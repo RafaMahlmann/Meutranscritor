@@ -105,21 +105,70 @@
         .empty-state p { font-size: 13px; max-width: 380px; line-height: 1.6; }
 
         .transcriptions { display: flex; flex-direction: column; gap: 16px; }
+
+        /* ===== CARD COLOR PALETTE ===== */
         .transcription-item {
             background: var(--bg-card);
             border: 1px solid var(--border);
+            border-left: 3px solid var(--card-accent, rgba(255,255,255,0.15));
             border-radius: 16px;
             overflow: hidden;
             animation: slideUp 0.3s ease;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        /* Subtle color number badge */
+        .transcription-item::before {
+            content: attr(data-color-num);
+            position: absolute;
+            top: 12px;
+            right: 58px; /* before action buttons */
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: var(--card-accent, rgba(255,255,255,0.15));
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            pointer-events: none;
+            line-height: 18px;
+            text-align: center;
         }
         .transcription-item:focus-within {
-            border-color: rgba(16, 185, 129, 0.3);
+            border-left-color: var(--card-accent, var(--accent));
+            box-shadow: 0 0 0 1px var(--card-accent-glow, var(--accent-glow));
         }
         .transcription-item.cursor-mode {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 1px var(--accent-glow);
+            box-shadow: 0 0 0 2px var(--card-accent, var(--accent));
         }
+
+        /* Palette color classes */
+        .card-color-0 { --card-accent: #10b981; --card-accent-glow: rgba(16,185,129,0.2); --card-bg-tint: rgba(16,185,129,0.04); }
+        .card-color-1 { --card-accent: #3b82f6; --card-accent-glow: rgba(59,130,246,0.2); --card-bg-tint: rgba(59,130,246,0.04); }
+        .card-color-2 { --card-accent: #a78bfa; --card-accent-glow: rgba(167,139,250,0.2); --card-bg-tint: rgba(167,139,250,0.04); }
+        .card-color-3 { --card-accent: #f97316; --card-accent-glow: rgba(249,115,22,0.2); --card-bg-tint: rgba(249,115,22,0.04); }
+        .card-color-4 { --card-accent: #ec4899; --card-accent-glow: rgba(236,72,153,0.2); --card-bg-tint: rgba(236,72,153,0.04); }
+        .card-color-5 { --card-accent: #06b6d4; --card-accent-glow: rgba(6,182,212,0.2); --card-bg-tint: rgba(6,182,212,0.04); }
+        .card-color-6 { --card-accent: #eab308; --card-accent-glow: rgba(234,179,8,0.2); --card-bg-tint: rgba(234,179,8,0.04); }
+        .card-color-7 { --card-accent: #f43f5e; --card-accent-glow: rgba(244,63,94,0.2); --card-bg-tint: rgba(244,63,94,0.04); }
+
+        /* Apply bg tint to card body */
+        .transcription-item .item-body {
+            background: var(--card-bg-tint, transparent);
+        }
+
+        /* Color dot indicator in header */
+        .color-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--card-accent, rgba(255,255,255,0.2));
+            display: inline-block;
+            flex-shrink: 0;
+            box-shadow: 0 0 6px var(--card-accent-glow, transparent);
+        }
+
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
@@ -154,19 +203,16 @@
             color: var(--text); font-size: 14px;
             line-height: 1.7; resize: vertical;
             outline: none; font-family: inherit;
-            caret-color: var(--accent);
+            caret-color: var(--card-accent, var(--accent));
         }
         .item-body textarea::placeholder { color: var(--text-dim); }
-        .item-body textarea:focus {
-            outline: none;
-        }
         .item-footer {
             display: flex; align-items: center; justify-content: space-between;
             padding: 10px 16px;
             border-top: 1px solid var(--border);
             font-size: 11px; color: var(--text-dim);
         }
-        .item-footer .cost { color: var(--accent); font-weight: 600; }
+        .item-footer .cost { color: var(--card-accent, var(--accent)); font-weight: 600; }
 
         .item-audio { padding: 0 16px 12px; }
         .item-audio audio { width: 100%; height: 36px; border-radius: 8px; }
@@ -548,10 +594,14 @@
         let streamSource = null;
         let isRecording = false;
         let currentStream = null;
-        let activeTextarea = null; // textarea que está com foco (modo cursor)
+        let activeTextarea = null;
+
+        // ===== COLOR PALETTE (8 cores, cicla automaticamente) =====
+        const PALETTE_SIZE = 8;
+        let colorCounter = 0; // incrementa a cada novo card
 
         const COST_WHISPER_PER_MIN = 0.006;
-        const COST_GROK_PER_MIN = 0.10 / 60; // $0.10/hora = ~$0.00167/min
+        const COST_GROK_PER_MIN = 0.10 / 60;
 
         let sessionStats = { count: 0, totalCostUSD: 0, totalCostBRL: 0, totalSeconds: 0 };
         let appSettings = {
@@ -619,9 +669,8 @@
             if (saved) {
                 const items = JSON.parse(saved);
                 items.forEach(item => {
-                    addTranscriptionItem(item.text, null, item.costUSD, item.type, item.provider, false);
+                    addTranscriptionItem(item.text, null, item.costUSD, item.type, item.provider, false, item.colorIndex);
                 });
-                // Restore stats
                 const stats = localStorage.getItem('whisper_stats_v3');
                 if (stats) sessionStats = JSON.parse(stats);
                 updateStats();
@@ -636,7 +685,8 @@
                         text: ta.value,
                         type: el.dataset.type || 'texto',
                         provider: el.dataset.provider || 'whisper',
-                        costUSD: parseFloat(el.dataset.cost) || 0
+                        costUSD: parseFloat(el.dataset.cost) || 0,
+                        colorIndex: parseInt(el.dataset.colorIndex) || 0
                     });
                 }
             });
@@ -699,11 +749,10 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
-        // ===== TRACK ACTIVE TEXTAREA (cursor mode) =====
+        // ===== TRACK ACTIVE TEXTAREA =====
         document.addEventListener('focusin', (e) => {
             if (e.target.tagName === 'TEXTAREA' && e.target.closest('.transcription-item')) {
                 activeTextarea = e.target;
-                // Highlight the card
                 document.querySelectorAll('.transcription-item').forEach(el => el.classList.remove('cursor-mode'));
                 e.target.closest('.transcription-item').classList.add('cursor-mode');
                 const hint = document.getElementById('recHint');
@@ -716,7 +765,6 @@
         });
         document.addEventListener('focusout', (e) => {
             if (e.target.tagName === 'TEXTAREA' && e.target.closest('.transcription-item')) {
-                // Don't clear immediately — let click happen
                 setTimeout(() => {
                     if (document.activeElement !== e.target) {
                         activeTextarea = null;
@@ -776,17 +824,14 @@
         function stopAndSendRecording() {
             if (!isRecording || !mediaRecorder) return;
             const elapsedSec = Math.floor((Date.now() - recordingStart) / 1000);
-
             mediaRecorder.stop();
             if (currentStream) currentStream.getTracks().forEach(t => t.stop());
             clearInterval(recTimerInterval);
             stopVuMeter();
-
             const mimeType = mediaRecorder.mimeType || 'audio/webm';
             const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
             audioBlob = new Blob(audioChunks, { type: mimeType });
             audioFile = new File([audioBlob], 'gravacao_' + new Date().toISOString().slice(0,19).replace(/:/g,'-') + '.' + ext, { type: mimeType });
-
             resetInputUI();
             doTranscribe(audioFile, elapsedSec, true);
         }
@@ -810,7 +855,6 @@
             currentStream = null;
             audioChunks = [];
             recordingStart = null;
-
             document.getElementById('inputText').disabled = false;
             document.getElementById('inputText').placeholder = 'Digite sua mensagem...';
             document.getElementById('inputBox').classList.remove('recording');
@@ -818,13 +862,11 @@
             document.getElementById('recHint').classList.remove('active');
             document.getElementById('recHint').classList.remove('cursor-mode');
             document.getElementById('recTimer').textContent = '00:00';
-
             document.getElementById('btnRecord').style.display = 'flex';
             document.getElementById('btnAttach').style.display = 'flex';
             document.getElementById('btnSend').style.display = 'flex';
             document.getElementById('btnStop').style.display = 'none';
             document.getElementById('btnCancel').style.display = 'none';
-
             checkInput();
             setStatus('Pronto', 'ready');
         }
@@ -869,14 +911,12 @@
 
                 let response;
                 if (appSettings.provider === 'grok') {
-                    // Grok STT endpoint
                     response = await fetch('https://api.x.ai/v1/stt', {
                         method: 'POST',
                         headers: { 'Authorization': 'Bearer ' + key },
                         body: formData
                     });
                 } else {
-                    // Whisper endpoint
                     formData.append('model', 'whisper-1');
                     if (appSettings.language) formData.append('language', appSettings.language);
                     formData.append('response_format', 'text');
@@ -903,7 +943,6 @@
                 const costPerMin = appSettings.provider === 'grok' ? COST_GROK_PER_MIN : COST_WHISPER_PER_MIN;
                 const costUSD = (Math.max(1, Math.ceil(durationSec / 60)) * costPerMin);
 
-                // If cursor mode is active, insert at cursor position
                 if (activeTextarea && document.contains(activeTextarea)) {
                     const start = activeTextarea.selectionStart;
                     const end = activeTextarea.selectionEnd;
@@ -914,7 +953,6 @@
                     navigator.clipboard.writeText(text).then(() => {
                         showToast('✅ Texto inserido no cursor e copiado!');
                     });
-                    // Update word count in footer
                     const item = activeTextarea.closest('.transcription-item');
                     if (item) {
                         const footer = item.querySelector('.item-footer span:first-child');
@@ -933,7 +971,6 @@
                 sessionStats.totalSeconds += durationSec;
                 updateStats();
                 saveHistory();
-
                 setStatus('Pronto', 'ready');
 
             } catch (error) {
@@ -943,21 +980,29 @@
             }
         }
 
-        // ===== ADD ITEM =====
-        function addTranscriptionItem(text, file, costUSD, type, provider, save = true) {
+        // ===== ADD ITEM (com paleta de cores) =====
+        function addTranscriptionItem(text, file, costUSD, type, provider, save = true, forceColorIndex = null) {
             document.getElementById('emptyState').style.display = 'none';
             document.getElementById('transcriptions').style.display = 'flex';
+
+            // Determina o índice de cor
+            const cidx = forceColorIndex !== null ? forceColorIndex : colorCounter;
+            const colorClass = 'card-color-' + (cidx % PALETTE_SIZE);
+            // Só incrementa o contador se for um card novo (não carregado do histórico)
+            if (forceColorIndex === null) colorCounter++;
 
             const id = 'item_' + Date.now();
             const now = new Date();
             const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
             const item = document.createElement('div');
-            item.className = 'transcription-item';
+            item.className = 'transcription-item ' + colorClass;
             item.id = id;
             item.dataset.type = type;
             item.dataset.provider = provider || 'whisper';
             item.dataset.cost = costUSD;
+            item.dataset.colorIndex = cidx % PALETTE_SIZE;
+            item.dataset.colorNum = (cidx % PALETTE_SIZE) + 1; // para o ::before
 
             const isGrok = (provider || 'whisper') === 'grok';
             const typeLabel = type === 'gravacao' ? 'Gravação' : type === 'arquivo' ? 'Arquivo' : 'Texto';
@@ -977,6 +1022,7 @@
             item.innerHTML = `
                 <div class="item-header">
                     <div class="item-meta">
+                        <span class="color-dot"></span>
                         <span class="${badgeClass}">${badgeText}</span>
                         <span class="item-badge">${typeIcon} ${typeLabel}</span>
                         <span class="item-time">${timeStr}</span>
@@ -1012,9 +1058,7 @@
             if (save) saveHistory();
         }
 
-        function trackFocus(el) {
-            activeTextarea = el;
-        }
+        function trackFocus(el) { activeTextarea = el; }
         function updateFooter(id) {
             const el = document.getElementById(id);
             if (!el) return;
@@ -1070,9 +1114,7 @@
         function checkInput() {
             const btn = document.getElementById('btnSend');
             const hasText = document.getElementById('inputText').value.trim().length > 0;
-            if (!isRecording) {
-                btn.classList.toggle('active', hasText);
-            }
+            if (!isRecording) btn.classList.toggle('active', hasText);
         }
         function updateStats() {
             document.getElementById('countTrans').textContent = sessionStats.count;
@@ -1080,9 +1122,7 @@
             document.getElementById('totalCostBRL').textContent = 'R$' + sessionStats.totalCostBRL.toFixed(2).replace('.',',');
             document.getElementById('todayTime').textContent = Math.ceil(sessionStats.totalSeconds / 60) + ' min';
         }
-        function updateUI() {
-            updateStats();
-        }
+        function updateUI() { updateStats(); }
         function setStatus(text, type) {
             document.getElementById('statusText').textContent = text;
             const dot = document.getElementById('statusDot');
