@@ -326,6 +326,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .model-pick-btn{width:100%;background:none;border:none;text-align:left;padding:9px 14px;cursor:pointer;transition:background var(--transition);font-family:var(--font);color:var(--text)}
 .model-pick-btn:hover{background:var(--bg-input)}
 .model-pick-btn.active{background:var(--accent-glow)}
+.local-start-btn{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg-input);cursor:pointer;font-family:var(--font);color:var(--text);transition:all var(--transition)}
+.local-start-btn:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-1px)}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -683,6 +685,39 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- POPUP INICIAR SERVIDOR LOCAL -->
+<div id="localStartOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);z-index:600;align-items:center;justify-content:center">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.3);animation:modalIn 0.25s ease">
+    <div style="font-size:40px;margin-bottom:12px">🖥️</div>
+    <h2 style="font-size:17px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px">Iniciar Whisper Local</h2>
+    <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:20px">Qual modelo deseja usar?<br><span style="font-size:11px;color:var(--text4)">Modelos menores são mais rápidos.</span></p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <button onclick="startLocalServer('small')" class="local-start-btn" id="lsbSmall">
+        <span style="font-size:15px">⚡</span>
+        <div style="text-align:left">
+          <div style="font-size:13px;font-weight:700">Rápido</div>
+          <div style="font-size:11px;color:var(--text3)">Mais veloz · boa qualidade</div>
+        </div>
+      </button>
+      <button onclick="startLocalServer('medium')" class="local-start-btn" id="lsbMedium">
+        <span style="font-size:15px">⚖️</span>
+        <div style="text-align:left">
+          <div style="font-size:13px;font-weight:700">Médio</div>
+          <div style="font-size:11px;color:var(--text3)">Equilíbrio velocidade/precisão</div>
+        </div>
+      </button>
+      <button onclick="startLocalServer('large-v3')" class="local-start-btn" id="lsbLarge" style="border-color:var(--accent);background:var(--accent-glow)">
+        <span style="font-size:15px">🎯</span>
+        <div style="text-align:left">
+          <div style="font-size:13px;font-weight:700">Preciso <span style="font-size:10px;font-weight:500;color:var(--accent)">recomendado</span></div>
+          <div style="font-size:11px;color:var(--text3)">Máxima qualidade</div>
+        </div>
+      </button>
+    </div>
+    <button onclick="cancelLocalStart()" style="background:none;border:none;font-size:12px;color:var(--text4);cursor:pointer;font-family:var(--font)">Cancelar — usar outro provedor</button>
+  </div>
+</div>
+
 <!-- TELA DE BOAS-VINDAS / PERMISSÃO DE MICROFONE -->
 <div class="overlay" id="micOverlay" style="display:none;z-index:600">
   <div class="modal" style="max-width:420px;text-align:center">
@@ -876,6 +911,49 @@ async function waitServerReady(){
     }catch(e){}
   }
   throw new Error('timeout');
+}
+async function checkAndStartServer(onReady){
+  try{
+    const r=await fetch('http://localhost:8000/v1/local/model');
+    if(r.ok){const d=await r.json();cfg.localModel=d.model;updateSpeedBadge();onReady&&onReady();return}
+  }catch(e){}
+  // servidor offline — mostra popup de escolha
+  const lastModel=cfg.localModel||'large-v3';
+  // destaca o último modelo usado
+  ['lsbSmall','lsbMedium','lsbLarge'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.style.borderColor='';el.style.background='var(--bg-input)'}
+  });
+  const map={'small':'lsbSmall','medium':'lsbMedium','large-v3':'lsbLarge'};
+  const last=document.getElementById(map[lastModel]);
+  if(last){last.style.borderColor='var(--accent)';last.style.background='var(--accent-glow)'}
+  document.getElementById('localStartOverlay').style.display='flex';
+  window._localStartCallback=onReady;
+}
+async function startLocalServer(model){
+  document.getElementById('localStartOverlay').style.display='none';
+  cfg.localModel=model;
+  localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+  showSwitchOverlay(['small','medium','large-v3'].indexOf(model)===0?'⚡ Rápido':model==='medium'?'⚖️ Médio':'🎯 Preciso');
+  // pede ao backend para iniciar (só funciona se o servidor já está rodando)
+  // como está offline, abre o .bat automaticamente via link
+  try{
+    await fetch('http://localhost:8000/v1/local/switch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model})});
+  }catch(e){
+    // servidor estava offline — abre o .bat
+    window.location.href='file:///C:/Users/xrafa/whisper-local/iniciar_whisper.bat';
+  }
+  await waitServerReady();
+  hideSwitchOverlay();
+  updateSpeedBadge();
+  window._localStartCallback&&window._localStartCallback();
+  toast('✅ Servidor pronto!');
+}
+function cancelLocalStart(){
+  document.getElementById('localStartOverlay').style.display='none';
+  // volta para whisper se cancelar
+  setProvider('whisper');
+  closeModal();
 }
 async function syncLocalModel(){
   if(cfg.provider!=='local')return;
@@ -1156,7 +1234,7 @@ function setProvider(p,save=true){
   document.getElementById('togG').className='api-tog-btn'+(p==='grok'?' on-g':'');
   document.getElementById('togGQ').className='api-tog-btn'+(p==='groqwhisper'?' on-gq':'');
   document.getElementById('togL').className='api-tog-btn'+(p==='local'?' on':'');
-  document.getElementById('localHint').style.display=p==='local'?'block':'none';
+  document.getElementById('localHint').style.display='none';
   setTimeout(updateSpeedBadge,0);
   const labels={whisper:'Whisper',grok:'Grok STT',groqwhisper:'Groq 🟢',local:'🖥️ Local'};
   document.getElementById('cfgLabel').textContent=labels[p]||'Whisper';
@@ -1164,6 +1242,7 @@ function setProvider(p,save=true){
   document.getElementById('btnCfg').className='gbtn '+(p==='grok'?'on-grok':p==='groqwhisper'?'on-groq':'on-accent');
   document.getElementById('brandIcon').textContent=p==='grok'?'🟠':p==='groqwhisper'?'🟢':p==='local'?'🖥️':'🎙️';
   if(save)saveCfg(false);
+  if(p==='local')setTimeout(()=>checkAndStartServer(closeModal),300);
 }
 function setDiarProvider(p,save=true){
   cfg.diarProvider=p;
