@@ -328,6 +328,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .model-pick-btn.active{background:var(--accent-glow)}
 .local-start-btn{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg-input);cursor:pointer;font-family:var(--font);color:var(--text);transition:all var(--transition)}
 .local-start-btn:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-1px)}
+.local-model-row{width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;font-family:var(--font);color:var(--text);transition:all var(--transition)}
+.local-model-row:hover{border-color:var(--accent);background:var(--accent-glow)}
+.local-model-row.active{border-color:var(--accent);background:var(--accent-glow)}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -549,10 +552,49 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <button class="api-tog-btn" id="togGQ" onclick="setProvider('groqwhisper')">🟢 Groq <span class="free-badge" style="font-size:9px">FREE</span></button>
         <button class="api-tog-btn" id="togL" onclick="setProvider('local')">🖥️ Local <span class="free-badge" style="font-size:9px">GRÁTIS</span></button>
       </div>
-      <div id="localHint" style="display:none;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:11px;padding:10px 14px;font-size:12px;color:var(--text3);line-height:1.6;margin-top:8px">
-        🖥️ <strong>Whisper rodando no seu PC</strong> — sem internet, sem custo.<br>
-        Para iniciar o servidor local, abra o PowerShell e execute:<br>
-        <code style="background:var(--bg-input);padding:2px 6px;border-radius:5px;font-size:11px">whisper-server --model Systran/faster-whisper-large-v3 --port 8000</code>
+      <!-- PAINEL LOCAL (visível só quando local está ativo) -->
+      <div id="localPanel" style="display:none;margin-top:10px">
+        <!-- Status do servidor -->
+        <div id="localStatusBar" style="display:flex;align-items:center;gap:8px;background:var(--bg-input);border-radius:11px;padding:9px 13px;margin-bottom:10px;font-size:12px">
+          <span id="localStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--text4);flex-shrink:0"></span>
+          <span id="localStatusText" style="color:var(--text3);flex:1">Verificando servidor…</span>
+          <button onclick="checkLocalStatusNow()" style="background:none;border:none;font-size:11px;color:var(--accent);cursor:pointer;font-family:var(--font);font-weight:600">↻ Verificar</button>
+        </div>
+        <!-- Seleção de modelo -->
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text4);margin-bottom:8px">Modelo Whisper</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button onclick="setLocalModelFromModal('small')" class="local-model-row" id="lmrSmall">
+            <div style="display:flex;align-items:center;gap:10px;width:100%">
+              <span style="font-size:16px">⚡</span>
+              <div style="flex:1;text-align:left">
+                <div style="font-size:13px;font-weight:600">Rápido <span style="font-size:10px;font-weight:400;color:var(--text3)">small</span></div>
+                <div style="font-size:11px;color:var(--text4)">~3× mais veloz · boa qualidade</div>
+              </div>
+              <span id="lmrSmallStats" style="font-size:11px;color:var(--text3)"></span>
+            </div>
+          </button>
+          <button onclick="setLocalModelFromModal('medium')" class="local-model-row" id="lmrMedium">
+            <div style="display:flex;align-items:center;gap:10px;width:100%">
+              <span style="font-size:16px">⚖️</span>
+              <div style="flex:1;text-align:left">
+                <div style="font-size:13px;font-weight:600">Médio <span style="font-size:10px;font-weight:400;color:var(--text3)">medium</span></div>
+                <div style="font-size:11px;color:var(--text4)">Equilíbrio velocidade/precisão</div>
+              </div>
+              <span id="lmrMediumStats" style="font-size:11px;color:var(--text3)"></span>
+            </div>
+          </button>
+          <button onclick="setLocalModelFromModal('large-v3')" class="local-model-row" id="lmrLarge">
+            <div style="display:flex;align-items:center;gap:10px;width:100%">
+              <span style="font-size:16px">🎯</span>
+              <div style="flex:1;text-align:left">
+                <div style="font-size:13px;font-weight:600">Preciso <span style="font-size:10px;font-weight:400;color:var(--text3)">large-v3</span></div>
+                <div style="font-size:11px;color:var(--text4)">Máxima qualidade</div>
+              </div>
+              <span id="lmrLargeStats" style="font-size:11px;color:var(--text3)"></span>
+            </div>
+          </button>
+        </div>
+        <p style="font-size:11px;color:var(--text4);margin-top:8px;line-height:1.6">🖥️ Transcrição offline no seu PC — sem internet, sem custo. O servidor deve estar rodando (<code style="font-size:10px;background:var(--bg-input);padding:1px 5px;border-radius:4px">iniciar_whisper.bat</code>).</p>
       </div>
       <div class="frow" style="margin-top:12px">
         <label><span id="keyLabel">OpenAI API Key</span><div style="display:flex;gap:5px"><a href="https://platform.openai.com/api-keys" target="_blank" class="alink">🔑 Chaves</a><a href="https://platform.openai.com/usage" target="_blank" class="alink">📊 Uso</a></div></label>
@@ -1266,15 +1308,72 @@ function setProvider(p,save=true){
   document.getElementById('togG').className='api-tog-btn'+(p==='grok'?' on-g':'');
   document.getElementById('togGQ').className='api-tog-btn'+(p==='groqwhisper'?' on-gq':'');
   document.getElementById('togL').className='api-tog-btn'+(p==='local'?' on':'');
-  document.getElementById('localHint').style.display='none';
+  document.getElementById('localPanel').style.display=p==='local'?'block':'none';
   setTimeout(updateSpeedBadge,0);
   const labels={whisper:'Whisper',grok:'Grok STT',groqwhisper:'Groq 🟢',local:'🖥️ Local'};
   document.getElementById('cfgLabel').textContent=labels[p]||'Whisper';
-  document.getElementById('keyLabel').textContent=p==='grok'?'Grok Key (ativa)':p==='groqwhisper'?'Groq Key (ativa)':p==='local'?'OpenAI Key (não usada no Local)':'OpenAI API Key';
+  document.getElementById('keyLabel').textContent=p==='grok'?'Grok Key (ativa)':p==='groqwhisper'?'Groq Key (ativa)':p==='local'?'(sem chave necessária)':'OpenAI API Key';
   document.getElementById('btnCfg').className='gbtn '+(p==='grok'?'on-grok':p==='groqwhisper'?'on-groq':'on-accent');
   document.getElementById('brandIcon').textContent=p==='grok'?'🟠':p==='groqwhisper'?'🟢':p==='local'?'🖥️':'🎙️';
+  if(p==='local'){updateLocalPanel();setTimeout(()=>checkAndStartServer(closeModal),300)}
   if(save)saveCfg(false);
-  if(p==='local')setTimeout(()=>checkAndStartServer(closeModal),300);
+}
+function updateLocalPanel(){
+  const model=cfg.localModel||'large-v3';
+  ['lmrSmall','lmrMedium','lmrLarge'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  const map={'small':'lmrSmall','medium':'lmrMedium','large-v3':'lmrLarge'};
+  document.getElementById(map[model])?.classList.add('active');
+  // stats por modelo
+  const all=JSON.parse(localStorage.getItem('vox_speed_stats')||'{}');
+  [['small','lmrSmallStats'],['medium','lmrMediumStats'],['large-v3','lmrLargeStats']].forEach(([m,sid])=>{
+    const el=document.getElementById(sid);if(!el)return;
+    const s=all[`local_${m}`];
+    if(s&&s.count>0&&s.totalAudioSec>0){
+      const spm=Math.round(s.totalProcSec/(s.totalAudioSec/60));
+      el.innerHTML=`<span style="color:${_speedColor(spm)}">${spm}s/min</span>`;
+    }else{el.textContent=''}
+  });
+}
+async function checkLocalStatusNow(){
+  const dot=document.getElementById('localStatusDot');
+  const txt=document.getElementById('localStatusText');
+  dot.style.background='var(--warning)';txt.textContent='Verificando…';
+  try{
+    const r=await fetch('http://localhost:8000/v1/local/model');
+    if(r.ok){
+      const d=await r.json();
+      cfg.localModel=d.model;
+      localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+      dot.style.background='#10b981';
+      txt.textContent=`Servidor online — modelo: ${d.label||d.model}`;
+      updateLocalPanel();updateSpeedBadge();
+    }else throw new Error();
+  }catch(e){
+    dot.style.background='var(--danger)';
+    txt.innerHTML='Servidor offline. <span style="color:var(--text3)">Abra o iniciar_whisper.bat</span>';
+  }
+}
+async function setLocalModelFromModal(model){
+  if(model===cfg.localModel){toast('ℹ️ Esse modelo já está ativo');return}
+  const labels={'small':'⚡ Rápido','medium':'⚖️ Médio','large-v3':'🎯 Preciso'};
+  closeModal();
+  showSwitchOverlay(labels[model]||model);
+  try{
+    const res=await fetch('http://localhost:8000/v1/local/switch',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model})
+    });
+    if(!res.ok)throw new Error();
+    cfg.localModel=model;
+    localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+    await waitServerReady();
+    hideSwitchOverlay();
+    updateSpeedBadge();
+    toast(`✅ Modelo trocado para ${labels[model]||model}!`);
+  }catch(e){
+    hideSwitchOverlay();
+    showOfflineInstructions(model);
+  }
 }
 function setDiarProvider(p,save=true){
   cfg.diarProvider=p;
@@ -1294,7 +1393,11 @@ function updateDiarStatus(){
   const st=document.getElementById('diarStatus');
   st.classList.toggle('on',cfg.diarEnabled);
 }
-function openModal(){document.getElementById('overlay').classList.add('on');updateRamBadge()}
+function openModal(){
+  document.getElementById('overlay').classList.add('on');
+  updateRamBadge();
+  if(cfg.provider==='local'){updateLocalPanel();checkLocalStatusNow()}
+}
 function closeModal(){document.getElementById('overlay').classList.remove('on')}
 function saveCfg(close=true){
   cfg.apiKey=document.getElementById('apiKey').value.trim();
