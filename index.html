@@ -389,20 +389,22 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           </button>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;position:relative">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;position:relative">
         <button class="gbtn on-accent" id="btnCfg" onclick="openModal()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0"/></svg>
           <span id="cfgLabel">Whisper</span>
         </button>
-        <button id="localModelBadge" onclick="toggleModelPicker()" style="display:none;background:none;border:none;cursor:pointer;font-size:10px;font-weight:600;font-family:var(--font);color:var(--text4);letter-spacing:0.3px;padding:0 2px;transition:color 0.2s;line-height:1.4" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text4)'">
-          <span id="localModelName">large-v3</span> · <span id="localModelAvg" style="color:var(--text4)"></span> ▾
+        <!-- SPEED BADGE — todos os provedores -->
+        <button id="speedBadge" onclick="toggleModelPicker()" style="display:none;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0 2px;text-align:right;line-height:1.5">
+          <div id="speedBadgeLine1" style="font-size:10px;font-weight:600;color:var(--text4);letter-spacing:0.2px"></div>
+          <div id="speedBadgeLine2" style="font-size:10px;font-weight:700;letter-spacing:0.1px"></div>
         </button>
-        <!-- MODEL PICKER -->
-        <div id="modelPicker" style="display:none;position:absolute;top:100%;right:0;margin-top:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:200;min-width:220px;overflow:hidden;animation:fadeDown 0.15s ease">
-          <div style="padding:8px 14px 4px;font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--text4)">Modelo local</div>
+        <!-- MODEL PICKER (só local) -->
+        <div id="modelPicker" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:200;min-width:240px;overflow:hidden;animation:fadeDown 0.15s ease">
+          <div style="padding:10px 14px 4px;font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--text4)">Modelo local</div>
           <button onclick="setLocalModel('small')" class="model-pick-btn" id="mpSmall">
             <div style="font-size:13px;font-weight:600">⚡ Rápido <span style="font-size:10px;font-weight:500;color:var(--text4)">small</span></div>
-            <div style="font-size:11px;color:var(--text3);margin-top:1px">~3x mais rápido · qualidade boa</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px">~3x mais rápido · boa qualidade</div>
           </button>
           <button onclick="setLocalModel('medium')" class="model-pick-btn" id="mpMedium">
             <div style="font-size:13px;font-weight:600">⚖️ Médio <span style="font-size:10px;font-weight:500;color:var(--text4)">medium</span></div>
@@ -410,9 +412,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           </button>
           <button onclick="setLocalModel('large-v3')" class="model-pick-btn" id="mpLarge">
             <div style="font-size:13px;font-weight:600">🎯 Preciso <span style="font-size:10px;font-weight:500;color:var(--text4)">large-v3</span></div>
-            <div style="font-size:11px;color:var(--text3);margin-top:1px">máxima qualidade · atual</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px">máxima qualidade</div>
           </button>
-          <div id="modelStats" style="padding:8px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.6"></div>
+          <div id="modelStats" style="padding:8px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.7"></div>
         </div>
       </div>
       <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -743,64 +745,94 @@ const SUMMARY_PROMPTS={
   livre:'Gere um resumo conciso deste texto destacando os pontos mais importantes. Em português, 3-5 parágrafos no máximo.'
 };
 
-// ── LOCAL MODEL PICKER ──
-const LOCAL_MODELS={
-  'small':{label:'⚡ Rápido',id:'mpSmall'},
-  'medium':{label:'⚖️ Médio',id:'mpMedium'},
-  'large-v3':{label:'🎯 Preciso',id:'mpLarge'}
-};
-function updateLocalBadge(){
-  if(cfg.provider!=='local')return;
-  const model=cfg.localModel||'large-v3';
-  document.getElementById('localModelBadge').style.display='block';
-  document.getElementById('localModelName').textContent=model;
+// ── SPEED STATS (todos os provedores) ──
+function _provKey(){
+  const p=cfg.provider;
+  return p==='local'?`local_${cfg.localModel||'large-v3'}`:p;
+}
+function recordTiming(procMs, audioSec){
+  const key=_provKey();
+  const all=JSON.parse(localStorage.getItem('vox_speed_stats')||'{}');
+  if(!all[key])all[key]={count:0,totalProcSec:0,totalAudioSec:0};
+  all[key].count++;
+  all[key].totalProcSec+=procMs/1000;
+  all[key].totalAudioSec+=audioSec;
+  localStorage.setItem('vox_speed_stats',JSON.stringify(all));
+  updateSpeedBadge();
+}
+function _speedColor(spm){
+  if(spm<=10)return '#10b981'; // verde
+  if(spm<=40)return '#ff9500'; // amarelo
+  return '#ff3b30';            // vermelho
+}
+function updateSpeedBadge(){
+  const badge=document.getElementById('speedBadge');
+  const line1=document.getElementById('speedBadgeLine1');
+  const line2=document.getElementById('speedBadgeLine2');
+  const key=_provKey();
+  const all=JSON.parse(localStorage.getItem('vox_speed_stats')||'{}');
+  const s=all[key];
+  const isLocal=cfg.provider==='local';
+  // linha 1: modelo (local) ou vazio
+  line1.textContent=isLocal?(cfg.localModel||'large-v3'):'';
+  if(s&&s.count>0&&s.totalAudioSec>0){
+    const spm=s.totalProcSec/(s.totalAudioSec/60);
+    const color=_speedColor(spm);
+    line2.innerHTML=`⏱ <span style="color:${color}">${Math.round(spm)}s/min</span> · ${s.count} ${s.count===1?'gravação':'gravações'}`;
+    badge.style.display='block';
+    badge.title=`Média: ${Math.round(spm)}s de processamento por minuto de áudio`;
+    if(isLocal){badge.style.cursor='pointer';badge.onclick=toggleModelPicker}
+    else{badge.style.cursor='default';badge.onclick=null}
+  }else{
+    if(isLocal){
+      line2.innerHTML=`<span style="color:var(--text4)">${cfg.localModel||'large-v3'} ▾</span>`;
+      line1.textContent='';
+      badge.style.display='block';
+      badge.style.cursor='pointer';
+      badge.onclick=toggleModelPicker;
+    }else{
+      badge.style.display='none';
+    }
+  }
+  if(isLocal)updateModelPickerActive(cfg.localModel||'large-v3');
   updateModelStats();
-  updateModelPickerActive(model);
 }
 function updateModelStats(){
-  const stats=JSON.parse(localStorage.getItem('vox_local_stats')||'{}');
+  const all=JSON.parse(localStorage.getItem('vox_speed_stats')||'{}');
   const model=cfg.localModel||'large-v3';
-  const s=stats[model];
-  const avgEl=document.getElementById('localModelAvg');
-  const statsEl=document.getElementById('modelStats');
-  if(s&&s.count>0){
-    const avg=Math.round(s.totalSec/s.count);
-    avgEl.textContent=`~${avg}s/transcrição`;
-    statsEl.innerHTML=`📊 <strong>${s.count}</strong> transcrições · média <strong>${avg}s</strong> · modelo <strong>${model}</strong>`;
+  const key=`local_${model}`;
+  const s=all[key];
+  const el=document.getElementById('modelStats');
+  if(!el)return;
+  if(s&&s.count>0&&s.totalAudioSec>0){
+    const spm=s.totalProcSec/(s.totalAudioSec/60);
+    const color=_speedColor(spm);
+    el.innerHTML=`⏱ <strong style="color:${color}">${Math.round(spm)}s/min</strong> de áudio · ${s.count} gravações`;
   }else{
-    avgEl.textContent='sem dados ainda';
-    statsEl.innerHTML=`📊 Nenhuma transcrição com <strong>${model}</strong> ainda`;
+    el.innerHTML=`<span style="color:var(--text4)">Nenhuma gravação com ${model} ainda</span>`;
   }
-}
-function recordLocalTiming(durationMs){
-  const model=cfg.localModel||'large-v3';
-  const stats=JSON.parse(localStorage.getItem('vox_local_stats')||'{}');
-  if(!stats[model])stats[model]={count:0,totalSec:0};
-  stats[model].count++;
-  stats[model].totalSec+=Math.round(durationMs/1000);
-  localStorage.setItem('vox_local_stats',JSON.stringify(stats));
-  updateLocalBadge();
 }
 function toggleModelPicker(){
   const p=document.getElementById('modelPicker');
-  p.style.display=p.style.display==='none'?'block':'none';
-  updateModelStats();
+  const isOpen=p.style.display==='block';
+  p.style.display=isOpen?'none':'block';
+  if(!isOpen)updateModelStats();
 }
 function updateModelPickerActive(model){
-  Object.values(LOCAL_MODELS).forEach(m=>document.getElementById(m.id)?.classList.remove('active'));
-  const cur=LOCAL_MODELS[model];
-  if(cur)document.getElementById(cur.id)?.classList.add('active');
+  ['mpSmall','mpMedium','mpLarge'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  const map={'small':'mpSmall','medium':'mpMedium','large-v3':'mpLarge'};
+  if(map[model])document.getElementById(map[model])?.classList.add('active');
 }
 function setLocalModel(model){
   cfg.localModel=model;
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
   document.getElementById('modelPicker').style.display='none';
-  updateLocalBadge();
+  updateSpeedBadge();
   toast(`⚡ Modelo trocado para ${model} — reinicie o servidor para aplicar`);
 }
 document.addEventListener('click',e=>{
   const picker=document.getElementById('modelPicker');
-  const badge=document.getElementById('localModelBadge');
+  const badge=document.getElementById('speedBadge');
   if(picker&&badge&&!picker.contains(e.target)&&!badge.contains(e.target))
     picker.style.display='none';
 });
@@ -831,7 +863,7 @@ async function requestMic(){
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',()=>{
   loadCfg();loadHistory();updateStats();checkSend();applyView();
-  checkMicPermission();
+  updateSpeedBadge();checkMicPermission();
   document.getElementById('snameInput').addEventListener('input',e=>{});
   document.addEventListener('click',e=>{
     if(!document.getElementById('expDrop').contains(e.target)&&!document.getElementById('btnExport').contains(e.target))
@@ -1065,8 +1097,7 @@ function setProvider(p,save=true){
   document.getElementById('togGQ').className='api-tog-btn'+(p==='groqwhisper'?' on-gq':'');
   document.getElementById('togL').className='api-tog-btn'+(p==='local'?' on':'');
   document.getElementById('localHint').style.display=p==='local'?'block':'none';
-  document.getElementById('localModelBadge').style.display=p==='local'?'block':'none';
-  if(p==='local')updateLocalBadge();
+  setTimeout(updateSpeedBadge,0);
   const labels={whisper:'Whisper',grok:'Grok STT',groqwhisper:'Groq 🟢',local:'🖥️ Local'};
   document.getElementById('cfgLabel').textContent=labels[p]||'Whisper';
   document.getElementById('keyLabel').textContent=p==='grok'?'Grok Key (ativa)':p==='groqwhisper'?'Groq Key (ativa)':p==='local'?'OpenAI Key (não usada no Local)':'OpenAI API Key';
@@ -1448,7 +1479,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
     }else{addCard(text,fromRec?file:file,cost,fromRec?'gravacao':'arquivo',cfg.provider,true,null,null,[],sn,mode,false)}
     const words=text.split(/\s+/).filter(w=>w).length;
     stats.count++;stats.usd+=cost;stats.brl+=cost*cfg.rate;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
-    if(cfg.provider==='local')recordLocalTiming(Date.now()-_t0);
+    recordTiming(Date.now()-_t0, actualSec);
     updateStats();saveHistory();setStatus('Pronto','ready');toast('✅ Transcrição concluída!');
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
   finally{isProc=false;lockUI(false)}
