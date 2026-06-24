@@ -828,7 +828,22 @@ function setLocalModel(model){
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
   document.getElementById('modelPicker').style.display='none';
   updateSpeedBadge();
-  toast(`⚡ Modelo trocado para ${model} — reinicie o servidor para aplicar`);
+  // mostra instrução clara para o usuário
+  const labels={'small':'⚡ Rápido (small)','medium':'⚖️ Médio (medium)','large-v3':'🎯 Preciso (large-v3)'};
+  toast(`✅ Selecionado: ${labels[model]||model} — feche e reabra o servidor para aplicar`);
+}
+async function syncLocalModel(){
+  if(cfg.provider!=='local')return;
+  try{
+    const res=await fetch('http://localhost:8000/v1/local/model');
+    if(!res.ok)return;
+    const data=await res.json();
+    if(cfg.localModel!==data.model){
+      cfg.localModel=data.model;
+      localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+      updateSpeedBadge();
+    }
+  }catch(e){}
 }
 document.addEventListener('click',e=>{
   const picker=document.getElementById('modelPicker');
@@ -863,7 +878,7 @@ async function requestMic(){
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',()=>{
   loadCfg();loadHistory();updateStats();checkSend();applyView();
-  updateSpeedBadge();checkMicPermission();
+  updateSpeedBadge();syncLocalModel();checkMicPermission();
   document.getElementById('snameInput').addEventListener('input',e=>{});
   document.addEventListener('click',e=>{
     if(!document.getElementById('expDrop').contains(e.target)&&!document.getElementById('btnExport').contains(e.target))
