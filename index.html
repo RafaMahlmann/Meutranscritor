@@ -823,14 +823,59 @@ function updateModelPickerActive(model){
   const map={'small':'mpSmall','medium':'mpMedium','large-v3':'mpLarge'};
   if(map[model])document.getElementById(map[model])?.classList.add('active');
 }
-function setLocalModel(model){
-  cfg.localModel=model;
-  localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+async function setLocalModel(model){
+  const labels={'small':'⚡ Rápido','medium':'⚖️ Médio','large-v3':'🎯 Preciso'};
   document.getElementById('modelPicker').style.display='none';
-  updateSpeedBadge();
-  // mostra instrução clara para o usuário
-  const labels={'small':'⚡ Rápido (small)','medium':'⚖️ Médio (medium)','large-v3':'🎯 Preciso (large-v3)'};
-  toast(`✅ Selecionado: ${labels[model]||model} — feche e reabra o servidor para aplicar`);
+  if(model===cfg.localModel){toast('ℹ️ Esse modelo já está ativo');return}
+  // mostra overlay de troca
+  showSwitchOverlay(labels[model]||model);
+  try{
+    const res=await fetch('http://localhost:8000/v1/local/switch',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model})
+    });
+    if(!res.ok)throw new Error();
+    cfg.localModel=model;
+    localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+    // aguarda servidor reiniciar e volta
+    await waitServerReady();
+    hideSwitchOverlay();
+    updateSpeedBadge();
+    toast(`✅ Modelo trocado para ${labels[model]||model}!`);
+  }catch(e){
+    hideSwitchOverlay();
+    toast('❌ Servidor não respondeu. Ele está rodando?',true);
+  }
+}
+function showSwitchOverlay(label){
+  let ov=document.getElementById('switchOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='switchOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);z-index:700;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px';
+    ov.innerHTML=`
+      <div style="font-size:42px">⚙️</div>
+      <div style="color:white;font-size:17px;font-weight:700;font-family:var(--font)">Trocando para ${label}…</div>
+      <div style="color:rgba(255,255,255,0.7);font-size:13px;font-family:var(--font);text-align:center;max-width:280px;line-height:1.6">O servidor está reiniciando.<br>Aguarde cerca de 30 segundos.</div>
+      <div style="display:flex;gap:6px;margin-top:4px">${[0,1,2].map(i=>`<div style="width:8px;height:8px;border-radius:50%;background:white;opacity:0.4;animation:blink 1.2s ${i*0.3}s infinite"></div>`).join('')}</div>`;
+    document.body.appendChild(ov);
+  }
+  ov.style.display='flex';
+}
+function hideSwitchOverlay(){
+  const ov=document.getElementById('switchOverlay');
+  if(ov)ov.style.display='none';
+}
+async function waitServerReady(){
+  await new Promise(r=>setTimeout(r,3000)); // aguarda shutdown
+  for(let i=0;i<40;i++){
+    await new Promise(r=>setTimeout(r,2000));
+    try{
+      const r=await fetch('http://localhost:8000/v1/local/model');
+      if(r.ok){const d=await r.json();cfg.localModel=d.model;return}
+    }catch(e){}
+  }
+  throw new Error('timeout');
 }
 async function syncLocalModel(){
   if(cfg.provider!=='local')return;
