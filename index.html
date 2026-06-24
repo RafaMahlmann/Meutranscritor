@@ -594,7 +594,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
             </div>
           </button>
         </div>
-        <p style="font-size:11px;color:var(--text4);margin-top:8px;line-height:1.6">🖥️ Transcrição offline no seu PC — sem internet, sem custo. O servidor deve estar rodando (<code style="font-size:10px;background:var(--bg-input);padding:1px 5px;border-radius:4px">iniciar_whisper.bat</code>).</p>
+        <a href="file:///C:/Users/xrafa/whisper-local/iniciar_whisper.bat" onclick="waitAndCloseOfflineFromModal()" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;background:var(--accent);color:white;border-radius:12px;padding:11px 16px;font-size:13px;font-weight:700;font-family:var(--font);text-decoration:none;transition:all var(--transition)" onmouseover="this.style.background='var(--accent2)'" onmouseout="this.style.background='var(--accent)'">
+          🚀 Iniciar servidor Whisper
+        </a>
+        <p style="font-size:11px;color:var(--text4);margin-top:8px;line-height:1.6;text-align:center">Ou fixe <strong>"Whisper Local"</strong> na barra de tarefas do Windows para acesso com 1 clique.</p>
       </div>
       <div class="frow" style="margin-top:12px">
         <label><span id="keyLabel">OpenAI API Key</span><div style="display:flex;gap:5px"><a href="https://platform.openai.com/api-keys" target="_blank" class="alink">🔑 Chaves</a><a href="https://platform.openai.com/usage" target="_blank" class="alink">📊 Uso</a></div></label>
@@ -1003,6 +1006,24 @@ function showOfflineInstructions(model){
       <button onclick="document.getElementById('offlineOverlay').style.display='none';setProvider('whisper')" style="background:none;border:none;font-size:12px;color:var(--text4);cursor:pointer;font-family:var(--font)">Cancelar — usar outro provedor</button>
     </div>`;
   ov.style.display='flex';
+}
+function waitAndCloseOfflineFromModal(){
+  // chamado pelo botão dentro do modal — apenas atualiza o status
+  setTimeout(()=>{
+    const check=setInterval(async()=>{
+      try{
+        const r=await fetch('http://localhost:8000/v1/local/model');
+        if(r.ok){
+          clearInterval(check);
+          const d=await r.json();
+          cfg.localModel=d.model;
+          localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+          updateLocalPanel();checkLocalStatusNow();updateSpeedBadge();
+          toast('✅ Servidor Whisper pronto!');
+        }
+      }catch(e){}
+    },3000);
+  },2000);
 }
 function waitAndCloseOffline(){
   // monitora até servidor ficar online e fecha overlay automaticamente
