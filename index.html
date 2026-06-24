@@ -656,6 +656,25 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- TELA DE BOAS-VINDAS / PERMISSÃO DE MICROFONE -->
+<div class="overlay" id="micOverlay" style="display:none;z-index:600">
+  <div class="modal" style="max-width:420px;text-align:center">
+    <div class="mb" style="padding:36px 28px">
+      <div style="font-size:56px;margin-bottom:16px">🎙️</div>
+      <h2 style="font-size:20px;font-weight:700;letter-spacing:-0.4px;margin-bottom:10px">Bem-vindo ao Vox!</h2>
+      <p style="font-size:14px;color:var(--text3);line-height:1.7;margin-bottom:24px">
+        Para transcrever suas gravações, o app precisa acessar o microfone do seu computador.<br><br>
+        Clique no botão abaixo e depois em <strong>"Permitir"</strong> quando o Chrome perguntar.<br>
+        <span style="font-size:12px;color:var(--text4)">Isso só acontece uma vez.</span>
+      </p>
+      <button onclick="requestMic()" style="background:var(--accent);color:white;border:none;border-radius:14px;padding:14px 32px;font-size:15px;font-weight:700;font-family:var(--font);cursor:pointer;width:100%;transition:all var(--transition);box-shadow:0 4px 16px var(--accent-glow)">
+        🎙️ Ativar microfone
+      </button>
+      <p id="micError" style="display:none;margin-top:14px;font-size:12px;color:var(--danger);line-height:1.6"></p>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast-wrap" id="toastWrap">
   <div class="toast" id="toastEl">
@@ -699,9 +718,33 @@ const SUMMARY_PROMPTS={
   livre:'Gere um resumo conciso deste texto destacando os pontos mais importantes. Em português, 3-5 parágrafos no máximo.'
 };
 
+// ── PERMISSÃO DE MICROFONE ──
+async function checkMicPermission(){
+  if(localStorage.getItem('vox_mic_granted')==='1')return;
+  try{
+    const result=await navigator.permissions.query({name:'microphone'});
+    if(result.state==='granted'){localStorage.setItem('vox_mic_granted','1');return}
+  }catch(e){}
+  document.getElementById('micOverlay').style.display='flex';
+}
+async function requestMic(){
+  const errEl=document.getElementById('micError');
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t=>t.stop());
+    localStorage.setItem('vox_mic_granted','1');
+    document.getElementById('micOverlay').style.display='none';
+    toast('✅ Microfone ativado! Pode gravar à vontade.');
+  }catch(e){
+    errEl.style.display='block';
+    errEl.textContent='❌ Permissão negada. Clique no 🔒 cadeado na barra do navegador → Microfone → Permitir, depois recarregue a página.';
+  }
+}
+
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',()=>{
   loadCfg();loadHistory();updateStats();checkSend();applyView();
+  checkMicPermission();
   document.getElementById('snameInput').addEventListener('input',e=>{});
   document.addEventListener('click',e=>{
     if(!document.getElementById('expDrop').contains(e.target)&&!document.getElementById('btnExport').contains(e.target))
