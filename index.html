@@ -917,9 +917,8 @@ async function checkAndStartServer(onReady){
     const r=await fetch('http://localhost:8000/v1/local/model');
     if(r.ok){const d=await r.json();cfg.localModel=d.model;updateSpeedBadge();onReady&&onReady();return}
   }catch(e){}
-  // servidor offline — mostra popup de escolha
+  // servidor offline — mostra popup de escolha de modelo
   const lastModel=cfg.localModel||'large-v3';
-  // destaca o último modelo usado
   ['lsbSmall','lsbMedium','lsbLarge'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){el.style.borderColor='';el.style.background='var(--bg-input)'}
@@ -929,25 +928,58 @@ async function checkAndStartServer(onReady){
   if(last){last.style.borderColor='var(--accent)';last.style.background='var(--accent-glow)'}
   document.getElementById('localStartOverlay').style.display='flex';
   window._localStartCallback=onReady;
+  // após escolher modelo, waitAndCloseOffline cuida do resto
 }
 async function startLocalServer(model){
   document.getElementById('localStartOverlay').style.display='none';
   cfg.localModel=model;
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
-  showSwitchOverlay(['small','medium','large-v3'].indexOf(model)===0?'⚡ Rápido':model==='medium'?'⚖️ Médio':'🎯 Preciso');
-  // pede ao backend para iniciar (só funciona se o servidor já está rodando)
-  // como está offline, abre o .bat automaticamente via link
-  try{
-    await fetch('http://localhost:8000/v1/local/switch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model})});
-  }catch(e){
-    // servidor estava offline — abre o .bat
-    window.location.href='file:///C:/Users/xrafa/whisper-local/iniciar_whisper.bat';
+  // salva modelo desejado para o .bat ler
+  localStorage.setItem('vox_local_desired_model',model);
+  // servidor offline — mostra instruções claras
+  showOfflineInstructions(model);
+}
+function showOfflineInstructions(model){
+  const labels={'small':'⚡ Rápido','medium':'⚖️ Médio','large-v3':'🎯 Preciso'};
+  let ov=document.getElementById('offlineOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='offlineOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);z-index:700;display:flex;align-items:center;justify-content:center';
+    document.body.appendChild(ov);
   }
-  await waitServerReady();
-  hideSwitchOverlay();
-  updateSpeedBadge();
-  window._localStartCallback&&window._localStartCallback();
-  toast('✅ Servidor pronto!');
+  ov.innerHTML=`
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.3);animation:modalIn 0.25s ease">
+      <div style="font-size:40px;margin-bottom:12px">🖥️</div>
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">Iniciar servidor Whisper</h2>
+      <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:6px">Modelo selecionado: <strong>${labels[model]||model}</strong></p>
+      <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:20px">Para usar o modo Local, abra o servidor clicando no botão abaixo:</p>
+      <a href="file:///C:/Users/xrafa/whisper-local/iniciar_whisper.bat" onclick="waitAndCloseOffline()" style="display:block;background:var(--accent);color:white;border:none;border-radius:14px;padding:13px 20px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;text-decoration:none;margin-bottom:10px">
+        🚀 Abrir servidor Whisper
+      </a>
+      <p style="font-size:11px;color:var(--text4);line-height:1.6;margin-bottom:16px">Após abrir, aguarde aparecer<br><strong>"Modelo carregado! Servidor pronto."</strong></p>
+      <button onclick="document.getElementById('offlineOverlay').style.display='none';setProvider('whisper')" style="background:none;border:none;font-size:12px;color:var(--text4);cursor:pointer;font-family:var(--font)">Cancelar — usar outro provedor</button>
+    </div>`;
+  ov.style.display='flex';
+}
+function waitAndCloseOffline(){
+  // monitora até servidor ficar online e fecha overlay automaticamente
+  const check=setInterval(async()=>{
+    try{
+      const r=await fetch('http://localhost:8000/v1/local/model');
+      if(r.ok){
+        clearInterval(check);
+        const ov=document.getElementById('offlineOverlay');
+        if(ov)ov.style.display='none';
+        const d=await r.json();
+        cfg.localModel=d.model;
+        localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+        updateSpeedBadge();
+        closeModal();
+        toast('✅ Servidor Whisper pronto!');
+      }
+    }catch(e){}
+  },3000);
 }
 function cancelLocalStart(){
   document.getElementById('localStartOverlay').style.display='none';
