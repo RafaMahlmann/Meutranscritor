@@ -510,10 +510,16 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
     <div class="mh"><h2>Configurações</h2><button class="mh-close" onclick="closeModal()">✕</button></div>
     <div class="mb">
       <div class="section-title">API de transcrição</div>
-      <div class="api-toggle">
+      <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr 1fr">
         <button class="api-tog-btn on" id="togW" onclick="setProvider('whisper')">🤖 Whisper</button>
         <button class="api-tog-btn" id="togG" onclick="setProvider('grok')">🟠 Grok STT</button>
         <button class="api-tog-btn" id="togGQ" onclick="setProvider('groqwhisper')">🟢 Groq <span class="free-badge" style="font-size:9px">FREE</span></button>
+        <button class="api-tog-btn" id="togL" onclick="setProvider('local')">🖥️ Local <span class="free-badge" style="font-size:9px">GRÁTIS</span></button>
+      </div>
+      <div id="localHint" style="display:none;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:11px;padding:10px 14px;font-size:12px;color:var(--text3);line-height:1.6;margin-top:8px">
+        🖥️ <strong>Whisper rodando no seu PC</strong> — sem internet, sem custo.<br>
+        Para iniciar o servidor local, abra o PowerShell e execute:<br>
+        <code style="background:var(--bg-input);padding:2px 6px;border-radius:5px;font-size:11px">whisper-server --model Systran/faster-whisper-large-v3 --port 8000</code>
       </div>
       <div class="frow" style="margin-top:12px">
         <label><span id="keyLabel">OpenAI API Key</span><div style="display:flex;gap:5px"><a href="https://platform.openai.com/api-keys" target="_blank" class="alink">🔑 Chaves</a><a href="https://platform.openai.com/usage" target="_blank" class="alink">📊 Uso</a></div></label>
@@ -923,11 +929,13 @@ function setProvider(p,save=true){
   document.getElementById('togW').className='api-tog-btn'+(p==='whisper'?' on':'');
   document.getElementById('togG').className='api-tog-btn'+(p==='grok'?' on-g':'');
   document.getElementById('togGQ').className='api-tog-btn'+(p==='groqwhisper'?' on-gq':'');
-  const labels={whisper:'Whisper',grok:'Grok STT',groqwhisper:'Groq 🟢'};
+  document.getElementById('togL').className='api-tog-btn'+(p==='local'?' on':'');
+  document.getElementById('localHint').style.display=p==='local'?'block':'none';
+  const labels={whisper:'Whisper',grok:'Grok STT',groqwhisper:'Groq 🟢',local:'🖥️ Local'};
   document.getElementById('cfgLabel').textContent=labels[p]||'Whisper';
-  document.getElementById('keyLabel').textContent=p==='grok'?'Grok Key (ativa)':p==='groqwhisper'?'Groq Key (ativa)':'OpenAI API Key';
+  document.getElementById('keyLabel').textContent=p==='grok'?'Grok Key (ativa)':p==='groqwhisper'?'Groq Key (ativa)':p==='local'?'OpenAI Key (não usada no Local)':'OpenAI API Key';
   document.getElementById('btnCfg').className='gbtn '+(p==='grok'?'on-grok':p==='groqwhisper'?'on-groq':'on-accent');
-  document.getElementById('brandIcon').textContent=p==='grok'?'🟠':p==='groqwhisper'?'🟢':'🎙️';
+  document.getElementById('brandIcon').textContent=p==='grok'?'🟠':p==='groqwhisper'?'🟢':p==='local'?'🖥️':'🎙️';
   if(save)saveCfg(false);
 }
 function setDiarProvider(p,save=true){
@@ -1275,8 +1283,8 @@ async function processAudio(file,durSec,fromRec){
 
 // ── SIMPLE TRANSCRIPTION ──
 async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
-  const key=cfg.provider==='grok'?cfg.apiKeyGrok:cfg.provider==='groqwhisper'?cfg.apiKeyGroq:cfg.apiKey;
-  if(!key){toast('🔑 Configure a chave API!',true);openModal();return}
+  const key=cfg.provider==='grok'?cfg.apiKeyGrok:cfg.provider==='groqwhisper'?cfg.apiKeyGroq:cfg.provider==='local'?'local':cfg.apiKey;
+  if(!key&&cfg.provider!=='local'){toast('🔑 Configure a chave API!',true);openModal();return}
   isProc=true;setStatus('Transcrevendo…','proc');lockUI(true);
   const pid='proc_'+Date.now();addProcCard(pid,file.name,durSec,fromRec?'gravacao':'arquivo');
   try{
@@ -1286,6 +1294,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
       const fd=new FormData();fd.append('file',file);let res;
       if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
       else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
+      else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd})}
       else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||'Erro '+res.status)}
       text=cfg.provider==='grok'?(await res.json()).text||'':await res.text();
