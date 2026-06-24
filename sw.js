@@ -1,6 +1,7 @@
-const CACHE='vox-v2';
+const CACHE='vox-v3';
+const SKIP=['/', '/index.html'];
+
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
@@ -8,6 +9,13 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('localhost:8000/v1/')) return;
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+  const url = e.request.url;
+  // nunca intercepta API
+  if (url.includes('/v1/')) return;
+  // HTML sempre vai para a rede (sem cache)
+  if (SKIP.some(p => url.endsWith(p)) || e.request.headers.get('accept')?.includes('text/html')) return;
+  // demais recursos: cache-first
+  e.respondWith(caches.open(CACHE).then(c =>
+    c.match(e.request).then(r => r || fetch(e.request).then(res => { c.put(e.request, res.clone()); return res; }))
+  ));
 });
