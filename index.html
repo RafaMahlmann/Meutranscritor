@@ -186,9 +186,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card.hidden{display:none}
 .card.drag-over{outline:3px dashed var(--accent);outline-offset:2px;background:var(--accent-glow) !important}
 .card.dragging{opacity:0.35;transform:scale(0.98)}
-.drag-handle{cursor:grab;padding:0 6px;color:var(--text4);font-size:14px;line-height:1;user-select:none;flex-shrink:0;border-radius:4px;display:flex;align-items:center}
-.drag-handle:hover{color:var(--text2);background:var(--bg-input)}
+.drag-handle{cursor:grab;padding:2px 8px;color:var(--text4);font-size:16px;line-height:1;user-select:none;flex-shrink:0;border-radius:6px;display:flex;align-items:center;transition:all .15s}
+.drag-handle:hover{color:var(--accent);background:var(--accent-glow)}
 .drag-handle:active{cursor:grabbing}
+#dragGhost{position:fixed;pointer-events:none;z-index:9999;opacity:0.85;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.25);transform:rotate(2deg) scale(1.02);transition:none;max-width:340px;overflow:hidden;background:var(--bg-card);border:2px solid var(--accent)}
 
 /* ── IBAR ── */
 .ibar{position:fixed;bottom:0;left:0;right:0;background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--border);padding:8px 0 20px;z-index:100}
@@ -2193,54 +2194,79 @@ function doDelete(id){
 }
 function copyCard(id){navigator.clipboard.writeText(document.querySelector('#'+id+' textarea')?.value||'').then(()=>toast('📋 Copiado!'))}
 
-// ── DRAG TO MERGE CARDS ──
-let _dragId=null;
+// ── DRAG TO MERGE CARDS (mouse events — sem HTML5 DnD) ──
+let _dragSrcId=null,_dragGhost=null,_dragActive=false;
+
 function initCardDrag(el){
-  // handle: só o ícone ativa o drag — não conflita com textarea ou botões
   const handle=el.querySelector('.drag-handle');
   if(!handle)return;
-  handle.addEventListener('mousedown',()=>el.setAttribute('draggable','true'));
-  handle.addEventListener('mouseup',()=>el.removeAttribute('draggable'));
-  el.addEventListener('dragstart',e=>{
-    if(!el.getAttribute('draggable'))return;
-    _dragId=el.id;
-    el.classList.add('dragging');
-    e.dataTransfer.effectAllowed='move';
-    e.dataTransfer.setData('text/plain',el.id);
-  });
-  el.addEventListener('dragend',()=>{
-    el.classList.remove('dragging');
-    el.removeAttribute('draggable');
-  });
-  el.addEventListener('dragover',e=>{
-    if(_dragId&&_dragId!==el.id&&!el.classList.contains('proc-card')){
-      e.preventDefault();
-      e.dataTransfer.dropEffect='move';
-      el.classList.add('drag-over');
-    }
-  });
-  el.addEventListener('dragleave',e=>{
-    // só remove se saiu do card mesmo (não de um filho)
-    if(!el.contains(e.relatedTarget))el.classList.remove('drag-over');
-  });
-  el.addEventListener('drop',e=>{
+  handle.addEventListener('mousedown',e=>{
     e.preventDefault();
-    el.classList.remove('drag-over');
-    const srcId=e.dataTransfer.getData('text/plain')||_dragId;
-    if(!srcId||srcId===el.id)return;
-    const src=document.getElementById(srcId);
-    if(!src)return;
-    const srcText=src.querySelector('textarea')?.value||'';
-    const dstTa=el.querySelector('textarea');
-    if(dstTa&&srcText){
-      dstTa.value=(dstTa.value.trimEnd()+'\n\n'+srcText).trim();
-      autoR(dstTa);updateFooter(el.id);
-    }
-    doDelete(srcId);
-    saveHistory();
-    toast('🔗 Cards mesclados!');
-    _dragId=null;
+    _startDrag(el,e);
   });
+}
+
+function _startDrag(el,e0){
+  _dragSrcId=el.id;
+  _dragActive=false;
+  const ox=e0.clientX,oy=e0.clientY;
+
+  function onMove(e){
+    if(!_dragActive){
+      if(Math.hypot(e.clientX-ox,e.clientY-oy)<6)return;
+      _dragActive=true;
+      el.classList.add('dragging');
+      // cria ghost
+      _dragGhost=document.createElement('div');
+      _dragGhost.id='dragGhost';
+      const text=el.querySelector('textarea')?.value||'';
+      _dragGhost.innerHTML=`<div style="padding:10px 14px;font-size:12px;color:var(--text2);max-height:80px;overflow:hidden">${text.slice(0,120)}${text.length>120?'…':''}</div>`;
+      document.body.appendChild(_dragGhost);
+    }
+    // move ghost
+    _dragGhost.style.left=(e.clientX+12)+'px';
+    _dragGhost.style.top=(e.clientY-20)+'px';
+    // destaca card sob cursor
+    document.querySelectorAll('.card.drag-over').forEach(c=>c.classList.remove('drag-over'));
+    const under=_cardUnderCursor(e.clientX,e.clientY,el.id);
+    if(under)under.classList.add('drag-over');
+  }
+
+  function onUp(e){
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    el.classList.remove('dragging');
+    _dragGhost?.remove();_dragGhost=null;
+    document.querySelectorAll('.card.drag-over').forEach(c=>c.classList.remove('drag-over'));
+    if(!_dragActive){_dragSrcId=null;return;}
+    _dragActive=false;
+    const target=_cardUnderCursor(e.clientX,e.clientY,el.id);
+    if(target){
+      const srcText=el.querySelector('textarea')?.value||'';
+      const dstTa=target.querySelector('textarea');
+      if(dstTa&&srcText){
+        dstTa.value=(dstTa.value.trimEnd()+'\n\n'+srcText).trim();
+        autoR(dstTa);updateFooter(target.id);
+      }
+      doDelete(_dragSrcId);
+      saveHistory();
+      toast('🔗 Cards mesclados!');
+    }
+    _dragSrcId=null;
+  }
+
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
+function _cardUnderCursor(x,y,excludeId){
+  // esconde ghost temporariamente para elementFromPoint funcionar
+  if(_dragGhost)_dragGhost.style.display='none';
+  const el=document.elementFromPoint(x,y);
+  if(_dragGhost)_dragGhost.style.display='';
+  const card=el?.closest('.card');
+  if(!card||card.id===excludeId||card.classList.contains('proc-card'))return null;
+  return card;
 }
 function dlObsidianCard(id){
   const el=document.getElementById(id);const text=el.querySelector('textarea')?.value.trim()||'';
