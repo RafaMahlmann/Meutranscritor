@@ -1,4 +1,4 @@
-const CACHE='vox-v3';
+const CACHE='vox-v4';
 const SKIP=['/', '/index.html'];
 
 self.addEventListener('install', e => {
