@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="light">
+<html lang="pt-BR" data-theme="light" data-skin="teal">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1564,8 +1564,9 @@ document.addEventListener('DOMContentLoaded',()=>{
       document.getElementById('expDrop').classList.remove('on');
   });
   document.addEventListener('keydown',spaceHotkey);
-  const savedSkin=localStorage.getItem('vox_skin');
-  if(savedSkin&&savedSkin!=='emerald')document.documentElement.setAttribute('data-skin',savedSkin);
+  const savedSkin=localStorage.getItem('vox_skin')||'teal';
+  if(savedSkin==='emerald')document.documentElement.removeAttribute('data-skin');
+  else document.documentElement.setAttribute('data-skin',savedSkin);
   const saved=localStorage.getItem('vox_theme');
   if(saved)setTheme(saved,false);
   _updateThemeColor();_syncSkinUI();
@@ -1879,7 +1880,7 @@ function setSkin(name){
   _updateThemeColor();_syncSkinUI();
 }
 function _syncSkinUI(){
-  const skin=localStorage.getItem('vox_skin')||'emerald';
+  const skin=localStorage.getItem('vox_skin')||'teal';
   const mode=document.documentElement.getAttribute('data-theme')||'light';
   document.querySelectorAll('#skinPop .skin-sw').forEach(b=>b.classList.toggle('on',b.dataset.skin===skin));
   document.querySelectorAll('#skinPop .skin-mode').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
@@ -3712,32 +3713,33 @@ function ribbonCopy(){const id=focusCardId();if(id)copyCard(id)}
 function ribbonRec(){const id=focusCardId();if(id)recHere(id)}
 function ribbonPin(){const id=focusCardId();if(id)togglePin(id)}
 
-// ── DRAG TO MERGE CARDS (mouse events — sem HTML5 DnD) ──
-let _dragSrcId=null,_dragGhost=null,_dragActive=false;
+// ── DRAG TO MERGE CARDS / MOVER PRA PASTA (auto-scroll + abre pastas na borda) ──
+let _dragSrcId=null,_dragGhost=null,_dragActive=false,_dragEl=null,_dragX=0,_dragY=0,_dragScrollV=0,_dragRAF=null;
 
 function initCardDrag(el){
   const handle=el.querySelector('.drag-handle');
   if(!handle)return;
-  handle.addEventListener('mousedown',e=>{
-    e.preventDefault();
-    _startDrag(el,{clientX:e.clientX,clientY:e.clientY});
-  });
-  handle.addEventListener('touchstart',e=>{
-    e.preventDefault();
-    const t=e.touches[0];
-    _startDrag(el,{clientX:t.clientX,clientY:t.clientY},true);
-  },{passive:false});
+  handle.addEventListener('mousedown',e=>{e.preventDefault();_startDrag(el,{clientX:e.clientX,clientY:e.clientY})});
+  handle.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];_startDrag(el,{clientX:t.clientX,clientY:t.clientY},true)},{passive:false});
+}
+
+function _dragHighlight(){
+  document.querySelectorAll('.card.drag-over,.folder-item.drag-over').forEach(c=>c.classList.remove('drag-over'));
+  const f=_folderUnderCursor(_dragX,_dragY);
+  if(f){f.classList.add('drag-over');return}
+  const under=_cardUnderCursor(_dragX,_dragY,_dragEl?.id);
+  if(under)under.classList.add('drag-over');
+}
+function _dragLoop(){
+  if(!_dragActive){_dragRAF=null;return}
+  if(_dragScrollV!==0){window.scrollBy(0,_dragScrollV);_dragHighlight()}
+  _dragRAF=requestAnimationFrame(_dragLoop);
 }
 
 function _startDrag(el,e0,isTouch=false){
-  _dragSrcId=el.id;
-  _dragActive=false;
+  _dragSrcId=el.id;_dragEl=el;_dragActive=false;_dragScrollV=0;
   const ox=e0.clientX,oy=e0.clientY;
-
-  function getCoords(e){
-    if(isTouch){const t=e.touches[0]||e.changedTouches[0];return{x:t.clientX,y:t.clientY}}
-    return{x:e.clientX,y:e.clientY};
-  }
+  function getCoords(e){if(isTouch){const t=e.touches[0]||e.changedTouches[0];return{x:t.clientX,y:t.clientY}}return{x:e.clientX,y:e.clientY}}
 
   function onMove(e){
     if(isTouch)e.preventDefault();
@@ -3746,59 +3748,56 @@ function _startDrag(el,e0,isTouch=false){
       if(Math.hypot(x-ox,y-oy)<8)return;
       _dragActive=true;
       el.classList.add('dragging');
-      _dragGhost=document.createElement('div');
-      _dragGhost.id='dragGhost';
+      _dragGhost=document.createElement('div');_dragGhost.id='dragGhost';
       const text=el.querySelector('textarea')?.value||'';
       _dragGhost.innerHTML=`<div style="padding:10px 14px;font-size:12px;color:var(--text2);max-height:80px;overflow:hidden">${escHtml(text.slice(0,120))}${text.length>120?'…':''}</div>`;
       document.body.appendChild(_dragGhost);
+      if(!_dragRAF)_dragRAF=requestAnimationFrame(_dragLoop);
     }
-    _dragGhost.style.left=(x+14)+'px';
-    _dragGhost.style.top=(y-24)+'px';
-    document.querySelectorAll('.card.drag-over,.folder-item.drag-over').forEach(c=>c.classList.remove('drag-over'));
-    const folderEl=_folderUnderCursor(x,y);
-    if(folderEl){folderEl.classList.add('drag-over')}
-    else{const under=_cardUnderCursor(x,y,el.id);if(under)under.classList.add('drag-over')}
+    _dragX=x;_dragY=y;
+    _dragGhost.style.left=(x+14)+'px';_dragGhost.style.top=(y-24)+'px';
+    const vw=window.innerWidth,vh=window.innerHeight;
+    // Arrastou até a borda direita → abre as pastas (essencial no mobile, onde ficam minimizadas)
+    if(x>vw-24){
+      const bar=document.getElementById('foldersBar');
+      if(bar&&!bar.classList.contains('open')){
+        bar.classList.add('open');
+        if(vw<=640)document.getElementById('foldersBackdrop')?.classList.add('on');
+        document.getElementById('btnFolders')?.classList.add('folders-on');
+      }
+    }
+    // Auto-scroll perto do topo / rodapé (rodapé maior por causa da barra de gravação fixa)
+    const TOP=100,BOT=185;
+    if(y<TOP)_dragScrollV=-Math.min(20,Math.ceil((TOP-y)/6)+3);
+    else if(y>vh-BOT)_dragScrollV=Math.min(20,Math.ceil((y-(vh-BOT))/6)+3);
+    else _dragScrollV=0;
+    _dragHighlight();
   }
 
   function onUp(e){
-    document.removeEventListener('mousemove',onMove);
-    document.removeEventListener('mouseup',onUp);
-    document.removeEventListener('touchmove',onMove);
-    document.removeEventListener('touchend',onUp);
+    document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
+    _dragScrollV=0;
     el.classList.remove('dragging');
     _dragGhost?.remove();_dragGhost=null;
     document.querySelectorAll('.card.drag-over,.folder-item.drag-over').forEach(c=>c.classList.remove('drag-over'));
-    if(!_dragActive){_dragSrcId=null;return;}
+    if(!_dragActive){_dragSrcId=null;_dragEl=null;return}
     _dragActive=false;
     const{x,y}=getCoords(e);
-    // Prioridade: soltar numa pasta move o card; soltar num card mescla
     const folderEl=_folderUnderCursor(x,y);
-    if(folderEl){
-      assignCardToFolder(_dragSrcId,folderEl.dataset.fid||'');
-      _dragSrcId=null;return;
-    }
+    if(folderEl){assignCardToFolder(_dragSrcId,folderEl.dataset.fid||'');_dragSrcId=null;_dragEl=null;return}
     const target=_cardUnderCursor(x,y,el.id);
     if(target){
       const srcText=el.querySelector('textarea')?.value||'';
       const dstTa=target.querySelector('textarea');
-      if(dstTa&&srcText){
-        dstTa.value=(dstTa.value.trimEnd()+'\n\n'+srcText).trim();
-        autoR(dstTa);updateFooter(target.id);
-      }
-      doDelete(_dragSrcId);
-      saveHistory();
-      toast('🔗 Cards mesclados!');
+      if(dstTa&&srcText){dstTa.value=(dstTa.value.trimEnd()+'\n\n'+srcText).trim();autoR(dstTa);updateFooter(target.id)}
+      doDelete(_dragSrcId);saveHistory();toast('🔗 Cards mesclados!');
     }
-    _dragSrcId=null;
+    _dragSrcId=null;_dragEl=null;
   }
 
-  if(isTouch){
-    document.addEventListener('touchmove',onMove,{passive:false});
-    document.addEventListener('touchend',onUp);
-  }else{
-    document.addEventListener('mousemove',onMove);
-    document.addEventListener('mouseup',onUp);
-  }
+  if(isTouch){document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp)}
+  else{document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp)}
 }
 
 function _cardUnderCursor(x,y,excludeId){
