@@ -415,6 +415,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .lens-opt-main{display:flex;flex-direction:column;gap:1px;line-height:1.25}
 .lens-opt-lbl{font-size:13px;font-weight:600;color:var(--text)}
 .lens-opt-d{font-size:11px;color:var(--text4);font-weight:400}
+.obs-wait{display:flex;align-items:center;gap:8px;padding:8px 10px 10px;font-size:12px;color:var(--text3)}
+.obs-spin{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:obsspin 0.7s linear infinite;flex-shrink:0}
+@keyframes obsspin{to{transform:rotate(360deg)}}
+.obs-actions{display:flex;gap:8px;padding:6px 8px 4px}
+.obs-btn{flex:1;background:var(--bg-input);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:9px 10px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all var(--transition)}
+.obs-btn:hover{border-color:var(--accent);color:var(--accent)}
+.obs-btn-copy{background:var(--accent-glow);border-color:var(--accent);color:var(--accent)}
+.obs-instr{font-size:11px;color:var(--text4);padding:5px 10px 8px;line-height:1.5}
 
 /* ── MODALS ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);z-index:300;align-items:center;justify-content:center;padding:20px}
@@ -532,8 +540,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       </button>
       <div class="exp-wrap">
         <button class="gbtn" id="btnExport" onclick="toggleExp()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Salvar</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 9 12 4 17 9"/><line x1="12" y1="4" x2="12" y2="16"/></svg>
+          <span>Exportar</span>
         </button>
         <div class="exp-drop" id="expDrop">
           <div class="exp-header">Projeto — continuar depois</div>
@@ -547,6 +555,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           </button>
           <hr class="exp-sep">
           <div class="exp-header">Exportar</div>
+          <button class="exp-btn" onclick="copyAllMarkdown()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar TUDO como Markdown
+          </button>
           <button class="exp-btn" onclick="exportAll('txt')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             Todas as transcrições (.txt)
@@ -3226,6 +3238,9 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <button class="icon-btn" onclick="copyCard('${id}')" title="Copiar para a área de transferência">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
+        <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="Exportar (copiar / baixar / Markdown)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
         <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="Modo Foco / Colapsar">
           <svg class="ico-expand" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
           <svg class="ico-collapse" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>
@@ -3236,6 +3251,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       </div>
     </div>
     <div class="lens-panel" id="lens-${id}"></div>
+    <div class="lens-panel" id="exp-menu-${id}"></div>
     <div class="spk-stats">${statsHtml}</div>
     <div class="spk-rename-row">${renameHtml}${speakerKeys.map(s=>`<button class="spk-rename-btn" onclick="copySpeaker('${id}','${s}')" style="border-style:solid">📋 ${escHtml(speakers[s])}</button>`).join('')}</div>
     <div class="cb roteiro-view" id="roteiro-${id}" style="${view==='bolhas'?'display:none':''}">
@@ -3363,21 +3379,30 @@ function toggleLensMenu(id){
   const p=document.getElementById('lens-'+id);if(!p)return;
   if(p.classList.contains('on')){p.classList.remove('on');p.innerHTML='';return}
   document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
-  p.innerHTML=`<div class="lens-hd">✨ O que fazer com este texto?</div>`+
+  p.innerHTML=`<div class="lens-hd">✨ Transformar com IA</div>`+
     Object.entries(LENSES).map(([k,L])=>
       `<button class="lens-opt" onclick="runLens('${id}','${k}')">`+
         `<span class="lens-ico">${L.icon}</span>`+
         `<span class="lens-opt-main"><span class="lens-opt-lbl">${L.label}</span><span class="lens-opt-d">${L.desc}</span></span>`+
-      `</button>`).join('')+
-    `<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">📤 Exportar / salvar</div>`+
-    `<button class="lens-opt" onclick="copyCard('${id}');closeLensPanel('${id}')"><span class="lens-ico">⧉</span><span class="lens-opt-main"><span class="lens-opt-lbl">Copiar texto</span><span class="lens-opt-d">Para a área de transferência</span></span></button>`+
-    `<button class="lens-opt" onclick="exportCard('${id}','txt');closeLensPanel('${id}')"><span class="lens-ico">📄</span><span class="lens-opt-main"><span class="lens-opt-lbl">Baixar TXT</span><span class="lens-opt-d">Texto simples, universal</span></span></button>`+
-    `<button class="lens-opt" onclick="exportCard('${id}','md');closeLensPanel('${id}')"><span class="lens-ico">⬇</span><span class="lens-opt-main"><span class="lens-opt-lbl">Baixar Markdown</span><span class="lens-opt-d">Para Obsidian, Notion, etc.</span></span></button>`+
-    `<button class="lens-opt" onclick="exportCard('${id}','html');closeLensPanel('${id}')"><span class="lens-ico">⬇</span><span class="lens-opt-main"><span class="lens-opt-lbl">Baixar HTML</span><span class="lens-opt-d">Página formatada</span></span></button>`+
-    `<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">🎤 Nota</div>`+
-    `<button class="lens-opt" onclick="recHere('${id}');closeLensPanel('${id}')"><span class="lens-ico">🎤</span><span class="lens-opt-main"><span class="lens-opt-lbl">Gravar aqui</span><span class="lens-opt-d">Adicionar áudio a esta nota</span></span></button>`;
+      `</button>`).join('');
   p.classList.add('on');
 }
+function toggleExportMenu(id){
+  const p=document.getElementById('exp-menu-'+id);if(!p)return;
+  if(p.classList.contains('on')){p.classList.remove('on');p.innerHTML='';return}
+  document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
+  p.innerHTML=`<div class="lens-hd">⤴ Exportar este card</div>`+
+    `<button class="lens-opt" onclick="copyCard('${id}');closeExportMenu('${id}')"><span class="lens-ico">📋</span><span class="lens-opt-main"><span class="lens-opt-lbl">Copiar texto + tags</span><span class="lens-opt-d">Cola tudo junto (tags viram #hashtags)</span></span></button>`+
+    `<button class="lens-opt" onclick="copyCardTextOnly('${id}');closeExportMenu('${id}')"><span class="lens-ico">⌁</span><span class="lens-opt-main"><span class="lens-opt-lbl">Copiar só o texto</span><span class="lens-opt-d">Sem as tags</span></span></button>`+
+    `<button class="lens-opt" onclick="copyCardMarkdown('${id}');closeExportMenu('${id}')"><span class="lens-ico">📝</span><span class="lens-opt-main"><span class="lens-opt-lbl">Copiar como Markdown</span><span class="lens-opt-d">Cópia fiel e crua — cole e pronto</span></span></button>`+
+    `<button class="lens-opt" onclick="copyCardObsidian('${id}')"><span class="lens-ico">🔮</span><span class="lens-opt-main"><span class="lens-opt-lbl">Copiar para Obsidian</span><span class="lens-opt-d">Relatório formatado com IA (títulos, listas, callouts)</span></span></button>`+
+    `<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">📥 Baixar arquivo</div>`+
+    `<button class="lens-opt" onclick="exportCard('${id}','txt');closeExportMenu('${id}')"><span class="lens-ico">📄</span><span class="lens-opt-main"><span class="lens-opt-lbl">Baixar TXT</span><span class="lens-opt-d">Texto simples, universal</span></span></button>`+
+    `<button class="lens-opt" onclick="exportCard('${id}','md');closeExportMenu('${id}')"><span class="lens-ico">⬇</span><span class="lens-opt-main"><span class="lens-opt-lbl">Baixar Markdown</span><span class="lens-opt-d">Para Obsidian, Notion, etc.</span></span></button>`+
+    `<button class="lens-opt" onclick="exportCard('${id}','html');closeExportMenu('${id}')"><span class="lens-ico">🌐</span><span class="lens-opt-main"><span class="lens-opt-lbl">Baixar HTML</span><span class="lens-opt-d">Página formatada</span></span></button>`;
+  p.classList.add('on');
+}
+function closeExportMenu(id){const p=document.getElementById('exp-menu-'+id);if(p){p.classList.remove('on');p.innerHTML=''}}
 async function runLens(id,lensKey){
   const card=document.getElementById(id);if(!card)return;
   const text=(card.querySelector('textarea')?.value||'').trim();
@@ -3456,6 +3481,9 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <button class="icon-btn" onclick="copyCard('${id}')" title="Copiar para a área de transferência">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
+        <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="Exportar (copiar / baixar / Markdown)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
         <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="Modo Foco / Colapsar">
           <svg class="ico-expand" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
           <svg class="ico-collapse" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>
@@ -3466,6 +3494,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       </div>
     </div>
     <div class="lens-panel" id="lens-${id}"></div>
+    <div class="lens-panel" id="exp-menu-${id}"></div>
     ${audioHtml}
     <div class="cb">
       <textarea oninput="autoR(this);updateFooter('${id}')" onfocus="trackFocus(this)" placeholder="Edite aqui…">${text}</textarea>
@@ -3519,7 +3548,77 @@ function doDelete(id){
     document.getElementById('emptyState').style.display='flex';
   }
 }
-function copyCard(id){navigator.clipboard.writeText(document.querySelector('#'+id+' textarea')?.value||'').then(()=>toast('📋 Copiado!'))}
+function _cardTags(id){return (document.getElementById(id)?.dataset.tags||'').split(',').filter(t=>t)}
+function _hashTags(id){const t=_cardTags(id);return t.length?'\n\n'+t.map(x=>'#'+x.trim().replace(/\s+/g,'-')).join(' '):''}
+function copyCard(id){
+  const text=document.querySelector('#'+id+' textarea')?.value||'';
+  const tags=_cardTags(id);
+  navigator.clipboard.writeText(text+_hashTags(id)).then(()=>toast(tags.length?'📋 Copiado com tags!':'📋 Copiado!'));
+}
+function copyCardTextOnly(id){navigator.clipboard.writeText(document.querySelector('#'+id+' textarea')?.value||'').then(()=>toast('📋 Texto copiado!'))}
+function cardMarkdown(id){
+  const c=document.getElementById(id);if(!c)return'';
+  const t=c.querySelector('textarea')?.value.trim()||'';
+  const name=c.dataset.sessionName||fmtDt(c.dataset.dt||'')||'nota';
+  const tags=(c.dataset.tags||'').split(',').filter(x=>x);
+  const isoDt=new Date(c.dataset.dt||Date.now()).toISOString().slice(0,19);
+  const mode=c.dataset.mode||'livre',prov=c.dataset.prov||'whisper';
+  const fmTags=tags.length?`\ntags: [${tags.map(x=>x.trim().replace(/\s+/g,'-')).join(', ')}]`:'';
+  return `---\ndate: ${isoDt}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n# ${name}\n\n${t}\n`;
+}
+function copyCardMarkdown(id){
+  const md=cardMarkdown(id);
+  if(!md.trim()||!(document.querySelector('#'+id+' textarea')?.value||'').trim()){toast('ℹ️ Card vazio',true);return}
+  navigator.clipboard.writeText(md).then(()=>toast('📝 Markdown copiado! Cole no Obsidian.'));
+}
+function copyAllMarkdown(){
+  const cards=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')].reverse();
+  if(!cards.length){toast('⚠️ Nenhuma transcrição',true);return}
+  const md=cards.map(c=>cardMarkdown(c.id)).join('\n---\n\n');
+  navigator.clipboard.writeText(md).then(()=>toast(`📝 ${cards.length} notas copiadas como Markdown!`));
+  document.getElementById('expDrop')?.classList.remove('on');
+}
+function _cardFrontmatter(card){
+  const tags=(card.dataset.tags||'').split(',').filter(x=>x);
+  const isoDt=new Date(card.dataset.dt||Date.now()).toISOString().slice(0,19);
+  const mode=card.dataset.mode||'livre',prov=card.dataset.prov||'whisper';
+  const fmTags=tags.length?`\ntags: [${tags.map(x=>x.trim().replace(/\s+/g,'-')).join(', ')}]`:'';
+  return `---\ndate: ${isoDt}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n`;
+}
+function _obsName(card){return `vox_obsidian_${(card.dataset.sessionName||'nota').replace(/[^\w\-]+/g,'_').slice(0,40)}.md`}
+async function copyCardObsidian(id){
+  const card=document.getElementById(id);if(!card)return;
+  const text=(card.querySelector('textarea')?.value||'').trim();
+  if(!text){toast('ℹ️ Card vazio',true);return}
+  const key=cfg.apiKey||cfg.apiKeyGroq;
+  if(!key){toast('🔑 Configure uma chave de IA!',true);openModal();return}
+  const panel=document.getElementById('exp-menu-'+id);
+  if(panel){panel.classList.add('on');panel.innerHTML=`<div class="lens-hd">🔮 Relatório para o Obsidian</div><div class="obs-wait"><span class="obs-spin"></span>A IA está formatando o texto…</div>`}
+  try{
+    const prompt=`Reformate a transcrição abaixo como um relatório em Markdown bem estruturado para o Obsidian, em português do Brasil. Regras:\n- Comece com um título "# " claro e descritivo, baseado no conteúdo.\n- Organize em seções com "## " quando fizer sentido.\n- Use listas com "- " para enumerações.\n- Destaque termos-chave com **negrito**.\n- Use callouts do Obsidian quando ajudar: "> [!note]", "> [!tip]" (evidências/pontos positivos), "> [!warning]" (riscos/ressalvas), "> [!info]".\n- Seja FIEL ao conteúdo: não invente fatos, não adicione informação externa, não remova ideias. Só organize e formate o que já está no texto.\n- NÃO inclua cabeçalho YAML (---). Responda APENAS com o corpo do relatório em Markdown.\n\nTranscrição:\n${text}`;
+    const maxTok=Math.min(6000,Math.ceil(text.length/2)+800);
+    const body=(await callAI(prompt,key,'auto',maxTok)).trim();
+    const md=_cardFrontmatter(card)+body+'\n';
+    _renderObsidianResult(id,md,card);
+  }catch(e){
+    toast('❌ '+e.message,true);
+    if(panel){panel.classList.remove('on');panel.innerHTML=''}
+  }
+}
+function _renderObsidianResult(id,md,card){
+  const panel=document.getElementById('exp-menu-'+id);if(!panel)return;
+  panel.classList.add('on');
+  panel.innerHTML=`<div class="lens-hd">🔮 Relatório pronto!</div>`+
+    `<div class="obs-actions"><button class="obs-btn obs-btn-copy" id="obscopy-${id}">📋 Copiar</button><button class="obs-btn" id="obsdl-${id}">⬇ Baixar .md</button></div>`+
+    `<div class="obs-instr">Cole no Obsidian (Ctrl/⌘+V) — ou arraste o arquivo baixado pro seu vault.</div>`;
+  const copyBtn=document.getElementById('obscopy-'+id);
+  const dlBtn=document.getElementById('obsdl-'+id);
+  if(copyBtn)copyBtn.onclick=async()=>{
+    try{await navigator.clipboard.writeText(md);copyBtn.textContent='✓ Copiado!';toast('📋 Copiado! Cole no Obsidian.');setTimeout(()=>closeExportMenu(id),1200);}
+    catch(e){dl(md,_obsName(card));toast('⬇ Cópia bloqueada — baixei o .md pra você');}
+  };
+  if(dlBtn)dlBtn.onclick=()=>{dl(md,_obsName(card));toast('⬇ Baixado! Arraste pro seu vault do Obsidian.');closeExportMenu(id);};
+}
 function closeLensPanel(id){const p=document.getElementById('lens-'+id);if(p){p.classList.remove('on');p.innerHTML=''}}
 function exportCard(id,fmt){
   const c=document.getElementById(id);if(!c)return;
@@ -3533,7 +3632,7 @@ function exportCard(id,fmt){
   let out,ext;
   if(fmt==='md'){
     ext='md';
-    out=`# ${name}\n> **Data:** ${dt} · **Modo:** ${mode} · **API:** ${prov}${tags.length?'\n> **Tags:** '+tags.map(x=>'#'+x).join(' '):''}\n\n${t}\n`;
+    out=cardMarkdown(id);
   }else if(fmt==='html'){
     ext='html';
     const tagsHtml=tags.length?`<div class="tags">${tags.map(x=>`<span class="tag">#${escHtml(x)}</span>`).join('')}</div>`:'';
