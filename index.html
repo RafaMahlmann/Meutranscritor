@@ -35,6 +35,10 @@
   --shadow-input:0 2px 8px rgba(0,0,0,0.5),0 8px 24px rgba(0,0,0,0.5);
   --text:#f5f5f7;--text2:#c7c7cc;--text3:#8e8e93;--text4:#48484a;
 }
+/* ── SKINS (cor de acento, funciona em claro e escuro) ── */
+[data-skin="amber"]{--accent:#d99a2b;--accent2:#b87f1c;--accent-glow:rgba(217,154,43,0.20)}
+[data-skin="indigo"]{--accent:#6366f1;--accent2:#4f46e5;--accent-glow:rgba(99,102,241,0.20)}
+[data-skin="teal"]{--accent:#0e8a8f;--accent2:#0b6e72;--accent-glow:rgba(14,138,143,0.20)}
 .c0{--ca:#10b981;--cag:rgba(16,185,129,0.12);--cat:rgba(16,185,129,0.06)}
 .c1{--ca:#3b82f6;--cag:rgba(59,130,246,0.12);--cat:rgba(59,130,246,0.06)}
 .c2{--ca:#a78bfa;--cag:rgba(167,139,250,0.12);--cat:rgba(167,139,250,0.06)}
@@ -43,6 +47,8 @@
 .c5{--ca:#06b6d4;--cag:rgba(6,182,212,0.12);--cat:rgba(6,182,212,0.06)}
 .c6{--ca:#eab308;--cag:rgba(234,179,8,0.12);--cat:rgba(234,179,8,0.06)}
 .c7{--ca:#f43f5e;--cag:rgba(244,63,94,0.12);--cat:rgba(244,63,94,0.06)}
+/* Cards neutros: faixinha + elementos usam o acento da skin (sem arco-íris) */
+.card{--ca:var(--accent)!important;--cag:var(--accent-glow)!important;--cat:transparent!important}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased}
 .wrap{max-width:860px;margin:0 auto;padding:0 20px;width:100%}
 header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
@@ -70,6 +76,17 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .gbtn.on-groq{background:var(--groq-glow);color:var(--groq)}
 .gbtn.on-diar{background:var(--diar-glow);color:var(--diar)}
 .theme-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--bg-input);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
+.skin-wrap{position:relative}
+.skin-pop{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:11px;min-width:184px;animation:fadeDown .15s ease}
+.skin-pop.on{display:block}
+.skin-hd{font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text4);padding:2px 2px 6px}
+.skin-modes{display:flex;gap:6px;margin-bottom:11px}
+.skin-mode{flex:1;background:var(--bg-input);border:1px solid transparent;color:var(--text2);border-radius:9px;padding:7px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition)}
+.skin-mode.on{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.skin-swatches{display:flex;gap:10px;padding:2px}
+.skin-sw{width:30px;height:30px;border-radius:50%;background:var(--sw);border:2px solid transparent;cursor:pointer;transition:transform var(--transition);padding:0}
+.skin-sw:hover{transform:scale(1.12)}
+.skin-sw.on{box-shadow:0 0 0 2px var(--bg-card),0 0 0 4px var(--sw)}
 .theme-btn:hover{background:var(--border2)}
 .stats{border-bottom:1px solid var(--border);padding:8px 0;display:flex;gap:0;overflow-x:auto}
 .stat{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);font-weight:500;padding:0 14px;border-right:1px solid var(--border);white-space:nowrap}
@@ -607,7 +624,23 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <div id="modelStats" style="padding:8px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.7"></div>
         </div>
       </div>
-      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <div class="skin-wrap">
+        <button class="theme-btn" id="themeBtn" onclick="toggleSkinPop()" title="Aparência">🎨</button>
+        <div class="skin-pop" id="skinPop">
+          <div class="skin-hd">Tema</div>
+          <div class="skin-modes">
+            <button class="skin-mode" data-mode="light" onclick="setTheme('light')">☀️ Claro</button>
+            <button class="skin-mode" data-mode="dark" onclick="setTheme('dark')">🌙 Escuro</button>
+          </div>
+          <div class="skin-hd">Cor</div>
+          <div class="skin-swatches">
+            <button class="skin-sw" data-skin="emerald" onclick="setSkin('emerald')" title="Esmeralda" style="--sw:#10b981"></button>
+            <button class="skin-sw" data-skin="amber" onclick="setSkin('amber')" title="Âmbar" style="--sw:#d99a2b"></button>
+            <button class="skin-sw" data-skin="indigo" onclick="setSkin('indigo')" title="Índigo" style="--sw:#6366f1"></button>
+            <button class="skin-sw" data-skin="teal" onclick="setSkin('teal')" title="Petróleo" style="--sw:#0e8a8f"></button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -1528,8 +1561,11 @@ document.addEventListener('DOMContentLoaded',()=>{
       document.getElementById('expDrop').classList.remove('on');
   });
   document.addEventListener('keydown',spaceHotkey);
+  const savedSkin=localStorage.getItem('vox_skin');
+  if(savedSkin&&savedSkin!=='emerald')document.documentElement.setAttribute('data-skin',savedSkin);
   const saved=localStorage.getItem('vox_theme');
   if(saved)setTheme(saved,false);
+  _updateThemeColor();_syncSkinUI();
 });
 
 // ── VIEW ──
@@ -1826,7 +1862,29 @@ function closeFoldersDrawer(){
 
 // ── THEME ──
 function toggleTheme(){const t=document.documentElement.getAttribute('data-theme');setTheme(t==='dark'?'light':'dark')}
-function setTheme(t,save=true){document.documentElement.setAttribute('data-theme',t);document.getElementById('themeBtn').textContent=t==='dark'?'☀️':'🌙';if(save)localStorage.setItem('vox_theme',t)}
+function setTheme(t,save=true){document.documentElement.setAttribute('data-theme',t);if(save)localStorage.setItem('vox_theme',t);_updateThemeColor();_syncSkinUI()}
+function toggleSkinPop(){
+  const p=document.getElementById('skinPop');const open=!p.classList.contains('on');
+  if(open){_syncSkinUI();p.classList.add('on');setTimeout(()=>document.addEventListener('click',_skinAway),0)}
+  else{p.classList.remove('on');document.removeEventListener('click',_skinAway)}
+}
+function _skinAway(e){const w=document.getElementById('themeBtn')?.closest('.skin-wrap');if(w&&!w.contains(e.target)){document.getElementById('skinPop')?.classList.remove('on');document.removeEventListener('click',_skinAway)}}
+function setSkin(name){
+  if(name==='emerald')document.documentElement.removeAttribute('data-skin');
+  else document.documentElement.setAttribute('data-skin',name);
+  localStorage.setItem('vox_skin',name);
+  _updateThemeColor();_syncSkinUI();
+}
+function _syncSkinUI(){
+  const skin=localStorage.getItem('vox_skin')||'emerald';
+  const mode=document.documentElement.getAttribute('data-theme')||'light';
+  document.querySelectorAll('#skinPop .skin-sw').forEach(b=>b.classList.toggle('on',b.dataset.skin===skin));
+  document.querySelectorAll('#skinPop .skin-mode').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
+}
+function _updateThemeColor(){
+  const c=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  const m=document.querySelector('meta[name="theme-color"]');if(m&&c)m.setAttribute('content',c);
+}
 
 // ── SESSION MODE ──
 const DIAR_MODES=['consulta','reuniao','entrevista'];
