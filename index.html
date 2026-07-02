@@ -3886,16 +3886,30 @@ function advSwipe(id,page){
   document.getElementById('adv-dots-'+id)?.querySelectorAll('.adv-dot').forEach(d=>d.classList.toggle('on',d.dataset.i===String(page)));
   document.getElementById('adv-sublinks-'+id)?.querySelectorAll('.adv-sublink').forEach((b,i)=>b.classList.toggle('on',i===page));
 }
-let _advTouchX=null;
-function advTouchStart(e){_advTouchX=e.touches[0].clientX}
+let _advTouch=null;
+function advTouchStart(e){
+  if(e.touches.length===2){
+    const x1=e.touches[0].clientX,x2=e.touches[1].clientX;
+    _advTouch={mid:(x1+x2)/2,spread:Math.abs(x1-x2)};
+  }else{
+    _advTouch=null;
+  }
+}
 function advTouchEnd(id,e){
-  if(_advTouchX===null)return;
-  const dx=e.changedTouches[0].clientX-_advTouchX;_advTouchX=null;
-  if(Math.abs(dx)<40)return;
+  if(!_advTouch||e.touches.length>0)return;
+  const ct=e.changedTouches;
+  if(ct.length<2){_advTouch=null;return}
+  const x1=ct[0].clientX,x2=ct[1].clientX;
+  const mid=(x1+x2)/2,spread=Math.abs(x1-x2);
+  const dxMid=mid-_advTouch.mid;
+  const spreadChange=Math.abs(spread-_advTouch.spread);
+  _advTouch=null;
+  if(Math.abs(dxMid)<40)return; // pouco movimento
+  if(spreadChange>Math.abs(dxMid)*0.6)return; // dedos se afastando/aproximando = pinça de zoom, ignora
   const split=document.getElementById('adv-split-'+id);if(!split)return;
   const cur=split.dataset.page;
-  if(dx<0&&cur==='0')advSwipe(id,1);
-  else if(dx>0&&cur==='1')advSwipe(id,0);
+  if(dxMid<0&&cur==='0')advSwipe(id,1);
+  else if(dxMid>0&&cur==='1')advSwipe(id,0);
 }
 async function advRunLens(id,key){
   const panel=document.getElementById('adv-'+id);if(!panel)return;
