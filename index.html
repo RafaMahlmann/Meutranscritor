@@ -121,14 +121,15 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .cards.focus-mode .card.focus-active .cb{flex:1;display:flex;flex-direction:column;order:3}
 .cards.focus-mode .card.focus-active .cb textarea{flex:1;min-height:150px;resize:none}
 .cards.focus-mode .card.focus-active .cf{order:4}
-.cards.focus-mode .card.focus-active .adv-panel{order:3}
+.cards.focus-mode .card.focus-active.advanced-active{height:calc(100vh - 175px)}
+.cards.focus-mode .card.focus-active .adv-panel{order:3;min-height:0}
 .cards.focus-mode .card.focus-active .adv-panel.on{flex:1;display:flex;flex-direction:column;min-height:0}
-.cards.focus-mode .card.focus-active .adv-panel.on .adv-split{flex:1;min-height:0;grid-template-rows:1fr}
-.cards.focus-mode .card.focus-active .adv-panel.on .adv-pane-orig{display:flex;flex-direction:column}
-.cards.focus-mode .card.focus-active .adv-panel.on .adv-original{flex:1;max-height:none}
-.cards.focus-mode .card.focus-active .adv-panel.on .adv-pane-draft{display:flex;flex-direction:column}
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-split{flex:1;min-height:0}
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-pane-orig{display:flex;flex-direction:column;min-height:0}
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-original{flex:1;max-height:none;min-height:0}
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-pane-draft{display:flex;flex-direction:column;min-height:0}
 .cards.focus-mode .card.focus-active .adv-panel.on .adv-ta-wrap{flex:1;min-height:0}
-.cards.focus-mode .card.focus-active .adv-panel.on .adv-draft{height:100%;max-height:none}
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-draft{height:100%;max-height:none;min-height:0}
 .focus-nav{display:none;flex-direction:column;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:10px 12px;margin-bottom:12px}
 .focus-nav.on{display:flex}
 .ribbon{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -452,11 +453,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .adv-panel.on{display:block}
 .card.advanced-active .cb{display:none}
 .cards.focus-mode .card.focus-active.advanced-active .cb{display:none}
-.adv-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.adv-pane{position:relative}
+.adv-split{display:flex;gap:12px;min-height:0}
+.adv-pane{position:relative;flex:1;min-width:0;min-height:0}
 .adv-col-lbl{font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--text4);margin-bottom:6px;text-align:center}
-.adv-original{background:var(--bg-input);border-radius:12px;padding:10px 12px;font-size:var(--cf-sz,14px);line-height:1.75;white-space:pre-wrap;color:var(--text2);max-height:340px;overflow-y:auto;box-sizing:border-box;position:relative}
-.adv-ta-wrap{position:relative}
+.adv-original{background:var(--bg-input);border-radius:12px;padding:10px 12px;font-size:var(--cf-sz,14px);line-height:1.75;white-space:pre-wrap;color:var(--text2);max-height:340px;overflow-y:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box;position:relative}
+.adv-ta-wrap{position:relative;min-height:0}
 .adv-toolbar{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
 .adv-lens-btn{width:26px;height:26px;border:none;background:var(--bg-input);border-radius:7px;color:var(--text3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition)}
 .adv-lens-btn svg{width:13px;height:13px}
@@ -485,7 +486,6 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .adv-sublink{border:none;background:none;font-size:10.5px;color:var(--text4);font-weight:600;cursor:pointer;font-family:var(--font);padding:2px 4px}
 .adv-sublink.on{color:var(--text3)}
 @media(max-width:640px){
-  .adv-split{grid-template-columns:1fr}
   .adv-split[data-page="0"] .adv-pane-draft{display:none!important}
   .adv-split[data-page="1"] .adv-pane-orig{display:none!important}
   .adv-split[data-page="0"] .adv-chev-r{display:flex}
@@ -3515,7 +3515,8 @@ const ICO={
   messageCircle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
   gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
   undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 13 5 9l4-4"/><path d="M5 9h7a4 4 0 1 1 0 8h-1"/></svg>',
-  redo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 13l4-4-4-4"/><path d="M19 9h-7a4 4 0 1 0 0 8h1"/></svg>'
+  redo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 13l4-4-4-4"/><path d="M19 9h-7a4 4 0 1 0 0 8h1"/></svg>',
+  kbDismiss:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="13" rx="2"/><line x1="6" y1="9" x2="6" y2="9"/><line x1="10" y1="9" x2="10" y2="9"/><line x1="14" y1="9" x2="14" y2="9"/><line x1="18" y1="9" x2="18" y2="9"/><line x1="6" y1="13" x2="18" y2="13"/><polyline points="9 15.5 12 18.5 15 15.5"/></svg>'
 };
 // ── LENTES (transformações de IA estilo NotebookLM) ──
 const LENSES={
@@ -3836,7 +3837,9 @@ function renderAdvancedPanel(id,original,draft){
     `<button class="adv-lens-btn" onclick="advRunLens('${id}','${k}')" title="${L.label}">${L.icon}</button>`).join('');
   const undoRedoBtns=`<span class="adv-toolbar-sep"></span>`+
     `<button class="adv-lens-btn" id="adv-undo-${id}" onclick="advUndo('${id}')" title="Desfazer (Ctrl+Z)" disabled>${ICO.undo}</button>`+
-    `<button class="adv-lens-btn" id="adv-redo-${id}" onclick="advRedo('${id}')" title="Refazer (Ctrl+Shift+Z)" disabled>${ICO.redo}</button>`;
+    `<button class="adv-lens-btn" id="adv-redo-${id}" onclick="advRedo('${id}')" title="Refazer (Ctrl+Shift+Z)" disabled>${ICO.redo}</button>`+
+    `<span class="adv-toolbar-sep"></span>`+
+    `<button class="adv-lens-btn" onclick="document.activeElement.blur()" title="Esconder teclado">${ICO.kbDismiss}</button>`;
   const chevR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>';
   const chevL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>';
   panel.innerHTML=`<div class="adv-split" id="adv-split-${id}" data-page="0" ontouchstart="advTouchStart(event)" ontouchend="advTouchEnd('${id}',event)">`+
@@ -4167,7 +4170,10 @@ document.addEventListener('keydown',e=>{
     const advCard=document.querySelector('.card.advanced-active');
     if(advCard){
       if(isRedo){if(advRedo(advCard.id))e.preventDefault();}
-      else{if(advUndo(advCard.id))e.preventDefault();}
+      else{
+        if(!advUndo(advCard.id)){exitAdvanced(advCard.id)}
+        e.preventDefault();
+      }
       return;
     }
     if(!isRedo){
