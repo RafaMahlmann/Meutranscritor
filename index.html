@@ -3827,9 +3827,26 @@ function enterAdvanced(id){
   if(!original.trim()){toast('ℹ️ Card vazio',true);return}
   panel.dataset.original=original;
   delete _advCh[id];
+  _advReentry=null;
   card.classList.add('advanced-active');
   renderAdvancedPanel(id,original,original);
   panel.classList.add('on');
+}
+let _advReentry=null;
+function reenterAdvanced(state){
+  const{id,original,draft,page,ch}=state;
+  const panel=document.getElementById('adv-'+id);if(!panel)return;
+  if(viewMode!=='focus'||focusCardId()!==id)enterFocusCard(id);
+  const card=document.getElementById(id);if(!card)return;
+  panel.dataset.original=original;
+  card.classList.add('advanced-active');
+  renderAdvancedPanel(id,original,draft);
+  panel.classList.add('on');
+  _advCh[id]=ch;
+  advUpdateUndoBtns(id);
+  if(page==='1')advSwipe(id,1);
+  _advReentry=null;
+  toast('↪ Voltou pro modo Avançado');
 }
 function renderAdvancedPanel(id,original,draft){
   const panel=document.getElementById('adv-'+id);if(!panel)return;
@@ -3958,9 +3975,24 @@ function advSaveNew(id){
   toast('✅ Novo card criado! Ctrl+Z desfaz.');
   exitAdvanced(id);
 }
-function exitAdvanced(id){
-  const card=document.getElementById(id);if(card)card.classList.remove('advanced-active');
-  const panel=document.getElementById('adv-'+id);if(panel){panel.classList.remove('on');panel.innerHTML='';delete panel.dataset.original}
+function exitAdvanced(id,viaUndo=false){
+  const card=document.getElementById(id);
+  const panel=document.getElementById('adv-'+id);
+  if(viaUndo&&card&&panel){
+    const ta=document.getElementById('adv-draft-'+id);
+    const split=document.getElementById('adv-split-'+id);
+    _advReentry={
+      id,
+      original:panel.dataset.original||'',
+      draft:ta?ta.value:'',
+      page:split?split.dataset.page:'0',
+      ch:_advCh[id]?{u:[..._advCh[id].u],r:[..._advCh[id].r]}:{u:[],r:[]}
+    };
+  }else{
+    _advReentry=null;
+  }
+  if(card)card.classList.remove('advanced-active');
+  if(panel){panel.classList.remove('on');panel.innerHTML='';delete panel.dataset.original}
   delete _advCh[id];
 }
 
@@ -4171,10 +4203,13 @@ document.addEventListener('keydown',e=>{
     if(advCard){
       if(isRedo){if(advRedo(advCard.id))e.preventDefault();}
       else{
-        if(!advUndo(advCard.id)){exitAdvanced(advCard.id)}
+        if(!advUndo(advCard.id)){exitAdvanced(advCard.id,true)}
         e.preventDefault();
       }
       return;
+    }
+    if(isRedo&&_advReentry&&focusCardId()===_advReentry.id){
+      reenterAdvanced(_advReentry);e.preventDefault();return;
     }
     if(!isRedo){
       // 1. Textarea focada → tenta undo de texto (se stack vazio, deixa browser cuidar)
