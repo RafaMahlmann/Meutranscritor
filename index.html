@@ -453,6 +453,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .adv-lens-btn{width:26px;height:26px;border:none;background:var(--bg-input);border-radius:7px;color:var(--text3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition)}
 .adv-lens-btn svg{width:13px;height:13px}
 .adv-lens-btn:hover{background:var(--accent-glow);color:var(--accent)}
+.adv-lens-btn:disabled{opacity:0.35;cursor:default;pointer-events:none}
+.adv-toolbar-sep{width:1px;background:var(--border);margin:2px 4px}
 .adv-draft{width:100%;background:var(--bg-input);border-radius:12px;padding:10px 12px;font-size:var(--cf-sz,14px);font-family:var(--font);line-height:1.75;color:var(--text);border:none;outline:none;resize:vertical;min-height:200px;max-height:340px;box-sizing:border-box}
 .adv-prompt-row{display:flex;gap:6px;margin-top:8px}
 .adv-prompt-input{flex:1;background:var(--bg-input);border:1px solid transparent;border-radius:9px;padding:7px 10px;font-family:var(--font);font-size:12px;color:var(--text);outline:none;min-width:0}
@@ -3503,7 +3505,9 @@ const ICO={
   list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
   scale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M9 21h6"/><path d="M5 7h14"/><path d="M5 7l-3 6a3 3 0 0 0 6 0z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0z"/></svg>',
   messageCircle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 13 5 9l4-4"/><path d="M5 9h7a4 4 0 1 1 0 8h-1"/></svg>',
+  redo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 13l4-4-4-4"/><path d="M19 9h-7a4 4 0 1 0 0 8h1"/></svg>'
 };
 // ── LENTES (transformações de IA estilo NotebookLM) ──
 const LENSES={
@@ -3813,6 +3817,7 @@ function enterAdvanced(id){
   const original=card.querySelector('.cb textarea')?.value||'';
   if(!original.trim()){toast('ℹ️ Card vazio',true);return}
   panel.dataset.original=original;
+  delete _advCh[id];
   card.classList.add('advanced-active');
   renderAdvancedPanel(id,original,original);
   panel.classList.add('on');
@@ -3821,6 +3826,9 @@ function renderAdvancedPanel(id,original,draft){
   const panel=document.getElementById('adv-'+id);if(!panel)return;
   const lensBtns=Object.entries(LENSES).map(([k,L])=>
     `<button class="adv-lens-btn" onclick="advRunLens('${id}','${k}')" title="${L.label}">${L.icon}</button>`).join('');
+  const undoRedoBtns=`<span class="adv-toolbar-sep"></span>`+
+    `<button class="adv-lens-btn" id="adv-undo-${id}" onclick="advUndo('${id}')" title="Desfazer (Ctrl+Z)" disabled>${ICO.undo}</button>`+
+    `<button class="adv-lens-btn" id="adv-redo-${id}" onclick="advRedo('${id}')" title="Refazer (Ctrl+Shift+Z)" disabled>${ICO.redo}</button>`;
   const chevR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>';
   const chevL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>';
   panel.innerHTML=`<div class="adv-split" id="adv-split-${id}" data-page="0" ontouchstart="advTouchStart(event)" ontouchend="advTouchEnd('${id}',event)">`+
@@ -3828,7 +3836,7 @@ function renderAdvancedPanel(id,original,draft){
       `<div class="adv-original">${escHtml(original)}<button class="adv-chev adv-chev-r" onclick="advSwipe('${id}',1)">${chevR}</button></div>`+
     `</div>`+
     `<div class="adv-pane adv-pane-draft"><div class="adv-col-lbl">Editado pela IA</div>`+
-      `<div class="adv-toolbar">${lensBtns}</div>`+
+      `<div class="adv-toolbar">${lensBtns}${undoRedoBtns}</div>`+
       `<div class="adv-ta-wrap"><textarea class="adv-draft" id="adv-draft-${id}">${draft}</textarea><button class="adv-chev adv-chev-l" onclick="advSwipe('${id}',0)">${chevL}</button></div>`+
       `<div class="adv-prompt-row">`+
         `<input class="adv-prompt-input" id="adv-prompt-${id}" placeholder="Ou digite uma instrução (ex: deixe mais formal)…" onkeydown="if(event.key==='Enter'){event.preventDefault();advRunCustom('${id}')}">`+
@@ -3871,6 +3879,7 @@ async function advRunLens(id,key){
   const maxTok=Math.min(8000,Math.ceil(original.length/3)+600);
   try{
     const result=(await callAI(L.prompt+'\n\nTexto:\n'+original,key2,'auto',maxTok)).trim();
+    advPushHistory(id);
     const ta=document.getElementById('adv-draft-'+id);if(ta)ta.value=result;
     toast('✅ '+L.label+' pronto!');
   }catch(e){toast('❌ '+e.message,true)}
@@ -3888,9 +3897,37 @@ async function advRunCustom(id){
   try{
     const prompt=`Aplique a seguinte instrução ao texto abaixo, em português do Brasil: "${instr}".\n\nTexto:\n${original}`;
     const result=(await callAI(prompt,key2,'auto',maxTok)).trim();
+    advPushHistory(id);
     const ta=document.getElementById('adv-draft-'+id);if(ta)ta.value=result;
     toast('✅ Pronto!');
   }catch(e){toast('❌ '+e.message,true)}
+}
+const _advCh={};
+function advPushHistory(id){
+  const ta=document.getElementById('adv-draft-'+id);if(!ta)return;
+  if(!_advCh[id])_advCh[id]={u:[],r:[]};
+  _advCh[id].u.push(ta.value);if(_advCh[id].u.length>30)_advCh[id].u.shift();
+  _advCh[id].r=[];
+  advUpdateUndoBtns(id);
+}
+function advUndo(id){
+  const ta=document.getElementById('adv-draft-'+id);if(!ta)return false;
+  if(!_advCh[id]?.u?.length)return false;
+  _advCh[id].r.push(ta.value);
+  ta.value=_advCh[id].u.pop();
+  advUpdateUndoBtns(id);toast('↩ Desfeito');return true;
+}
+function advRedo(id){
+  const ta=document.getElementById('adv-draft-'+id);if(!ta)return false;
+  if(!_advCh[id]?.r?.length)return false;
+  _advCh[id].u.push(ta.value);
+  ta.value=_advCh[id].r.pop();
+  advUpdateUndoBtns(id);toast('↪ Refeito');return true;
+}
+function advUpdateUndoBtns(id){
+  const u=document.getElementById('adv-undo-'+id),r=document.getElementById('adv-redo-'+id);
+  if(u)u.disabled=!(_advCh[id]?.u?.length);
+  if(r)r.disabled=!(_advCh[id]?.r?.length);
 }
 function advSaveReplace(id){
   const ta=document.getElementById('adv-draft-'+id);if(!ta)return;
@@ -3913,6 +3950,7 @@ function advSaveNew(id){
 function exitAdvanced(id){
   const card=document.getElementById(id);if(card)card.classList.remove('advanced-active');
   const panel=document.getElementById('adv-'+id);if(panel){panel.classList.remove('on');panel.innerHTML='';delete panel.dataset.original}
+  delete _advCh[id];
 }
 
 // ── DRAG TO MERGE CARDS / MOVER PRA PASTA (auto-scroll + abre pastas na borda) ──
@@ -4118,6 +4156,12 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&(e.key==='z'||e.key==='Z')){
     const isRedo=e.shiftKey;
     const activeEl=document.activeElement;
+    if(activeEl.tagName==='TEXTAREA'&&activeEl.id.startsWith('adv-draft-')){
+      const advId=activeEl.id.slice('adv-draft-'.length);
+      if(isRedo){if(advRedo(advId))e.preventDefault();}
+      else{if(advUndo(advId))e.preventDefault();}
+      return;
+    }
     if(!isRedo){
       // 1. Textarea focada → tenta undo de texto (se stack vazio, deixa browser cuidar)
       if(activeEl.tagName==='TEXTAREA'){
