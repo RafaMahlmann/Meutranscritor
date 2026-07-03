@@ -1799,9 +1799,9 @@ function renderFolders(){
     let html='';
     folders.forEach(f=>{
       const sel=folderDlSel.has(f.id);
-      html+=`<div class="folder-item${sel?' dl-sel':''}" onclick="toggleFolderDlSel('${f.id}')">
+      html+=`<div class="folder-item${sel?' dl-sel':''}" onclick="toggleFolderDlSel('${escJs(f.id)}')">
         <span style="font-size:15px">${sel?'☑':'☐'}</span>
-        <span class="folder-dot" style="background:${f.color}"></span>
+        <span class="folder-dot" style="background:${safeColor(f.color)}"></span>
         <span class="folder-name">${escHtml(f.name)}</span>
         <span class="folder-count">${counts[f.id]||0}</span></div>`;
     });
@@ -1815,11 +1815,11 @@ function renderFolders(){
   let html=`<div class="folder-item${activeFolderId===null?' active':''}" data-fid="" onclick="selectFolder(null)">
     <span class="folder-ico">📥</span><span class="folder-name">${t('Tudo')}</span><span class="folder-count">${counts.all}</span></div>`;
   folders.forEach(f=>{
-    html+=`<div class="folder-item${activeFolderId===f.id?' active':''}" data-fid="${f.id}" onclick="selectFolder('${f.id}')">
-      <span class="folder-dot" style="background:${f.color}"></span>
+    html+=`<div class="folder-item${activeFolderId===f.id?' active':''}" data-fid="${escHtml(f.id)}" onclick="selectFolder('${escJs(f.id)}')">
+      <span class="folder-dot" style="background:${safeColor(f.color)}"></span>
       <span class="folder-name">${escHtml(f.name)}</span>
       <span class="folder-count">${counts[f.id]||0}</span>
-      <span class="folder-menu-btn" onclick="event.stopPropagation();folderMenu('${f.id}',event)" title="${t('Opções')}">⋯</span></div>`;
+      <span class="folder-menu-btn" onclick="event.stopPropagation();folderMenu('${escJs(f.id)}',event)" title="${t('Opções')}">⋯</span></div>`;
   });
   list.innerHTML=html;
 }
@@ -1851,9 +1851,9 @@ function folderMenu(id,ev){
   const menu=document.createElement('div');
   menu.id='folderMenu';menu.className='folder-menu';
   menu.innerHTML=`
-    <button onclick="renameFolder('${id}')">${t('✏️ Renomear')}</button>
-    <button onclick="exportFolder('${id}')">${t('📄 Exportar pasta')}</button>
-    <button class="danger" onclick="deleteFolder('${id}')">${t('🗑️ Excluir pasta')}</button>`;
+    <button onclick="renameFolder('${escJs(id)}')">${t('✏️ Renomear')}</button>
+    <button onclick="exportFolder('${escJs(id)}')">${t('📄 Exportar pasta')}</button>
+    <button class="danger" onclick="deleteFolder('${escJs(id)}')">${t('🗑️ Excluir pasta')}</button>`;
   document.body.appendChild(menu);
   const r=ev.target.getBoundingClientRect();
   let left=r.right-160;if(left<8)left=8;
@@ -2678,6 +2678,9 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 // Para dados do usuário dentro de strings JS em atributos onclick="fn('...')":
 // escapa primeiro a string JS (aspas/barra), depois o HTML do atributo.
 function escJs(s){return escHtml(String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\r?\n/g,'\\n'))}
+// Aceita só cores CSS seguras (#hex, rgb/rgba, hsl, nome simples). Backup importado
+// pode trazer f.color arbitrario e escapar do atributo style — aqui viramos fallback.
+function safeColor(c){c=String(c||'').trim();return /^(#[0-9a-fA-F]{3,8}|rgba?\([\d.,\s%]+\)|hsla?\([\d.,\s%]+\)|[a-zA-Z]{3,20})$/.test(c)?c:'var(--accent)'}
 
 // ── EXTRACT PANEL ──
 const _ext={};
