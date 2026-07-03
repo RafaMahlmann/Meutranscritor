@@ -1308,9 +1308,9 @@ let folderDlMode=false;
 const folderDlSel=new Set();
 const FOLDER_COLORS=['#10b981','#3b82f6','#a78bfa','#f97316','#ec4899','#06b6d4','#eab308','#f43f5e'];
 
-let stats={count:0,usd:0,brl:0,sec:0,words:0};
+let stats={count:0,sec:0,words:0};
 let cfg={
-  provider:'whisper',apiKey:'',apiKeyGrok:'',apiKeyGroq:'',rate:5.0,lang:'',
+  provider:'whisper',apiKey:'',apiKeyGrok:'',apiKeyGroq:'',lang:'',
   diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',
   aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',recipes:[]
 };
@@ -3168,7 +3168,7 @@ function appendSegmentText(id,text,cost,durSec){
   const newCost=parseFloat(card.dataset.cost||'0')+cost;card.dataset.cost=newCost;
   updateFooter(id);
   const words=(text||'').split(/\s+/).filter(w=>w).length;
-  stats.usd+=cost;stats.brl+=cost*(cfg.rate||5);stats.sec+=durSec;stats.words=(stats.words||0)+words;
+  stats.sec+=durSec;stats.words=(stats.words||0)+words;
   updateStats();saveHistory();
 }
 function setSegCardLive(id,on){
@@ -3259,7 +3259,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
       if(cid){showLensChips(cid);if(cfg.apiKeyGroq||cfg.apiKey)setTimeout(()=>suggestTags(cid),400)}
     }
     const words=text.split(/\s+/).filter(w=>w).length;
-    stats.count++;stats.usd+=cost;stats.brl+=cost*cfg.rate;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
+    stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
     recordTiming(Date.now()-_t0, actualSec);
     updateStats();saveHistory();setStatus('Pronto','ready');
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
@@ -3305,7 +3305,7 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
     let speakers=buildDefaultSpeakers(utterances,mode);
     try{speakers=await autoRenameSpeakers(utterances,mode,speakers)}catch(e){console.warn('Auto-rename falhou:',e)}
     const words=utterances.reduce((a,u)=>a+u.text.split(/\s+/).filter(w=>w).length,0);
-    stats.count++;stats.usd+=cost;stats.brl+=cost*cfg.rate;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
+    stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
     const didA=addDiarCard(utterances,speakers,cost,cfg.provider==='groqwhisper'?'groq':cfg.provider,true,null,null,[],sn,mode,false);
     if(didA)showLensChips(didA);
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Diarização concluída!'));
@@ -3338,7 +3338,7 @@ async function doDiarizeOpenAI(file,durSec,fromRec,sn,mode){
       const text=data.text||'';
       const cost=Math.max(1,Math.ceil(durSec/60))*COST_W;
       addCard(text,null,cost,fromRec?'gravacao':'arquivo',cfg.provider,true,null,null,[],sn,mode,false);
-      stats.count++;stats.usd+=cost;stats.brl+=cost*cfg.rate;stats.sec+=durSec;
+      stats.count++;stats.sec+=durSec;
       updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Transcrição concluída (sem diarização no retorno)'));
       return;
     }
@@ -3348,7 +3348,7 @@ async function doDiarizeOpenAI(file,durSec,fromRec,sn,mode){
     try{speakers=await autoRenameSpeakers(utterances,mode,speakers)}catch(e){}
     const didO=addDiarCard(utterances,speakers,cost,cfg.provider,true,null,null,[],sn,mode,false);
     if(didO)showLensChips(didO);
-    stats.count++;stats.usd+=cost;stats.brl+=cost*cfg.rate;stats.sec+=durSec;
+    stats.count++;stats.sec+=durSec;
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Diarização concluída!'));
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
   finally{isProc=false;lockUI(false)}
