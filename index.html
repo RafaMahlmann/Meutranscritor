@@ -488,7 +488,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .tx-btn.ghost{background:var(--bg-input);color:var(--text2)}
 .tx-lock-row{display:flex;align-items:center;gap:9px;margin:10px 0 0;font-size:13px;color:var(--text2);cursor:pointer;user-select:none}
 .tx-lock-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
-.tx-pass-input{width:100%;box-sizing:border-box;background:var(--bg-input);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:10px 12px;font-family:var(--font);font-size:13px;margin-top:8px}
+.tx-pass-wrap{position:relative;margin-top:8px}
+.tx-pass-input{width:100%;box-sizing:border-box;background:var(--bg-input);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:10px 40px 10px 12px;font-family:var(--font);font-size:13px}
+.tx-pass-wrap .tx-pass-input{margin-top:0}
+.tx-eye-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text4);cursor:pointer;padding:6px;display:flex;align-items:center;border-radius:8px}
+.tx-eye-btn:hover{color:var(--text2);background:var(--bg-card)}
+.tx-eye-btn svg{width:16px;height:16px}
 .tx-preview{background:var(--bg-input);border-radius:12px;padding:12px;font-size:12.5px;color:var(--text2);line-height:1.6;max-height:150px;overflow-y:auto;white-space:pre-wrap;margin:10px 0}
 .tx-warn{background:var(--warning-glow,rgba(245,158,11,0.12));border-radius:12px;padding:11px 13px;font-size:12px;color:var(--text2);line-height:1.55;margin:10px 0}
 .tx-progress{font-size:13px;font-weight:700;color:var(--accent);text-align:center;margin:8px 0}
@@ -823,6 +828,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <div class="ribbon-grp">
             <button class="ribbon-btn" onclick="ribbonRec()" title="Gravar" data-i18n-title><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg></button>
             <button class="ribbon-btn" onclick="ribbonPin()" title="Fixar" data-i18n-title><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4v2h10v-2l-2 -4v-6"/><path d="M12 16v5"/><path d="M8 4h8"/></svg></button>
+          </div>
+          <div class="ribbon-grp">
+            <button class="ribbon-btn" onclick="ribbonUndo()" title="Desfazer (Ctrl+Z)" data-i18n-title><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 13 5 9l4-4"/><path d="M5 9h7a4 4 0 1 1 0 8h-1"/></svg></button>
+            <button class="ribbon-btn" onclick="ribbonRedo()" title="Refazer (Ctrl+Shift+Z)" data-i18n-title><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 13l4-4-4-4"/><path d="M19 9h-7a4 4 0 1 0 0 8h1"/></svg></button>
           </div>
         </div>
         <div class="focus-nav-row">
@@ -1427,7 +1436,10 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "Usa a mesma OpenAI Key da aba Transcrição.":"Uses the same OpenAI Key from the Transcription tab.",
 "Endereço da API (compatível com OpenAI)":"API address (OpenAI-compatible)","Chave (se a API exigir)":"Key (if the API requires one)",
 "<strong>Exemplos prontos:</strong><br> 🖥️ <strong>Ollama (grátis, 100% no seu PC):</strong> endereço <code>http://localhost:11434/v1</code>, modelo <code>llama3.2</code>, sem chave.<br> 🌐 <strong>OpenRouter:</strong> endereço <code>https://openrouter.ai/api/v1</code> + sua chave.<br> ✨ <strong>Gemini:</strong> endereço <code>https://generativelanguage.googleapis.com/v1beta/openai</code> + sua chave.":"<strong>Ready-made examples:</strong><br> 🖥️ <strong>Ollama (free, 100% on your PC):</strong> address <code>http://localhost:11434/v1</code>, model <code>llama3.2</code>, no key.<br> 🌐 <strong>OpenRouter:</strong> address <code>https://openrouter.ai/api/v1</code> + your key.<br> ✨ <strong>Gemini:</strong> address <code>https://generativelanguage.googleapis.com/v1beta/openai</code> + your key.",
-"⚡ Testar conexão":"⚡ Test connection","testando…":"testing…","conectado!":"connected!","sem resposta — a API está no ar?":"no response — is the API up?"};
+"⚡ Testar conexão":"⚡ Test connection","testando…":"testing…","conectado!":"connected!","sem resposta — a API está no ar?":"no response — is the API up?",
+"Ocultar senha":"Hide password","Mostrar senha":"Show password",
+"↩ Desfazer / Refazer":"↩ Undo / Redo","Desfazer":"Undo","Refazer":"Redo",
+"ℹ️ Nada para desfazer":"ℹ️ Nothing to undo","ℹ️ Nada para refazer":"ℹ️ Nothing to redo"};
 
 // ── STATE ──
 let MR=null,chunks=[],recStart=null,recTimer=null;
@@ -3805,6 +3817,7 @@ const ICO={
   search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
   eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
   zap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
   clipboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
   share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="6.51"/></svg>'
@@ -3891,6 +3904,13 @@ function _txUrls(b64,flags){
 }
 function _txOverlay(){let ov=document.getElementById('txOverlay');if(!ov){ov=document.createElement('div');ov.id='txOverlay';ov.className='tx-overlay';ov.addEventListener('click',e=>{if(e.target===ov)closeTxOverlay()});document.body.appendChild(ov)}return ov}
 function closeTxOverlay(){const ov=document.getElementById('txOverlay');if(ov){ov.classList.remove('on');ov.innerHTML=''}}
+function toggleTxEye(inputId,btn){
+  const inp=document.getElementById(inputId);if(!inp)return;
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.innerHTML=show?ICO.eyeOff:ICO.eye;
+  btn.title=show?t('Ocultar senha'):t('Mostrar senha');
+}
 let _txState=null,_txRx=null;
 function openTransferPanel(id){
   const card=document.getElementById(id);if(!card)return;
@@ -3905,7 +3925,7 @@ function openTransferPanel(id){
     <div class="tx-sub">${t('Passe o bastão: QR pra quem está perto, link pra quem está longe.')}</div>
     ${tut}
     <label class="tx-lock-row"><input type="checkbox" id="txLock" onchange="document.getElementById('txPassWrap').style.display=this.checked?'block':'none'">🔒 ${t('Proteger com senha (só abre quem souber a senha)')}</label>
-    <div id="txPassWrap" style="display:none"><input type="password" class="tx-pass-input" id="txPass" placeholder="${t('Senha combinada entre vocês')}" autocomplete="off"></div>
+    <div id="txPassWrap" style="display:none"><div class="tx-pass-wrap"><input type="password" class="tx-pass-input" id="txPass" placeholder="${t('Senha combinada entre vocês')}" autocomplete="off"><button type="button" class="tx-eye-btn" title="${t('Mostrar senha')}" onclick="toggleTxEye('txPass',this)">${ICO.eye}</button></div></div>
     <div class="tx-row"><button class="tx-btn primary" onclick="txGenerate('${id}')">${t('Gerar QR e link')}</button></div>
     <div id="txResult"></div></div>`;
   ov.classList.add('on');
@@ -3988,7 +4008,7 @@ function _txReceive(b64,flags){
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
     <div class="tx-title">📥 ${t('Texto recebido via Vox Transfer')}</div>
-    ${locked?`<div class="tx-sub">🔒 ${t('Este texto está protegido. Digite a senha combinada:')}</div><input type="password" class="tx-pass-input" id="txRxPass" autocomplete="off" onkeydown="if(event.key==='Enter')txUnlock()"><div class="tx-row"><button class="tx-btn primary" onclick="txUnlock()">${t('Destrancar')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Cancelar')}</button></div>`:''}
+    ${locked?`<div class="tx-sub">🔒 ${t('Este texto está protegido. Digite a senha combinada:')}</div><div class="tx-pass-wrap"><input type="password" class="tx-pass-input" id="txRxPass" autocomplete="off" onkeydown="if(event.key==='Enter')txUnlock()"><button type="button" class="tx-eye-btn" title="${t('Mostrar senha')}" onclick="toggleTxEye('txRxPass',this)">${ICO.eye}</button></div><div class="tx-row"><button class="tx-btn primary" onclick="txUnlock()">${t('Destrancar')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Cancelar')}</button></div>`:''}
     <div id="txRxBody"></div></div>`;
   ov.classList.add('on');
   if(!locked)txUnlock();
@@ -4203,7 +4223,13 @@ function toggleExportMenu(id){
   const p=document.getElementById('exp-menu-'+id);if(!p)return;
   if(p.classList.contains('on')){p.classList.remove('on');p.innerHTML='';return}
   document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
-  p.innerHTML=`<div class="lens-hd">${t('⤴ Exportar este card')}</div>`+
+  const canU=!!_ch[id]?.u?.length,canR=!!_ch[id]?.r?.length;
+  p.innerHTML=`<div class="lens-hd">${t('↩ Desfazer / Refazer')}</div>`+
+    `<div style="display:flex;gap:8px;padding:2px 2px 10px">`+
+      `<button class="tx-btn ghost" style="display:flex;align-items:center;justify-content:center;gap:7px" ${canU?'':'disabled'} onclick="cardUndo('${id}');toggleExportMenu('${id}');toggleExportMenu('${id}')"><span class="lens-ico" style="width:auto">${ICO.undo}</span>${t('Desfazer')}</button>`+
+      `<button class="tx-btn ghost" style="display:flex;align-items:center;justify-content:center;gap:7px" ${canR?'':'disabled'} onclick="cardRedo('${id}');toggleExportMenu('${id}');toggleExportMenu('${id}')"><span class="lens-ico" style="width:auto">${ICO.redo}</span>${t('Refazer')}</button>`+
+    `</div>`+
+    `<div class="lens-hd" style="border-top:1px solid var(--border);padding-top:9px">${t('⤴ Exportar este card')}</div>`+
     `<button class="lens-opt" onclick="copyCard('${id}');closeExportMenu('${id}')"><span class="lens-ico">${ICO.copy}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Copiar texto + tags')}</span><span class="lens-opt-d">${t('Cola tudo junto (tags viram #hashtags)')}</span></span></button>`+
     `<button class="lens-opt" onclick="copyCardTextOnly('${id}');closeExportMenu('${id}')"><span class="lens-ico">${ICO.textOnly}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Copiar só o texto')}</span><span class="lens-opt-d">${t('Sem as tags')}</span></span></button>`+
     `<button class="lens-opt" onclick="copyCardMarkdown('${id}');closeExportMenu('${id}')"><span class="lens-ico">${ICO.markdown}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Copiar como Markdown')}</span><span class="lens-opt-d">${t('Cópia fiel e crua — cole e pronto')}</span></span></button>`+
@@ -4477,6 +4503,8 @@ function ribbonCopyObsidian(){const id=focusCardId();if(id)copyCardObsidian(id)}
 function ribbonRec(){const id=focusCardId();if(id)recHere(id)}
 function ribbonPin(){const id=focusCardId();if(id)togglePin(id)}
 function ribbonAdvanced(){const id=focusCardId();if(id)enterAdvanced(id)}
+function ribbonUndo(){const id=focusCardId();if(id&&!cardUndo(id))toast(t('ℹ️ Nada para desfazer'),true)}
+function ribbonRedo(){const id=focusCardId();if(id&&!cardRedo(id))toast(t('ℹ️ Nada para refazer'),true)}
 function ribbonLensMenu(){const id=focusCardId();if(id){closeLensPanel(id);toggleLensMenu(id)}else toast(t('ℹ️ Nenhum card em foco'),true)}
 
 // ── AVANÇADO (comparar original x IA lado a lado) ──
