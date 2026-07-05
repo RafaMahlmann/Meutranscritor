@@ -623,8 +623,16 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .local-model-row.active{border-color:var(--accent);background:var(--accent-glow)}
 .key-row{transition:opacity var(--transition),filter var(--transition)}
 .key-row.inactive{opacity:0.38;filter:grayscale(0.4);pointer-events:none}
-.key-row.active-key{position:relative}
-.key-row.active-key::before{content:'✓ ativo';position:absolute;top:0;right:0;font-size:9px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--accent);background:var(--accent-glow);padding:2px 7px;border-radius:0 11px 0 8px}
+/* Selo "ativo" inline no nome da chave — não colide mais com o link do console */
+.key-row.active-key label>span:first-child::after{content:'✓ ativo';margin-left:7px;font-size:9px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--accent);background:var(--accent-glow);padding:2px 7px;border-radius:20px;vertical-align:1px}
+/* Abas do modal de configurações */
+.cfg-tabs{display:flex;gap:4px;margin:-4px 0 16px;background:var(--bg-input);border-radius:13px;padding:4px;position:sticky;top:0;z-index:5}
+.cfg-tab-btn{flex:1;border:none;background:none;border-radius:10px;padding:8px 4px;font-size:11.5px;font-weight:700;font-family:var(--font);color:var(--text3);cursor:pointer;transition:all var(--transition);white-space:nowrap}
+.cfg-tab-btn.on{background:var(--bg-card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.local-100-badge{display:none;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:0.4px;color:var(--accent);background:var(--accent-glow);padding:3px 9px;border-radius:20px;white-space:nowrap}
+.local-100-badge.on{display:inline-flex}
+.txtai-test{display:flex;align-items:center;gap:10px;margin-top:12px}
+.txtai-test-result{font-size:12px;font-weight:600}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -961,8 +969,15 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 <!-- SETTINGS MODAL -->
 <div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
-    <div class="mh"><h2 data-i18n>Configurações</h2><button class="mh-close" onclick="closeModal()">✕</button></div>
+    <div class="mh"><h2 data-i18n>Configurações</h2><span class="local-100-badge" id="local100Badge">🔒 <span data-i18n>100% local</span></span><button class="mh-close" onclick="closeModal()">✕</button></div>
     <div class="mb">
+      <div class="cfg-tabs">
+        <button class="cfg-tab-btn on" id="cfgTabBtnTrans" onclick="cfgTab('Trans')">🎙️ <span data-i18n>Transcrição</span></button>
+        <button class="cfg-tab-btn" id="cfgTabBtnText" onclick="cfgTab('Text')">✨ <span data-i18n>IA de texto</span></button>
+        <button class="cfg-tab-btn" id="cfgTabBtnDiar" onclick="cfgTab('Diar')">🔮 <span data-i18n>Diarização</span></button>
+        <button class="cfg-tab-btn" id="cfgTabBtnGeral" onclick="cfgTab('Geral')">⚙️ <span data-i18n>Geral</span></button>
+      </div>
+      <div class="cfg-tab-pane" id="cfgPaneTrans">
       <div class="section-title" data-i18n>API de transcrição</div>
       <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr 1fr">
         <button class="api-tog-btn on" id="togW" onclick="setProvider('whisper')">🤖 Whisper</button>
@@ -1042,9 +1057,66 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <option value="es">Español</option>
         </select>
       </div>
+      </div><!-- /cfgPaneTrans -->
+
+      <!-- IA DE TEXTO -->
+      <div class="cfg-tab-pane" id="cfgPaneText" style="display:none">
+      <div class="section-title" data-i18n>✨ IA de texto — quem pensa nas lentes e receitas</div>
+      <p class="fhint" style="margin-bottom:12px" data-i18n>Transcrever é ouvir. Já as lentes e receitas (resumo, e-mail, flashcards…) precisam de uma IA que pensa. Escolha quem faz esse trabalho:</p>
+      <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr">
+        <button class="api-tog-btn on" id="txtaiTogGroq" onclick="setTxtProvider('groq')">🟢 Groq <span class="free-badge" style="font-size:9px">FREE</span></button>
+        <button class="api-tog-btn" id="txtaiTogOpenai" onclick="setTxtProvider('openai')">🤖 OpenAI</button>
+        <button class="api-tog-btn" id="txtaiTogCustom" onclick="setTxtProvider('custom')">🔧 <span data-i18n>Minha API</span></button>
+      </div>
+      <div id="txtaiGroqPanel" style="margin-top:12px">
+        <div class="frow">
+          <label><span data-i18n>Modelo</span></label>
+          <select id="txtModelGroq">
+            <option value="llama-3.3-70b-versatile">Llama 3.3 70B (recomendado)</option>
+            <option value="llama-3.1-8b-instant">Llama 3.1 8B (mais rápido)</option>
+          </select>
+        </div>
+        <p class="fhint" data-i18n>Usa a mesma Groq Key da aba Transcrição — grátis, sem custo extra.</p>
+      </div>
+      <div id="txtaiOpenaiPanel" style="display:none;margin-top:12px">
+        <div class="frow">
+          <label><span data-i18n>Modelo</span></label>
+          <select id="txtModelOpenai">
+            <option value="gpt-4o-mini">GPT-4o mini (barato)</option>
+            <option value="gpt-4o">GPT-4o (mais capaz)</option>
+          </select>
+        </div>
+        <p class="fhint" data-i18n>Usa a mesma OpenAI Key da aba Transcrição.</p>
+      </div>
+      <div id="txtaiCustomPanel" style="display:none;margin-top:12px">
+        <div class="frow">
+          <label><span data-i18n>Endereço da API (compatível com OpenAI)</span></label>
+          <input type="text" id="txtBaseUrl" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="frow">
+          <label><span data-i18n>Modelo</span></label>
+          <input type="text" id="txtModel" placeholder="llama3.2" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="frow">
+          <label><span data-i18n>Chave (se a API exigir)</span></label>
+          <input type="password" id="txtKey" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="diar-guide" data-i18n-html>
+          <strong>Exemplos prontos:</strong><br>
+          🖥️ <strong>Ollama (grátis, 100% no seu PC):</strong> endereço <code>http://localhost:11434/v1</code>, modelo <code>llama3.2</code>, sem chave.<br>
+          🌐 <strong>OpenRouter:</strong> endereço <code>https://openrouter.ai/api/v1</code> + sua chave.<br>
+          ✨ <strong>Gemini:</strong> endereço <code>https://generativelanguage.googleapis.com/v1beta/openai</code> + sua chave.
+        </div>
+      </div>
+      <div class="txtai-test">
+        <button class="maint-btn" onclick="testTxtAI()" data-i18n>⚡ Testar conexão</button>
+        <span class="txtai-test-result" id="txtaiTestResult"></span>
+      </div>
+      </div><!-- /cfgPaneText -->
 
       <!-- DIARIZAÇÃO -->
-      <div class="section-title" style="margin-top:22px" data-i18n>🔮 Diarização — identificar quem fala</div>
+      <div class="cfg-tab-pane" id="cfgPaneDiar" style="display:none">
+      <div class="section-title" data-i18n>🔮 Diarização — identificar quem fala</div>
       <div class="diar-toggle-row">
         <div>
           <p data-i18n>Identificar locutores automaticamente</p>
@@ -1090,8 +1162,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <p class="fhint" data-i18n>Usada para identificar automaticamente quem é o profissional e quem é o paciente. Custo: ~$0.001/consulta.</p>
         </div>
       </div>
+      </div><!-- /cfgPaneDiar -->
 
-      <div class="section-title" style="margin-top:22px" data-i18n>Manutenção</div>
+      <div class="cfg-tab-pane" id="cfgPaneGeral" style="display:none">
+      <div class="section-title" data-i18n>Manutenção</div>
       <div class="maint-box" style="margin-bottom:8px">
         <div class="maint-info">
           <div class="maint-title"><span data-i18n>Áudios na RAM</span> <span class="ram-badge" id="ramBadge" style="display:none">0</span></div>
@@ -1136,6 +1210,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <button class="maint-btn" onclick="bulkDelete('all')" data-i18n>Apagar tudo</button>
         </div>
       </div>
+      </div><!-- /cfgPaneGeral -->
     </div>
     <div class="mf"><button class="btn-save" onclick="saveCfg()" data-i18n>Salvar</button></div>
   </div>
@@ -1343,7 +1418,16 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "Texto recebido via Vox Transfer":"Text received via Vox Transfer","Este texto está protegido. Digite a senha combinada:":"This text is protected. Enter the agreed password:",
 "Destrancar":"Unlock","❌ Senha incorreta ou link corrompido":"❌ Wrong password or corrupted link",
 "Confere? Ele vira um novo card seu — uma cópia independente.":"Looks right? It becomes a new card of yours — an independent copy.",
-"Adicionar como card":"Add as card","recebido":"received","Transferido":"Transferred","📥 Card recebido e adicionado!":"📥 Card received and added!"};
+"Adicionar como card":"Add as card","recebido":"received","Transferido":"Transferred","📥 Card recebido e adicionado!":"📥 Card received and added!",
+"Transcrição":"Transcription","IA de texto":"Text AI","Diarização":"Diarization","Geral":"General","100% local":"100% local",
+"✨ IA de texto — quem pensa nas lentes e receitas":"✨ Text AI — the brain behind lenses and recipes",
+"Transcrever é ouvir. Já as lentes e receitas (resumo, e-mail, flashcards…) precisam de uma IA que pensa. Escolha quem faz esse trabalho:":"Transcribing is listening. Lenses and recipes (summary, email, flashcards…) need an AI that thinks. Choose who does that job:",
+"Minha API":"My API","Modelo":"Model",
+"Usa a mesma Groq Key da aba Transcrição — grátis, sem custo extra.":"Uses the same Groq Key from the Transcription tab — free, no extra cost.",
+"Usa a mesma OpenAI Key da aba Transcrição.":"Uses the same OpenAI Key from the Transcription tab.",
+"Endereço da API (compatível com OpenAI)":"API address (OpenAI-compatible)","Chave (se a API exigir)":"Key (if the API requires one)",
+"<strong>Exemplos prontos:</strong><br> 🖥️ <strong>Ollama (grátis, 100% no seu PC):</strong> endereço <code>http://localhost:11434/v1</code>, modelo <code>llama3.2</code>, sem chave.<br> 🌐 <strong>OpenRouter:</strong> endereço <code>https://openrouter.ai/api/v1</code> + sua chave.<br> ✨ <strong>Gemini:</strong> endereço <code>https://generativelanguage.googleapis.com/v1beta/openai</code> + sua chave.":"<strong>Ready-made examples:</strong><br> 🖥️ <strong>Ollama (free, 100% on your PC):</strong> address <code>http://localhost:11434/v1</code>, model <code>llama3.2</code>, no key.<br> 🌐 <strong>OpenRouter:</strong> address <code>https://openrouter.ai/api/v1</code> + your key.<br> ✨ <strong>Gemini:</strong> address <code>https://generativelanguage.googleapis.com/v1beta/openai</code> + your key.",
+"⚡ Testar conexão":"⚡ Test connection","testando…":"testing…","conectado!":"connected!","sem resposta — a API está no ar?":"no response — is the API up?"};
 
 // ── STATE ──
 let MR=null,chunks=[],recStart=null,recTimer=null;
@@ -1372,7 +1456,8 @@ let stats={count:0,sec:0,words:0};
 let cfg={
   provider:'whisper',apiKey:'',apiKeyGrok:'',apiKeyGroq:'',lang:'',
   diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',
-  aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',recipes:[]
+  aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',recipes:[],
+  txtProvider:'groq',txtModelGroq:'llama-3.3-70b-versatile',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:''
 };
 
 const SESSION_MODES={
@@ -2229,7 +2314,7 @@ async function openDaySummary(){
     const text=c.querySelector('textarea')?.value.trim()||'';
     return `=== ${sn} (${c.dataset.mode||'livre'}) ===\n${text}`;
   }).join('\n\n');
-  const key=cfg.apiKey||cfg.apiKeyGroq;
+  const key=aiKey();
   if(!key){document.getElementById('summaryBody').innerHTML=`<p style="color:var(--text3);font-size:13px">${t('Configure uma chave de IA nas configurações para gerar resumos.')}</p>`;return}
   try{
     const prompt=`Você é um assistente que analisa transcrições do dia com fidelidade ao conteúdo. Gere um resumo executivo do dia com: 1) Visão geral (quantas sessões e temas centrais), 2) Pontos mais relevantes por sessão, 3) Padrões ou observações gerais. Baseie-se SOMENTE no que está nas transcrições — não invente. Seja claro e bem estruturado. ${_promptLang()}\n\nTranscrições:\n${combined}`;
@@ -2254,27 +2339,70 @@ function exportSummaryObsidian(){
 
 // ── AI HELPER ──
 // opts: {system: persona/system prompt, temperature: 0–1 por tarefa (baixa=precisão, alta=criatividade)}
+// Resolve qual IA de texto usar (aba "IA de texto"). provider força groq/openai (legado).
+function _txtAITarget(provider='auto'){
+  const pv=provider!=='auto'?provider:(cfg.txtProvider||'groq');
+  if(pv==='custom'&&cfg.txtBaseUrl)
+    return {url:cfg.txtBaseUrl.replace(/\/+$/,'')+'/chat/completions',key:cfg.txtKey||'ollama',model:cfg.txtModel||'llama3.2',name:cfg.txtBaseUrl.includes('localhost')||cfg.txtBaseUrl.includes('127.0.0.1')?'IA local':'API custom'};
+  if(pv==='openai'&&cfg.apiKey)
+    return {url:'https://api.openai.com/v1/chat/completions',key:cfg.apiKey,model:cfg.txtModelOpenai||'gpt-4o-mini',name:'OpenAI'};
+  if(cfg.apiKeyGroq)
+    return {url:'https://api.groq.com/openai/v1/chat/completions',key:cfg.apiKeyGroq,model:cfg.txtModelGroq||'llama-3.3-70b-versatile',name:'Groq'};
+  if(cfg.apiKey)
+    return {url:'https://api.openai.com/v1/chat/completions',key:cfg.apiKey,model:cfg.txtModelOpenai||'gpt-4o-mini',name:'OpenAI'};
+  return null;
+}
+// Há alguma IA de texto utilizável? (usado nos guards no lugar de cfg.apiKey||cfg.apiKeyGroq)
+function aiKey(){const tgt=_txtAITarget();return tgt?tgt.key:''}
 async function callAI(prompt,key,provider='auto',maxTokens=800,opts={}){
-  const useGroq=provider==='groq'||(provider==='auto'&&!cfg.apiKey&&cfg.apiKeyGroq);
+  const tgt=_txtAITarget(provider);
+  if(!tgt)throw new Error(t('🔑 Configure uma chave de IA!'));
   const messages=[];
   if(opts.system)messages.push({role:'system',content:opts.system});
   messages.push({role:'user',content:prompt});
   const temperature=opts.temperature??0.6;
-  if(useGroq){
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',headers:{'Authorization':'Bearer '+cfg.apiKeyGroq,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature,messages})
-    });
-    if(!res.ok)throw new Error('Groq: '+res.status);
-    const d=await res.json();return d.choices[0].message.content.trim();
-  }else{
-    const res=await fetch('https://api.openai.com/v1/chat/completions',{
-      method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'gpt-4o-mini',max_tokens:maxTokens,temperature,messages})
-    });
-    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'OpenAI: '+res.status)}
-    const d=await res.json();return d.choices[0].message.content.trim();
+  const res=await fetch(tgt.url,{
+    method:'POST',headers:{'Authorization':'Bearer '+tgt.key,'Content-Type':'application/json'},
+    body:JSON.stringify({model:tgt.model,max_tokens:maxTokens,temperature,messages})
+  }).catch(()=>{throw new Error(tgt.name+': '+t('sem resposta — a API está no ar?'))});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||tgt.name+': '+res.status)}
+  const d=await res.json();return d.choices[0].message.content.trim();
+}
+// ── Abas do modal + IA de texto ──
+function cfgTab(name){
+  ['Trans','Text','Diar','Geral'].forEach(n=>{
+    document.getElementById('cfgPane'+n).style.display=n===name?'block':'none';
+    document.getElementById('cfgTabBtn'+n).classList.toggle('on',n===name);
+  });
+}
+function setTxtProvider(p,save=true){
+  cfg.txtProvider=p;
+  document.getElementById('txtaiTogGroq').className='api-tog-btn'+(p==='groq'?' on':'');
+  document.getElementById('txtaiTogOpenai').className='api-tog-btn'+(p==='openai'?' on':'');
+  document.getElementById('txtaiTogCustom').className='api-tog-btn'+(p==='custom'?' on':'');
+  document.getElementById('txtaiGroqPanel').style.display=p==='groq'?'block':'none';
+  document.getElementById('txtaiOpenaiPanel').style.display=p==='openai'?'block':'none';
+  document.getElementById('txtaiCustomPanel').style.display=p==='custom'?'block':'none';
+  if(save)localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+  updateLocal100Badge();
+}
+async function testTxtAI(){
+  const out=document.getElementById('txtaiTestResult');
+  // salva os campos atuais antes de testar (sem fechar o modal)
+  saveCfg(false);
+  out.style.color='var(--text3)';out.textContent=t('testando…');
+  try{
+    const r=await callAI('Responda apenas: ok','', 'auto',10,{temperature:0});
+    const tgt=_txtAITarget();
+    out.style.color='var(--accent)';out.textContent='✅ '+(tgt?tgt.name+' · '+tgt.model:'')+' — '+t('conectado!');
+  }catch(e){
+    out.style.color='var(--danger)';out.textContent='❌ '+e.message;
   }
+}
+function updateLocal100Badge(){
+  const b=document.getElementById('local100Badge');if(!b)return;
+  const txtLocal=cfg.txtProvider==='custom'&&/localhost|127\.0\.0\.1/.test(cfg.txtBaseUrl||'');
+  b.classList.toggle('on',cfg.provider==='local'&&txtLocal);
 }
 
 // ── CONFIG ──
@@ -2289,6 +2417,12 @@ function loadCfg(){
   document.getElementById('langSel').value=cfg.lang||'';
   document.getElementById('diarEnabled').checked=cfg.diarEnabled||false;
   document.getElementById('aiRenameProvider').value=cfg.aiRenameProvider||'openai';
+  document.getElementById('txtModelGroq').value=cfg.txtModelGroq||'llama-3.3-70b-versatile';
+  document.getElementById('txtModelOpenai').value=cfg.txtModelOpenai||'gpt-4o-mini';
+  document.getElementById('txtBaseUrl').value=cfg.txtBaseUrl||'';
+  document.getElementById('txtModel').value=cfg.txtModel||'';
+  document.getElementById('txtKey').value=cfg.txtKey||'';
+  setTxtProvider(cfg.txtProvider||'groq',false);
   setProvider(cfg.provider||'whisper',false);
   setDiarProvider(cfg.diarProvider||'assemblyai',false);
   _syncFolderFmtBtns();
@@ -2309,7 +2443,7 @@ function setProvider(p,save=true){
   document.getElementById('btnCfg').className='gbtn '+(p==='grok'?'on-grok':p==='groqwhisper'?'on-groq':'on-accent');
   document.getElementById('brandIcon').textContent=p==='grok'?'🟠':p==='groqwhisper'?'🟢':p==='local'?'🖥️':'🎙️';
   if(p==='local'){updateLocalPanel();setTimeout(()=>checkAndStartServer(closeModal),300)}
-  _updateKeyRowFocus(p);
+  _updateKeyRowFocus(p);updateLocal100Badge();
   if(save)saveCfg(false);
 }
 function _updateKeyRowFocus(p){
@@ -2428,8 +2562,13 @@ function saveCfg(close=true){
   cfg.diarEnabled=document.getElementById('diarEnabled').checked;
   cfg.aiRenameProvider=document.getElementById('aiRenameProvider').value;
   cfg.localBatPath=document.getElementById('localBatPathInput').value.trim();
+  cfg.txtModelGroq=document.getElementById('txtModelGroq').value;
+  cfg.txtModelOpenai=document.getElementById('txtModelOpenai').value;
+  cfg.txtBaseUrl=document.getElementById('txtBaseUrl').value.trim();
+  cfg.txtModel=document.getElementById('txtModel').value.trim();
+  cfg.txtKey=document.getElementById('txtKey').value.trim();
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
-  updateDiarStatus();
+  updateDiarStatus();updateLocal100Badge();
   if(close){closeModal();toast(t('✅ Configurações salvas'))}
 }
 
@@ -2711,7 +2850,7 @@ async function suggestTags(id){
   try{
     const existing=getAllUsedTags();
     const prompt=`Analise o texto abaixo e sugira de 5 a 8 tags (até 3 palavras cada, em português, minúsculas, sem o símbolo #) que classifiquem bem este conteúdo. Priorize: nomes próprios, temas centrais, conceitos específicos.${existing.length?` Reutilize quando fizer sentido: ${existing.join(', ')}.`:''} Responda APENAS com as tags separadas por vírgula, nada mais.\n\nTexto:\n${text.slice(0,6000)}`;
-    const provider=cfg.apiKeyGroq?'groq':'auto';
+    const provider='auto';
     const res=await callAI(prompt,key,provider);
     const tags=res.split(/[,\n]/).map(t=>t.trim().replace(/^#/,'').replace(/[.;]+$/,'').toLowerCase()).filter(t=>t&&t.length>=2&&t.length<=40).slice(0,8);
     renderTagSuggestions(id,tags);
@@ -2759,7 +2898,7 @@ async function openExtractPanel(id){
   panel.innerHTML=`<div class="ext-panel-head">${t('⚙ analisando texto…')}</div>`;
   try{
     const prompt=`Analise o texto abaixo e extraia todos os termos que podem ser tags úteis de classificação. Para cada termo, indique a categoria: NOME (nomes próprios, empresas, produtos), TEMA (substantivos e sintagmas nominais), ACAO (ações nominalizadas como gravação, transcrição), SIGLA (acrônimos). Responda APENAS com uma lista, um termo por linha, no formato exato: CATEGORIA:termo. Use português, minúsculas para os termos, sem # nem pontuação.\n\nTexto:\n${text.slice(0,8000)}`;
-    const provider=cfg.apiKeyGroq?'groq':'auto';
+    const provider='auto';
     const res=await callAI(prompt,key,provider);
     const items=[];const seen=new Set();
     res.split(/\n/).forEach(l=>{
@@ -2922,7 +3061,7 @@ async function stopVoiceTag(id){
       if(!transcript){if(panel){panel.classList.remove('on');panel.innerHTML='';}return;}
       const key=cfg.apiKeyGroq||cfg.apiKey;
       const prompt=`O usuário falou o seguinte para descrever as tags que quer adicionar a uma nota. Extraia as tags mencionadas ou implícitas. Retorne APENAS as tags separadas por vírgula, em minúsculas, sem # nem pontuação extra. Máximo 10 tags.\n\nFala: "${transcript}"`;
-      const provider=cfg.apiKeyGroq?'groq':'auto';
+      const provider='auto';
       const res=await callAI(prompt,key,provider);
       const tags=res.split(/[,\n]/).map(t=>t.trim().replace(/^#/,'').replace(/[.;]+$/,'').toLowerCase()).filter(t=>t&&t.length>=2&&t.length<=40).slice(0,10);
       _vtRenderResult(id,tags,transcript);
@@ -3606,7 +3745,7 @@ async function aiSummarizeCard(id){
   const card=document.getElementById(id);if(!card)return;
   const text=card.querySelector('textarea')?.value||'';
   const mode=card.dataset.mode||'livre';
-  const key=cfg.apiKey||cfg.apiKeyGroq;
+  const key=aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
   toast(t('✨ Gerando resumo…'));
   try{
@@ -3623,7 +3762,7 @@ async function polishCard(id){
   const card=document.getElementById(id);if(!card)return;
   const ta=card.querySelector('textarea');if(!ta||!ta.value.trim())return;
   const mode=card.dataset.mode||'livre';
-  const key=cfg.apiKey||cfg.apiKeyGroq;
+  const key=aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
   const presets={
     consulta:`Corrija erros de transcrição, melhore a clareza do texto clínico e formate adequadamente para prontuário, mantendo todas as informações. ${_promptLang()}`,
@@ -3942,7 +4081,7 @@ async function runRecipe(id,steps,name){
   const card=document.getElementById(id);if(!card)return;
   let text=(card.querySelector('textarea')?.value||'').trim();
   if(!text){toast(t('ℹ️ Card vazio — nada para transformar'),true);return}
-  const key=cfg.apiKey||cfg.apiKeyGroq;
+  const key=aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
   const p=document.getElementById('lens-'+id);if(p){p.classList.remove('on');p.innerHTML=''}
   try{
@@ -4094,7 +4233,7 @@ async function runLens(id,lensKey,focus=''){
   const card=document.getElementById(id);if(!card)return;
   const text=(card.querySelector('textarea')?.value||'').trim();
   if(!text){toast(t('ℹ️ Card vazio — nada para transformar'),true);return}
-  const key=cfg.apiKey||cfg.apiKeyGroq;
+  const key=aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
   const L=LENSES[lensKey];if(!L)return;
   const p=document.getElementById('lens-'+id);if(p){p.classList.remove('on');p.innerHTML=''}
@@ -4274,7 +4413,7 @@ async function copyCardObsidian(id){
   const card=document.getElementById(id);if(!card)return;
   const text=(card.querySelector('textarea')?.value||'').trim();
   if(!text){toast(t('ℹ️ Card vazio'),true);return}
-  const key=cfg.apiKey||cfg.apiKeyGroq;
+  const key=aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
   const panel=document.getElementById('exp-menu-'+id);
   if(panel){panel.classList.add('on');panel.innerHTML=`<div class="lens-hd">${t('🔮 Relatório para o Obsidian')}</div><div class="obs-wait"><span class="obs-spin"></span>${t('A IA está formatando o texto…')}</div>`}
@@ -4441,7 +4580,7 @@ function advTouchEnd(e){
 async function advRunLens(id,key){
   const panel=document.getElementById('adv-'+id);if(!panel)return;
   const L=LENSES[key];if(!L)return;
-  const key2=cfg.apiKey||cfg.apiKeyGroq;
+  const key2=aiKey();
   if(!key2){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
   const original=panel.dataset.original||'';if(!original.trim())return;
   toast('✨ '+L.label+'…');
@@ -4457,7 +4596,7 @@ async function advRunCustom(id){
   const input=document.getElementById('adv-prompt-'+id);
   const instr=(input?.value||'').trim();
   if(!instr){toast(t('ℹ️ Digite uma instrução'),true);return}
-  const key2=cfg.apiKey||cfg.apiKeyGroq;
+  const key2=aiKey();
   if(!key2){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
   const original=panel.dataset.original||'';if(!original.trim())return;
   toast(t('✨ Aplicando instrução…'));
