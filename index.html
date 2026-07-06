@@ -1374,7 +1374,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.06.2';
+const VOX_VERSION='2026.07.06.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 let currentLang=localStorage.getItem('vox_lang')||'pt';
 function t(s){
@@ -1453,6 +1453,9 @@ let MR=null,chunks=[],recStart=null,recTimer=null;
 let analyser=null,dataArr=null,animId=null,audioCtx=null,streamSrc=null;
 let isRec=false,isProc=false,curStream=null,micStream=null,dispStream=null,mixCtx=null;
 let activeTA=null,activeTACard=null;
+// Alvo travado de "gravar aqui": sobrevive ao foco saindo do textarea (botão Parar
+// tira o foco) mesmo com a transcrição assíncrona demorando bem mais que isso.
+let recTargetTA=null,recTargetCard=null;
 let stagedFile=null,searchActive=false;
 const blobReg=new Map();
 let colorIdx=0;
@@ -3328,7 +3331,7 @@ async function startRec(targetCardId=null){
   if(isRec||isProc||stagedFile)return;
   if(targetCardId){
     const el=document.getElementById(targetCardId);
-    if(el){const ta=el.querySelector('textarea');activeTA=ta;activeTACard=targetCardId;ta.focus();ta.selectionStart=ta.selectionEnd=ta.value.length;el.querySelector('.rec-here')?.classList.add('recording-this')}
+    if(el){const ta=el.querySelector('textarea');activeTA=ta;activeTACard=targetCardId;recTargetTA=ta;recTargetCard=targetCardId;ta.focus();ta.selectionStart=ta.selectionEnd=ta.value.length;el.querySelector('.rec-here')?.classList.add('recording-this')}
   }
   try{
     const stream=await getCaptureStream();curStream=stream;
@@ -3347,6 +3350,7 @@ async function startRec(targetCardId=null){
   }catch(err){
     stopCapture();
     document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
+    recTargetTA=null;recTargetCard=null;
     const src=cfg.audioSource||'mic';
     toast(t(src==='mic'?'❌ Microfone não disponível.':'❌ Captura de áudio cancelada ou não permitida.'),true);
   }
@@ -3435,7 +3439,7 @@ function cancelRec(){
   try{MR.stop()}catch(e){}stopCapture();clearInterval(recTimer);stopVU();chunks=[];
   if(segCard!==null){const c=document.getElementById(segCard);if(c)c.remove();segCard=null;saveHistory()}
   document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
-  resetUI();activeTA=null;activeTACard=null;toast(t('🚫 Gravação cancelada.'));
+  resetUI();activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;toast(t('🚫 Gravação cancelada.'));
 }
 function resetUI(){
   isRec=false;MR=null;curStream=null;chunks=[];recStart=null;
@@ -3496,13 +3500,18 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
     const cpm=cfg.provider==='grok'?COST_G:cfg.provider==='groqwhisper'?COST_GQ:COST_W;
     const cost=Math.max(1,Math.ceil(actualSec/60))*cpm;
     document.getElementById(pid)?.remove();
-    if(activeTA&&document.contains(activeTA)){
-      const s=activeTA.selectionStart,en=activeTA.selectionEnd,cur=activeTA.value;
+    // "Gravar aqui" trava o alvo no início da gravação (recTargetTA) — usa ele de
+    // preferência, pois activeTA já foi zerado pelo blur ao clicar em Parar (a
+    // transcrição async demora bem mais que o timeout de 200ms do focusout).
+    const insertTA=(fromRec&&recTargetTA&&document.contains(recTargetTA))?recTargetTA:((activeTA&&document.contains(activeTA))?activeTA:null);
+    if(insertTA){
+      const s=insertTA.selectionStart,en=insertTA.selectionEnd,cur=insertTA.value;
       const sep=cur.length>0&&cur[cur.length-1]!=='\n'?'\n':'';
-      if(activeTACard)pushCardHistory(activeTACard);
-      activeTA.value=cur.slice(0,s)+sep+text+cur.slice(en);
-      autoR(activeTA);navigator.clipboard.writeText(text).then(()=>toast(t('✅ Inserido + copiado!')));
-      updateFooter(activeTA.closest('.card')?.id);saveHistory();activeTA=null;activeTACard=null;
+      const insertCard=insertTA.closest('.card')?.id;
+      if(insertCard)pushCardHistory(insertCard);
+      insertTA.value=cur.slice(0,s)+sep+text+cur.slice(en);
+      autoR(insertTA);navigator.clipboard.writeText(text).then(()=>toast(t('✅ Inserido + copiado!')));
+      updateFooter(insertCard);saveHistory();activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;
     }else{
       const cid=addCard(text,fromRec?file:file,cost,fromRec?'gravacao':'arquivo',cfg.provider,true,null,null,[],sn,mode,false);
       navigator.clipboard.writeText(text).catch(()=>{});
