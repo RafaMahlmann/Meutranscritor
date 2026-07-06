@@ -776,6 +776,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   <div class="stat">⏱️ <strong id="stime">0 min</strong></div>
   <div class="stat" id="statSaved" style="display:none">⚡ <strong id="sSaved">0 min</strong> <span data-i18n>economizados</span></div>
   <div class="stats-ctrls">
+    <button class="stat-folders-btn" id="btnNewCard" onclick="newEmptyCard()" title="Criar card novo em branco" data-i18n-title>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span data-i18n>Novo card</span>
+    </button>
     <div class="font-sz-wrap" title="Tamanho do texto" data-i18n-title>
       <button class="font-sz-btn" id="fzS" onclick="setFontSize('s')" style="font-size:11px">A</button>
       <button class="font-sz-btn" id="fzM" onclick="setFontSize('m')" style="font-size:14px">A</button>
@@ -946,6 +950,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <textarea id="itxt" class="itxt" rows="1" placeholder="Digite ou 📎 anexe um áudio…" data-i18n-placeholder oninput="autoR(this);checkSend()"></textarea>
       <div class="ibtns">
         <input type="file" id="fInput" accept="audio/*,video/*" style="display:none" onchange="handleFile(event)">
+        <input type="file" id="fInputCard" accept="audio/*,video/*,.txt,.md,text/plain,text/markdown" style="display:none" onchange="handleCardFile(event)">
         <input type="file" id="projInput" accept=".json,.txt,.md,application/json,text/plain" style="display:none" onchange="importProjectFile(event)">
         <button class="circle c-attach" id="btnAttach" onclick="document.getElementById('fInput').click()" title="Anexar áudio" data-i18n-title>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -1374,7 +1379,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.06.3';
+const VOX_VERSION='2026.07.06.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 let currentLang=localStorage.getItem('vox_lang')||'pt';
 function t(s){
@@ -1446,7 +1451,11 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "⚡ Testar conexão":"⚡ Test connection","testando…":"testing…","conectado!":"connected!","sem resposta — a API está no ar?":"no response — is the API up?",
 "Ocultar senha":"Hide password","Mostrar senha":"Show password",
 "↩ Desfazer / Refazer":"↩ Undo / Redo","Desfazer":"Undo","Refazer":"Redo",
-"ℹ️ Nada para desfazer":"ℹ️ Nothing to undo","ℹ️ Nada para refazer":"ℹ️ Nothing to redo"};
+"ℹ️ Nada para desfazer":"ℹ️ Nothing to undo","ℹ️ Nada para refazer":"ℹ️ Nothing to redo",
+"Novo card":"New card","Criar card novo em branco":"Create a new blank card",
+"✏️ Card novo criado — escreva, grave ou anexe!":"✏️ New card created — write, record or attach!",
+"Anexar áudio ou texto aqui":"Attach audio or text here","vai entrar no card escolhido":"will go into the chosen card",
+"📄 Texto inserido no card!":"📄 Text inserted into the card!"};
 
 // ── STATE ──
 let MR=null,chunks=[],recStart=null,recTimer=null;
@@ -3182,6 +3191,10 @@ function togglePin(id){
 function handleFile(e){
   if(!e.target.files.length)return;
   const f=e.target.files[0];e.target.value='';
+  recTargetTA=null;recTargetCard=null; // anexo global: nunca mira card existente
+  stageFile(f);
+}
+function stageFile(f){
   stagedFile=f;
   const mb=(f.size/(1024*1024)).toFixed(1);
   const large=f.size>24*1024*1024;
@@ -3189,15 +3202,17 @@ function handleFile(e){
   document.getElementById('fsIco').textContent=f.type.startsWith('video/')?'🎬':'🎵';
   document.getElementById('fsName').textContent=f.name;
   document.getElementById('fsMeta').textContent=`${mb} MB · ~${estMin} min${large?' · '+t('divisão automática'):''}`;
-  document.getElementById('fsHint').innerHTML=large?t('⚡ Será dividido em partes de ~10 min.'):t('Clique em <strong>Transcrever</strong> para enviar à API.');
+  const destino=recTargetCard?` <strong>→ ${t('vai entrar no card escolhido')}</strong>`:'';
+  document.getElementById('fsHint').innerHTML=(large?t('⚡ Será dividido em partes de ~10 min.'):t('Clique em <strong>Transcrever</strong> para enviar à API.'))+destino;
   document.getElementById('btnGo').disabled=false;
   document.getElementById('fstage').classList.add('on');
   document.getElementById('ibox').classList.add('frozen');
   document.getElementById('itxt').disabled=true;document.getElementById('itxt').placeholder=t('📎 Arquivo pronto');
   document.getElementById('btnRec').disabled=true;document.getElementById('btnAttach').disabled=true;
 }
-function cancelFile(){
+function cancelFile(clearTarget=true){
   stagedFile=null;
+  if(clearTarget){recTargetTA=null;recTargetCard=null}
   document.getElementById('fstage').classList.remove('on');
   document.getElementById('ibox').classList.remove('frozen');
   document.getElementById('itxt').disabled=false;document.getElementById('itxt').placeholder=t('Digite ou 📎 anexe um áudio…');
@@ -3206,8 +3221,47 @@ function cancelFile(){
 function confirmTranscribe(){
   if(!stagedFile)return;
   const f=stagedFile;
-  document.getElementById('fstage').classList.remove('on');cancelFile();
+  document.getElementById('fstage').classList.remove('on');cancelFile(false);
   processAudio(f,Math.round(f.size/(1024*1024)*30),false);
+}
+// ── Card novo em branco (botão + da barra de status) ──
+function newEmptyCard(){
+  const cid=addCard('',null,0,'texto',cfg.provider,true,null,null,[],document.getElementById('snameInput').value.trim(),sessionMode,false);
+  stats.count++;updateStats();
+  const el=document.getElementById(cid);
+  if(el){el.scrollIntoView({behavior:'smooth',block:'center'});const ta=el.querySelector('textarea');if(ta)setTimeout(()=>ta.focus(),300)}
+  toast(t('✏️ Card novo criado — escreva, grave ou anexe!'));
+}
+// ── Anexar aqui: arquivo externo (áudio→transcreve, texto→insere) NO card ──
+function attachHere(cid){
+  if(isRec||isProc||stagedFile)return;
+  const el=document.getElementById(cid);if(!el)return;
+  const ta=el.querySelector('textarea');if(!ta)return;
+  recTargetTA=ta;recTargetCard=cid;
+  document.getElementById('fInputCard').click();
+}
+function handleCardFile(e){
+  if(!e.target.files.length){recTargetTA=null;recTargetCard=null;return}
+  const f=e.target.files[0];e.target.value='';
+  const isText=/\.(txt|md)$/i.test(f.name)||f.type.startsWith('text/');
+  if(isText){
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const text=String(reader.result||'').trim();
+      const ta=recTargetTA,cid=recTargetCard;
+      recTargetTA=null;recTargetCard=null;
+      if(!text){toast(t('ℹ️ Arquivo vazio'),true);return}
+      if(!ta||!document.contains(ta))return;
+      pushCardHistory(cid);
+      const cur=ta.value;const sep=cur.length>0&&cur[cur.length-1]!=='\n'?'\n':'';
+      ta.value=cur+sep+text;
+      autoR(ta);updateFooter(cid);saveHistory();
+      toast(t('📄 Texto inserido no card!'));
+    };
+    reader.readAsText(f);
+    return;
+  }
+  stageFile(f); // áudio/vídeo: barrinha normal; destino já travado em recTarget
 }
 
 // ── VU METER ──
@@ -3329,6 +3383,7 @@ function makeRecorder(stream){
 }
 async function startRec(targetCardId=null){
   if(isRec||isProc||stagedFile)return;
+  if(!targetCardId){recTargetTA=null;recTargetCard=null} // gravação global: limpa alvo antigo
   if(targetCardId){
     const el=document.getElementById(targetCardId);
     if(el){const ta=el.querySelector('textarea');activeTA=ta;activeTACard=targetCardId;recTargetTA=ta;recTargetCard=targetCardId;ta.focus();ta.selectionStart=ta.selectionEnd=ta.value.length;el.querySelector('.rec-here')?.classList.add('recording-this')}
@@ -3470,8 +3525,10 @@ async function processAudio(file,durSec,fromRec){
   const sn=document.getElementById('snameInput').value.trim();
   const mode=sessionMode;
   if(cfg.diarEnabled&&cfg.diarProvider==='assemblyai'&&cfg.apiKeyAssembly){
+    recTargetTA=null;recTargetCard=null; // diarização sempre cria card próprio
     await doDiarizeAssembly(file,durSec,fromRec,sn,mode);
   }else if(cfg.diarEnabled&&cfg.diarProvider==='openai'&&cfg.apiKey){
+    recTargetTA=null;recTargetCard=null;
     await doDiarizeOpenAI(file,durSec,fromRec,sn,mode);
   }else{
     await doTranscribe(file,durSec,fromRec,sn,mode);
@@ -3481,7 +3538,7 @@ async function processAudio(file,durSec,fromRec){
 // ── SIMPLE TRANSCRIPTION ──
 async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
   const key=cfg.provider==='grok'?cfg.apiKeyGrok:cfg.provider==='groqwhisper'?cfg.apiKeyGroq:cfg.provider==='local'?'local':cfg.apiKey;
-  if(!key&&cfg.provider!=='local'){toast(t('🔑 Configure a chave API!'),true);openModal();return}
+  if(!key&&cfg.provider!=='local'){recTargetTA=null;recTargetCard=null;toast(t('🔑 Configure a chave API!'),true);openModal();return}
   isProc=true;setStatus('Transcrevendo…','proc');lockUI(true);
   const pid='proc_'+Date.now();addProcCard(pid,file.name,durSec,fromRec?'gravacao':'arquivo');
   const _t0=Date.now();
@@ -3500,10 +3557,10 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
     const cpm=cfg.provider==='grok'?COST_G:cfg.provider==='groqwhisper'?COST_GQ:COST_W;
     const cost=Math.max(1,Math.ceil(actualSec/60))*cpm;
     document.getElementById(pid)?.remove();
-    // "Gravar aqui" trava o alvo no início da gravação (recTargetTA) — usa ele de
-    // preferência, pois activeTA já foi zerado pelo blur ao clicar em Parar (a
-    // transcrição async demora bem mais que o timeout de 200ms do focusout).
-    const insertTA=(fromRec&&recTargetTA&&document.contains(recTargetTA))?recTargetTA:((activeTA&&document.contains(activeTA))?activeTA:null);
+    // "Gravar aqui"/"Anexar aqui" travam o alvo (recTargetTA) — usa ele de
+    // preferência, pois activeTA já foi zerado pelo blur ao clicar em Parar/
+    // Transcrever (a transcrição async demora bem mais que os 200ms do focusout).
+    const insertTA=(recTargetTA&&document.contains(recTargetTA))?recTargetTA:((activeTA&&document.contains(activeTA))?activeTA:null);
     if(insertTA){
       const s=insertTA.selectionStart,en=insertTA.selectionEnd,cur=insertTA.value;
       const sep=cur.length>0&&cur[cur.length-1]!=='\n'?'\n':'';
@@ -3523,7 +3580,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
     recordTiming(Date.now()-_t0, actualSec);
     updateStats();saveHistory();setStatus('Pronto','ready');
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
-  finally{isProc=false;lockUI(false)}
+  finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null}
 }
 
 // ── ASSEMBLYAI DIARIZATION ──
@@ -3570,7 +3627,7 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
     if(didA)showLensChips(didA);
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Diarização concluída!'));
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
-  finally{isProc=false;lockUI(false)}
+  finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null}
 }
 
 // ── OPENAI DIARIZATION ──
@@ -3611,7 +3668,7 @@ async function doDiarizeOpenAI(file,durSec,fromRec,sn,mode){
     stats.count++;stats.sec+=durSec;
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Diarização concluída!'));
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
-  finally{isProc=false;lockUI(false)}
+  finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null}
 }
 
 // ── SPEAKER HELPERS ──
@@ -3705,6 +3762,9 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         </button>
         <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg>
+        </button>
+        <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </button>
         <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -4364,6 +4424,9 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         </button>
         <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg>
+        </button>
+        <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </button>
         <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
