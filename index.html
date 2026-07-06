@@ -1374,7 +1374,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.06.1';
+const VOX_VERSION='2026.07.06.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 let currentLang=localStorage.getItem('vox_lang')||'pt';
 function t(s){
@@ -3042,6 +3042,22 @@ function updateCardUndoBtns(id){
   if(u)u.disabled=!(_ch[id]?.u?.length);
   if(r)r.disabled=!(_ch[id]?.r?.length);
 }
+// Digitação manual: agrupa edições próximas no tempo num único passo de desfazer
+// (mesma técnica do CodeMirror/ProseMirror — newGroupDelay de 500ms), na MESMA
+// pilha _ch usada pelas lentes de IA. beforeinput ainda vê o valor antigo, então
+// aqui não há resync de baseline: cada nova rajada lê o valor "atual" sozinha.
+const _typeTimers={};
+function cardTypeBeforeInput(id,ta){
+  if(_typeTimers[id])return; // rajada já aberta — nada a fazer ainda
+  if(!_ch[id])_ch[id]={u:[],r:[]};
+  _ch[id].u.push(ta.value);if(_ch[id].u.length>30)_ch[id].u.shift();
+  _ch[id].r=[];
+  updateCardUndoBtns(id);
+}
+function cardTypeInput(id){
+  clearTimeout(_typeTimers[id]);
+  _typeTimers[id]=setTimeout(()=>{delete _typeTimers[id]},500);
+}
 
 // ── VOICE TAG ──
 const _vt={};
@@ -3701,7 +3717,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
     <div class="spk-stats">${statsHtml}</div>
     <div class="spk-rename-row">${renameHtml}${speakerKeys.map(s=>`<button class="spk-rename-btn" onclick="copySpeaker('${id}','${escJs(s)}')" style="border-style:solid">📋 ${escHtml(speakers[s])}</button>`).join('')}</div>
     <div class="cb roteiro-view" id="roteiro-${id}" style="${view==='bolhas'?'display:none':''}">
-      <textarea oninput="autoR(this);updateFooter('${id}')" onfocus="trackFocus(this)">${escHtml(roteiroText)}</textarea>
+      <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)">${escHtml(roteiroText)}</textarea>
     </div>
     <div class="bbl-wrap" id="bbl-${id}" style="${view!=='bolhas'?'display:none':''}">
       ${renderBubbles(utterances,speakers)}
@@ -4360,7 +4376,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
     <div class="adv-panel" id="adv-${id}"></div>
     ${audioHtml}
     <div class="cb">
-      <textarea oninput="autoR(this);updateFooter('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
+      <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
     </div>
     ${tagsHtml}
     <div class="cf">
