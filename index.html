@@ -61,6 +61,8 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .brand-text{line-height:1.2}
 .brand-name{font-size:15px;font-weight:700;letter-spacing:-0.3px}
 .brand-sub{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:0.3px;text-transform:uppercase}
+.brand-sub-row{display:flex;align-items:center;gap:6px}
+.ver-badge{font-size:9px;color:var(--text4);font-weight:600;letter-spacing:0.2px;cursor:default}
 .hd-actions{display:flex;align-items:center;gap:7px}
 .search-wrap{padding:16px 0 0;display:none}
 .search-wrap.visible{display:block}
@@ -660,7 +662,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <div class="brand-icon" id="brandIcon">🎙️</div>
       <div class="brand-text">
         <div class="brand-name" id="appTitle">Vox · My Transcriber</div>
-        <div class="brand-sub" id="brandSub" data-i18n>Transcription</div>
+        <div class="brand-sub-row"><div class="brand-sub" id="brandSub" data-i18n>Transcription</div><span class="ver-badge" id="verBadge"></span></div>
       </div>
     </div>
     <div class="hd-actions">
@@ -1221,6 +1223,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <button class="maint-btn" onclick="bulkDelete('all')" data-i18n>Apagar tudo</button>
         </div>
       </div>
+      <p style="font-size:11px;color:var(--text4);text-align:center;margin-top:18px">Vox · My Transcriber <span id="verSettings"></span></p>
       </div><!-- /cfgPaneGeral -->
     </div>
     <div class="mf"><button class="btn-save" onclick="saveCfg()" data-i18n>Salvar</button></div>
@@ -1370,6 +1373,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 </script>
 
 <script>
+// ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
+const VOX_VERSION='2026.07.06.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 let currentLang=localStorage.getItem('vox_lang')||'pt';
 function t(s){
@@ -1852,6 +1857,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   const saved=localStorage.getItem('vox_theme');
   if(saved)setTheme(saved,false);
   _updateThemeColor();_syncSkinUI();
+  document.getElementById('verBadge').textContent='v'+VOX_VERSION;
+  const vs=document.getElementById('verSettings');if(vs)vs.textContent='v'+VOX_VERSION;
   // Vox Transfer: recebe #vox= na abertura e também com o app já aberto
   handleTransferHash();
   window.addEventListener('hashchange',handleTransferHash);
