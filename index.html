@@ -178,6 +178,8 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .ca-wrap{display:flex;gap:2px;flex-wrap:wrap}
 .icon-btn{width:30px;height:30px;border:none;background:none;color:var(--text4);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
 .icon-btn:hover{background:var(--bg-input);color:var(--text2)}
+.icon-btn:disabled{opacity:0.28;cursor:default;pointer-events:none}
+.icon-btn svg{width:13px;height:13px}
 .icon-btn.rec-here{color:var(--ca,var(--accent));background:var(--cag,var(--accent-glow))}
 .icon-btn.pinned{color:#f59e0b}
 .icon-btn.recording-this{background:var(--danger);color:white;animation:pulse-red 1.5s infinite}
@@ -3012,20 +3014,26 @@ function pushCardHistory(id){
   if(!_ch[id])_ch[id]={u:[],r:[]};
   _ch[id].u.push(ta.value);if(_ch[id].u.length>30)_ch[id].u.shift();
   _ch[id].r=[];
+  updateCardUndoBtns(id);
 }
 function cardUndo(id){
   const ta=document.getElementById(id)?.querySelector('textarea');if(!ta)return false;
   if(!_ch[id]?.u?.length)return false;
   _ch[id].r.push(ta.value);
   ta.value=_ch[id].u.pop();
-  autoR(ta);updateFooter(id);saveHistory();toast(t('↩ Desfeito'));return true;
+  autoR(ta);updateFooter(id);saveHistory();updateCardUndoBtns(id);toast(t('↩ Desfeito'));return true;
 }
 function cardRedo(id){
   const ta=document.getElementById(id)?.querySelector('textarea');if(!ta)return false;
   if(!_ch[id]?.r?.length)return false;
   _ch[id].u.push(ta.value);
   ta.value=_ch[id].r.pop();
-  autoR(ta);updateFooter(id);saveHistory();toast(t('↪ Refeito'));return true;
+  autoR(ta);updateFooter(id);saveHistory();updateCardUndoBtns(id);toast(t('↪ Refeito'));return true;
+}
+function updateCardUndoBtns(id){
+  const u=document.getElementById('cu-'+id),r=document.getElementById('cr-'+id);
+  if(u)u.disabled=!(_ch[id]?.u?.length);
+  if(r)r.disabled=!(_ch[id]?.r?.length);
 }
 
 // ── VOICE TAG ──
@@ -3655,6 +3663,8 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar no topo')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="${pinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4v2h10v-2l-2 -4v-6"/><path d="M12 16v5"/><path d="M8 4h8"/></svg>
         </button>
+        <button class="icon-btn" id="cu-${id}" onclick="cardUndo('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
+        <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
         <button class="icon-btn" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
@@ -4223,13 +4233,7 @@ function toggleExportMenu(id){
   const p=document.getElementById('exp-menu-'+id);if(!p)return;
   if(p.classList.contains('on')){p.classList.remove('on');p.innerHTML='';return}
   document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
-  const canU=!!_ch[id]?.u?.length,canR=!!_ch[id]?.r?.length;
-  p.innerHTML=`<div class="lens-hd">${t('↩ Desfazer / Refazer')}</div>`+
-    `<div style="display:flex;gap:8px;padding:2px 2px 10px">`+
-      `<button class="tx-btn ghost" style="display:flex;align-items:center;justify-content:center;gap:7px" ${canU?'':'disabled'} onclick="cardUndo('${id}');toggleExportMenu('${id}');toggleExportMenu('${id}')"><span class="lens-ico" style="width:auto">${ICO.undo}</span>${t('Desfazer')}</button>`+
-      `<button class="tx-btn ghost" style="display:flex;align-items:center;justify-content:center;gap:7px" ${canR?'':'disabled'} onclick="cardRedo('${id}');toggleExportMenu('${id}');toggleExportMenu('${id}')"><span class="lens-ico" style="width:auto">${ICO.redo}</span>${t('Refazer')}</button>`+
-    `</div>`+
-    `<div class="lens-hd" style="border-top:1px solid var(--border);padding-top:9px">${t('⤴ Exportar este card')}</div>`+
+  p.innerHTML=`<div class="lens-hd">${t('⤴ Exportar este card')}</div>`+
     `<button class="lens-opt" onclick="copyCard('${id}');closeExportMenu('${id}')"><span class="lens-ico">${ICO.copy}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Copiar texto + tags')}</span><span class="lens-opt-d">${t('Cola tudo junto (tags viram #hashtags)')}</span></span></button>`+
     `<button class="lens-opt" onclick="copyCardTextOnly('${id}');closeExportMenu('${id}')"><span class="lens-ico">${ICO.textOnly}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Copiar só o texto')}</span><span class="lens-opt-d">${t('Sem as tags')}</span></span></button>`+
     `<button class="lens-opt" onclick="copyCardMarkdown('${id}');closeExportMenu('${id}')"><span class="lens-ico">${ICO.markdown}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Copiar como Markdown')}</span><span class="lens-opt-d">${t('Cópia fiel e crua — cole e pronto')}</span></span></button>`+
@@ -4321,6 +4325,8 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="${pinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4v2h10v-2l-2 -4v-6"/><path d="M12 16v5"/><path d="M8 4h8"/></svg>
         </button>
+        <button class="icon-btn" id="cu-${id}" onclick="cardUndo('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
+        <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
         <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21l15 -15l-3 -3l-15 15l3 3z"/><path d="M15 6l3 3"/><path d="M9 3a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/><path d="M19 13a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg>
         </button>
