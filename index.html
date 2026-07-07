@@ -57,7 +57,8 @@ main.wrap.wrap-focus{max-width:none}
 header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
 .hd{display:flex;align-items:center;justify-content:space-between;padding:13px 0}
 .brand{display:flex;align-items:center;gap:11px}
-.brand-icon{width:34px;height:34px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 2px 8px var(--accent-glow);flex-shrink:0}
+.brand-icon{width:34px;height:34px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 2px 8px var(--accent-glow);flex-shrink:0;cursor:pointer;transition:transform .15s ease,filter .15s ease}
+.brand-icon:hover{transform:scale(1.06);filter:brightness(1.08)}
 .brand-text{line-height:1.2}
 .brand-name{font-size:15px;font-weight:700;letter-spacing:-0.3px}
 .brand-sub{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:0.3px;text-transform:uppercase}
@@ -671,7 +672,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 <header>
   <div class="wrap hd">
     <div class="brand">
-      <div class="brand-icon" id="brandIcon">🎙️</div>
+      <div class="brand-icon" id="brandIcon" onclick="openAbout()" title="Sobre" data-i18n-title>Sobre</div>
       <div class="brand-text">
         <div class="brand-name" id="appTitle">Vox · My Transcriber</div>
         <div class="brand-sub-row"><div class="brand-sub" id="brandSub" data-i18n>Transcription</div><span class="ver-badge" id="verBadge"></span></div>
@@ -1416,6 +1417,23 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- ABOUT MODAL -->
+<div class="overlay" id="aboutOverlay" onclick="if(event.target===this)closeAbout()">
+  <div class="modal" style="max-width:420px;text-align:center;position:relative">
+    <div class="mb" style="padding:36px 28px 28px">
+      <button class="mh-close" onclick="closeAbout()" style="position:absolute;top:14px;right:14px">✕</button>
+      <div style="width:68px;height:68px;background:var(--accent);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 18px;box-shadow:0 4px 18px var(--accent-glow)">🎙️</div>
+      <h2 style="font-size:20px;font-weight:700;letter-spacing:-0.4px;margin-bottom:6px">Vox · My Transcriber</h2>
+      <p style="font-size:12px;color:var(--text4);margin-bottom:18px">v<span id="aboutVer"></span></p>
+      <p style="font-size:13px;color:var(--text3);line-height:1.65;margin-bottom:26px" data-i18n>Transcrição de áudio com foco em privacidade. Seus dados nunca passam pelos nossos servidores — porque não temos servidores.</p>
+      <button onclick="shareApp()" style="width:100%;background:var(--accent);color:white;border:none;border-radius:14px;padding:14px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);box-shadow:0 4px 16px var(--accent-glow);display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px">
+        <span>🔗</span><span data-i18n>Compartilhe com seus amigos</span>
+      </button>
+      <p style="font-size:11px;color:var(--text4);line-height:1.5" data-i18n>Envie o link para que outras pessoas possam usar o app no próprio dispositivo.</p>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast-wrap" id="toastWrap">
   <div class="toast" id="toastEl">
@@ -1438,7 +1456,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.07.7';
+const VOX_VERSION='2026.07.07.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1882,6 +1900,28 @@ function skipOnboard(){
   localStorage.setItem('vox_onboarded','1');
   document.getElementById('onboardOverlay').style.display='none';
   toast(t('✅ Microfone ativado! Configure um provedor nas ⚙️ Configurações.'));
+}
+
+// ── ABOUT ──
+function openAbout(){
+  document.getElementById('aboutVer').textContent=VOX_VERSION;
+  document.getElementById('aboutOverlay').style.display='flex';
+}
+function closeAbout(){document.getElementById('aboutOverlay').style.display='none'}
+async function shareApp(){
+  const url='https://rafamahlmann.github.io/Meutranscritor/';
+  try{
+    if(navigator.share){
+      await navigator.share({title:'Vox · My Transcriber',text:t('Transcreva áudio com privacidade:'),url});
+    }else if(navigator.clipboard){
+      await navigator.clipboard.writeText(url);
+      toast(t('🔗 Link copiado! Envie para seus amigos.'));
+    }else{
+      window.prompt(t('Copie o link:'),url);
+    }
+  }catch(e){
+    // usuário cancelou ou share indisponível
+  }
 }
 
 // ── BROWSER DETECTION ──
