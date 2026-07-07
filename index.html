@@ -1391,7 +1391,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.07.2';
+const VOX_VERSION='2026.07.07.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2466,8 +2466,21 @@ async function openDaySummary(){
   const key=aiKey();
   if(!key){document.getElementById('summaryBody').innerHTML=`<p style="color:var(--text3);font-size:13px">${t('Configure uma chave de IA nas configurações para gerar resumos.')}</p>`;return}
   try{
-    const prompt=`Você é um assistente que analisa transcrições do dia com fidelidade ao conteúdo. Gere um resumo executivo do dia com: 1) Visão geral (quantas sessões e temas centrais), 2) Pontos mais relevantes por sessão, 3) Padrões ou observações gerais. Baseie-se SOMENTE no que está nas transcrições — não invente. Seja claro e bem estruturado. ${_promptLang()}\n\nTranscrições:\n${combined}`;
-    const res=await callAI(prompt,key,'auto',2500);
+    const basePrompt=`Você é um assistente que analisa transcrições do dia com fidelidade ao conteúdo. Gere um resumo executivo do dia com: 1) Visão geral (quantas sessões e temas centrais), 2) Pontos mais relevantes por sessão, 3) Padrões ou observações gerais. Baseie-se SOMENTE no que está nas transcrições — não invente. Seja claro e bem estruturado. ${_promptLang()}`;
+    let res;
+    if(combined.length<=LENS_CHUNK_CHARS){
+      res=await callAI(basePrompt+`\n\nTranscrições:\n${combined}`,key,'auto',2500);
+    }else{
+      // Dia gigante: mesmo map-reduce das lentes (bloco a bloco + unificação)
+      const chunks=_splitLensChunks(combined);
+      const partials=[];
+      for(let i=0;i<chunks.length;i++){
+        document.getElementById('summaryBody').innerHTML=`<div class="summary-loading"><div class="dots"><span></span><span></span><span></span></div> ${t('Gerando com IA…')} (${i+1}/${chunks.length})</div>`;
+        partials.push((await callAI(basePrompt+`\n\n[Bloco ${i+1} de ${chunks.length} das transcrições do dia — resuma apenas este bloco.]\n\nTranscrições:\n${chunks[i]}`,key,'auto',1200)).trim());
+      }
+      const reduce=`Abaixo estão ${chunks.length} resumos parciais e sequenciais das transcrições de UM MESMO dia. Unifique-os em UM resumo executivo final coerente (visão geral, pontos por sessão, padrões), eliminando repetições. Não invente conteúdo. ${_promptLang()}\n\n`+partials.map((p,i)=>`--- Parcial ${i+1} ---\n${p}`).join('\n\n');
+      res=await callAI(reduce,key,'auto',2500);
+    }
     daySummaryText=res;
     document.getElementById('summaryBody').innerHTML=`<div class="summary-content">${escHtml(res)}</div>`;
     document.getElementById('btnCopySummary').style.display='';
