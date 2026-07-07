@@ -419,8 +419,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .sname-input{font-size:12px;font-family:var(--font);background:var(--bg-input);border:1px solid transparent;border-radius:10px;padding:4px 10px;color:var(--text);outline:none;transition:all var(--transition);min-width:0;flex:1;max-width:220px}
 .sname-input:focus{border-color:var(--diar);background:var(--bg2)}
 .sname-input::placeholder{color:var(--text4)}
-.diar-status{font-size:11px;font-weight:600;color:var(--diar);display:none;align-items:center;gap:4px}
-.diar-status.on{display:flex}
+.diar-toggle-chip{font-size:11px;font-weight:700;color:var(--text3);display:inline-flex;align-items:center;gap:4px;border:1px dashed var(--border2);background:transparent;border-radius:20px;padding:4px 11px;cursor:pointer;font-family:var(--font);transition:all var(--transition)}
+.diar-toggle-chip:hover{border-color:var(--diar);color:var(--diar)}
+.diar-toggle-chip.on{background:var(--diar-glow,rgba(139,92,246,0.14));border-style:solid;border-color:var(--diar);color:var(--diar)}
 
 .tips{display:flex;align-items:center;gap:0;margin-bottom:7px;overflow-x:auto}
 .tip{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text4);font-weight:500;padding:0 10px;border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0}
@@ -972,7 +973,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <button class="smode-btn" data-m="entrevista" onclick="setMode('entrevista')" data-i18n>🎙️ Entrevista</button>
       <button class="smode-btn active" data-m="livre" onclick="setMode('livre')" data-i18n>📝 Livre</button>
       <input class="sname-input" id="snameInput" placeholder="Nome da sessão (opcional)" data-i18n-placeholder maxlength="60">
-      <span class="diar-status" id="diarStatus" data-i18n>🔮 Diarização ativa</span>
+      <button class="diar-toggle-chip" id="diarStatus" onclick="toggleDiarQuick()" title="Ligar/desligar diarização" data-i18n-title>🔮 <span id="diarChipLbl" data-i18n>Diarização</span></button>
     </div>
     <div class="tips">
       <div class="tip" id="tipSpace" data-i18n-html><kbd>Espaço</kbd> gravar / parar</div>
@@ -1182,7 +1183,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <p style="font-size:12px;color:var(--text3);margin-bottom:10px" data-i18n>Escolha o provedor de diarização:</p>
         <div class="diar-provider-toggle" style="grid-template-columns:1fr 1fr 1fr">
           <button class="diar-prov-btn" id="dpGladia" onclick="setDiarProvider('gladia')" data-i18n-html>💠 Gladia<br><small style="font-weight:400;opacity:0.8">10 h/mês grátis</small></button>
-          <button class="diar-prov-btn on" id="dpAssembly" onclick="setDiarProvider('assemblyai')" data-i18n-html>🟣 AssemblyAI<br><small style="font-weight:400;opacity:0.8">Crédito mínimo US$5</small></button>
+          <button class="diar-prov-btn on" id="dpAssembly" onclick="setDiarProvider('assemblyai')" data-i18n-html>🟣 AssemblyAI<br><small style="font-weight:400;opacity:0.8">US$50 grátis</small></button>
           <button class="diar-prov-btn" id="dpOpenAI" onclick="setDiarProvider('openai')" data-i18n-html>🤖 OpenAI<br><small style="font-weight:400;opacity:0.8">Mesma chave Whisper</small></button>
         </div>
         <div id="gladiaSection" style="display:none">
@@ -1204,18 +1205,19 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         </div>
         <div id="assemblySection">
           <div class="frow">
-            <label><span>AssemblyAI API Key <span class="free-badge" data-i18n>saldo inicial US$5</span></span><a href="https://www.assemblyai.com/dashboard" target="_blank" rel="noopener noreferrer" class="alink">Console</a></label>
+            <label><span>AssemblyAI API Key <span class="free-badge" data-i18n>US$50 grátis</span></span><a href="https://www.assemblyai.com/dashboard" target="_blank" rel="noopener noreferrer" class="alink">Console</a></label>
             <input type="password" id="apiKeyAssembly" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
           </div>
           <div class="diar-guide" data-i18n-html>
-            <strong>Configurando a AssemblyAI em 4 passos simples</strong>
-            <p>Olhar o site da AssemblyAI pela primeira vez pode parecer uma trilha confusa no meio da mata, mas relaxa! Nós somos o seu guia. Vamos te levar pela mão nos exatos pontos onde você precisa clicar. Vamos lá?</p>
+            <strong>Em 3 passos (2 minutos):</strong>
             <ol>
-              <li>Acesse o site da AssemblyAI e clique em 'LOG IN' no canto superior direito (entre rapidinho com sua conta Google).</li>
-              <li>No seu painel (Dashboard), eles vão pedir um pequeno saldo para liberar a API. Adicione o mínimo de $5 dólares (cerca de R$ 27,50). Pode ficar tranquilo: com esse valor você consegue transcrever dezenas de horas de áudio!</li>
-              <li>Assim que o saldo cair, na mesma tela do painel, procure por 'Your API Key'. É um código longo. Clique no botãozinho ao lado para copiar.</li>
-              <li>O último degrau da nossa trilha: cole essa chave no campo de API Key aqui do nosso app e clique em Salvar. Prontinho, missão cumprida! 🎉</li>
+              <li>Crie a conta grátis em <a href="https://www.assemblyai.com" target="_blank" rel="noopener noreferrer">assemblyai.com</a> — <strong>não pede cartão</strong>.</li>
+              <li>No painel (Dashboard), copie sua API Key.</li>
+              <li>Cole acima e salve — pronto! 🎉</li>
             </ol>
+            <br>
+            💰 <strong>Como funciona o custo:</strong> você ganha <strong>US$50 de crédito grátis</strong> ao criar a conta (sem cartão). A diarização consome ~US$0,23 por hora de áudio — ou seja, dá para transcrever cerca de <strong>200 horas</strong> antes de precisar pagar qualquer coisa. Só depois que o crédito acaba é que a AssemblyAI pede um cartão.<br>
+            🎯 <strong>Ideal para:</strong> quem quer a diarização mais precisa com um crédito inicial generoso.
           </div>
         </div>
         <div id="openaiDiarSection" style="display:none">
@@ -1573,6 +1575,11 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "Incluir tempos [mm:ss]":"Include timestamps [mm:ss]","Incluir locutores:":"Include speakers:","ℹ️ Selecione ao menos um locutor":"ℹ️ Select at least one speaker",
 "Modo Conversa":"Conversation Mode","Virar card padrão":"Turn into standard card","Vira uma nota comum, na pasta atual":"Becomes a regular note, in the current folder",
 "💾 Conversa virou card padrão!":"💾 Conversation turned into a standard card!",
+"US$50 grátis":"US$50 free",
+"Diarização":"Diarization","Diarização ON":"Diarization ON","Ligar/desligar diarização":"Turn diarization on/off",
+"🔮 Diarização ativada":"🔮 Diarization on","🔮 Diarização desativada":"🔮 Diarization off",
+"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 grátis</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free</small>",
+"<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>não pede cartão</strong>.</li> <li>No painel (Dashboard), copie sua API Key.</li> <li>Cole acima e salve — pronto! 🎉</li> </ol> <br> 💰 <strong>Como funciona o custo:</strong> você ganha <strong>US$50 de crédito grátis</strong> ao criar a conta (sem cartão). A diarização consome ~US$0,23 por hora de áudio — ou seja, dá para transcrever cerca de <strong>200 horas</strong> antes de precisar pagar qualquer coisa. Só depois que o crédito acaba é que a AssemblyAI pede um cartão.<br> 🎯 <strong>Ideal para:</strong> quem quer a diarização mais precisa com um crédito inicial generoso.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>no card required</strong>.</li> <li>In the dashboard, copy your API Key.</li> <li>Paste above and save — done! 🎉</li> </ol> <br> 💰 <strong>How the cost works:</strong> you get <strong>US$50 in free credit</strong> when you create the account (no card). Diarization costs ~US$0.23 per hour of audio — that's about <strong>200 hours</strong> before you pay anything. Only after the credit runs out does AssemblyAI ask for a card.<br> 🎯 <strong>Great for:</strong> those who want the most accurate diarization with a generous starting credit.",
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 de crédito</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free credit</small>",
 "<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copie sua API Key no painel</li> <li>Cole acima e salve — pronto!</li> </ol> <br> 💰 <strong>Custo:</strong> 10 horas TODO mês grátis (renova sozinho). Depois: ~US$0,61/h.<br> 🎯 <strong>Ideal para:</strong> uso frequente sem pagar nada — consultas, reuniões, entrevistas.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copy your API Key from the dashboard</li> <li>Paste above and save — done!</li> </ol> <br> 💰 <strong>Cost:</strong> 10 hours FREE every month (renews automatically). After that: ~US$0.61/h.<br> 🎯 <strong>Great for:</strong> frequent use without paying — consultations, meetings, interviews."};
@@ -2457,14 +2464,26 @@ function setMode(m){
 function dismissBanner(){bannerDismissed=true;document.getElementById('diarBanner').style.display='none'}
 function openModalToDiar(){
   openModal();
+  cfgTab('Diar'); // abre direto na aba de diarização, não na de transcrição
   setTimeout(()=>{
     const tog=document.getElementById('diarEnabled');
     if(tog&&!tog.checked){tog.checked=true;toggleDiar(true)}
-    document.getElementById('diarSection')?.scrollIntoView({behavior:'smooth',block:'center'});
     const row=document.querySelector('.diar-toggle-row');
-    if(row){row.style.transition='background 0.4s';row.style.background='rgba(139,92,246,0.22)';setTimeout(()=>{row.style.background=''},1400)}
+    if(row){row.scrollIntoView({behavior:'smooth',block:'center'});row.style.transition='background 0.4s';row.style.background='rgba(139,92,246,0.22)';setTimeout(()=>{row.style.background=''},1400)}
   },220);
   dismissBanner();
+}
+// Atalho rápido de diarização na barra de gravação (liga/desliga ou abre setup)
+function toggleDiarQuick(){
+  const hasKey=cfg.apiKeyGladia||cfg.apiKeyAssembly||(cfg.diarProvider==='openai'&&cfg.apiKey);
+  if(!cfg.diarEnabled){
+    if(!hasKey){openModalToDiar();return} // sem chave → abre setup na aba certa
+    cfg.diarEnabled=true;localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+    updateDiarStatus();toast(t('🔮 Diarização ativada'));
+  }else{
+    cfg.diarEnabled=false;localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+    updateDiarStatus();toast(t('🔮 Diarização desativada'));
+  }
 }
 
 // ── SEARCH ──
@@ -2850,8 +2869,10 @@ function toggleDiar(on){
   saveCfg(false);
 }
 function updateDiarStatus(){
-  const st=document.getElementById('diarStatus');
+  const st=document.getElementById('diarStatus');if(!st)return;
   st.classList.toggle('on',cfg.diarEnabled);
+  const lbl=document.getElementById('diarChipLbl');
+  if(lbl)lbl.textContent=cfg.diarEnabled?t('Diarização ON'):t('Diarização');
 }
 function openModal(){
   document.getElementById('overlay').classList.add('on');
