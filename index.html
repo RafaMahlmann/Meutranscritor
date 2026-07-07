@@ -217,6 +217,15 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .spk-rename-row{display:flex;gap:5px;padding:4px 14px 8px;flex-wrap:wrap;background:var(--cat,transparent)}
 .spk-rename-btn{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--font);transition:all var(--transition)}
 .spk-rename-btn:hover{border-color:var(--text3);color:var(--text)}
+.spk-ctrl{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--border);border-radius:20px;padding:1px 3px}
+.spk-ctrl .spk-rename-btn{border:none;padding:2px 6px}
+.spk-del:hover{color:var(--danger);border-color:transparent}
+.spk-times.on{border-style:solid;border-color:var(--accent);color:var(--accent)}
+.bbl-ts{font-size:9px;color:var(--text4);font-weight:500;margin-left:6px}
+.dx-row{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:13px;color:var(--text2);cursor:pointer}
+.dx-row input{width:15px;height:15px;accent-color:var(--accent)}
+.dx-actions{display:flex;gap:8px;padding:10px 6px 4px}
+.dx-actions .tx-btn{flex:1}
 
 /* ── TAGS ── */
 .ctags{display:flex;flex-wrap:wrap;gap:5px;padding:4px 14px 8px;background:var(--cat,transparent)}
@@ -1546,6 +1555,11 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "Manter minhas transcrições e pastas":"Keep my transcriptions and folders",
 "💾 Baixar backup antes":"💾 Download backup first","Restaurar agora":"Restore now",
 "🔑 Configure a chave Gladia!":"🔑 Set up the Gladia key!","10 h/mês grátis":"10 h/month free","Nenhuma fala identificada":"No speech identified",
+"Mostrar/ocultar tempos":"Show/hide timestamps","Copiar falas":"Copy lines","Remover locutor":"Remove speaker",
+"ℹ️ Não dá para remover o único locutor":"ℹ️ Can't remove the only speaker","Remover \"{name}\" e todas as falas dessa pessoa?":"Remove \"{name}\" and all of this person's lines?",
+"🗑️ \"{name}\" removido":"🗑️ \"{name}\" removed","Exportar conversa (com controle)":"Export conversation (with control)",
+"Escolha tempos e quais locutores incluir":"Choose timestamps and which speakers to include","⤴ Exportar conversa":"⤴ Export conversation",
+"Incluir tempos [mm:ss]":"Include timestamps [mm:ss]","Incluir locutores:":"Include speakers:","ℹ️ Selecione ao menos um locutor":"ℹ️ Select at least one speaker",
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 de crédito</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free credit</small>",
 "<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copie sua API Key no painel</li> <li>Cole acima e salve — pronto!</li> </ol> <br> 💰 <strong>Custo:</strong> 10 horas TODO mês grátis (renova sozinho). Depois: ~US$0,61/h.<br> 🎯 <strong>Ideal para:</strong> uso frequente sem pagar nada — consultas, reuniões, entrevistas.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copy your API Key from the dashboard</li> <li>Paste above and save — done!</li> </ol> <br> 💰 <strong>Cost:</strong> 10 hours FREE every month (renews automatically). After that: ~US$0.61/h.<br> 🎯 <strong>Great for:</strong> frequent use without paying — consultations, meetings, interviews."};
@@ -4095,7 +4109,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
     <div class="lens-panel" id="lens-${id}"></div>
     <div class="lens-panel" id="exp-menu-${id}"></div>
     <div class="spk-stats">${statsHtml}</div>
-    <div class="spk-rename-row">${renameHtml}${speakerKeys.map(s=>`<button class="spk-rename-btn" onclick="copySpeaker('${id}','${escJs(s)}')" style="border-style:solid">📋 ${escHtml(speakers[s])}</button>`).join('')}</div>
+    <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}">⏱️</button></div>
     <div class="cb roteiro-view" id="roteiro-${id}" style="${view==='bolhas'?'display:none':''}">
       <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)">${escHtml(roteiroText)}</textarea>
     </div>
@@ -4115,7 +4129,20 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
   return id;
 }
 
-function renderBubbles(utterances,speakers){
+// Tempo de fala (ms) → mm:ss (ou h:mm:ss em áudios longos)
+function fmtMs(ms){
+  const s=Math.floor((ms||0)/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  const pad=n=>String(n).padStart(2,'0');
+  return h>0?`${h}:${pad(m)}:${pad(sec)}`:`${m}:${pad(sec)}`;
+}
+// Monta o texto do roteiro; withTimes inclui [mm:ss] antes de cada fala
+function buildRoteiro(utterances,speakers,withTimes){
+  return utterances.map(u=>{
+    const nm=speakers[u.speaker]||u.speaker;
+    return withTimes?`[${fmtMs(u.start)}] ${nm}: ${u.text}`:`${nm}: ${u.text}`;
+  }).join('\n');
+}
+function renderBubbles(utterances,speakers,withTimes){
   const spkKeys=[...new Set(utterances.map(u=>u.speaker))];
   const bblClasses=['bbl-left','bbl-right','bbl-c','bbl-d'];
   const clsMap={};spkKeys.forEach((s,i)=>{clsMap[s]=bblClasses[i%4]});
@@ -4123,8 +4150,63 @@ function renderBubbles(utterances,speakers){
     const cls=clsMap[u.speaker]||'bbl-left';
     const align=cls==='bbl-right'?'bbl-right':'';
     const name=speakers[u.speaker]||u.speaker;
-    return `<div class="bbl ${cls} ${align}"><span class="bbl-name">${escHtml(name)}</span><div class="bbl-text">${escHtml(u.text)}</div></div>`;
+    const ts=withTimes?`<span class="bbl-ts">${fmtMs(u.start)}</span>`:'';
+    return `<div class="bbl ${cls} ${align}"><span class="bbl-name">${escHtml(name)}${ts}</span><div class="bbl-text">${escHtml(u.text)}</div></div>`;
   }).join('');
+}
+// Liga/desliga os tempos no roteiro E nas bolhas do card diarizado
+function toggleDiarTimes(id){
+  const card=document.getElementById(id);if(!card)return;
+  const on=card.dataset.showtimes!=='true';
+  card.dataset.showtimes=on?'true':'false';
+  const utterances=JSON.parse(card.dataset.utterances||'[]');
+  const speakers=JSON.parse(card.dataset.speakers||'{}');
+  const ta=card.querySelector('.roteiro-view textarea');
+  if(ta){ta.value=buildRoteiro(utterances,speakers,on);autoR(ta)}
+  const bbl=document.getElementById('bbl-'+id);
+  if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,on);
+  const btn=document.getElementById('tt-'+id);if(btn)btn.classList.toggle('on',on);
+  saveHistory();
+}
+// Remove um locutor (suas falas somem do card)
+function deleteSpeaker(id,speaker){
+  const card=document.getElementById(id);if(!card)return;
+  let utterances=JSON.parse(card.dataset.utterances||'[]');
+  const speakers=JSON.parse(card.dataset.speakers||'{}');
+  const nm=speakers[speaker]||speaker;
+  const restam=[...new Set(utterances.map(u=>u.speaker))].filter(s=>s!==speaker);
+  if(restam.length<1){toast(t('ℹ️ Não dá para remover o único locutor'),true);return}
+  if(!confirm(t('Remover "{name}" e todas as falas dessa pessoa?').replace('{name}',nm)))return;
+  utterances=utterances.filter(u=>u.speaker!==speaker);
+  delete speakers[speaker];
+  card.dataset.utterances=JSON.stringify(utterances);
+  card.dataset.speakers=JSON.stringify(speakers);
+  const withTimes=card.dataset.showtimes==='true';
+  const ta=card.querySelector('.roteiro-view textarea');
+  if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes);autoR(ta)}
+  const bbl=document.getElementById('bbl-'+id);
+  if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,withTimes);
+  saveHistory();toast(t('🗑️ "{name}" removido').replace('{name}',nm));
+  // re-render dos controles de locutor (stats/rename/copiar)
+  if(typeof refreshDiarControls==='function')refreshDiarControls(id);
+}
+function refreshDiarControls(id){
+  const card=document.getElementById(id);if(!card)return;
+  const utterances=JSON.parse(card.dataset.utterances||'[]');
+  const speakers=JSON.parse(card.dataset.speakers||'{}');
+  const keys=[...new Set(utterances.map(u=>u.speaker))];
+  const row=card.querySelector('.spk-rename-row');
+  if(row)row.innerHTML=diarSpeakerControls(id,keys,speakers);
+}
+// HTML dos controles por locutor (renomear · copiar · excluir) — reusável
+function diarSpeakerControls(id,keys,speakers){
+  return keys.map(s=>
+    `<span class="spk-ctrl">`+
+      `<button class="spk-rename-btn" onclick="promptRename('${id}','${escJs(s)}')" title="${t('Renomear locutor')}">✏️ <span id="srnm-${id}-${escHtml(s)}">${escHtml(speakers[s]||s)}</span></button>`+
+      `<button class="spk-rename-btn" onclick="copySpeaker('${id}','${escJs(s)}')" title="${t('Copiar falas')}">📋</button>`+
+      `<button class="spk-rename-btn spk-del" onclick="deleteSpeaker('${id}','${escJs(s)}')" title="${t('Remover locutor')}">🗑️</button>`+
+    `</span>`
+  ).join('');
 }
 
 function toggleDiarView(id){
@@ -4144,18 +4226,48 @@ function promptRename(id,speaker){
   if(!novo||novo===current)return;
   speakers[speaker]=novo;
   card.dataset.speakers=JSON.stringify(speakers);
-  // Update display
   const nameEl=document.getElementById(`spkname-${id}-${speaker}`);if(nameEl)nameEl.textContent=novo;
   const btnEl=document.getElementById(`srnm-${id}-${speaker}`);if(btnEl)btnEl.textContent=novo;
-  // Update textarea roteiro
-  const ta=card.querySelector('textarea');
-  if(ta){pushCardHistory(id);ta.value=ta.value.replace(new RegExp('^'+current+':','gm'),novo+':');}
-  // Update bubbles
+  // Reconstrói roteiro e bolhas a partir dos dados (robusto com/sem tempos)
+  const utterances=JSON.parse(card.dataset.utterances||'[]');
+  const withTimes=card.dataset.showtimes==='true';
+  const ta=card.querySelector('.roteiro-view textarea');
+  if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes);autoR(ta)}
   const bbl=document.getElementById('bbl-'+id);
-  if(bbl){const utterances=JSON.parse(card.dataset.utterances||'[]');bbl.innerHTML=renderBubbles(utterances,speakers)}
+  if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,withTimes);
   saveHistory();toast(t('✏️ Renomeado para "{name}"').replace('{name}',novo));
 }
 
+// Exportação com controle: escolher tempos + quais locutores incluir
+function openDiarExport(id){
+  const card=document.getElementById(id);if(!card)return;
+  const speakers=JSON.parse(card.dataset.speakers||'{}');
+  const utterances=JSON.parse(card.dataset.utterances||'[]');
+  const keys=[...new Set(utterances.map(u=>u.speaker))];
+  const p=document.getElementById('exp-menu-'+id);if(!p)return;
+  p.innerHTML=`<div class="lens-hd">${t('⤴ Exportar conversa')}</div>`+
+    `<label class="dx-row"><input type="checkbox" id="dx-times-${id}"><span>${t('Incluir tempos [mm:ss]')}</span></label>`+
+    `<div class="lens-hd" style="padding-top:8px">${t('Incluir locutores:')}</div>`+
+    keys.map(s=>`<label class="dx-row"><input type="checkbox" class="dx-spk-${id}" data-spk="${escHtml(s)}" checked><span>${escHtml(speakers[s]||s)}</span></label>`).join('')+
+    `<div class="dx-actions">`+
+      `<button class="tx-btn primary" onclick="diarExportRun('${id}','copy')">📋 ${t('Copiar')}</button>`+
+      `<button class="tx-btn ghost" onclick="diarExportRun('${id}','txt')">⬇ ${t('Baixar TXT')}</button>`+
+    `</div>`;
+  p.classList.add('on');
+}
+function diarExportRun(id,dest){
+  const card=document.getElementById(id);if(!card)return;
+  const speakers=JSON.parse(card.dataset.speakers||'{}');
+  const utterances=JSON.parse(card.dataset.utterances||'[]');
+  const withTimes=document.getElementById('dx-times-'+id)?.checked;
+  const chosen=new Set([...document.querySelectorAll('.dx-spk-'+id)].filter(c=>c.checked).map(c=>c.dataset.spk));
+  const filtered=utterances.filter(u=>chosen.has(u.speaker));
+  if(!filtered.length){toast(t('ℹ️ Selecione ao menos um locutor'),true);return}
+  const text=buildRoteiro(filtered,speakers,withTimes);
+  if(dest==='copy'){navigator.clipboard.writeText(text).then(()=>toast(t('📋 Copiado!')))}
+  else{const safe=(card.dataset.sessionName||'conversa').replace(/[^\w\-]+/g,'_').slice(0,40)||'conversa';dl(text,`vox_${safe}.txt`)}
+  closeExportMenu(id);
+}
 function copySpeaker(id,speaker){
   const card=document.getElementById(id);if(!card)return;
   const utterances=JSON.parse(card.dataset.utterances||'[]');
@@ -4636,7 +4748,11 @@ function toggleExportMenu(id){
   const p=document.getElementById('exp-menu-'+id);if(!p)return;
   if(p.classList.contains('on')){p.classList.remove('on');p.innerHTML='';return}
   document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
-  p.innerHTML=`<div class="lens-hd">${t('⤴ Exportar este card')}</div>`+
+  const card=document.getElementById(id);
+  const diarHead=card?.dataset.diarized==='true'?
+    `<button class="lens-opt" onclick="closeExportMenu('${id}');openDiarExport('${id}')"><span class="lens-ico">${ICO.users}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Exportar conversa (com controle)')}</span><span class="lens-opt-d">${t('Escolha tempos e quais locutores incluir')}</span></span></button>`
+    :'';
+  p.innerHTML=`<div class="lens-hd">${t('⤴ Exportar este card')}</div>`+diarHead+
     `<button class="lens-opt" onclick="copyCard('${id}');closeExportMenu('${id}')"><span class="lens-ico">${ICO.copy}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Copiar texto + tags')}</span><span class="lens-opt-d">${t('Cola tudo junto (tags viram #hashtags)')}</span></span></button>`+
     `<button class="lens-opt" onclick="copyCardTextOnly('${id}');closeExportMenu('${id}')"><span class="lens-ico">${ICO.textOnly}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Copiar só o texto')}</span><span class="lens-opt-d">${t('Sem as tags')}</span></span></button>`+
     `<button class="lens-opt" onclick="copyCardMarkdown('${id}');closeExportMenu('${id}')"><span class="lens-ico">${ICO.markdown}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Copiar como Markdown')}</span><span class="lens-opt-d">${t('Cópia fiel e crua — cole e pronto')}</span></span></button>`+
