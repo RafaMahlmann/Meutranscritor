@@ -356,6 +356,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
 }
 
+/* ── FOLDER TREE ── */
+.folder-node{display:block;width:100%}
+.folder-arrow{width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--text4);cursor:pointer;flex-shrink:0;transition:transform .15s ease,color .15s ease}
+.folder-arrow:hover{color:var(--text)}
+.folder-arrow.expanded{transform:rotate(90deg)}
+.folder-arrow-placeholder{width:14px;flex-shrink:0}
+.folder-tree-children{width:100%;overflow:hidden;transition:max-height .2s ease}
+.folder-breadcrumb{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:0 6px 8px;font-size:11px;color:var(--text3);border-bottom:1px solid var(--border);margin-bottom:6px}
+.folder-breadcrumb button{background:none;border:none;padding:0;font-size:11px;color:var(--accent);cursor:pointer;font-family:var(--font);font-weight:600}
+.folder-breadcrumb button:hover{text-decoration:underline}
+.folder-breadcrumb span{color:var(--text4)}
+
 /* ── IBAR ── */
 .ibar{position:fixed;bottom:0;left:0;right:0;background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--border);padding:8px 0 20px;z-index:100}
 .ibar-inner{max-width:860px;margin:0 auto;padding:0 20px}
@@ -1379,7 +1391,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.06.5';
+const VOX_VERSION='2026.07.06.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 let currentLang=localStorage.getItem('vox_lang')||'pt';
 function t(s){
@@ -1484,6 +1496,7 @@ let folders=[];
 let activeFolderId=null;
 let folderDlMode=false;
 const folderDlSel=new Set();
+const folderExpanded=new Set();
 const FOLDER_COLORS=['#10b981','#3b82f6','#a78bfa','#f97316','#ec4899','#06b6d4','#eab308','#f43f5e'];
 
 let stats={count:0,sec:0,words:0};
@@ -1952,18 +1965,68 @@ function loadFontSize(){
   setFontSize(s);
 }
 
+// ── FOLDER TREE HELPERS ──
+function getFolderChildren(parentId){
+  return folders.filter(f=>f.parentId===parentId);
+}
+function getFolderDescendants(id){
+  const ids=new Set();
+  const queue=[id];
+  while(queue.length){
+    const cur=queue.shift();
+    const children=folders.filter(f=>f.parentId===cur);
+    children.forEach(c=>{ids.add(c.id);queue.push(c.id);});
+  }
+  return [...ids];
+}
+function isDescendantOf(candidateId, ancestorId){
+  let cur=folders.find(f=>f.id===candidateId);
+  while(cur&&cur.parentId){
+    if(cur.parentId===ancestorId)return true;
+    cur=folders.find(f=>f.id===cur.parentId);
+  }
+  return false;
+}
+function getFolderPath(id){
+  const path=[];
+  let cur=folders.find(f=>f.id===id);
+  while(cur){
+    path.unshift({id:cur.id,name:cur.name});
+    cur=cur.parentId?folders.find(f=>f.id===cur.parentId):null;
+  }
+  return path;
+}
+function getFolderCount(id, counts){
+  let total=counts[id]||0;
+  getFolderChildren(id).forEach(c=>{total+=getFolderCount(c.id,counts);});
+  return total;
+}
+
 // ── FOLDERS ──
 function loadFolders(){
   try{folders=JSON.parse(localStorage.getItem('vox_folders')||'[]')}catch(e){folders=[]}
+  // migração: garantir parentId em pastas antigas
+  folders=folders.map(f=>({...f,parentId:f.parentId??null}));
   const af=localStorage.getItem('vox_active_folder')||'';
   activeFolderId=af||null;
   // se a pasta ativa salva não existe mais, volta pra Tudo
   if(activeFolderId&&!folders.some(f=>f.id===activeFolderId))activeFolderId=null;
+  // restaura estado de expansão
+  folderExpanded.clear();
+  try{
+    const exp=JSON.parse(localStorage.getItem('vox_folders_expanded')||'[]');
+    exp.forEach(id=>folderExpanded.add(id));
+  }catch(e){}
+  // expande automaticamente os ancestrais da pasta ativa
+  if(activeFolderId){
+    getFolderPath(activeFolderId).forEach(p=>{if(p.id)folderExpanded.add(p.id);});
+  }
   renderFolders();
 }
 function saveFolders(){
   localStorage.setItem('vox_folders',JSON.stringify(folders));
   localStorage.setItem('vox_active_folder',activeFolderId||'');
+  localStorage.setItem('vox_folders_expanded',JSON.stringify([...folderExpanded]));
 }
 function getFolderCounts(){
   const counts={all:0};
@@ -1985,7 +2048,7 @@ function renderFolders(){
         <span style="font-size:15px">${sel?'☑':'☐'}</span>
         <span class="folder-dot" style="background:${safeColor(f.color)}"></span>
         <span class="folder-name">${escHtml(f.name)}</span>
-        <span class="folder-count">${counts[f.id]||0}</span></div>`;
+        <span class="folder-count">${getFolderCount(f.id,counts)}</span></div>`;
     });
     html+=`<div class="folder-dl-footer">
       <button class="folder-dl-confirm" onclick="downloadSelectedFolders()">↓ ${t('Baixar')} (${folderDlSel.size})</button>
@@ -1994,16 +2057,51 @@ function renderFolders(){
     list.innerHTML=html;
     return;
   }
-  let html=`<div class="folder-item${activeFolderId===null?' active':''}" data-fid="" onclick="selectFolder(null)">
+  let html='';
+  // breadcrumb quando dentro de uma subpasta
+  if(activeFolderId){
+    const path=getFolderPath(activeFolderId);
+    html+=`<div class="folder-breadcrumb"><button onclick="selectFolder(null)">${t('Tudo')}</button>`;
+    path.forEach(p=>{html+=`<span>/</span><button onclick="selectFolder('${escJs(p.id)}')">${escHtml(p.name)}</button>`;});
+    html+=`</div>`;
+  }
+  // raiz
+  html+=`<div class="folder-item${activeFolderId===null?' active':''}" data-fid="" onclick="selectFolder(null)">
     <span class="folder-ico">📥</span><span class="folder-name">${t('Tudo')}</span><span class="folder-count">${counts.all}</span></div>`;
-  folders.forEach(f=>{
-    html+=`<div class="folder-item${activeFolderId===f.id?' active':''}" data-fid="${escHtml(f.id)}" onclick="selectFolder('${escJs(f.id)}')">
-      <span class="folder-dot" style="background:${safeColor(f.color)}"></span>
-      <span class="folder-name">${escHtml(f.name)}</span>
-      <span class="folder-count">${counts[f.id]||0}</span>
-      <span class="folder-menu-btn" onclick="event.stopPropagation();folderMenu('${escJs(f.id)}',event)" title="${t('Opções')}">⋯</span></div>`;
-  });
+  html+=renderFolderTree(null,0,counts);
   list.innerHTML=html;
+}
+function renderFolderTree(parentId,lvl,counts){
+  const children=getFolderChildren(parentId);
+  if(!children.length)return '';
+  let html='<div class="folder-tree-children">';
+  children.forEach(f=>{
+    const isExpanded=folderExpanded.has(f.id);
+    const hasChildren=getFolderChildren(f.id).length>0;
+    const isActive=activeFolderId===f.id;
+    const count=getFolderCount(f.id,counts);
+    const indent=lvl*14;
+    html+=`<div class="folder-node">`;
+    html+=`<div class="folder-item${isActive?' active':''}" data-fid="${escHtml(f.id)}" style="padding-left:${indent}px" onclick="selectFolder('${escJs(f.id)}')">`;
+    if(hasChildren){
+      html+=`<span class="folder-arrow${isExpanded?' expanded':''}" onclick="event.stopPropagation();toggleFolderExpanded('${escJs(f.id)}')">▶</span>`;
+    }else{
+      html+=`<span class="folder-arrow-placeholder"></span>`;
+    }
+    html+=`<span class="folder-dot" style="background:${safeColor(f.color)}"></span>
+      <span class="folder-name">${escHtml(f.name)}</span>
+      <span class="folder-count">${count}</span>
+      <span class="folder-menu-btn" onclick="event.stopPropagation();folderMenu('${escJs(f.id)}',event)" title="${t('Opções')}">⋯</span></div>`;
+    if(isExpanded)html+=renderFolderTree(f.id,lvl+1,counts);
+    html+=`</div>`;
+  });
+  html+='</div>';
+  return html;
+}
+function toggleFolderExpanded(id){
+  if(folderExpanded.has(id))folderExpanded.delete(id);
+  else folderExpanded.add(id);
+  saveFolders();renderFolders();
 }
 function selectFolder(id){
   activeFolderId=id;
@@ -2019,11 +2117,14 @@ function applyFolderFilter(){
   if(viewMode==='focus')applyFocusCard();
   updateRecencyBadges();
 }
-function createFolder(){
+function createFolder(parentId=null){
   const name=prompt(t('Nome da nova pasta:'));
   if(!name||!name.trim())return;
   const id='f_'+Date.now().toString(36);
-  folders.push({id,name:name.trim(),color:FOLDER_COLORS[folders.length%FOLDER_COLORS.length]});
+  const color=FOLDER_COLORS[folders.length%FOLDER_COLORS.length];
+  folders.push({id,name:name.trim(),color,parentId:parentId||null});
+  // expande o pai para mostrar a nova subpasta
+  if(parentId)folderExpanded.add(parentId);
   saveFolders();renderFolders();selectFolder(id);
   toast(t('📁 Pasta "')+name.trim()+t('" criada'));
 }
@@ -2033,6 +2134,7 @@ function folderMenu(id,ev){
   const menu=document.createElement('div');
   menu.id='folderMenu';menu.className='folder-menu';
   menu.innerHTML=`
+    <button onclick="createFolder('${escJs(id)}')">${t('📁 Nova subpasta')}</button>
     <button onclick="renameFolder('${escJs(id)}')">${t('✏️ Renomear')}</button>
     <button onclick="exportFolder('${escJs(id)}')">${t('📄 Exportar pasta')}</button>
     <button class="danger" onclick="deleteFolder('${escJs(id)}')">${t('🗑️ Excluir pasta')}</button>`;
@@ -2054,14 +2156,19 @@ function renameFolder(id){
 function deleteFolder(id){
   closeFolderMenu();
   const f=folders.find(x=>x.id===id);if(!f)return;
+  const descendants=getFolderDescendants(id);
+  const idsToDelete=new Set([id,...descendants]);
   const counts=getFolderCounts();
-  const n=counts[id]||0;
-  const folderDeleteMsg=n>0?t('As {n} transcrições voltam para "Tudo" (não são apagadas).').replace('{n}',n):t('A pasta está vazia.');
+  let totalCards=(counts[id]||0);
+  descendants.forEach(did=>{totalCards+=(counts[did]||0);});
+  const folderDeleteMsg=totalCards>0?t('As {n} transcrições voltam para "Tudo" (não são apagadas).').replace('{n}',totalCards):t('A pasta está vazia.');
   if(!confirm(t('Excluir a pasta "')+f.name+t('"?')+'\n\n'+folderDeleteMsg))return;
-  // move cards de volta pra Tudo
-  document.querySelectorAll('#cardsList .card').forEach(c=>{if((c.dataset.folder||'')===id)c.dataset.folder=''});
-  folders=folders.filter(x=>x.id!==id);
-  if(activeFolderId===id)activeFolderId=null;
+  // move cards da pasta e subpastas de volta pra Tudo
+  document.querySelectorAll('#cardsList .card').forEach(c=>{if(idsToDelete.has(c.dataset.folder||''))c.dataset.folder=''});
+  // remove pasta e descendentes
+  folders=folders.filter(x=>!idsToDelete.has(x.id));
+  idsToDelete.forEach(did=>folderExpanded.delete(did));
+  if(activeFolderId&&idsToDelete.has(activeFolderId))activeFolderId=null;
   saveFolders();renderFolders();saveHistory();applyFolderFilter();
   toast(t('🗑️ Pasta "')+f.name+t('" excluída'));
 }
@@ -2094,6 +2201,10 @@ function toggleFolderDlSel(id){
   else folderDlSel.add(id);
   renderFolders();
 }
+function getCardsInFolderTree(folderId){
+  const ids=new Set([folderId,...getFolderDescendants(folderId)]);
+  return [...document.querySelectorAll('#cardsList .card:not(.proc-card)')].filter(c=>ids.has(c.dataset.folder||'')).reverse();
+}
 function downloadSelectedFolders(){
   if(!folderDlSel.size){toast(t('⚠️ Selecione ao menos uma pasta'),true);return}
   const fmt=cfg.folderDlFormat||'txt';
@@ -2101,7 +2212,7 @@ function downloadSelectedFolders(){
   let count=0;
   folderDlSel.forEach(id=>{
     const f=folders.find(x=>x.id===id);if(!f)return;
-    const cards=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')].filter(c=>(c.dataset.folder||'')===id).reverse();
+    const cards=getCardsInFolderTree(id);
     if(!cards.length){toast(t('⚠️ "{name}" está vazia, pulada').replace('{name}',f.name),true);return}
     const now=new Date();
     let out;
@@ -2142,7 +2253,7 @@ function downloadSelectedFolders(){
 function exportFolder(id){
   closeFolderMenu();
   const f=folders.find(x=>x.id===id);if(!f)return;
-  const cards=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')].filter(c=>(c.dataset.folder||'')===id).reverse();
+  const cards=getCardsInFolderTree(id);
   if(!cards.length){toast(t('⚠️ Pasta vazia'),true);return}
   const now=new Date();
   let out=`# ${f.name} — Vox\n**${t('Exportado:')}** ${now.toLocaleString(getLocale())} · **${t('Total:')}** ${cards.length}\n\n---\n\n`;
@@ -5042,12 +5153,26 @@ async function splitChunks(file,pid,key){
   return{text:res.join(' '),sec:realSec};
 }
 async function txChunk(file,key){
-  const fd=new FormData();fd.append('file',file);let res;
-  if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd})}
-  else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd})}
-  else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd})}
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+res.status)}
-  return cfg.provider==='grok'?(await res.json()).text||'':await res.text();
+  // Mesma espera automática do callAI: 429 (limite por minuto/hora de áudio do
+  // provedor) lê o "try again in Xs" e refaz — áudios de horas não quebram no meio.
+  for(let attempt=0;attempt<3;attempt++){
+    const fd=new FormData();fd.append('file',file);let res;
+    if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd})}
+    else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd})}
+    else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd})}
+    else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd})}
+    if(res.status===429&&attempt<2){
+      const e=await res.json().catch(()=>({}));
+      const m=/try again in (?:(\d+)m)?([\d.]+)s/i.exec(e.error?.message||'');
+      const wait=Math.min(120,m?((+m[1]||0)*60+parseFloat(m[2])+1):20);
+      toast(t('⏳ Limite por minuto da IA — aguardando {s}s e continuando…').replace('{s}',Math.ceil(wait)));
+      await new Promise(r=>setTimeout(r,wait*1000));
+      continue;
+    }
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+res.status)}
+    return cfg.provider==='grok'?(await res.json()).text||'':await res.text();
+  }
+  throw new Error(t('limite de uso da IA — tente novamente em instantes'));
 }
 function setPL(pid,txt){const e=document.getElementById('pl-'+pid);if(e)e.textContent=txt}
 function encWAV(s,sr){
