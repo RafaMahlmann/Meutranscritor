@@ -422,6 +422,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .diar-toggle-chip{font-size:11px;font-weight:700;color:var(--text3);display:inline-flex;align-items:center;gap:4px;border:1px dashed var(--border2);background:transparent;border-radius:20px;padding:4px 11px;cursor:pointer;font-family:var(--font);transition:all var(--transition)}
 .diar-toggle-chip:hover{border-color:var(--diar);color:var(--diar)}
 .diar-toggle-chip.on{background:var(--diar-glow,rgba(139,92,246,0.14));border-style:solid;border-color:var(--diar);color:var(--diar)}
+.diar-help-btn{width:18px;height:18px;border-radius:50%;border:1px solid var(--border2);background:transparent;color:var(--text4);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
+.diar-help-btn:hover{border-color:var(--diar);color:var(--diar)}
 
 .tips{display:flex;align-items:center;gap:0;margin-bottom:7px;overflow-x:auto}
 .tip{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text4);font-weight:500;padding:0 10px;border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0}
@@ -974,6 +976,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <button class="smode-btn active" data-m="livre" onclick="setMode('livre')" data-i18n>📝 Livre</button>
       <input class="sname-input" id="snameInput" placeholder="Nome da sessão (opcional)" data-i18n-placeholder maxlength="60">
       <button class="diar-toggle-chip" id="diarStatus" onclick="toggleDiarQuick()" title="Ligar/desligar diarização" data-i18n-title>🔮 <span id="diarChipLbl" data-i18n>Diarização</span></button>
+      <button class="diar-help-btn" onclick="showDiarHelp()" title="O que é diarização?" data-i18n-title aria-label="O que é diarização?">?</button>
     </div>
     <div class="tips">
       <div class="tip" id="tipSpace" data-i18n-html><kbd>Espaço</kbd> gravar / parar</div>
@@ -1182,8 +1185,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <div id="diarSection" style="display:none">
         <p style="font-size:12px;color:var(--text3);margin-bottom:10px" data-i18n>Escolha o provedor de diarização:</p>
         <div class="diar-provider-toggle" style="grid-template-columns:1fr 1fr 1fr">
-          <button class="diar-prov-btn" id="dpGladia" onclick="setDiarProvider('gladia')" data-i18n-html>💠 Gladia<br><small style="font-weight:400;opacity:0.8">10 h/mês grátis</small></button>
           <button class="diar-prov-btn on" id="dpAssembly" onclick="setDiarProvider('assemblyai')" data-i18n-html>🟣 AssemblyAI<br><small style="font-weight:400;opacity:0.8">US$50 grátis</small></button>
+          <button class="diar-prov-btn" id="dpGladia" onclick="setDiarProvider('gladia')" data-i18n-html>💠 Gladia<br><small style="font-weight:400;opacity:0.8">10 h/mês grátis</small></button>
           <button class="diar-prov-btn" id="dpOpenAI" onclick="setDiarProvider('openai')" data-i18n-html>🤖 OpenAI<br><small style="font-weight:400;opacity:0.8">Mesma chave Whisper</small></button>
         </div>
         <div id="gladiaSection" style="display:none">
@@ -1478,7 +1481,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.07.8';
+const VOX_VERSION='2026.07.07.9';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1578,6 +1581,8 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "US$50 grátis":"US$50 free",
 "Diarização":"Diarization","Diarização ON":"Diarization ON","Ligar/desligar diarização":"Turn diarization on/off",
 "🔮 Diarização ativada":"🔮 Diarization on","🔮 Diarização desativada":"🔮 Diarization off",
+"O que é diarização?":"What is diarization?","Configurar agora":"Set up now","Entendi":"Got it",
+"É quando o app separa <strong>quem falou o quê</strong>. Em vez de um texto corrido, você vê a conversa organizada: <strong>Ana:</strong> uma fala, <strong>Bruno:</strong> outra fala — como um roteiro. Perfeito para <strong>consultas</strong> (profissional e paciente), <strong>reuniões</strong> e <strong>entrevistas</strong>.<br><br>Para reconhecer as vozes, o app usa um serviço especializado que você configura uma vez (leva 2 minutos e costuma ter uso grátis). É só ligar o botão 🔮 e gravar — o resto é automático.":"It's when the app separates <strong>who said what</strong>. Instead of one long text, you see the conversation organized: <strong>Ana:</strong> one line, <strong>Bruno:</strong> another — like a script. Perfect for <strong>consultations</strong> (professional and patient), <strong>meetings</strong> and <strong>interviews</strong>.<br><br>To recognize the voices, the app uses a specialized service you set up once (takes 2 minutes and usually has free usage). Just turn on the 🔮 button and record — the rest is automatic.",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 grátis</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free</small>",
 "<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>não pede cartão</strong>.</li> <li>No painel (Dashboard), copie sua API Key.</li> <li>Cole acima e salve — pronto! 🎉</li> </ol> <br> 💰 <strong>Como funciona o custo:</strong> você ganha <strong>US$50 de crédito grátis</strong> ao criar a conta (sem cartão). A diarização consome ~US$0,23 por hora de áudio — ou seja, dá para transcrever cerca de <strong>200 horas</strong> antes de precisar pagar qualquer coisa. Só depois que o crédito acaba é que a AssemblyAI pede um cartão.<br> 🎯 <strong>Ideal para:</strong> quem quer a diarização mais precisa com um crédito inicial generoso.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>no card required</strong>.</li> <li>In the dashboard, copy your API Key.</li> <li>Paste above and save — done! 🎉</li> </ol> <br> 💰 <strong>How the cost works:</strong> you get <strong>US$50 in free credit</strong> when you create the account (no card). Diarization costs ~US$0.23 per hour of audio — that's about <strong>200 hours</strong> before you pay anything. Only after the credit runs out does AssemblyAI ask for a card.<br> 🎯 <strong>Great for:</strong> those who want the most accurate diarization with a generous starting credit.",
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
@@ -2456,9 +2461,13 @@ function setMode(m){
   sessionMode=m;
   document.querySelectorAll('.smode-btn').forEach(b=>b.classList.toggle('active',b.dataset.m===m));
   const needsDiar=DIAR_MODES.includes(m);
-  const hasSetup=cfg.diarEnabled&&(cfg.apiKeyAssembly||(cfg.diarProvider==='openai'&&cfg.apiKey));
+  const hasKey=cfg.apiKeyAssembly||cfg.apiKeyGladia||(cfg.diarProvider==='openai'&&cfg.apiKey);
+  // Consulta/reunião/entrevista já ligam a diarização se houver chave (fluxo direto)
+  if(needsDiar&&hasKey&&!cfg.diarEnabled){
+    cfg.diarEnabled=true;localStorage.setItem('vox_cfg',JSON.stringify(cfg));updateDiarStatus();
+  }
   const banner=document.getElementById('diarBanner');
-  if(needsDiar&&!hasSetup&&!bannerDismissed){banner.style.display='block'}
+  if(needsDiar&&!hasKey&&!bannerDismissed){banner.style.display='block'}
   else{banner.style.display='none'}
 }
 function dismissBanner(){bannerDismissed=true;document.getElementById('diarBanner').style.display='none'}
@@ -2472,6 +2481,15 @@ function openModalToDiar(){
     if(row){row.scrollIntoView({behavior:'smooth',block:'center'});row.style.transition='background 0.4s';row.style.background='rgba(139,92,246,0.22)';setTimeout(()=>{row.style.background=''},1400)}
   },220);
   dismissBanner();
+}
+// Explicação amigável de diarização (para quem nunca ouviu o termo)
+function showDiarHelp(){
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
+    <div class="tx-title">🔮 ${t('O que é diarização?')}</div>
+    <div class="tx-sub" style="line-height:1.7">${t('É quando o app separa <strong>quem falou o quê</strong>. Em vez de um texto corrido, você vê a conversa organizada: <strong>Ana:</strong> uma fala, <strong>Bruno:</strong> outra fala — como um roteiro. Perfeito para <strong>consultas</strong> (profissional e paciente), <strong>reuniões</strong> e <strong>entrevistas</strong>.<br><br>Para reconhecer as vozes, o app usa um serviço especializado que você configura uma vez (leva 2 minutos e costuma ter uso grátis). É só ligar o botão 🔮 e gravar — o resto é automático.')}</div>
+    <div class="tx-row"><button class="tx-btn primary" onclick="closeTxOverlay();openModalToDiar()">${t('Configurar agora')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Entendi')}</button></div></div>`;
+  ov.classList.add('on');
 }
 // Atalho rápido de diarização na barra de gravação (liga/desliga ou abre setup)
 function toggleDiarQuick(){
