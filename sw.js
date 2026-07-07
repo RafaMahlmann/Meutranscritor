@@ -1,5 +1,4 @@
-const CACHE='vox-v4';
-const SKIP=['/', '/index.html'];
+const CACHE='vox-v5';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -8,13 +7,19 @@ self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
   self.clients.claim();
 });
+self.addEventListener('message', e => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
 self.addEventListener('fetch', e => {
+  // Só GET: POSTs de APIs (AssemblyAI /v2, Gladia, etc.) não podem ser cacheados
+  // — cache.put(POST) lança erro e derruba a chamada.
+  if (e.request.method !== 'GET') return;
   const url = e.request.url;
-  // nunca intercepta API
-  if (url.includes('/v1/')) return;
-  // HTML sempre vai para a rede (sem cache)
-  if (SKIP.some(p => url.endsWith(p)) || e.request.headers.get('accept')?.includes('text/html')) return;
-  // demais recursos: cache-first
+  // Só mesma origem: APIs externas e fontes seguem direto pra rede.
+  if (!url.startsWith(self.location.origin)) return;
+  // HTML sempre vai para a rede (nunca cachear o app — updates instantâneos).
+  if (e.request.headers.get('accept')?.includes('text/html') || url.endsWith('/')) return;
+  // Demais recursos same-origin (ícones, manifest): cache-first.
   e.respondWith(caches.open(CACHE).then(c =>
     c.match(e.request).then(r => r || fetch(e.request).then(res => { c.put(e.request, res.clone()); return res; }))
   ));
