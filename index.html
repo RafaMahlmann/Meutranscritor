@@ -1391,7 +1391,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.07.1';
+const VOX_VERSION='2026.07.07.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1471,7 +1471,8 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "📄 Texto inserido no card!":"📄 Text inserted into the card!",
 "⏳ Limite por minuto da IA — aguardando {s}s e continuando…":"⏳ AI per-minute limit — waiting {s}s and continuing…",
 "limite de uso da IA — tente novamente em instantes":"AI usage limit — try again in a moment",
-"bloco {i} de {n}…":"chunk {i} of {n}…","unindo os blocos…":"merging the chunks…"};
+"bloco {i} de {n}…":"chunk {i} of {n}…","unindo os blocos…":"merging the chunks…",
+"Nova versão disponível":"New version available","Atualizar":"Update"};
 
 // ── STATE ──
 let MR=null,chunks=[],recStart=null,recTimer=null;
@@ -5258,6 +5259,27 @@ function exportObsidian(){
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
 }
+// ── Aviso de nova versão: compara o ETag do index.html no servidor ──
+// (o app nunca é cacheado pelo SW; o que segura versão velha é o cache HTTP.
+//  HEAD com no-store fura esse cache e o ETag muda a cada deploy do Pages.)
+let _verEtag=null;
+async function _checkUpdate(){
+  try{
+    const r=await fetch(location.pathname,{method:'HEAD',cache:'no-store'});
+    const et=r.headers.get('etag')||r.headers.get('last-modified');
+    if(!et)return;
+    if(_verEtag===null){_verEtag=et;return}
+    if(et!==_verEtag&&!document.getElementById('updBar')){
+      const b=document.createElement('div');
+      b.id='updBar';
+      b.style.cssText='position:fixed;bottom:86px;left:50%;transform:translateX(-50%);z-index:950;background:var(--accent);color:#fff;padding:10px 16px;border-radius:14px;display:flex;align-items:center;gap:12px;font-family:var(--font);font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.25)';
+      b.innerHTML='✨ '+t('Nova versão disponível')+' <button onclick="location.reload()" style="background:rgba(255,255,255,0.25);border:none;color:#fff;border-radius:9px;padding:6px 14px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer">'+t('Atualizar')+'</button>';
+      document.body.appendChild(b);
+    }
+  }catch(e){}
+}
+window.addEventListener('load',()=>{_checkUpdate();setInterval(_checkUpdate,30*60*1000)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)_checkUpdate()});
 </script>
 </body>
 </html>
