@@ -222,6 +222,17 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .spk-del:hover{color:var(--danger);border-color:transparent}
 .spk-times.on{border-style:solid;border-color:var(--accent);color:var(--accent)}
 .bbl-ts{font-size:9px;color:var(--text4);font-weight:500;margin-left:6px}
+.conversa-bar{display:flex;gap:8px;padding:2px 14px 10px;background:var(--cat,transparent)}
+.conversa-btn{flex:1;border:1px solid var(--border2);background:var(--bg-input);color:var(--text2);border-radius:11px;padding:9px 12px;font-size:12.5px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition)}
+.conversa-btn:hover{border-color:var(--accent);color:var(--accent)}
+.conversa-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.conversa-btn.primary:hover{background:var(--accent2);color:#fff}
+/* Modo Conversa em foco: bolhas maiores, ocupa a tela */
+.cards.focus-mode .card.focus-active.conversa-on .bbl-wrap{flex:1;order:3;overflow-y:auto;padding:16px 18px;gap:12px}
+.cards.focus-mode .card.focus-active.conversa-on .bbl{max-width:78%}
+.cards.focus-mode .card.focus-active.conversa-on .bbl-text{font-size:15px;padding:10px 15px}
+.cards.focus-mode .card.focus-active.conversa-on .bbl-name{font-size:11px}
+.cards.focus-mode .card.focus-active.conversa-on .roteiro-view{display:none!important}
 .dx-row{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:13px;color:var(--text2);cursor:pointer}
 .dx-row input{width:15px;height:15px;accent-color:var(--accent)}
 .dx-actions{display:flex;gap:8px;padding:10px 6px 4px}
@@ -1560,6 +1571,8 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "🗑️ \"{name}\" removido":"🗑️ \"{name}\" removed","Exportar conversa (com controle)":"Export conversation (with control)",
 "Escolha tempos e quais locutores incluir":"Choose timestamps and which speakers to include","⤴ Exportar conversa":"⤴ Export conversation",
 "Incluir tempos [mm:ss]":"Include timestamps [mm:ss]","Incluir locutores:":"Include speakers:","ℹ️ Selecione ao menos um locutor":"ℹ️ Select at least one speaker",
+"Modo Conversa":"Conversation Mode","Virar card padrão":"Turn into standard card","Vira uma nota comum, na pasta atual":"Becomes a regular note, in the current folder",
+"💾 Conversa virou card padrão!":"💾 Conversation turned into a standard card!",
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 de crédito</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free credit</small>",
 "<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copie sua API Key no painel</li> <li>Cole acima e salve — pronto!</li> </ol> <br> 💰 <strong>Custo:</strong> 10 horas TODO mês grátis (renova sozinho). Depois: ~US$0,61/h.<br> 🎯 <strong>Ideal para:</strong> uso frequente sem pagar nada — consultas, reuniões, entrevistas.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copy your API Key from the dashboard</li> <li>Paste above and save — done!</li> </ol> <br> 💰 <strong>Cost:</strong> 10 hours FREE every month (renews automatically). After that: ~US$0.61/h.<br> 🎯 <strong>Great for:</strong> frequent use without paying — consultations, meetings, interviews."};
@@ -2022,6 +2035,7 @@ function applyView(){
   cl.classList.remove('masonry','focus-mode');
   document.querySelector('main.wrap').classList.toggle('wrap-focus',viewMode==='focus');
   document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
+  if(viewMode!=='focus')document.querySelectorAll('#cardsList .card.conversa-on').forEach(c=>c.classList.remove('conversa-on'));
   if(viewMode==='masonry'){
     cl.classList.add('masonry');if(cl.style.display!=='none')cl.style.display='block';
     nav.classList.remove('on');
@@ -4110,6 +4124,10 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
     <div class="lens-panel" id="exp-menu-${id}"></div>
     <div class="spk-stats">${statsHtml}</div>
     <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}">⏱️</button></div>
+    <div class="conversa-bar">
+      <button class="conversa-btn primary" onclick="enterConversa('${id}')">💬 ${t('Modo Conversa')}</button>
+      <button class="conversa-btn" onclick="diarToStandardCard('${id}')" title="${t('Vira uma nota comum, na pasta atual')}">💾 ${t('Virar card padrão')}</button>
+    </div>
     <div class="cb roteiro-view" id="roteiro-${id}" style="${view==='bolhas'?'display:none':''}">
       <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)">${escHtml(roteiroText)}</textarea>
     </div>
@@ -4216,6 +4234,29 @@ function toggleDiarView(id){
   document.getElementById('roteiro-'+id).style.display=isRoteiro?'none':'';
   document.getElementById('bbl-'+id).style.display=isRoteiro?'':'none';
   saveHistory();
+}
+// Modo Conversa: bolhas (estilo WhatsApp) em tela cheia
+function enterConversa(id){
+  const card=document.getElementById(id);if(!card)return;
+  if(card.dataset.view!=='bolhas')toggleDiarView(id);
+  card.classList.add('conversa-on');
+  enterFocusCard(id);
+}
+// "Virar card padrão": materializa a conversa como nota comum, na pasta atual
+function diarToStandardCard(id){
+  const card=document.getElementById(id);if(!card)return;
+  const utterances=JSON.parse(card.dataset.utterances||'[]');
+  const speakers=JSON.parse(card.dataset.speakers||'{}');
+  const withTimes=card.dataset.showtimes==='true';
+  const text=buildRoteiro(utterances,speakers,withTimes);
+  const mode=card.dataset.mode||'livre';
+  const sn=card.dataset.sessionName||'';
+  const folder=card.dataset.folder||activeFolderId||'';
+  const tags=(card.dataset.tags||'').split(',').filter(x=>x);
+  const nid=addCard(text,null,0,'texto',card.dataset.prov||'whisper',true,null,null,tags,sn,mode,false,folder);
+  stats.count++;updateStats();saveHistory();
+  if(nid){const el=document.getElementById(nid);el?.scrollIntoView({behavior:'smooth',block:'center'});showLensChips(nid)}
+  toast(t('💾 Conversa virou card padrão!'));
 }
 
 function promptRename(id,speaker){
