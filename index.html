@@ -1159,9 +1159,27 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       </div>
       <div id="diarSection" style="display:none">
         <p style="font-size:12px;color:var(--text3);margin-bottom:10px" data-i18n>Escolha o provedor de diarização:</p>
-        <div class="diar-provider-toggle">
-          <button class="diar-prov-btn on" id="dpAssembly" onclick="setDiarProvider('assemblyai')" data-i18n-html>🟣 AssemblyAI<br><small style="font-weight:400;opacity:0.8">Free tier · mais preciso</small></button>
+        <div class="diar-provider-toggle" style="grid-template-columns:1fr 1fr 1fr">
+          <button class="diar-prov-btn" id="dpGladia" onclick="setDiarProvider('gladia')" data-i18n-html>💠 Gladia<br><small style="font-weight:400;opacity:0.8">10 h/mês grátis</small></button>
+          <button class="diar-prov-btn on" id="dpAssembly" onclick="setDiarProvider('assemblyai')" data-i18n-html>🟣 AssemblyAI<br><small style="font-weight:400;opacity:0.8">US$50 de crédito</small></button>
           <button class="diar-prov-btn" id="dpOpenAI" onclick="setDiarProvider('openai')" data-i18n-html>🤖 OpenAI<br><small style="font-weight:400;opacity:0.8">Mesma chave Whisper</small></button>
+        </div>
+        <div id="gladiaSection" style="display:none">
+          <div class="frow">
+            <label><span>Gladia API Key <span class="free-badge" data-i18n>10 h/mês grátis</span></span><a href="https://app.gladia.io" target="_blank" rel="noopener noreferrer" class="alink">app.gladia.io</a></label>
+            <input type="password" id="apiKeyGladia" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          </div>
+          <div class="diar-guide" data-i18n-html>
+            <strong>Em 3 passos (2 minutos):</strong>
+            <ol>
+              <li>Crie a conta grátis em <a href="https://app.gladia.io" target="_blank" rel="noopener noreferrer">app.gladia.io</a></li>
+              <li>Copie sua API Key no painel</li>
+              <li>Cole acima e salve — pronto!</li>
+            </ol>
+            <br>
+            💰 <strong>Custo:</strong> 10 horas TODO mês grátis (renova sozinho). Depois: ~US$0,61/h.<br>
+            🎯 <strong>Ideal para:</strong> uso frequente sem pagar nada — consultas, reuniões, entrevistas.
+          </div>
         </div>
         <div id="assemblySection">
           <div class="frow">
@@ -1421,7 +1439,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.07.4';
+const VOX_VERSION='2026.07.07.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1509,7 +1527,11 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "Zera todas as preferências, chaves e ajustes — como no primeiro dia.":"Resets all preferences, keys and settings — like day one.",
 "Restaurar":"Restore","⚠️ Tem certeza? Isso apaga chaves de API, idioma, tema, receitas e todos os ajustes.":"⚠️ Are you sure? This erases API keys, language, theme, recipes and all settings.",
 "Manter minhas transcrições e pastas":"Keep my transcriptions and folders",
-"💾 Baixar backup antes":"💾 Download backup first","Restaurar agora":"Restore now"};
+"💾 Baixar backup antes":"💾 Download backup first","Restaurar agora":"Restore now",
+"🔑 Configure a chave Gladia!":"🔑 Set up the Gladia key!","10 h/mês grátis":"10 h/month free","Nenhuma fala identificada":"No speech identified",
+"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
+"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 de crédito</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free credit</small>",
+"<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copie sua API Key no painel</li> <li>Cole acima e salve — pronto!</li> </ol> <br> 💰 <strong>Custo:</strong> 10 horas TODO mês grátis (renova sozinho). Depois: ~US$0,61/h.<br> 🎯 <strong>Ideal para:</strong> uso frequente sem pagar nada — consultas, reuniões, entrevistas.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copy your API Key from the dashboard</li> <li>Paste above and save — done!</li> </ol> <br> 💰 <strong>Cost:</strong> 10 hours FREE every month (renews automatically). After that: ~US$0.61/h.<br> 🎯 <strong>Great for:</strong> frequent use without paying — consultations, meetings, interviews."};
 
 // ── STATE ──
 let MR=null,chunks=[],recStart=null,recTimer=null;
@@ -1541,7 +1563,7 @@ const FOLDER_COLORS=['#10b981','#3b82f6','#a78bfa','#f97316','#ec4899','#06b6d4'
 let stats={count:0,sec:0,words:0};
 let cfg={
   provider:'whisper',apiKey:'',apiKeyGrok:'',apiKeyGroq:'',lang:'',
-  diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',
+  diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',apiKeyGladia:'',
   aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',recipes:[],
   txtProvider:'groq',txtModelGroq:'llama-3.3-70b-versatile',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:'',
   assist:true
@@ -2626,6 +2648,7 @@ function loadCfg(){
   document.getElementById('apiKeyGrok').value=cfg.apiKeyGrok||'';
   document.getElementById('apiKeyGroq').value=cfg.apiKeyGroq||'';
   document.getElementById('apiKeyAssembly').value=cfg.apiKeyAssembly||'';
+  document.getElementById('apiKeyGladia').value=cfg.apiKeyGladia||'';
   document.getElementById('localBatPathInput').value=cfg.localBatPath||'';
   document.getElementById('langSel').value=cfg.lang||'';
   document.getElementById('diarEnabled').checked=cfg.diarEnabled||false;
@@ -2745,8 +2768,10 @@ async function setLocalModelFromModal(model){
 }
 function setDiarProvider(p,save=true){
   cfg.diarProvider=p;
+  document.getElementById('dpGladia').className='diar-prov-btn'+(p==='gladia'?' on':'');
   document.getElementById('dpAssembly').className='diar-prov-btn'+(p==='assemblyai'?' on':'');
   document.getElementById('dpOpenAI').className='diar-prov-btn'+(p==='openai'?' on':'');
+  document.getElementById('gladiaSection').style.display=p==='gladia'?'block':'none';
   document.getElementById('assemblySection').style.display=p==='assemblyai'?'block':'none';
   document.getElementById('openaiDiarSection').style.display=p==='openai'?'block':'none';
   if(save)saveCfg(false);
@@ -2772,6 +2797,7 @@ function saveCfg(close=true){
   cfg.apiKeyGrok=document.getElementById('apiKeyGrok').value.trim();
   cfg.apiKeyGroq=document.getElementById('apiKeyGroq').value.trim();
   cfg.apiKeyAssembly=document.getElementById('apiKeyAssembly').value.trim();
+  cfg.apiKeyGladia=document.getElementById('apiKeyGladia').value.trim();
   cfg.lang=document.getElementById('langSel').value;
   cfg.diarEnabled=document.getElementById('diarEnabled').checked;
   cfg.aiRenameProvider=document.getElementById('aiRenameProvider').value;
@@ -3717,8 +3743,11 @@ function sendTxt(){
 async function processAudio(file,durSec,fromRec){
   const sn=document.getElementById('snameInput').value.trim();
   const mode=sessionMode;
-  if(cfg.diarEnabled&&cfg.diarProvider==='assemblyai'&&cfg.apiKeyAssembly){
+  if(cfg.diarEnabled&&cfg.diarProvider==='gladia'&&cfg.apiKeyGladia){
     recTargetTA=null;recTargetCard=null; // diarização sempre cria card próprio
+    await doDiarizeGladia(file,durSec,fromRec,sn,mode);
+  }else if(cfg.diarEnabled&&cfg.diarProvider==='assemblyai'&&cfg.apiKeyAssembly){
+    recTargetTA=null;recTargetCard=null;
     await doDiarizeAssembly(file,durSec,fromRec,sn,mode);
   }else if(cfg.diarEnabled&&cfg.diarProvider==='openai'&&cfg.apiKey){
     recTargetTA=null;recTargetCard=null;
@@ -3818,6 +3847,56 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
     stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
     const didA=addDiarCard(utterances,speakers,cost,cfg.provider==='groqwhisper'?'groq':cfg.provider,true,null,null,[],sn,mode,false);
     if(didA)showLensChips(didA);
+    updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Diarização concluída!'));
+  }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
+  finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null}
+}
+
+// ── GLADIA DIARIZATION (10 h/mês grátis · endpoints confirmados em docs.gladia.io) ──
+async function doDiarizeGladia(file,durSec,fromRec,sn,mode){
+  const key=cfg.apiKeyGladia;
+  if(!key){toast(t('🔑 Configure a chave Gladia!'),true);openModal();return}
+  isProc=true;setStatus('Diarizando…','proc');lockUI(true);
+  const pid='proc_'+Date.now();addProcCard(pid,file.name,durSec,fromRec?'gravacao':'arquivo','diar');
+  try{
+    setPL(pid,t('Enviando áudio…'));
+    const fd=new FormData();fd.append('audio',file);
+    const upRes=await fetch('https://api.gladia.io/v2/upload',{method:'POST',headers:{'x-gladia-key':key},body:fd});
+    if(!upRes.ok)throw new Error(t('Upload falhou:')+' '+upRes.status);
+    const{audio_url}=await upRes.json();
+    setPL(pid,t('Transcrevendo com diarização…'));
+    const body={audio_url,diarization:true};
+    if(cfg.lang)body.language=cfg.lang;
+    const subRes=await fetch('https://api.gladia.io/v2/pre-recorded',{
+      method:'POST',headers:{'x-gladia-key':key,'Content-Type':'application/json'},body:JSON.stringify(body)
+    });
+    if(!subRes.ok){const e=await subRes.json().catch(()=>({}));throw new Error(t('Submit falhou:')+' '+(e.message||subRes.status))}
+    const{id}=await subRes.json();
+    let data;
+    for(let i=0;i<120;i++){
+      await new Promise(r=>setTimeout(r,3000));
+      const pollRes=await fetch('https://api.gladia.io/v2/pre-recorded/'+id,{headers:{'x-gladia-key':key}});
+      data=await pollRes.json();
+      setPL(pid,t('Processando ({status})…').replace('{status}',data.status));
+      if(data.status==='done')break;
+      if(data.status==='error')throw new Error('Gladia: '+(data.error_code||'erro'));
+    }
+    if(!data||data.status!=='done')throw new Error(t('Timeout na diarização'));
+    // Gladia: speaker é número e tempos em segundos → normaliza pra letra e ms (padrão do app)
+    const utterances=(data.result?.transcription?.utterances||[]).map(u=>({
+      speaker:String.fromCharCode(65+(u.speaker||0)),text:(u.text||'').trim(),
+      start:Math.round((u.start||0)*1000),end:Math.round((u.end||0)*1000)
+    })).filter(u=>u.text);
+    if(!utterances.length)throw new Error(t('Nenhuma fala identificada'));
+    document.getElementById(pid)?.remove();
+    const actualSec=Math.ceil(data.result?.metadata?.audio_duration||durSec);
+    setPL(pid,t('Identificando locutores…'));
+    let speakers=buildDefaultSpeakers(utterances,mode);
+    try{speakers=await autoRenameSpeakers(utterances,mode,speakers)}catch(e){console.warn('Auto-rename falhou:',e)}
+    const words=utterances.reduce((a,u)=>a+u.text.split(/\s+/).filter(w=>w).length,0);
+    stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
+    const didG=addDiarCard(utterances,speakers,0,cfg.provider==='groqwhisper'?'groq':cfg.provider,true,null,null,[],sn,mode,false);
+    if(didG)showLensChips(didG);
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Diarização concluída!'));
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
   finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null}
