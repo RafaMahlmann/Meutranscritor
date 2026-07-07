@@ -1,4 +1,4 @@
-const CACHE='vox-v5';
+const CACHE='vox-v6';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
