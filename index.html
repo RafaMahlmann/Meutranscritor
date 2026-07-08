@@ -1250,6 +1250,26 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <span></span>
         </label>
       </div>
+      <div class="section-title" style="margin-top:16px" data-i18n>🔐 Blindagem das chaves de API</div>
+      <p class="fhint" style="margin-bottom:10px" data-i18n>Suas chaves ficam só no seu navegador — se ele "esquecer" (cache limpo, troca de aparelho), você as perde. Duas formas de se proteger, nenhuma obrigatória:</p>
+      <div class="maint-box" style="margin-bottom:8px">
+        <div class="maint-info">
+          <div class="maint-title" data-i18n>🔒 Cofre do navegador</div>
+          <div class="maint-desc" data-i18n>Guarda junto com suas senhas (Chrome/iCloud Keychain) — sincroniza sozinho entre seus aparelhos.</div>
+        </div>
+        <button class="maint-btn" onclick="manualRestoreFromVault()" data-i18n>Restaurar</button>
+      </div>
+      <div class="maint-box" style="margin-bottom:8px">
+        <div class="maint-info">
+          <div class="maint-title" data-i18n>💾 Backup em arquivo</div>
+          <div class="maint-desc" data-i18n>Baixa um arquivo protegido por senha — funciona em qualquer aparelho, guarde onde quiser.</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="maint-btn" onclick="exportKeysBackup()" data-i18n>Baixar</button>
+          <button class="maint-btn" onclick="triggerImportKeysBackup()" data-i18n>Restaurar</button>
+        </div>
+      </div>
+      <input type="file" id="keysBackupInput" accept=".json,application/json" style="display:none" onchange="importKeysBackup(event)">
       <div class="section-title" style="margin-top:16px" data-i18n>Manutenção</div>
       <div class="maint-box" style="margin-bottom:8px">
         <div class="maint-info">
@@ -1427,10 +1447,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 
       <!-- Key input -->
       <div style="position:relative;margin-bottom:10px">
-        <input type="text" id="onboardGroqKey" placeholder="gsk_…" autocomplete="off" style="width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:12px;padding:12px 44px 12px 14px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;transition:border-color var(--transition)" onfocus="this.style.borderColor='var(--groq)'" onblur="this.style.borderColor='var(--border)'" oninput="document.getElementById('btnOnboardGo').disabled=!this.value.trim()">
+        <input type="text" id="onboardGroqKey" placeholder="gsk_…" autocomplete="off" style="width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:12px;padding:12px 44px 12px 14px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;transition:border-color var(--transition)" onfocus="this.style.borderColor='var(--groq)'" onblur="this.style.borderColor='var(--border)'" oninput="_onboardSync()">
         <span style="position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none">🔑</span>
       </div>
-      <p style="font-size:11px;color:var(--text4);margin-bottom:20px;line-height:1.6" data-i18n>🔒 A chave fica salva só no seu dispositivo — nunca sai daqui.</p>
+      <p style="font-size:11px;color:var(--text4);margin-bottom:14px;line-height:1.6" data-i18n>🔒 A chave fica salva só no seu dispositivo — nunca sai daqui.</p>
+
+      <!-- Já tem outra chave? -->
+      <button type="button" onclick="_toggleOnboardOther()" id="onboardOtherToggle" style="background:none;border:none;color:var(--text3);font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;padding:0 0 14px;display:flex;align-items:center;gap:5px"><span id="onboardOtherArrow">▾</span> <span data-i18n>Já tem chave de outro lugar? Cole aqui</span></button>
+      <div id="onboardOtherPanel" style="display:none;flex-direction:column;gap:8px;margin-bottom:14px">
+        <input type="text" id="onboardOpenaiKey" placeholder="OpenAI — sk-…" autocomplete="off" oninput="_onboardSync()" style="width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+        <input type="text" id="onboardGrokKey" placeholder="Grok (xAI) — xai-…" autocomplete="off" oninput="_onboardSync()" style="width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+        <input type="text" id="onboardAssemblyKey" placeholder="AssemblyAI (diarização) — …" autocomplete="off" oninput="_onboardSync()" style="width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+      </div>
 
       <!-- CTA -->
       <button id="btnOnboardGo" onclick="finishOnboard()" disabled style="width:100%;background:var(--groq);color:white;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);box-shadow:0 4px 16px var(--groq-glow);opacity:0.4" data-i18n>
@@ -1483,7 +1511,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.08.1';
+const VOX_VERSION='2026.07.08.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1572,6 +1600,19 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "Restaurar":"Restore","⚠️ Tem certeza? Isso apaga chaves de API, idioma, tema, receitas e todos os ajustes.":"⚠️ Are you sure? This erases API keys, language, theme, recipes and all settings.",
 "Manter minhas transcrições e pastas":"Keep my transcriptions and folders",
 "💾 Baixar backup antes":"💾 Download backup first","Restaurar agora":"Restore now",
+"🔐 Blindagem das chaves de API":"🔐 API key protection",
+"Suas chaves ficam só no seu navegador — se ele \"esquecer\" (cache limpo, troca de aparelho), você as perde. Duas formas de se proteger, nenhuma obrigatória:":"Your keys live only in your browser — if it \"forgets\" (cache cleared, device change), you lose them. Two ways to protect yourself, neither mandatory:",
+"🔒 Cofre do navegador":"🔒 Browser vault","Guarda junto com suas senhas (Chrome/iCloud Keychain) — sincroniza sozinho entre seus aparelhos.":"Stored alongside your passwords (Chrome/iCloud Keychain) — syncs automatically across your devices.",
+"💾 Backup em arquivo":"💾 File backup","Baixa um arquivo protegido por senha — funciona em qualquer aparelho, guarde onde quiser.":"Downloads a password-protected file — works on any device, keep it wherever you like.",
+"🔒 Chaves restauradas do cofre do navegador!":"🔒 Keys restored from the browser vault!","ℹ️ Nenhuma chave encontrada no cofre do navegador":"ℹ️ No keys found in the browser vault",
+"Crie uma senha para proteger o backup (vai precisar dela para restaurar):":"Create a password to protect the backup (you'll need it to restore):",
+"ℹ️ Nenhuma chave configurada ainda":"ℹ️ No keys configured yet",
+"🔑 Backup baixado! Guarde num lugar seguro (Google Drive, iCloud, e-mail…)":"🔑 Backup downloaded! Keep it somewhere safe (Google Drive, iCloud, email…)",
+"❌ Arquivo inválido":"❌ Invalid file","❌ Este não é um backup de chaves do Vox":"❌ This isn't a Vox keys backup",
+"Digite a senha desse backup:":"Enter this backup's password:","✅ Chaves restauradas do backup!":"✅ Keys restored from backup!",
+"❌ Senha incorreta ou arquivo corrompido":"❌ Wrong password or corrupted file",
+"Já tem chave de outro lugar? Cole aqui":"Already have a key from somewhere else? Paste it here",
+"🟢 Configurado! Pronto para transcrever.":"🟢 Configured! Ready to transcribe.",
 "🔑 Configure a chave Gladia!":"🔑 Set up the Gladia key!","10 h/mês grátis":"10 h/month free","Nenhuma fala identificada":"No speech identified",
 "Mostrar/ocultar tempos":"Show/hide timestamps","Copiar falas":"Copy lines","Remover locutor":"Remove speaker",
 "ℹ️ Não dá para remover o único locutor":"ℹ️ Can't remove the only speaker","Remover \"{name}\" e todas as falas dessa pessoa?":"Remove \"{name}\" and all of this person's lines?",
@@ -1922,8 +1963,8 @@ async function requestMic(){
     stream.getTracks().forEach(t=>t.stop());
     localStorage.setItem('vox_mic_granted','1');
     document.getElementById('micOverlay').style.display='none';
-    // Se nunca fez onboarding E não tem chave Groq → abre setup
-    if(!localStorage.getItem('vox_onboarded')&&!cfg.apiKeyGroq){
+    // Se nunca fez onboarding E não tem NENHUMA chave de transcrição → abre setup
+    if(!localStorage.getItem('vox_onboarded')&&!cfg.apiKeyGroq&&!cfg.apiKey&&!cfg.apiKeyGrok){
       setTimeout(()=>document.getElementById('onboardOverlay').style.display='flex',300);
     }else{
       toast(t('✅ Microfone ativado! Pode gravar à vontade.'));
@@ -1933,20 +1974,41 @@ async function requestMic(){
     errEl.textContent=t('❌ Permissão negada. Clique no 🔒 cadeado na barra do navegador → Microfone → Permitir, depois recarregue a página.');
   }
 }
+// Onboarding: aceita QUALQUER chave que a pessoa já tenha (não só Groq) — o
+// botão de início só fica ativo quando pelo menos uma delas estiver preenchida.
+function _toggleOnboardOther(){
+  const p=document.getElementById('onboardOtherPanel');
+  const on=p.style.display==='flex';
+  p.style.display=on?'none':'flex';
+  document.getElementById('onboardOtherArrow').textContent=on?'▾':'▴';
+}
+function _onboardSync(){
+  const any=['onboardGroqKey','onboardOpenaiKey','onboardGrokKey','onboardAssemblyKey']
+    .some(id=>document.getElementById(id).value.trim());
+  document.getElementById('btnOnboardGo').disabled=!any;
+}
 function finishOnboard(){
-  const key=document.getElementById('onboardGroqKey').value.trim();
-  if(!key)return;
-  cfg.apiKeyGroq=key;
-  setProvider('groqwhisper',false);
-  cfg.apiKey=document.getElementById('apiKey').value.trim();
-  cfg.apiKeyGrok=document.getElementById('apiKeyGrok').value.trim();
-  cfg.apiKeyAssembly=document.getElementById('apiKeyAssembly').value.trim();
+  const groq=document.getElementById('onboardGroqKey').value.trim();
+  const openai=document.getElementById('onboardOpenaiKey').value.trim();
+  const grok=document.getElementById('onboardGrokKey').value.trim();
+  const assembly=document.getElementById('onboardAssemblyKey').value.trim();
+  if(!groq&&!openai&&!grok&&!assembly)return;
+  if(groq)cfg.apiKeyGroq=groq;
+  if(openai)cfg.apiKey=openai;
+  if(grok)cfg.apiKeyGrok=grok;
+  if(assembly){cfg.apiKeyAssembly=assembly;cfg.diarEnabled=true;cfg.diarProvider='assemblyai'}
+  // Prioridade de transcrição: Groq > OpenAI > Grok (mantém o padrão grátis na frente)
+  const provider=groq?'groqwhisper':openai?'whisper':grok?'grok':cfg.provider;
+  setProvider(provider,false);
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
-  // Sync UI fields
-  document.getElementById('apiKeyGroq').value=key;
+  // Sync campos das Configurações, pra abrir lá já preenchido também
+  if(groq)document.getElementById('apiKeyGroq').value=groq;
+  if(openai)document.getElementById('apiKey').value=openai;
+  if(grok)document.getElementById('apiKeyGrok').value=grok;
+  if(assembly)document.getElementById('apiKeyAssembly').value=assembly;
   localStorage.setItem('vox_onboarded','1');
   document.getElementById('onboardOverlay').style.display='none';
-  toast(t('🟢 Groq configurado! Pronto para transcrever.'));
+  toast(t('🟢 Configurado! Pronto para transcrever.'));
 }
 function skipOnboard(){
   localStorage.setItem('vox_onboarded','1');
@@ -2010,6 +2072,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   applyStaticI18n();_syncLangUI();
   loadCfg();loadHistory();updateStats();checkSend();applyView();loadFontSize();
   loadFolders();applyFolderFilter();_syncAudioCfgUI();
+  // Chegou sem NENHUMA chave (ex: limpou dados do navegador)? Tenta reaver do
+  // cofre nativo silenciosamente, sem interromper ninguém (mediation:'silent').
+  if(!Object.values(_keysPayload()).some(v=>v)){
+    restoreKeysFromCredentialVault(true).then(ok=>{if(ok){loadCfg();toast(t('🔒 Chaves restauradas do cofre do navegador!'))}});
+  }
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
   if(!localStorage.getItem('vox_welcomed')&&!document.querySelector('#cardsList .card:not(.proc-card)')){
     localStorage.setItem('vox_welcomed','1');
@@ -2905,7 +2972,73 @@ function saveCfg(close=true){
   cfg.txtKey=document.getElementById('txtKey').value.trim();
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
   updateDiarStatus();updateLocal100Badge();
+  saveKeysToCredentialVault(); // camada 1: cofre nativo do navegador/SO, silencioso, não bloqueia
   if(close){closeModal();toast(t('✅ Configurações salvas'))}
+}
+
+// ── BLINDAGEM DE CHAVES: duas camadas, nenhuma delas obrigatória ──
+// Camada 1 — cofre nativo do navegador/sistema (Chrome Password Manager,
+// iCloud Keychain no Safari). Não inventamos criptografia nenhuma aqui: só
+// pedimos pro navegador guardar, do mesmo jeito que ele guarda uma senha de
+// login — ele mesmo mostra a confirmação nativa, sincroniza entre os
+// aparelhos da mesma conta, sozinho.
+function _credSupported(){return typeof window.PasswordCredential!=='undefined'&&!!navigator.credentials}
+function _keysPayload(){return{apiKey:cfg.apiKey||'',apiKeyGrok:cfg.apiKeyGrok||'',apiKeyGroq:cfg.apiKeyGroq||'',apiKeyAssembly:cfg.apiKeyAssembly||'',apiKeyGladia:cfg.apiKeyGladia||'',txtKey:cfg.txtKey||'',txtBaseUrl:cfg.txtBaseUrl||'',txtModel:cfg.txtModel||'',txtProvider:cfg.txtProvider||''}}
+async function saveKeysToCredentialVault(){
+  if(!_credSupported())return false;
+  const payload=_keysPayload();
+  if(!Object.values(payload).some(v=>v))return false; // nada pra guardar ainda
+  try{
+    const cred=new PasswordCredential({id:'vox-api-keys',password:JSON.stringify(payload),name:'Vox · My Transcriber — API keys'});
+    await navigator.credentials.store(cred);
+    return true;
+  }catch(e){return false} // recusado ou indisponível — sem problema, é só uma camada extra
+}
+async function restoreKeysFromCredentialVault(silentOnly){
+  if(!_credSupported())return false;
+  try{
+    const cred=await navigator.credentials.get({password:true,mediation:silentOnly?'silent':'optional'});
+    if(!cred||!cred.password)return false;
+    const payload=JSON.parse(cred.password);
+    Object.assign(cfg,payload);
+    localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+    return true;
+  }catch(e){return false}
+}
+async function manualRestoreFromVault(){
+  const ok=await restoreKeysFromCredentialVault(false);
+  if(ok){loadCfg();toast(t('🔒 Chaves restauradas do cofre do navegador!'))}
+  else toast(t('ℹ️ Nenhuma chave encontrada no cofre do navegador'),true);
+}
+// Camada 2 — backup manual em arquivo (protegido por senha), funciona em
+// QUALQUER navegador/aparelho, sem depender de nenhuma API exótica. Reusa o
+// mesmo motor de criptografia do Vox Transfer (_txEncrypt/_txDecrypt).
+async function exportKeysBackup(){
+  const payload=_keysPayload();
+  if(!Object.values(payload).some(v=>v)){toast(t('ℹ️ Nenhuma chave configurada ainda'),true);return}
+  const pass=prompt(t('Crie uma senha para proteger o backup (vai precisar dela para restaurar):'));
+  if(!pass)return;
+  const u8=new TextEncoder().encode(JSON.stringify(payload));
+  const enc=await _txEncrypt(u8,pass);
+  const out={app:'vox-keys',v:1,data:_b64uEnc(enc)};
+  dl(JSON.stringify(out,null,2),'vox_chaves_backup.json');
+  toast(t('🔑 Backup baixado! Guarde num lugar seguro (Google Drive, iCloud, e-mail…)'));
+}
+function triggerImportKeysBackup(){document.getElementById('keysBackupInput').click()}
+async function importKeysBackup(e){
+  const file=e.target.files[0];e.target.value='';
+  if(!file)return;
+  let obj;try{obj=JSON.parse(await file.text())}catch(err){toast(t('❌ Arquivo inválido'),true);return}
+  if(!obj||obj.app!=='vox-keys'||!obj.data){toast(t('❌ Este não é um backup de chaves do Vox'),true);return}
+  const pass=prompt(t('Digite a senha desse backup:'));
+  if(!pass)return;
+  try{
+    const dec=await _txDecrypt(_b64uDec(obj.data),pass);
+    Object.assign(cfg,JSON.parse(new TextDecoder().decode(dec)));
+    localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+    loadCfg();
+    toast(t('✅ Chaves restauradas do backup!'));
+  }catch(err){toast(t('❌ Senha incorreta ou arquivo corrompido'),true)}
 }
 
 // ── RAM + RESET ──
