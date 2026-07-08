@@ -227,6 +227,7 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .conversa-btn:hover{border-color:var(--accent);color:var(--accent)}
 .conversa-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 .conversa-btn.primary:hover{background:var(--accent2);color:#fff}
+.conversa-stale{font-size:11.5px;color:var(--text4);padding:6px 4px;font-style:italic}
 /* Modo Conversa em foco: bolhas maiores, ocupa a tela */
 .cards.focus-mode .card.focus-active.conversa-on .bbl-wrap{flex:1;order:3;overflow-y:auto;padding:16px 18px;gap:12px}
 .cards.focus-mode .card.focus-active.conversa-on .bbl{max-width:78%}
@@ -1481,7 +1482,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.07.10';
+const VOX_VERSION='2026.07.07.11';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1588,6 +1589,8 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "Isto é uma <strong>estimativa</strong>: a IA lê o texto e tenta identificar onde cada pessoa fala, pelo CONTEÚDO — ela não ouve o áudio, então não é diarização de verdade (aquela do 🔮, que analisa as vozes). Funciona melhor com <strong>2 pessoas</strong> com papéis claros, como médico/paciente ou entrevistador/entrevistado.<br><br>É grátis e usa a mesma IA de texto já configurada.":"This is an <strong>estimate</strong>: the AI reads the text and tries to identify where each person speaks, based on CONTENT — it doesn't listen to the audio, so it's not real diarization (the 🔮 one, which analyzes voices). Works best with <strong>2 people</strong> in clear roles, like doctor/patient or interviewer/interviewee.<br><br>It's free and uses the same text AI already configured.",
 "Entendi, continuar":"Got it, continue","Separando falantes…":"Splitting speakers…",
 "Falantes separados (estimativa)! Ctrl+Z desfaz.":"Speakers split (estimate)! Ctrl+Z undoes.",
+"✏️ Editado manualmente — bolhas e tempos desativados (texto continua editável)":"✏️ Manually edited — bubbles and timestamps disabled (text still editable)",
+"ℹ️ Texto editado: bolhas e Modo Conversa foram desativados neste card":"ℹ️ Text edited: bubbles and Conversation Mode were disabled on this card",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 grátis</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free</small>",
 "<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>não pede cartão</strong>.</li> <li>No painel (Dashboard), copie sua API Key.</li> <li>Cole acima e salve — pronto! 🎉</li> </ol> <br> 💰 <strong>Como funciona o custo:</strong> você ganha <strong>US$50 de crédito grátis</strong> ao criar a conta (sem cartão). A diarização consome ~US$0,23 por hora de áudio — ou seja, dá para transcrever cerca de <strong>200 horas</strong> antes de precisar pagar qualquer coisa. Só depois que o crédito acaba é que a AssemblyAI pede um cartão.<br> 🎯 <strong>Ideal para:</strong> quem quer a diarização mais precisa com um crédito inicial generoso.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>no card required</strong>.</li> <li>In the dashboard, copy your API Key.</li> <li>Paste above and save — done! 🎉</li> </ol> <br> 💰 <strong>How the cost works:</strong> you get <strong>US$50 in free credit</strong> when you create the account (no card). Diarization costs ~US$0.23 per hour of audio — that's about <strong>200 hours</strong> before you pay anything. Only after the credit runs out does AssemblyAI ask for a card.<br> 🎯 <strong>Great for:</strong> those who want the most accurate diarization with a generous starting credit.",
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
@@ -3358,22 +3361,25 @@ function _updateExtCount(id){
 // ── CARD UNDO/REDO ──
 const _ch={};
 let _lastAICard=null;
+// Escopo ".cb textarea" (não o genérico "textarea"): com o painel Avançado aberto,
+// ele também tem um <textarea> (o rascunho) que fica ANTES na ordem do DOM — o
+// seletor genérico pegava esse por engano em vez do texto real do card.
 function pushCardHistory(id){
-  const ta=document.getElementById(id)?.querySelector('textarea');if(!ta)return;
+  const ta=document.getElementById(id)?.querySelector('.cb textarea');if(!ta)return;
   if(!_ch[id])_ch[id]={u:[],r:[]};
   _ch[id].u.push(ta.value);if(_ch[id].u.length>30)_ch[id].u.shift();
   _ch[id].r=[];
   updateCardUndoBtns(id);
 }
 function cardUndo(id){
-  const ta=document.getElementById(id)?.querySelector('textarea');if(!ta)return false;
+  const ta=document.getElementById(id)?.querySelector('.cb textarea');if(!ta)return false;
   if(!_ch[id]?.u?.length)return false;
   _ch[id].r.push(ta.value);
   ta.value=_ch[id].u.pop();
   autoR(ta);updateFooter(id);saveHistory();updateCardUndoBtns(id);toast(t('↩ Desfeito'));return true;
 }
 function cardRedo(id){
-  const ta=document.getElementById(id)?.querySelector('textarea');if(!ta)return false;
+  const ta=document.getElementById(id)?.querySelector('.cb textarea');if(!ta)return false;
   if(!_ch[id]?.r?.length)return false;
   _ch[id].u.push(ta.value);
   ta.value=_ch[id].r.pop();
@@ -4137,7 +4143,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         </button>
         <button class="icon-btn" id="cu-${id}" onclick="cardUndo('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
         <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
-        <button class="icon-btn" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">
+        <button class="icon-btn" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
         <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">
@@ -4166,9 +4172,10 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
     </div>
     <div class="lens-panel" id="lens-${id}"></div>
     <div class="lens-panel" id="exp-menu-${id}"></div>
+    <div class="adv-panel" id="adv-${id}"></div>
     <div class="spk-stats">${statsHtml}</div>
     <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}">⏱️</button></div>
-    <div class="conversa-bar">
+    <div class="conversa-bar" id="convbar-${id}">
       <button class="conversa-btn primary" onclick="enterConversa('${id}')">💬 ${t('Modo Conversa')}</button>
       <button class="conversa-btn" onclick="diarToStandardCard('${id}')" title="${t('Vira uma nota comum, na pasta atual')}">💾 ${t('Virar card padrão')}</button>
     </div>
@@ -5377,8 +5384,23 @@ function advSaveReplace(id){
   const card=document.getElementById(id);if(!card)return;
   const cta=card.querySelector('.cb textarea');if(!cta)return;
   pushCardHistory(id);cta.value=val;autoR(cta);updateFooter(id);saveHistory();
+  if(card.dataset.diarized==='true')diarMarkStale(id);
   toast(t('✅ Card atualizado! Ctrl+Z desfaz.'));
   exitAdvanced(id);
+}
+// Editar o roteiro pelo Avançado faz o texto divergir dos dados originais da
+// diarização (utterances). Em vez de tentar reconstruí-los, desativa bolhas/
+// Modo Conversa/tempos com um aviso claro — o roteiro (texto) continua editável.
+function diarMarkStale(id){
+  const card=document.getElementById(id);if(!card)return;
+  if(card.dataset.bblStale==='true')return; // já avisado
+  card.dataset.bblStale='true';
+  if(card.dataset.view==='bolhas')toggleDiarView(id);
+  document.getElementById('dv-'+id)?.setAttribute('disabled','');
+  document.getElementById('tt-'+id)?.setAttribute('disabled','');
+  const cb=document.getElementById('convbar-'+id);
+  if(cb)cb.innerHTML=`<span class="conversa-stale">${t('✏️ Editado manualmente — bolhas e tempos desativados (texto continua editável)')}</span>`;
+  toast(t('ℹ️ Texto editado: bolhas e Modo Conversa foram desativados neste card'));
 }
 function advSaveNew(id){
   const ta=document.getElementById('adv-draft-'+id);if(!ta)return;
