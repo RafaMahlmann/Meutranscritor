@@ -1513,7 +1513,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.08.13';
+const VOX_VERSION='2026.07.08.14';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1983,7 +1983,9 @@ function skipOnboard(){
 }
 
 // ── ABOUT / INTRO VIDEO ──
+let introThenAbout=false;
 function openAbout(){
+  introThenAbout=true;
   playIntroVideo(true);
 }
 function closeAbout(){document.getElementById('aboutOverlay').style.display='none'}
@@ -2008,7 +2010,7 @@ function playIntroVideo(userInitiated=false){
     });
   }
 }
-function closeIntroVideo(){
+function closeIntroVideo(finished=false){
   const overlay=document.getElementById('vintroOverlay');
   const video=document.getElementById('vintroVideo');
   if(!video||!overlay)return;
@@ -2016,6 +2018,11 @@ function closeIntroVideo(){
   overlay.classList.remove('on');
   document.body.style.overflow='';
   localStorage.setItem('vox_intro_seen','1');
+  if(finished&&introThenAbout){
+    introThenAbout=false;
+    document.getElementById('aboutVer').textContent=VOX_VERSION;
+    document.getElementById('aboutOverlay').style.display='flex';
+  }
 }
 function unmuteIntroVideo(e){
   if(e)e.stopPropagation();
@@ -2095,7 +2102,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Vídeo de abertura: primeira execução ou após reset de fábrica
   maybeAutoPlayIntro();
   const vintroVideo=document.getElementById('vintroVideo');
-  if(vintroVideo)vintroVideo.addEventListener('ended',closeIntroVideo);
+  if(vintroVideo)vintroVideo.addEventListener('ended',()=>closeIntroVideo(true));
   // Onboarding para quem já tinha mic mas nunca configurou provedor
   if(localStorage.getItem('vox_mic_granted')==='1'&&!localStorage.getItem('vox_onboarded')&&!cfg.apiKeyGroq&&!cfg.apiKey&&!cfg.apiKeyGrok){
     setTimeout(()=>document.getElementById('onboardOverlay').style.display='flex',600);
