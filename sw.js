@@ -1,6 +1,10 @@
-const CACHE='vox-v6';
+const CACHE='vox-v7';
+const PRECACHE=[
+  './media/vox-intro.mp4'
+];
 
 self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).catch(()=>{}));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
@@ -19,7 +23,7 @@ self.addEventListener('fetch', e => {
   if (!url.startsWith(self.location.origin)) return;
   // HTML sempre vai para a rede (nunca cachear o app — updates instantâneos).
   if (e.request.headers.get('accept')?.includes('text/html') || url.endsWith('/')) return;
-  // Demais recursos same-origin (ícones, manifest): cache-first.
+  // Demais recursos same-origin (ícones, manifest, vídeo): cache-first.
   e.respondWith(caches.open(CACHE).then(c =>
     c.match(e.request).then(r => r || fetch(e.request).then(res => { c.put(e.request, res.clone()); return res; }))
   ));

@@ -688,6 +688,25 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .brand-sub{display:none}
   .api-toggle{grid-template-columns:1fr 1fr}
 }
+
+/* ── INTRO VIDEO PLAYER ── */
+.vintro-overlay{display:none;position:fixed;inset:0;background:#000;z-index:1000;align-items:center;justify-content:center;flex-direction:column}
+.vintro-overlay.on{display:flex}
+.vintro-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.vintro-video{max-width:min(900px,80vw);max-height:80vh;width:auto;height:auto;object-fit:contain;background:#000}
+.vintro-sound{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.vintro-sound.on{opacity:1;pointer-events:auto}
+.vintro-sound-btn{background:rgba(255,255,255,0.12);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.18);color:#fff;border-radius:50%;width:72px;height:72px;display:flex;align-items:center;justify-content:center;font-size:28px;transition:transform .15s ease,background .15s ease}
+.vintro-sound:hover .vintro-sound-btn{background:rgba(255,255,255,0.22);transform:scale(1.06)}
+.vintro-skip{position:absolute;bottom:28px;right:28px;background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:background .15s ease;z-index:2}
+.vintro-skip:hover{background:rgba(255,255,255,0.2)}
+@media(max-width:1024px){
+  .vintro-video{max-width:100vw;max-height:100vh;border-radius:0}
+  .vintro-skip{bottom:42px;right:18px}
+}
+@media(max-width:640px){
+  .vintro-skip{bottom:34px;right:14px;padding:7px 13px;font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -696,7 +715,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 <header>
   <div class="wrap hd">
     <div class="brand">
-      <div class="brand-icon" id="brandIcon" onclick="openAbout()" title="Sobre" data-i18n-title>Sobre</div>
+      <div class="brand-icon" id="brandIcon" onclick="openAbout()" title="Abertura" data-i18n-title>Abertura</div>
       <div class="brand-text">
         <div class="brand-name" id="appTitle">Vox · My Transcriber</div>
         <div class="brand-sub-row"><div class="brand-sub" id="brandSub" data-i18n>Transcription</div><span class="ver-badge" id="verBadge"></span></div>
@@ -1461,6 +1480,17 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- INTRO VIDEO OVERLAY -->
+<div class="vintro-overlay" id="vintroOverlay">
+  <div class="vintro-stage">
+    <video id="vintroVideo" class="vintro-video" src="media/vox-intro.mp4" preload="auto" playsinline webkit-playsinline muted></video>
+    <div class="vintro-sound" id="vintroSound" onclick="unmuteIntroVideo(event)">
+      <div class="vintro-sound-btn" aria-label="Ativar som">🔇</div>
+    </div>
+    <button class="vintro-skip" onclick="closeIntroVideo()" data-i18n>Pular</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast-wrap" id="toastWrap">
   <div class="toast" id="toastEl">
@@ -1483,7 +1513,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.07.12';
+const VOX_VERSION='2026.07.08.13';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1597,7 +1627,8 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>não pede cartão</strong>.</li> <li>No painel (Dashboard), copie sua API Key.</li> <li>Cole acima e salve — pronto! 🎉</li> </ol> <br> 💰 <strong>Como funciona o custo:</strong> você ganha <strong>US$50 de crédito grátis</strong> ao criar a conta (sem cartão). A diarização consome ~US$0,23 por hora de áudio — ou seja, dá para transcrever cerca de <strong>200 horas</strong> antes de precisar pagar qualquer coisa. Só depois que o crédito acaba é que a AssemblyAI pede um cartão.<br> 🎯 <strong>Ideal para:</strong> quem quer a diarização mais precisa com um crédito inicial generoso.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>no card required</strong>.</li> <li>In the dashboard, copy your API Key.</li> <li>Paste above and save — done! 🎉</li> </ol> <br> 💰 <strong>How the cost works:</strong> you get <strong>US$50 in free credit</strong> when you create the account (no card). Diarization costs ~US$0.23 per hour of audio — that's about <strong>200 hours</strong> before you pay anything. Only after the credit runs out does AssemblyAI ask for a card.<br> 🎯 <strong>Great for:</strong> those who want the most accurate diarization with a generous starting credit.",
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 de crédito</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free credit</small>",
-"<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copie sua API Key no painel</li> <li>Cole acima e salve — pronto!</li> </ol> <br> 💰 <strong>Custo:</strong> 10 horas TODO mês grátis (renova sozinho). Depois: ~US$0,61/h.<br> 🎯 <strong>Ideal para:</strong> uso frequente sem pagar nada — consultas, reuniões, entrevistas.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copy your API Key from the dashboard</li> <li>Paste above and save — done!</li> </ol> <br> 💰 <strong>Cost:</strong> 10 hours FREE every month (renews automatically). After that: ~US$0.61/h.<br> 🎯 <strong>Great for:</strong> frequent use without paying — consultations, meetings, interviews."};
+"<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copie sua API Key no painel</li> <li>Cole acima e salve — pronto!</li> </ol> <br> 💰 <strong>Custo:</strong> 10 horas TODO mês grátis (renova sozinho). Depois: ~US$0,61/h.<br> 🎯 <strong>Ideal para:</strong> uso frequente sem pagar nada — consultas, reuniões, entrevistas.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a></li> <li>Copy your API Key from the dashboard</li> <li>Paste above and save — done!</li> </ol> <br> 💰 <strong>Cost:</strong> 10 hours FREE every month (renews automatically). After that: ~US$0.61/h.<br> 🎯 <strong>Great for:</strong> frequent use without paying — consultations, meetings, interviews.",
+"Pular":"Skip","Abertura":"Intro"};
 
 // ── STATE ──
 let MR=null,chunks=[],recStart=null,recTimer=null;
@@ -1951,12 +1982,54 @@ function skipOnboard(){
   toast(t('✅ Microfone ativado! Configure um provedor nas ⚙️ Configurações.'));
 }
 
-// ── ABOUT ──
+// ── ABOUT / INTRO VIDEO ──
 function openAbout(){
-  document.getElementById('aboutVer').textContent=VOX_VERSION;
-  document.getElementById('aboutOverlay').style.display='flex';
+  playIntroVideo(true);
 }
 function closeAbout(){document.getElementById('aboutOverlay').style.display='none'}
+
+function playIntroVideo(userInitiated=false){
+  const overlay=document.getElementById('vintroOverlay');
+  const video=document.getElementById('vintroVideo');
+  const sound=document.getElementById('vintroSound');
+  if(!video||!overlay)return;
+  video.currentTime=0;
+  video.muted=!userInitiated;
+  if(sound)sound.classList.toggle('on',video.muted);
+  overlay.classList.add('on');
+  document.body.style.overflow='hidden';
+  const playPromise=video.play();
+  if(playPromise&&typeof playPromise.catch==='function'){
+    playPromise.catch(()=>{
+      // Autoplay bloqueado: oferece botão de som
+      video.muted=true;
+      if(sound)sound.classList.add('on');
+      video.play().catch(()=>{});
+    });
+  }
+}
+function closeIntroVideo(){
+  const overlay=document.getElementById('vintroOverlay');
+  const video=document.getElementById('vintroVideo');
+  if(!video||!overlay)return;
+  video.pause();
+  overlay.classList.remove('on');
+  document.body.style.overflow='';
+  localStorage.setItem('vox_intro_seen','1');
+}
+function unmuteIntroVideo(e){
+  if(e)e.stopPropagation();
+  const video=document.getElementById('vintroVideo');
+  const sound=document.getElementById('vintroSound');
+  if(!video)return;
+  video.muted=false;
+  if(sound)sound.classList.remove('on');
+  video.play().catch(()=>{});
+}
+function maybeAutoPlayIntro(){
+  if(localStorage.getItem('vox_intro_seen'))return;
+  playIntroVideo(false);
+}
 async function shareApp(){
   const url='https://rafamahlmann.github.io/Meutranscritor/';
   try{
@@ -2019,6 +2092,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('btnFolders').classList.add('folders-on');
   }
   updateSpeedBadge();syncLocalModel();checkMicPermission();checkBrowser();
+  // Vídeo de abertura: primeira execução ou após reset de fábrica
+  maybeAutoPlayIntro();
+  const vintroVideo=document.getElementById('vintroVideo');
+  if(vintroVideo)vintroVideo.addEventListener('ended',closeIntroVideo);
   // Onboarding para quem já tinha mic mas nunca configurou provedor
   if(localStorage.getItem('vox_mic_granted')==='1'&&!localStorage.getItem('vox_onboarded')&&!cfg.apiKeyGroq&&!cfg.apiKey&&!cfg.apiKeyGrok){
     setTimeout(()=>document.getElementById('onboardOverlay').style.display='flex',600);
