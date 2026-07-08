@@ -1315,6 +1315,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         </div>
       </div>
       <p style="font-size:11px;color:var(--text4);text-align:center;margin-top:18px">Vox · My Transcriber <span id="verSettings"></span></p>
+      <p style="font-size:11px;color:var(--text4);text-align:center;margin-top:4px"><a href="terms.html" target="_blank" rel="noopener noreferrer" style="color:var(--text4);text-decoration:underline" data-i18n>Termos de Uso</a> · <a href="privacy.html" target="_blank" rel="noopener noreferrer" style="color:var(--text4);text-decoration:underline" data-i18n>Política de Privacidade</a></p>
       </div><!-- /cfgPaneGeral -->
     </div>
     <div class="mf"><button class="btn-save" onclick="saveCfg()" data-i18n>Salvar</button></div>
@@ -1482,7 +1483,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.07.11';
+const VOX_VERSION='2026.07.07.12';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1591,6 +1592,7 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "Falantes separados (estimativa)! Ctrl+Z desfaz.":"Speakers split (estimate)! Ctrl+Z undoes.",
 "✏️ Editado manualmente — bolhas e tempos desativados (texto continua editável)":"✏️ Manually edited — bubbles and timestamps disabled (text still editable)",
 "ℹ️ Texto editado: bolhas e Modo Conversa foram desativados neste card":"ℹ️ Text edited: bubbles and Conversation Mode were disabled on this card",
+"Termos de Uso":"Terms of Use","Política de Privacidade":"Privacy Policy",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 grátis</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free</small>",
 "<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>não pede cartão</strong>.</li> <li>No painel (Dashboard), copie sua API Key.</li> <li>Cole acima e salve — pronto! 🎉</li> </ol> <br> 💰 <strong>Como funciona o custo:</strong> você ganha <strong>US$50 de crédito grátis</strong> ao criar a conta (sem cartão). A diarização consome ~US$0,23 por hora de áudio — ou seja, dá para transcrever cerca de <strong>200 horas</strong> antes de precisar pagar qualquer coisa. Só depois que o crédito acaba é que a AssemblyAI pede um cartão.<br> 🎯 <strong>Ideal para:</strong> quem quer a diarização mais precisa com um crédito inicial generoso.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>no card required</strong>.</li> <li>In the dashboard, copy your API Key.</li> <li>Paste above and save — done! 🎉</li> </ol> <br> 💰 <strong>How the cost works:</strong> you get <strong>US$50 in free credit</strong> when you create the account (no card). Diarization costs ~US$0.23 per hour of audio — that's about <strong>200 hours</strong> before you pay anything. Only after the credit runs out does AssemblyAI ask for a card.<br> 🎯 <strong>Great for:</strong> those who want the most accurate diarization with a generous starting credit.",
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
@@ -2588,29 +2590,6 @@ function exportAll(fmt,onlyToday=false){
   }
   dl(out,`vox_historico_${slug}.${fmt==='md'?'md':'txt'}`);
   toast(`📄 ${list.length} `+t('itens salvos'));
-}
-function exportObsidian(){
-  document.getElementById('expDrop').classList.remove('on');
-  const cards=[...document.querySelectorAll('.card:not(.proc-card)')].reverse();
-  if(!cards.length){toast(t('⚠️ Nenhuma transcrição'),true);return}
-  const slug=new Date().toISOString().slice(0,16).replace(/:/g,'-');
-  let out='';
-  cards.forEach((c,i)=>{
-    const text=c.querySelector('textarea')?.value.trim()||'';
-    const dt=c.dataset.dt||new Date().toISOString();
-    const tags=['transcrição',c.dataset.mode||'livre',...(c.dataset.tags||'').split(',').filter(t=>t)];
-    const spks=JSON.parse(c.dataset.speakers||'{}');
-    const spkList=Object.values(spks).filter(Boolean).join(', ');
-    out+=`---\ndate: ${new Date(dt).toISOString().slice(0,19)}\ntags: [${tags.join(', ')}]\nmode: ${c.dataset.mode||'livre'}\napi: ${c.dataset.prov||'whisper'}\n`;
-    if(c.dataset.sessionName)out+=`title: ${c.dataset.sessionName}\n`;
-    if(spkList)out+=`speakers: [${spkList}]\n`;
-    out+=`---\n\n`;
-    if(c.dataset.sessionName)out+=`# ${c.dataset.sessionName}\n\n`;
-    out+=text;
-    if(i<cards.length-1)out+='\n\n---\n\n';
-  });
-  dl(out,`vox_obsidian_${slug}.md`);
-  toast(`📗 ${cards.length} `+t('notas exportadas!'));
 }
 function dl(content,filename){
   const a=document.createElement('a');
