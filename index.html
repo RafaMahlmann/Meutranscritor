@@ -1481,7 +1481,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.07.9';
+const VOX_VERSION='2026.07.07.10';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1583,6 +1583,11 @@ let I18N_EN={"Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summar
 "🔮 Diarização ativada":"🔮 Diarization on","🔮 Diarização desativada":"🔮 Diarization off",
 "O que é diarização?":"What is diarization?","Configurar agora":"Set up now","Entendi":"Got it",
 "É quando o app separa <strong>quem falou o quê</strong>. Em vez de um texto corrido, você vê a conversa organizada: <strong>Ana:</strong> uma fala, <strong>Bruno:</strong> outra fala — como um roteiro. Perfeito para <strong>consultas</strong> (profissional e paciente), <strong>reuniões</strong> e <strong>entrevistas</strong>.<br><br>Para reconhecer as vozes, o app usa um serviço especializado que você configura uma vez (leva 2 minutos e costuma ter uso grátis). É só ligar o botão 🔮 e gravar — o resto é automático.":"It's when the app separates <strong>who said what</strong>. Instead of one long text, you see the conversation organized: <strong>Ana:</strong> one line, <strong>Bruno:</strong> another — like a script. Perfect for <strong>consultations</strong> (professional and patient), <strong>meetings</strong> and <strong>interviews</strong>.<br><br>To recognize the voices, the app uses a specialized service you set up once (takes 2 minutes and usually has free usage). Just turn on the 🔮 button and record — the rest is automatic.",
+"👥 Separar falantes (IA)":"👥 Split speakers (AI)","Estimativa por texto — não ouve o áudio. Melhor com 2 pessoas.":"Text-based estimate — doesn't listen to the audio. Best with 2 people.",
+"Separar falantes (IA)":"Split speakers (AI)",
+"Isto é uma <strong>estimativa</strong>: a IA lê o texto e tenta identificar onde cada pessoa fala, pelo CONTEÚDO — ela não ouve o áudio, então não é diarização de verdade (aquela do 🔮, que analisa as vozes). Funciona melhor com <strong>2 pessoas</strong> com papéis claros, como médico/paciente ou entrevistador/entrevistado.<br><br>É grátis e usa a mesma IA de texto já configurada.":"This is an <strong>estimate</strong>: the AI reads the text and tries to identify where each person speaks, based on CONTENT — it doesn't listen to the audio, so it's not real diarization (the 🔮 one, which analyzes voices). Works best with <strong>2 people</strong> in clear roles, like doctor/patient or interviewer/interviewee.<br><br>It's free and uses the same text AI already configured.",
+"Entendi, continuar":"Got it, continue","Separando falantes…":"Splitting speakers…",
+"Falantes separados (estimativa)! Ctrl+Z desfaz.":"Speakers split (estimate)! Ctrl+Z undoes.",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 grátis</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free</small>",
 "<strong>Em 3 passos (2 minutos):</strong> <ol> <li>Crie a conta grátis em <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>não pede cartão</strong>.</li> <li>No painel (Dashboard), copie sua API Key.</li> <li>Cole acima e salve — pronto! 🎉</li> </ol> <br> 💰 <strong>Como funciona o custo:</strong> você ganha <strong>US$50 de crédito grátis</strong> ao criar a conta (sem cartão). A diarização consome ~US$0,23 por hora de áudio — ou seja, dá para transcrever cerca de <strong>200 horas</strong> antes de precisar pagar qualquer coisa. Só depois que o crédito acaba é que a AssemblyAI pede um cartão.<br> 🎯 <strong>Ideal para:</strong> quem quer a diarização mais precisa com um crédito inicial generoso.":"<strong>3 steps (2 minutes):</strong> <ol> <li>Create a free account at <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>no card required</strong>.</li> <li>In the dashboard, copy your API Key.</li> <li>Paste above and save — done! 🎉</li> </ol> <br> 💰 <strong>How the cost works:</strong> you get <strong>US$50 in free credit</strong> when you create the account (no card). Diarization costs ~US$0.23 per hour of audio — that's about <strong>200 hours</strong> before you pay anything. Only after the credit runs out does AssemblyAI ask for a card.<br> 🎯 <strong>Great for:</strong> those who want the most accurate diarization with a generous starting credit.",
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
@@ -4767,8 +4772,15 @@ function toggleLensMenu(id){
     `<span class="lens-ico">${ICO.plus||'+'}</span>`+
     `<span class="lens-opt-main"><span class="lens-opt-lbl">${t('+ criar receita')}</span><span class="lens-opt-d">${t('Encadeie lentes: a saída de uma vira a entrada da próxima')}</span></span>`+
   `</button>`;
-  html+=`<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">⚙️</div>`+
-    `<button class="lens-opt" onclick="closeLensPanel('${id}');enterAdvanced('${id}')">`+
+  const isDiarized=document.getElementById(id)?.dataset.diarized==='true';
+  html+=`<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">⚙️</div>`;
+  if(!isDiarized){
+    html+=`<button class="lens-opt" onclick="closeLensPanel('${id}');splitSpeakersByContext('${id}')">`+
+      `<span class="lens-ico">${ICO.users}</span>`+
+      `<span class="lens-opt-main"><span class="lens-opt-lbl">${t('👥 Separar falantes (IA)')}</span><span class="lens-opt-d">${t('Estimativa por texto — não ouve o áudio. Melhor com 2 pessoas.')}</span></span>`+
+    `</button>`;
+  }
+  html+=`<button class="lens-opt" onclick="closeLensPanel('${id}');enterAdvanced('${id}')">`+
       `<span class="lens-ico">${ICO.gear}</span>`+
       `<span class="lens-opt-main"><span class="lens-opt-lbl">${t('Avançado')}</span><span class="lens-opt-d">${t('Compare original x IA lado a lado, edite antes de salvar')}</span></span>`+
     `</button>`;
@@ -4901,6 +4913,49 @@ async function generateLens(L,text,key,focus=''){
   const reduce=`A mesma tarefa foi aplicada separadamente a ${chunks.length} blocos sequenciais de um texto longo. Abaixo estão os resultados parciais, na ordem original. Unifique-os em UM único resultado final coerente, no MESMO formato da tarefa, eliminando repetições e contradições entre blocos. Não invente conteúdo que não esteja nos parciais. ${_promptLang()}\n\n`+
     partials.map((p,i)=>`--- Resultado do bloco ${i+1} ---\n${p}`).join('\n\n');
   return (await callAI(reduce,key,'auto',2600,{system:L.sys,temperature:L.temp})).trim();
+}
+// ── B5: Diarização Leve por contexto (a IA de texto separa turnos SÓ lendo — não ouve áudio) ──
+function splitSpeakersByContext(id){
+  if(cfg.assist!==false&&!localStorage.getItem('vox_seen_splitctx')){
+    localStorage.setItem('vox_seen_splitctx','1');
+    const ov=_txOverlay();
+    ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
+      <div class="tx-title">👥 ${t('Separar falantes (IA)')}</div>
+      <div class="tx-sub" style="line-height:1.7">${t('Isto é uma <strong>estimativa</strong>: a IA lê o texto e tenta identificar onde cada pessoa fala, pelo CONTEÚDO — ela não ouve o áudio, então não é diarização de verdade (aquela do 🔮, que analisa as vozes). Funciona melhor com <strong>2 pessoas</strong> com papéis claros, como médico/paciente ou entrevistador/entrevistado.<br><br>É grátis e usa a mesma IA de texto já configurada.')}</div>
+      <div class="tx-row"><button class="tx-btn primary" onclick="closeTxOverlay();_runSplitSpeakers('${id}')">${t('Entendi, continuar')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Cancelar')}</button></div></div>`;
+    ov.classList.add('on');
+    return;
+  }
+  _runSplitSpeakers(id);
+}
+async function _runSplitSpeakers(id){
+  const card=document.getElementById(id);if(!card)return;
+  const ta=card.querySelector('textarea');
+  const text=(ta?.value||'').trim();
+  if(!text){toast(t('ℹ️ Card vazio — nada para transformar'),true);return}
+  const key=aiKey();
+  if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
+  toast('👥 '+t('Separando falantes…'));
+  try{
+    const prompt=`O texto abaixo é uma transcrição de fala com UMA OU MAIS pessoas conversando, sem marcação de quem fala. Releia com atenção e separe em turnos de fala, um por linha, no formato "Rótulo: fala". Regras estritas: NÃO invente, resuma ou altere o conteúdo das falas — preserve toda palavra do original, só reorganizando em turnos. Se os papéis ficarem claros pelo conteúdo (ex: quem faz perguntas clínicas vs quem relata sintomas), use rótulos descritivos (ex: "Médico", "Paciente", "Entrevistador", "Entrevistado"). Se não houver papéis claros ou for uma pessoa só falando, use "Pessoa 1", "Pessoa 2" etc. Responda APENAS com os turnos, sem comentário. ${_promptLang()}\n\nTexto:\n${text}`;
+    let result;
+    if(text.length<=LENS_CHUNK_CHARS){
+      result=(await callAI(prompt,key,'auto',2600,{temperature:0.3})).trim();
+    }else{
+      // Texto grande: mesmo map-reduce das lentes, mantendo os rótulos consistentes entre blocos
+      const chunks=_splitLensChunks(text);
+      const partials=[];
+      for(let i=0;i<chunks.length;i++){
+        toast('👥 '+t('bloco {i} de {n}…').replace('{i}',i+1).replace('{n}',chunks.length));
+        partials.push((await callAI(prompt.replace('Texto:\n'+text,'Texto (bloco '+(i+1)+' de '+chunks.length+'):\n'+chunks[i]),key,'auto',1800,{temperature:0.3})).trim());
+      }
+      result=partials.join('\n');
+    }
+    pushCardHistory(id);ta.value=result;autoR(ta);updateFooter(id);saveHistory();
+    const tags=(card.dataset.tags||'').split(',').filter(x=>x);
+    if(!tags.includes('dialogo-estimado')){tags.push('dialogo-estimado');card.dataset.tags=tags.join(',');renderTags(id,tags)}
+    toast('✅ '+t('Falantes separados (estimativa)! Ctrl+Z desfaz.'));
+  }catch(e){toast('❌ '+e.message,true)}
 }
 async function runLens(id,lensKey,focus=''){
   const card=document.getElementById(id);if(!card)return;
