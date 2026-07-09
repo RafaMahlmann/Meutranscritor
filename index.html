@@ -52,8 +52,9 @@
 /* Cards neutros: faixinha + elementos usam o acento da skin (sem arco-íris) */
 .card{--ca:var(--accent)!important;--cag:var(--accent-glow)!important;--cat:transparent!important}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased}
-.wrap{max-width:860px;margin:0 auto;padding:0 20px;width:100%;transition:max-width var(--transition)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px;width:100%}
 main.wrap.wrap-focus{max-width:none}
+.wrap.wrap-masonry{max-width:1600px}
 header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
 .hd{display:flex;align-items:center;justify-content:space-between;padding:13px 0}
 .brand{display:flex;align-items:center;gap:11px}
@@ -114,7 +115,7 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 
 /* ── CARDS LAYOUT ── */
 .cards{display:flex;flex-direction:column;gap:14px}
-.cards.masonry{display:block;columns:2;column-gap:14px}
+.cards.masonry{display:block;columns:340px;column-gap:14px}
 .cards.masonry .card{break-inside:avoid;margin-bottom:14px;display:inline-block;width:100%}
 .cards.masonry .card.proc-card{column-span:all}
 .cards.masonry .card.pinned-card{column-span:all}
@@ -409,7 +410,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 
 /* ── IBAR ── */
 .ibar{position:fixed;bottom:0;left:0;right:0;background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--border);padding:8px 0 20px;z-index:100}
-.ibar-inner{max-width:860px;margin:0 auto;padding:0 20px}
+.ibar-inner{max-width:1100px;margin:0 auto;padding:0 20px}
 .fstage{display:none;background:var(--accent-glow);border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:10px 14px;margin-bottom:8px;animation:slideIn 0.25s ease}
 .fstage.on{display:block}
 .fstage-top{display:flex;align-items:center;gap:10px}
@@ -1559,7 +1560,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.09.4';
+const VOX_VERSION='2026.07.09.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2228,6 +2229,7 @@ function applyView(){
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
   cl.classList.remove('masonry','focus-mode');
   document.querySelector('main.wrap').classList.toggle('wrap-focus',viewMode==='focus');
+  document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-masonry',viewMode==='masonry'));
   document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
   if(viewMode!=='focus')document.querySelectorAll('#cardsList .card.conversa-on').forEach(c=>c.classList.remove('conversa-on'));
   if(viewMode==='masonry'){
