@@ -1541,7 +1541,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.08.16';
+const VOX_VERSION='2026.07.08.17';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3560,6 +3560,14 @@ function _updateExtCount(id){
 // ── CARD UNDO/REDO ──
 const _ch={};
 let _lastAICard=null;
+// Lentes fora do lugar (inplace:false) criam CARD NOVO em vez de editar o
+// original — usar setLastAICard (não atribuir direto) pra manter o botão de
+// desfazer do cabeçalho em sincronia com o fallback "apaga o card criado".
+function setLastAICard(id){
+  const prev=_lastAICard;_lastAICard=id;
+  if(prev&&prev!==id)updateCardUndoBtns(prev);
+  updateCardUndoBtns(id);
+}
 // Escopo ".cb textarea" (não o genérico "textarea"): com o painel Avançado aberto,
 // ele também tem um <textarea> (o rascunho) que fica ANTES na ordem do DOM — o
 // seletor genérico pegava esse por engano em vez do texto real do card.
@@ -3586,8 +3594,18 @@ function cardRedo(id){
 }
 function updateCardUndoBtns(id){
   const u=document.getElementById('cu-'+id),r=document.getElementById('cr-'+id);
-  if(u)u.disabled=!(_ch[id]?.u?.length);
+  if(u)u.disabled=!(_ch[id]?.u?.length)&&id!==_lastAICard;
   if(r)r.disabled=!(_ch[id]?.r?.length);
+}
+// Usado pelo botão de desfazer no cabeçalho (e pela ribbon do modo foco): tenta
+// desfazer texto e, se não houver nada, cai no mesmo fallback do Ctrl+Z —
+// apagar o card que a IA acabou de criar (lentes fora do lugar geram card novo).
+function cardUndoBtn(id){
+  if(cardUndo(id))return true;
+  if(id===_lastAICard&&document.getElementById(id)){
+    doDelete(id);_lastAICard=null;toast(t('↩ Desfeito'));return true;
+  }
+  return false;
 }
 // Digitação manual: agrupa edições próximas no tempo num único passo de desfazer
 // (mesma técnica do CodeMirror/ProseMirror — newGroupDelay de 500ms), na MESMA
@@ -4344,7 +4362,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar no topo')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="${pinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4v2h10v-2l-2 -4v-6"/><path d="M12 16v5"/><path d="M8 4h8"/></svg>
         </button>
-        <button class="icon-btn" id="cu-${id}" onclick="cardUndo('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
+        <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
         <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
         <button class="icon-btn" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -4584,7 +4602,7 @@ async function aiSummarizeCard(id){
     const prompt=(SUMMARY_PROMPTS[mode]||SUMMARY_PROMPTS.livre)();
     const result=await callAI(prompt+'\n\nTexto:\n'+text,key);
     // Add summary as a new card
-    _lastAICard=addCard(result,null,0,'texto',cfg.provider,true,null,null,['resumo-ia',mode],t('Resumo IA — ')+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false);
+    setLastAICard(addCard(result,null,0,'texto',cfg.provider,true,null,null,['resumo-ia',mode],t('Resumo IA — ')+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false));
     toast(t('✅ Resumo gerado! Ctrl+Z para desfazer.'));
   }catch(e){toast('❌ '+e.message,true)}
 }
@@ -4931,7 +4949,7 @@ async function runRecipe(id,steps,name){
       text=await generateLens(L,text,key);
     }
     const mode=card.dataset.mode||'livre';
-    _lastAICard=addCard(text,null,0,'texto',cfg.provider,true,null,null,[_recipeSlug(name),mode],name+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false);
+    setLastAICard(addCard(text,null,0,'texto',cfg.provider,true,null,null,[_recipeSlug(name),mode],name+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false));
     toast('✅ '+name+' '+t('gerada! Ctrl+Z desfaz.'));
   }catch(e){toast('❌ '+e.message,true)}
 }
@@ -5184,7 +5202,7 @@ async function runLens(id,lensKey,focus=''){
       toast('✅ '+L.label+' '+t('aplicado! Ctrl+Z desfaz.'));
     }else{
       const mode=card.dataset.mode||'livre';
-      _lastAICard=addCard(result,null,0,'texto',cfg.provider,true,null,null,[L.tag,mode],L.label+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false);
+      setLastAICard(addCard(result,null,0,'texto',cfg.provider,true,null,null,[L.tag,mode],L.label+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false));
       toast('✅ '+L.label+' '+t('gerado! Ctrl+Z desfaz.'));
     }
   }catch(e){toast('❌ '+e.message,true)}
@@ -5233,7 +5251,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="${pinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4v2h10v-2l-2 -4v-6"/><path d="M12 16v5"/><path d="M8 4h8"/></svg>
         </button>
-        <button class="icon-btn" id="cu-${id}" onclick="cardUndo('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
+        <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
         <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
         <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21l15 -15l-3 -3l-15 15l3 3z"/><path d="M15 6l3 3"/><path d="M9 3a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/><path d="M19 13a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg>
@@ -5420,7 +5438,7 @@ function ribbonCopyObsidian(){const id=focusCardId();if(id)copyCardObsidian(id)}
 function ribbonRec(){const id=focusCardId();if(id)recHere(id)}
 function ribbonPin(){const id=focusCardId();if(id)togglePin(id)}
 function ribbonAdvanced(){const id=focusCardId();if(id)enterAdvanced(id)}
-function ribbonUndo(){const id=focusCardId();if(id&&!cardUndo(id))toast(t('ℹ️ Nada para desfazer'),true)}
+function ribbonUndo(){const id=focusCardId();if(id&&!cardUndoBtn(id))toast(t('ℹ️ Nada para desfazer'),true)}
 function ribbonRedo(){const id=focusCardId();if(id&&!cardRedo(id))toast(t('ℹ️ Nada para refazer'),true)}
 function ribbonLensMenu(){const id=focusCardId();if(id){closeLensPanel(id);toggleLensMenu(id)}else toast(t('ℹ️ Nenhum card em foco'),true)}
 
@@ -5610,7 +5628,7 @@ function advSaveNew(id){
   const val=ta.value.trim();if(!val)return;
   const card=document.getElementById(id);if(!card)return;
   const mode=card.dataset.mode||'livre';
-  _lastAICard=addCard(val,null,0,'texto',cfg.provider,true,null,null,['avancado',mode],t('Avançado')+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false);
+  setLastAICard(addCard(val,null,0,'texto',cfg.provider,true,null,null,['avancado',mode],t('Avançado')+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false));
   toast(t('✅ Novo card criado! Ctrl+Z desfaz.'));
   exitAdvanced(id);
 }
