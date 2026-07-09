@@ -1289,14 +1289,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         </label>
       </div>
       <div class="section-title" style="margin-top:16px" data-i18n>🔐 Blindagem das chaves de API</div>
-      <p class="fhint" style="margin-bottom:10px" data-i18n>Suas chaves ficam só no seu navegador — se ele "esquecer" (cache limpo, troca de aparelho), você as perde. Duas formas de se proteger, nenhuma obrigatória:</p>
-      <div class="maint-box" style="margin-bottom:8px">
-        <div class="maint-info">
-          <div class="maint-title" data-i18n>🔒 Cofre do navegador</div>
-          <div class="maint-desc" data-i18n>Guarda junto com suas senhas (Chrome/iCloud Keychain) — sincroniza sozinho entre seus aparelhos.</div>
-        </div>
-        <button class="maint-btn" onclick="manualRestoreFromVault()" data-i18n>Restaurar</button>
-      </div>
+      <p class="fhint" style="margin-bottom:10px" data-i18n>Suas chaves ficam só no seu navegador — se ele "esquecer" (cache limpo, troca de aparelho), você as perde de vez. Pra não digitar tudo de novo: baixe um backup protegido por senha e guarde num lugar seguro (e-mail pra você mesmo, nuvem, pendrive). Se um dia precisar reconfigurar, é só restaurar esse arquivo aqui — sem digitar as chaves de novo.</p>
       <div class="maint-box" style="margin-bottom:8px">
         <div class="maint-info">
           <div class="maint-title" data-i18n>💾 Backup em arquivo</div>
@@ -1560,7 +1553,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.09.10';
+const VOX_VERSION='2026.07.09.11';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1650,10 +1643,8 @@ let I18N_EN={"📉 Resumo":"📉 Summary","Corta e condensa o que foi dito":"Cut
 "Manter minhas transcrições e pastas":"Keep my transcriptions and folders",
 "💾 Baixar backup antes":"💾 Download backup first","Restaurar agora":"Restore now",
 "🔐 Blindagem das chaves de API":"🔐 API key protection",
-"Suas chaves ficam só no seu navegador — se ele \"esquecer\" (cache limpo, troca de aparelho), você as perde. Duas formas de se proteger, nenhuma obrigatória:":"Your keys live only in your browser — if it \"forgets\" (cache cleared, device change), you lose them. Two ways to protect yourself, neither mandatory:",
-"🔒 Cofre do navegador":"🔒 Browser vault","Guarda junto com suas senhas (Chrome/iCloud Keychain) — sincroniza sozinho entre seus aparelhos.":"Stored alongside your passwords (Chrome/iCloud Keychain) — syncs automatically across your devices.",
+"Suas chaves ficam só no seu navegador — se ele \"esquecer\" (cache limpo, troca de aparelho), você as perde de vez. Pra não digitar tudo de novo: baixe um backup protegido por senha e guarde num lugar seguro (e-mail pra você mesmo, nuvem, pendrive). Se um dia precisar reconfigurar, é só restaurar esse arquivo aqui — sem digitar as chaves de novo.":"Your keys live only in your browser — if it \"forgets\" (cache cleared, device change), you lose them for good. So you don't have to retype everything: download a password-protected backup and keep it somewhere safe (email to yourself, cloud, USB drive). If you ever need to reconfigure, just restore that file here — no retyping keys.",
 "💾 Backup em arquivo":"💾 File backup","Baixa um arquivo protegido por senha — funciona em qualquer aparelho, guarde onde quiser.":"Downloads a password-protected file — works on any device, keep it wherever you like.",
-"🔒 Chaves restauradas do cofre do navegador!":"🔒 Keys restored from the browser vault!","ℹ️ Nenhuma chave encontrada no cofre do navegador":"ℹ️ No keys found in the browser vault",
 "Crie uma senha para proteger o backup (vai precisar dela para restaurar):":"Create a password to protect the backup (you'll need it to restore):",
 "ℹ️ Nenhuma chave configurada ainda":"ℹ️ No keys configured yet",
 "🔑 Backup baixado! Guarde num lugar seguro (Google Drive, iCloud, e-mail…)":"🔑 Backup downloaded! Keep it somewhere safe (Google Drive, iCloud, email…)",
@@ -2051,7 +2042,6 @@ function finishOnboard(){
   const provider=groq?'groqwhisper':openai?'whisper':grok?'grok':cfg.provider;
   setProvider(provider,false);
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
-  saveKeysToCredentialVault(); // camada 1: mesma blindagem que a tela de Configurações já tinha
   // Sync campos das Configurações, pra abrir lá já preenchido também
   if(groq)document.getElementById('apiKeyGroq').value=groq;
   if(openai)document.getElementById('apiKey').value=openai;
@@ -2172,11 +2162,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   applyStaticI18n();_syncLangUI();
   loadCfg();loadHistory();updateStats();checkSend();applyView();loadFontSize();
   loadFolders();applyFolderFilter();_syncAudioCfgUI();
-  // Chegou sem NENHUMA chave (ex: limpou dados do navegador)? Tenta reaver do
-  // cofre nativo silenciosamente, sem interromper ninguém (mediation:'silent').
-  if(!Object.values(_keysPayload()).some(v=>v)){
-    restoreKeysFromCredentialVault(true).then(ok=>{if(ok){loadCfg();toast(t('🔒 Chaves restauradas do cofre do navegador!'))}});
-  }
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
   if(!localStorage.getItem('vox_welcomed')&&!document.querySelector('#cardsList .card:not(.proc-card)')){
     localStorage.setItem('vox_welcomed','1');
@@ -3077,47 +3062,17 @@ function saveCfg(close=true){
   cfg.txtKey=document.getElementById('txtKey').value.trim();
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
   updateDiarStatus();updateLocal100Badge();
-  saveKeysToCredentialVault(); // camada 1: cofre nativo do navegador/SO, silencioso, não bloqueia
   if(close){closeModal();toast(t('✅ Configurações salvas'))}
 }
 
-// ── BLINDAGEM DE CHAVES: duas camadas, nenhuma delas obrigatória ──
-// Camada 1 — cofre nativo do navegador/sistema (Chrome Password Manager,
-// iCloud Keychain no Safari). Não inventamos criptografia nenhuma aqui: só
-// pedimos pro navegador guardar, do mesmo jeito que ele guarda uma senha de
-// login — ele mesmo mostra a confirmação nativa, sincroniza entre os
-// aparelhos da mesma conta, sozinho.
-function _credSupported(){return typeof window.PasswordCredential!=='undefined'&&!!navigator.credentials}
+// ── BLINDAGEM DE CHAVES: backup manual em arquivo (protegido por senha) ──
+// Funciona em QUALQUER navegador/aparelho. Reusa o mesmo motor de
+// criptografia do Vox Transfer (_txEncrypt/_txDecrypt).
+// (Removido: cofre nativo via Credential Management API — o Chrome atual
+// não aceita mais PasswordCredential.store() por código, só por formulário
+// nativo de login; navigator.credentials.store() sempre lançava
+// NotSupportedError, então essa camada nunca funcionou de verdade.)
 function _keysPayload(){return{apiKey:cfg.apiKey||'',apiKeyGrok:cfg.apiKeyGrok||'',apiKeyGroq:cfg.apiKeyGroq||'',apiKeyAssembly:cfg.apiKeyAssembly||'',apiKeyGladia:cfg.apiKeyGladia||'',txtKey:cfg.txtKey||'',txtBaseUrl:cfg.txtBaseUrl||'',txtModel:cfg.txtModel||'',txtProvider:cfg.txtProvider||''}}
-async function saveKeysToCredentialVault(){
-  if(!_credSupported())return false;
-  const payload=_keysPayload();
-  if(!Object.values(payload).some(v=>v))return false; // nada pra guardar ainda
-  try{
-    const cred=new PasswordCredential({id:'vox-api-keys',password:JSON.stringify(payload),name:'Vox · My Transcriber — API keys'});
-    await navigator.credentials.store(cred);
-    return true;
-  }catch(e){return false} // recusado ou indisponível — sem problema, é só uma camada extra
-}
-async function restoreKeysFromCredentialVault(silentOnly){
-  if(!_credSupported())return false;
-  try{
-    const cred=await navigator.credentials.get({password:true,mediation:silentOnly?'silent':'optional'});
-    if(!cred||!cred.password)return false;
-    const payload=JSON.parse(cred.password);
-    Object.assign(cfg,payload);
-    localStorage.setItem('vox_cfg',JSON.stringify(cfg));
-    return true;
-  }catch(e){return false}
-}
-async function manualRestoreFromVault(){
-  const ok=await restoreKeysFromCredentialVault(false);
-  if(ok){loadCfg();toast(t('🔒 Chaves restauradas do cofre do navegador!'))}
-  else toast(t('ℹ️ Nenhuma chave encontrada no cofre do navegador'),true);
-}
-// Camada 2 — backup manual em arquivo (protegido por senha), funciona em
-// QUALQUER navegador/aparelho, sem depender de nenhuma API exótica. Reusa o
-// mesmo motor de criptografia do Vox Transfer (_txEncrypt/_txDecrypt).
 async function exportKeysBackup(){
   const payload=_keysPayload();
   if(!Object.values(payload).some(v=>v)){toast(t('ℹ️ Nenhuma chave configurada ainda'),true);return}
