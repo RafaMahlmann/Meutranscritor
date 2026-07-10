@@ -509,10 +509,16 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .lens-opt-main{display:flex;flex-direction:column;gap:1px;line-height:1.25}
 .lens-opt-lbl{font-size:13px;font-weight:600;color:var(--text)}
 .lens-opt-d{font-size:11px;color:var(--text4);font-weight:400}
-.lens-opt.is-main{background:var(--accent-glow)}
-.lens-star{margin-left:auto;font-size:15px;color:var(--text4);padding:2px 6px;cursor:pointer;flex-shrink:0;transition:color var(--transition)}
-.lens-star:hover{color:var(--warning)}
-.lens-star.on{color:var(--warning)}
+.lens-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:2px 10px 8px}
+.lens-card{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 30px 10px 10px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:5px;font-family:var(--font);transition:all var(--transition)}
+.lens-card:hover{border-color:var(--cat,var(--accent))}
+.lens-card.is-fav{border-color:var(--warning)}
+.lens-card-ico{width:26px;height:26px;border-radius:9px;background:color-mix(in srgb,var(--cat,var(--accent)) 18%,transparent);color:var(--cat,var(--accent));display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.lens-card-ico svg{width:14px;height:14px}
+.lens-card-lbl{font-size:12.5px;font-weight:600;color:var(--text)}
+.lens-card-d{font-size:10.5px;color:var(--text4);line-height:1.35}
+.lens-star{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1;background:var(--bg-input);color:var(--text4);border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.1);cursor:pointer;flex-shrink:0;transition:all var(--transition)}
+.lens-star.on{background:var(--warning);color:#fff;border-color:var(--warning);box-shadow:inset 0 2px 3px rgba(0,0,0,0.35)}
 .lens-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px}
 .lens-chips-lbl{font-size:10px;font-weight:700;color:var(--text4);letter-spacing:0.3px}
 .lens-chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg-card);border:1px solid var(--accent);color:var(--accent);border-radius:20px;padding:4px 11px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition)}
@@ -1650,7 +1656,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.10.6';
+const VOX_VERSION='2026.07.10.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1823,7 +1829,7 @@ let stats={count:0,sec:0,words:0};
 let cfg={
   provider:'whisper',apiKey:'',apiKeyGrok:'',apiKeyGroq:'',lang:'',
   diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',apiKeyGladia:'',
-  aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',recipes:[],
+  aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',favLenses:[],recipes:[],
   txtProvider:'groq',txtModelGroq:'llama-3.3-70b-versatile',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:'',
   assist:true
 };
@@ -3080,6 +3086,7 @@ function updateLocal100Badge(){
 function loadCfg(){
   const s=localStorage.getItem('vox_cfg');
   if(s)cfg={...cfg,...JSON.parse(s)};
+  if(!cfg.favLenses)cfg.favLenses=cfg.mainLens?[cfg.mainLens]:[];
   document.getElementById('apiKey').value=cfg.apiKey||'';
   document.getElementById('apiKeyGrok').value=cfg.apiKeyGrok||'';
   document.getElementById('apiKeyGroq').value=cfg.apiKeyGroq||'';
@@ -4856,10 +4863,8 @@ const ICO={
 // ── VITRINE: chips de lente pós-transcrição + lente protagonista ──
 function quickLensesFor(mode){
   const base={consulta:['corretor','soap','decisoes'],reuniao:['corretor','decisoes','mesa'],entrevista:['corretor','socraticas','resumo'],livre:['corretor','resumo','mesa']}[mode]||['corretor','resumo','mesa'];
-  if(cfg.mainLens){
-    if(cfg.mainLens.startsWith('recipe:'))return [cfg.mainLens,...base].slice(0,3);
-    if(LENSES[cfg.mainLens])return [cfg.mainLens,...base.filter(k=>k!==cfg.mainLens)].slice(0,3);
-  }
+  const favs=(cfg.favLenses||[]).filter(k=>k.startsWith('recipe:')||LENSES[k]);
+  if(favs.length)return [...favs,...base.filter(k=>!favs.includes(k))].slice(0,3);
   return base;
 }
 function _recipeChipHtml(id,mk){
@@ -4889,10 +4894,13 @@ function mainLensLabel(k){
   }
   return LENSES[k]?.label||'';
 }
-function setMainLens(k,cardId){
-  cfg.mainLens=cfg.mainLens===k?'':k;
+function toggleFavLens(k,cardId){
+  cfg.favLenses=cfg.favLenses||[];
+  const i=cfg.favLenses.indexOf(k);
+  const nowFav=i===-1;
+  if(nowFav)cfg.favLenses.push(k);else cfg.favLenses.splice(i,1);
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
-  toast(cfg.mainLens?('⭐ '+mainLensLabel(k)+' '+t('agora é sua lente padrão')):t('⭐ Lente padrão removida'));
+  toast(nowFav?('⭐ '+mainLensLabel(k)+' '+t('agora é sua lente padrão')):t('⭐ Lente padrão removida'));
   if(cardId){closeLensPanel(cardId);toggleLensMenu(cardId)}
 }
 async function shareCard(id){
@@ -5075,11 +5083,11 @@ function txAccept(){
 // Cada lente tem: persona (sys), temperatura própria, e opcionalmente pass1
 // (análise prévia em duas passadas — a IA primeiro monta o roteiro, depois escreve).
 const LENS_CATS={
-  resumo:{title:'📉 Resumo',desc:'Corta e condensa o que foi dito'},
-  estrutura:{title:'🗂️ Estrutura',desc:'Reorganiza tudo, sem cortar nada'},
-  extracao:{title:'🎯 Extração',desc:'Puxa só um recorte específico, descarta o resto'},
-  gerar:{title:'💡 Gerar & desafiar',desc:'Cria algo novo em cima do texto: análise, perguntas, debate'},
-  converter:{title:'🔄 Converter',desc:'Muda o formato para outro público ou uso'}
+  resumo:{title:'📉 Resumo',desc:'Corta e condensa o que foi dito',color:'#ec4899'},
+  estrutura:{title:'🗂️ Estrutura',desc:'Reorganiza tudo, sem cortar nada',color:'#f59e0b'},
+  extracao:{title:'🎯 Extração',desc:'Puxa só um recorte específico, descarta o resto',color:'#14b8a6'},
+  gerar:{title:'💡 Gerar & desafiar',desc:'Cria algo novo em cima do texto: análise, perguntas, debate',color:'#8b5cf6'},
+  converter:{title:'🔄 Converter',desc:'Muda o formato para outro público ou uso',color:'#3b82f6'}
 };
 const LENSES={
   corretor:{cat:'estrutura',get label(){return t('Corretor mínimo')},icon:ICO.check,inplace:true,temp:0.2,get desc(){return t('Corrige gramática e clareza, sem mudar o conteúdo')},
@@ -5160,7 +5168,7 @@ function runUserRecipe(i,cardId){const r=userRecipeByIdx(i);if(r)runRecipe(cardI
 function deleteUserRecipe(i,cardId){
   cfg.recipes.splice(i,1);
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
-  if(cfg.mainLens==='recipe:u'+i)setMainLens('recipe:u'+i,null);
+  cfg.favLenses=(cfg.favLenses||[]).filter(k=>k!=='recipe:u'+i);
   toast(t('🗑️ Receita excluída'));
   if(cardId){closeLensPanel(cardId);toggleLensMenu(cardId)}
 }
@@ -5168,37 +5176,40 @@ function toggleLensMenu(id){
   const p=document.getElementById('lens-'+id);if(!p)return;
   if(p.classList.contains('on')){p.classList.remove('on');p.innerHTML='';return}
   document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
+  const favs=cfg.favLenses||[];
   let html='';
   Object.entries(LENS_CATS).forEach(([cat,hd],ci)=>{
-    html+=`<div class="lens-hd"${ci>0?' style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px"':''}>${t(hd.title)}</div>`+
-      `<div class="lens-hd-sub">${t(hd.desc)}</div>`;
+    html+=`<div class="lens-hd" style="color:${hd.color}${ci>0?';border-top:1px solid var(--border);margin-top:4px;padding-top:9px':''}">${t(hd.title)}</div>`+
+      `<div class="lens-hd-sub">${t(hd.desc)}</div><div class="lens-grid" style="--cat:${hd.color}">`;
     Object.entries(LENSES).filter(([,L])=>L.cat===cat).forEach(([k,L])=>{
-      const isMain=cfg.mainLens===k;
-      html+=`<button class="lens-opt${isMain?' is-main':''}" onclick="runLens('${id}','${k}')">`+
-        `<span class="lens-ico">${L.icon}</span>`+
-        `<span class="lens-opt-main"><span class="lens-opt-lbl">${L.label}</span><span class="lens-opt-d">${L.desc}</span></span>`+
-        `<span class="lens-star${isMain?' on':''}" onclick="event.stopPropagation();setMainLens('${k}','${id}')" title="${t('Usar como padrão')}">${isMain?'★':'☆'}</span>`+
+      const isFav=favs.includes(k);
+      html+=`<button class="lens-card${isFav?' is-fav':''}" onclick="runLens('${id}','${k}')">`+
+        `<span class="lens-card-ico">${L.icon}</span>`+
+        `<span class="lens-card-lbl">${L.label}</span><span class="lens-card-d">${L.desc}</span>`+
+        `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();toggleFavLens('${k}','${id}')" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
       `</button>`;
     });
+    html+='</div>';
   });
-  html+=`<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">${t('⚡ Receitas')}</div>`;
+  html+=`<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">${t('⚡ Receitas')}</div><div class="lens-grid">`;
   RECIPES_FACTORY.forEach(r=>{
-    const mk='recipe:'+r.key;const isMain=cfg.mainLens===mk;
-    html+=`<button class="lens-opt${isMain?' is-main':''}" onclick="runRecipe('${id}',[${r.steps.map(s=>"'"+s+"'").join(',')}],'${r.name.replace(/'/g,"\\'")}')">`+
-      `<span class="lens-ico">${ICO.zap}</span>`+
-      `<span class="lens-opt-main"><span class="lens-opt-lbl">${r.name}</span><span class="lens-opt-d">${r.steps.map(k=>LENSES[k]?.label||k).join(' → ')}</span></span>`+
-      `<span class="lens-star${isMain?' on':''}" onclick="event.stopPropagation();setMainLens('${mk}','${id}')" title="${t('Usar como padrão')}">${isMain?'★':'☆'}</span>`+
+    const mk='recipe:'+r.key;const isFav=favs.includes(mk);
+    html+=`<button class="lens-card${isFav?' is-fav':''}" onclick="runRecipe('${id}',[${r.steps.map(s=>"'"+s+"'").join(',')}],'${r.name.replace(/'/g,"\\'")}')">`+
+      `<span class="lens-card-ico">${ICO.zap}</span>`+
+      `<span class="lens-card-lbl">${r.name}</span><span class="lens-card-d">${r.steps.map(k=>LENSES[k]?.label||k).join(' → ')}</span>`+
+      `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();toggleFavLens('${mk}','${id}')" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
     `</button>`;
   });
   (cfg.recipes||[]).forEach((r,i)=>{
-    const mk='recipe:u'+i;const isMain=cfg.mainLens===mk;
-    html+=`<button class="lens-opt${isMain?' is-main':''}" onclick="runUserRecipe(${i},'${id}')">`+
-      `<span class="lens-ico">${ICO.zap}</span>`+
-      `<span class="lens-opt-main"><span class="lens-opt-lbl">${escHtml(r.name)}</span><span class="lens-opt-d">${r.steps.map(k=>LENSES[k]?.label||k).join(' → ')}</span></span>`+
-      `<span class="lens-star${isMain?' on':''}" onclick="event.stopPropagation();setMainLens('${mk}','${id}')" title="${t('Usar como padrão')}">${isMain?'★':'☆'}</span>`+
+    const mk='recipe:u'+i;const isFav=favs.includes(mk);
+    html+=`<button class="lens-card${isFav?' is-fav':''}" onclick="runUserRecipe(${i},'${id}')">`+
+      `<span class="lens-card-ico">${ICO.zap}</span>`+
+      `<span class="lens-card-lbl">${escHtml(r.name)}</span><span class="lens-card-d">${r.steps.map(k=>LENSES[k]?.label||k).join(' → ')}</span>`+
+      `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();toggleFavLens('${mk}','${id}')" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
       `<button class="recipe-del" onclick="event.stopPropagation();deleteUserRecipe(${i},'${id}')" title="${t('Excluir receita')}">🗑</button>`+
     `</button>`;
   });
+  html+='</div>';
   html+=`<button class="lens-opt" onclick="openRecipeCreator('${id}')">`+
     `<span class="lens-ico">${ICO.plus||'+'}</span>`+
     `<span class="lens-opt-main"><span class="lens-opt-lbl">${t('+ criar receita')}</span><span class="lens-opt-d">${t('Encadeie lentes: a saída de uma vira a entrada da próxima')}</span></span>`+
