@@ -1656,7 +1656,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.10.7';
+const VOX_VERSION='2026.07.10.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4894,14 +4894,21 @@ function mainLensLabel(k){
   }
   return LENSES[k]?.label||'';
 }
-function toggleFavLens(k,cardId){
+function _toggleFav(k){
   cfg.favLenses=cfg.favLenses||[];
   const i=cfg.favLenses.indexOf(k);
   const nowFav=i===-1;
   if(nowFav)cfg.favLenses.push(k);else cfg.favLenses.splice(i,1);
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
   toast(nowFav?('⭐ '+mainLensLabel(k)+' '+t('agora é sua lente padrão')):t('⭐ Lente padrão removida'));
+}
+function toggleFavLens(k,cardId){
+  _toggleFav(k);
   if(cardId){closeLensPanel(cardId);toggleLensMenu(cardId)}
+}
+function toggleFavLensAdv(k,id){
+  _toggleFav(k);
+  renderAdvLensPicker(id);
 }
 async function shareCard(id){
   const text=(document.querySelector('#'+id+' textarea')?.value||'').trim();
@@ -5172,10 +5179,10 @@ function deleteUserRecipe(i,cardId){
   toast(t('🗑️ Receita excluída'));
   if(cardId){closeLensPanel(cardId);toggleLensMenu(cardId)}
 }
-function toggleLensMenu(id){
-  const p=document.getElementById('lens-'+id);if(!p)return;
-  if(p.classList.contains('on')){p.classList.remove('on');p.innerHTML='';return}
-  document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
+// Monta a grade colorida de lentes (compartilhada pelo menu normal do card
+// e pelo seletor dentro do modo Avançado) — runFn/starFn deixam cada
+// contexto decidir o que acontece ao rodar a lente / marcar favorito.
+function _lensCatsGridHtml(runFn,starFn){
   const favs=cfg.favLenses||[];
   let html='';
   Object.entries(LENS_CATS).forEach(([cat,hd],ci)=>{
@@ -5183,14 +5190,22 @@ function toggleLensMenu(id){
       `<div class="lens-hd-sub">${t(hd.desc)}</div><div class="lens-grid" style="--cat:${hd.color}">`;
     Object.entries(LENSES).filter(([,L])=>L.cat===cat).forEach(([k,L])=>{
       const isFav=favs.includes(k);
-      html+=`<button class="lens-card${isFav?' is-fav':''}" onclick="runLens('${id}','${k}')">`+
+      html+=`<button class="lens-card${isFav?' is-fav':''}" onclick="${runFn(k)}">`+
         `<span class="lens-card-ico">${L.icon}</span>`+
         `<span class="lens-card-lbl">${L.label}</span><span class="lens-card-d">${L.desc}</span>`+
-        `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();toggleFavLens('${k}','${id}')" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
+        `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();${starFn(k)}" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
       `</button>`;
     });
     html+='</div>';
   });
+  return html;
+}
+function toggleLensMenu(id){
+  const p=document.getElementById('lens-'+id);if(!p)return;
+  if(p.classList.contains('on')){p.classList.remove('on');p.innerHTML='';return}
+  document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
+  const favs=cfg.favLenses||[];
+  let html=_lensCatsGridHtml(k=>`runLens('${id}','${k}')`,k=>`toggleFavLens('${k}','${id}')`);
   html+=`<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">${t('⚡ Receitas')}</div><div class="lens-grid">`;
   RECIPES_FACTORY.forEach(r=>{
     const mk='recipe:'+r.key;const isFav=favs.includes(mk);
@@ -5236,7 +5251,7 @@ function toggleLensMenu(id){
 function _lensPanelAway(e){
   const on=document.querySelector('.lens-panel.on');
   if(!on){document.removeEventListener('click',_lensPanelAway);return}
-  const trigger=on.closest('.card,.ribbon')?.querySelector('[onclick*="toggleLensMenu"],[onclick*="ribbonLensMenu"]');
+  const trigger=on.closest('.card,.ribbon')?.querySelector('[onclick*="toggleLensMenu"],[onclick*="ribbonLensMenu"],[onclick*="toggleAdvLensMenu"]');
   if(!on.contains(e.target)&&!(trigger&&trigger.contains(e.target))){
     on.classList.remove('on');on.innerHTML='';
     document.removeEventListener('click',_lensPanelAway);
@@ -5705,8 +5720,9 @@ function reenterAdvanced(state){
 }
 function renderAdvancedPanel(id,original,draft){
   const panel=document.getElementById('adv-'+id);if(!panel)return;
-  const lensBtns=Object.entries(LENSES).map(([k,L])=>
-    `<button class="adv-lens-btn" onclick="advRunLens('${id}','${k}')" title="${L.label}">${L.icon}</button>`).join('');
+  const lensMenuBtn=`<button class="adv-lens-btn" onclick="toggleAdvLensMenu('${id}')" title="${t('✨ Transformar com IA')}">`+
+    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21l15 -15l-3 -3l-15 15l3 3z"/><path d="M15 6l3 3"/><path d="M9 3a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/><path d="M19 13a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg>`+
+  `</button>`;
   const undoRedoBtns=`<span class="adv-toolbar-sep"></span>`+
     `<button class="adv-lens-btn" id="adv-undo-${id}" onclick="advUndo('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>`+
     `<button class="adv-lens-btn" id="adv-redo-${id}" onclick="advRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>`+
@@ -5719,7 +5735,8 @@ function renderAdvancedPanel(id,original,draft){
       `<div class="adv-original">${escHtml(original)}<button class="adv-chev adv-chev-r" onclick="advSwipe('${id}',1)">${chevR}</button></div>`+
     `</div>`+
     `<div class="adv-pane adv-pane-draft"><div class="adv-col-lbl">${t('Editado pela IA')}</div>`+
-      `<div class="adv-toolbar">${lensBtns}${undoRedoBtns}</div>`+
+      `<div class="adv-toolbar">${lensMenuBtn}${undoRedoBtns}</div>`+
+      `<div class="lens-panel" id="adv-lens-${id}"></div>`+
       `<div class="adv-ta-wrap"><textarea class="adv-draft" id="adv-draft-${id}">${escHtml(draft)}</textarea><button class="adv-chev adv-chev-l" onclick="advSwipe('${id}',0)">${chevL}</button></div>`+
       `<div class="adv-prompt-row">`+
         `<input class="adv-prompt-input" id="adv-prompt-${id}" placeholder="${t('Ou digite uma instrução (ex: deixe mais formal)…')}" onkeydown="if(event.key==='Enter'){event.preventDefault();advRunCustom('${id}')}">`+
@@ -5734,6 +5751,26 @@ function renderAdvancedPanel(id,original,draft){
     `<button class="adv-btn" onclick="advSaveNew('${id}')">${t('+ Novo card')}</button>`+
     `<button class="adv-btn primary" onclick="advSaveReplace('${id}')">${t('Substituir original')}</button>`+
   `</div>`;
+}
+// Seletor de lentes dentro do modo Avançado — mesma grade colorida do menu
+// normal (_lensCatsGridHtml), mas rodando contra o rascunho (advRunLens) em
+// vez de criar/editar o card normal.
+function renderAdvLensPicker(id){
+  const panel=document.getElementById('adv-lens-'+id);if(!panel)return;
+  panel.innerHTML=_lensCatsGridHtml(k=>`advRunLensAndClose('${id}','${k}')`,k=>`toggleFavLensAdv('${k}','${id}')`);
+}
+function toggleAdvLensMenu(id){
+  const panel=document.getElementById('adv-lens-'+id);if(!panel)return;
+  if(panel.classList.contains('on')){panel.classList.remove('on');panel.innerHTML='';return}
+  document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
+  renderAdvLensPicker(id);
+  panel.classList.add('on');
+  setTimeout(()=>document.addEventListener('click',_lensPanelAway),0);
+}
+function advRunLensAndClose(id,key){
+  const panel=document.getElementById('adv-lens-'+id);
+  if(panel){panel.classList.remove('on');panel.innerHTML=''}
+  advRunLens(id,key);
 }
 function advSwipe(id,page){
   const split=document.getElementById('adv-split-'+id);if(!split)return;
