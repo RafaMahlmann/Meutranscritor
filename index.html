@@ -520,6 +520,27 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .lens-card-d{font-size:10.5px;color:var(--text4);line-height:1.35}
 .lens-star{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1;background:var(--bg-input);color:var(--text4);border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.1);cursor:pointer;flex-shrink:0;transition:all var(--transition)}
 .lens-star.on{background:var(--warning);color:#fff;border-color:var(--warning);box-shadow:inset 0 2px 3px rgba(0,0,0,0.35)}
+.lens-style-switch{display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px}
+.lens-style-btn{background:var(--bg-input);border:1px solid transparent;border-radius:8px;padding:5px 9px;font-size:13px;cursor:pointer;color:var(--text3);font-family:var(--font);transition:all var(--transition)}
+.lens-style-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.lens-map{position:relative;width:100%;min-height:420px;margin-top:4px;overflow:visible}
+#lensMapOverlay .mb{overflow-x:hidden}
+.map-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.map-line{stroke-width:1.2;opacity:0.35;fill:none}
+.map-hub,.map-node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;z-index:2}
+.map-hub-body{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1.5px solid var(--nc,var(--accent));font-size:22px;box-shadow:0 0 0 4px color-mix(in srgb,var(--nc,var(--accent)) 12%,transparent);position:relative}
+.map-hub-pulse{position:absolute;inset:-8px;border-radius:50%;border:1.5px solid var(--nc,var(--accent));opacity:.18;animation:mapPulse 3.4s ease-in-out infinite;pointer-events:none}
+@keyframes mapPulse{0%,100%{transform:scale(1);opacity:.18}50%{transform:scale(1.14);opacity:.34}}
+.map-hub-lbl{margin-top:6px;font-size:10px;font-weight:700;letter-spacing:.3px;color:var(--text3);white-space:nowrap;text-align:center}
+.map-node-btn{position:relative;background:none;border:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.map-node-body{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1.5px solid var(--nc,var(--accent));color:var(--nc,var(--accent));font-size:16px;transition:transform .15s ease,box-shadow .15s ease}
+.map-node-btn:hover .map-node-body{transform:scale(1.12);box-shadow:0 0 14px color-mix(in srgb,var(--nc,var(--accent)) 45%,transparent)}
+.map-node-burst{position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--nc,var(--accent));opacity:0;transform:scale(.6);transition:opacity .35s ease,transform .35s ease;pointer-events:none}
+.map-node.pop .map-node-body{transform:scale(.9)}
+.map-node.pop .map-node-burst{opacity:.7;transform:scale(1.55);transition:opacity .05s ease,transform .05s ease}
+.map-node-lbl{position:absolute;top:calc(100% + 5px);left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:3px 8px;font-size:10.5px;font-weight:600;color:var(--text2);white-space:normal;max-width:90px;line-height:1.25;text-align:center;opacity:0;pointer-events:none;transition:opacity .12s ease;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:5}
+.map-node:hover .map-node-lbl{opacity:1}
+.map-node .lens-star{position:absolute;top:-6px;right:-12px}
 .lens-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px}
 .lens-chips-lbl{font-size:10px;font-weight:700;color:var(--text4);letter-spacing:0.3px}
 .lens-chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg-card);border:1px solid var(--accent);color:var(--accent);border-radius:20px;padding:4px 11px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition)}
@@ -1482,6 +1503,17 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- MAPA DE LENTES (visual alternativo ao menu em cards) -->
+<div class="overlay" id="lensMapOverlay" onclick="if(event.target===this)closeLensMap()">
+  <div class="modal wide">
+    <div class="mh"><h2 data-i18n>🕸️ Mapa de lentes</h2><button class="mh-close" onclick="closeLensMap()">✕</button></div>
+    <div class="mb">
+      <div id="lensMapSwitch"></div>
+      <div class="lens-map" id="lensMapCanvas"></div>
+    </div>
+  </div>
+</div>
+
 <!-- POPUP INICIAR SERVIDOR LOCAL -->
 <div id="localStartOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);z-index:600;align-items:center;justify-content:center">
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.3);animation:modalIn 0.25s ease">
@@ -1643,7 +1675,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.10.9';
+const VOX_VERSION='2026.07.10.10';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1679,6 +1711,8 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+"🕸️ Mapa de lentes":"🕸️ Lens map",
+"Mapa":"Map",
 "💡 Padrão: <strong>Groq</strong> (grátis) — se você já configurou a chave Groq na aba Transcrição, a IA de texto já funciona sozinha, sem precisar mexer aqui.":"💡 Default: <strong>Groq</strong> (free) — if you've already set up your Groq key in the Transcription tab, the text AI already works on its own, no need to touch this.",
 "🎁 Grátis ou local — comece por aqui":"🎁 Free or local — start here",
 "Recomendamos fortemente o Z.ai: é realmente grátis, sem pegadinha e sem limite de tempo.":"We strongly recommend Z.ai: it's genuinely free, no catch, no time limit.",
@@ -1816,7 +1850,7 @@ let stats={count:0,sec:0,words:0};
 let cfg={
   provider:'whisper',apiKey:'',apiKeyGrok:'',apiKeyGroq:'',lang:'',
   diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',apiKeyGladia:'',
-  aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',favLenses:[],recipes:[],
+  aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',favLenses:[],lensMenuStyle:'list',recipes:[],
   txtProvider:'groq',txtModelGroq:'llama-3.3-70b-versatile',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:'',
   assist:true
 };
@@ -5187,12 +5221,119 @@ function _lensCatsGridHtml(runFn,starFn){
   });
   return html;
 }
+// Monta o "Mapa" — mesma lógica/dados de _lensCatsGridHtml, mas em nós
+// espalhados por categoria (hub central + lentes em leque, ligados por
+// linhas SVG) em vez de cards numa grade. Posições calculadas por
+// trigonometria simples, nada de layout manual por lente.
+function _lensCatsMapHtml(runFn,starFn){
+  const favs=cfg.favLenses||[];
+  const cats=Object.entries(LENS_CATS);
+  const N=cats.length;
+  const hubRx=34,hubRy=30,leafRx=24,leafRy=23;
+  const clamp=v=>Math.max(9,Math.min(91,v));
+  let lines='',nodes='';
+  cats.forEach(([cat,hd],ci)=>{
+    const angle=-90+ci*(360/N);
+    const rad=angle*Math.PI/180;
+    const hx=clamp(50+hubRx*Math.cos(rad)),hy=clamp(50+hubRy*Math.sin(rad));
+    const emoji=(t(hd.title).match(/^\S+/)||[''])[0];
+    nodes+=`<div class="map-hub" style="left:${hx}%;top:${hy}%;--nc:${hd.color}">`+
+      `<div class="map-hub-pulse"></div><div class="map-hub-body">${emoji}</div>`+
+      `<div class="map-hub-lbl">${t(hd.title).replace(/^\S+\s*/,'')}</div></div>`;
+    const items=Object.entries(LENSES).filter(([,L])=>L.cat===cat);
+    const M=items.length,spread=Math.min(160,Math.max(70,30*M));
+    items.forEach(([k,L],j)=>{
+      const off=M===1?0:(j-(M-1)/2)*(spread/(M-1));
+      const a=(angle+off)*Math.PI/180;
+      const lx=clamp(hx+leafRx*Math.cos(a)),ly=clamp(hy+leafRy*Math.sin(a));
+      const isFav=favs.includes(k);
+      lines+=`<line class="map-line" x1="${hx}" y1="${hy}" x2="${lx}" y2="${ly}" stroke="${hd.color}"/>`;
+      nodes+=`<div class="map-node${isFav?' is-fav':''}" style="left:${lx}%;top:${ly}%;--nc:${hd.color}">`+
+        `<button class="map-node-btn" onclick="_mapPop(this,()=>{${runFn(k)}})" title="${escHtml(L.label)}">`+
+          `<span class="map-node-burst"></span><span class="map-node-body">${L.icon}</span>`+
+        `</button>`+
+        `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();${starFn(k)}" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
+        `<div class="map-node-lbl">${escHtml(L.label)}</div>`+
+      `</div>`;
+    });
+  });
+  return `<svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>${nodes}`;
+}
+// Feedback de clique nos nós do Mapa: "aperta" e faz um anel de explosão
+// antes de rodar a ação — é isso que carrega a sensação satisfatória, sem
+// precisar de XP/nível nenhum.
+function _mapPop(btn,cb){
+  const wrap=btn.closest('.map-node');
+  if(wrap)wrap.classList.add('pop');
+  setTimeout(()=>{if(wrap)wrap.classList.remove('pop');cb&&cb()},220);
+}
+// Desenha as linhas do Mapa uma única vez quando o painel abre (sem loop).
+function _animateMapLines(root){
+  const lines=root.querySelectorAll('.map-line');
+  requestAnimationFrame(()=>{
+    lines.forEach((line,i)=>{
+      const len=line.getTotalLength();
+      line.style.strokeDasharray=len;
+      line.style.strokeDashoffset=len;
+      requestAnimationFrame(()=>{
+        line.style.transition='stroke-dashoffset .6s ease-out '+(i*35)+'ms';
+        line.style.strokeDashoffset=0;
+      });
+    });
+  });
+}
+let _lensMapCardId=null;
+function openLensMap(id){
+  _lensMapCardId=id;
+  document.getElementById('lensMapSwitch').innerHTML=_lensStyleSwitchHtml(id,'map');
+  renderLensMapCanvas(id);
+  document.getElementById('lensMapOverlay').classList.add('on');
+}
+function closeLensMap(){
+  document.getElementById('lensMapOverlay').classList.remove('on');
+  document.getElementById('lensMapCanvas').innerHTML='';
+  document.getElementById('lensMapSwitch').innerHTML='';
+  _lensMapCardId=null;
+}
+function renderLensMapCanvas(id){
+  const canvas=document.getElementById('lensMapCanvas');if(!canvas)return;
+  canvas.innerHTML=_lensCatsMapHtml(k=>`runLensFromMap('${id}','${k}')`,k=>`toggleFavLensMap('${k}','${id}')`);
+  _animateMapLines(canvas);
+}
+function runLensFromMap(id,k){closeLensMap();runLens(id,k)}
+function toggleFavLensMap(k,id){_toggleFav(k);renderLensMapCanvas(id)}
+// Alterna entre "Lista" (cards) e "Mapa" (constelação) — lembrado em
+// cfg.lensMenuStyle pra próxima vez que abrir o menu de lentes.
+function _lensStyleSwitchHtml(id,current){
+  return `<div class="lens-style-switch">`+
+    `<button class="lens-style-btn${current==='list'?' on':''}" onclick="switchLensStyle('${id}','list')" title="${t('Lista')}">🔲</button>`+
+    `<button class="lens-style-btn${current==='map'?' on':''}" onclick="switchLensStyle('${id}','map')" title="${t('Mapa')}">🕸️</button>`+
+  `</div>`;
+}
+function switchLensStyle(id,style){
+  cfg.lensMenuStyle=style;
+  localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+  document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
+  closeLensMap();
+  if(style==='map')openLensMap(id);else _renderLensListPanel(id);
+}
 function toggleLensMenu(id){
+  if((cfg.lensMenuStyle||'list')==='map'){
+    const ov=document.getElementById('lensMapOverlay');
+    if(ov.classList.contains('on')&&_lensMapCardId===id){closeLensMap();return}
+    openLensMap(id);
+    return;
+  }
   const p=document.getElementById('lens-'+id);if(!p)return;
   if(p.classList.contains('on')){p.classList.remove('on');p.innerHTML='';return}
+  _renderLensListPanel(id);
+}
+function _renderLensListPanel(id){
+  const p=document.getElementById('lens-'+id);if(!p)return;
   document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
   const favs=cfg.favLenses||[];
-  let html=_lensCatsGridHtml(k=>`runLens('${id}','${k}')`,k=>`toggleFavLens('${k}','${id}')`);
+  let html=_lensStyleSwitchHtml(id,'list');
+  html+=_lensCatsGridHtml(k=>`runLens('${id}','${k}')`,k=>`toggleFavLens('${k}','${id}')`);
   html+=`<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">${t('⚡ Receitas')}</div><div class="lens-grid">`;
   RECIPES_FACTORY.forEach(r=>{
     const mk='recipe:'+r.key;const isFav=favs.includes(mk);
