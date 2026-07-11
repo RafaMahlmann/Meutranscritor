@@ -153,6 +153,50 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .focus-nav-lbl{font-size:12px;color:var(--text3);font-weight:600;flex:1;text-align:center}
 .focus-nav-exit{background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:5px 12px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;margin-left:auto;transition:all var(--transition)}
 .ico-collapse{display:none}
+
+/* ── MODO DOCUMENTO (estilo Word/Docs) ──────────────────────────────────
+   Reaproveita a mesma máquina do Modo Foco (mesmo card .focus-active,
+   mesmo editor OverType) — só troca a "roupa": toolbar nova no lugar da
+   ribbon, papel branco centralizado, barra de baixo (.ibar) escondida.
+   Tudo escondido por padrão; body.doc-mode liga. */
+.doc-bar{display:none}
+body.doc-mode .doc-bar{display:block;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:8px 10px;margin-bottom:12px}
+body.doc-mode .focus-nav{display:none!important}
+body.doc-mode .ibar{display:none!important}
+.doc-toolbar{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+.doc-tgrp{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.doc-tsep{width:1px;align-self:stretch;background:var(--border);flex-shrink:0;margin:2px 2px}
+.doc-tbtn{background:none;border:none;color:var(--text3);border-radius:8px;padding:6px 9px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all var(--transition)}
+.doc-tbtn:hover{background:var(--bg-input);color:var(--text)}
+.doc-tbtn-danger:hover{background:rgba(255,59,48,0.1);color:var(--danger)}
+.doc-tbtn-exit{margin-left:auto;color:var(--accent)}
+.doc-tlbl{font-size:12px;color:var(--text3);font-weight:600;padding:0 4px;white-space:nowrap}
+.doc-rec-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,59,48,0.1);color:var(--danger);border-radius:20px;padding:3px 6px 3px 10px;font-size:11px;font-weight:700;animation:blink 1.4s infinite}
+.doc-rec-stop{background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:2px 5px}
+/* Toolbar nativa do OverType (negrito/título/lista) — só aparece no Modo
+   Documento (toolbar:true só é passado nesse modo, ver _mountFocusEditor).
+   Ela renderiza dentro do próprio papel, coladinha no topo do texto — como
+   a régua de formatação do Word fica dentro do documento, não no menu. */
+body.doc-mode .focus-ot-mount .overtype-toolbar{background:var(--bg-input)!important;border:none!important;border-bottom:1px solid var(--border)!important;border-radius:0!important;padding:6px 10px!important}
+body.doc-mode .focus-ot-mount .overtype-toolbar-button{color:var(--text3)!important;border-radius:8px!important}
+body.doc-mode .focus-ot-mount .overtype-toolbar-button:hover{background:var(--bg-card)!important;color:var(--text)!important}
+
+/* O "papel": card em foco vira página branca centralizada */
+body.doc-mode .cards.focus-mode .card.focus-active{max-width:850px;margin:0 auto;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+/* Cabeçalho do card vira "título do documento" — mantém os badges/nome de
+   sessão/timestamp que já existem, só esconde os ícones de ação (foram
+   pra toolbar) e a alcinha de arrastar (não faz sentido num documento só). */
+body.doc-mode .card.focus-active .ch{padding:16px 44px 12px;background:transparent}
+body.doc-mode .card.focus-active .ca-wrap,body.doc-mode .card.focus-active .drag-handle{display:none!important}
+body.doc-mode .card.focus-active .cb{padding:8px 44px 20px}
+body.doc-mode .card.focus-active .ctags{padding-left:44px;padding-right:44px}
+/* Rodapé do card vira barra de status estilo Word */
+body.doc-mode .card.focus-active .cf{padding:9px 44px;background:var(--bg-input);border-radius:0 0 5px 5px}
+@media(max-width:900px){
+  body.doc-mode .card.focus-active .ch,body.doc-mode .card.focus-active .cf{padding-left:20px;padding-right:20px}
+  body.doc-mode .card.focus-active .cb{padding-left:20px;padding-right:20px}
+  body.doc-mode .card.focus-active .ctags{padding-left:20px;padding-right:20px}
+}
 .focus-active .ico-collapse{display:inline}
 .focus-active .ico-expand{display:none}
 .font-sz-wrap{display:inline-flex;align-items:center;gap:1px;background:var(--bg-input);border-radius:8px;padding:2px 4px}
@@ -985,7 +1029,45 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <button class="focus-nav-btn" onclick="focusStep(1)" data-i18n>← Anterior</button>
           <span class="focus-nav-lbl" id="focusNavLbl">1 / 1</span>
           <button class="focus-nav-btn" onclick="focusStep(-1)" data-i18n>Próximo →</button>
+          <button class="focus-nav-btn" onclick="setViewMode('doc')" title="Ver como documento" data-i18n-title>📄 <span data-i18n>Documento</span></button>
           <button class="focus-nav-exit" onclick="setViewMode('list')" data-i18n>✕ Sair do Foco</button>
+        </div>
+      </div>
+      <!-- MODO DOCUMENTO: barra de ferramentas estilo Word/Docs. Reaproveita as MESMAS
+           funções do resto do app (nada de lógica nova) — só reorganiza onde os botões
+           moram. Fica escondida fora do viewMode 'doc' (ver .doc-bar no CSS). -->
+      <div class="doc-bar" id="docBar">
+        <div class="doc-toolbar">
+          <div class="doc-tgrp">
+            <button class="doc-tbtn" onclick="focusStep(1)" title="Anterior" data-i18n-title>‹</button>
+            <span class="doc-tlbl" id="docNavLbl">1 / 1</span>
+            <button class="doc-tbtn" onclick="focusStep(-1)" title="Próximo" data-i18n-title>›</button>
+          </div>
+          <div class="doc-tsep"></div>
+          <div class="doc-tgrp">
+            <button class="doc-tbtn" onclick="cardUndoBtn(_docCardId())" title="Desfazer (Ctrl+Z)" data-i18n-title>↩</button>
+            <button class="doc-tbtn" onclick="cardRedo(_docCardId())" title="Refazer (Ctrl+Shift+Z)" data-i18n-title>↪</button>
+          </div>
+          <div class="doc-tsep"></div>
+          <div class="doc-tgrp">
+            <button class="doc-tbtn" onclick="toggleLensMenu(_docCardId())" title="✨ Transformar com IA" data-i18n-title>✨</button>
+            <button class="doc-tbtn" onclick="enterAdvanced(_docCardId())" title="Avançado" data-i18n-title>⚙️</button>
+          </div>
+          <div class="doc-tsep"></div>
+          <div class="doc-tgrp">
+            <button class="doc-tbtn" onclick="recHere(_docCardId())" title="Gravar aqui" data-i18n-title>🎙️</button>
+            <button class="doc-tbtn" onclick="attachHere(_docCardId())" title="Anexar áudio ou texto aqui" data-i18n-title>📎</button>
+            <span class="doc-rec-chip" id="docRecChip" style="display:none">🔴 <span id="docRecTimer">00:00</span><button class="doc-rec-stop" onclick="stopRec()" title="Parar" data-i18n-title>⏹</button></span>
+          </div>
+          <div class="doc-tsep"></div>
+          <div class="doc-tgrp">
+            <button class="doc-tbtn" onclick="copyCard(_docCardId())" title="Copiar para a área de transferência" data-i18n-title>📋</button>
+            <button class="doc-tbtn" onclick="toggleExportMenu(_docCardId())" title="Exportar (copiar / baixar / Markdown)" data-i18n-title>⤴</button>
+            <button class="doc-tbtn" id="docPinBtn" onclick="togglePin(_docCardId())" title="Fixar" data-i18n-title>📌</button>
+            <button class="doc-tbtn doc-tbtn-danger" onclick="askDel(_docCardId())" title="Excluir" data-i18n-title>🗑</button>
+          </div>
+          <div class="doc-tsep"></div>
+          <button class="doc-tbtn doc-tbtn-exit" onclick="setViewMode('list')" title="Voltar à lista" data-i18n-title>✕ <span data-i18n>Voltar</span></button>
         </div>
       </div>
       <div class="cards" id="cardsList" style="display:none"></div>
@@ -1714,7 +1796,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.10.13';
+const VOX_VERSION='2026.07.11.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1750,6 +1832,9 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+"Documento":"Document",
+"Voltar":"Back",
+"Ver como documento":"View as document",
 "🕸️ Mapa de lentes":"🕸️ Lens map",
 "Mapa":"Map",
 "Trilha":"Track",
@@ -2386,30 +2471,36 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 // ── VIEW ──
 function toggleView(){
-  const modes=['list','masonry','focus'];
-  setViewMode(modes[(modes.indexOf(viewMode)+1)%3]);
+  const modes=['list','masonry','focus','doc'];
+  setViewMode(modes[(modes.indexOf(viewMode)+1)%4]);
 }
 function setViewMode(m){
   viewMode=m;localStorage.setItem('vox_view',m);applyView();
 }
+// O Modo Documento reaproveita 100% da máquina do Modo Foco (mesmo card
+// .focus-active, mesmo applyFocusCard/editor OverType) — só troca a "roupa"
+// via body.doc-mode (CSS). Por isso as duas condições abaixo tratam 'focus'
+// e 'doc' como a mesma coisa, exceto onde o visual precisa divergir.
 function applyView(){
   const cl=document.getElementById('cardsList');
   const nav=document.getElementById('focusNav');
+  const isFocusLike=viewMode==='focus'||viewMode==='doc';
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
   cl.classList.remove('masonry','focus-mode');
-  document.querySelector('main.wrap').classList.toggle('wrap-focus',viewMode==='focus');
+  document.body.classList.toggle('doc-mode',viewMode==='doc');
+  document.querySelector('main.wrap').classList.toggle('wrap-focus',isFocusLike);
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-masonry',viewMode==='masonry'));
-  if(viewMode!=='focus')_unmountFocusEditor();
+  if(!isFocusLike)_unmountFocusEditor();
   document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
-  if(viewMode!=='focus')document.querySelectorAll('#cardsList .card.conversa-on').forEach(c=>c.classList.remove('conversa-on'));
+  if(!isFocusLike)document.querySelectorAll('#cardsList .card.conversa-on').forEach(c=>c.classList.remove('conversa-on'));
   if(viewMode==='masonry'){
     cl.classList.add('masonry');if(cl.style.display!=='none')cl.style.display='block';
     nav.classList.remove('on');
     document.getElementById('viewLabel').innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
-  }else if(viewMode==='focus'){
+  }else if(isFocusLike){
     cl.classList.add('focus-mode');if(cl.style.display!=='none')cl.style.display='block';
-    nav.classList.add('on');
-    document.getElementById('viewLabel').textContent=t('Lista');
+    nav.classList.toggle('on',viewMode==='focus'); // no modo doc a ribbon fica escondida, a toolbar nova assume
+    document.getElementById('viewLabel').textContent=t(viewMode==='focus'?'Documento':'Lista');
     applyFocusCard();
   }else{
     if(cl.style.display!=='none')cl.style.display='flex';
@@ -2417,6 +2508,9 @@ function applyView(){
     document.getElementById('viewLabel').textContent=t('Masonry');
   }
 }
+// Card atualmente aberto no Modo Foco/Documento — usado pelos botões da
+// toolbar do Modo Documento pra saber em qual card agir.
+function _docCardId(){return getFocusCards()[focusCardIdx]?.id}
 function getFocusCards(){
   return[...document.querySelectorAll('#cardsList .card:not(.proc-card):not(.hidden):not(.folder-hidden)')];
 }
@@ -2457,7 +2551,7 @@ async function _mountFocusEditor(id){
   ta.style.display='none';
   const[inst]=new OverType(mount,{
     value:ta.value,
-    toolbar:false,
+    toolbar:viewMode==='doc', // Modo Documento ganha a régua de formatação nativa
     fontFamily:'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',
     onChange:v=>{cardTypeBeforeInput(id,ta);ta.value=v;updateFooter(id);cardTypeInput(id)}
   });
@@ -2475,6 +2569,7 @@ function applyFocusCard(){
   const fta=fc.querySelector('.cb textarea');
   if(fta)fta.style.height='';
   document.getElementById('focusNavLbl').textContent=`${focusCardIdx+1} / ${cards.length}`;
+  const docLbl=document.getElementById('docNavLbl');if(docLbl)docLbl.textContent=`${focusCardIdx+1} / ${cards.length}`;
   fc.scrollIntoView({behavior:'smooth',block:'start'});
   _mountFocusEditor(fc.id);
 }
@@ -3447,6 +3542,7 @@ function forceReset(){
   document.getElementById('ibox').classList.remove('rec','frozen');
   document.getElementById('vuWrap').classList.remove('on');
   document.getElementById('recTimer').textContent='00:00';
+  document.getElementById('docRecChip').style.display='none';
   document.getElementById('btnRec').style.display='flex';document.getElementById('btnRec').disabled=false;
   document.getElementById('btnAttach').style.display='flex';document.getElementById('btnAttach').disabled=false;
   document.getElementById('btnSend').style.display='flex';
@@ -4267,9 +4363,10 @@ async function startRec(targetCardId=null){
     if(!targetCardId)segTimer=setInterval(rotateSegment,SEG_MS); // só o botão principal rotaciona
     document.getElementById('itxt').placeholder=t('🎙️ Gravando…');document.getElementById('itxt').disabled=true;
     document.getElementById('ibox').classList.add('rec');document.getElementById('vuWrap').classList.add('on');
+    document.getElementById('docRecChip').style.display='inline-flex';
     document.getElementById('btnRec').style.display='none';document.getElementById('btnAttach').style.display='none';
     document.getElementById('btnSend').style.display='none';document.getElementById('btnStop').style.display='flex';document.getElementById('btnCancel').style.display='flex';
-    recTimer=setInterval(()=>{const el=Math.floor((Date.now()-recStart)/1000);document.getElementById('recTimer').textContent=String(Math.floor(el/60)).padStart(2,'0')+':'+String(el%60).padStart(2,'0')},1000);
+    recTimer=setInterval(()=>{const el=Math.floor((Date.now()-recStart)/1000);const s=String(Math.floor(el/60)).padStart(2,'0')+':'+String(el%60).padStart(2,'0');document.getElementById('recTimer').textContent=s;const dt=document.getElementById('docRecTimer');if(dt)dt.textContent=s},1000);
     initVU(stream);setStatus('Gravando…','rec');
   }catch(err){
     stopCapture();
@@ -4370,7 +4467,7 @@ function resetUI(){
   if(segTimer){clearInterval(segTimer);segTimer=null}
   document.getElementById('itxt').disabled=false;document.getElementById('itxt').placeholder=t('Digite ou 📎 anexe um áudio…');
   document.getElementById('ibox').classList.remove('rec');document.getElementById('vuWrap').classList.remove('on');
-  document.getElementById('recTimer').textContent='00:00';
+  document.getElementById('recTimer').textContent='00:00';document.getElementById('docRecChip').style.display='none';
   document.getElementById('btnRec').style.display='flex';document.getElementById('btnAttach').style.display='flex';document.getElementById('btnSend').style.display='flex';
   document.getElementById('btnStop').style.display='none';document.getElementById('btnCancel').style.display='none';
   checkSend();if(!isProc)setStatus('Pronto','ready');
