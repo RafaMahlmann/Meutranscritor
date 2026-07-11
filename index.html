@@ -126,7 +126,12 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .cards.focus-mode .card.focus-active .ctag-row{order:2}
 .cards.focus-mode .card.focus-active .cb{flex:1;display:flex;flex-direction:column;order:3}
 .cards.focus-mode .card.focus-active .cb textarea{flex:1;min-height:150px;resize:none}
-.focus-ot-mount{flex:1;min-height:150px;min-width:0;display:flex;flex-direction:column}
+/* max-height explícito (não só flex:1) — segunda camada de segurança: mesmo
+   que o cálculo interno do OverType falhe em algum navegador/cenário (não
+   reproduzi em teste controlado, mas o Rafa viu o texto crescer sem limite
+   em vez de rolar), essa div NUNCA cresce além disso, e força o conteúdo
+   por dentro a rolar dentro dela — não tem como "escapar" pra fora do card. */
+.focus-ot-mount{flex:1;min-height:150px;max-height:calc(100vh - 340px);min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .focus-ot-mount .overtype-container,.focus-ot-mount .overtype-wrapper{height:100%;flex:1;min-height:0}
 .focus-ot-mount .overtype-input,.focus-ot-mount .overtype-preview{min-height:0}
 .cards.focus-mode .card.focus-active .cf{order:4}
@@ -170,6 +175,8 @@ body.doc-mode .ibar{display:none!important}
 .doc-tbtn:hover{background:var(--bg-input);color:var(--text)}
 .doc-tbtn-danger:hover{background:rgba(255,59,48,0.1);color:var(--danger)}
 .doc-tbtn-exit{margin-left:auto;color:var(--accent)}
+.doc-tbtn.active{background:var(--accent-glow);color:var(--accent)}
+#docHdrFoldBtn.active{transform:rotate(180deg)}
 .doc-tlbl{font-size:12px;color:var(--text3);font-weight:600;padding:0 4px;white-space:nowrap}
 .doc-rec-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,59,48,0.1);color:var(--danger);border-radius:20px;padding:3px 6px 3px 10px;font-size:11px;font-weight:700;animation:blink 1.4s infinite}
 .doc-rec-stop{background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:2px 5px}
@@ -188,6 +195,12 @@ body.doc-mode .cards.focus-mode .card.focus-active{max-width:850px;margin:0 auto
    pra toolbar) e a alcinha de arrastar (não faz sentido num documento só). */
 body.doc-mode .card.focus-active .ch{padding:16px 44px 12px;background:transparent}
 body.doc-mode .card.focus-active .ca-wrap,body.doc-mode .card.focus-active .drag-handle{display:none!important}
+/* Recolher cabeçalho: etiquetas (provedor/tipo/modo/sessão/horário) + fileira
+   "Transformar" somem pra ganhar espaço de escrita — tudo ali já tem equivalente
+   na toolbar do Modo Documento, então é conteúdo redundante quando recolhido. */
+body.doc-mode .card.focus-active.hdr-folded .ch-left,
+body.doc-mode .card.focus-active.hdr-folded .lens-panel{display:none!important}
+body.doc-mode .card.focus-active.hdr-folded .ch{padding-bottom:4px}
 body.doc-mode .card.focus-active .cb{padding:8px 44px 20px}
 body.doc-mode .card.focus-active .ctags{padding-left:44px;padding-right:44px}
 /* Rodapé do card vira barra de status estilo Word */
@@ -1045,6 +1058,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
+            <button class="doc-tbtn" id="docHdrFoldBtn" onclick="toggleDocHeaderFold()" title="Recolher cabeçalho (etiquetas + Transformar)" data-i18n-title>▾</button>
+          </div>
+          <div class="doc-tsep"></div>
+          <div class="doc-tgrp">
             <button class="doc-tbtn" onclick="cardUndoBtn(_docCardId())" title="Desfazer (Ctrl+Z)" data-i18n-title>↩</button>
             <button class="doc-tbtn" onclick="cardRedo(_docCardId())" title="Refazer (Ctrl+Shift+Z)" data-i18n-title>↪</button>
           </div>
@@ -1796,7 +1813,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.11.1';
+const VOX_VERSION='2026.07.11.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2556,6 +2573,15 @@ async function _mountFocusEditor(id){
     onChange:v=>{cardTypeBeforeInput(id,ta);ta.value=v;updateFooter(id);cardTypeInput(id)}
   });
   inst.textarea?.addEventListener('focus',()=>trackFocus(ta));
+  // Espelha a posição do cursor do textarea VISÍVEL (interno do OverType) pro textarea
+  // real escondido — sem isso, "Gravar aqui" sempre inseria a transcrição no final,
+  // ignorando onde a pessoa tinha acabado de clicar dentro do texto (o clique nunca
+  // chega no textarea real, que fica por trás do OverType).
+  const _syncSel=()=>{if(inst.textarea){ta.selectionStart=inst.textarea.selectionStart;ta.selectionEnd=inst.textarea.selectionEnd}};
+  inst.textarea?.addEventListener('keyup',_syncSel);
+  inst.textarea?.addEventListener('mouseup',_syncSel);
+  inst.textarea?.addEventListener('click',_syncSel);
+  inst.textarea?.addEventListener('select',_syncSel);
   _focusEditorInstance=inst;_focusEditorCardId=id;_focusEditorMountEl=mount;
 }
 function applyFocusCard(){
@@ -2566,12 +2592,20 @@ function applyFocusCard(){
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
   const fc=cards[focusCardIdx];
   fc.classList.add('focus-active');
+  fc.classList.toggle('hdr-folded',localStorage.getItem('vox_doc_hdr_folded')==='1');
+  document.getElementById('docHdrFoldBtn')?.classList.toggle('active',localStorage.getItem('vox_doc_hdr_folded')==='1');
   const fta=fc.querySelector('.cb textarea');
   if(fta)fta.style.height='';
   document.getElementById('focusNavLbl').textContent=`${focusCardIdx+1} / ${cards.length}`;
   const docLbl=document.getElementById('docNavLbl');if(docLbl)docLbl.textContent=`${focusCardIdx+1} / ${cards.length}`;
   fc.scrollIntoView({behavior:'smooth',block:'start'});
   _mountFocusEditor(fc.id);
+}
+function toggleDocHeaderFold(){
+  const cid=_docCardId();const card=document.getElementById(cid);if(!card)return;
+  const folded=card.classList.toggle('hdr-folded');
+  localStorage.setItem('vox_doc_hdr_folded',folded?'1':'0');
+  document.getElementById('docHdrFoldBtn')?.classList.toggle('active',folded);
 }
 function focusStep(dir){
   focusCardIdx=Math.max(0,Math.min(focusCardIdx+dir,getFocusCards().length-1));
@@ -4351,7 +4385,15 @@ async function startRec(targetCardId=null){
   if(!targetCardId){recTargetTA=null;recTargetCard=null} // gravação global: limpa alvo antigo
   if(targetCardId){
     const el=document.getElementById(targetCardId);
-    if(el){const ta=el.querySelector('textarea');activeTA=ta;activeTACard=targetCardId;recTargetTA=ta;recTargetCard=targetCardId;ta.focus();ta.selectionStart=ta.selectionEnd=ta.value.length;el.querySelector('.rec-here')?.classList.add('recording-this')}
+    if(el){
+      const ta=el.querySelector('textarea');activeTA=ta;activeTACard=targetCardId;recTargetTA=ta;recTargetCard=targetCardId;
+      // Só força o cursor pro final se a pessoa NÃO estava com o editor em foco. Se
+      // estava (ex: clicou no meio do texto antes de apertar gravar), respeita a posição
+      // real — mantida sincronizada pelo listener em _mountFocusEditor.
+      const otEl=(_focusEditorCardId===targetCardId)?_focusEditorInstance?.textarea:null;
+      if(document.activeElement!==ta&&document.activeElement!==otEl)ta.selectionStart=ta.selectionEnd=ta.value.length;
+      ta.focus();el.querySelector('.rec-here')?.classList.add('recording-this')
+    }
   }
   try{
     const stream=await getCaptureStream();curStream=stream;
