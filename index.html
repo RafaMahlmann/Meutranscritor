@@ -126,8 +126,9 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .cards.focus-mode .card.focus-active .ctag-row{order:2}
 .cards.focus-mode .card.focus-active .cb{flex:1;display:flex;flex-direction:column;order:3}
 .cards.focus-mode .card.focus-active .cb textarea{flex:1;min-height:150px;resize:none}
-.focus-ot-mount{flex:1;min-height:150px;display:flex;flex-direction:column}
-.focus-ot-mount .overtype-container,.focus-ot-mount .overtype-wrapper{height:100%;flex:1}
+.focus-ot-mount{flex:1;min-height:150px;min-width:0;display:flex;flex-direction:column}
+.focus-ot-mount .overtype-container,.focus-ot-mount .overtype-wrapper{height:100%;flex:1;min-height:0}
+.focus-ot-mount .overtype-input,.focus-ot-mount .overtype-preview{min-height:0}
 .cards.focus-mode .card.focus-active .cf{order:4}
 .cards.focus-mode .card.focus-active.advanced-active{height:calc(100vh - 175px);height:calc(100dvh - 175px)}
 .cards.focus-mode .card.focus-active .adv-panel{order:3;min-height:0}
@@ -1713,7 +1714,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.10.12';
+const VOX_VERSION='2026.07.10.13';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2424,18 +2425,24 @@ function getFocusCards(){
 // tornariam isso caro à toa). O <textarea> real do card nunca é removido, só escondido —
 // o OverType espelha o valor nele via onChange, então lentes de IA, tags, contagem de
 // palavras e undo/redo continuam lendo/escrevendo o mesmo lugar de sempre.
-let _focusEditorInstance=null,_focusEditorCardId=null,_focusEditorGen=0;
+let _focusEditorInstance=null,_focusEditorCardId=null,_focusEditorMountEl=null,_focusEditorGen=0;
 function _unmountFocusEditor(){
   _focusEditorGen++; // invalida qualquer _mountFocusEditor pendente (ainda no await do
   // carregamento do script) de uma troca de card anterior — sem isso, uma montagem atrasada
   // podia "vencer" depois que o usuário já tinha saído daquele card, deixando um mount órfão.
-  if(!_focusEditorInstance)return;
-  const card=document.getElementById(_focusEditorCardId);
-  const ta=card?.querySelector('.cb textarea');
-  if(ta){ta.value=_focusEditorInstance.getValue();ta.style.display=''}
-  try{_focusEditorInstance.destroy()}catch(e){}
-  document.getElementById('ot-'+_focusEditorCardId)?.remove();
-  _focusEditorInstance=null;_focusEditorCardId=null;
+  if(_focusEditorInstance){
+    const card=document.getElementById(_focusEditorCardId);
+    const ta=card?.querySelector('.cb textarea');
+    if(ta){ta.value=_focusEditorInstance.getValue();ta.style.display=''}
+    try{_focusEditorInstance.destroy()}catch(e){}
+  }
+  _focusEditorMountEl?.remove();
+  // Limpeza defensiva: remove QUALQUER elemento com esse id, não só o que a referência
+  // direta apontava — se alguma corrida (ex: restauração automática do Modo Foco ao
+  // recarregar a página + reentrada rápida) chegou a duplicar o mount, isso garante que
+  // nunca sobra órfão, mesmo sem entender exatamente qual sequência causou a duplicata.
+  if(_focusEditorCardId)document.querySelectorAll(`[id="ot-${_focusEditorCardId}"]`).forEach(e=>e.remove());
+  _focusEditorInstance=null;_focusEditorCardId=null;_focusEditorMountEl=null;
 }
 async function _mountFocusEditor(id){
   const gen=++_focusEditorGen;
@@ -2443,6 +2450,7 @@ async function _mountFocusEditor(id){
   const ta=card.querySelector('.cb textarea');if(!ta)return;
   try{await _loadScriptOnce('overtype/overtype.js')}catch(e){return} // falha silenciosa: textarea normal já funciona sozinho
   if(gen!==_focusEditorGen)return; // uma troca de card mais nova já assumiu — aborta
+  document.querySelectorAll(`[id="ot-${id}"]`).forEach(e=>e.remove()); // idem: limpa antes de criar
   const mount=document.createElement('div');
   mount.id='ot-'+id;mount.className='focus-ot-mount';
   ta.insertAdjacentElement('afterend',mount);
@@ -2454,7 +2462,7 @@ async function _mountFocusEditor(id){
     onChange:v=>{cardTypeBeforeInput(id,ta);ta.value=v;updateFooter(id);cardTypeInput(id)}
   });
   inst.textarea?.addEventListener('focus',()=>trackFocus(ta));
-  _focusEditorInstance=inst;_focusEditorCardId=id;
+  _focusEditorInstance=inst;_focusEditorCardId=id;_focusEditorMountEl=mount;
 }
 function applyFocusCard(){
   const cards=getFocusCards();if(!cards.length)return;
