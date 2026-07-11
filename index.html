@@ -1780,6 +1780,27 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- SENHA DO BACKUP DE CHAVES: input real (não prompt()) — deixa o navegador/
+     cofre de senhas (Chrome, iCloud Keychain etc.) oferecer salvar/preencher.
+     Usado tanto pra criar o backup quanto pra restaurar. -->
+<div class="overlay" id="keysPassOverlay" onclick="if(event.target===this)_cancelBackupPass()">
+  <div class="modal" style="max-width:400px">
+    <div class="mb" style="padding:26px 26px 22px">
+      <h2 id="keysPassTitle" style="font-size:17px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px"></h2>
+      <p id="keysPassHint" style="font-size:12.5px;color:var(--text3);line-height:1.6;margin-bottom:16px"></p>
+      <form id="keysPassForm" onsubmit="_submitBackupPass(event)">
+        <input type="text" name="username" autocomplete="username" value="Vox - backup de chaves" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0" tabindex="-1" aria-hidden="true">
+        <input type="password" id="keysPassInput" name="vox-backup-password" style="width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;margin-bottom:6px;box-sizing:border-box">
+        <p id="keysPassBlankHint" style="font-size:11px;color:var(--text4);margin-bottom:16px;line-height:1.5"></p>
+        <div style="display:flex;gap:8px">
+          <button type="button" onclick="_cancelBackupPass()" style="flex:1;background:none;border:1px solid var(--border2);border-radius:12px;padding:11px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;font-family:var(--font)" data-i18n>Cancelar</button>
+          <button type="submit" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)" data-i18n>Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- INTRO VIDEO OVERLAY -->
 <div class="vintro-overlay" id="vintroOverlay">
   <div class="vintro-stage">
@@ -1813,7 +1834,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.11.2';
+const VOX_VERSION='2026.07.11.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1936,6 +1957,14 @@ let I18N_EN={
 "❌ Arquivo inválido":"❌ Invalid file","❌ Este não é um backup de chaves do Vox":"❌ This isn't a Vox keys backup",
 "Digite a senha desse backup:":"Enter this backup's password:","✅ Chaves restauradas do backup!":"✅ Keys restored from backup!",
 "❌ Senha incorreta ou arquivo corrompido":"❌ Wrong password or corrupted file",
+"Confirmar":"Confirm","Proteger o backup":"Protect the backup","Digite a senha do backup":"Enter the backup password",
+"Crie uma senha pra proteger o arquivo. Se preferir, deixe em branco e confirme — o backup é salvo sem senha (mais simples, mas qualquer pessoa com o arquivo consegue ler suas chaves).":"Create a password to protect the file. If you'd rather not, leave it blank and confirm — the backup is saved without a password (simpler, but anyone with the file can read your keys).",
+"Digite a senha que você criou quando baixou esse backup.":"Enter the password you created when you downloaded this backup.",
+"Senha (opcional)":"Password (optional)","Senha":"Password","Deixar em branco = salvar sem senha.":"Leave blank = save without a password.",
+"💾 Backup baixado sem senha — qualquer pessoa com o arquivo pode ler suas chaves.":"💾 Backup downloaded without a password — anyone with the file can read your keys.",
+"❌ Arquivo corrompido":"❌ Corrupted file",
+"🔄 A chave do provedor salvo não estava configurada — selecionamos automaticamente o ":"🔄 The saved provider's key wasn't set up — we automatically switched to ",
+", que você tem configurado.":", which you have set up.",
 "Já tem chave de outro lugar? Cole aqui":"Already have a key from somewhere else? Paste it here",
 "🟢 Configurado! Pronto para transcrever.":"🟢 Configured! Ready to transcribe.",
 "🔑 Configure a chave Gladia!":"🔑 Set up the Gladia key!","10 h/mês grátis":"10 h/month free","Nenhuma fala identificada":"No speech identified",
@@ -3328,6 +3357,15 @@ function updateLocal100Badge(){
 }
 
 // ── CONFIG ──
+function _pickBestProvider(want){
+  if(want==='local')return want; // local não depende de chave — nunca troca sozinho
+  const hasKey={whisper:!!cfg.apiKey,grok:!!cfg.apiKeyGrok,groqwhisper:!!cfg.apiKeyGroq};
+  if(hasKey[want])return want;
+  if(cfg.apiKeyGrok)return 'grok';
+  if(cfg.apiKeyGroq)return 'groqwhisper';
+  if(cfg.apiKey)return 'whisper';
+  return want; // nenhuma chave disponível — mantém, deixa o aviso normal de "configure a chave" aparecer
+}
 function loadCfg(){
   const s=localStorage.getItem('vox_cfg');
   if(s)cfg={...cfg,...JSON.parse(s)};
@@ -3348,7 +3386,17 @@ function loadCfg(){
   document.getElementById('txtModel').value=cfg.txtModel||'';
   document.getElementById('txtKey').value=cfg.txtKey||'';
   setTxtProvider(cfg.txtProvider||'groq',false);
-  setProvider(cfg.provider||'whisper',false);
+  const wantProv=cfg.provider||'whisper';
+  const bestProv=_pickBestProvider(wantProv);
+  setProvider(bestProv,false);
+  if(bestProv!==wantProv){
+    // O provedor salvo não tem chave configurada (ex: restaurou um backup parcial,
+    // ou limpou o navegador) — troca sozinho pro que a pessoa realmente tem, em vez
+    // de deixar a gravação falhar silenciosamente sem explicar por quê.
+    localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+    const provLabels={whisper:'Whisper',grok:'Grok',groqwhisper:'Groq'};
+    toast(t('🔄 A chave do provedor salvo não estava configurada — selecionamos automaticamente o ')+(provLabels[bestProv]||bestProv)+t(', que você tem configurado.'));
+  }
   setDiarProvider(cfg.diarProvider||'assemblyai',false);
   _syncFolderFmtBtns();
   if(cfg.diarEnabled)document.getElementById('diarSection').style.display='block';
@@ -3509,17 +3557,56 @@ function saveCfg(close=true){
 // não aceita mais PasswordCredential.store() por código, só por formulário
 // nativo de login; navigator.credentials.store() sempre lançava
 // NotSupportedError, então essa camada nunca funcionou de verdade.)
-function _keysPayload(){return{apiKey:cfg.apiKey||'',apiKeyGrok:cfg.apiKeyGrok||'',apiKeyGroq:cfg.apiKeyGroq||'',apiKeyAssembly:cfg.apiKeyAssembly||'',apiKeyGladia:cfg.apiKeyGladia||'',txtKey:cfg.txtKey||'',txtBaseUrl:cfg.txtBaseUrl||'',txtModel:cfg.txtModel||'',txtProvider:cfg.txtProvider||''}}
+function _keysPayload(){return{apiKey:cfg.apiKey||'',apiKeyGrok:cfg.apiKeyGrok||'',apiKeyGroq:cfg.apiKeyGroq||'',apiKeyAssembly:cfg.apiKeyAssembly||'',apiKeyGladia:cfg.apiKeyGladia||'',txtKey:cfg.txtKey||'',txtBaseUrl:cfg.txtBaseUrl||'',txtModel:cfg.txtModel||'',txtProvider:cfg.txtProvider||'',provider:cfg.provider||'',diarProvider:cfg.diarProvider||''}}
+// Substitui prompt() (que não integra com cofre de senhas nenhum, e não dá
+// pra distinguir "cancelou" de "confirmou em branco") por um input de verdade
+// dentro de um <form>, com autocomplete correto — assim o Chrome/iCloud
+// Keychain/etc. podem oferecer salvar ou preencher essa senha, se a pessoa
+// quiser. Deixar em branco e confirmar é uma opção válida (backup sem senha).
+let _backupPassResolve=null;
+function _askBackupPassword(mode){
+  return new Promise(resolve=>{
+    _backupPassResolve=resolve;
+    const isCreate=mode==='create';
+    document.getElementById('keysPassTitle').textContent=isCreate?t('Proteger o backup'):t('Digite a senha do backup');
+    document.getElementById('keysPassHint').textContent=isCreate
+      ?t('Crie uma senha pra proteger o arquivo. Se preferir, deixe em branco e confirme — o backup é salvo sem senha (mais simples, mas qualquer pessoa com o arquivo consegue ler suas chaves).')
+      :t('Digite a senha que você criou quando baixou esse backup.');
+    const inp=document.getElementById('keysPassInput');
+    inp.value='';inp.autocomplete=isCreate?'new-password':'current-password';
+    inp.placeholder=isCreate?t('Senha (opcional)'):t('Senha');
+    document.getElementById('keysPassBlankHint').textContent=isCreate?t('Deixar em branco = salvar sem senha.'):'';
+    document.getElementById('keysPassOverlay').classList.add('on');
+    setTimeout(()=>inp.focus(),50);
+  });
+}
+function _submitBackupPass(ev){
+  ev.preventDefault();
+  const pass=document.getElementById('keysPassInput').value;
+  document.getElementById('keysPassOverlay').classList.remove('on');
+  const r=_backupPassResolve;_backupPassResolve=null;
+  if(r)r({ok:true,pass});
+}
+function _cancelBackupPass(){
+  document.getElementById('keysPassOverlay').classList.remove('on');
+  const r=_backupPassResolve;_backupPassResolve=null;
+  if(r)r({ok:false,pass:''});
+}
 async function exportKeysBackup(){
   const payload=_keysPayload();
   if(!Object.values(payload).some(v=>v)){toast(t('ℹ️ Nenhuma chave configurada ainda'),true);return}
-  const pass=prompt(t('Crie uma senha para proteger o backup (vai precisar dela para restaurar):'));
-  if(!pass)return;
+  const res=await _askBackupPassword('create');
+  if(!res.ok)return;
   const u8=new TextEncoder().encode(JSON.stringify(payload));
-  const enc=await _txEncrypt(u8,pass);
-  const out={app:'vox-keys',v:1,data:_b64uEnc(enc)};
+  let out;
+  if(res.pass){
+    const enc=await _txEncrypt(u8,res.pass);
+    out={app:'vox-keys',v:1,enc:true,data:_b64uEnc(enc)};
+  }else{
+    out={app:'vox-keys',v:1,enc:false,data:_b64uEnc(u8)};
+  }
   dl(JSON.stringify(out,null,2),'vox_chaves_backup.json');
-  toast(t('🔑 Backup baixado! Guarde num lugar seguro (Google Drive, iCloud, e-mail…)'));
+  toast(res.pass?t('🔑 Backup baixado! Guarde num lugar seguro (Google Drive, iCloud, e-mail…)'):t('💾 Backup baixado sem senha — qualquer pessoa com o arquivo pode ler suas chaves.'));
 }
 function triggerImportKeysBackup(){document.getElementById('keysBackupInput').click()}
 async function importKeysBackup(e){
@@ -3527,15 +3614,22 @@ async function importKeysBackup(e){
   if(!file)return;
   let obj;try{obj=JSON.parse(await file.text())}catch(err){toast(t('❌ Arquivo inválido'),true);return}
   if(!obj||obj.app!=='vox-keys'||!obj.data){toast(t('❌ Este não é um backup de chaves do Vox'),true);return}
-  const pass=prompt(t('Digite a senha desse backup:'));
-  if(!pass)return;
+  let payloadBytes;
+  if(obj.enc===false){
+    payloadBytes=_b64uDec(obj.data);
+  }else{
+    // backups antigos não tinham o campo "enc" e eram sempre criptografados
+    const res=await _askBackupPassword('restore');
+    if(!res.ok)return;
+    try{payloadBytes=await _txDecrypt(_b64uDec(obj.data),res.pass)}
+    catch(err){toast(t('❌ Senha incorreta ou arquivo corrompido'),true);return}
+  }
   try{
-    const dec=await _txDecrypt(_b64uDec(obj.data),pass);
-    Object.assign(cfg,JSON.parse(new TextDecoder().decode(dec)));
+    Object.assign(cfg,JSON.parse(new TextDecoder().decode(payloadBytes)));
     localStorage.setItem('vox_cfg',JSON.stringify(cfg));
     loadCfg();
     toast(t('✅ Chaves restauradas do backup!'));
-  }catch(err){toast(t('❌ Senha incorreta ou arquivo corrompido'),true)}
+  }catch(err){toast(t('❌ Arquivo corrompido'),true)}
 }
 
 // ── RAM + RESET ──
