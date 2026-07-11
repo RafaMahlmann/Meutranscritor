@@ -204,6 +204,18 @@ body.doc-mode .card.focus-active .adv-panel{margin-left:10px;margin-right:10px}
 body.doc-mode .adv-original,
 body.doc-mode .adv-draft{background:var(--bg-card);border:1px solid var(--border);box-shadow:0 4px 20px rgba(0,0,0,0.06)}
 body.doc-mode .adv-col-lbl{color:var(--text3)}
+/* Barra flutuante de formatação: some quando o OverType nativo some (Modo
+   Avançado troca a folha única pelas duas colunas). Mora no canto oposto das
+   etiquetas (mesma fileira, .ch com justify-content:space-between — como o
+   .ca-wrap já fica escondido no modo doc, essa barra assume aquele lugar) e
+   age sobre a coluna (Original ou Editado) que estiver com o foco. */
+.adv-float-toolbar{display:none;align-items:center;gap:1px;background:var(--bg-input);border-radius:10px;padding:3px;flex-wrap:wrap}
+body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
+.adv-ft-btn{background:none;border:none;color:var(--text3);border-radius:6px;min-width:24px;height:24px;padding:0 5px;font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;justify-content:center}
+.adv-ft-btn:hover{background:var(--bg-card);color:var(--text)}
+.adv-ft-btn:disabled{opacity:0.35;cursor:default}
+.adv-ft-btn:disabled:hover{background:none;color:var(--text3)}
+.adv-ft-sep{width:1px;height:16px;background:var(--border);margin:0 2px;flex-shrink:0}
 @media(max-width:900px){
   body.doc-mode .card.focus-active .ch,body.doc-mode .card.focus-active .cf{padding-left:20px;padding-right:20px}
   body.doc-mode .card.focus-active .cb{padding-left:20px;padding-right:20px}
@@ -693,7 +705,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .adv-split{display:flex;gap:12px;min-height:0}
 .adv-pane{position:relative;flex:1;min-width:0;min-height:0}
 .adv-col-lbl{font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--text4);margin-bottom:6px;text-align:center}
-.adv-original{background:var(--bg-input);border-radius:12px;padding:10px 12px;font-size:var(--cf-sz,14px);line-height:1.75;white-space:pre-wrap;color:var(--text2);max-height:340px;overflow-y:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box;position:relative}
+.adv-original{width:100%;background:var(--bg-input);border-radius:12px;padding:10px 12px;font-size:var(--cf-sz,14px);font-family:var(--font);line-height:1.75;color:var(--text);border:none;outline:none;resize:vertical;min-height:200px;max-height:340px;box-sizing:border-box}
 .adv-ta-wrap{position:relative;min-height:0}
 .adv-toolbar{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
 .adv-lens-btn{width:26px;height:26px;border:none;background:var(--bg-input);border-radius:7px;color:var(--text3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition)}
@@ -1046,7 +1058,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
             <button class="doc-tbtn" onclick="toggleLensMenu(_docCardId())" title="✨ Transformar com IA" data-i18n-title>✨</button>
-            <button class="doc-tbtn" onclick="enterAdvanced(_docCardId())" title="Avançado" data-i18n-title>⚙️</button>
+            <button class="doc-tbtn" onclick="toggleAdvanced(_docCardId())" title="Avançado (clique de novo pra substituir e fechar)" data-i18n-title>⚙️</button>
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
@@ -1812,7 +1824,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.11.5';
+const VOX_VERSION='2026.07.11.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1943,6 +1955,11 @@ let I18N_EN={
 "❌ Arquivo corrompido":"❌ Corrupted file",
 "Ativar som":"Enable sound","Desativar som":"Disable sound",
 "Ver como documento / Colapsar":"View as document / Collapse",
+"Negrito":"Bold","Itálico":"Italic","Código":"Code","Link":"Link",
+"Título 1":"Heading 1","Título 2":"Heading 2","Título 3":"Heading 3",
+"Lista com marcador":"Bullet list","Lista numerada":"Numbered list","Lista de tarefas":"Task list","Citação":"Quote",
+"✅ Texto substituído. Ctrl+Z volta pra visão dupla.":"✅ Text replaced. Ctrl+Z goes back to the split view.",
+"Avançado (clique de novo pra substituir e fechar)":"Advanced (click again to replace and close)",
 "🔄 A chave do provedor salvo não estava configurada — selecionamos automaticamente o ":"🔄 The saved provider's key wasn't set up — we automatically switched to ",
 ", que você tem configurado.":", which you have set up.",
 "Já tem chave de outro lugar? Cole aqui":"Already have a key from somewhere else? Paste it here",
@@ -6150,6 +6167,24 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </button>
       </div>
+      <div class="adv-float-toolbar" onmousedown="event.preventDefault()">
+        <button class="adv-ft-btn" onclick="advFormat(this,'bold')" title="${t('Negrito')}"><b>B</b></button>
+        <button class="adv-ft-btn" onclick="advFormat(this,'italic')" title="${t('Itálico')}"><i>I</i></button>
+        <button class="adv-ft-btn" onclick="advFormat(this,'code')" title="${t('Código')}">&lt;/&gt;</button>
+        <button class="adv-ft-btn" onclick="advFormat(this,'link')" title="${t('Link')}">🔗</button>
+        <span class="adv-ft-sep"></span>
+        <button class="adv-ft-btn" onclick="advFormat(this,'h1')" title="${t('Título 1')}">H1</button>
+        <button class="adv-ft-btn" onclick="advFormat(this,'h2')" title="${t('Título 2')}">H2</button>
+        <button class="adv-ft-btn" onclick="advFormat(this,'h3')" title="${t('Título 3')}">H3</button>
+        <span class="adv-ft-sep"></span>
+        <button class="adv-ft-btn" onclick="advFormat(this,'ul')" title="${t('Lista com marcador')}">☰</button>
+        <button class="adv-ft-btn" onclick="advFormat(this,'ol')" title="${t('Lista numerada')}">①</button>
+        <button class="adv-ft-btn" onclick="advFormat(this,'task')" title="${t('Lista de tarefas')}">☑</button>
+        <button class="adv-ft-btn" onclick="advFormat(this,'quote')" title="${t('Citação')}">❝</button>
+        <span class="adv-ft-sep"></span>
+        <button class="adv-ft-btn adv-ft-undo" onclick="advUndoClick(this)" title="${t('Desfazer (Ctrl+Z)')}" disabled>↩</button>
+        <button class="adv-ft-btn adv-ft-redo" onclick="advRedoClick(this)" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>↪</button>
+      </div>
     </div>
     <div class="lens-panel" id="lens-${id}"></div>
     <div class="lens-panel" id="exp-menu-${id}"></div>
@@ -6322,15 +6357,29 @@ function enterAdvanced(id){
   const original=card.querySelector('.cb textarea')?.value||'';
   if(!original.trim()){toast(t('ℹ️ Card vazio'),true);return}
   panel.dataset.original=original;
-  delete _advCh[id];
-  _advReentry=null;
+  delete _advCh[id];delete _advToggleRedo[id];
+  _advReentry=null;_advReentryVia=null;
   card.classList.add('advanced-active');
   renderAdvancedPanel(id,original,original);
   panel.classList.add('on');
 }
+function toggleAdvanced(id){
+  const card=document.getElementById(id);if(!card)return;
+  if(card.classList.contains('advanced-active'))advCloseAndReplace(id);
+  else enterAdvanced(id);
+}
 let _advReentry=null;
+// via: 'undo' → esse estado surgiu de um Ctrl+Z sem mais nada pra desfazer dentro do
+// modo (fluxo "Sair" — descarta o rascunho); só REFAZER (Ctrl+Shift+Z) deve reabrir.
+// via: 'replace' → surgiu do botão ⚙️ funcionando como interruptor (substitui e fecha);
+// aí é o DESFAZER (Ctrl+Z) que reabre, e o Ctrl+Shift+Z seguinte refecha (ver
+// _advToggleRedo abaixo).
+let _advReentryVia=null;
+const _advToggleRedo={}; // {[id]:true} → o próximo Ctrl+Shift+Z deve refechar (chamar
+// advCloseAndReplace de novo) em vez do redo normal de formatação/IA dentro do painel.
 function reenterAdvanced(state){
   const{id,original,draft,page,ch}=state;
+  const via=_advReentryVia;
   const panel=document.getElementById('adv-'+id);if(!panel)return;
   if(viewMode!=='doc'||focusCardId()!==id)enterFocusCard(id);
   const card=document.getElementById(id);if(!card)return;
@@ -6341,7 +6390,8 @@ function reenterAdvanced(state){
   _advCh[id]=ch;
   advUpdateUndoBtns(id);
   if(page==='1')advSwipe(id,1);
-  _advReentry=null;
+  _advReentry=null;_advReentryVia=null;
+  if(via==='replace')_advToggleRedo[id]=true;else delete _advToggleRedo[id];
   toast(t('↪ Voltou pro modo Avançado'));
 }
 function renderAdvancedPanel(id,original,draft){
@@ -6349,19 +6399,16 @@ function renderAdvancedPanel(id,original,draft){
   const lensMenuBtn=`<button class="adv-lens-btn" onclick="toggleAdvLensMenu('${id}')" title="${t('✨ Transformar com IA')}">`+
     `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21l15 -15l-3 -3l-15 15l3 3z"/><path d="M15 6l3 3"/><path d="M9 3a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/><path d="M19 13a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg>`+
   `</button>`;
-  const undoRedoBtns=`<span class="adv-toolbar-sep"></span>`+
-    `<button class="adv-lens-btn" id="adv-undo-${id}" onclick="advUndo('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>`+
-    `<button class="adv-lens-btn" id="adv-redo-${id}" onclick="advRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>`+
-    `<span class="adv-toolbar-sep"></span>`+
+  const miscBtns=`<span class="adv-toolbar-sep"></span>`+
     `<button class="adv-lens-btn" onclick="document.activeElement.blur()" title="${t('Esconder teclado')}">${ICO.kbDismiss}</button>`;
   const chevR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>';
   const chevL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>';
   panel.innerHTML=`<div class="adv-split" id="adv-split-${id}" data-page="0" ontouchstart="advTouchStart(event)" ontouchmove="advTouchMove('${id}',event)" ontouchend="advTouchEnd(event)" ontouchcancel="advTouchEnd(event)">`+
     `<div class="adv-pane adv-pane-orig"><div class="adv-col-lbl">${t('Original')}</div>`+
-      `<div class="adv-original">${escHtml(original)}<button class="adv-chev adv-chev-r" onclick="advSwipe('${id}',1)">${chevR}</button></div>`+
+      `<div class="adv-ta-wrap"><textarea class="adv-original" id="adv-orig-${id}">${escHtml(original)}</textarea><button class="adv-chev adv-chev-r" onclick="advSwipe('${id}',1)">${chevR}</button></div>`+
     `</div>`+
     `<div class="adv-pane adv-pane-draft"><div class="adv-col-lbl">${t('Editado pela IA')}</div>`+
-      `<div class="adv-toolbar">${lensMenuBtn}${undoRedoBtns}</div>`+
+      `<div class="adv-toolbar">${lensMenuBtn}${miscBtns}</div>`+
       `<div class="lens-panel" id="adv-lens-${id}"></div>`+
       `<div class="adv-ta-wrap"><textarea class="adv-draft" id="adv-draft-${id}">${escHtml(draft)}</textarea><button class="adv-chev adv-chev-l" onclick="advSwipe('${id}',0)">${chevL}</button></div>`+
       `<div class="adv-prompt-row">`+
@@ -6433,64 +6480,134 @@ function advTouchEnd(e){
   if(e.touches.length===0){_advTouch=null;_advTouchFired=false;}
 }
 async function advRunLens(id,key){
-  const panel=document.getElementById('adv-'+id);if(!panel)return;
   const L=LENSES[key];if(!L)return;
   const key2=aiKey();
   if(!key2){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
-  const original=panel.dataset.original||'';if(!original.trim())return;
+  // Lê o texto ATUAL do painel Original (não uma foto congelada) — se a pessoa editou
+  // o Original antes de rodar uma lente, a IA trabalha em cima do que está escrito agora.
+  const original=document.getElementById('adv-orig-'+id)?.value||'';if(!original.trim())return;
   toast('✨ '+L.label+'…');
   try{
     const result=await generateLens(L,original,key2);
-    advPushHistory(id);
+    advPushHistory(id,'draft');
     const ta=document.getElementById('adv-draft-'+id);if(ta)ta.value=result;
     toast('✅ '+L.label+' '+t('pronto!'));
   }catch(e){toast('❌ '+e.message,true)}
 }
 async function advRunCustom(id){
-  const panel=document.getElementById('adv-'+id);if(!panel)return;
   const input=document.getElementById('adv-prompt-'+id);
   const instr=(input?.value||'').trim();
   if(!instr){toast(t('ℹ️ Digite uma instrução'),true);return}
   const key2=aiKey();
   if(!key2){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
-  const original=panel.dataset.original||'';if(!original.trim())return;
+  const original=document.getElementById('adv-orig-'+id)?.value||'';if(!original.trim())return;
   toast(t('✨ Aplicando instrução…'));
   const maxTok=Math.min(8000,Math.ceil(original.length/3)+600);
   try{
     const prompt=`Aplique a seguinte instrução ao texto abaixo: "${instr}". ${_promptLang()}\n\nTexto:\n${original}`;
     const result=(await callAI(prompt,key2,'auto',maxTok)).trim();
-    advPushHistory(id);
+    advPushHistory(id,'draft');
     const ta=document.getElementById('adv-draft-'+id);if(ta)ta.value=result;
     toast(t('✅ Pronto!'));
   }catch(e){toast('❌ '+e.message,true)}
 }
+// Cada pane (original/draft) tem sua PRÓPRIA pilha de desfazer/refazer —
+// _advCh[id] = {draft:{u:[],r:[]}, original:{u:[],r:[]}}. Formatação (barra
+// flutuante) e lentes de IA agem sobre a pane que estiver com o foco.
 const _advCh={};
-function advPushHistory(id){
-  const ta=document.getElementById('adv-draft-'+id);if(!ta)return;
-  if(!_advCh[id])_advCh[id]={u:[],r:[]};
-  _advCh[id].u.push(ta.value);if(_advCh[id].u.length>30)_advCh[id].u.shift();
-  _advCh[id].r=[];
+// Resolve qual textarea (original ou rascunho) está "ativa" agora — o foco
+// real do navegador é a fonte da verdade, então os botões da barra flutuante
+// usam onmousedown+preventDefault pra NÃO roubar esse foco ao serem clicados.
+function _advTargetTA(id){
+  const ae=document.activeElement;
+  if(ae&&ae.id==='adv-draft-'+id)return{ta:ae,pane:'draft'};
+  if(ae&&ae.id==='adv-orig-'+id)return{ta:ae,pane:'original'};
+  return{ta:document.getElementById('adv-draft-'+id),pane:'draft'};
+}
+function advPushHistory(id,pane='draft'){
+  const ta=document.getElementById(pane==='original'?'adv-orig-'+id:'adv-draft-'+id);if(!ta)return;
+  if(!_advCh[id])_advCh[id]={draft:{u:[],r:[]},original:{u:[],r:[]}};
+  const st=_advCh[id][pane];
+  st.u.push(ta.value);if(st.u.length>30)st.u.shift();
+  st.r=[];
+  delete _advToggleRedo[id]; // uma edição nova invalida o "refazer o fechar" pendente
   advUpdateUndoBtns(id);
 }
 function advUndo(id){
-  const ta=document.getElementById('adv-draft-'+id);if(!ta)return false;
-  if(!_advCh[id]?.u?.length)return false;
-  _advCh[id].r.push(ta.value);
-  ta.value=_advCh[id].u.pop();
+  const{ta,pane}=_advTargetTA(id);if(!ta)return false;
+  const st=_advCh[id]?.[pane];
+  if(!st?.u?.length)return false;
+  st.r.push(ta.value);
+  ta.value=st.u.pop();
   advUpdateUndoBtns(id);toast(t('↩ Desfeito'));return true;
 }
 function advRedo(id){
-  const ta=document.getElementById('adv-draft-'+id);if(!ta)return false;
-  if(!_advCh[id]?.r?.length)return false;
-  _advCh[id].u.push(ta.value);
-  ta.value=_advCh[id].r.pop();
+  const{ta,pane}=_advTargetTA(id);if(!ta)return false;
+  const st=_advCh[id]?.[pane];
+  if(!st?.r?.length)return false;
+  st.u.push(ta.value);
+  ta.value=st.r.pop();
   advUpdateUndoBtns(id);toast(t('↪ Refeito'));return true;
 }
 function advUpdateUndoBtns(id){
-  const u=document.getElementById('adv-undo-'+id),r=document.getElementById('adv-redo-'+id);
-  if(u)u.disabled=!(_advCh[id]?.u?.length);
-  if(r)r.disabled=!(_advCh[id]?.r?.length);
+  const{pane}=_advTargetTA(id);
+  const st=_advCh[id]?.[pane];
+  const card=document.getElementById(id);
+  const u=card?.querySelector('.adv-ft-undo'),r=card?.querySelector('.adv-ft-redo');
+  if(u)u.disabled=!(st?.u?.length);
+  if(r)r.disabled=!(st?.r?.length);
 }
+// Formatação markdown (barra flutuante): negrito/itálico/código envolvem a seleção;
+// título/lista/citação prefixam cada linha selecionada. Mesma técnica que qualquer
+// editor markdown leve usa — sem depender do OverType, que só controla UM textarea
+// por instância e não dava pra apontar dinamicamente pra duas panes diferentes.
+function _mdApply(ta,action){
+  const val=ta.value;
+  const s=ta.selectionStart,e=ta.selectionEnd;
+  const sel=val.slice(s,e);
+  function setSel(a,b){ta.selectionStart=a;ta.selectionEnd=b}
+  function wrap(mark){
+    ta.value=val.slice(0,s)+mark+sel+mark+val.slice(e);
+    setSel(s+mark.length,s+mark.length+sel.length);
+  }
+  function eachLine(fn){
+    const lineStart=val.lastIndexOf('\n',s-1)+1;
+    let lineEnd=val.indexOf('\n',e);if(lineEnd===-1)lineEnd=val.length;
+    const lines=val.slice(lineStart,lineEnd).split('\n');
+    let n=1;
+    const out=lines.map(ln=>fn(ln,n++)).join('\n');
+    ta.value=val.slice(0,lineStart)+out+val.slice(lineEnd);
+    setSel(lineStart,lineStart+out.length);
+  }
+  const stripHeading=ln=>ln.replace(/^#{1,6}\s+/,'');
+  const stripList=ln=>ln.replace(/^(\s*)([-*]\s+|\d+\.\s+|- \[[ x]\]\s+|>\s+)/,'$1');
+  if(action==='bold')wrap('**');
+  else if(action==='italic')wrap('_');
+  else if(action==='code')wrap('`');
+  else if(action==='link'){
+    const label=sel||'texto';
+    const ins=`[${label}](url)`;
+    ta.value=val.slice(0,s)+ins+val.slice(e);
+    const us=s+label.length+3;setSel(us,us+3);
+  }
+  else if(action==='h1')eachLine(ln=>'# '+stripHeading(ln));
+  else if(action==='h2')eachLine(ln=>'## '+stripHeading(ln));
+  else if(action==='h3')eachLine(ln=>'### '+stripHeading(ln));
+  else if(action==='ul')eachLine(ln=>'- '+stripList(ln));
+  else if(action==='ol')eachLine((ln,n)=>n+'. '+stripList(ln));
+  else if(action==='task')eachLine(ln=>'- [ ] '+stripList(ln));
+  else if(action==='quote')eachLine(ln=>'> '+stripList(ln));
+  ta.focus();
+  ta.dispatchEvent(new Event('input',{bubbles:true}));
+}
+function advFormat(btn,action){
+  const id=btn.closest('.card')?.id;if(!id)return;
+  const{ta,pane}=_advTargetTA(id);if(!ta)return;
+  advPushHistory(id,pane);
+  _mdApply(ta,action);
+}
+function advUndoClick(btn){const id=btn.closest('.card')?.id;if(id)advUndo(id)}
+function advRedoClick(btn){const id=btn.closest('.card')?.id;if(id)advRedo(id)}
 function advSaveReplace(id){
   const ta=document.getElementById('adv-draft-'+id);if(!ta)return;
   const val=ta.value;
@@ -6500,6 +6617,33 @@ function advSaveReplace(id){
   if(card.dataset.diarized==='true')diarMarkStale(id);
   toast(t('✅ Card atualizado! Ctrl+Z desfaz.'));
   exitAdvanced(id);
+}
+// Interruptor do ⚙️ Avançado (2º clique, com a visão dupla já aberta): substitui o
+// texto principal pelo rascunho e fecha — mas, ao contrário do "Substituir original"
+// (que usa o desfazer genérico do card), esse fechamento guarda o estado completo da
+// visão dupla pra Ctrl+Z poder REABRI-LA (ver _advReentryVia/_advToggleRedo acima).
+function advCloseAndReplace(id){
+  const panel=document.getElementById('adv-'+id);if(!panel)return;
+  const draftTa=document.getElementById('adv-draft-'+id);
+  const origTa=document.getElementById('adv-orig-'+id);
+  const card=document.getElementById(id);
+  const cta=card?.querySelector('.cb textarea');
+  if(!draftTa||!cta)return;
+  const split=document.getElementById('adv-split-'+id);
+  _advReentry={
+    id,
+    original:origTa?origTa.value:'',
+    draft:draftTa.value,
+    page:split?split.dataset.page:'0',
+    ch:_advCh[id]?{draft:{u:[..._advCh[id].draft.u],r:[..._advCh[id].draft.r]},original:{u:[..._advCh[id].original.u],r:[..._advCh[id].original.r]}}:{draft:{u:[],r:[]},original:{u:[],r:[]}}
+  };
+  _advReentryVia='replace';
+  cta.value=draftTa.value;autoR(cta);updateFooter(id);saveHistory();
+  if(card.dataset.diarized==='true')diarMarkStale(id);
+  card.classList.remove('advanced-active');
+  panel.classList.remove('on');panel.innerHTML='';delete panel.dataset.original;
+  delete _advCh[id];delete _advToggleRedo[id];
+  toast(t('✅ Texto substituído. Ctrl+Z volta pra visão dupla.'));
 }
 // Editar o roteiro pelo Avançado faz o texto divergir dos dados originais da
 // diarização (utterances). Em vez de tentar reconstruí-los, desativa bolhas/
@@ -6529,17 +6673,20 @@ function exitAdvanced(id,viaUndo=false){
   const panel=document.getElementById('adv-'+id);
   if(viaUndo&&card&&panel){
     const ta=document.getElementById('adv-draft-'+id);
+    const origTa=document.getElementById('adv-orig-'+id);
     const split=document.getElementById('adv-split-'+id);
     _advReentry={
       id,
-      original:panel.dataset.original||'',
+      original:origTa?origTa.value:(panel.dataset.original||''),
       draft:ta?ta.value:'',
       page:split?split.dataset.page:'0',
-      ch:_advCh[id]?{u:[..._advCh[id].u],r:[..._advCh[id].r]}:{u:[],r:[]}
+      ch:_advCh[id]?{draft:{u:[..._advCh[id].draft.u],r:[..._advCh[id].draft.r]},original:{u:[..._advCh[id].original.u],r:[..._advCh[id].original.r]}}:{draft:{u:[],r:[]},original:{u:[],r:[]}}
     };
+    _advReentryVia='undo';
   }else{
-    _advReentry=null;
+    _advReentry=null;_advReentryVia=null;
   }
+  delete _advToggleRedo[id];
   if(card)card.classList.remove('advanced-active');
   if(panel){panel.classList.remove('on');panel.innerHTML='';delete panel.dataset.original}
   delete _advCh[id];
@@ -6876,14 +7023,21 @@ document.addEventListener('keydown',e=>{
     const activeEl=document.activeElement;
     const advCard=document.querySelector('.card.advanced-active');
     if(advCard){
-      if(isRedo){if(advRedo(advCard.id))e.preventDefault();}
-      else{
+      if(isRedo){
+        // Reabriu a visão dupla desfazendo um "fechar e substituir" (⚙️)? O próximo
+        // Ctrl+Shift+Z refecha (refaz o toggle), não o redo normal de formatação/IA.
+        if(_advToggleRedo[advCard.id]){advCloseAndReplace(advCard.id);e.preventDefault();return}
+        if(advRedo(advCard.id))e.preventDefault();
+      }else{
         if(!advUndo(advCard.id)){exitAdvanced(advCard.id,true)}
         e.preventDefault();
       }
       return;
     }
-    if(isRedo&&_advReentry&&focusCardId()===_advReentry.id){
+    if(isRedo&&_advReentry&&_advReentryVia==='undo'&&focusCardId()===_advReentry.id){
+      reenterAdvanced(_advReentry);e.preventDefault();return;
+    }
+    if(!isRedo&&_advReentry&&_advReentryVia==='replace'&&focusCardId()===_advReentry.id){
       reenterAdvanced(_advReentry);e.preventDefault();return;
     }
     if(!isRedo){
