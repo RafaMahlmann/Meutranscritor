@@ -126,6 +126,8 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .cards.focus-mode .card.focus-active .ctag-row{order:2}
 .cards.focus-mode .card.focus-active .cb{flex:1;display:flex;flex-direction:column;order:3}
 .cards.focus-mode .card.focus-active .cb textarea{flex:1;min-height:150px;resize:none}
+.focus-ot-mount{flex:1;min-height:150px;display:flex;flex-direction:column}
+.focus-ot-mount .overtype-container,.focus-ot-mount .overtype-wrapper{height:100%;flex:1}
 .cards.focus-mode .card.focus-active .cf{order:4}
 .cards.focus-mode .card.focus-active.advanced-active{height:calc(100vh - 175px);height:calc(100dvh - 175px)}
 .cards.focus-mode .card.focus-active .adv-panel{order:3;min-height:0}
@@ -1711,7 +1713,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.10.11';
+const VOX_VERSION='2026.07.10.12';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2396,6 +2398,7 @@ function applyView(){
   cl.classList.remove('masonry','focus-mode');
   document.querySelector('main.wrap').classList.toggle('wrap-focus',viewMode==='focus');
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-masonry',viewMode==='masonry'));
+  if(viewMode!=='focus')_unmountFocusEditor();
   document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
   if(viewMode!=='focus')document.querySelectorAll('#cardsList .card.conversa-on').forEach(c=>c.classList.remove('conversa-on'));
   if(viewMode==='masonry'){
@@ -2416,9 +2419,47 @@ function applyView(){
 function getFocusCards(){
   return[...document.querySelectorAll('#cardsList .card:not(.proc-card):not(.hidden):not(.folder-hidden)')];
 }
+// Editor "tipo Google Docs" (OverType, vendorizado em overtype/) — só liga no card em
+// Modo Foco (.focus-active), nunca na lista/masonry (dezenas de cards ao mesmo tempo
+// tornariam isso caro à toa). O <textarea> real do card nunca é removido, só escondido —
+// o OverType espelha o valor nele via onChange, então lentes de IA, tags, contagem de
+// palavras e undo/redo continuam lendo/escrevendo o mesmo lugar de sempre.
+let _focusEditorInstance=null,_focusEditorCardId=null,_focusEditorGen=0;
+function _unmountFocusEditor(){
+  _focusEditorGen++; // invalida qualquer _mountFocusEditor pendente (ainda no await do
+  // carregamento do script) de uma troca de card anterior — sem isso, uma montagem atrasada
+  // podia "vencer" depois que o usuário já tinha saído daquele card, deixando um mount órfão.
+  if(!_focusEditorInstance)return;
+  const card=document.getElementById(_focusEditorCardId);
+  const ta=card?.querySelector('.cb textarea');
+  if(ta){ta.value=_focusEditorInstance.getValue();ta.style.display=''}
+  try{_focusEditorInstance.destroy()}catch(e){}
+  document.getElementById('ot-'+_focusEditorCardId)?.remove();
+  _focusEditorInstance=null;_focusEditorCardId=null;
+}
+async function _mountFocusEditor(id){
+  const gen=++_focusEditorGen;
+  const card=document.getElementById(id);if(!card||card.dataset.diarized==='true')return;
+  const ta=card.querySelector('.cb textarea');if(!ta)return;
+  try{await _loadScriptOnce('overtype/overtype.js')}catch(e){return} // falha silenciosa: textarea normal já funciona sozinho
+  if(gen!==_focusEditorGen)return; // uma troca de card mais nova já assumiu — aborta
+  const mount=document.createElement('div');
+  mount.id='ot-'+id;mount.className='focus-ot-mount';
+  ta.insertAdjacentElement('afterend',mount);
+  ta.style.display='none';
+  const[inst]=new OverType(mount,{
+    value:ta.value,
+    toolbar:false,
+    fontFamily:'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',
+    onChange:v=>{cardTypeBeforeInput(id,ta);ta.value=v;updateFooter(id);cardTypeInput(id)}
+  });
+  inst.textarea?.addEventListener('focus',()=>trackFocus(ta));
+  _focusEditorInstance=inst;_focusEditorCardId=id;
+}
 function applyFocusCard(){
   const cards=getFocusCards();if(!cards.length)return;
   focusCardIdx=Math.max(0,Math.min(focusCardIdx,cards.length-1));
+  _unmountFocusEditor();
   document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
   const fc=cards[focusCardIdx];
@@ -2427,6 +2468,7 @@ function applyFocusCard(){
   if(fta)fta.style.height='';
   document.getElementById('focusNavLbl').textContent=`${focusCardIdx+1} / ${cards.length}`;
   fc.scrollIntoView({behavior:'smooth',block:'start'});
+  _mountFocusEditor(fc.id);
 }
 function focusStep(dir){
   focusCardIdx=Math.max(0,Math.min(focusCardIdx+dir,getFocusCards().length-1));
@@ -5918,6 +5960,13 @@ function updateFooter(id){
   if(!id)return;const c=document.getElementById(id);if(!c)return;
   const ta=c.querySelector('textarea');const f=document.getElementById('cf-'+id);
   if(ta&&f){const val=ta.value;f.textContent=val.length+' '+t('car.')+' · '+val.split(/\s+/).filter(w=>w).length+' '+t('pal.')}
+  // Ponto único de sincronia: quase todo lugar que escreve em textarea.value chama
+  // updateFooter logo depois — reaproveitamos esse hábito pra manter o editor visual
+  // (Modo Foco) atualizado sem precisar caçar cada função que muda o texto (undo,
+  // lentes de IA, etc). Guard de igualdade evita loop com o onChange do próprio editor.
+  if(ta&&_focusEditorCardId===id&&_focusEditorInstance&&ta.value!==_focusEditorInstance.getValue()){
+    _focusEditorInstance.setValue(ta.value);
+  }
   saveHistory();
 }
 function askDel(id){document.getElementById('conf-'+id)?.classList.add('on')}
