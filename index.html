@@ -511,9 +511,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .lens-opt-lbl{font-size:13px;font-weight:600;color:var(--text)}
 .lens-opt-d{font-size:11px;color:var(--text4);font-weight:400}
 .lens-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:2px 10px 8px}
-.lens-card{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 30px 10px 10px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:5px;font-family:var(--font);transition:all var(--transition)}
+.lens-card{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 30px 10px 10px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:5px;font-family:var(--font);transition:all var(--transition);animation:cardIn .22s ease-out backwards;animation-delay:calc(var(--i,0) * 18ms)}
 .lens-card:hover{border-color:var(--cat,var(--accent))}
+.lens-card:active{transform:scale(.97);transition:transform .1s ease-out}
 .lens-card.is-fav{border-color:var(--warning)}
+@keyframes cardIn{from{opacity:0;transform:translateY(4px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes starPop{0%{transform:scale(1)}45%{transform:scale(1.35)}100%{transform:scale(1)}}
+.lens-star.pop{animation:starPop .25s ease-out}
 .lens-card-ico{width:26px;height:26px;border-radius:9px;background:color-mix(in srgb,var(--cat,var(--accent)) 18%,transparent);color:var(--cat,var(--accent));display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .lens-card-ico svg{width:14px;height:14px}
 .lens-card-lbl{font-size:12.5px;font-weight:600;color:var(--text)}
@@ -524,23 +528,55 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .lens-style-btn{background:var(--bg-input);border:1px solid transparent;border-radius:8px;padding:5px 9px;font-size:13px;cursor:pointer;color:var(--text3);font-family:var(--font);transition:all var(--transition)}
 .lens-style-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 .lens-map{position:relative;width:100%;min-height:420px;margin-top:4px;overflow:visible}
+.lens-map.dark-world{background:#0a0a12;border-radius:16px;padding:24px;box-sizing:border-box}
+#lensMapOverlay .modal.overlay-lg{max-width:min(96vw,1100px)}
+.modal.overlay-lg .lens-map{min-height:min(72vh,680px)}
 #lensMapOverlay .mb{overflow-x:hidden}
 .map-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .map-line{stroke-width:1.2;opacity:0.35;fill:none}
 .map-hub,.map-node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;z-index:2}
-.map-hub-body{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1.5px solid var(--nc,var(--accent));font-size:22px;box-shadow:0 0 0 4px color-mix(in srgb,var(--nc,var(--accent)) 12%,transparent);position:relative}
-.map-hub-pulse{position:absolute;inset:-8px;border-radius:50%;border:1.5px solid var(--nc,var(--accent));opacity:.18;animation:mapPulse 3.4s ease-in-out infinite;pointer-events:none}
+.map-hub-body{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#12121c;border:1.5px solid var(--nc,var(--accent));font-size:28px;box-shadow:0 0 28px 6px color-mix(in srgb,var(--nc,var(--accent)) 55%,transparent);position:relative}
+.map-hub-pulse{position:absolute;inset:-10px;border-radius:50%;border:1.5px solid var(--nc,var(--accent));opacity:.18;animation:mapPulse 3.4s ease-in-out infinite;pointer-events:none}
 @keyframes mapPulse{0%,100%{transform:scale(1);opacity:.18}50%{transform:scale(1.14);opacity:.34}}
-.map-hub-lbl{margin-top:6px;font-size:10px;font-weight:700;letter-spacing:.3px;color:var(--text3);white-space:nowrap;text-align:center}
+.map-hub-lbl{margin-top:8px;font-size:11px;font-weight:700;letter-spacing:.3px;color:#e2e2e8;white-space:nowrap;text-align:center}
 .map-node-btn{position:relative;background:none;border:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.map-node-body{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1.5px solid var(--nc,var(--accent));color:var(--nc,var(--accent));font-size:16px;transition:transform .15s ease,box-shadow .15s ease}
-.map-node-btn:hover .map-node-body{transform:scale(1.12);box-shadow:0 0 14px color-mix(in srgb,var(--nc,var(--accent)) 45%,transparent)}
+.map-node-body{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#12121c;border:1.5px solid var(--nc,var(--accent));color:var(--nc,var(--accent));font-size:22px;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 0 12px 2px color-mix(in srgb,var(--nc,var(--accent)) 40%,transparent)}
+.map-node-btn:hover .map-node-body{transform:scale(1.12);box-shadow:0 0 20px 4px color-mix(in srgb,var(--nc,var(--accent)) 60%,transparent)}
 .map-node-burst{position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--nc,var(--accent));opacity:0;transform:scale(.6);transition:opacity .35s ease,transform .35s ease;pointer-events:none}
 .map-node.pop .map-node-body{transform:scale(.9)}
 .map-node.pop .map-node-burst{opacity:.7;transform:scale(1.55);transition:opacity .05s ease,transform .05s ease}
-.map-node-lbl{position:absolute;top:calc(100% + 5px);left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:3px 8px;font-size:10.5px;font-weight:600;color:var(--text2);white-space:normal;max-width:90px;line-height:1.25;text-align:center;opacity:0;pointer-events:none;transition:opacity .12s ease;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:5}
-.map-node:hover .map-node-lbl{opacity:1}
+.map-node-lbl{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:600;color:#e2e2e8;white-space:normal;width:max-content;max-width:clamp(58px,26vw,110px);line-height:1.3;text-align:center;pointer-events:none;z-index:5}
+.map-node-lbl b{display:block;font-size:10.5px}
+.map-node-lbl-d{display:block;font-weight:400;color:#9a9aac;font-size:9px;margin-top:1px}
 .map-node .lens-star{position:absolute;top:-6px;right:-12px}
+.trilha-pills{position:relative;display:flex;gap:6px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--border)}
+.trilha-pill{background:var(--bg-input);border:1px solid transparent;border-radius:20px;padding:7px 14px;font-size:12.5px;font-weight:600;font-family:var(--font);color:var(--text3);cursor:pointer;transition:all var(--transition)}
+.trilha-pill:hover{color:var(--cat,var(--accent))}
+.trilha-pill.on{background:color-mix(in srgb,var(--cat,var(--accent)) 15%,transparent);color:var(--cat,var(--accent))}
+.trilha-indicator{position:absolute;left:0;bottom:-1px;height:2px;width:1px;background:var(--cat,var(--accent));border-radius:2px;transform-origin:0 0;transition:transform .2s ease-out}
+.bubble-hub,.bubble-node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;z-index:2}
+.bubble-hub-body{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nc,var(--accent));font-size:24px;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.bubble-lbl-hub{margin-top:6px;font-size:11px;font-weight:700;color:var(--text2)}
+.bubble-node-btn{position:relative;background:none;border:none;padding:0;cursor:pointer}
+.bubble-node-body{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--nc,var(--accent)) 85%,white);color:#fff;font-size:18px;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.bubble-node-btn:hover .bubble-node-body{transform:scale(1.1);box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.bubble-node.pop .bubble-node-body{transform:scale(.9)}
+.bubble-lbl{margin-top:5px;font-size:10.5px;font-weight:600;color:var(--text2);white-space:normal;max-width:80px;line-height:1.25;text-align:center}
+.bubble-node .lens-star{position:absolute;top:-6px;right:-10px}
+.palette-search-wrap{margin-bottom:10px}
+.palette-search{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;font-family:var(--font);color:var(--text);box-sizing:border-box}
+.palette-search:focus{outline:none;border-color:var(--accent)}
+.palette-list{display:flex;flex-direction:column;gap:2px;max-height:min(60vh,480px);overflow-y:auto}
+.palette-row{position:relative;display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;border-radius:10px;padding:9px 34px 9px 10px;text-align:left;cursor:pointer;font-family:var(--font);transition:background var(--transition)}
+.palette-row.hl,.palette-row:hover{background:var(--bg-input)}
+.palette-badge{flex-shrink:0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--cat,var(--accent));background:color-mix(in srgb,var(--cat,var(--accent)) 15%,transparent);border-radius:6px;padding:2px 6px;white-space:nowrap}
+.palette-ico{flex-shrink:0;width:16px;height:16px;color:var(--text3);display:inline-flex;align-items:center;justify-content:center}
+.palette-ico svg{width:15px;height:15px}
+.palette-main{display:flex;flex-direction:column;gap:1px;min-width:0}
+.palette-lbl{font-size:13px;font-weight:600;color:var(--text)}
+.palette-d{font-size:11px;color:var(--text4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.palette-row .lens-star{right:8px}
+.palette-empty{padding:20px;text-align:center;color:var(--text4);font-size:12px}
 .lens-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px}
 .lens-chips-lbl{font-size:10px;font-weight:700;color:var(--text4);letter-spacing:0.3px}
 .lens-chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg-card);border:1px solid var(--accent);color:var(--accent);border-radius:20px;padding:4px 11px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition)}
@@ -1504,9 +1540,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 </div>
 
 <!-- MAPA DE LENTES (visual alternativo ao menu em cards) -->
-<div class="overlay" id="lensMapOverlay" onclick="if(event.target===this)closeLensMap()">
+<div class="overlay" id="lensMapOverlay" onclick="if(event.target===this)closeLensOverlay()">
   <div class="modal wide">
-    <div class="mh"><h2 data-i18n>🕸️ Mapa de lentes</h2><button class="mh-close" onclick="closeLensMap()">✕</button></div>
+    <div class="mh"><h2 id="lensOverlayTitle">🕸️ Mapa de lentes</h2><button class="mh-close" onclick="closeLensOverlay()">✕</button></div>
     <div class="mb">
       <div id="lensMapSwitch"></div>
       <div class="lens-map" id="lensMapCanvas"></div>
@@ -1675,7 +1711,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.10.10';
+const VOX_VERSION='2026.07.10.11';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -1713,6 +1749,15 @@ function applyStaticI18n(){
 let I18N_EN={
 "🕸️ Mapa de lentes":"🕸️ Lens map",
 "Mapa":"Map",
+"Trilha":"Track",
+"Bolhas":"Bubbles",
+"Paleta":"Palette",
+"Buscar lente…":"Search lens…",
+"Nada encontrado":"Nothing found",
+"🕸️ Constelação de lentes":"🕸️ Lens constellation",
+"〰️ Trilha de lentes":"〰️ Lens track",
+"🫧 Bolhas de lentes":"🫧 Lens bubbles",
+"⌘ Paleta de lentes":"⌘ Lens palette",
 "💡 Padrão: <strong>Groq</strong> (grátis) — se você já configurou a chave Groq na aba Transcrição, a IA de texto já funciona sozinha, sem precisar mexer aqui.":"💡 Default: <strong>Groq</strong> (free) — if you've already set up your Groq key in the Transcription tab, the text AI already works on its own, no need to touch this.",
 "🎁 Grátis ou local — comece por aqui":"🎁 Free or local — start here",
 "Recomendamos fortemente o Z.ai: é realmente grátis, sem pegadinha e sem limite de tempo.":"We strongly recommend Z.ai: it's genuinely free, no catch, no time limit.",
@@ -4922,10 +4967,26 @@ function _toggleFav(k){
   if(nowFav)cfg.favLenses.push(k);else cfg.favLenses.splice(i,1);
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
   toast(nowFav?('⭐ '+mainLensLabel(k)+' '+t('agora é sua lente padrão')):t('⭐ Lente padrão removida'));
+  return nowFav;
 }
+// Atualiza a estrela/card NO LUGAR (sem reconstruir o painel inteiro) — só assim
+// a animação de "encolhe/preenche/estoura" tem algo pra animar. Se não achar os
+// elementos (ex: card de receita, que não passa por _lensCardHtml), cai no
+// reconstrói-tudo de sempre — continua funcionando, só sem o efeito extra.
 function toggleFavLens(k,cardId){
-  _toggleFav(k);
-  if(cardId){closeLensPanel(cardId);toggleLensMenu(cardId)}
+  const nowFav=_toggleFav(k);
+  if(!cardId)return;
+  const panel=document.getElementById('lens-'+cardId);
+  const card=panel?.querySelector(`.lens-card[data-lk="${k}"]`);
+  const star=panel?.querySelector(`.lens-star[data-lk="${k}"]`);
+  if(card&&star){
+    card.classList.toggle('is-fav',nowFav);
+    star.classList.toggle('on',nowFav);
+    star.textContent=nowFav?'★':'☆';
+    star.classList.remove('pop');void star.offsetWidth;star.classList.add('pop');
+  }else{
+    closeLensPanel(cardId);toggleLensMenu(cardId);
+  }
 }
 function toggleFavLensAdv(k,id){
   _toggleFav(k);
@@ -5203,67 +5264,164 @@ function deleteUserRecipe(i,cardId){
 // Monta a grade colorida de lentes (compartilhada pelo menu normal do card
 // e pelo seletor dentro do modo Avançado) — runFn/starFn deixam cada
 // contexto decidir o que acontece ao rodar a lente / marcar favorito.
+// Gera UM card de lente — usado pela grade normal, pela Trilha e pelas Bolhas,
+// pra não ter 3 cópias do mesmo template divergindo com o tempo.
+function _lensCardHtml(k,L,isFav,runFn,starFn,idx){
+  const style=idx==null?'':` style="--i:${Math.min(idx,12)}"`;
+  return `<button class="lens-card${isFav?' is-fav':''}" data-lk="${k}"${style} onclick="${runFn(k)}">`+
+    `<span class="lens-card-ico">${L.icon}</span>`+
+    `<span class="lens-card-lbl">${L.label}</span><span class="lens-card-d">${L.desc}</span>`+
+    `<span class="lens-star${isFav?' on':''}" data-lk="${k}" onclick="event.stopPropagation();${starFn(k)}" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
+  `</button>`;
+}
 function _lensCatsGridHtml(runFn,starFn){
   const favs=cfg.favLenses||[];
   let html='';
+  let i=0;
   Object.entries(LENS_CATS).forEach(([cat,hd],ci)=>{
     html+=`<div class="lens-hd" style="color:${hd.color}${ci>0?';border-top:1px solid var(--border);margin-top:4px;padding-top:9px':''}">${t(hd.title)}</div>`+
       `<div class="lens-hd-sub">${t(hd.desc)}</div><div class="lens-grid" style="--cat:${hd.color}">`;
     Object.entries(LENSES).filter(([,L])=>L.cat===cat).forEach(([k,L])=>{
       const isFav=favs.includes(k);
-      html+=`<button class="lens-card${isFav?' is-fav':''}" onclick="${runFn(k)}">`+
-        `<span class="lens-card-ico">${L.icon}</span>`+
-        `<span class="lens-card-lbl">${L.label}</span><span class="lens-card-d">${L.desc}</span>`+
-        `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();${starFn(k)}" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
-      `</button>`;
+      html+=_lensCardHtml(k,L,isFav,runFn,starFn,i++);
     });
     html+='</div>';
   });
   return html;
 }
-// Monta o "Mapa" — mesma lógica/dados de _lensCatsGridHtml, mas em nós
-// espalhados por categoria (hub central + lentes em leque, ligados por
-// linhas SVG) em vez de cards numa grade. Posições calculadas por
-// trigonometria simples, nada de layout manual por lente.
-function _lensCatsMapHtml(runFn,starFn){
-  const favs=cfg.favLenses||[];
+// Calcula onde cada categoria/lente fica no "espaço" (0-100%, cabe em qualquer
+// tela) — trigonometria pura, sem HTML. Fonte única de posição pra Constelação
+// (dark) e Bolhas (light): as duas mostram os MESMOS pontos, só o visual muda.
+function _lensClusterPositions(){
   const cats=Object.entries(LENS_CATS);
   const N=cats.length;
   const hubRx=34,hubRy=30,leafRx=24,leafRy=23;
   const clamp=v=>Math.max(9,Math.min(91,v));
-  let lines='',nodes='';
+  const outCats=[],outNodes=[];
   cats.forEach(([cat,hd],ci)=>{
     const angle=-90+ci*(360/N);
     const rad=angle*Math.PI/180;
     const hx=clamp(50+hubRx*Math.cos(rad)),hy=clamp(50+hubRy*Math.sin(rad));
-    const emoji=(t(hd.title).match(/^\S+/)||[''])[0];
-    nodes+=`<div class="map-hub" style="left:${hx}%;top:${hy}%;--nc:${hd.color}">`+
-      `<div class="map-hub-pulse"></div><div class="map-hub-body">${emoji}</div>`+
-      `<div class="map-hub-lbl">${t(hd.title).replace(/^\S+\s*/,'')}</div></div>`;
+    outCats.push({key:cat,hd,hx,hy});
     const items=Object.entries(LENSES).filter(([,L])=>L.cat===cat);
     const M=items.length,spread=Math.min(160,Math.max(70,30*M));
     items.forEach(([k,L],j)=>{
       const off=M===1?0:(j-(M-1)/2)*(spread/(M-1));
       const a=(angle+off)*Math.PI/180;
       const lx=clamp(hx+leafRx*Math.cos(a)),ly=clamp(hy+leafRy*Math.sin(a));
-      const isFav=favs.includes(k);
-      lines+=`<line class="map-line" x1="${hx}" y1="${hy}" x2="${lx}" y2="${ly}" stroke="${hd.color}"/>`;
-      nodes+=`<div class="map-node${isFav?' is-fav':''}" style="left:${lx}%;top:${ly}%;--nc:${hd.color}">`+
-        `<button class="map-node-btn" onclick="_mapPop(this,()=>{${runFn(k)}})" title="${escHtml(L.label)}">`+
-          `<span class="map-node-burst"></span><span class="map-node-body">${L.icon}</span>`+
-        `</button>`+
-        `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();${starFn(k)}" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
-        `<div class="map-node-lbl">${escHtml(L.label)}</div>`+
-      `</div>`;
+      outNodes.push({key:k,L,cat,hd,hx,hy,lx,ly});
     });
   });
+  return{cats:outCats,nodes:outNodes};
+}
+// Monta o "Mapa" — mesma lógica/dados de _lensCatsGridHtml, mas em nós
+// espalhados por categoria (hub central + lentes em leque, ligados por
+// linhas SVG) em vez de cards numa grade. Posições vêm de _lensClusterPositions.
+function _lensCatsMapHtml(runFn,starFn){
+  const favs=cfg.favLenses||[];
+  const{cats,nodes:pts}=_lensClusterPositions();
+  let lines='',nodes='';
+  cats.forEach(({key:cat,hd,hx,hy})=>{
+    const emoji=(t(hd.title).match(/^\S+/)||[''])[0];
+    nodes+=`<div class="map-hub" style="left:${hx}%;top:${hy}%;--nc:${hd.color}">`+
+      `<div class="map-hub-pulse"></div><div class="map-hub-body">${emoji}</div>`+
+      `<div class="map-hub-lbl">${t(hd.title).replace(/^\S+\s*/,'')}</div></div>`;
+  });
+  pts.forEach(({key:k,L,hd,hx,hy,lx,ly})=>{
+    const isFav=favs.includes(k);
+    lines+=`<line class="map-line" x1="${hx}" y1="${hy}" x2="${lx}" y2="${ly}" stroke="${hd.color}"/>`;
+    nodes+=`<div class="map-node${isFav?' is-fav':''}" style="left:${lx}%;top:${ly}%;--nc:${hd.color}">`+
+      `<button class="map-node-btn" onclick="_mapPop(this,()=>{${runFn(k)}})" title="${escHtml(L.label)}">`+
+        `<span class="map-node-burst"></span><span class="map-node-body">${L.icon}</span>`+
+      `</button>`+
+      `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();${starFn(k)}" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
+      `<div class="map-node-lbl"><b>${escHtml(L.label)}</b><span class="map-node-lbl-d">${escHtml(L.desc)}</span></div>`+
+    `</div>`;
+  });
   return `<svg class="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>${nodes}`;
+}
+// "Paleta de comando" — busca + lista, estilo Linear/Raycast/cmdk. Cada linha
+// mostra a categoria como uma etiquetinha (o detalhe que a pesquisa aponta
+// como "maior proporção de polimento por linha de código"). Enter clica de
+// verdade no botão da linha destacada (nunca eval — mesma disciplina do
+// resto do app).
+let _paletteQuery='',_paletteHighlightIdx=0,_paletteCtx=null;
+function _lensCatsPaletteHtml(runFn,starFn){
+  _paletteCtx={runFn,starFn};
+  _paletteQuery='';
+  _paletteHighlightIdx=0;
+  return `<div class="palette-search-wrap">`+
+      `<input type="text" id="paletteInput" class="palette-search" placeholder="${t('Buscar lente…')}" oninput="_paletteFilter(this.value)" onkeydown="_paletteKeydown(event)" autocomplete="off" spellcheck="false">`+
+    `</div>`+
+    `<div class="palette-list" id="paletteList"></div>`;
+}
+function _paletteAllItems(){
+  return Object.entries(LENSES).map(([k,L])=>({k,L,hd:LENS_CATS[L.cat]}));
+}
+function _paletteFiltered(){
+  const q=_paletteQuery.trim().toLowerCase();
+  const all=_paletteAllItems();
+  if(!q)return all;
+  return all.filter(({L,hd})=>(L.label+' '+L.desc+' '+t(hd.title)).toLowerCase().includes(q));
+}
+function _paletteRenderList(){
+  const list=document.getElementById('paletteList');if(!list||!_paletteCtx)return;
+  const items=_paletteFiltered();
+  if(!items.length){list.innerHTML=`<div class="palette-empty">${t('Nada encontrado')}</div>`;return}
+  _paletteHighlightIdx=Math.min(_paletteHighlightIdx,items.length-1);
+  const favs=cfg.favLenses||[];
+  list.innerHTML=items.map(({k,L,hd},i)=>{
+    const isFav=favs.includes(k);
+    return `<button class="palette-row${i===_paletteHighlightIdx?' hl':''}" data-lk="${k}" onclick="${_paletteCtx.runFn(k)}" onmouseenter="_paletteHighlightIdx=${i};_paletteRefreshHl()">`+
+      `<span class="palette-badge" style="--cat:${hd.color}">${t(hd.title).replace(/^\S+\s*/,'')}</span>`+
+      `<span class="palette-ico">${L.icon}</span>`+
+      `<span class="palette-main"><span class="palette-lbl">${L.label}</span><span class="palette-d">${L.desc}</span></span>`+
+      `<span class="lens-star${isFav?' on':''}" data-lk="${k}" onclick="event.stopPropagation();${_paletteCtx.starFn(k)}" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
+    `</button>`;
+  }).join('');
+}
+function _paletteFilter(v){_paletteQuery=v;_paletteHighlightIdx=0;_paletteRenderList()}
+function _paletteRefreshHl(){document.querySelectorAll('.palette-row').forEach((r,i)=>r.classList.toggle('hl',r.dataset.lk===_paletteFiltered()[_paletteHighlightIdx]?.k))}
+function _paletteScrollHl(){document.querySelector('.palette-row.hl')?.scrollIntoView({block:'nearest'})}
+function _paletteKeydown(e){
+  const items=_paletteFiltered();
+  if(e.key==='Escape'){e.preventDefault();closeLensOverlay();return}
+  if(!items.length)return;
+  if(e.key==='ArrowDown'){e.preventDefault();_paletteHighlightIdx=Math.min(_paletteHighlightIdx+1,items.length-1);_paletteRefreshHl();_paletteScrollHl()}
+  else if(e.key==='ArrowUp'){e.preventDefault();_paletteHighlightIdx=Math.max(_paletteHighlightIdx-1,0);_paletteRefreshHl();_paletteScrollHl()}
+  else if(e.key==='Enter'){e.preventDefault();const it=items[_paletteHighlightIdx];if(it)document.querySelector(`.palette-row[data-lk="${it.k}"]`)?.click()}
+}
+// "Bolhas leves" — mesmas posições de _lensClusterPositions (igual à
+// Constelação), mas círculos PREENCHIDOS + sombra em vez de contorno fino +
+// brilho. Funciona no tema claro de sempre, sem precisar de um fundo escuro
+// dedicado — foge do problema de "brilho não lê em fundo branco".
+function _lensCatsBubbleHtml(runFn,starFn){
+  const favs=cfg.favLenses||[];
+  const{cats,nodes:pts}=_lensClusterPositions();
+  let nodes='';
+  cats.forEach(({hd,hx,hy})=>{
+    const emoji=(t(hd.title).match(/^\S+/)||[''])[0];
+    nodes+=`<div class="bubble-hub" style="left:${hx}%;top:${hy}%;--nc:${hd.color}">`+
+      `<div class="bubble-hub-body">${emoji}</div>`+
+      `<div class="bubble-lbl bubble-lbl-hub">${t(hd.title).replace(/^\S+\s*/,'')}</div></div>`;
+  });
+  pts.forEach(({key:k,L,hd,lx,ly})=>{
+    const isFav=favs.includes(k);
+    nodes+=`<div class="bubble-node${isFav?' is-fav':''}" style="left:${lx}%;top:${ly}%;--nc:${hd.color}">`+
+      `<button class="bubble-node-btn" onclick="_mapPop(this,()=>{${runFn(k)}})" title="${escHtml(L.desc)}">`+
+        `<span class="bubble-node-body">${L.icon}</span>`+
+      `</button>`+
+      `<span class="lens-star${isFav?' on':''}" onclick="event.stopPropagation();${starFn(k)}" title="${t('Usar como padrão')}">${isFav?'★':'☆'}</span>`+
+      `<div class="bubble-lbl">${escHtml(L.label)}</div>`+
+    `</div>`;
+  });
+  return nodes;
 }
 // Feedback de clique nos nós do Mapa: "aperta" e faz um anel de explosão
 // antes de rodar a ação — é isso que carrega a sensação satisfatória, sem
 // precisar de XP/nível nenhum.
 function _mapPop(btn,cb){
-  const wrap=btn.closest('.map-node');
+  const wrap=btn.closest('.map-node,.bubble-node');
   if(wrap)wrap.classList.add('pop');
   setTimeout(()=>{if(wrap)wrap.classList.remove('pop');cb&&cb()},220);
 }
@@ -5282,46 +5440,115 @@ function _animateMapLines(root){
     });
   });
 }
-let _lensMapCardId=null;
-function openLensMap(id){
-  _lensMapCardId=id;
-  document.getElementById('lensMapSwitch').innerHTML=_lensStyleSwitchHtml(id,'map');
-  renderLensMapCanvas(id);
-  document.getElementById('lensMapOverlay').classList.add('on');
+// "Trilha": pílulas por categoria (acordeão — só 1 aberta por vez) + barrinha
+// fina que desliza até a pílula ativa. A barrinha e as pílulas são elementos
+// PERSISTENTES entre trocas (só o conteúdo abaixo é substituído) — é por isso
+// que dá pra animar de verdade (CSS transition precisa do MESMO elemento
+// antes/depois, não dá pra animar entre um innerHTML e outro).
+let _trilhaOpenCat=null,_trilhaCtx=null;
+function _lensCatsTrilhaHtml(runFn,starFn){
+  _trilhaCtx={runFn,starFn};
+  const cats=Object.entries(LENS_CATS);
+  if(_trilhaOpenCat==null||!LENS_CATS[_trilhaOpenCat])_trilhaOpenCat=cats[0][0];
+  let pills='';
+  cats.forEach(([cat,hd])=>{
+    pills+=`<button class="trilha-pill${cat===_trilhaOpenCat?' on':''}" data-cat="${cat}" style="--cat:${hd.color}" onclick="_trilhaSelect('${cat}')">${t(hd.title)}</button>`;
+  });
+  return `<div class="trilha-pills" id="trilhaPills">${pills}<div class="trilha-indicator" id="trilhaIndicator"></div></div>`+
+    `<div id="trilhaContent">${_trilhaContentHtml(_trilhaOpenCat)}</div>`;
 }
-function closeLensMap(){
+function _trilhaContentHtml(cat){
+  const hd=LENS_CATS[cat],favs=cfg.favLenses||[];
+  let items='',i=0;
+  Object.entries(LENSES).filter(([,L])=>L.cat===cat).forEach(([k,L])=>{
+    items+=_lensCardHtml(k,L,favs.includes(k),_trilhaCtx.runFn,_trilhaCtx.starFn,i++);
+  });
+  return `<div class="lens-hd-sub">${t(hd.desc)}</div><div class="lens-grid" style="--cat:${hd.color}">${items}</div>`;
+}
+function _trilhaSelect(cat){
+  if(cat===_trilhaOpenCat||!_trilhaCtx)return;
+  _trilhaOpenCat=cat;
+  document.querySelectorAll('.trilha-pill').forEach(b=>b.classList.toggle('on',b.dataset.cat===cat));
+  _trilhaPositionIndicator();
+  const content=document.getElementById('trilhaContent');
+  if(content)content.innerHTML=_trilhaContentHtml(cat);
+}
+function _trilhaPositionIndicator(){
+  const wrap=document.getElementById('trilhaPills');
+  const active=wrap?.querySelector('.trilha-pill.on');
+  const ind=document.getElementById('trilhaIndicator');
+  if(!wrap||!active||!ind)return;
+  const wr=wrap.getBoundingClientRect(),ar=active.getBoundingClientRect();
+  ind.style.transform=`translateX(${ar.left-wr.left}px) scaleX(${ar.width})`;
+}
+// Estilos que abrem no "palco" grande (#lensMapOverlay) em vez do dropdown
+// embutido no card. 'list' é o único que fica inline — todo o resto usa o
+// mesmo overlay genérico, só trocando o que renderLensOverlayCanvas desenha.
+const OVERLAY_STYLES=['map','trilha','bubbles','palette'];
+let _lensOverlayCardId=null;
+function openLensOverlay(id){
+  _lensOverlayCardId=id;
+  document.getElementById('lensMapSwitch').innerHTML=_lensStyleSwitchHtml(id,cfg.lensMenuStyle);
+  // .on precisa entrar ANTES de renderizar o conteúdo — senão o overlay ainda
+  // está com display:none no momento em que a Paleta tenta focar o campo de
+  // busca, e o foco simplesmente não "pega" em elemento invisível.
+  document.getElementById('lensMapOverlay').classList.add('on');
+  renderLensOverlayCanvas(id);
+}
+function closeLensOverlay(){
   document.getElementById('lensMapOverlay').classList.remove('on');
   document.getElementById('lensMapCanvas').innerHTML='';
   document.getElementById('lensMapSwitch').innerHTML='';
-  _lensMapCardId=null;
+  _lensOverlayCardId=null;
 }
-function renderLensMapCanvas(id){
+// Decide, por cfg.lensMenuStyle, qual _lensCatsXxxHtml desenhar dentro do
+// palco grande. Cada proposta nova só precisa somar um "case" aqui.
+const LENS_OVERLAY_TITLES={map:'🕸️ Constelação de lentes',trilha:'〰️ Trilha de lentes',bubbles:'🫧 Bolhas de lentes',palette:'⌘ Paleta de lentes'};
+function renderLensOverlayCanvas(id){
   const canvas=document.getElementById('lensMapCanvas');if(!canvas)return;
-  canvas.innerHTML=_lensCatsMapHtml(k=>`runLensFromMap('${id}','${k}')`,k=>`toggleFavLensMap('${k}','${id}')`);
+  const runFn=k=>`runLensFromOverlay('${id}','${k}')`,starFn=k=>`toggleFavLensOverlay('${k}','${id}')`;
+  const style=cfg.lensMenuStyle;
+  canvas.classList.toggle('dark-world',style==='map');
+  document.querySelector('#lensMapOverlay .modal').classList.toggle('overlay-lg',OVERLAY_STYLES.includes(style));
+  const title=document.getElementById('lensOverlayTitle');if(title)title.textContent=t(LENS_OVERLAY_TITLES[style]||LENS_OVERLAY_TITLES.map);
+  if(style==='map')canvas.innerHTML=_lensCatsMapHtml(runFn,starFn);
+  else if(style==='trilha'){canvas.innerHTML=_lensCatsTrilhaHtml(runFn,starFn);requestAnimationFrame(_trilhaPositionIndicator)}
+  else if(style==='bubbles')canvas.innerHTML=_lensCatsBubbleHtml(runFn,starFn);
+  else if(style==='palette'){canvas.innerHTML=_lensCatsPaletteHtml(runFn,starFn);_paletteRenderList();document.getElementById('paletteInput')?.focus()}
+  else canvas.innerHTML='';
   _animateMapLines(canvas);
 }
-function runLensFromMap(id,k){closeLensMap();runLens(id,k)}
-function toggleFavLensMap(k,id){_toggleFav(k);renderLensMapCanvas(id)}
+function runLensFromOverlay(id,k){closeLensOverlay();runLens(id,k)}
+// Paleta é caso especial: favoritar não pode reconstruir o campo de busca
+// inteiro (perderia o texto digitado e o foco) — só a lista é atualizada.
+function toggleFavLensOverlay(k,id){
+  _toggleFav(k);
+  if(cfg.lensMenuStyle==='palette')_paletteRenderList();
+  else renderLensOverlayCanvas(id);
+}
 // Alterna entre "Lista" (cards) e "Mapa" (constelação) — lembrado em
 // cfg.lensMenuStyle pra próxima vez que abrir o menu de lentes.
 function _lensStyleSwitchHtml(id,current){
   return `<div class="lens-style-switch">`+
     `<button class="lens-style-btn${current==='list'?' on':''}" onclick="switchLensStyle('${id}','list')" title="${t('Lista')}">🔲</button>`+
     `<button class="lens-style-btn${current==='map'?' on':''}" onclick="switchLensStyle('${id}','map')" title="${t('Mapa')}">🕸️</button>`+
+    `<button class="lens-style-btn${current==='trilha'?' on':''}" onclick="switchLensStyle('${id}','trilha')" title="${t('Trilha')}">〰️</button>`+
+    `<button class="lens-style-btn${current==='bubbles'?' on':''}" onclick="switchLensStyle('${id}','bubbles')" title="${t('Bolhas')}">🫧</button>`+
+    `<button class="lens-style-btn${current==='palette'?' on':''}" onclick="switchLensStyle('${id}','palette')" title="${t('Paleta')}">⌘</button>`+
   `</div>`;
 }
 function switchLensStyle(id,style){
   cfg.lensMenuStyle=style;
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
   document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
-  closeLensMap();
-  if(style==='map')openLensMap(id);else _renderLensListPanel(id);
+  closeLensOverlay();
+  if(OVERLAY_STYLES.includes(style))openLensOverlay(id);else _renderLensListPanel(id);
 }
 function toggleLensMenu(id){
-  if((cfg.lensMenuStyle||'list')==='map'){
+  if(OVERLAY_STYLES.includes(cfg.lensMenuStyle||'list')){
     const ov=document.getElementById('lensMapOverlay');
-    if(ov.classList.contains('on')&&_lensMapCardId===id){closeLensMap();return}
-    openLensMap(id);
+    if(ov.classList.contains('on')&&_lensOverlayCardId===id){closeLensOverlay();return}
+    openLensOverlay(id);
     return;
   }
   const p=document.getElementById('lens-'+id);if(!p)return;
