@@ -1,6 +1,6 @@
 # Relatório do Brush — Redesenho da Aba Diarização
 
-> **Brush:** Kimi Code — Redesenho da aba Diarização + refinamento de linguagem  
+> **Brush:** Kimi Code — Redesenho da aba Diarização + refinamentos de linguagem  
 > **Arquivo-guia:** `prompts/PROMPT_MESTRE_Brush_Kimi_Diarizacao.md`  
 > **Projeto:** Vox (Meutranscritor)  
 > **Data de execução:** 2026-07-12  
@@ -16,7 +16,9 @@ Reformular a aba **Diarização** do modal de configurações do Vox para:
 - Remover a experiência técnica (switch "Identificar locutores automaticamente" e botão "Salvar").
 - Salvar todas as configurações automaticamente (`localStorage`).
 - Apresentar os provedores de diarização de forma acolhedora, honesta e autoexplicativa.
-- **Refinar a linguagem** para que qualquer pessoa comum entenda, sem jargões técnicos.
+- **Refinar a linguagem** para que qualquer pessoa comum entenda, sem jargões técnicos, marketing exagerado ou afirmações absolutas.
+
+A regra de ouro aplicada em todos os textos: *"Se eu estivesse explicando isso pessoalmente para um amigo inteligente, mas leigo, eu usaria exatamente essas palavras?"*
 
 ---
 
@@ -43,9 +45,9 @@ A aba foi completamente reescrita. Antes tinha:
 
 Agora tem:
 
-- Título amigável: **🔮 Diarização — quem falou o quê**.
-- Texto introdutório explicando o que é diarização em linguagem natural.
-- Bloco informativo `.maint-box` sobre os desafios reais de separar falantes e sobre o controle dos dados.
+- Título limpo e atemporal: **🔮 Diarização**.
+- Texto introdutório simples, como uma conversa.
+- Bloco informativo `.maint-box` com título acolhedor: **O que você precisa saber**.
 - Cartões de provedores no estilo da aba IA de texto:
   - **AssemblyAI** (⭐ Recomendado)
   - **Gladia** (🟢 10 horas grátis por mês)
@@ -53,7 +55,7 @@ Agora tem:
   - **OpenAI** (Pago)
 - Toggle compacto de provedor usando `.api-tog-btn`.
 - Painéis de configuração de chave por provedor, com textos humanizados.
-- Seletor de IA para identificar os participantes automaticamente.
+- Seletor de IA com linguagem natural: **IA para tentar identificar quem é quem na conversa**.
 
 ### 3.2 Salvamento automático
 
@@ -74,29 +76,29 @@ Agora tem:
 
 ## 4. Trechos de código alterados
 
-### 4.1 Estrutura HTML da nova aba Diarização
+### 4.1 Estrutura HTML final da aba Diarização
 
 Local: `index.html`, aproximadamente linhas 1442–1567.
 
 ```html
 <!-- DIARIZAÇÃO -->
 <div class="cfg-tab-pane" id="cfgPaneDiar" style="display:none">
-  <div class="section-title" data-i18n>🔮 Diarização — quem falou o quê</div>
+  <div class="section-title" data-i18n>🔮 Diarização</div>
   <p class="fhint" style="margin-bottom:4px" data-i18n>
-    Com a diarização, o Vox separa automaticamente quem fala cada parte da conversa.
+    A diarização separa automaticamente quem fala cada parte da conversa.
   </p>
   <p class="fhint" style="margin-bottom:12px" data-i18n>
-    Em vez de um texto corrido, você recebe a conversa organizada por pessoa — como se cada participante tivesse sua própria fala. É ideal para reuniões, entrevistas, consultas e atendimentos.
+    Em vez de um texto corrido, você recebe a conversa organizada por pessoa — como se cada participante tivesse sua própria fala. Funciona bem para reuniões, entrevistas, consultas e atendimentos.
   </p>
 
   <div class="maint-box" style="margin-bottom:12px">
     <div class="maint-info">
-      <div class="maint-title" data-i18n>ℹ️ Como funciona</div>
+      <div class="maint-title" data-i18n>ℹ️ O que você precisa saber</div>
       <div class="maint-desc" data-i18n>
         Mesmo as inteligências artificiais mais avançadas ainda podem se confundir quando duas ou mais pessoas falam ao mesmo tempo ou têm vozes parecidas.
       </div>
       <div class="maint-desc" data-i18n style="margin-top:4px">
-        Por isso o Vox permite que você escolha entre os provedores especializados que hoje oferecem os melhores resultados. Cada um usa a sua própria chave de API: seus dados continuam sob o seu controle.
+        Por isso você pode escolher entre os provedores que hoje entregam os melhores resultados. Cada um usa a sua própria chave: seus dados continuam sob o seu controle.
       </div>
     </div>
   </div>
@@ -108,15 +110,50 @@ Local: `index.html`, aproximadamente linhas 1442–1567.
     <div class="maint-info">
       <div class="maint-title">🟣 AssemblyAI <span class="free-badge" data-i18n>⭐ Recomendado</span></div>
       <div class="maint-desc" data-i18n>
-        Nossa principal recomendação. A AssemblyAI entrega uma das diarizações mais precisas do mercado, com uma integração madura e estável. Ao criar a conta, você recebe cerca de US$ 50 em créditos gratuitos — o que normalmente dá para usar por muitas horas antes de precisar pagar qualquer coisa.
+        É a opção que recomendamos para a maioria das pessoas. Oferece excelente qualidade, integração bastante estável e cerca de US$ 50 em créditos gratuitos para novos usuários, suficientes para muitas horas de utilização antes de qualquer custo.
       </div>
       <div class="maint-foot"><a href="https://www.assemblyai.com" ... data-i18n>🌐 site oficial</a></div>
     </div>
     <button type="button" class="preset-use-btn" onclick="setDiarProvider('assemblyai',true,true)" data-i18n>Usar AssemblyAI</button>
   </div>
 
-  <!-- Cartões Gladia, pyannote.ai, OpenAI... -->
+  <!-- Cartão Gladia -->
+  <div class="maint-box" style="margin-bottom:8px">
+    <div class="maint-info">
+      <div class="maint-title">💠 Gladia <span class="free-badge" data-i18n>🟢 10 horas grátis por mês</span></div>
+      <div class="maint-desc" data-i18n>
+        Excelente opção para quem quer usar uma franquia gratuita que renova automaticamente todos os meses. É prática para quem usa com frequência e prefere começar sem gastar nada.
+      </div>
+      <div class="maint-foot"><a href="https://app.gladia.io" ... data-i18n>🌐 site oficial</a></div>
+    </div>
+    <button type="button" class="preset-use-btn" onclick="setDiarProvider('gladia',true,true)" data-i18n>Usar Gladia</button>
+  </div>
 
+  <!-- Cartão pyannote.ai -->
+  <div class="maint-box" style="margin-bottom:8px">
+    <div class="maint-info">
+      <div class="maint-title">🎯 pyannote.ai <span class="limit-badge" data-i18n>Alta precisão</span></div>
+      <div class="maint-desc" data-i18n>
+        Desenvolvido pelos criadores do principal sistema open source de diarização, é indicado para quem busca a maior precisão possível na identificação de quem falou cada trecho da conversa.
+      </div>
+      <div class="maint-foot"><a href="https://www.pyannote.ai" ... data-i18n>🌐 site oficial</a></div>
+    </div>
+    <button type="button" class="preset-use-btn" onclick="setDiarProvider('pyannote',true,true)" data-i18n>Usar pyannote.ai</button>
+  </div>
+
+  <!-- Cartão OpenAI -->
+  <div class="maint-box" style="margin-bottom:12px">
+    <div class="maint-info">
+      <div class="maint-title">🤖 OpenAI <span class="paid-badge" data-i18n>Pago</span></div>
+      <div class="maint-desc" data-i18n>
+        Boa alternativa para quem já usa os serviços da OpenAI e prefere manter tudo no mesmo ecossistema. Reaproveita a mesma chave configurada na aba Transcrição.
+      </div>
+      <div class="maint-foot"><a href="https://platform.openai.com" ... data-i18n>🌐 site oficial</a></div>
+    </div>
+    <button type="button" class="preset-use-btn" onclick="setDiarProvider('openai',true,true)" data-i18n>Usar OpenAI</button>
+  </div>
+
+  <!-- Toggle compacto -->
   <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr 1fr">
     <button class="api-tog-btn" id="dpAssembly" onclick="setDiarProvider('assemblyai',true,true)">🟣 AssemblyAI</button>
     <button class="api-tog-btn" id="dpGladia" onclick="setDiarProvider('gladia',true,true)">💠 Gladia</button>
@@ -124,13 +161,15 @@ Local: `index.html`, aproximadamente linhas 1442–1567.
     <button class="api-tog-btn" id="dpOpenAI" onclick="setDiarProvider('openai',true,true)">🤖 OpenAI</button>
   </div>
 
+  <!-- Painéis de configuração de chave -->
   <div id="assemblySection">...</div>
   <div id="gladiaSection" style="display:none">...</div>
   <div id="pyannoteSection" style="display:none">...</div>
   <div id="openaiDiarSection" style="display:none">...</div>
 
+  <!-- Seletor de IA para identificar participantes -->
   <div class="frow" style="margin-top:12px">
-    <label><span data-i18n>Identificar os participantes automaticamente</span></label>
+    <label><span data-i18n>IA para tentar identificar quem é quem na conversa</span></label>
     <select id="aiRenameProvider" onchange="saveCfg(false)">...</select>
     <p class="fhint" data-i18n>
       Depois de separar as falas, o Vox pode tentar descobrir automaticamente quem é o profissional e quem é o paciente (ou outro papel). Usa a IA de texto que você já configurou.
@@ -139,57 +178,58 @@ Local: `index.html`, aproximadamente linhas 1442–1567.
 </div>
 ```
 
-### 4.2 Bloco informativo humanizado
+### 4.2 Evolução da linguagem
 
-Antes:
+#### Título
 
-```html
-<div class="maint-title" data-i18n>ℹ️ Sobre a diarização</div>
-<div class="maint-desc" data-i18n>Separar corretamente quem está falando continua sendo um dos maiores desafios da Inteligência Artificial.</div>
-<div class="maint-desc" data-i18n style="margin-top:4px">Por isso o Vox integra diferentes provedores especializados utilizando suas próprias chaves de API (BYOK), preservando sua privacidade.</div>
-```
+- Antes: `🔮 Diarização — quem falou o quê`
+- Depois: `🔮 Diarização`
 
-Depois:
+**Motivo:** a explicação abaixo do título já cumpre o papel de explicar o recurso. O título ficou limpo, elegante e atemporal.
 
-```html
-<div class="maint-title" data-i18n>ℹ️ Como funciona</div>
-<div class="maint-desc" data-i18n>Mesmo as inteligências artificiais mais avançadas ainda podem se confundir quando duas ou mais pessoas falam ao mesmo tempo ou têm vozes parecidas.</div>
-<div class="maint-desc" data-i18n style="margin-top:4px">Por isso o Vox permite que você escolha entre os provedores especializados que hoje oferecem os melhores resultados. Cada um usa a sua própria chave de API: seus dados continuam sob o seu controle.</div>
-```
+#### Bloco explicativo
 
-**Princípio aplicado:** nenhuma sigla (BYOK removido), nenhuma afirmação de "desafio da IA" sem contexto humano. O usuário entende o porquê e mantém a confiança.
+- Antes: `ℹ️ Como funciona`
+- Depois: `ℹ️ O que você precisa saber`
 
-### 4.3 Cartão AssemblyAI melhorado
+**Motivo:** transmite acolhimento em vez de documentação técnica.
 
-Antes:
+#### Texto do bloco explicativo
 
-```html
-<div class="maint-desc" data-i18n>Nossa principal recomendação. Excelente qualidade de diarização, integração madura e aproximadamente US$50 em créditos gratuitos para novos usuários.</div>
-```
+- Antes: `Por isso o Vox integra diferentes provedores especializados utilizando suas próprias chaves de API (BYOK), preservando sua privacidade.`
+- Depois: `Por isso você pode escolher entre os provedores que hoje entregam os melhores resultados. Cada um usa a sua própria chave: seus dados continuam sob o seu controle.`
 
-Depois:
+**Motivo:** removeu a sigla BYOK e a linguagem de "integração de provedores", soando mais como uma conversa.
 
-```html
-<div class="maint-desc" data-i18n>Nossa principal recomendação. A AssemblyAI entrega uma das diarizações mais precisas do mercado, com uma integração madura e estável. Ao criar a conta, você recebe cerca de US$ 50 em créditos gratuitos — o que normalmente dá para usar por muitas horas antes de precisar pagar qualquer coisa.</div>
-```
+#### AssemblyAI
 
-**Princípio aplicado:** explica *por que* é recomendado e traduz o crédito em valor concreto ("muitas horas"), sem soar como marketing.
+- Antes: `Nossa principal recomendação. A AssemblyAI entrega uma das diarizações mais precisas do mercado...`
+- Depois: `É a opção que recomendamos para a maioria das pessoas. Oferece excelente qualidade, integração bastante estável e cerca de US$ 50 em créditos gratuitos...`
 
-### 4.4 Cartão pyannote.ai melhorado
+**Motivo:** recomendação honesta, sem superlativos de marketing como "uma das melhores do mercado".
 
-Antes:
+#### pyannote.ai
 
-```html
-<div class="maint-desc" data-i18n>Desenvolvido pelos criadores do principal sistema open source de diarização.</div>
-```
+- Antes: `...é hoje uma das opções com maior precisão...`
+- Depois: `...é indicado para quem busca a maior precisão possível na identificação de quem falou cada trecho da conversa.`
 
-Depois:
+**Motivo:** responde naturalmente à pergunta "Quando devo escolher esta opção?".
 
-```html
-<div class="maint-desc" data-i18n>Desenvolvido pelos criadores do principal sistema open source de diarização, é hoje uma das opções com maior precisão para identificar quem falou cada trecho da conversa.</div>
-```
+#### OpenAI
 
-### 4.5 Função `setDiarProvider` reformulada
+- Antes: `Bom para quem já usa a OpenAI em outras partes do Vox...`
+- Depois: `Boa alternativa para quem já usa os serviços da OpenAI e prefere manter tudo no mesmo ecossistema...`
+
+**Motivo:** explica o benefício real de manter tudo no mesmo ecossistema.
+
+#### Seletor de IA
+
+- Antes: `Identificar os participantes automaticamente`
+- Depois: `IA para tentar identificar quem é quem na conversa`
+
+**Motivo:** linguagem mais humana e próxima de como uma pessoa explicaria para outra.
+
+### 4.3 Função `setDiarProvider`
 
 Local: `index.html`, aproximadamente linhas 3650–3673.
 
@@ -226,7 +266,7 @@ function setDiarProvider(p, save=true, activate=false){
 - O toggle reutiliza a classe `.api-tog-btn` da aba IA de texto, mas força a cor roxa (`--diar`) via estilo inline para manter a identidade da aba.
 - A visibilidade dos painéis de chave é controlada pelo provedor selecionado.
 
-### 4.6 `saveCfg` sem dependência do checkbox removido
+### 4.4 `saveCfg` sem dependência do checkbox removido
 
 Local: `index.html`, aproximadamente linhas 3687–3703.
 
@@ -270,20 +310,22 @@ function saveCfg(close=true){
 | Adicionar pyannote.ai apenas na UI | O brush era de redesign de interface. Implementar o backend pyannote.ai ampliaria o escopo. Ficou preparado para brush futuro. |
 | Remover o botão Salvar de todo o modal | O prompt diz "Toda configuração deve ser salva automaticamente". Para manter coerência, o botão foi removido do modal inteiro, não só da aba Diarização. |
 | Salvar automático em todas as abas | Como o botão Salvar sumiu, todos os campos do modal precisam persistir sozinhos. |
-| Humanizar linguagem | Textos escritos para pessoas comuns, sem jargões técnicos. Siglas como BYOK removidas da interface. |
+| Humanizar linguagem | Textos escritos para pessoas comuns, sem jargões técnicos. Siglas como BYOK removidas da interface. Recomendações honestas, sem superlativos de marketing. |
 
 ---
 
 ## 6. Estado atual
 
 - ✅ Aba Diarização redesenhada no padrão da aba IA de texto.
+- ✅ Título simplificado para `🔮 Diarização`.
+- ✅ Bloco explicativo com título acolhedor: `O que você precisa saber`.
 - ✅ Switch "Identificar locutores automaticamente" removido.
 - ✅ Botão "Salvar" removido.
 - ✅ Salvamento automático implementado em todos os campos do modal.
-- ✅ Cartões dos 4 provedores adicionados.
+- ✅ Cartões dos 4 provedores com linguagem honesta e humana.
 - ✅ Toggle de provedor reutilizando `.api-tog-btn`.
 - ✅ pyannote.ai adicionado como provedor configurável (UI + cfg).
-- ✅ Linguagem humanizada: nenhuma sigla técnica visível, explicações honestas e acolhedoras.
+- ✅ Seletor de IA renomeado para linguagem natural.
 - ✅ Traduções i18n atualizadas.
 - ✅ Sintaxe JS validada com `node --check`.
 - ✅ HTML da aba validado quanto a tags não fechadas.
