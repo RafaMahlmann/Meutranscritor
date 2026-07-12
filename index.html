@@ -1037,6 +1037,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   <div class="stat"><span class="sdot" id="sdot"></span><span id="stext" data-i18n>Pronto</span></div>
   <div class="stat">📝 <strong id="sc">0</strong> <span data-i18n>itens</span></div>
   <div class="stat">⏱️ <strong id="stime">0 min</strong></div>
+  <div class="stat" id="statAvg" style="display:none" title="Duração média de cada gravação" data-i18n-title>📊 <strong id="sAvg">—</strong> <span data-i18n>média</span></div>
   <div class="stat" id="statSaved" style="display:none">⚡ <strong id="sSaved">0 min</strong> <span data-i18n>economizados</span></div>
   <div class="stats-ctrls">
     <button class="stat-folders-btn" id="btnNewCard" onclick="newEmptyCard()" title="Criar card novo em branco" data-i18n-title>
@@ -1946,7 +1947,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.12.5';
+const VOX_VERSION='2026.07.12.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2085,6 +2086,7 @@ let I18N_EN={
 "Desabafo → clareza":"Vent → clarity","O que realmente pesa, o que está no seu controle, e um passo pequeno":"What's really weighing on you, what's in your control, and one small step",
 "Pré-mortem":"Pre-mortem","O plano já falhou — descubra por quê antes de acontecer":"The plan already failed — find out why before it happens",
 "Alterna entre Lista, Masonry e Documento":"Switches between List, Masonry and Document",
+"média":"avg","Duração média de cada gravação":"Average duration per recording",
 "Plano de ação":"Action plan","O despejo de ideias vira plano sequenciado, com o passo de amanhã":"The braindump becomes a sequenced plan, with tomorrow's step",
 "Tempestade de ideias":"Brainstorm","Ideias que decorrem da nota — inclusive as que ninguém teve ainda":"Ideas that flow from the note — including the ones nobody's had yet",
 "Roteiro de vídeo curto":"Short video script","Gancho de 3s, blocos de fala e chamada final — Reels/TikTok/Shorts":"3s hook, speech blocks and final call — Reels/TikTok/Shorts",
@@ -7204,6 +7206,13 @@ function showCards(){
 function updateStats(){
   document.getElementById('sc').textContent=stats.count;
   document.getElementById('stime').textContent=Math.ceil(stats.sec/60)+' '+t('min');
+  // Média de duração por gravação — estatística pedida pelo Rafa: mostra o
+  // perfil de uso ("gravo curto e muito" vs "gravo longo e pouco").
+  if(stats.count>0&&stats.sec>0){
+    const avgSec=stats.sec/stats.count;
+    document.getElementById('sAvg').textContent=avgSec<60?Math.round(avgSec)+'s':(avgSec/60).toFixed(1).replace('.0','')+' '+t('min');
+    document.getElementById('statAvg').style.display='flex';
+  }
   const words=stats.words||0;
   if(words>0){
     const minsSaved=Math.round(words/40);
