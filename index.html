@@ -872,8 +872,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 /* Selo "ativo" inline no nome da chave — não colide mais com o link do console */
 .key-row.active-key label>span:first-child::after{content:'✓ ativo';margin-left:7px;font-size:9px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--accent);background:var(--accent-glow);padding:2px 7px;border-radius:20px;vertical-align:1px}
 /* Abas do modal de configurações */
-.cfg-tabs{display:flex;gap:4px;margin:-4px 0 16px;background:var(--bg-input);border-radius:13px;padding:4px;position:sticky;top:0;z-index:5}
-.cfg-tab-btn{flex:1;border:none;background:none;border-radius:10px;padding:8px 4px;font-size:11.5px;font-weight:700;font-family:var(--font);color:var(--text3);cursor:pointer;transition:all var(--transition);white-space:nowrap}
+.cfg-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:-4px 0 16px;background:var(--bg-input);border-radius:13px;padding:4px;position:sticky;top:0;z-index:5}
+/* min-width:0 é o que permite o flex:1 realmente encolher — sem isso, cada
+   aba recusa ficar menor que o texto+ícone dela ("white-space:nowrap"), e
+   em tela de celular a fileira toda estourava a largura do modal, cortando
+   "⚙️ Geral" pra fora da tela. Com flex-wrap, se ainda não couber tudo numa
+   linha só, quebra pra 2 linhas de 2 abas em vez de vazar da tela. */
+.cfg-tab-btn{flex:1 1 min(140px,45%);min-width:0;border:none;background:none;border-radius:10px;padding:8px 4px;font-size:11.5px;font-weight:700;font-family:var(--font);color:var(--text3);cursor:pointer;transition:all var(--transition);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cfg-tab-btn.on{background:var(--bg-card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.08)}
 .local-100-badge{display:none;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:0.4px;color:var(--accent);background:var(--accent-glow);padding:3px 9px;border-radius:20px;white-space:nowrap}
 .local-100-badge.on{display:inline-flex}
@@ -1941,7 +1946,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.12.4';
+const VOX_VERSION='2026.07.12.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
