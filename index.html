@@ -53,7 +53,12 @@
 .card{--ca:var(--accent)!important;--cag:var(--accent-glow)!important;--cat:transparent!important}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased}
 .wrap{max-width:1100px;margin:0 auto;padding:0 20px;width:100%}
-main.wrap.wrap-focus{max-width:none}
+/* Sem qualificar por "main" — precisa valer também pra .stats (a barra de
+   contadores/botões logo acima), que é OUTRO elemento .wrap independente do
+   <main>. Antes só o <main> alargava no Modo Documento/Foco; a .stats ficava
+   presa no max-width:1100px antigo e centralizada sozinha, descolada de
+   tudo abaixo dela — inclusive antes de qualquer questão de sidebar. */
+.wrap.wrap-focus{max-width:none}
 .wrap.wrap-masonry{max-width:1600px}
 header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
 .hd{display:flex;align-items:center;justify-content:space-between;padding:13px 0}
@@ -95,7 +100,11 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .skin-sw:hover{transform:scale(1.12)}
 .skin-sw.on{box-shadow:0 0 0 2px var(--bg-card),0 0 0 4px var(--sw)}
 .theme-btn:hover{background:var(--border2)}
-.stats{border-bottom:1px solid var(--border);padding:8px 0;display:flex;gap:0;overflow-x:auto}
+/* padding-top/bottom em vez do shorthand "8px 0" — o shorthand zerava
+   esquerda/direita, sobrescrevendo os 20px de .wrap (mesma classe, mas essa
+   regra vem depois no CSS) e descolando a barra 20px pra direita do
+   conteúdo abaixo dela, que preserva o padding de .wrap normalmente. */
+.stats{border-bottom:1px solid var(--border);padding-top:8px;padding-bottom:8px;display:flex;gap:0;overflow-x:auto}
 .stat{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);font-weight:500;padding:0 14px;border-right:1px solid var(--border);white-space:nowrap}
 .stat:first-child{padding-left:0}
 .stat:last-child{border-right:none}
@@ -122,7 +131,14 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 @media(max-width:600px){.cards.masonry{columns:1}}
 .cards.focus-mode .card{display:none!important}
 .cards.focus-mode .card.focus-active{display:flex!important;flex-direction:column;min-height:calc(100vh - 175px);min-height:calc(100dvh - 175px)}
-.cards.focus-mode .card.focus-active .lens-panel{order:1}
+/* ">" (filho direto), não descendente qualquer — o seletor genérico pegava
+   também o #adv-lens-ID de dentro do Modo Avançado (que tem a MESMA classe
+   .lens-panel, só que aninhado fundo em .adv-panel > .adv-split >
+   .adv-pane-draft). Herdar order:1 ali reordenava esse painel pra depois
+   dos irmãos com order:0 (label/toolbar/textarea/prompt-row) dentro do seu
+   próprio container flex — ele acabava desenhado por baixo/fora da coluna,
+   sobrepondo texto de forma bagunçada. */
+.cards.focus-mode .card.focus-active>.lens-panel{order:1}
 .cards.focus-mode .card.focus-active .ctag-row{order:2}
 .cards.focus-mode .card.focus-active .cb{flex:1;display:flex;flex-direction:column;order:3}
 .cards.focus-mode .card.focus-active .cb textarea{flex:1;min-height:150px;resize:none}
@@ -145,15 +161,18 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
    dentro de .adv-pane-orig. Usar flex:1 aqui era um no-op: o textarea
    Original ficava com a altura mínima do navegador (~2 linhas) enquanto o
    Editado (que já usava height:100% corretamente) ocupava tudo. */
-/* max-height ligado à janela (não "none") — sem isso, arrastar a alcinha
-   de redimensionar (canto inferior direito, resize:vertical nativo do
-   navegador) crescia infinitamente e furava o card pra fora da tela. Com o
-   teto, arrastar até o fim encosta no rodapé da janela e para — em janela
-   pequena o limite é pequeno, em janela grande é grande, como devia ser. */
-.cards.focus-mode .card.focus-active .adv-panel.on .adv-original{height:100%;max-height:calc(100vh - 220px);max-height:calc(100dvh - 220px);min-height:0}
+/* max-height:100% (não um calc() fixo da janela) — o navegador respeita
+   max-height nativamente ao limitar o arrasto da alcinha de redimensionar
+   (resize:vertical), então isso trava o arrasto exatamente no limite do
+   PRÓPRIO .adv-ta-wrap (que já reserva o espaço certo, descontando rótulo/
+   barra de ferramentas/barra de instrução do lado do Editado). Um calc()
+   relativo à janela inteira não sabia dessa reserva — dava pra arrastar o
+   texto por cima do "Ou digite uma instrução…" e do botão Gerar. */
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-original{height:100%;max-height:100%;min-height:0}
 .cards.focus-mode .card.focus-active .adv-panel.on .adv-pane-draft{display:flex;flex-direction:column;min-height:0}
 .cards.focus-mode .card.focus-active .adv-panel.on .adv-ta-wrap{flex:1;min-height:0}
-.cards.focus-mode .card.focus-active .adv-panel.on .adv-draft{height:100%;max-height:calc(100vh - 220px);max-height:calc(100dvh - 220px);min-height:0}
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-prompt-row{flex-shrink:0}
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-draft{height:100%;max-height:100%;min-height:0}
 .ico-collapse{display:none}
 
 /* ── MODO DOCUMENTO (estilo Word/Docs) ──────────────────────────────────
@@ -214,6 +233,11 @@ body.doc-mode .card.focus-active .adv-panel{margin-left:10px;margin-right:10px}
 body.doc-mode .adv-original,
 body.doc-mode .adv-draft{background:var(--bg-card);border:1px solid var(--border);box-shadow:0 4px 20px rgba(0,0,0,0.06)}
 body.doc-mode .adv-col-lbl{color:var(--text3)}
+/* O seletor de lentes (Transformar com IA) dentro do Avançado precisa ficar
+   NA FRENTE do texto de verdade — fundo opaco (não o var(--bg-input) a 12%
+   de opacidade padrão, que deixa o texto por trás vazando) + sombra, igual
+   às folhas ao lado. Ele é a hierarquia visual máxima enquanto está aberto. */
+.adv-pane-draft .lens-panel.on{background:var(--bg-card);border:1px solid var(--border);box-shadow:0 8px 28px rgba(0,0,0,0.14)}
 /* Barra flutuante de formatação: some quando o OverType nativo some (Modo
    Avançado troca a folha única pelas duas colunas). Mora no canto oposto das
    etiquetas (mesma fileira, .ch com justify-content:space-between — como o
@@ -471,6 +495,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folders-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:399}
 .folders-backdrop.on{display:block}
 .stats-ctrls{position:sticky;right:0;z-index:2;margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:var(--bg);padding-left:12px}
+/* A barra .stats usa a mesma classe .wrap (largura cheia) da página toda,
+   mas o conteúdo abaixo dela (barra "✕ Voltar", toolbar do Documento) mora
+   dentro de .content-area, que fica mais estreita quando a sidebar de
+   pastas está aberta (182px + 14px de gap). Sem isso, esse grupo de botões
+   ficava alinhado com a borda da PÁGINA, não com a borda do conteúdo — uns
+   196px mais à direita do que a barra logo abaixo dele. */
+.stats-ctrls:has(#btnFolders.folders-on){margin-right:196px}
 .stat-folders-btn{flex-shrink:0;background:var(--bg-input);border:none;color:var(--text3);border-radius:8px;padding:5px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-size:11px;font-weight:600;transition:all var(--transition)}
 .stat-folders-btn:hover{background:var(--border2);color:var(--text)}
 .stat-folders-btn.folders-on{background:var(--accent-glow);color:var(--accent)}
@@ -528,7 +559,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .diar-help-btn{width:18px;height:18px;border-radius:50%;border:1px solid var(--border2);background:transparent;color:var(--text4);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
 .diar-help-btn:hover{border-color:var(--diar);color:var(--diar)}
 
-.tips{display:flex;align-items:center;gap:0;margin-bottom:7px;overflow-x:auto}
+/* flex-wrap:wrap — em tela estreita (iPhone), as 3 dicas juntas passavam da
+   largura da tela; sem quebra de linha nem indicador visível de rolagem,
+   a 3ª dica ("#tag na busca filtra") ficava escondida fora da viewport,
+   parecendo ter "sumido"/"pulado pra fora". Agora quebra pra 2ª linha. */
+.tips{display:flex;flex-wrap:wrap;align-items:center;gap:0 0;margin-bottom:7px;overflow-x:auto}
 .tip{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text4);font-weight:500;padding:0 10px;border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0}
 .tip:first-child{padding-left:0}
 .tip:last-child{border-right:none}
@@ -1900,7 +1935,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.12.2';
+const VOX_VERSION='2026.07.12.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2684,7 +2719,7 @@ function applyView(){
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
   cl.classList.remove('masonry','focus-mode');
   document.body.classList.toggle('doc-mode',viewMode==='doc');
-  document.querySelector('main.wrap').classList.toggle('wrap-focus',isFocusLike);
+  document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-focus',isFocusLike));
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-masonry',viewMode==='masonry'));
   if(!isFocusLike)_unmountFocusEditor();
   document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
