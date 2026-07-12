@@ -140,10 +140,20 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
 .cards.focus-mode .card.focus-active .adv-panel.on{flex:1;display:flex;flex-direction:column;min-height:0}
 .cards.focus-mode .card.focus-active .adv-panel.on .adv-split{flex:1;min-height:0}
 .cards.focus-mode .card.focus-active .adv-panel.on .adv-pane-orig{display:flex;flex-direction:column;min-height:0}
-.cards.focus-mode .card.focus-active .adv-panel.on .adv-original{flex:1;max-height:none;min-height:0}
+/* height:100% (não flex:1) — o pai direto do textarea é .adv-ta-wrap, que NÃO
+   é flex container; é ELE quem recebe o flex:1 (regra abaixo) e cresce
+   dentro de .adv-pane-orig. Usar flex:1 aqui era um no-op: o textarea
+   Original ficava com a altura mínima do navegador (~2 linhas) enquanto o
+   Editado (que já usava height:100% corretamente) ocupava tudo. */
+/* max-height ligado à janela (não "none") — sem isso, arrastar a alcinha
+   de redimensionar (canto inferior direito, resize:vertical nativo do
+   navegador) crescia infinitamente e furava o card pra fora da tela. Com o
+   teto, arrastar até o fim encosta no rodapé da janela e para — em janela
+   pequena o limite é pequeno, em janela grande é grande, como devia ser. */
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-original{height:100%;max-height:calc(100vh - 220px);max-height:calc(100dvh - 220px);min-height:0}
 .cards.focus-mode .card.focus-active .adv-panel.on .adv-pane-draft{display:flex;flex-direction:column;min-height:0}
 .cards.focus-mode .card.focus-active .adv-panel.on .adv-ta-wrap{flex:1;min-height:0}
-.cards.focus-mode .card.focus-active .adv-panel.on .adv-draft{height:100%;max-height:none;min-height:0}
+.cards.focus-mode .card.focus-active .adv-panel.on .adv-draft{height:100%;max-height:calc(100vh - 220px);max-height:calc(100dvh - 220px);min-height:0}
 .ico-collapse{display:none}
 
 /* ── MODO DOCUMENTO (estilo Word/Docs) ──────────────────────────────────
@@ -683,6 +693,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .adv-col-lbl{font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--text4);margin-bottom:6px;text-align:center}
 .adv-original{width:100%;background:var(--bg-input);border-radius:12px;padding:10px 12px;font-size:var(--cf-sz,14px);font-family:var(--font);line-height:1.75;color:var(--text);border:none;outline:none;resize:vertical;min-height:200px;max-height:340px;box-sizing:border-box}
 .adv-ta-wrap{position:relative;min-height:0}
+/* O seletor de lentes dentro do Avançado (#adv-lens-ID) reaproveita a MESMA
+   grade de 31 cards do menu normal — sem teto, ela crescia até ~2000px de
+   altura dentro de uma coluna de altura FIXA (o Avançado usa flexbox pra
+   dividir uma altura travada da tela). Isso zerava a área de texto ao lado
+   (.adv-ta-wrap ia a 0px, flex:1 min-height:0 cede tudo pro vizinho gigante)
+   e parecia bagunça/sobreposição. Com teto + rolagem própria, os cards
+   ficam contidos e o texto nunca perde o espaço dele. */
+.adv-pane-draft .lens-panel.on{max-height:min(50vh,420px);overflow-y:auto;flex-shrink:0}
 .adv-toolbar{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
 .adv-lens-btn{width:26px;height:26px;border:none;background:var(--bg-input);border-radius:7px;color:var(--text3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition)}
 .adv-lens-btn svg{width:13px;height:13px}
@@ -869,9 +887,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span data-i18n>Buscar</span>
       </button>
-      <button class="gbtn" id="btnView" onclick="toggleView()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="8" height="11" rx="2"/><rect x="13" y="3" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><rect x="3" y="17" width="8" height="4" rx="2"/></svg>
-        <span id="viewLabel" data-i18n>Masonry</span>
+      <button class="gbtn" id="btnView" onclick="toggleView()" title="Alterna entre Lista, Masonry e Documento" data-i18n-title>
+        <span id="viewIcon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></span>
+        <span id="viewLabel" data-i18n>Lista</span>
       </button>
       <button class="gbtn" id="btnDaySummary" onclick="openDaySummary()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -1882,7 +1900,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.12.1';
+const VOX_VERSION='2026.07.12.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2020,6 +2038,7 @@ let I18N_EN={
 "Ensaio de conversa difícil":"Difficult conversation rehearsal","Argumentos prontos, reações prováveis e o que não dizer":"Ready-made arguments, likely reactions and what not to say",
 "Desabafo → clareza":"Vent → clarity","O que realmente pesa, o que está no seu controle, e um passo pequeno":"What's really weighing on you, what's in your control, and one small step",
 "Pré-mortem":"Pre-mortem","O plano já falhou — descubra por quê antes de acontecer":"The plan already failed — find out why before it happens",
+"Alterna entre Lista, Masonry e Documento":"Switches between List, Masonry and Document",
 "Plano de ação":"Action plan","O despejo de ideias vira plano sequenciado, com o passo de amanhã":"The braindump becomes a sequenced plan, with tomorrow's step",
 "Tempestade de ideias":"Brainstorm","Ideias que decorrem da nota — inclusive as que ninguém teve ainda":"Ideas that flow from the note — including the ones nobody's had yet",
 "Roteiro de vídeo curto":"Short video script","Gancho de 3s, blocos de fala e chamada final — Reels/TikTok/Shorts":"3s hook, speech blocks and final call — Reels/TikTok/Shorts",
@@ -2670,16 +2689,23 @@ function applyView(){
   if(!isFocusLike)_unmountFocusEditor();
   document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
   if(!isFocusLike)document.querySelectorAll('#cardsList .card.conversa-on').forEach(c=>c.classList.remove('conversa-on'));
+  // O ícone/rótulo do botão sempre espelha o modo ATUAL (não o próximo pro
+  // qual o clique vai) — senão a pessoa lê "Documento" pensando que já tá
+  // nele, quando na verdade isso é o destino do clique. Confuso.
+  const viewIcon=document.getElementById('viewIcon'),viewLbl=document.getElementById('viewLabel');
   if(viewMode==='masonry'){
     cl.classList.add('masonry');if(cl.style.display!=='none')cl.style.display='block';
-    document.getElementById('viewLabel').innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+    if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="8" height="11" rx="2"/><rect x="13" y="3" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><rect x="3" y="17" width="8" height="4" rx="2"/></svg>';
+    if(viewLbl)viewLbl.textContent=t('Masonry');
   }else if(isFocusLike){
     cl.classList.add('focus-mode');if(cl.style.display!=='none')cl.style.display='block';
-    document.getElementById('viewLabel').textContent=t('Lista');
+    if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M15 2v5h5"/></svg>';
+    if(viewLbl)viewLbl.textContent=t('Documento');
     applyFocusCard();
   }else{
     if(cl.style.display!=='none')cl.style.display='flex';
-    document.getElementById('viewLabel').textContent=t('Masonry');
+    if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>';
+    if(viewLbl)viewLbl.textContent=t('Lista');
   }
 }
 // Card atualmente aberto no Modo Foco/Documento — usado pelos botões da
