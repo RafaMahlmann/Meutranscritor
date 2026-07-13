@@ -539,11 +539,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .btn-cancel-file{background:none;border:1px solid var(--border2);color:var(--text3);border-radius:10px;padding:7px 10px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer}
 .btn-cancel-file:hover{color:var(--danger);border-color:var(--danger)}
 .fstage-hint{font-size:11px;color:var(--text3);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.1)}
-.vu-wrap{display:none;position:absolute;left:0;bottom:calc(100% + 8px);width:min(300px,100%);background:var(--bg-card);border:1px solid rgba(255,59,48,0.22);border-radius:999px;padding:7px 10px;align-items:center;gap:8px;box-shadow:0 14px 42px rgba(0,0,0,0.18)}
+.vu-wrap{display:none;position:absolute;left:0;bottom:calc(100% + 8px);width:230px;background:var(--bg-card);border:1px solid rgba(255,59,48,0.22);border-radius:999px;padding:7px 10px;align-items:center;gap:8px;box-shadow:0 14px 42px rgba(0,0,0,0.18);overflow:visible}
 .vu-wrap.on{display:flex}
 .vu-lbl{width:10px;height:10px;border-radius:50%;background:var(--danger);font-size:0;min-width:10px;box-shadow:0 0 0 5px rgba(255,59,48,0.12);animation:pulse-red 1.5s ease-in-out infinite}
-.vu-canvas{flex:1;height:22px;border-radius:999px;background:rgba(255,59,48,0.08)}
-.vu-timer{font-size:12px;font-weight:800;color:var(--danger);font-variant-numeric:tabular-nums;min-width:40px;text-align:right}
+.vu-canvas{flex:1;height:22px;border-radius:999px;background:rgba(255,59,48,0.08);overflow:hidden}
+.vu-timer{position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);font-size:12px;font-weight:800;color:var(--danger);font-variant-numeric:tabular-nums;min-width:42px;text-align:left;text-shadow:0 1px 0 var(--bg)}
 
 /* ── SESSION MODE ── */
 .smode-bar{display:flex;align-items:center;justify-content:flex-start;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:8px;max-width:100%}
@@ -622,6 +622,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .fstage-actions{gap:5px}
   .btn-go{padding:7px 10px;font-size:12px}
   .btn-cancel-file{padding:7px 8px}
+  .vu-wrap{width:min(210px,calc(100vw - 88px))}
 }
 
 /* ── EXPORT DROPDOWN ── */
@@ -1971,7 +1972,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.13.3';
+const VOX_VERSION='2026.07.13.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4795,20 +4796,21 @@ function handleCardFile(e){
 function initVU(stream){
   audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   streamSrc=audioCtx.createMediaStreamSource(stream);
-  analyser=audioCtx.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=0.8;
+  analyser=audioCtx.createAnalyser();analyser.fftSize=512;analyser.smoothingTimeConstant=0.65;
   streamSrc.connect(analyser);dataArr=new Uint8Array(analyser.frequencyBinCount);drawVU();
 }
 function drawVU(){
   const cv=document.getElementById('vuCanvas');const ctx=cv.getContext('2d');const w=cv.width,h=cv.height;
   function loop(){
-    animId=requestAnimationFrame(loop);analyser.getByteFrequencyData(dataArr);ctx.clearRect(0,0,w,h);
-    let sum=0;for(let i=0;i<dataArr.length;i++)sum+=dataArr[i];
-    const k=Math.min(1,Math.max(.12,(sum/dataArr.length)/150));
-    const mid=h/2,amp=Math.max(3,(h*.34)*k),phase=Date.now()/180;
+    animId=requestAnimationFrame(loop);analyser.getByteTimeDomainData(dataArr);ctx.clearRect(0,0,w,h);
+    let sum=0;for(let i=0;i<dataArr.length;i++){const v=(dataArr[i]-128)/128;sum+=v*v}
+    const rms=Math.sqrt(sum/dataArr.length);
+    const k=rms<.018?0:Math.min(1,(rms-.018)*7);
+    const mid=h/2,amp=1+(h*.42)*k,phase=Date.now()/220;
     ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.strokeStyle='rgba(255,59,48,0.16)';ctx.lineWidth=2;
+    ctx.strokeStyle='rgba(255,59,48,0.18)';ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(8,mid);ctx.lineTo(w-8,mid);ctx.stroke();
-    ctx.strokeStyle='rgba(255,59,48,0.86)';ctx.lineWidth=3;
+    ctx.strokeStyle=k>.05?'rgba(255,59,48,0.9)':'rgba(255,59,48,0.38)';ctx.lineWidth=3;
     ctx.beginPath();
     for(let x=8;x<=w-8;x+=4){
       const y=mid+Math.sin((x/18)+phase)*amp*Math.sin(Math.PI*(x-8)/(w-16));
