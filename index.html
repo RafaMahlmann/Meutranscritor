@@ -114,7 +114,7 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .sdot.rec{background:var(--danger);animation:blink 1s infinite}
 .sdot.proc{background:var(--warning);animation:blink 0.7s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
+main{flex:1;padding:20px 0 160px;display:flex;flex-direction:column}
 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 20px}
 .empty-icon{width:52px;height:52px;margin-bottom:20px;opacity:0.25}
 .empty h2{font-size:20px;font-weight:700;letter-spacing:-0.4px;margin-bottom:8px}
@@ -180,10 +180,9 @@ main{flex:1;padding:20px 0 260px;display:flex;flex-direction:column}
    removido por ser redundante com este. Reaproveita a mesma máquina de
    sempre (mesmo card .focus-active, mesmo editor OverType) — Documento só
    é a "roupa": toolbar, papel branco centralizado, barra de baixo (.ibar)
-   escondida. Tudo escondido por padrão; body.doc-mode liga. */
+   compacta e sempre disponível. Tudo escondido por padrão; body.doc-mode liga. */
 .doc-bar{display:none}
 body.doc-mode .doc-bar{display:block;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:8px 10px;margin-bottom:12px}
-body.doc-mode .ibar{display:none!important}
 .doc-toolbar{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
 .doc-tgrp{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .doc-tsep{width:1px;align-self:stretch;background:var(--border);flex-shrink:0;margin:2px 2px}
@@ -524,10 +523,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-breadcrumb span{color:var(--text4)}
 
 /* ── IBAR ── */
-.ibar{position:fixed;bottom:0;left:0;right:0;background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--border);padding:8px 0 20px;z-index:100}
-.ibar-inner{max-width:1100px;margin:0 auto;padding:0 20px}
-.fstage{display:none;background:var(--accent-glow);border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:10px 14px;margin-bottom:8px;animation:slideIn 0.25s ease}
+.ibar{position:fixed;right:18px;bottom:18px;width:min(720px,calc(100vw - 36px));background:transparent;z-index:100;pointer-events:none}
+.ibar-inner{position:relative;padding:0;pointer-events:auto}
+.fstage{display:none;background:var(--bg-card);border:1px solid rgba(16,185,129,0.35);border-radius:16px;padding:10px 12px;margin:0 0 8px;box-shadow:0 14px 42px rgba(0,0,0,0.18);animation:slideIn 0.25s ease}
 .fstage.on{display:block}
+.ibar.file-drag .fstage{display:block;border:2px dashed var(--danger);background:rgba(255,59,48,0.08)}
 .fstage-top{display:flex;align-items:center;gap:10px}
 .fstage-info{flex:1;min-width:0}
 .fstage-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -539,11 +539,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .btn-cancel-file{background:none;border:1px solid var(--border2);color:var(--text3);border-radius:10px;padding:7px 10px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer}
 .btn-cancel-file:hover{color:var(--danger);border-color:var(--danger)}
 .fstage-hint{font-size:11px;color:var(--text3);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.1)}
-.vu-wrap{display:none;padding:4px 4px 2px;align-items:center;gap:10px}
+.vu-wrap{display:none;position:absolute;right:0;bottom:calc(100% + 8px);width:min(280px,100%);background:var(--bg-card);border:1px solid rgba(255,59,48,0.22);border-radius:999px;padding:7px 10px;align-items:center;gap:8px;box-shadow:0 14px 42px rgba(0,0,0,0.18)}
 .vu-wrap.on{display:flex}
-.vu-lbl{font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:1.5px;min-width:30px;font-weight:700}
-.vu-canvas{flex:1;height:26px;border-radius:8px;background:var(--bg-input)}
-.vu-timer{font-size:13px;font-weight:700;color:var(--danger);font-variant-numeric:tabular-nums;min-width:40px;text-align:right}
+.vu-lbl{width:10px;height:10px;border-radius:50%;background:var(--danger);font-size:0;min-width:10px;box-shadow:0 0 0 5px rgba(255,59,48,0.12);animation:pulse-red 1.5s ease-in-out infinite}
+.vu-canvas{flex:1;height:22px;border-radius:999px;background:var(--bg-input)}
+.vu-timer{font-size:12px;font-weight:800;color:var(--danger);font-variant-numeric:tabular-nums;min-width:40px;text-align:right}
 
 /* ── SESSION MODE ── */
 .smode-bar{display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap}
@@ -563,16 +563,16 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    largura da tela; sem quebra de linha nem indicador visível de rolagem,
    a 3ª dica ("#tag na busca filtra") ficava escondida fora da viewport,
    parecendo ter "sumido"/"pulado pra fora". Agora quebra pra 2ª linha. */
-.tips{display:flex;flex-wrap:wrap;align-items:center;gap:0 0;margin-bottom:7px;overflow-x:auto}
+.tips{display:none;flex-wrap:wrap;align-items:center;gap:0 0;margin-bottom:7px;overflow-x:auto}
 .tip{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text4);font-weight:500;padding:0 10px;border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0}
 .tip:first-child{padding-left:0}
 .tip:last-child{border-right:none}
 .tip kbd{background:var(--bg-input);border:1px solid var(--border2);border-radius:5px;padding:1px 5px;font-size:10px;font-family:var(--font);font-weight:700;color:var(--text3)}
-.ibox{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-input);padding:4px 4px 4px 6px;display:flex;align-items:flex-end;gap:4px;box-shadow:var(--shadow-input);transition:border-color var(--transition),box-shadow var(--transition)}
-.ibox:focus-within{border-color:var(--accent);box-shadow:var(--shadow-input),0 0 0 3px var(--accent-glow)}
+.ibox{background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:4px 5px 4px 12px;display:flex;align-items:center;gap:4px;box-shadow:0 12px 34px rgba(0,0,0,0.16);transition:border-color var(--transition),box-shadow var(--transition),transform var(--transition)}
+.ibox:focus-within{border-color:var(--accent);box-shadow:0 12px 34px rgba(0,0,0,0.16),0 0 0 3px var(--accent-glow)}
 .ibox.rec{border-color:var(--danger);box-shadow:var(--shadow-input),0 0 0 3px rgba(255,59,48,0.15)}
 .ibox.frozen{opacity:0.55;pointer-events:none}
-.itxt{flex:1;background:transparent;border:none;color:var(--text);font-size:14px;font-family:var(--font);line-height:1.55;padding:10px 10px;max-height:130px;resize:none;outline:none}
+.itxt{flex:1;background:transparent;border:none;color:var(--text);font-size:14px;font-family:var(--font);line-height:1.45;padding:8px 8px;max-height:56px;resize:none;outline:none}
 .itxt::placeholder{color:var(--text4)}
 .itxt:disabled{opacity:0.5;cursor:not-allowed}
 .ibtns{display:flex;align-items:center;gap:3px;padding:4px 4px 4px 0}
@@ -605,6 +605,22 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .c-send{background:var(--accent);opacity:0.35;cursor:not-allowed}
 .c-send.active{opacity:1;cursor:pointer;box-shadow:0 2px 10px var(--accent-glow)}
 .c-send.active:hover{background:var(--accent2);transform:scale(1.06)}
+@media(max-width:640px){
+  .ibar{right:10px;bottom:10px;width:calc(100vw - 20px)}
+  .smode-bar{gap:4px;margin-bottom:6px;max-height:27px;overflow:hidden}
+  .smode-btn{font-size:10.5px;padding:3px 8px}
+  .sname-input{display:none}
+  .diar-toggle-chip{font-size:10.5px;padding:3px 8px}
+  .diar-help-btn{display:none}
+  .ibox{padding-left:10px}
+  .itxt{font-size:13.5px;min-width:0}
+  .circle{width:32px;height:32px}
+  .aud-gear{width:20px;height:20px}
+  .fstage{border-radius:15px;padding:9px 10px}
+  .fstage-actions{gap:5px}
+  .btn-go{padding:7px 10px;font-size:12px}
+  .btn-cancel-file{padding:7px 8px}
+}
 
 /* ── EXPORT DROPDOWN ── */
 .exp-wrap{position:relative}
@@ -1155,7 +1171,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 
 <!-- STUCK BANNER -->
 <div id="stuckBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:101;pointer-events:none">
-  <div style="max-width:860px;margin:0 auto;padding:0 20px 270px">
+  <div style="max-width:860px;margin:0 auto;padding:0 20px 160px">
     <div style="background:rgba(255,59,48,0.95);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(255,59,48,0.3);pointer-events:all">
       <span style="font-size:18px">⚠️</span>
       <div style="flex:1;font-size:12px;color:white;font-weight:500" data-i18n>App parece travado. Alguma gravação ou transcrição não finalizou.</div>
@@ -1947,7 +1963,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.12.6';
+const VOX_VERSION='2026.07.13.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2177,6 +2193,10 @@ let I18N_EN={
 "🔧 Preparando suporte a esse áudio (só na primeira vez)…":"🔧 Preparing support for this audio (first time only)…",
 "🔧 Convertendo áudio…":"🔧 Converting audio…",
 "Não foi possível processar este arquivo de áudio.":"Couldn't process this audio file.",
+"Solte o áudio aqui":"Drop the audio here",
+"O Vox vai preparar a transcrição":"Vox will prepare the transcription",
+"Também funciona com vídeo que tenha áudio.":"Video with audio works too.",
+"⚠️ Solte um arquivo de áudio ou vídeo.":"⚠️ Drop an audio or video file.",
 "Termos de Uso":"Terms of Use","Política de Privacidade":"Privacy Policy",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 grátis</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free</small>",
 "<strong>Em poucos minutos:</strong> <ol> <li>Crie sua conta gratuita em <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>não pede cartão</strong>.</li> <li>No painel, copie sua chave de API.</li> <li>Cole aqui em cima — pronto.</li> </ol> <br> 💰 O crédito inicial de cerca de <strong>US$ 50</strong> costuma dar para <strong>muitas horas</strong> de uso. Só depois que ele acabar a AssemblyAI pede um cartão para continuar.<br> 🎯 <strong>Ideal para:</strong> quem quer começar de forma simples e sem gastar nada de início.":"<strong>In a few minutes:</strong> <ol> <li>Create your free account at <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>no card required</strong>.</li> <li>In the dashboard, copy your API key.</li> <li>Paste it above — done.</li> </ol> <br> 💰 The initial credit of about <strong>US$50</strong> is usually enough for <strong>many hours</strong> of use. Only after it runs out will AssemblyAI ask for a card to continue.<br> 🎯 <strong>Great for:</strong> those who want to start simply without spending anything at first.",
@@ -2674,6 +2694,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   applyStaticI18n();_syncLangUI();
   loadCfg();loadHistory();updateStats();checkSend();applyView();loadFontSize();
   loadFolders();applyFolderFilter();_syncAudioCfgUI();
+  initAudioDropzone();
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
   if(!localStorage.getItem('vox_welcomed')&&!document.querySelector('#cardsList .card:not(.proc-card)')){
     localStorage.setItem('vox_welcomed','1');
@@ -4005,6 +4026,7 @@ function forceReset(){
   document.querySelectorAll('.proc-card').forEach(c=>c.remove());
   // 4. Zera todos os flags de estado
   isRec=false;isProc=false;stagedFile=null;MR=null;curStream=null;chunks=[];recStart=null;
+  _ibarDragDepth=0;_showAudioDrop(false);
   activeTA=null;activeTACard=null;
   document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
   // 5. Restaura a UI completamente
@@ -4630,8 +4652,52 @@ function handleFile(e){
   recTargetTA=null;recTargetCard=null; // anexo global: nunca mira card existente
   stageFile(f);
 }
+let _ibarDragDepth=0;
+function _hasFileDrag(e){
+  return [...(e.dataTransfer?.types||[])].includes('Files');
+}
+function _isAudioLikeFile(f){
+  return f&&(f.type.startsWith('audio/')||f.type.startsWith('video/')||/\.(mp3|mp4|mpeg|mpga|m4a|wav|webm|ogg|flac|amr|wma|3gp)$/i.test(f.name||''));
+}
+function _showAudioDrop(on){
+  const ibar=document.querySelector('.ibar');if(!ibar)return;
+  ibar.classList.toggle('file-drag',!!on);
+  if(on&&!stagedFile){
+    document.getElementById('fsIco').textContent='📎';
+    document.getElementById('fsName').textContent=t('Solte o áudio aqui');
+    document.getElementById('fsMeta').textContent=t('O Vox vai preparar a transcrição');
+    document.getElementById('fsHint').textContent=t('Também funciona com vídeo que tenha áudio.');
+    document.getElementById('btnGo').disabled=true;
+  }
+}
+function initAudioDropzone(){
+  document.addEventListener('dragenter',e=>{
+    if(!_hasFileDrag(e)||isRec||isProc||stagedFile)return;
+    _ibarDragDepth++;_showAudioDrop(true);
+  });
+  document.addEventListener('dragover',e=>{
+    if(!_hasFileDrag(e)||isRec||isProc||stagedFile)return;
+    e.preventDefault();e.dataTransfer.dropEffect='copy';
+  });
+  document.addEventListener('dragleave',e=>{
+    if(!_hasFileDrag(e)||!_ibarDragDepth)return;
+    _ibarDragDepth=Math.max(0,_ibarDragDepth-1);
+    if(!_ibarDragDepth)_showAudioDrop(false);
+  });
+  document.addEventListener('drop',e=>{
+    if(!_hasFileDrag(e))return;
+    _ibarDragDepth=0;_showAudioDrop(false);
+    if(isRec||isProc||stagedFile)return;
+    const f=e.dataTransfer?.files?.[0];if(!f)return;
+    e.preventDefault();
+    if(!_isAudioLikeFile(f)){toast(t('⚠️ Solte um arquivo de áudio ou vídeo.'),true);return}
+    recTargetTA=null;recTargetCard=null;
+    stageFile(f);
+  });
+}
 function stageFile(f){
   stagedFile=f;
+  _ibarDragDepth=0;_showAudioDrop(false);
   const mb=(f.size/(1024*1024)).toFixed(1);
   const large=f.size>24*1024*1024;
   const estMin=Math.max(1,Math.round(f.size/(1024*1024)*0.5));
@@ -4648,6 +4714,7 @@ function stageFile(f){
 }
 function cancelFile(clearTarget=true){
   stagedFile=null;
+  _ibarDragDepth=0;_showAudioDrop(false);
   if(clearTarget){recTargetTA=null;recTargetCard=null}
   document.getElementById('fstage').classList.remove('on');
   document.getElementById('ibox').classList.remove('frozen');
@@ -4950,6 +5017,7 @@ function cancelRec(){
 }
 function resetUI(){
   isRec=false;MR=null;curStream=null;chunks=[];recStart=null;
+  _ibarDragDepth=0;_showAudioDrop(false);
   if(segTimer){clearInterval(segTimer);segTimer=null}
   document.getElementById('itxt').disabled=false;document.getElementById('itxt').placeholder=t('Digite ou 📎 anexe um áudio…');
   document.getElementById('ibox').classList.remove('rec');document.getElementById('vuWrap').classList.remove('on');
