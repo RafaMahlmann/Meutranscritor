@@ -542,7 +542,16 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fstage-hint{font-size:11px;color:var(--text3);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.1)}
 .vu-wrap{display:none;position:absolute;right:12px;bottom:calc(100% + 8px);width:230px;background:var(--bg-card);border:1px solid rgba(255,59,48,0.22);border-radius:999px;padding:7px 10px;align-items:center;gap:8px;box-shadow:0 14px 42px rgba(0,0,0,0.18);overflow:visible}
 .vu-wrap.on{display:flex}
-.ibar.rec-on .vu-wrap{position:static;margin-left:auto;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.1)}
+/* position:relative (não "static") — o timer (#recTimer) é filho direto
+   de .vu-wrap e se posiciona de forma absoluta contra ELE. Com "static",
+   .vu-wrap deixa de ser o contêiner de referência e o timer "vaza" pro
+   próximo ancestral posicionado (.ibar-inner, o card inteiro) — por isso
+   ele aparecia na quina esquerda externa do card em vez de colado no
+   balão. "relative" mantém o encaixe no fluxo flex (igual a "static"),
+   só que volta a servir de referência pro timer. right/bottom explícitos
+   em auto pra não herdar o deslocamento do estado oculto (aquele é usado
+   só quando .vu-wrap flutua como popup, não durante a gravação). */
+.ibar.rec-on .vu-wrap{position:relative;right:auto;bottom:auto;margin-left:auto;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.1)}
 .vu-lbl{width:10px;height:10px;border-radius:50%;background:var(--danger);font-size:0;min-width:10px;box-shadow:0 0 0 5px rgba(255,59,48,0.12);animation:pulse-red 1.5s ease-in-out infinite}
 .vu-canvas{flex:1;height:22px;border-radius:999px;background:rgba(255,59,48,0.08);overflow:hidden}
 .vu-timer{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);font-size:12px;font-weight:800;color:var(--danger);font-variant-numeric:tabular-nums;min-width:42px;text-align:right;text-shadow:0 1px 0 var(--bg)}
@@ -620,8 +629,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .smode-bar{gap:5px;max-width:100%}
   .ibox{align-self:flex-end;margin-left:0}
   .smode-btn{font-size:10.5px;padding:6px 10px}
-  .diar-toggle-chip{display:none}
-  .diar-help-btn{display:none}
+  .diar-toggle-chip{font-size:10.5px;padding:6px 10px}
   .circle{width:38px;height:38px}
   .aud-gear{width:30px;height:30px}
   .fstage{border-radius:15px;padding:9px 10px}
@@ -1979,7 +1987,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.13.6';
+const VOX_VERSION='2026.07.13.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
