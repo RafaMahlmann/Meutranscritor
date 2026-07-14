@@ -954,6 +954,65 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .api-toggle{grid-template-columns:1fr 1fr}
 }
 
+/* ── FASE 2 — topo fundido (só mobile): header (~74px) + .stats (~58px) iam
+   juntos a ~132px de "moldura" fixa. Compactando padding/ícones/rótulos os
+   dois somam bem menos, sobrando altura de tela pra texto. Nada disto entra
+   em vigor fora do @media — desktop permanece pixel-idêntico. */
+@media(max-width:640px){
+  .hd{padding:6px 0}
+  .brand{gap:8px}
+  .brand-icon{width:26px;height:26px;border-radius:8px}
+  /* min-width:0 é o que permite o flex-item encolher abaixo do "min-content"
+     do texto — sem ele, .brand-name nunca chegava a aplicar o ellipsis e o
+     título quebrava em 2 linhas (é o que inflava o header hoje). */
+  .brand-text{min-width:0}
+  .brand-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ver-badge{display:none}
+  .hd-actions{gap:4px}
+  /* white-space:nowrap é necessário pro #btnLang ("🌐 PT") — é o único botão
+     do header com texto solto (sem <span>), então a regra que esconde
+     rótulo (linha acima, existente) não o atinge; sem nowrap ele quebrava
+     em 2 linhas dentro da largura apertada e ficava tão alto (43px,
+     medido no preview) quanto o brand-name quebrado de antes. */
+  /* padding vertical (6px) igual ao original — só o horizontal encolhe
+     (12px→9px). Esses botões já eram ícone-só antes da Fase 2 (regra mais
+     acima, pré-existente) e já viviam abaixo de 44px de altura; não vale a
+     pena encolher ainda mais um alvo de toque que já era apertado. */
+  .hd-actions .gbtn{padding:6px 9px;white-space:nowrap}
+  .theme-btn{width:28px;height:28px;font-size:14px;position:relative}
+  /* .theme-btn perdeu 6px de cada lado (34px→28px) — hit-slop compensa. */
+  .theme-btn::after{content:'';position:absolute;inset:-8px}
+  /* padding lateral menor (20px→12px): sem isso a fileira ficava ~12px mais
+     larga que a tela e o navegador desenhava uma barra de rolagem horizontal
+     — que, em vez de ficar "flutuando" por cima (como as barras de toque em
+     iOS/Android), tomava ~16px de ALTURA aqui no preview e inflava a barra
+     inteira. Cortando a largura, a fileira cabe inteira sem precisar rolar. */
+  .stats{padding:5px 12px}
+  .stat{font-size:10.5px;padding:0 6px}
+  .stats-ctrls{gap:6px}
+  .stat-folders-btn{padding:5px 8px;position:relative}
+  .stat-folders-btn span{display:none}
+  /* Botão vira ícone-só (mais compacto), mas a área de TOQUE continua ≥44px
+     via ::after (hit-slop invisível) — não é o tamanho visual que importa
+     pro dedo, é a área que responde ao toque. */
+  .stat-folders-btn::after{content:'';position:absolute;inset:-10px}
+}
+
+/* ── FASE 2 — auto-esconder header/.stats/#docBar ao rolar pra baixo (só
+   mobile). JS (ver "_onChromeScroll" no script principal) decide QUANDO
+   ligar/desligar a classe .chrome-hidden no <body> conforme direção/posição
+   do scroll da JANELA (é ela quem rola — não há container interno com
+   overflow próprio nesta página). max-height "folgado" (140px, bem maior que
+   o conteúdo real) no estado normal evita cortar algo se o texto crescer
+   (fonte grande, tradução mais longa etc); só quando .chrome-hidden está
+   presente é que o max-height vai a 0 e o conjunto colapsa. */
+@media(max-width:640px){
+  header,.stats,#docBar{max-height:140px;transition:max-height .25s ease,opacity .2s ease}
+  body.chrome-hidden header,body.chrome-hidden .stats,body.chrome-hidden #docBar{
+    max-height:0;opacity:0;overflow:hidden;pointer-events:none;border-color:transparent
+  }
+}
+
 /* ── INTRO VIDEO PLAYER ── */
 .vintro-overlay{display:none;position:fixed;inset:0;background:#000;z-index:1000;align-items:center;justify-content:center;flex-direction:column}
 .vintro-overlay.on{display:flex}
@@ -3411,6 +3470,75 @@ function _shHandleClick(){
   if(_shTouchMoved){_shTouchMoved=false;return}
   toggleSheet();
 }
+
+// ── FASE 2: TOPO FUNDIDO — AUTO-ESCONDER NO SCROLL (só mobile) ──
+// Descoberta (feita no preview antes de escrever isto): a página inteira rola
+// pela JANELA — html/body/main/.content-area/#cardsList são todos
+// overflow:visible, nenhum vira container de scroll próprio. Testado assim:
+// window.scrollTo(0,300) e depois comparei window.scrollY (mudou pra 300)
+// contra document.body.scrollTop/main.scrollTop/.content-area.scrollTop
+// (todos ficaram em 0). Por isso o listener escuta 'scroll' na window, e não
+// em nenhum elemento interno — grudar o listener no elemento errado faria
+// isto simplesmente nunca disparar.
+//
+// Nunca esconde o topo se: a busca está ativa (não pode sumir o jeito de
+// fechar/trocar a busca no meio do uso), o bottom sheet do rodapé (Fase 1)
+// está aberto, a gaveta de pastas está aberta, ou qualquer modal/overlay do
+// app está visível — a maioria usa a classe ".on" (padrão do projeto,
+// confirmado por grep), um punhado (mic/onboard/localStart) usa style inline.
+function _chromeAutoHideBlocked(){
+  if(searchActive)return true;
+  if(document.querySelector('.ibar.sheet-open'))return true;
+  if(document.querySelector('.folders-backdrop.on'))return true;
+  if(document.querySelector('.overlay.on,.conf-overlay.on,.tx-overlay.on,.vintro-overlay.on'))return true;
+  if(document.getElementById('expDrop')?.classList.contains('on'))return true;
+  if(document.getElementById('skinPop')?.classList.contains('on'))return true;
+  const mp=document.getElementById('modelPicker');
+  if(mp&&mp.style.display==='block')return true;
+  for(const id of ['micOverlay','onboardOverlay','localStartOverlay']){
+    const el=document.getElementById(id);
+    if(el&&getComputedStyle(el).display!=='none')return true;
+  }
+  return false;
+}
+// _chAccum acumula o deslocamento na direção atual (zera ao mudar de sinal)
+// — é a histerese que evita "tremida" (esconder/mostrar em sequência) quando
+// o dedo hesita no meio do gesto. Limiares diferentes pra esconder (>24px pra
+// baixo) e mostrar (>8px pra cima, ou perto do topo) fazem o gesto de voltar
+// parecer mais sensível que o de sumir, do jeito que se espera nesse padrão
+// de UI (bars que somem ao rolar).
+let _chLastY=window.scrollY,_chAccum=0,_chTicking=false;
+function _chromeScrollTick(){
+  _chTicking=false;
+  const y=window.scrollY;
+  const dy=y-_chLastY;
+  _chLastY=y;
+  if(!window.matchMedia('(max-width:640px)').matches){
+    // desktop: o CSS de .chrome-hidden só existe dentro do @media mobile,
+    // então isto já não teria efeito visual nenhum — mas tira a classe do
+    // body mesmo assim (dupla garantia) caso a janela seja redimensionada
+    // de mobile pra desktop com o topo escondido.
+    if(document.body.classList.contains('chrome-hidden'))document.body.classList.remove('chrome-hidden');
+    _chAccum=0;
+    return;
+  }
+  if((dy>0&&_chAccum<0)||(dy<0&&_chAccum>0))_chAccum=0; // mudou de direção
+  _chAccum+=dy;
+  const hidden=document.body.classList.contains('chrome-hidden');
+  if(!hidden&&dy>0&&_chAccum>24&&y>80&&!_chromeAutoHideBlocked()){
+    document.body.classList.add('chrome-hidden');
+    _chAccum=0;
+  }else if(hidden&&((dy<0&&_chAccum<-8)||y<40)){
+    document.body.classList.remove('chrome-hidden');
+    _chAccum=0;
+  }
+}
+function _onChromeScroll(){
+  if(_chTicking)return;
+  _chTicking=true;
+  requestAnimationFrame(_chromeScrollTick);
+}
+window.addEventListener('scroll',_onChromeScroll,{passive:true});
 
 // ── SEARCH ──
 function toggleSearch(){
