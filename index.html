@@ -62,7 +62,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .wrap.wrap-masonry{max-width:1600px}
 header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
 .hd{display:flex;align-items:center;justify-content:space-between;padding:13px 0}
-.brand{display:flex;align-items:center;gap:11px}
+.brand{display:flex;align-items:center;gap:11px;cursor:pointer}
+/* Textinho abaixo do nome/versão — sinaliza que clicar em qualquer parte do
+   .brand (ícone, nome, versão) abre o vídeo de abertura e a tela de
+   compartilhamento (onclick mora no .brand inteiro, não só no ícone). */
+.brand-share-hint{font-size:9.5px;color:var(--accent);font-weight:700;letter-spacing:0.2px}
+.brand:hover .brand-share-hint{text-decoration:underline}
 .brand-icon{width:34px;height:34px;background:url('Logo/icon-header.png') center/contain no-repeat;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:0;box-shadow:0 2px 8px var(--accent-glow);flex-shrink:0;cursor:pointer;transition:transform .15s ease,filter .15s ease}
 .brand-icon:hover{transform:scale(1.06);filter:brightness(1.08)}
 .brand-text{line-height:1.2}
@@ -1133,11 +1138,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 <!-- HEADER -->
 <header>
   <div class="wrap hd">
-    <div class="brand">
-      <div class="brand-icon" id="brandIcon" onclick="openAbout()" title="Abertura" data-i18n-title>Abertura</div>
+    <div class="brand" id="brandTrigger" onclick="openAbout()" title="Compartilhe" data-i18n-title>
+      <div class="brand-icon" id="brandIcon">Abertura</div>
       <div class="brand-text">
         <div class="brand-name" id="appTitle">Vox · My Transcriber</div>
         <div class="brand-sub-row"><div class="brand-sub" id="brandSub" data-i18n>Transcription</div><span class="ver-badge" id="verBadge"></span></div>
+        <div class="brand-share-hint" data-i18n>Compartilhe</div>
       </div>
     </div>
     <div class="hd-actions">
@@ -2191,7 +2197,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.14.4';
+const VOX_VERSION='2026.07.14.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2233,6 +2239,7 @@ let I18N_EN={
 "Parar gravação":"Stop recording",
 "Mais opções":"More options",
 "Cancelar gravação":"Cancel recording",
+"Compartilhe":"Share",
 "✨ IA de texto — os cérebros do Vox":"✨ Text AI — the brains of Vox",
 "Transcrever é ouvir. As lentes, receitas e comparações precisam de cérebros de IA para pensar em cima do texto.":"Transcribing is listening. Lenses, recipes and comparisons need AI brains to think over the text.",
 "🔐 O Vox não cobra por uso de IA nem vê seus dados: você conecta suas próprias chaves. Comece com opções grátis ou quase grátis e adicione outros cérebros quando quiser comparar respostas.":"🔐 Vox does not charge for AI usage or see your data: you connect your own keys. Start with free or nearly-free options and add other brains when you want to compare answers.",
