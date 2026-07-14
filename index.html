@@ -650,7 +650,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      (alcinha + chip do modo + ibox), ~64px de altura. Tocar/arrastar a
      alcinha ou tocar o chip revela a .smode-bar completa acima (classe
      .sheet-open no .ibar). safe-area-inset evita colar na "ilha" do iPhone. */
-  .ibar{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));width:auto}
+  /* --kb-offset: altura do teclado virtual sobrepondo a tela (0px quando ele
+     está fechado). Atualizado por _updateKeyboardOffset() via
+     window.visualViewport — sem isso, o teclado do iPhone cobre a barrinha
+     de gravação por cima (position:fixed não reagia ao teclado sozinho) e o
+     botão de gravar ficava inalcançável enquanto a pessoa editava um card. */
+  .ibar{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb-offset,0px));width:auto}
   .ibar-inner{min-height:64px;align-items:stretch;flex-direction:column;gap:0;padding:5px 10px;border-radius:18px}
   .ibar.rec-on .ibar-inner{min-height:58px;align-items:flex-end;justify-content:center}
   /* .smode-bar fica com altura 0 (recolhido); .sheet-open revela com
@@ -2174,7 +2179,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.14.2';
+const VOX_VERSION='2026.07.14.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2948,6 +2953,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   _updateSmodeChip(); // sincroniza o chip do modo com sessionMode ('livre' por padrão)
   _syncLpDiscovery(); // FASE 4d: liga/desliga body.lp-used conforme localStorage.vox_lp_used
+  _updateKeyboardOffset(); // estado inicial de --kb-offset (0px, teclado fechado)
   document.addEventListener('keydown',spaceHotkey);
   const savedSkin=localStorage.getItem('vox_skin')||'teal';
   if(savedSkin==='emerald')document.documentElement.removeAttribute('data-skin');
@@ -3638,6 +3644,26 @@ function _onChromeScroll(){
   requestAnimationFrame(_chromeScrollTick);
 }
 window.addEventListener('scroll',_onChromeScroll,{passive:true});
+
+// ── BARRA DE GRAVAÇÃO SEGUE O TECLADO VIRTUAL (mobile) ──
+// position:fixed sozinho não reage ao teclado virtual do celular — o teclado
+// simplesmente sobrepõe a parte de baixo da tela por cima do .ibar, deixando
+// o botão de gravar inalcançável enquanto a pessoa edita um card (a barrinha
+// fica "atrás" do teclado). window.visualViewport reporta a área realmente
+// visível descontando o teclado; a diferença entre ela e a altura total da
+// janela é a "altura ocupada pelo teclado", que empurramos pra --kb-offset
+// (consumida pelo bottom do .ibar no CSS mobile). Sem teclado, a diferença
+// é 0 e nada muda. Só liga no mobile — desktop não tem teclado virtual.
+function _updateKeyboardOffset(){
+  const vv=window.visualViewport;
+  if(!vv||!_isSheetViewport()){document.documentElement.style.setProperty('--kb-offset','0px');return}
+  const overlap=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop));
+  document.documentElement.style.setProperty('--kb-offset',overlap+'px');
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',_updateKeyboardOffset);
+  window.visualViewport.addEventListener('scroll',_updateKeyboardOffset);
+}
 
 // ── FASE 4a: SWIPE LATERAL NO MODO DOCUMENTO (troca de card, touch only) ──
 // Arrastar o dedo sobre o "papel" do Modo Documento navega pro card
