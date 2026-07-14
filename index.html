@@ -585,6 +585,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .ibox:focus-within{border-color:var(--accent);box-shadow:0 12px 34px rgba(0,0,0,0.16),0 0 0 3px var(--accent-glow)}
 .ibox.rec{border-color:var(--danger);box-shadow:var(--shadow-input),0 0 0 3px rgba(255,59,48,0.15)}
 .ibox.frozen{opacity:0.55;pointer-events:none}
+/* FASE 1 — bottom sheet (só mobile): .ibar-row embrulha a alcinha+chip+ibox.
+   display:contents faz o wrapper "sumir" do layout no desktop — os filhos
+   (alcinha/chip com display:none, .ibox normal) ficam exatamente como
+   filhos diretos do .ibar-inner de sempre, então nada muda acima de 640px. */
+.ibar-row{display:contents}
+.sheet-handle{display:none}
+.smode-chip{display:none}
+.ibar.rec-on .ibar-row{display:none}
 .itxt{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px}
 .itxt::placeholder{color:var(--text4)}
 .itxt:disabled{opacity:0.5;cursor:not-allowed}
@@ -623,11 +631,25 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .c-send.active{opacity:1;cursor:pointer;box-shadow:0 2px 10px var(--accent-glow)}
 .c-send.active:hover{background:var(--accent2);transform:scale(1.06)}
 @media(max-width:640px){
-  .ibar{left:10px;right:10px;bottom:10px;width:auto}
-  .ibar-inner{min-height:104px;align-items:flex-start;flex-direction:column;gap:8px;padding:9px 10px;border-radius:18px}
+  /* FASE 1 — bottom sheet: o rodapé nasce recolhido numa fileira única
+     (alcinha + chip do modo + ibox), ~64px de altura. Tocar/arrastar a
+     alcinha ou tocar o chip revela a .smode-bar completa acima (classe
+     .sheet-open no .ibar). safe-area-inset evita colar na "ilha" do iPhone. */
+  .ibar{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));width:auto}
+  .ibar-inner{min-height:64px;align-items:stretch;flex-direction:column;gap:0;padding:5px 10px;border-radius:18px}
   .ibar.rec-on .ibar-inner{min-height:58px;align-items:flex-end;justify-content:center}
-  .smode-bar{gap:5px;max-width:100%}
-  .ibox{align-self:flex-end;margin-left:0}
+  /* .smode-bar fica com altura 0 (recolhido); .sheet-open revela com
+     transição suave — max-height/opacity/margin juntos, sem "pulo" seco.
+     gap:0 no .ibar-inner (acima) + margin-bottom aqui evitam que o "gap"
+     fixo do flex some 8px mesmo com o bloco recolhido a 0px de altura. */
+  .smode-bar{gap:5px;max-width:100%;max-height:0;opacity:0;overflow:hidden;pointer-events:none;margin-bottom:0;transition:max-height .2s ease,opacity .15s ease,margin-bottom .2s ease}
+  .ibar.sheet-open .smode-bar{max-height:160px;opacity:1;pointer-events:auto;margin-bottom:8px}
+  .ibar-row{display:flex;align-items:center;gap:6px;width:100%;flex-shrink:0}
+  .sheet-handle{display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;background:none;border:none;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sheet-handle-bar{width:36px;height:4px;border-radius:999px;background:var(--border2);transition:background var(--transition)}
+  .sheet-handle:active .sheet-handle-bar{background:var(--text3)}
+  .smode-chip{display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:var(--text2);background:var(--bg-card);border:1px solid var(--border2);border-radius:999px;padding:6px 12px;cursor:pointer;font-family:var(--font);min-width:0;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1;transition:border-color var(--transition),color var(--transition)}
+  .smode-chip:active{border-color:var(--text3);color:var(--text)}
   .smode-btn{font-size:10.5px;padding:6px 10px}
   .diar-toggle-chip{font-size:10.5px;padding:6px 10px}
   .circle{width:38px;height:38px}
@@ -1254,7 +1276,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <div class="tip" data-i18n>💡 card em foco → insere no cursor</div>
       <div class="tip" data-i18n-html>🏷️ <strong>#tag</strong> na busca filtra</div>
     </div>
-    <div class="ibox" id="ibox">
+    <!-- FASE 1 (mobile): fileira recolhida do bottom sheet — alcinha de
+         arrastar + chip do modo ativo, lado a lado com o .ibox. Em desktop
+         .ibar-row vira display:contents (CSS) e some do fluxo — zero efeito
+         visual acima de 640px. -->
+    <div class="ibar-row">
+      <button type="button" class="sheet-handle" id="sheetHandle" onclick="_shHandleClick()" ontouchstart="_shHandleTouchStart(event)" ontouchmove="_shHandleTouchMove(event)" ontouchend="_shHandleTouchEnd()" ontouchcancel="_shHandleTouchEnd()" aria-label="Mais opções" aria-expanded="false" title="Mais opções" data-i18n-title>
+        <span class="sheet-handle-bar"></span>
+      </button>
+      <button type="button" class="smode-chip" id="smodeChip" onclick="toggleSheet()">
+        <span id="smodeChipTxt">📝 Livre</span>
+      </button>
+      <div class="ibox" id="ibox">
       <textarea id="itxt" class="itxt" rows="1" placeholder="Digite ou 📎 anexe um áudio…" data-i18n-placeholder oninput="autoR(this);checkSend()"></textarea>
       <div class="ibtns">
         <input type="file" id="fInput" style="display:none" onchange="handleFile(event)">
@@ -1293,6 +1326,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <button class="circle c-send" id="btnSend" onclick="sendTxt()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
+      </div>
       </div>
     </div>
   </div>
@@ -2028,6 +2062,7 @@ function applyStaticI18n(){
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
 "Parar gravação":"Stop recording",
+"Mais opções":"More options",
 "✨ IA de texto — os cérebros do Vox":"✨ Text AI — the brains of Vox",
 "Transcrever é ouvir. As lentes, receitas e comparações precisam de cérebros de IA para pensar em cima do texto.":"Transcribing is listening. Lenses, recipes and comparisons need AI brains to think over the text.",
 "🔐 O Vox não cobra por uso de IA nem vê seus dados: você conecta suas próprias chaves. Comece com opções grátis ou quase grátis e adicione outros cérebros quando quiser comparar respostas.":"🔐 Vox does not charge for AI usage or see your data: you connect your own keys. Start with free or nearly-free options and add other brains when you want to compare answers.",
@@ -2749,6 +2784,12 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(!document.getElementById('expDrop').contains(e.target)&&!document.getElementById('btnExport').contains(e.target))
       document.getElementById('expDrop').classList.remove('on');
   });
+  // FASE 1 — bottom sheet (mobile): tocar fora do .ibar com o sheet aberto fecha.
+  document.addEventListener('click',e=>{
+    const ibar=document.querySelector('.ibar');
+    if(ibar&&ibar.classList.contains('sheet-open')&&!ibar.contains(e.target))closeSheet();
+  });
+  _updateSmodeChip(); // sincroniza o chip do modo com sessionMode ('livre' por padrão)
   document.addEventListener('keydown',spaceHotkey);
   const savedSkin=localStorage.getItem('vox_skin')||'teal';
   if(savedSkin==='emerald')document.documentElement.removeAttribute('data-skin');
@@ -3272,6 +3313,7 @@ let bannerDismissed=false;
 function setMode(m){
   sessionMode=m;
   document.querySelectorAll('.smode-btn').forEach(b=>b.classList.toggle('active',b.dataset.m===m));
+  _updateSmodeChip(); // mobile: chip do rodapé recolhido reflete o modo escolhido
   const needsDiar=DIAR_MODES.includes(m);
   const hasKey=cfg.apiKeyAssembly||cfg.apiKeyGladia||cfg.apiKeyPyannote||(cfg.diarProvider==='openai'&&cfg.apiKey);
   // Consulta/reunião/entrevista já ligam a diarização se houver chave (fluxo direto)
@@ -3319,6 +3361,55 @@ function toggleDiarQuick(){
     cfg.diarEnabled=false;localStorage.setItem('vox_cfg',JSON.stringify(cfg));
     updateDiarStatus();toast(t('🔮 Diarização desativada'));
   }
+}
+
+// ── BOTTOM SHEET (rodapé recolhível, só mobile — FASE 1) ──
+// No celular, o .ibar nasce recolhido numa fileira única (alcinha + chip do
+// modo + ibox). A classe .sheet-open nele revela a .smode-bar completa.
+// Fora do @media(max-width:640px) essa classe não tem NENHUM efeito visual
+// (ver CSS do .ibar) — por isso é seguro chamar estas funções em qualquer
+// largura de tela, sem checar viewport toda vez.
+function _isSheetViewport(){return window.matchMedia('(max-width:640px)').matches}
+function _setSheetOpen(open){
+  const ibar=document.querySelector('.ibar');if(!ibar)return;
+  ibar.classList.toggle('sheet-open',open);
+  document.getElementById('sheetHandle')?.setAttribute('aria-expanded',open?'true':'false');
+}
+function toggleSheet(){
+  if(!_isSheetViewport())return; // desktop: alcinha/chip nem aparecem (display:none)
+  _setSheetOpen(!document.querySelector('.ibar')?.classList.contains('sheet-open'));
+}
+function openSheet(){if(_isSheetViewport())_setSheetOpen(true)}
+function closeSheet(){_setSheetOpen(false)}
+// Chip do modo ativo (ex: "📝 Livre") — setMode() chama isso a cada troca.
+function _updateSmodeChip(){
+  const el=document.getElementById('smodeChipTxt');
+  if(el)el.textContent=SESSION_MODES[sessionMode]?.label||t('📝 Livre');
+}
+// Arrastar a alcinha (só toque, nunca mouse): sobe abre, desce fecha.
+// Limiar de 24px evita disparo em tremores/toques acidentais; um único
+// toggle por gesto (zera _shTouchY) pra não "tremer" entre aberto/fechado
+// enquanto o dedo continua se movendo.
+let _shTouchY=null,_shTouchMoved=false;
+function _shHandleTouchStart(e){
+  if(!_isSheetViewport())return;
+  _shTouchY=e.touches[0].clientY;_shTouchMoved=false;
+}
+function _shHandleTouchMove(e){
+  if(_shTouchY===null)return;
+  const dy=e.touches[0].clientY-_shTouchY;
+  if(Math.abs(dy)<24)return;
+  _shTouchMoved=true;
+  _setSheetOpen(dy<0); // arrastou pra cima → abre; arrastou pra baixo → fecha
+  _shTouchY=null;
+}
+function _shHandleTouchEnd(){_shTouchY=null}
+// O tap na alcinha dispara "click" logo depois do touchend do navegador; se
+// o gesto já foi tratado como swipe (_shTouchMoved), ignora esse clique
+// fantasma pra não desfazer o toggle que o swipe acabou de fazer.
+function _shHandleClick(){
+  if(_shTouchMoved){_shTouchMoved=false;return}
+  toggleSheet();
 }
 
 // ── SEARCH ──
@@ -4958,6 +5049,7 @@ async function startRec(targetCardId=null){
     MR=makeRecorder(stream);
     MR.start(100);recStart=Date.now();isRec=true;
     document.querySelector('.ibar')?.classList.add('rec-on');
+    closeSheet(); // FASE 1: começar a gravar fecha o sheet recolhido (mobile) automaticamente
     segCard=null;segIndex=0;segTotalSec=0;
     segSn=document.getElementById('snameInput').value.trim();segMode=sessionMode;segProv=cfg.provider;
     if(segTimer){clearInterval(segTimer);segTimer=null}
