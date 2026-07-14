@@ -294,11 +294,15 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
    abre/fecha o cabeçalho recolhido do card. Escondido por padrão aqui fora
    do @media — desktop nunca chega a ver este botão nem o cabeçalho
    recolhido, então fica pixel-idêntico ao de sempre. */
-/* Mesmo tratamento de "pílula com cara de botão" do smode-chip (proposta
-   aprovada pelo Rafa): fundo + borda na cor de destaque sinalizam de cara
-   que dá pra tocar, em vez de depender só do :hover (que touch não tem). */
-.ch-toggle{display:none;flex-shrink:0;width:20px;height:20px;border:1px solid var(--accent);background:var(--accent-glow);color:var(--accent);border-radius:50%;align-items:center;justify-content:center;font-size:11px;cursor:pointer;transition:transform var(--transition),opacity var(--transition);padding:0}
-.ch-toggle:active{opacity:0.75}
+/* O próprio badge do modo (Livre/Consulta/...) é o botão que expande o
+   cabeçalho no mobile — sem elemento separado do lado (era uma "bolinha"
+   solta antes; o Rafa pediu pra consolidar no próprio texto). Base: reset
+   de <button> pra ficar idêntico ao badge estático no desktop, onde o
+   recolhimento nem existe; a borda "cara de botão" e o chevron só entram
+   dentro do @media mobile, abaixo. */
+.ch-mode-badge{border:none;font-family:var(--font);cursor:default;display:inline-flex;align-items:center;gap:3px}
+.ch-mode-badge:active{opacity:0.75}
+.ch-mode-chev{display:none;font-size:9px;line-height:1;transition:transform var(--transition)}
 .icon-btn{width:30px;height:30px;border:none;background:none;color:var(--text4);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
 .icon-btn:hover{background:var(--bg-input);color:var(--text2)}
 .icon-btn:disabled{opacity:0.28;cursor:default;pointer-events:none}
@@ -688,11 +692,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   /* Pílula com "cara de botão" (proposta aprovada pelo Rafa): fundo e borda
      na cor de destaque do tema fazem o cérebro reconhecer "isto é clicável"
      na hora, sem precisar aprender — mesmo princípio do chevron do cabeçalho
-     do card (.ch-toggle), pra ficarem consistentes. */
+     do card (.ch-mode-badge), pra ficarem consistentes. */
   .smode-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-glow);border:1px solid var(--accent);border-radius:999px;padding:6px 10px 6px 12px;cursor:pointer;font-family:var(--font);min-width:0;max-width:150px;flex-shrink:1;transition:opacity var(--transition)}
   .smode-chip:active{opacity:0.75}
   .smode-chip-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-  /* Chevron gira 180° quando o sheet abre — mesma linguagem do .ch-toggle. */
+  /* Chevron gira 180° quando o sheet abre — mesma linguagem do .ch-mode-badge. */
   .smode-chip-chev{flex-shrink:0;font-size:11px;line-height:1;transition:transform var(--transition)}
   .ibar.sheet-open .smode-chip-chev{transform:rotate(180deg)}
   .smode-btn{font-size:10.5px;padding:6px 10px}
@@ -1075,8 +1079,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   /* :not(.focus-active) aqui também — sem isso o chevron aparecia flutuando
      (inerte, sem função) até dentro do Modo Documento, que nunca deveria
      saber que este recurso existe. */
-  .card:not(.focus-active) .ch-toggle{display:inline-flex}
-  .card.ch-open .ch-toggle{transform:rotate(180deg)}
+  .card:not(.focus-active) .ch-mode-badge{border:1px solid var(--ca,var(--accent));cursor:pointer}
+  .card:not(.focus-active) .ch-mode-chev{display:inline-flex}
+  .card.ch-open .ch-mode-chev{transform:rotate(180deg)}
   .card:not(.focus-active) .ch-left{cursor:pointer}
   .card:not(.ch-open):not(.focus-active):not(.proc-card) .ca-wrap,
   .card:not(.ch-open):not(.focus-active):not(.proc-card) .spk-stats,
@@ -1457,7 +1462,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <span class="sheet-handle-bar"></span>
       </button>
       <button type="button" class="smode-chip" id="smodeChip" onclick="toggleSheet()" aria-expanded="false">
-        <span id="smodeChipTxt" class="smode-chip-txt">📝 Livre</span>
+        <span class="smode-chip-txt" data-i18n>Menu</span>
         <span class="smode-chip-chev" aria-hidden="true">˅</span>
       </button>
       <div class="ibox" id="ibox">
@@ -2209,7 +2214,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.14.7';
+const VOX_VERSION='2026.07.14.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2252,6 +2257,7 @@ let I18N_EN={
 "Mais opções":"More options",
 "Cancelar gravação":"Cancel recording",
 "Compartilhe":"Share",
+"Menu":"Menu",
 "Pense em voz alta — sua fala vira raciocínio pronto pra trabalhar, com vários cérebros de IA te ajudando a lapidar. Suas chaves, seus dados: nada passa pelos nossos servidores, porque não temos servidores.":"Think out loud — your speech becomes workable thought, shaped by multiple AI brains you choose. Your keys, your data: nothing passes through our servers, because we don't have any.",
 "Compartilhe com seus amigos":"Share with your friends",
 "Envie o link para que outras pessoas possam usar o app no próprio dispositivo.":"Send the link so other people can use the app on their own device.",
@@ -2986,7 +2992,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     const ibar=document.querySelector('.ibar');
     if(ibar&&ibar.classList.contains('sheet-open')&&!ibar.contains(e.target))closeSheet();
   });
-  _updateSmodeChip(); // sincroniza o chip do modo com sessionMode ('livre' por padrão)
   _syncLpDiscovery(); // FASE 4d: liga/desliga body.lp-used conforme localStorage.vox_lp_used
   _updateKeyboardOffset(); // estado inicial de --kb-offset (0px, teclado fechado)
   document.addEventListener('keydown',spaceHotkey);
@@ -3512,7 +3517,6 @@ let bannerDismissed=false;
 function setMode(m){
   sessionMode=m;
   document.querySelectorAll('.smode-btn').forEach(b=>b.classList.toggle('active',b.dataset.m===m));
-  _updateSmodeChip(); // mobile: chip do rodapé recolhido reflete o modo escolhido
   const needsDiar=DIAR_MODES.includes(m);
   const hasKey=cfg.apiKeyAssembly||cfg.apiKeyGladia||cfg.apiKeyPyannote||(cfg.diarProvider==='openai'&&cfg.apiKey);
   // Consulta/reunião/entrevista já ligam a diarização se houver chave (fluxo direto)
@@ -3581,11 +3585,6 @@ function toggleSheet(){
 }
 function openSheet(){if(_isSheetViewport())_setSheetOpen(true)}
 function closeSheet(){_setSheetOpen(false)}
-// Chip do modo ativo (ex: "📝 Livre") — setMode() chama isso a cada troca.
-function _updateSmodeChip(){
-  const el=document.getElementById('smodeChipTxt');
-  if(el)el.textContent=SESSION_MODES[sessionMode]?.label||t('📝 Livre');
-}
 // Arrastar a alcinha (só toque, nunca mouse): sobe abre, desce fecha.
 // Limiar de 24px evita disparo em tremores/toques acidentais; um único
 // toggle por gesto (zera _shTouchY) pra não "tremer" entre aberto/fechado
@@ -4850,7 +4849,7 @@ function tagsBlock(id,tags){
 }
 // FASE 3 (só mobile) — abre/fecha o cabeçalho recolhido de UM card (.ch-open
 // no elemento do card; ver CSS em @media(max-width:640px)). Chamado tanto
-// pelo tap na linha (.ch-left) quanto pelo chevron (.ch-toggle) — o chevron
+// pelo tap na linha (.ch-left) quanto pelo badge do modo (.ch-mode-badge) — ele
 // faz event.stopPropagation() antes, senão os dois disparariam juntos e o
 // toggle cancelaria a si mesmo. Guard de matchMedia: fora do mobile a classe
 // .ch-open não tem nenhum efeito visual (CSS só existe dentro do @media),
@@ -4865,7 +4864,7 @@ function toggleChCollapse(id){
   const open=!chOpenCards.has(id);
   if(open)chOpenCards.add(id);else chOpenCards.delete(id);
   card.classList.toggle('ch-open',open);
-  const btn=card.querySelector('.ch-toggle');
+  const btn=card.querySelector('.ch-mode-badge');
   if(btn){
     btn.setAttribute('aria-expanded',open?'true':'false');
     const lbl=open?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card');
@@ -5954,11 +5953,10 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <span class="cdot"></span>
         <span class="badge${badgeCls}">${provLabel}</span>
         <span class="badge diar">${t('🔮 Diarizado')}</span>
-        <span class="badge">${modeLabel}</span>
+        <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}">${modeLabel}<span class="ch-mode-chev" aria-hidden="true">˅</span></button>
         ${sn?`<span class="sname-badge" title="${escHtml(sn)}">📌 ${escHtml(sn)}</span>`:''}
         ${pinned?`<span class="badge pin">${t('📌 Fixado')}</span>`:''}
         <span class="ts">${timeStr} · ${dateStr}</span>
-        <button type="button" class="ch-toggle" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}">˅</button>
       </div>
       <div class="ca-wrap">
         <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar no topo')}">
@@ -7172,11 +7170,10 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <span class="cdot"></span>
         <span class="badge${badgeCls}">${provLabel}</span>
         <span class="badge badge-type">${typeIco} ${typeLabel}</span>
-        <span class="badge">${modeLabel}</span>
+        <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}">${modeLabel}<span class="ch-mode-chev" aria-hidden="true">˅</span></button>
         ${sn?`<span class="sname-badge" title="${escHtml(sn)}">${escHtml(sn)}</span>`:''}
         ${pinned?'<span class="badge pin">📌</span>':''}
         <span class="ts">${timeStr} · ${dateStr}</span>
-        <button type="button" class="ch-toggle" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}">˅</button>
       </div>
       <div class="ca-wrap">
         <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar')}">
