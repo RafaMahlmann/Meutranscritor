@@ -302,6 +302,11 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
    dentro do @media mobile, abaixo. */
 .ch-mode-badge{border:none;font-family:var(--font);cursor:default;display:inline-flex;align-items:center;gap:3px}
 .ch-mode-badge:active{opacity:0.75}
+/* Desktop mostra o nome do modo (Livre/Consulta/...) — só o mobile troca
+   pra "Menu" genérico (Rafa pediu consistência com o chip do rodapé, mas
+   só na visão de celular; o card no desktop nunca recolhe, então o nome
+   do modo continua sendo a informação mais útil ali). */
+.ch-mode-badge-menu{display:none}
 .ch-mode-chev{display:none;font-size:9px;line-height:1;transition:transform var(--transition)}
 .icon-btn{width:30px;height:30px;border:none;background:none;color:var(--text4);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
 .icon-btn:hover{background:var(--bg-input);color:var(--text2)}
@@ -1080,6 +1085,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      (inerte, sem função) até dentro do Modo Documento, que nunca deveria
      saber que este recurso existe. */
   .card:not(.focus-active) .ch-mode-badge{border:1px solid var(--ca,var(--accent));cursor:pointer}
+  .card:not(.focus-active) .ch-mode-badge-label{display:none}
+  .card:not(.focus-active) .ch-mode-badge-menu{display:inline}
   .card:not(.focus-active) .ch-mode-chev{display:inline-flex}
   .card.ch-open .ch-mode-chev{transform:rotate(180deg)}
   .card:not(.focus-active) .ch-left{cursor:pointer}
@@ -2214,7 +2221,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.14.8';
+const VOX_VERSION='2026.07.14.9';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5917,7 +5924,6 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
   const badgeCls=provStr==='grok'?' grok':provStr==='groqwhisper'?' groq':'';
   const provLabel=provStr==='grok'?'🟠 Grok':provStr==='groqwhisper'?'🟢 Groq':'🤖 Whisper';
   const modeLabel=SESSION_MODES[mode]?.label||t('📝 Livre');
-
   // Build textarea text (roteiro format)
   const roteiroText=utterances.map(u=>`${speakers[u.speaker]||u.speaker}: ${u.text}`).join('\n');
 
@@ -5953,7 +5959,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <span class="cdot"></span>
         <span class="badge${badgeCls}">${provLabel}</span>
         <span class="badge diar">${t('🔮 Diarizado')}</span>
-        <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}">${modeLabel}<span class="ch-mode-chev" aria-hidden="true">˅</span></button>
+        <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
         ${sn?`<span class="sname-badge" title="${escHtml(sn)}">📌 ${escHtml(sn)}</span>`:''}
         ${pinned?`<span class="badge pin">${t('📌 Fixado')}</span>`:''}
         <span class="ts">${timeStr} · ${dateStr}</span>
@@ -7170,7 +7176,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <span class="cdot"></span>
         <span class="badge${badgeCls}">${provLabel}</span>
         <span class="badge badge-type">${typeIco} ${typeLabel}</span>
-        <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}">${modeLabel}<span class="ch-mode-chev" aria-hidden="true">˅</span></button>
+        <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
         ${sn?`<span class="sname-badge" title="${escHtml(sn)}">${escHtml(sn)}</span>`:''}
         ${pinned?'<span class="badge pin">📌</span>':''}
         <span class="ts">${timeStr} · ${dateStr}</span>
