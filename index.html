@@ -599,6 +599,15 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .sheet-handle{display:none}
 .smode-chip{display:none}
 .ibar.rec-on .ibar-row{display:none}
+/* FASE 4 (mobile only) — escondidos por padrão aqui (mesmo padrão do
+   .sheet-handle acima); o @media(max-width:640px) é quem liga de verdade.
+   Sem isso o .lp-dot ficava com display:block "de graça" só por ser filho
+   de um flex container (blockification de item flex, CSS Display spec) —
+   inofensivo na prática (0×0, sem cor fora do media query) mas explícito
+   é melhor que depender desse efeito colateral. */
+.lp-dot{display:none}
+.lp-hint{display:none}
+.ptc-indicator{display:none}
 .itxt{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px}
 .itxt::placeholder{color:var(--text4)}
 .itxt:disabled{opacity:0.5;cursor:not-allowed}
@@ -607,7 +616,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .c-attach{background:var(--bg-input);color:var(--text3)}
 .c-attach:hover{background:var(--accent-glow);color:var(--accent)}
 .c-attach:disabled{opacity:0.3;cursor:not-allowed}
-.c-rec{background:var(--danger)}
+.c-rec{background:var(--danger);position:relative} /* position:relative não muda o layout (sem offsets) — só cria o contexto pro .lp-dot (FASE 4d) se ancorar */
 .c-rec:hover{background:var(--danger2);transform:scale(1.06)}
 .aud-wrap{position:relative;display:flex;align-items:center}
 .aud-gear{width:32px;height:32px;border-radius:50%;border:none;background:var(--bg-input);color:var(--text4);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition);flex-shrink:0}
@@ -1057,6 +1066,32 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{display:none}
 }
 
+/* ── FASE 4 — "pulos do gato" (só mobile) ──
+   4a (swipe no Modo Documento) e 4b (haptics) não têm CSS próprio — são só
+   JS. Este bloco cobre os elementos visuais de 4c/4d (long-press pra abrir
+   fonte de áudio + descoberta assistida) e 4e (puxar pra criar card). */
+@keyframes lpDotPulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
+@media(max-width:640px){
+  /* 4d.1 — pontinho permanente no canto do botão de gravar: só existe
+     enquanto a pessoa nunca segurou o botão (localStorage.vox_lp_used).
+     _syncLpDiscovery() no script principal liga/desliga body.lp-used. */
+  .lp-dot{display:block;position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--danger);pointer-events:none;animation:lpDotPulse 2.6s ease-in-out infinite}
+  body.lp-used .lp-dot{display:none}
+  /* 4d.2 — balão de dica contextual, ancorado no .ibar-inner (position:relative
+     já existente) acima do botão de gravar. */
+  .lp-hint{position:absolute;bottom:calc(100% + 10px);right:6px;max-width:230px;background:var(--bg-card);border:1px solid var(--accent);border-radius:14px;padding:10px 12px;box-shadow:0 8px 30px rgba(0,0,0,0.22);font-size:12px;line-height:1.5;color:var(--text2);z-index:120;animation:fadeDown .2s ease}
+  .lp-hint-ok{display:block;margin:8px 0 0 auto;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:6px 12px;font-size:11.5px;font-weight:700;font-family:var(--font);cursor:pointer}
+  /* 4e — indicador fixo no topo da tela enquanto a pessoa puxa pra baixo
+     além do topo da lista; .armed quando já passou do limiar de 80px. */
+  .ptc-indicator{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%) scale(.94);z-index:150;background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;color:var(--text3);box-shadow:0 8px 24px rgba(0,0,0,0.18);pointer-events:none;transition:transform .15s ease,color .15s ease,border-color .15s ease}
+  .ptc-indicator.armed{color:var(--accent);border-color:var(--accent);transform:translateX(-50%) scale(1)}
+  /* overscroll-behavior-y:contain no body (confirmado na FASE 2 que é a
+     window/body quem rola — não há container interno próprio) impede que o
+     puxar-pra-baixo do 4e dispare o pull-to-refresh nativo do navegador/PWA
+     por baixo do nosso indicador. */
+  body{overscroll-behavior-y:contain}
+}
+
 /* ── INTRO VIDEO PLAYER ── */
 .vintro-overlay{display:none;position:fixed;inset:0;background:#000;z-index:1000;align-items:center;justify-content:center;flex-direction:column}
 .vintro-overlay.on{display:flex}
@@ -1420,8 +1455,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
             <div class="aud-note" id="audioCfgNote"></div>
           </div>
         </div>
-        <button class="circle c-rec" id="btnRec" onclick="startRec()" title="Gravar (Espaço)" data-i18n-title>
+        <button class="circle c-rec" id="btnRec" onclick="_recBtnClick(event)" ontouchstart="_recBtnTouchStart(event)" ontouchmove="_recBtnTouchMove(event)" ontouchend="_recBtnTouchEnd(event)" ontouchcancel="_recBtnTouchCancel(event)" title="Gravar (Espaço)" data-i18n-title>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          <span class="lp-dot" id="lpDot" aria-hidden="true"></span>
         </button>
         <button class="circle c-stop" id="btnStop" onclick="stopRec()" style="display:none">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
@@ -1431,6 +1467,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         </button>
       </div>
       </div>
+    </div>
+    <!-- FASE 4d.2: balão de dica contextual do long-press (mobile) — ver
+         _maybeShowLpHint()/_dismissLpHint() no script principal -->
+    <div class="lp-hint" id="lpHint" style="display:none">
+      <span id="lpHintTxt"></span>
+      <button type="button" class="lp-hint-ok" onclick="_dismissLpHint()" data-i18n>Entendi</button>
     </div>
   </div>
 </div>
@@ -2113,6 +2155,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- FASE 4e: indicador de "puxar pra criar card" (mobile, Lista/Masonry) —
+     ver _ptcTouchMove()/_showPtcIndicator() no script principal -->
+<div class="ptc-indicator" id="ptcIndicator" style="display:none"></div>
+
 <script>
 // ── QR CODE GENERATOR — qrcode-generator v1.4.4 (c) Kazuhiko Arase, MIT License ──
 // https://github.com/kazuhikoarase/qrcode-generator — embutido para uso offline (Vox Transfer)
@@ -2164,6 +2210,9 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// FASE 4 — pulos do gato (mobile)
+"💡 Segure o botão de gravar pra escolher a fonte: microfone, som interno ou os dois":"💡 Hold the record button to choose the source: microphone, system audio, or both",
+"↓ Solte pra criar um card novo":"↓ Release to create a new card",
 "Parar gravação":"Stop recording",
 "Mais opções":"More options",
 "✨ IA de texto — os cérebros do Vox":"✨ Text AI — the brains of Vox",
@@ -2898,6 +2947,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(ibar&&ibar.classList.contains('sheet-open')&&!ibar.contains(e.target))closeSheet();
   });
   _updateSmodeChip(); // sincroniza o chip do modo com sessionMode ('livre' por padrão)
+  _syncLpDiscovery(); // FASE 4d: liga/desliga body.lp-used conforme localStorage.vox_lp_used
   document.addEventListener('keydown',spaceHotkey);
   const savedSkin=localStorage.getItem('vox_skin')||'teal';
   if(savedSkin==='emerald')document.documentElement.removeAttribute('data-skin');
@@ -3588,6 +3638,167 @@ function _onChromeScroll(){
   requestAnimationFrame(_chromeScrollTick);
 }
 window.addEventListener('scroll',_onChromeScroll,{passive:true});
+
+// ── FASE 4a: SWIPE LATERAL NO MODO DOCUMENTO (troca de card, touch only) ──
+// Arrastar o dedo sobre o "papel" do Modo Documento navega pro card
+// anterior/próximo, reaproveitando focusStep() (mesma função dos botões
+// ‹ › do doc-bar). Convenção adotada (a mais comum em carrosséis/galerias
+// mobile): arrastar pra ESQUERDA revela o "próximo" conteúdo (focusStep(-1),
+// que é o botão › "Próximo" aqui); arrastar pra DIREITA volta ("Anterior",
+// focusStep(1)). Só mede deslocamento total entre touchstart/touchend — sem
+// tracking em touchmove, então não interfere no scroll vertical nativo.
+// Nunca dispara se: activeElement é INPUT/TEXTAREA (pessoa editando/
+// selecionando texto — mesmo critério já usado no atalho de teclado das
+// setas, linha ~7842) ou o card está em modo Avançado (comparação lado a
+// lado, onde um arrasto horizontal é mais provável ser interação com o
+// conteúdo do que navegação).
+let _docSwX=null,_docSwY=null;
+function _docSwStart(e){
+  // Gesto novo é exclusivo do "repaginação mobile" — mesmo que o Modo Documento em
+  // si já exista no desktop, o swipe só liga ≤640px (mesmo guard usado nas FASES 1/2/4e).
+  if(!_isSheetViewport())return;
+  if(!document.body.classList.contains('doc-mode'))return;
+  const card=e.target.closest?.('.card.focus-active');
+  if(!card||card.classList.contains('advanced-active')){_docSwX=null;return}
+  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){_docSwX=null;return}
+  if(e.touches.length!==1){_docSwX=null;return}
+  _docSwX=e.touches[0].clientX;_docSwY=e.touches[0].clientY;
+}
+function _docSwEnd(e){
+  if(_docSwX===null)return;
+  const t=e.changedTouches[0];
+  const dx=t.clientX-_docSwX,dy=t.clientY-_docSwY;
+  _docSwX=null;_docSwY=null;
+  if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*2)return; // não é um swipe horizontal decisivo
+  focusStep(dx<0?-1:1);
+}
+function _docSwCancel(){_docSwX=null}
+document.addEventListener('touchstart',_docSwStart,{passive:true});
+document.addEventListener('touchend',_docSwEnd,{passive:true});
+document.addEventListener('touchcancel',_docSwCancel,{passive:true});
+
+// ── FASE 4d: DESCOBERTA ASSISTIDA DO LONG-PRESS (mobile) ──
+// 3 camadas de progressive disclosure (exigência do Rafa: um recurso
+// escondido que ninguém descobre não serve de nada):
+// 1. pontinho permanente no #btnRec (CSS: body:not(.lp-used) .lp-dot)
+//    enquanto a pessoa nunca segurou o botão.
+// 2. balão de dica, mostrado a partir da 2ª gravação da vida, no máximo 3
+//    vezes no total e nunca 2x na mesma sessão/carregamento de página.
+// 3. primeiro long-press de verdade apaga tudo (localStorage.vox_lp_used).
+let _lpHintShownThisSession=false; // em memória — reseta a cada carregamento de página, de propósito
+function _syncLpDiscovery(){
+  document.body.classList.toggle('lp-used',localStorage.getItem('vox_lp_used')==='1');
+}
+function _markLongPressUsed(){
+  if(localStorage.getItem('vox_lp_used')==='1')return;
+  localStorage.setItem('vox_lp_used','1');
+  _syncLpDiscovery();
+  _hideLpHint();
+}
+function _maybeShowLpHint(){
+  if(!_isSheetViewport())return; // long-press é touch only — dica não faz sentido fora do mobile
+  if(localStorage.getItem('vox_lp_used')==='1')return;
+  if(_lpHintShownThisSession)return;
+  if(parseInt(localStorage.getItem('vox_rec_count')||'0',10)<2)return; // só a partir da 2ª gravação
+  const shown=parseInt(localStorage.getItem('vox_lp_hint_shown')||'0',10);
+  if(shown>=3)return; // no máximo 3 vezes no total
+  localStorage.setItem('vox_lp_hint_shown',String(shown+1));
+  _lpHintShownThisSession=true;
+  const hint=document.getElementById('lpHint');if(!hint)return;
+  const txt=document.getElementById('lpHintTxt');
+  if(txt)txt.textContent=t('💡 Segure o botão de gravar pra escolher a fonte: microfone, som interno ou os dois');
+  hint.style.display='block';
+}
+function _dismissLpHint(){_hideLpHint()}
+function _hideLpHint(){
+  const hint=document.getElementById('lpHint');if(hint)hint.style.display='none';
+}
+
+// ── FASE 4c: SEGURAR O BOTÃO DE GRAVAR ABRE A ESCOLHA DE FONTE (touch only) ──
+// Toque rápido grava normalmente. Segurar ≥500ms abre o popup de fonte de
+// áudio (toggleAudioCfg()) em vez de iniciar a gravação, com vibrate(15) de
+// feedback. _recLongPressFired sinaliza que o long-press já agiu — o
+// próximo "click" que o navegador dispara logo depois do touchend (mesmo
+// após um toque longo) precisa ser suprimido, senão a gravação começava
+// junto com o popup abrindo. stopPropagation() no click suprimido também
+// evita que ele chegue ao listener de "clique fora fecha o popup"
+// (_audioCfgAway, registrado no document) e feche o popup que acabou de abrir.
+let _recLpTimer=null,_recLongPressFired=false,_recLpStartX=0,_recLpStartY=0;
+function _recBtnTouchStart(e){
+  if(!_isSheetViewport())return; // igual ao 4a/4e — recurso exclusivo do mobile, mesmo o botão existindo no desktop
+  if(isRec||isProc||stagedFile)return; // já gravando/processando: sem long-press, comportamento normal
+  if(e.touches.length!==1)return;
+  _recLongPressFired=false;
+  _recLpStartX=e.touches[0].clientX;_recLpStartY=e.touches[0].clientY;
+  _recLpTimer=setTimeout(()=>{
+    _recLpTimer=null;_recLongPressFired=true;
+    navigator.vibrate?.(15);
+    toggleAudioCfg();
+    _markLongPressUsed();
+  },500);
+}
+function _recBtnTouchMove(e){
+  if(!_recLpTimer)return;
+  const t=e.touches[0];
+  // dedo escorregou (não é mais "segurar parado") → cancela o long-press, vira toque normal
+  if(Math.abs(t.clientX-_recLpStartX)>10||Math.abs(t.clientY-_recLpStartY)>10){clearTimeout(_recLpTimer);_recLpTimer=null}
+}
+function _recBtnTouchEnd(){
+  if(_recLpTimer){clearTimeout(_recLpTimer);_recLpTimer=null}
+}
+function _recBtnTouchCancel(){
+  if(_recLpTimer){clearTimeout(_recLpTimer);_recLpTimer=null}
+  _recLongPressFired=false;
+}
+function _recBtnClick(e){
+  if(_recLongPressFired){_recLongPressFired=false;e.preventDefault();e.stopPropagation();return}
+  startRec();
+}
+
+// ── FASE 4e: PUXAR PRA BAIXO NO TOPO CRIA CARD NOVO (Lista/Masonry, mobile) ──
+// Só conta como gesto de "puxar do topo" se window.scrollY já era 0 no
+// início do toque (ver comentário da FASE 2: é a window quem rola, não um
+// container interno). Passar o limiar de 80px arma o gesto (indicador muda
+// de cor); soltar o dedo já armado cria um card vazio (newEmptyCard(), igual
+// ao botão "+ Novo card") + vibrate(20). overscroll-behavior-y:contain no
+// body (CSS, FASE 4) evita conflito com o pull-to-refresh nativo.
+let _ptcStartY=null,_ptcArmed=false;
+const PTC_THRESHOLD=80;
+function _ptcTouchStart(e){
+  if(!_isSheetViewport())return;
+  if(viewMode==='doc')return; // só Lista/Masonry — Documento tem seu próprio gesto (4a)
+  if(window.scrollY!==0)return;
+  if(e.touches.length!==1)return;
+  _ptcStartY=e.touches[0].clientY;_ptcArmed=false;
+}
+function _ptcTouchMove(e){
+  if(_ptcStartY===null)return;
+  const dy=e.touches[0].clientY-_ptcStartY;
+  if(dy<=0){_ptcArmed=false;_hidePtcIndicator();return} // voltou ao topo: não é mais overscroll
+  _ptcArmed=dy>=PTC_THRESHOLD;
+  _showPtcIndicator(_ptcArmed);
+}
+function _ptcTouchEnd(){
+  if(_ptcStartY===null)return;
+  const armed=_ptcArmed;
+  _ptcStartY=null;_ptcArmed=false;
+  _hidePtcIndicator();
+  if(armed){newEmptyCard();navigator.vibrate?.(20)}
+}
+function _ptcTouchCancel(){_ptcStartY=null;_ptcArmed=false;_hidePtcIndicator()}
+function _showPtcIndicator(armed){
+  const el=document.getElementById('ptcIndicator');if(!el)return;
+  el.textContent=t('↓ Solte pra criar um card novo');
+  el.classList.toggle('armed',armed);
+  el.style.display='block';
+}
+function _hidePtcIndicator(){
+  const el=document.getElementById('ptcIndicator');if(el)el.style.display='none';
+}
+document.addEventListener('touchstart',_ptcTouchStart,{passive:true});
+document.addEventListener('touchmove',_ptcTouchMove,{passive:true});
+document.addEventListener('touchend',_ptcTouchEnd,{passive:true});
+document.addEventListener('touchcancel',_ptcTouchCancel,{passive:true});
 
 // ── SEARCH ──
 function toggleSearch(){
@@ -5249,6 +5460,7 @@ async function startRec(targetCardId=null){
     const stream=await getCaptureStream();curStream=stream;
     MR=makeRecorder(stream);
     MR.start(100);recStart=Date.now();isRec=true;
+    navigator.vibrate?.(30); // FASE 4b: feedback tátil ao iniciar (Android; iOS/desktop ignoram silenciosamente)
     document.querySelector('.ibar')?.classList.add('rec-on');
     closeSheet(); // FASE 1: começar a gravar fecha o sheet recolhido (mobile) automaticamente
     segCard=null;segIndex=0;segTotalSec=0;
@@ -5272,6 +5484,11 @@ async function startRec(targetCardId=null){
 }
 function stopRec(){
   if(!isRec||!MR)return;
+  navigator.vibrate?.([20,40,20]); // FASE 4b: feedback tátil ao parar (Android; iOS/desktop ignoram silenciosamente)
+  // FASE 4d: conta gravações da vida (independente de sucesso na transcrição — o que importa aqui
+  // é o hábito de gravar) pra decidir quando mostrar a dica contextual do long-press.
+  localStorage.setItem('vox_rec_count',String(parseInt(localStorage.getItem('vox_rec_count')||'0',10)+1));
+  _maybeShowLpHint();
   const elapsed=Math.floor((Date.now()-recStart)/1000);
   clearInterval(recTimer);stopVU();
   if(segTimer){clearInterval(segTimer);segTimer=null}
