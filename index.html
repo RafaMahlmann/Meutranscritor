@@ -294,8 +294,11 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
    abre/fecha o cabeçalho recolhido do card. Escondido por padrão aqui fora
    do @media — desktop nunca chega a ver este botão nem o cabeçalho
    recolhido, então fica pixel-idêntico ao de sempre. */
-.ch-toggle{display:none;flex-shrink:0;width:20px;height:20px;border:none;background:none;color:var(--text3);border-radius:50%;align-items:center;justify-content:center;font-size:12px;cursor:pointer;transition:transform var(--transition),background var(--transition);padding:0}
-.ch-toggle:hover{background:var(--bg-input);color:var(--text2)}
+/* Mesmo tratamento de "pílula com cara de botão" do smode-chip (proposta
+   aprovada pelo Rafa): fundo + borda na cor de destaque sinalizam de cara
+   que dá pra tocar, em vez de depender só do :hover (que touch não tem). */
+.ch-toggle{display:none;flex-shrink:0;width:20px;height:20px;border:1px solid var(--accent);background:var(--accent-glow);color:var(--accent);border-radius:50%;align-items:center;justify-content:center;font-size:11px;cursor:pointer;transition:transform var(--transition),opacity var(--transition);padding:0}
+.ch-toggle:active{opacity:0.75}
 .icon-btn{width:30px;height:30px;border:none;background:none;color:var(--text4);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
 .icon-btn:hover{background:var(--bg-input);color:var(--text2)}
 .icon-btn:disabled{opacity:0.28;cursor:default;pointer-events:none}
@@ -682,8 +685,16 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .sheet-handle{display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;background:none;border:none;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .sheet-handle-bar{width:36px;height:4px;border-radius:999px;background:var(--border2);transition:background var(--transition)}
   .sheet-handle:active .sheet-handle-bar{background:var(--text3)}
-  .smode-chip{display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:var(--text2);background:var(--bg-card);border:1px solid var(--border2);border-radius:999px;padding:6px 12px;cursor:pointer;font-family:var(--font);min-width:0;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1;transition:border-color var(--transition),color var(--transition)}
-  .smode-chip:active{border-color:var(--text3);color:var(--text)}
+  /* Pílula com "cara de botão" (proposta aprovada pelo Rafa): fundo e borda
+     na cor de destaque do tema fazem o cérebro reconhecer "isto é clicável"
+     na hora, sem precisar aprender — mesmo princípio do chevron do cabeçalho
+     do card (.ch-toggle), pra ficarem consistentes. */
+  .smode-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-glow);border:1px solid var(--accent);border-radius:999px;padding:6px 10px 6px 12px;cursor:pointer;font-family:var(--font);min-width:0;max-width:150px;flex-shrink:1;transition:opacity var(--transition)}
+  .smode-chip:active{opacity:0.75}
+  .smode-chip-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  /* Chevron gira 180° quando o sheet abre — mesma linguagem do .ch-toggle. */
+  .smode-chip-chev{flex-shrink:0;font-size:11px;line-height:1;transition:transform var(--transition)}
+  .ibar.sheet-open .smode-chip-chev{transform:rotate(180deg)}
   .smode-btn{font-size:10.5px;padding:6px 10px}
   .diar-toggle-chip{font-size:10.5px;padding:6px 10px}
   .circle{width:38px;height:38px}
@@ -1445,8 +1456,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <button type="button" class="sheet-handle" id="sheetHandle" onclick="_shHandleClick()" ontouchstart="_shHandleTouchStart(event)" ontouchmove="_shHandleTouchMove(event)" ontouchend="_shHandleTouchEnd()" ontouchcancel="_shHandleTouchEnd()" aria-label="Mais opções" aria-expanded="false" title="Mais opções" data-i18n-title>
         <span class="sheet-handle-bar"></span>
       </button>
-      <button type="button" class="smode-chip" id="smodeChip" onclick="toggleSheet()">
-        <span id="smodeChipTxt">📝 Livre</span>
+      <button type="button" class="smode-chip" id="smodeChip" onclick="toggleSheet()" aria-expanded="false">
+        <span id="smodeChipTxt" class="smode-chip-txt">📝 Livre</span>
+        <span class="smode-chip-chev" aria-hidden="true">˅</span>
       </button>
       <div class="ibox" id="ibox">
       <textarea id="itxt" class="itxt" rows="1" placeholder="Digite ou 📎 anexe um áudio…" data-i18n-placeholder oninput="autoR(this);checkSend()"></textarea>
@@ -2197,7 +2209,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.14.6';
+const VOX_VERSION='2026.07.14.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3561,6 +3573,7 @@ function _setSheetOpen(open){
   const ibar=document.querySelector('.ibar');if(!ibar)return;
   ibar.classList.toggle('sheet-open',open);
   document.getElementById('sheetHandle')?.setAttribute('aria-expanded',open?'true':'false');
+  document.getElementById('smodeChip')?.setAttribute('aria-expanded',open?'true':'false');
 }
 function toggleSheet(){
   if(!_isSheetViewport())return; // desktop: alcinha/chip nem aparecem (display:none)
