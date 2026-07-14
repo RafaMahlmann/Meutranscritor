@@ -285,6 +285,12 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .sname-badge{font-size:11px;font-weight:600;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ts{font-size:11px;color:var(--text3);font-weight:500}
 .ca-wrap{display:flex;gap:2px;flex-wrap:wrap}
+/* FASE 3 (só mobile — ver @media(max-width:640px) mais abaixo): chevron que
+   abre/fecha o cabeçalho recolhido do card. Escondido por padrão aqui fora
+   do @media — desktop nunca chega a ver este botão nem o cabeçalho
+   recolhido, então fica pixel-idêntico ao de sempre. */
+.ch-toggle{display:none;flex-shrink:0;width:20px;height:20px;border:none;background:none;color:var(--text3);border-radius:50%;align-items:center;justify-content:center;font-size:12px;cursor:pointer;transition:transform var(--transition),background var(--transition);padding:0}
+.ch-toggle:hover{background:var(--bg-input);color:var(--text2)}
 .icon-btn{width:30px;height:30px;border:none;background:none;color:var(--text4);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
 .icon-btn:hover{background:var(--bg-input);color:var(--text2)}
 .icon-btn:disabled{opacity:0.28;cursor:default;pointer-events:none}
@@ -1011,6 +1017,44 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   body.chrome-hidden header,body.chrome-hidden .stats,body.chrome-hidden #docBar{
     max-height:0;opacity:0;overflow:hidden;pointer-events:none;border-color:transparent
   }
+}
+
+/* ── FASE 3 — cabeçalho interno do card recolhido (só mobile) ──
+   Cada card na Lista/Masonry nasce com o .ch numa linha fina (~40px): badge
+   do provedor + badge do modo + hora + chevron. O resto (ações do
+   .ca-wrap, controles de locutor/diarização, fileira de tags) só aparece
+   com a classe .ch-open no card (tocar na linha ou no chevron liga/desliga
+   — ver toggleChCollapse() no script principal). O texto (.cb/.roteiro-view)
+   nunca é tocado por este bloco — continua logo abaixo da linha recolhida.
+   Mesma ideia do toggle de recolher cabeçalho que já existe no Modo
+   Documento (hdr-folded/#docHdrFoldBtn, ~linha 220), só que por card, sem
+   persistir em localStorage, e por isso :not(.focus-active) abaixo — nunca
+   mexe no card enquanto ele está aberto no Modo Documento (visualização
+   diferente, com seu próprio recolhimento). :not(.proc-card) porque o
+   card de "processando" já nasce numa linha só, sem .ca-wrap. */
+@media(max-width:640px){
+  /* :not(.focus-active) aqui também — sem isso o chevron aparecia flutuando
+     (inerte, sem função) até dentro do Modo Documento, que nunca deveria
+     saber que este recurso existe. */
+  .card:not(.focus-active) .ch-toggle{display:inline-flex}
+  .card.ch-open .ch-toggle{transform:rotate(180deg)}
+  .card:not(.focus-active) .ch-left{cursor:pointer}
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ca-wrap,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .spk-stats,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .spk-rename-row,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .conversa-bar,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ctags,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .tag-suggestions,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ext-panel,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .vt-panel{display:none}
+  /* Dentro do .ch-left recolhido, só provedor + modo + hora + chevron ficam
+     visíveis — os demais badges (diarizado/tipo/nome de sessão/fixado) e o
+     selo de "recente" somem até expandir. */
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.diar,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge-type,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .sname-badge,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin,
+  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{display:none}
 }
 
 /* ── INTRO VIDEO PLAYER ── */
@@ -2326,7 +2370,8 @@ let I18N_EN={
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 de crédito</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free credit</small>",
 "<strong>Em poucos minutos:</strong> <ol> <li>Crie sua conta gratuita em <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a>.</li> <li>Copie sua chave de API no painel.</li> <li>Cole aqui em cima — pronto.</li> </ol> <br> 💰 Você ganha <strong>10 horas grátis todo mês</strong>, renovadas automaticamente. Depois disso, o custo fica em torno de <strong>US$ 0,61 por hora</strong>.<br> 🎯 <strong>Ideal para:</strong> quem usa com frequência e prefere não se preocupar com créditos acabando.":"<strong>In a few minutes:</strong> <ol> <li>Create your free account at <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a>.</li> <li>Copy your API key from the dashboard.</li> <li>Paste it above — done.</li> </ol> <br> 💰 You get <strong>10 free hours every month</strong>, renewed automatically. After that, the cost is around <strong>US$0.61 per hour</strong>.<br> 🎯 <strong>Great for:</strong> frequent users who prefer not to worry about credits running out.",
-"Pular":"Skip","Abertura":"Intro"};
+"Pular":"Skip","Abertura":"Intro",
+"Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header"};
 
 // ── STATE ──
 let MR=null,chunks=[],recStart=null,recTimer=null;
@@ -2353,6 +2398,10 @@ let activeFolderId=null;
 let folderDlMode=false;
 const folderDlSel=new Set();
 const folderExpanded=new Set();
+// FASE 3 (só mobile): ids dos cards com o cabeçalho recolhido ABERTO. Só em
+// memória — de propósito, não persiste (não é como vox_doc_hdr_folded do
+// Modo Documento); cada card nasce ausente daqui, ou seja, recolhido.
+const chOpenCards=new Set();
 const FOLDER_COLORS=['#10b981','#3b82f6','#a78bfa','#f97316','#ec4899','#06b6d4','#eab308','#f43f5e'];
 
 let stats={count:0,sec:0,words:0};
@@ -4526,6 +4575,30 @@ function tagsBlock(id,tags){
     `<div class="ext-panel" id="extpanel-${id}"></div>`+
     `<div class="vt-panel" id="vtpanel-${id}"></div>`;
 }
+// FASE 3 (só mobile) — abre/fecha o cabeçalho recolhido de UM card (.ch-open
+// no elemento do card; ver CSS em @media(max-width:640px)). Chamado tanto
+// pelo tap na linha (.ch-left) quanto pelo chevron (.ch-toggle) — o chevron
+// faz event.stopPropagation() antes, senão os dois disparariam juntos e o
+// toggle cancelaria a si mesmo. Guard de matchMedia: fora do mobile a classe
+// .ch-open não tem nenhum efeito visual (CSS só existe dentro do @media),
+// então nem vale mexer no Set — evita, por exemplo, computar isto à toa em
+// cada clique acidental na fileira de badges do card no desktop.
+function toggleChCollapse(id){
+  if(!window.matchMedia('(max-width:640px)').matches)return;
+  const card=document.getElementById(id);if(!card)return;
+  // Modo Documento tem seu próprio recolhimento de cabeçalho (hdr-folded,
+  // toggleDocHeaderFold) — nunca mistura os dois numa mesma visualização.
+  if(card.classList.contains('focus-active'))return;
+  const open=!chOpenCards.has(id);
+  if(open)chOpenCards.add(id);else chOpenCards.delete(id);
+  card.classList.toggle('ch-open',open);
+  const btn=card.querySelector('.ch-toggle');
+  if(btn){
+    btn.setAttribute('aria-expanded',open?'true':'false');
+    const lbl=open?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card');
+    btn.setAttribute('aria-label',lbl);btn.title=lbl;
+  }
+}
 function getAllUsedTags(){
   const set=new Set();
   document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
@@ -5591,7 +5664,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir esta transcrição?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
     <div class="ch">
       <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
-      <div class="ch-left">
+      <div class="ch-left" onclick="toggleChCollapse('${id}')">
         <span class="cdot"></span>
         <span class="badge${badgeCls}">${provLabel}</span>
         <span class="badge diar">${t('🔮 Diarizado')}</span>
@@ -5599,6 +5672,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         ${sn?`<span class="sname-badge" title="${escHtml(sn)}">📌 ${escHtml(sn)}</span>`:''}
         ${pinned?`<span class="badge pin">${t('📌 Fixado')}</span>`:''}
         <span class="ts">${timeStr} · ${dateStr}</span>
+        <button type="button" class="ch-toggle" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}">˅</button>
       </div>
       <div class="ca-wrap">
         <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar no topo')}">
@@ -6808,14 +6882,15 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
     <div class="ch">
       <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
-      <div class="ch-left">
+      <div class="ch-left" onclick="toggleChCollapse('${id}')">
         <span class="cdot"></span>
         <span class="badge${badgeCls}">${provLabel}</span>
-        <span class="badge">${typeIco} ${typeLabel}</span>
+        <span class="badge badge-type">${typeIco} ${typeLabel}</span>
         <span class="badge">${modeLabel}</span>
         ${sn?`<span class="sname-badge" title="${escHtml(sn)}">${escHtml(sn)}</span>`:''}
         ${pinned?'<span class="badge pin">📌</span>':''}
         <span class="ts">${timeStr} · ${dateStr}</span>
+        <button type="button" class="ch-toggle" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}">˅</button>
       </div>
       <div class="ca-wrap">
         <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar')}">
