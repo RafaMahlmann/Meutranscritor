@@ -560,7 +560,16 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .ibar.rec-on .vu-wrap{position:relative;right:auto;bottom:auto;margin-left:auto;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.1)}
 .vu-lbl{width:10px;height:10px;border-radius:50%;background:var(--danger);font-size:0;min-width:10px;box-shadow:0 0 0 5px rgba(255,59,48,0.12);animation:pulse-red 1.5s ease-in-out infinite}
 .vu-canvas{flex:1;height:22px;border-radius:999px;background:rgba(255,59,48,0.08);overflow:hidden}
-.vu-timer{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);font-size:12px;font-weight:800;color:var(--danger);font-variant-numeric:tabular-nums;min-width:42px;text-align:right;text-shadow:0 1px 0 var(--bg)}
+/* .vu-meta agrupa o X de cancelar + o timer, ambos à esquerda da bolha —
+   um único bloco posicionado (em vez de cada filho calcular sua própria
+   posição absoluta), timer e botão lado a lado via flex. */
+.vu-meta{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:5px}
+.vu-timer{font-size:12px;font-weight:800;color:var(--danger);font-variant-numeric:tabular-nums;min-width:42px;text-align:right;text-shadow:0 1px 0 var(--bg)}
+/* "meio transparente, só o X, sem fundo" — ::after cria uma área de toque
+   maior (~34px) sem aumentar o tamanho visual do ícone. */
+.vu-cancel{position:relative;background:none;border:none;padding:0;margin:0;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;color:var(--text3);opacity:0.5;cursor:pointer;font-size:13px;font-weight:700;line-height:1;font-family:var(--font);transition:opacity var(--transition),color var(--transition)}
+.vu-cancel::after{content:'';position:absolute;inset:-10px}
+.vu-cancel:hover{opacity:1;color:var(--danger)}
 
 /* ── SESSION MODE ── */
 .smode-bar{display:flex;align-items:center;justify-content:flex-start;gap:6px;flex-wrap:wrap;max-width:calc(100% - 180px)}
@@ -1388,7 +1397,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
     <div class="vu-wrap" id="vuWrap" onclick="if(isRec)stopRec()" title="Parar gravação" data-i18n-title>
       <span class="vu-lbl">REC</span>
       <canvas id="vuCanvas" class="vu-canvas" width="600" height="26"></canvas>
-      <span id="recTimer" class="vu-timer">00:00</span>
+      <div class="vu-meta">
+        <button type="button" class="vu-cancel" id="vuCancelBtn" onclick="event.stopPropagation();cancelRec()" title="Cancelar gravação" aria-label="Cancelar gravação" data-i18n-title>✕</button>
+        <span id="recTimer" class="vu-timer">00:00</span>
+      </div>
     </div>
     <!-- DIARIZATION ONBOARDING BANNER -->
     <div id="diarBanner" style="display:none;background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(139,92,246,0.06));border:1px solid rgba(139,92,246,0.3);border-radius:14px;padding:10px 14px;margin-bottom:8px;animation:slideIn 0.25s ease">
@@ -2179,7 +2191,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.14.3';
+const VOX_VERSION='2026.07.14.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2220,6 +2232,7 @@ let I18N_EN={
 "↓ Solte pra criar um card novo":"↓ Release to create a new card",
 "Parar gravação":"Stop recording",
 "Mais opções":"More options",
+"Cancelar gravação":"Cancel recording",
 "✨ IA de texto — os cérebros do Vox":"✨ Text AI — the brains of Vox",
 "Transcrever é ouvir. As lentes, receitas e comparações precisam de cérebros de IA para pensar em cima do texto.":"Transcribing is listening. Lenses, recipes and comparisons need AI brains to think over the text.",
 "🔐 O Vox não cobra por uso de IA nem vê seus dados: você conecta suas próprias chaves. Comece com opções grátis ou quase grátis e adicione outros cérebros quando quiser comparar respostas.":"🔐 Vox does not charge for AI usage or see your data: you connect your own keys. Start with free or nearly-free options and add other brains when you want to compare answers.",
