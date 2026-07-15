@@ -144,7 +144,23 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
    próprio container flex — ele acabava desenhado por baixo/fora da coluna,
    sobrepondo texto de forma bagunçada. */
 .cards.focus-mode .card.focus-active>.lens-panel{order:1}
-.cards.focus-mode .card.focus-active .ctag-row{order:2}
+/* Substitui .ctags como filho direto do flex — agora .ctags mora dentro de
+   .cpanel-wrap-tags. Mantém a MESMA posição visual de antes (order:0,
+   empatado com .ch, que vem antes no HTML-fonte). */
+.cards.focus-mode .card.focus-active .cpanel-wrap-tags{order:0}
+/* .lens-panel (chips do Transformar) também deixou de ser filho direto —
+   agora é .cpanel-wrap-transform quem carrega o order:1 que .lens-panel
+   tinha antes (a regra ">.lens-panel{order:1}" original continua valendo
+   pro #exp-menu-${id}, que segue filho direto, sem wrapper). */
+.cards.focus-mode .card.focus-active .cpanel-wrap-transform{order:1}
+/* Tracinhos de recolher (.cpanel-handle) ficam escondidos por padrão em
+   QUALQUER largura de tela — sem isto, o <button> nu ganharia o estilo
+   nativo do navegador (inline-block, padding, borda) fora do
+   @media(max-width:640px), aparecendo como uma caixinha indesejada no
+   desktop. Só a regra dentro do @media(max-width:640px), escopada a
+   ".cards.focus-mode .card.focus-active", reverte isso pra display:flex —
+   ou seja, tracinho visível SÓ no Modo Documento móvel, nunca fora dele. */
+.cpanel-handle{display:none}
 .cards.focus-mode .card.focus-active .cb{flex:1;display:flex;flex-direction:column;order:3}
 .cards.focus-mode .card.focus-active .cb textarea{flex:1;min-height:150px;resize:none}
 /* max-height explícito (não só flex:1) — segunda camada de segurança: mesmo
@@ -695,8 +711,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .smode-bar{gap:5px;max-width:100%;max-height:0;opacity:0;overflow:hidden;pointer-events:none;margin-bottom:0;transition:max-height .2s ease,opacity .15s ease,margin-bottom .2s ease}
   .ibar.sheet-open .smode-bar{max-height:160px;opacity:1;pointer-events:auto;margin-bottom:8px}
   .ibar-row{display:flex;align-items:center;gap:6px;width:100%;flex-shrink:0}
-  .sheet-handle{display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;background:none;border:none;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
-  .sheet-handle-bar{width:36px;height:4px;border-radius:999px;background:var(--border2);transition:background var(--transition)}
+  /* width subiu de 44→72px pra caber a barra maior (64px) com a mesma
+     folga de ~4px de cada lado que já existia (44-36=8px total antes;
+     72-64=8px total agora) — sem isso o botão (flex container) encolhia a
+     barra de volta pros 44px originais via flex-shrink:1 padrão do filho,
+     anulando o aumento visual pedido. */
+  .sheet-handle{display:flex;align-items:center;justify-content:center;width:72px;height:44px;flex-shrink:0;background:none;border:none;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sheet-handle-bar{width:64px;height:6px;flex-shrink:0;border-radius:999px;background:var(--border2);transition:background var(--transition)}
   .sheet-handle:active .sheet-handle-bar{background:var(--text3)}
   /* Pílula com "cara de botão" (proposta aprovada pelo Rafa): fundo e borda
      na cor de destaque do tema fazem o cérebro reconhecer "isto é clicável"
@@ -1136,6 +1157,41 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      puxar-pra-baixo do 4e dispare o pull-to-refresh nativo do navegador/PWA
      por baixo do nosso indicador. */
   body{overscroll-behavior-y:contain}
+}
+
+/* ── FASE 5 — Tags/Transformar recolhíveis no Modo Documento (só mobile) ──
+   Cada card no Modo Documento tem duas seções entre o cabeçalho e o texto:
+   tags (.ctags, dentro de .cpanel-wrap-tags) e o painel de Transformar
+   (.lens-panel, dentro de .cpanel-wrap-transform). As duas nascem abertas;
+   toggleCardPanel(id,which) no script principal alterna a classe
+   .cpanel-collapsed no wrapper. Tracinhos com a MESMA linguagem visual da
+   alcinha do rodapé (.sheet-handle), cor diferente por seção pra dar pra
+   identificar de relance quando as duas estão recolhidas (ficam coladinhas,
+   logo abaixo do cabeçalho do card). --ca = tags (acompanha o skin
+   escolhido, mesma variável usada em .ctag); --diar = Transformar (roxo
+   fixo, nunca é igual ao accent em nenhum skin — garante contraste visual
+   sempre, sem precisar de uma 3ª cor nova na paleta).
+   Tudo escopado a ".cards.focus-mode .card.focus-active" — o display:none
+   incondicional (base, fora deste @media — ver regra logo acima de
+   ".cb{...order:3}") garante que, mesmo aqui dentro do mobile, o tracinho
+   só reaparece (display:flex) dentro do Modo Documento; em Lista/Masonry
+   no mobile ele continua escondido. */
+@media(max-width:640px){
+  .cards.focus-mode .card.focus-active .cpanel-handle{display:flex;align-items:center;justify-content:center;align-self:flex-start;background:none;border:none;padding:9px 14px;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .cards.focus-mode .card.focus-active .cpanel-handle-bar{width:36px;height:4px;border-radius:999px;transition:background var(--transition),opacity var(--transition)}
+  .cards.focus-mode .card.focus-active .cpanel-handle-tags .cpanel-handle-bar{background:var(--ca,var(--accent))}
+  .cards.focus-mode .card.focus-active .cpanel-handle-transform .cpanel-handle-bar{background:var(--diar)}
+  .cards.focus-mode .card.focus-active .cpanel-handle:active .cpanel-handle-bar{opacity:0.6}
+  .cards.focus-mode .card.focus-active .cpanel-wrap{display:flex;flex-direction:column}
+  .cards.focus-mode .card.focus-active .cpanel-wrap>.ctags,
+  .cards.focus-mode .card.focus-active .cpanel-wrap>.lens-panel.on{max-height:400px;opacity:1;overflow:hidden;transition:max-height .2s ease,opacity .15s ease,padding .2s ease}
+  /* padding:0 além do max-height:0 — com box-sizing:border-box, o padding
+     (12px verticais em .ctags/.lens-panel) não encolhe sozinho quando
+     max-height chega a 0, sobrando uma faixa residual visível mesmo
+     "recolhido". Zerando os dois juntos, os tracinhos ficam realmente
+     coladinhos quando as duas seções estão fechadas. */
+  .cards.focus-mode .card.focus-active .cpanel-wrap.cpanel-collapsed>.ctags,
+  .cards.focus-mode .card.focus-active .cpanel-wrap.cpanel-collapsed>.lens-panel.on{max-height:0;opacity:0;padding-top:0;padding-bottom:0}
 }
 
 /* ── INTRO VIDEO PLAYER ── */
@@ -2225,7 +2281,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.14.10';
+const VOX_VERSION='2026.07.15.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2261,6 +2317,11 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// FASE 5 — Tags/Transformar recolhíveis no Modo Documento (mobile)
+"Recolher tags":"Collapse tags",
+"Expandir tags":"Expand tags",
+"Recolher Transformar":"Collapse Transform",
+"Expandir Transformar":"Expand Transform",
 // FASE 4 — pulos do gato (mobile)
 "💡 Segure o botão de gravar pra escolher a fonte: microfone, som interno ou os dois":"💡 Hold the record button to choose the source: microphone, system audio, or both",
 "↓ Solte pra criar um card novo":"↓ Release to create a new card",
@@ -4848,13 +4909,16 @@ function filterTag(tag){if(!searchActive)toggleSearch();document.getElementById(
 
 // ── TAG SUGGESTIONS (IA) ──
 function tagsBlock(id,tags){
-  return `<div class="ctags" id="ctags-${id}">`+
+  return `<div class="cpanel-wrap cpanel-wrap-tags" id="cpanelTags-${id}">`+
+    `<button type="button" class="cpanel-handle cpanel-handle-tags" onclick="toggleCardPanel('${id}','tags')" aria-expanded="true" aria-label="${t('Recolher tags')}" title="${t('Recolher tags')}"><span class="cpanel-handle-bar"></span></button>`+
+    `<div class="ctags" id="ctags-${id}">`+
     tags.map(t=>`<button class="ctag" onclick="filterTag('${escJs(t)}')">#${escHtml(t)}<span class="ctag-rm" onclick="event.stopPropagation();removeTag('${id}','${escJs(t)}')">×</span></button>`).join('')+
     `<button class="ctag-suggest-btn" onclick="suggestTags('${id}')" title="${t('Sugerir tags com IA')}">${t('+ tag IA')}</button>`+
     `<button class="ctag-gear-btn" onclick="openExtractPanel('${id}')" title="${t('Extrair todos os termos do texto')}">${t('⚙ extrair')}</button>`+
     `<button class="ctag-voice-btn" id="vtbtn-${id}" onclick="startVoiceTag('${id}')" title="${t('Falar tags')}">${t('🎤 falar')}</button>`+
     `<input class="ctag-input" placeholder="${t('tag manual')}" onkeydown="handleTagInput(event,'${id}')" maxlength="20">`+
-    `</div><div class="tag-suggestions" id="tagsug-${id}"></div>`+
+    `</div></div>`+
+    `<div class="tag-suggestions" id="tagsug-${id}"></div>`+
     `<div class="ext-panel" id="extpanel-${id}"></div>`+
     `<div class="vt-panel" id="vtpanel-${id}"></div>`;
 }
@@ -4879,6 +4943,24 @@ function toggleChCollapse(id){
   if(btn){
     btn.setAttribute('aria-expanded',open?'true':'false');
     const lbl=open?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card');
+    btn.setAttribute('aria-label',lbl);btn.title=lbl;
+  }
+}
+// Recolhe/expande Tags ou Transformar dentro de UM card, no Modo Documento
+// mobile (mesmo padrão de toggleChCollapse/toggleSheet: guard de
+// matchMedia, aria-expanded sincronizado, sem persistir em localStorage —
+// cada card nasce expandido, exatamente como já é hoje).
+function toggleCardPanel(id,which){
+  if(!_isSheetViewport())return;
+  const wrap=document.getElementById('cpanel'+(which==='tags'?'Tags':'Transform')+'-'+id);
+  if(!wrap)return;
+  const collapsed=wrap.classList.toggle('cpanel-collapsed');
+  const btn=wrap.querySelector('.cpanel-handle');
+  if(btn){
+    btn.setAttribute('aria-expanded',collapsed?'false':'true');
+    const lbl=collapsed
+      ?(which==='tags'?t('Expandir tags'):t('Expandir Transformar'))
+      :(which==='tags'?t('Recolher tags'):t('Recolher Transformar'));
     btn.setAttribute('aria-label',lbl);btn.title=lbl;
   }
 }
@@ -6001,7 +6083,10 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         </button>
       </div>
     </div>
-    <div class="lens-panel" id="lens-${id}"></div>
+    <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
+      <button type="button" class="cpanel-handle cpanel-handle-transform" onclick="toggleCardPanel('${id}','transform')" aria-expanded="true" aria-label="${t('Recolher Transformar')}" title="${t('Recolher Transformar')}"><span class="cpanel-handle-bar"></span></button>
+      <div class="lens-panel" id="lens-${id}"></div>
+    </div>
     <div class="lens-panel" id="exp-menu-${id}"></div>
     <div class="adv-panel" id="adv-${id}"></div>
     <div class="spk-stats">${statsHtml}</div>
@@ -6287,6 +6372,7 @@ function _recipeChipHtml(id,mk){
 function showLensChips(id){
   const card=document.getElementById(id);if(!card)return;
   const p=document.getElementById('lens-'+id);if(!p)return;
+  document.getElementById('cpanelTransform-'+id)?.classList.remove('cpanel-collapsed');
   const keys=quickLensesFor(card.dataset.mode||'livre');
   p.innerHTML=`<div class="lens-chips"><span class="lens-chips-lbl">${t('✨ Transformar:')}</span>`+
     keys.map(k=>k.startsWith('recipe:')?_recipeChipHtml(id,k):`<button class="lens-chip" onclick="runLens('${id}','${k}')">${LENSES[k].icon}<span>${LENSES[k].label}</span></button>`).join('')+
@@ -6864,6 +6950,7 @@ function switchLensStyle(id,style){
   if(OVERLAY_STYLES.includes(style))openLensOverlay(id);else _renderLensListPanel(id);
 }
 function toggleLensMenu(id){
+  document.getElementById('cpanelTransform-'+id)?.classList.remove('cpanel-collapsed');
   if(OVERLAY_STYLES.includes(cfg.lensMenuStyle||'list')){
     const ov=document.getElementById('lensMapOverlay');
     if(ov.classList.contains('on')&&_lensOverlayCardId===id){closeLensOverlay();return}
@@ -6876,6 +6963,7 @@ function toggleLensMenu(id){
 }
 function _renderLensListPanel(id){
   const p=document.getElementById('lens-'+id);if(!p)return;
+  document.getElementById('cpanelTransform-'+id)?.classList.remove('cpanel-collapsed');
   document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
   const favs=cfg.favLenses||[];
   let html=_lensStyleSwitchHtml(id,'list');
@@ -7234,7 +7322,10 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <button class="adv-ft-btn adv-ft-redo" onclick="advRedoClick(this)" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>↪</button>
       </div>
     </div>
-    <div class="lens-panel" id="lens-${id}"></div>
+    <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
+      <button type="button" class="cpanel-handle cpanel-handle-transform" onclick="toggleCardPanel('${id}','transform')" aria-expanded="true" aria-label="${t('Recolher Transformar')}" title="${t('Recolher Transformar')}"><span class="cpanel-handle-bar"></span></button>
+      <div class="lens-panel" id="lens-${id}"></div>
+    </div>
     <div class="lens-panel" id="exp-menu-${id}"></div>
     <div class="adv-panel" id="adv-${id}"></div>
     ${audioHtml}
