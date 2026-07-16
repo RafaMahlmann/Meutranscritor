@@ -215,6 +215,7 @@ body.doc-mode .doc-bar{display:block;background:var(--bg-card);border:1px solid 
 #docHdrFoldBtn.active{transform:rotate(180deg)}
 .doc-tlbl{font-size:12px;color:var(--text3);font-weight:600;padding:0 4px;white-space:nowrap}
 .doc-rec-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,59,48,0.1);color:var(--danger);border-radius:20px;padding:3px 6px 3px 10px;font-size:11px;font-weight:700;animation:blink 1.4s infinite}
+.rec-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);display:inline-block;animation:blink 1.4s infinite}
 .doc-rec-stop{background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:2px 5px}
 /* Toolbar nativa do OverType (negrito/título/lista) — só aparece no Modo
    Documento (toolbar:true só é passado nesse modo, ver _mountFocusEditor).
@@ -1404,30 +1405,30 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
-            <button class="doc-tbtn" onclick="cardUndoBtn(_docCardId())" title="Desfazer (Ctrl+Z)" data-i18n-title>↩</button>
-            <button class="doc-tbtn" onclick="cardRedo(_docCardId())" title="Refazer (Ctrl+Shift+Z)" data-i18n-title>↪</button>
+            <button class="doc-tbtn" onclick="cardUndoBtn(_docCardId())" title="Desfazer (Ctrl+Z)" data-i18n-title>${ICO.undo}</button>
+            <button class="doc-tbtn" onclick="cardRedo(_docCardId())" title="Refazer (Ctrl+Shift+Z)" data-i18n-title>${ICO.redo}</button>
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
-            <button class="doc-tbtn" onclick="toggleLensMenu(_docCardId())" title="✨ Transformar com IA" data-i18n-title>✨</button>
-            <button class="doc-tbtn" onclick="toggleAdvanced(_docCardId())" title="Avançado (clique de novo pra substituir e fechar)" data-i18n-title>⚙️</button>
-            <button class="doc-tbtn" onclick="askAI(_docCardId())" title="Perguntar IA" data-i18n-title>💬</button>
+            <button class="doc-tbtn" onclick="toggleLensMenu(_docCardId())" title="✨ Transformar com IA" data-i18n-title>${ICO.magicWand}</button>
+            <button class="doc-tbtn" onclick="toggleAdvanced(_docCardId())" title="Avançado (clique de novo pra substituir e fechar)" data-i18n-title>${ICO.gear}</button>
+            <button class="doc-tbtn" onclick="askAI(_docCardId())" title="Perguntar IA" data-i18n-title>${ICO.askAI}</button>
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
-            <button class="doc-tbtn" onclick="recHere(_docCardId())" title="Gravar aqui" data-i18n-title>🎙️</button>
-            <button class="doc-tbtn" onclick="attachHere(_docCardId())" title="Anexar áudio ou texto aqui" data-i18n-title>📎</button>
-            <span class="doc-rec-chip" id="docRecChip" style="display:none">🔴 <span id="docRecTimer">00:00</span><button class="doc-rec-stop" onclick="stopRec()" title="Parar" data-i18n-title>⏹</button></span>
+            <button class="doc-tbtn" onclick="recHere(_docCardId())" title="Gravar aqui" data-i18n-title>${ICO.mic}</button>
+            <button class="doc-tbtn" onclick="attachHere(_docCardId())" title="Anexar áudio ou texto aqui" data-i18n-title>${ICO.attach}</button>
+            <span class="doc-rec-chip" id="docRecChip" style="display:none"><span class="rec-dot"></span> <span id="docRecTimer">00:00</span><button class="doc-rec-stop" onclick="stopRec()" title="Parar" data-i18n-title>${ICO.stop}</button></span>
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
-            <button class="doc-tbtn" onclick="copyCard(_docCardId())" title="Copiar para a área de transferência" data-i18n-title>📋</button>
-            <button class="doc-tbtn" onclick="toggleExportMenu(_docCardId())" title="Exportar (copiar / baixar / Markdown)" data-i18n-title>⤴</button>
-            <button class="doc-tbtn" id="docPinBtn" onclick="togglePin(_docCardId())" title="Fixar" data-i18n-title>📌</button>
-            <button class="doc-tbtn doc-tbtn-danger" onclick="askDel(_docCardId())" title="Excluir" data-i18n-title>🗑</button>
+            <button class="doc-tbtn" onclick="copyCard(_docCardId())" title="Copiar para a área de transferência" data-i18n-title>${ICO.copy}</button>
+            <button class="doc-tbtn" onclick="toggleExportMenu(_docCardId())" title="Exportar (copiar / baixar / Markdown)" data-i18n-title>${ICO.export}</button>
+            <button class="doc-tbtn" id="docPinBtn" onclick="togglePin(_docCardId())" title="Fixar" data-i18n-title>${ICO.pinOutline}</button>
+            <button class="doc-tbtn doc-tbtn-danger" onclick="askDel(_docCardId())" title="Excluir" data-i18n-title>${ICO.trash}</button>
           </div>
           <div class="doc-tsep"></div>
-          <button class="doc-tbtn doc-tbtn-exit" onclick="setViewMode('list')" title="Voltar à lista" data-i18n-title>✕ <span data-i18n>Voltar</span></button>
+          <button class="doc-tbtn doc-tbtn-exit" onclick="setViewMode('list')" title="Voltar à lista" data-i18n-title>${ICO.close} <span data-i18n>Voltar</span></button>
         </div>
       </div>
       <div class="cards" id="cardsList" style="display:none"></div>
@@ -2292,7 +2293,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.16.1';
+const VOX_VERSION='2026.07.16.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6091,37 +6092,18 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <span class="ts">${timeStr} · ${dateStr}</span>
       </div>
       <div class="ca-wrap">
-        <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar no topo')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="${pinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4v2h10v-2l-2 -4v-6"/><path d="M12 16v5"/><path d="M8 4h8"/></svg>
-        </button>
+        <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar no topo')}">${pinned?ICO.pinFilled:ICO.pinOutline}</button>
         <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
         <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
-        <button class="icon-btn" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </button>
-        <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21l15 -15l-3 -3l-15 15l3 3z"/><path d="M15 6l3 3"/><path d="M9 3a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/><path d="M19 13a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg>
-        </button>
+        <button class="icon-btn" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">${ICO.diarView}</button>
+        <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">${ICO.magicWand}</button>
         <button class="icon-btn" onclick="askAI('${id}')" title="${t('Perguntar IA')}">${ICO.askAI}</button>
-        <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg>
-        </button>
-        <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        </button>
-        <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-        <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        </button>
-        <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">
-          <svg class="ico-expand" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-          <svg class="ico-collapse" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>
-        </button>
-        <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
+        <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
+        <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
+        <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
+        <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
+        <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
+        <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
       </div>
     </div>
     <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
@@ -6395,7 +6377,19 @@ const ICO={
   zap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
   clipboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
   share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="6.51"/></svg>',
-  askAI:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="12" cy="10" r="1"/><circle cx="16" cy="10" r="1"/><circle cx="8" cy="10" r="1"/></svg>'
+  askAI:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="10" height="8" rx="2"/><circle cx="5" cy="10" r="1"/><circle cx="9" cy="10" r="1"/><line x1="7" y1="6" x2="7" y2="3"/><circle cx="7" cy="2" r="1"/><path d="M17 6c0-2-1-3-3-3s-3 1-3 3c0 2 1.5 2.5 2 3.5V12"/><circle cx="16" cy="17" r="1.5"/></svg>',
+  pinOutline:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4v2h10v-2l-2 -4v-6"/><path d="M12 16v5"/><path d="M8 4h8"/></svg>',
+  pinFilled:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4v2h10v-2l-2 -4v-6"/><path d="M12 16v5"/><path d="M8 4h8"/></svg>',
+  magicWand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21l15 -15l-3 -3l-15 15l3 3z"/><path d="M15 6l3 3"/><path d="M9 3a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/><path d="M19 13a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg>',
+  attach:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
+  export:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
+  expand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>',
+  collapse:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  diarView:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  stop:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>',
+  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
 };
 // ── VITRINE: chips de lente pós-transcrição + lente protagonista ──
 function quickLensesFor(mode){
@@ -7316,34 +7310,18 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <span class="ts">${timeStr} · ${dateStr}</span>
       </div>
       <div class="ca-wrap">
-        <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="${pinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4v2h10v-2l-2 -4v-6"/><path d="M12 16v5"/><path d="M8 4h8"/></svg>
-        </button>
+        <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar')}">${pinned?ICO.pinFilled:ICO.pinOutline}</button>
         <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
         <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
-        <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21l15 -15l-3 -3l-15 15l3 3z"/><path d="M15 6l3 3"/><path d="M9 3a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/><path d="M19 13a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg>
-        </button>
-        <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg>
-        </button>
-        <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        </button>
+        <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">${ICO.magicWand}</button>
+        <button class="icon-btn" onclick="askAI('${id}')" title="${t('Perguntar IA')}">${ICO.askAI}</button>
+        <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
+        <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
         <button class="icon-btn" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
-        <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-        <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        </button>
-        <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">
-          <svg class="ico-expand" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-          <svg class="ico-collapse" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>
-        </button>
-        <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
+        <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
+        <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
+        <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
+        <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
       </div>
       <div class="adv-float-toolbar" onmousedown="event.preventDefault()">
         <button class="adv-ft-btn" onclick="advFormat(this,'bold')" title="${t('Negrito')}"><b>B</b></button>
