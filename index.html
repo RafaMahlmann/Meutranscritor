@@ -1411,6 +1411,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <div class="doc-tgrp">
             <button class="doc-tbtn" onclick="toggleLensMenu(_docCardId())" title="✨ Transformar com IA" data-i18n-title>✨</button>
             <button class="doc-tbtn" onclick="toggleAdvanced(_docCardId())" title="Avançado (clique de novo pra substituir e fechar)" data-i18n-title>⚙️</button>
+            <button class="doc-tbtn" onclick="askAI(_docCardId())" title="Perguntar IA" data-i18n-title>💬</button>
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
@@ -2291,7 +2292,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.15.1';
+const VOX_VERSION='2026.07.16.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2332,6 +2333,14 @@ let I18N_EN={
 "Expandir tags":"Expand tags",
 "Recolher Transformar":"Collapse Transform",
 "Expandir Transformar":"Expand Transform",
+"Tags":"Tags",
+"Perguntar IA":"Ask AI",
+"Perguntando…":"Asking…",
+"Resposta gerada! Ctrl+Z desfaz.":"Response generated! Ctrl+Z undoes.",
+"Card vazio — nada para perguntar":"Empty card — nothing to ask about",
+"Configure uma chave de IA!":"Set up an AI key!",
+"O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
+"💬 Pergunta: ":"💬 Question: ",
 // FASE 4 — pulos do gato (mobile)
 "💡 Segure o botão de gravar pra escolher a fonte: microfone, som interno ou os dois":"💡 Hold the record button to choose the source: microphone, system audio, or both",
 "↓ Solte pra criar um card novo":"↓ Release to create a new card",
@@ -4919,8 +4928,14 @@ function filterTag(tag){if(!searchActive)toggleSearch();document.getElementById(
 
 // ── TAG SUGGESTIONS (IA) ──
 function tagsBlock(id,tags){
+  const isCollapsed=localStorage.getItem('vox_tags_collapsed')==='1';
   return `<div class="cpanel-wrap cpanel-wrap-tags" id="cpanelTags-${id}">`+
-    `<button type="button" class="cpanel-handle cpanel-handle-tags" onclick="toggleCardPanel('${id}','tags')" aria-expanded="true" aria-label="${t('Recolher tags')}" title="${t('Recolher tags')}"><span class="cpanel-handle-bar"></span></button>`+
+    `<div class="ctags-header" onclick="toggleTagsPanel('${id}')" role="button" tabindex="0" aria-expanded="${isCollapsed?'false':'true'}" aria-label="${isCollapsed?t('Expandir tags'):t('Recolher tags')}" onkeydown="if(event.key==='Enter'||event.key===' ')event.preventDefault();toggleTagsPanel('${id}')">`+
+      `<span class="ctags-header-chev${isCollapsed?' collapsed':''}">${isCollapsed?'▶':'▼'}</span>`+
+      `<span class="ctags-header-label">${t('Tags')}</span>`+
+      `<span class="ctags-header-count">${tags.length}</span>`+
+    `</div>`+
+    `<div class="ctags-collapse-wrap${isCollapsed?' collapsed':''}">`+
     `<div class="ctags" id="ctags-${id}">`+
     tags.map(t=>`<button class="ctag" onclick="filterTag('${escJs(t)}')">#${escHtml(t)}<span class="ctag-rm" onclick="event.stopPropagation();removeTag('${id}','${escJs(t)}')">×</span></button>`).join('')+
     `<button class="ctag-suggest-btn" onclick="suggestTags('${id}')" title="${t('Sugerir tags com IA')}">${t('+ tag IA')}</button>`+
@@ -4973,6 +4988,21 @@ function toggleCardPanel(id,which){
       :(which==='tags'?t('Recolher tags'):t('Recolher Transformar'));
     btn.setAttribute('aria-label',lbl);btn.title=lbl;
   }
+}
+function toggleTagsPanel(id){
+  const wrap=document.getElementById('cpanelTags-'+id);if(!wrap)return;
+  const collapse=wrap.querySelector('.ctags-collapse-wrap');
+  const header=wrap.querySelector('.ctags-header');
+  const chev=wrap.querySelector('.ctags-header-chev');
+  if(!collapse)return;
+  const nowCollapsed=collapse.classList.toggle('collapsed');
+  if(chev)chev.classList.toggle('collapsed',nowCollapsed);
+  if(header){
+    header.setAttribute('aria-expanded',nowCollapsed?'false':'true');
+    const lbl=nowCollapsed?t('Expandir tags'):t('Recolher tags');
+    header.setAttribute('aria-label',lbl);header.title=lbl;
+  }
+  localStorage.setItem('vox_tags_collapsed',nowCollapsed?'1':'0');
 }
 function getAllUsedTags(){
   const set=new Set();
@@ -6072,6 +6102,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21l15 -15l-3 -3l-15 15l3 3z"/><path d="M15 6l3 3"/><path d="M9 3a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/><path d="M19 13a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg>
         </button>
+        <button class="icon-btn" onclick="askAI('${id}')" title="${t('Perguntar IA')}">${ICO.askAI}</button>
         <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg>
         </button>
@@ -6363,7 +6394,8 @@ const ICO={
   eyeOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
   zap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
   clipboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
-  share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="6.51"/></svg>'
+  share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="6.51"/></svg>',
+  askAI:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="12" cy="10" r="1"/><circle cx="16" cy="10" r="1"/><circle cx="8" cy="10" r="1"/></svg>'
 };
 // ── VITRINE: chips de lente pós-transcrição + lente protagonista ──
 function quickLensesFor(mode){
@@ -7389,6 +7421,24 @@ function updateFooter(id){
 }
 function askDel(id){document.getElementById('conf-'+id)?.classList.add('on')}
 function cancelDel(id){document.getElementById('conf-'+id)?.classList.remove('on')}
+// ── Perguntar IA: abre um prompt para o usuário fazer uma pergunta sobre o texto do card ──
+async function askAI(id){
+  const card=document.getElementById(id);if(!card)return;
+  const text=(card.querySelector('textarea')?.value||'').trim();
+  if(!text){toast(t('ℹ️ Card vazio — nada para perguntar'),true);return}
+  const key=aiKey();
+  if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
+  const pergunta=prompt(t('💬 O que você quer perguntar sobre este texto?'));
+  if(!pergunta||!pergunta.trim())return;
+  toast('💬 '+t('Perguntando…'));
+  try{
+    const prompt=`Com base no texto abaixo, responda à pergunta do usuário. Seja direto e use apenas o conteúdo do texto — se a resposta não estiver no texto, diga isso claramente. ${_promptLang()}\n\nTexto:\n${text}\n\nPergunta: ${pergunta.trim()}`;
+    const result=await callAI(prompt,key,'auto',1200);
+    const mode=card.dataset.mode||'livre';
+    setLastAICard(addCard(result,null,0,'texto',cfg.provider,true,null,null,['pergunta-ia',mode],t('💬 Pergunta: ')+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false));
+    toast('✅ '+t('Resposta gerada! Ctrl+Z desfaz.'));
+  }catch(e){toast('❌ '+e.message,true)}
+}
 function doDelete(id){
   revokeBlob(id);document.getElementById(id)?.remove();
   stats.count=Math.max(0,stats.count-1);updateStats();saveHistory();
