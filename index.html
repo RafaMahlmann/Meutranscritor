@@ -2366,7 +2366,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.17.10';
+const VOX_VERSION='2026.07.18.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6368,6 +6368,7 @@ function toggleDiarView(id){
   saveHistory();
 }
 // Modo Conversa: bolhas (estilo WhatsApp) em tela cheia
+// DEPRECATED-candidata: remoção na Fase 4
 function enterConversa(id){
   const card=document.getElementById(id);if(!card)return;
   if(card.dataset.view!=='bolhas')toggleDiarView(id);
@@ -6478,6 +6479,14 @@ async function sendDiarChat(id,chipText){
 function sendDiarChatChip(id,chipEl){sendDiarChat(id,chipEl?.textContent||'')}
 function buildDiarChatPrompt(id,question){
   const card=document.getElementById(id);if(!card)return'';
+  if(card.dataset.diarized!=='true'){
+    const text=(card.querySelector('textarea')?.value||'').trim();
+    const maxCtx=12000;
+    const ctx=text.length>maxCtx?text.slice(0,maxCtx)+'\n…':text;
+    const history=getDiarChatHistory(id);
+    const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
+    return `Você é um assistente analisando um texto. Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO].\n\nTEXTO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
+  }
   const utterances=JSON.parse(card.dataset.utterances||'[]');
   const speakers=JSON.parse(card.dataset.speakers||'{}');
   const withTimes=card.dataset.showtimes==='true';
