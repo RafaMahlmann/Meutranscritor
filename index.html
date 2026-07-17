@@ -2350,7 +2350,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.16.6';
+const VOX_VERSION='2026.07.17.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5009,8 +5009,9 @@ function tagsBlock(id,tags){
     `<button class="ctag-gear-btn" onclick="openExtractPanel('${id}')" title="${t('Extrair todos os termos do texto')}">${t('⚙ extrair')}</button>`+
     `<button class="ctag-voice-btn" id="vtbtn-${id}" onclick="startVoiceTag('${id}')" title="${t('Falar tags')}">${t('🎤 falar')}</button>`+
     `<input class="ctag-input" placeholder="${t('tag manual')}" onkeydown="handleTagInput(event,'${id}')" maxlength="20">`+
-    `</div></div>`+
+    `</div>`+
     `<div class="tag-suggestions" id="tagsug-${id}"></div>`+
+    `</div>`+
     `<div class="ext-panel" id="extpanel-${id}"></div>`+
     `<div class="vt-panel" id="vtpanel-${id}"></div>`;
 }
@@ -5062,6 +5063,21 @@ function toggleTagsPanel(id){
   const header=wrap.querySelector('.ctags-header');
   const chev=wrap.querySelector('.ctags-header-chev');
   if(!collapse)return;
+  const card=document.getElementById(id);
+  // Mobile Lista/Masonry: se o card ainda está recolhido, a setinha primeiro
+  // expande o card e abre o painel de tags, em vez de "girar no vazio".
+  if(_isSheetViewport() && card && !card.classList.contains('focus-active') && !card.classList.contains('ch-open')){
+    toggleChCollapse(id);
+    collapse.classList.remove('collapsed');
+    if(chev)chev.classList.remove('collapsed');
+    if(header){
+      header.setAttribute('aria-expanded','true');
+      const lbl=t('Recolher tags');
+      header.setAttribute('aria-label',lbl);header.title=lbl;
+    }
+    localStorage.setItem('vox_tags_collapsed','0');
+    return;
+  }
   const nowCollapsed=collapse.classList.toggle('collapsed');
   if(chev)chev.classList.toggle('collapsed',nowCollapsed);
   if(header){
