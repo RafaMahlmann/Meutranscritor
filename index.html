@@ -479,8 +479,9 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .ctag-suggest-btn{font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px;border:1px dashed var(--border2);background:transparent;color:var(--text3);font-family:var(--font);cursor:pointer;transition:all var(--transition)}
 .ctag-suggest-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 .ctag-suggest-btn.loading{opacity:0.5;pointer-events:none}
-.tag-suggestions{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:0 14px 8px;background:var(--cat,transparent)}
+.tag-suggestions{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:0 14px 8px;background:var(--cat,transparent);overflow:hidden;transition:max-height .2s ease,opacity .15s ease,padding .2s ease;max-height:400px;opacity:1}
 .tag-suggestions:empty{display:none;padding:0}
+.tag-suggestions.collapsed{max-height:0;opacity:0;padding-top:0;padding-bottom:0}
 .tagsug-lbl{font-size:10px;color:var(--text4);font-weight:700;letter-spacing:0.3px}
 .ctag-suggest{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;border:1px dashed var(--accent);background:var(--accent-glow);color:var(--accent);cursor:pointer;font-family:var(--font);transition:all var(--transition)}
 .ctag-suggest:hover{background:var(--accent);color:#fff}
@@ -2350,7 +2351,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.17.1';
+const VOX_VERSION='2026.07.17.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5009,9 +5010,8 @@ function tagsBlock(id,tags){
     `<button class="ctag-gear-btn" onclick="openExtractPanel('${id}')" title="${t('Extrair todos os termos do texto')}">${t('⚙ extrair')}</button>`+
     `<button class="ctag-voice-btn" id="vtbtn-${id}" onclick="startVoiceTag('${id}')" title="${t('Falar tags')}">${t('🎤 falar')}</button>`+
     `<input class="ctag-input" placeholder="${t('tag manual')}" onkeydown="handleTagInput(event,'${id}')" maxlength="20">`+
-    `</div>`+
-    `<div class="tag-suggestions" id="tagsug-${id}"></div>`+
-    `</div>`+
+    `</div></div>`+
+    `<div class="tag-suggestions${isCollapsed?' collapsed':''}" id="tagsug-${id}"></div>`+
     `<div class="ext-panel" id="extpanel-${id}"></div>`+
     `<div class="vt-panel" id="vtpanel-${id}"></div>`;
 }
@@ -5062,6 +5062,7 @@ function toggleTagsPanel(id){
   const collapse=wrap.querySelector('.ctags-collapse-wrap');
   const header=wrap.querySelector('.ctags-header');
   const chev=wrap.querySelector('.ctags-header-chev');
+  const suggestions=wrap.querySelector('.tag-suggestions');
   if(!collapse)return;
   const card=document.getElementById(id);
   // Mobile Lista/Masonry: se o card ainda está recolhido, a setinha primeiro
@@ -5069,6 +5070,7 @@ function toggleTagsPanel(id){
   if(_isSheetViewport() && card && !card.classList.contains('focus-active') && !card.classList.contains('ch-open')){
     toggleChCollapse(id);
     collapse.classList.remove('collapsed');
+    if(suggestions)suggestions.classList.remove('collapsed');
     if(chev)chev.classList.remove('collapsed');
     if(header){
       header.setAttribute('aria-expanded','true');
@@ -5079,6 +5081,7 @@ function toggleTagsPanel(id){
     return;
   }
   const nowCollapsed=collapse.classList.toggle('collapsed');
+  if(suggestions)suggestions.classList.toggle('collapsed',nowCollapsed);
   if(chev)chev.classList.toggle('collapsed',nowCollapsed);
   if(header){
     header.setAttribute('aria-expanded',nowCollapsed?'false':'true');
