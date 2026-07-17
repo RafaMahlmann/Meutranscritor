@@ -80,6 +80,9 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .brand-sub-row{display:flex;align-items:center;gap:6px}
 .ver-badge{font-size:9px;color:var(--text4);font-weight:600;letter-spacing:0.2px;cursor:default}
 .hd-actions{display:flex;align-items:center;gap:7px}
+.cfg-wrap{display:inline-flex;align-items:center;position:relative;vertical-align:middle}
+.cfg-wrap.has-badge{margin-bottom:18px}
+#speedBadge{display:none;white-space:nowrap}
 .search-wrap{padding:16px 0 0;display:none}
 .search-wrap.visible{display:block}
 .search-box{position:relative;display:flex;align-items:center}
@@ -1364,15 +1367,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           </button>
         </div>
       </div>
-      <div style="display:inline-flex;position:relative;vertical-align:middle">
+      <div class="cfg-wrap">
         <button class="gbtn on-accent" id="btnCfg" onclick="openModal()" title="Configurações" data-i18n-title>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span id="cfgLabel">Whisper</span>
         </button>
         <!-- SPEED BADGE — todos os provedores -->
-        <button id="speedBadge" onclick="toggleModelPicker()" style="display:none;position:absolute;top:calc(100% + 2px);right:0;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0 2px;text-align:right;line-height:1.5;z-index:10">
-          <div id="speedBadgeLine1" style="font-size:10px;font-weight:600;color:var(--text4);letter-spacing:0.2px"></div>
-          <div id="speedBadgeLine2" style="font-size:10px;font-weight:700;letter-spacing:0.1px"></div>
+        <button id="speedBadge" onclick="toggleModelPicker()" style="display:none;position:absolute;top:calc(100% + 2px);left:0;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0 2px;text-align:left;line-height:1.5;z-index:10;white-space:nowrap">
+          <span id="speedBadgeLine1" style="font-size:10px;font-weight:600;color:var(--text4);letter-spacing:0.2px"></span><span id="speedBadgeLine2" style="font-size:10px;font-weight:700;letter-spacing:0.1px"></span>
         </button>
         <!-- MODEL PICKER (só local) -->
         <div id="modelPicker" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:200;min-width:240px;overflow:hidden;animation:fadeDown 0.15s ease">
@@ -2363,7 +2365,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.17.5';
+const VOX_VERSION='2026.07.17.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2714,12 +2716,14 @@ function updateSpeedBadge(){
   const badge=document.getElementById('speedBadge');
   const line1=document.getElementById('speedBadgeLine1');
   const line2=document.getElementById('speedBadgeLine2');
+  const wrap=badge?.closest('.cfg-wrap');
   const key=_provKey();
   const all=JSON.parse(localStorage.getItem('vox_speed_stats')||'{}');
   const s=all[key];
   const isLocal=cfg.provider==='local';
   // linha 1: modelo (local) ou vazio
   line1.textContent=isLocal?(cfg.localModel||'large-v3'):'';
+  if(line1.textContent)line1.textContent+=' · ';
   if(s&&s.count>0&&s.totalAudioSec>0){
     const spm=s.totalProcSec/(s.totalAudioSec/60);
     const color=_speedColor(spm);
@@ -2730,7 +2734,7 @@ function updateSpeedBadge(){
     else{badge.style.cursor='default';badge.onclick=null}
   }else{
     if(isLocal){
-      line2.innerHTML=`<span style="color:var(--text4)">${cfg.localModel||'large-v3'} ▾</span>`;
+      line2.innerHTML=`<span style="color:var(--text4)">▾</span>`;
       line1.textContent='';
       badge.style.display='block';
       badge.style.cursor='pointer';
@@ -2739,6 +2743,7 @@ function updateSpeedBadge(){
       badge.style.display='none';
     }
   }
+  if(wrap)wrap.classList.toggle('has-badge',badge.style.display==='block');
   if(isLocal)updateModelPickerActive(cfg.localModel||'large-v3');
   updateModelStats();
 }
