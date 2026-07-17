@@ -81,8 +81,8 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .ver-badge{font-size:9px;color:var(--text4);font-weight:600;letter-spacing:0.2px;cursor:default}
 .hd-actions{display:flex;align-items:center;gap:7px}
 .cfg-wrap{display:inline-flex;align-items:center;position:relative;vertical-align:middle}
-.cfg-wrap.has-badge{padding-bottom:18px}
 #speedBadge{display:none;white-space:nowrap}
+header.has-speed-badge{padding-bottom:18px}
 .search-wrap{padding:16px 0 0;display:none}
 .search-wrap.visible{display:block}
 .search-box{position:relative;display:flex;align-items:center}
@@ -1172,7 +1172,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 
 /* ── DESKTOP: stats alinhada à esquerda, abaixo do header ── */
 @media(min-width:641px){
-  .stats{margin-top:20px;padding-top:10px}
+  .stats{padding:14px 0}
 }
 
 /* ── FASE 3 — cabeçalho interno do card recolhido (só mobile) ──
@@ -2365,7 +2365,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.17.8';
+const VOX_VERSION='2026.07.17.9';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2716,7 +2716,7 @@ function updateSpeedBadge(){
   const badge=document.getElementById('speedBadge');
   const line1=document.getElementById('speedBadgeLine1');
   const line2=document.getElementById('speedBadgeLine2');
-  const wrap=badge?.closest('.cfg-wrap');
+  const headerEl=document.querySelector('header');
   const key=_provKey();
   const all=JSON.parse(localStorage.getItem('vox_speed_stats')||'{}');
   const s=all[key];
@@ -2743,7 +2743,7 @@ function updateSpeedBadge(){
       badge.style.display='none';
     }
   }
-  if(wrap)wrap.classList.toggle('has-badge',badge.style.display==='block');
+  if(headerEl)headerEl.classList.toggle('has-speed-badge',badge.style.display==='block');
   if(isLocal)updateModelPickerActive(cfg.localModel||'large-v3');
   updateModelStats();
 }
