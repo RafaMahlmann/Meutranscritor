@@ -68,6 +68,10 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
    compartilhamento (onclick mora no .brand inteiro, não só no ícone). */
 .brand-share-hint{font-size:9.5px;color:var(--accent);font-weight:700;letter-spacing:0.2px}
 .brand:hover .brand-share-hint{text-decoration:underline}
+.brand-stats{display:none;align-items:center;gap:8px;font-size:10px;color:var(--text3);font-weight:500;margin-top:1px;letter-spacing:0.2px}
+.brand-stats span{white-space:nowrap}
+#bstime{color:var(--accent)}
+#bsc{color:var(--text2)}
 .brand-icon{width:34px;height:34px;background:url('Logo/icon-header.png') center/contain no-repeat;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:0;box-shadow:0 2px 8px var(--accent-glow);flex-shrink:0;cursor:pointer;transition:transform .15s ease,filter .15s ease}
 .brand-icon:hover{transform:scale(1.06);filter:brightness(1.08)}
 .brand-text{line-height:1.2}
@@ -1137,6 +1141,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      inteira. Cortando a largura, a fileira cabe inteira sem precisar rolar. */
   .stats{padding:5px 12px}
   .stat{font-size:10.5px;padding:0 6px}
+  .brand-stats{display:flex}
+  #statCount,#statTime{display:none}
   .stats-ctrls{gap:6px}
   .stat-folders-btn{padding:5px 8px;position:relative}
   .stat-folders-btn span{display:none}
@@ -1159,6 +1165,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   body.chrome-hidden header,body.chrome-hidden .stats,body.chrome-hidden #docBar{
     max-height:0;opacity:0;overflow:hidden;pointer-events:none;border-color:transparent
   }
+}
+
+/* ── DESKTOP: stats alinhada à direita com o botão de provedor ── */
+@media(min-width:641px){
+  .stats{justify-content:flex-end;margin-top:12px;padding-top:10px}
 }
 
 /* ── FASE 3 — cabeçalho interno do card recolhido (só mobile) ──
@@ -1295,6 +1306,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <div class="brand-text">
         <div class="brand-name" id="appTitle">Vox · My Transcriber</div>
         <div class="brand-sub-row"><div class="brand-sub" id="brandSub" data-i18n>Transcription</div><span class="ver-badge" id="verBadge"></span></div>
+        <div class="brand-stats" id="brandStats"><span id="bstime">0 min</span><span id="bsc">0 gravações</span></div>
         <div class="brand-share-hint" data-i18n>Compartilhe</div>
       </div>
     </div>
@@ -1352,13 +1364,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           </button>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;position:relative">
+      <div style="display:inline-flex;position:relative;vertical-align:middle">
         <button class="gbtn on-accent" id="btnCfg" onclick="openModal()" title="Configurações" data-i18n-title>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span id="cfgLabel">Whisper</span>
         </button>
         <!-- SPEED BADGE — todos os provedores -->
-        <button id="speedBadge" onclick="toggleModelPicker()" style="display:none;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0 2px;text-align:right;line-height:1.5">
+        <button id="speedBadge" onclick="toggleModelPicker()" style="display:none;position:absolute;top:calc(100% + 2px);right:0;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0 2px;text-align:right;line-height:1.5;z-index:10">
           <div id="speedBadgeLine1" style="font-size:10px;font-weight:600;color:var(--text4);letter-spacing:0.2px"></div>
           <div id="speedBadgeLine2" style="font-size:10px;font-weight:700;letter-spacing:0.1px"></div>
         </button>
@@ -1405,8 +1417,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 <!-- STATS -->
 <div class="stats wrap">
   <div class="stat"><span class="sdot" id="sdot"></span><span id="stext" data-i18n>Pronto</span></div>
-  <div class="stat">📝 <strong id="sc">0</strong> <span data-i18n>itens</span></div>
-  <div class="stat">⏱️ <strong id="stime">0 min</strong></div>
+  <div class="stat" id="statCount">📝 <strong id="sc">0</strong> <span data-i18n>itens</span></div>
+  <div class="stat" id="statTime">⏱️ <strong id="stime">0 min</strong></div>
   <div class="stat" id="statAvg" style="display:none" title="Duração média de cada gravação" data-i18n-title>📊 <strong id="sAvg">—</strong> <span data-i18n>média</span></div>
   <div class="stat" id="statSaved" style="display:none">⚡ <strong id="sSaved">0 min</strong> <span data-i18n>economizados</span></div>
   <div class="stats-ctrls">
@@ -2351,7 +2363,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.17.2';
+const VOX_VERSION='2026.07.17.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -8287,6 +8299,10 @@ function showCards(){
 function updateStats(){
   document.getElementById('sc').textContent=stats.count;
   document.getElementById('stime').textContent=Math.ceil(stats.sec/60)+' '+t('min');
+  const bstime=document.getElementById('bstime');
+  const bsc=document.getElementById('bsc');
+  if(bstime)bstime.textContent=Math.ceil(stats.sec/60)+' '+t('min');
+  if(bsc)bsc.textContent=stats.count+' '+t('gravações');
   // Média de duração por gravação — estatística pedida pelo Rafa: mostra o
   // perfil de uso ("gravo curto e muito" vs "gravo longo e pouco").
   if(stats.count>0&&stats.sec>0){
