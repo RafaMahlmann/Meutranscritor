@@ -150,7 +150,8 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
    dos irmãos com order:0 (label/toolbar/textarea/prompt-row) dentro do seu
    próprio container flex — ele acabava desenhado por baixo/fora da coluna,
    sobrepondo texto de forma bagunçada. */
-.cards.focus-mode .card.focus-active>.lens-panel{order:1}
+.cards.focus-mode .card.focus-active>.lens-panel,
+.cards.focus-mode .card.focus-active .diar-main-col>.lens-panel{order:1}
 /* Substitui .ctags como filho direto do flex — agora .ctags mora dentro de
    .cpanel-wrap-tags. Mantém a MESMA posição visual de antes (order:0,
    empatado com .ch, que vem antes no HTML-fonte). */
@@ -2589,7 +2590,7 @@ let I18N_EN={
 "🗑️ \"{name}\" removido":"🗑️ \"{name}\" removed","Exportar conversa (com controle)":"Export conversation (with control)",
 "Escolha tempos e quais locutores incluir":"Choose timestamps and which speakers to include","⤴ Exportar conversa":"⤴ Export conversation",
 "Incluir tempos [mm:ss]":"Include timestamps [mm:ss]","Incluir locutores:":"Include speakers:","ℹ️ Selecione ao menos um locutor":"ℹ️ Select at least one speaker",
-"Modo Conversa":"Conversation Mode","Virar card padrão":"Turn into standard card","Vira uma nota comum, na pasta atual":"Becomes a regular note, in the current folder",
+"Conversar sobre este texto":"Talk about this text","Modo Conversa":"Conversation Mode","Virar card padrão":"Turn into standard card","Vira uma nota comum, na pasta atual":"Becomes a regular note, in the current folder",
 "💾 Conversa virou card padrão!":"💾 Conversation turned into a standard card!",
 "US$50 grátis":"US$50 free",
 "Diarização":"Diarization","Diarização ON":"Diarization ON","Ligar/desligar diarização":"Turn diarization on/off",
@@ -2633,7 +2634,8 @@ let I18N_EN={
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
 "Resuma os pontos principais":"Summarize the main points","Quais decisões foram tomadas?":"What decisions were made?","Liste as próximas ações":"List next actions","Corrija a pontuação":"Fix punctuation",
-"Pergunte sobre esta conversa…":"Ask about this conversation…","Enviar":"Send",
+"Pergunte sobre esta conversa…":"Ask about this conversation…","Pergunte sobre este texto…":"Ask about this text…","Enviar":"Send",
+"💬 Pergunte algo sobre este texto ou use um dos atalhos abaixo.":"💬 Ask something about this text or use one of the shortcuts below.",
 "💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.":"💬 Ask something about this conversation or use one of the shortcuts below.",
 "❌ Não foi possível obter resposta: ":"❌ Could not get a response: ","✓ Aplicar sugestão":"✓ Apply suggestion","✅ Sugestão aplicada. Ctrl+Z desfaz.":"✅ Suggestion applied. Ctrl+Z undoes.","Usuário":"User"};
 
@@ -4853,7 +4855,7 @@ function loadHistory(){
       if(it.diarized){
         addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',it.folder||'',it.chatHistory||'[]');
       }else{
-        addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'');
+        addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]');
       }
     });
     const st=localStorage.getItem('vox_stats');
@@ -4890,7 +4892,7 @@ function saveHistory(){
     if(c.dataset.diarized==='true'){
       items.push({...base,diarized:true,utterances:c.dataset.utterances||'[]',speakers:c.dataset.speakers||'{}',view:c.dataset.view||'roteiro',chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
     }else{
-      items.push({...base,text:ta.value});
+      items.push({...base,chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
     }
   });
   localStorage.setItem('vox_history',JSON.stringify(items));
@@ -4959,7 +4961,7 @@ function _restoreProject(data){
     if(it.diarized){
       addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',it.folder||'',it.chatHistory||'[]');
     }else{
-      addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'');
+      addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]');
     }
     added++;
   });
@@ -6139,6 +6141,32 @@ async function autoRenameSpeakers(utterances,mode,currentSpeakers){
   return newMap;
 }
 
+// Painel de chat reutilizável para qualquer card (diarizado ou padrão)
+function cardChatPanelHtml(id){
+  return `
+    <div class="diar-chat-wrap" id="diarchat-${id}">
+      <div class="diar-chat-hd">
+        <span class="diar-chat-hd-title">🤖 ${t('Assistente')}</span>
+        <button class="diar-chat-hd-close" onclick="exitDiarChat('${id}')" title="${t('Fechar chat')}">✕</button>
+      </div>
+      <div class="diar-chat-tabs">
+        <button class="diar-chat-tab active" data-tab="texto" onclick="switchDiarChatTab('${id}','texto')">${t('Texto')}</button>
+        <button class="diar-chat-tab" data-tab="chat" onclick="switchDiarChatTab('${id}','chat')">${t('Chat')}</button>
+      </div>
+      <div class="diar-chat-messages" id="diarchatmsgs-${id}"></div>
+      <div class="diar-chat-chips" id="diarchatchips-${id}">
+        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Resuma os pontos principais')}</button>
+        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Quais decisões foram tomadas?')}</button>
+        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Liste as próximas ações')}</button>
+        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Corrija a pontuação')}</button>
+      </div>
+      <div class="diar-chat-input-row">
+        <textarea id="diarchatin-${id}" rows="1" placeholder="${t('Pergunte sobre este texto…')}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDiarChat('${id}')}"></textarea>
+        <button class="diar-chat-send" id="diarchatsend-${id}" onclick="sendDiarChat('${id}')">${t('Enviar')}</button>
+      </div>
+    </div>`;
+}
+
 // ── DIARIZED CARD ──
 function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,forceDt=null,tags=[],sn='',mode='livre',pinned=false,view='roteiro',folder='',chatHistory='[]'){
   showCards();
@@ -6219,7 +6247,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       <div class="spk-stats">${statsHtml}</div>
       <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}">⏱️</button></div>
       <div class="conversa-bar" id="convbar-${id}">
-        <button class="conversa-btn primary" onclick="enterDiarChat('${id}')">💬 ${t('Modo Conversa')}</button>
+        <button class="conversa-btn primary" onclick="enterDiarChat('${id}')">💬 ${t('Conversar sobre este texto')}</button>
         <button class="conversa-btn" onclick="diarToStandardCard('${id}')" title="${t('Vira uma nota comum, na pasta atual')}">💾 ${t('Virar card padrão')}</button>
       </div>
       <div class="cb roteiro-view" id="roteiro-${id}" style="${view==='bolhas'?'display:none':''}">
@@ -6233,27 +6261,8 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <span id="cf-${id}">${utterances.length} ${t('turnos')} · ${roteiroText.split(/\s+/).filter(w=>w).length} ${t('pal.')}</span>
       </div>
     </div>
-    <div class="diar-chat-wrap" id="diarchat-${id}">
-      <div class="diar-chat-hd">
-        <span class="diar-chat-hd-title">🤖 ${t('Assistente')}</span>
-        <button class="diar-chat-hd-close" onclick="exitDiarChat('${id}')" title="${t('Fechar chat')}">✕</button>
-      </div>
-      <div class="diar-chat-tabs">
-        <button class="diar-chat-tab active" data-tab="texto" onclick="switchDiarChatTab('${id}','texto')">${t('Texto')}</button>
-        <button class="diar-chat-tab" data-tab="chat" onclick="switchDiarChatTab('${id}','chat')">${t('Chat')}</button>
-      </div>
-      <div class="diar-chat-messages" id="diarchatmsgs-${id}"></div>
-      <div class="diar-chat-chips" id="diarchatchips-${id}">
-        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Resuma os pontos principais')}</button>
-        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Quais decisões foram tomadas?')}</button>
-        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Liste as próximas ações')}</button>
-        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Corrija a pontuação')}</button>
-      </div>
-      <div class="diar-chat-input-row">
-        <textarea id="diarchatin-${id}" rows="1" placeholder="${t('Pergunte sobre esta conversa…')}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDiarChat('${id}')}"></textarea>
-        <button class="diar-chat-send" id="diarchatsend-${id}" onclick="sendDiarChat('${id}')">${t('Enviar')}</button>
-      </div>
-    </div>`;
+    ${cardChatPanelHtml(id)}`;
+
 
   document.getElementById('cardsList').prepend(el);
   const ta=el.querySelector('textarea');if(ta)autoR(ta);
@@ -6419,9 +6428,11 @@ function setDiarChatHistory(id,history){
   saveHistory();
 }
 async function renderDiarChat(id){
+  const card=document.getElementById(id);if(!card)return;
   const msgs=document.getElementById('diarchatmsgs-'+id);if(!msgs)return;
   const history=getDiarChatHistory(id);
-  if(!history.length){msgs.innerHTML=`<div class="diar-chat-empty">${escHtml(t('💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.'))}</div>`;return}
+  const emptyKey=card.dataset.diarized==='true'?'💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.':'💬 Pergunte algo sobre este texto ou use um dos atalhos abaixo.';
+  if(!history.length){msgs.innerHTML=`<div class="diar-chat-empty">${escHtml(t(emptyKey))}</div>`;return}
   await _loadMarkdownLibs();
   msgs.innerHTML=history.map(m=>renderDiarChatMessage(id,m)).join('');
   msgs.scrollTop=msgs.scrollHeight;
@@ -7541,7 +7552,7 @@ async function runLens(id,lensKey,focus=''){
 }
 
 // ── REGULAR CARD ──
-function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null,tags=[],sn='',mode='livre',pinned=false,folder=''){
+function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null,tags=[],sn='',mode='livre',pinned=false,folder='',chatHistory='[]'){
   showCards();
   if(save&&!folder&&activeFolderId)folder=activeFolderId;
   const ci=forceCI!==null?forceCI:colorIdx;if(forceCI===null)colorIdx++;
@@ -7564,69 +7575,75 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   const el=document.createElement('div');
   el.className=`card ${cc}${pinned?' pinned-card':''}`;el.id=id;
   el.dataset.type=type;el.dataset.prov=provStr;el.dataset.cost=costUSD;el.dataset.ci=ci%PALETTE;el.dataset.dt=dt;
-  el.dataset.tags=tags.join(',');el.dataset.sessionName=sn;el.dataset.mode=mode;el.dataset.pinned=pinned?'true':'false';el.dataset.speakers='{}';el.dataset.folder=folder;
+  el.dataset.tags=tags.join(',');el.dataset.sessionName=sn;el.dataset.mode=mode;el.dataset.pinned=pinned?'true':'false';el.dataset.speakers='{}';el.dataset.folder=folder;el.dataset.chatHistory=chatHistory;
 
   el.innerHTML=`
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
-    <div class="ch">
-      <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
-      <div class="ch-left" onclick="toggleChCollapse('${id}')">
-        <span class="cdot"></span>
-        <span class="badge${badgeCls}">${provLabel}</span>
-        <span class="badge badge-type">${typeIco} ${typeLabel}</span>
-        <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
-        ${sn?`<span class="sname-badge" title="${escHtml(sn)}">${escHtml(sn)}</span>`:''}
-        ${pinned?'<span class="badge pin">📌</span>':''}
-        <span class="ts">${timeStr} · ${dateStr}</span>
+    <div class="diar-main-col">
+      <div class="ch">
+        <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
+        <div class="ch-left" onclick="toggleChCollapse('${id}')">
+          <span class="cdot"></span>
+          <span class="badge${badgeCls}">${provLabel}</span>
+          <span class="badge badge-type">${typeIco} ${typeLabel}</span>
+          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
+          ${sn?`<span class="sname-badge" title="${escHtml(sn)}">${escHtml(sn)}</span>`:''}
+          ${pinned?'<span class="badge pin">📌</span>':''}
+          <span class="ts">${timeStr} · ${dateStr}</span>
+        </div>
+        <div class="ca-wrap">
+          <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar')}">${pinned?ICO.pinFilled:ICO.pinOutline}</button>
+          <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
+          <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
+          <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">${ICO.magicWand}</button>
+          <button class="icon-btn" onclick="askAI('${id}')" title="${t('Perguntar IA')}">${ICO.askAI}</button>
+          <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
+          <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
+          <button class="icon-btn" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
+          <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
+          <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
+          <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
+          <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
+        </div>
+        <div class="adv-float-toolbar" onmousedown="event.preventDefault()">
+          <button class="adv-ft-btn" onclick="advFormat(this,'bold')" title="${t('Negrito')}"><b>B</b></button>
+          <button class="adv-ft-btn" onclick="advFormat(this,'italic')" title="${t('Itálico')}"><i>I</i></button>
+          <button class="adv-ft-btn" onclick="advFormat(this,'code')" title="${t('Código')}">&lt;/&gt;</button>
+          <button class="adv-ft-btn" onclick="advFormat(this,'link')" title="${t('Link')}">🔗</button>
+          <span class="adv-ft-sep"></span>
+          <button class="adv-ft-btn" onclick="advFormat(this,'h1')" title="${t('Título 1')}">H1</button>
+          <button class="adv-ft-btn" onclick="advFormat(this,'h2')" title="${t('Título 2')}">H2</button>
+          <button class="adv-ft-btn" onclick="advFormat(this,'h3')" title="${t('Título 3')}">H3</button>
+          <span class="adv-ft-sep"></span>
+          <button class="adv-ft-btn" onclick="advFormat(this,'ul')" title="${t('Lista com marcador')}">☰</button>
+          <button class="adv-ft-btn" onclick="advFormat(this,'ol')" title="${t('Lista numerada')}">①</button>
+          <button class="adv-ft-btn" onclick="advFormat(this,'task')" title="${t('Lista de tarefas')}">☑</button>
+          <button class="adv-ft-btn" onclick="advFormat(this,'quote')" title="${t('Citação')}">❝</button>
+          <span class="adv-ft-sep"></span>
+          <button class="adv-ft-btn adv-ft-undo" onclick="advUndoClick(this)" title="${t('Desfazer (Ctrl+Z)')}" disabled>↩</button>
+          <button class="adv-ft-btn adv-ft-redo" onclick="advRedoClick(this)" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>↪</button>
+        </div>
       </div>
-      <div class="ca-wrap">
-        <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar')}">${pinned?ICO.pinFilled:ICO.pinOutline}</button>
-        <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
-        <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
-        <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">${ICO.magicWand}</button>
-        <button class="icon-btn" onclick="askAI('${id}')" title="${t('Perguntar IA')}">${ICO.askAI}</button>
-        <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-        <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
-        <button class="icon-btn" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
-        <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
-        <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
-        <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
-        <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
+      <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
+        <button type="button" class="cpanel-handle cpanel-handle-transform" onclick="toggleCardPanel('${id}','transform')" aria-expanded="true" aria-label="${t('Recolher Transformar')}" title="${t('Recolher Transformar')}"><span class="cpanel-handle-bar"></span></button>
+        <div class="lens-panel" id="lens-${id}"></div>
       </div>
-      <div class="adv-float-toolbar" onmousedown="event.preventDefault()">
-        <button class="adv-ft-btn" onclick="advFormat(this,'bold')" title="${t('Negrito')}"><b>B</b></button>
-        <button class="adv-ft-btn" onclick="advFormat(this,'italic')" title="${t('Itálico')}"><i>I</i></button>
-        <button class="adv-ft-btn" onclick="advFormat(this,'code')" title="${t('Código')}">&lt;/&gt;</button>
-        <button class="adv-ft-btn" onclick="advFormat(this,'link')" title="${t('Link')}">🔗</button>
-        <span class="adv-ft-sep"></span>
-        <button class="adv-ft-btn" onclick="advFormat(this,'h1')" title="${t('Título 1')}">H1</button>
-        <button class="adv-ft-btn" onclick="advFormat(this,'h2')" title="${t('Título 2')}">H2</button>
-        <button class="adv-ft-btn" onclick="advFormat(this,'h3')" title="${t('Título 3')}">H3</button>
-        <span class="adv-ft-sep"></span>
-        <button class="adv-ft-btn" onclick="advFormat(this,'ul')" title="${t('Lista com marcador')}">☰</button>
-        <button class="adv-ft-btn" onclick="advFormat(this,'ol')" title="${t('Lista numerada')}">①</button>
-        <button class="adv-ft-btn" onclick="advFormat(this,'task')" title="${t('Lista de tarefas')}">☑</button>
-        <button class="adv-ft-btn" onclick="advFormat(this,'quote')" title="${t('Citação')}">❝</button>
-        <span class="adv-ft-sep"></span>
-        <button class="adv-ft-btn adv-ft-undo" onclick="advUndoClick(this)" title="${t('Desfazer (Ctrl+Z)')}" disabled>↩</button>
-        <button class="adv-ft-btn adv-ft-redo" onclick="advRedoClick(this)" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>↪</button>
+      <div class="lens-panel" id="exp-menu-${id}"></div>
+      <div class="adv-panel" id="adv-${id}"></div>
+      ${audioHtml}
+      <div class="conversa-bar" id="convbar-${id}">
+        <button class="conversa-btn primary" onclick="enterDiarChat('${id}')">💬 ${t('Conversar sobre este texto')}</button>
+      </div>
+      <div class="cb">
+        <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
+        <div class="md-preview" id="mdp-${id}" style="display:none"></div>
+      </div>
+      ${tagsHtml}
+      <div class="cf">
+        <span id="cf-${id}">${wc} ${t('car.')} · ${ww} ${t('pal.')}</span>
       </div>
     </div>
-    <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
-      <button type="button" class="cpanel-handle cpanel-handle-transform" onclick="toggleCardPanel('${id}','transform')" aria-expanded="true" aria-label="${t('Recolher Transformar')}" title="${t('Recolher Transformar')}"><span class="cpanel-handle-bar"></span></button>
-      <div class="lens-panel" id="lens-${id}"></div>
-    </div>
-    <div class="lens-panel" id="exp-menu-${id}"></div>
-    <div class="adv-panel" id="adv-${id}"></div>
-    ${audioHtml}
-    <div class="cb">
-      <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
-      <div class="md-preview" id="mdp-${id}" style="display:none"></div>
-    </div>
-    ${tagsHtml}
-    <div class="cf">
-      <span id="cf-${id}">${wc} ${t('car.')} · ${ww} ${t('pal.')}</span>
-    </div>`;
+    ${cardChatPanelHtml(id)}`;
 
   document.getElementById('cardsList').prepend(el);
   const ta=el.querySelector('textarea');if(ta)autoR(ta);
