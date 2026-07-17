@@ -2620,7 +2620,9 @@ let I18N_EN={
 "Resuma os pontos principais":"Summarize the main points","Quais decisões foram tomadas?":"What decisions were made?","Liste as próximas ações":"List next actions","Corrija a pontuação":"Fix punctuation",
 "Pergunte sobre esta conversa…":"Ask about this conversation…","Enviar":"Send",
 "💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.":"💬 Ask something about this conversation or use one of the shortcuts below.",
-"❌ Não foi possível obter resposta: ":"❌ Could not get a response: ","✓ Aplicar sugestão":"✓ Apply suggestion","✅ Sugestão aplicada. Ctrl+Z desfaz.":"✅ Suggestion applied. Ctrl+Z undoes.","Usuário":"User"};
+"❌ Não foi possível obter resposta: ":"❌ Could not get a response: ","✓ Aplicar sugestão":"✓ Apply suggestion","✅ Sugestão aplicada. Ctrl+Z desfaz.":"✅ Suggestion applied. Ctrl+Z undoes.","Usuário":"User",
+"🎬 Vídeo detectado — extraindo áudio antes de diarizar…":"🎬 Video detected — extracting audio before diarizing…",
+"Não foi possível extrair o áudio do vídeo: ":"Could not extract audio from the video: "};
 
 // ── STATE ──
 let MR=null,chunks=[],recStart=null,recTimer=null;
@@ -5461,6 +5463,9 @@ function _hasFileDrag(e){
 function _isAudioLikeFile(f){
   return f&&(f.type.startsWith('audio/')||f.type.startsWith('video/')||/\.(mp3|mp4|mpeg|mpga|m4a|wav|webm|ogg|flac|amr|wma|3gp)$/i.test(f.name||''));
 }
+function _isVideoFile(f){
+  return f&&(f.type.startsWith('video/')||/\.(mov|mp4|m4v|mkv|avi|webm|3gp|3g2|flv|wmv)$/i.test(f.name||''));
+}
 function _showAudioDrop(on){
   const ibar=document.querySelector('.ibar');if(!ibar)return;
   ibar.classList.toggle('file-drag',!!on);
@@ -5872,6 +5877,12 @@ function sendTxt(){
 async function processAudio(file,durSec,fromRec){
   const sn=document.getElementById('snameInput').value.trim();
   const mode=sessionMode;
+  // APIs de diarização esperam áudio. Se o usuário enviou vídeo, extraímos o áudio primeiro.
+  if(cfg.diarEnabled&&_isVideoFile(file)){
+    toast(t('🎬 Vídeo detectado — extraindo áudio antes de diarizar…'));
+    try{file=await extractAudioFromVideo(file,null)}
+    catch(e){toast('❌ '+t('Não foi possível extrair o áudio do vídeo: ')+e.message,true);return}
+  }
   if(cfg.diarEnabled&&cfg.diarProvider==='gladia'&&cfg.apiKeyGladia){
     recTargetTA=null;recTargetCard=null; // diarização sempre cria card próprio
     await doDiarizeGladia(file,durSec,fromRec,sn,mode);
@@ -8356,6 +8367,17 @@ async function transcodeToMp3(file,pid){
   await ff.writeFile(inName,await FFmpegUtil.fetchFile(file));
   if(pid)setPL(pid,t('🔧 Convertendo áudio…'));
   await ff.exec(['-i',inName,'-ar','44100','-ac','1','-b:a','128k','out.mp3']);
+  const data=await ff.readFile('out.mp3');
+  await ff.deleteFile(inName).catch(()=>{});await ff.deleteFile('out.mp3').catch(()=>{});
+  return new File([data.buffer],file.name.replace(/\.[a-z0-9]+$/i,'')+'.mp3',{type:'audio/mp3'});
+}
+// Extrai áudio de vídeo (ex: .mov do iPhone) antes de enviar para APIs de diarização/transcrição.
+async function extractAudioFromVideo(file,pid){
+  if(pid)setPL(pid,t('🎬 Vídeo detectado — extraindo áudio…'));
+  const ff=await _loadFFmpeg();
+  const inName='in'+(_extOf(file)?'.'+_extOf(file):'');
+  await ff.writeFile(inName,await FFmpegUtil.fetchFile(file));
+  await ff.exec(['-i',inName,'-vn','-ar','44100','-ac','1','-b:a','128k','out.mp3']);
   const data=await ff.readFile('out.mp3');
   await ff.deleteFile(inName).catch(()=>{});await ff.deleteFile('out.mp3').catch(()=>{});
   return new File([data.buffer],file.name.replace(/\.[a-z0-9]+$/i,'')+'.mp3',{type:'audio/mp3'});
