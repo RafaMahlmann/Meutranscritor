@@ -395,7 +395,8 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .spk-del:hover{color:var(--danger);border-color:transparent}
 .spk-times.on{border-style:solid;border-color:var(--accent);color:var(--accent)}
 .bbl-ts{font-size:9px;color:var(--text4);font-weight:500;margin-left:6px}
-.conversa-bar{display:flex;gap:8px;padding:2px 14px 10px;background:var(--cat,transparent)}
+.conversa-bar{display:none;gap:8px;padding:2px 14px 10px;background:var(--cat,transparent)}
+.card.welcome-card .conversa-bar{display:flex}
 .conversa-btn{flex:1;border:1px solid var(--border2);background:var(--bg-input);color:var(--text2);border-radius:11px;padding:9px 12px;font-size:12.5px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition)}
 .conversa-btn:hover{border-color:var(--accent);color:var(--accent)}
 .conversa-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -1307,6 +1308,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-header .cchat-viewslot{width:120px;min-width:120px;display:flex;align-items:center;justify-content:flex-end}
 #cchat-overlay .cchat-header .cchat-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text);padding:4px 8px;border-radius:6px;line-height:1}
 #cchat-overlay .cchat-header .cchat-close:hover{background:var(--hover)}
+#cchat-overlay .cchat-header .cchat-clear{background:none;border:none;font-size:15px;cursor:pointer;color:var(--text);padding:4px 8px;border-radius:6px;line-height:1}
+#cchat-overlay .cchat-header .cchat-clear:hover{background:var(--hover)}
 #cchat-overlay .cchat-split{display:flex;flex:1;overflow:hidden}
 #cchat-overlay .cchat-textzone{flex:1;overflow-y:auto;padding:16px;min-width:0}
 #cchat-overlay .cchat-textzone textarea{width:100%;height:100%;min-height:300px;border:none;outline:none;resize:none;font-size:14px;line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
@@ -1327,6 +1330,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-msg.cchat-user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
 #cchat-overlay .cchat-msg.cchat-assistant{background:var(--bg);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)}
 #cchat-overlay .cchat-msg .cchat-meta{font-size:10px;opacity:0.7;margin-bottom:2px}
+#cchat-overlay .cchat-cite{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700;cursor:pointer;margin:0 1px;vertical-align:2px}
+#cchat-overlay .cchat-cite:hover{background:var(--accent2)}
 #cchat-overlay .cchat-empty{text-align:center;color:var(--text);opacity:0.5;padding:40px 20px;font-size:13px}
 #cchat-overlay .cchat-typing{display:flex;gap:4px;padding:10px 14px;align-self:flex-start}
 #cchat-overlay .cchat-typing span{width:6px;height:6px;background:var(--text);opacity:0.4;border-radius:50%;animation:cchat-bounce 1.4s infinite ease-in-out both}
@@ -2415,7 +2420,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.18.4';
+const VOX_VERSION='2026.07.18.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2640,6 +2645,8 @@ let I18N_EN={
 "Escolha tempos e quais locutores incluir":"Choose timestamps and which speakers to include","⤴ Exportar conversa":"⤴ Export conversation",
 "Incluir tempos [mm:ss]":"Include timestamps [mm:ss]","Incluir locutores:":"Include speakers:","ℹ️ Selecione ao menos um locutor":"ℹ️ Select at least one speaker",
 "Conversar sobre este texto":"Talk about this text","Modo Conversa":"Conversation Mode","Virar card padrão":"Turn into standard card","Vira uma nota comum, na pasta atual":"Becomes a regular note, in the current folder",
+// FASE 4 — Modo Conversa universal: citações, limpar conversa, exportar com chat
+"Limpar conversa":"Clear conversation","Limpar toda a conversa deste card? Essa ação não pode ser desfeita.":"Clear the entire conversation for this card? This action cannot be undone.","Trecho não encontrado no texto":"Excerpt not found in the text","Conversa":"Conversation","Você":"You",
 "💾 Conversa virou card padrão!":"💾 Conversation turned into a standard card!",
 "US$50 grátis":"US$50 free",
 "Diarização":"Diarization","Diarização ON":"Diarization ON","Ligar/desligar diarização":"Turn diarization on/off",
@@ -3190,7 +3197,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     localStorage.setItem('vox_welcomed','1');
     const demoText=t('Falar é mais rápido que digitar — a maioria das pessoas fala três vezes mais palavras por minuto do que digita. Mas a fala se perde no ar. A ideia deste app é simples: você fala, o texto aparece, e aí começa a mágica — este mesmo texto pode virar um resumo, uma mesa-redonda entre especialistas, um e-mail pronto, flashcards de estudo. Toque nos botões coloridos aqui embaixo e veja com seus próprios olhos.');
     const wid=addCard(demoText,null,0,'texto','groqwhisper',true,null,null,[t('demo')],t('👋 Bem-vindo ao Vox'),'livre',false,'');
-    if(wid)showLensChips(wid);
+    if(wid){document.getElementById(wid)?.classList.add('welcome-card');showLensChips(wid);}
   }
   if(window.innerWidth>640&&localStorage.getItem('vox_folders_open')!=='0'){
     document.getElementById('foldersBar').classList.add('open');
@@ -6190,31 +6197,6 @@ async function autoRenameSpeakers(utterances,mode,currentSpeakers){
   return newMap;
 }
 
-// Painel de chat reutilizável para qualquer card (diarizado ou padrão)
-function cardChatPanelHtml(id){
-  return `
-    <div class="diar-chat-wrap" id="diarchat-${id}">
-      <div class="diar-chat-hd">
-        <span class="diar-chat-hd-title">🤖 ${t('Assistente')}</span>
-        <button class="diar-chat-hd-close" onclick="exitDiarChat('${id}')" title="${t('Fechar chat')}">✕</button>
-      </div>
-      <div class="diar-chat-tabs">
-        <button class="diar-chat-tab active" data-tab="texto" onclick="switchDiarChatTab('${id}','texto')">${t('Texto')}</button>
-        <button class="diar-chat-tab" data-tab="chat" onclick="switchDiarChatTab('${id}','chat')">${t('Chat')}</button>
-      </div>
-      <div class="diar-chat-messages" id="diarchatmsgs-${id}"></div>
-      <div class="diar-chat-chips" id="diarchatchips-${id}">
-        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Resuma os pontos principais')}</button>
-        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Quais decisões foram tomadas?')}</button>
-        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Liste as próximas ações')}</button>
-        <button class="diar-chat-chip" onclick="sendDiarChatChip('${id}',this)">${t('Corrija a pontuação')}</button>
-      </div>
-      <div class="diar-chat-input-row">
-        <textarea id="diarchatin-${id}" rows="1" placeholder="${t('Pergunte sobre este texto…')}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDiarChat('${id}')}"></textarea>
-        <button class="diar-chat-send" id="diarchatsend-${id}" onclick="sendDiarChat('${id}')">${t('Enviar')}</button>
-      </div>
-    </div>`;
-}
 
 // ── DIARIZED CARD ──
 function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,forceDt=null,tags=[],sn='',mode='livre',pinned=false,view='roteiro',folder='',chatHistory='[]'){
@@ -6279,6 +6261,8 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <button class="icon-btn" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">${ICO.diarView}</button>
           <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">${ICO.magicWand}</button>
           <button class="icon-btn" onclick="askAI('${id}')" title="${t('Perguntar IA')}">${ICO.askAI}</button>
+          <button class="icon-btn" onclick="openConversaMode('${id}')" title="${t('Conversar sobre este texto')}">💬</button>
+          <button class="icon-btn" onclick="diarToStandardCard('${id}')" title="${t('Virar card padrão')}">💾</button>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
           <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
@@ -6416,14 +6400,6 @@ function toggleDiarView(id){
   document.getElementById('bbl-'+id).style.display=isRoteiro?'':'none';
   saveHistory();
 }
-// Modo Conversa: bolhas (estilo WhatsApp) em tela cheia
-// DEPRECATED-candidata: remoção na Fase 4
-function enterConversa(id){
-  const card=document.getElementById(id);if(!card)return;
-  if(card.dataset.view!=='bolhas')toggleDiarView(id);
-  card.classList.add('conversa-on');
-  enterFocusCard(id);
-}
 // "Virar card padrão": materializa a conversa como nota comum, na pasta atual
 function diarToStandardCard(id){
   const card=document.getElementById(id);if(!card)return;
@@ -6442,32 +6418,6 @@ function diarToStandardCard(id){
 }
 
 // ── MODO CONVERSA SOBRE DIARIZAÇÃO ──
-function enterDiarChat(id){
-  const card=document.getElementById(id);if(!card)return;
-  if(viewMode!=='doc')enterFocusCard(id);
-  card.classList.add('conversa-on','diar-chat-on');
-  const wrap=document.getElementById('diarchat-'+id);
-  if(wrap)wrap.classList.add('on');
-  renderDiarChat(id);
-  if(window.innerWidth<=640)switchDiarChatTab(id,'chat');
-  const ta=document.getElementById('diarchatin-'+id);
-  if(ta)setTimeout(()=>ta.focus(),60);
-}
-function exitDiarChat(id){
-  const card=document.getElementById(id);if(!card)return;
-  card.classList.remove('diar-chat-on');
-  const wrap=document.getElementById('diarchat-'+id);
-  if(wrap)wrap.classList.remove('on');
-}
-function switchDiarChatTab(id,tab){
-  const card=document.getElementById(id);if(!card)return;
-  card.dataset.diarChatTab=tab;
-  document.querySelectorAll('#diarchat-'+id+' .diar-chat-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
-  const main=card.querySelector('.diar-main-col');
-  const wrap=document.getElementById('diarchat-'+id);
-  if(main)main.classList.toggle('diar-chat-hide-mobile',tab==='chat');
-  if(wrap)wrap.classList.toggle('diar-chat-hide-mobile',tab==='texto');
-}
 function getDiarChatHistory(id){
   const card=document.getElementById(id);if(!card)return[];
   try{return JSON.parse(card.dataset.chatHistory||'[]')}catch(e){return[]}
@@ -6477,55 +6427,6 @@ function setDiarChatHistory(id,history){
   card.dataset.chatHistory=JSON.stringify(history.slice(-50));
   saveHistory();
 }
-async function renderDiarChat(id){
-  const card=document.getElementById(id);if(!card)return;
-  const msgs=document.getElementById('diarchatmsgs-'+id);if(!msgs)return;
-  const history=getDiarChatHistory(id);
-  const emptyKey=card.dataset.diarized==='true'?'💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.':'💬 Pergunte algo sobre este texto ou use um dos atalhos abaixo.';
-  if(!history.length){msgs.innerHTML=`<div class="diar-chat-empty">${escHtml(t(emptyKey))}</div>`;return}
-  await _loadMarkdownLibs();
-  msgs.innerHTML=history.map(m=>renderDiarChatMessage(id,m)).join('');
-  msgs.scrollTop=msgs.scrollHeight;
-}
-function renderDiarChatMessage(id,m){
-  const isUser=m.role==='user';
-  const avatar=isUser?'👤':'🤖';
-  const cls=isUser?'diar-chat-msg-user':'diar-chat-msg-assistant';
-  const bubble=window.marked&&window.DOMPurify
-    ? DOMPurify.sanitize(marked.parse(m.content||''))
-    : escHtml(m.content||'');
-  return `<div class="diar-chat-msg ${cls}"><span class="diar-chat-avatar">${avatar}</span><div class="diar-chat-bubble">${bubble}</div></div>`;
-}
-async function sendDiarChat(id,chipText){
-  const card=document.getElementById(id);if(!card)return;
-  const input=document.getElementById('diarchatin-'+id);
-  const text=(chipText!=null?String(chipText):input?.value||'').trim();
-  if(!text)return;
-  if(input&&!chipText)input.value='';
-  appendDiarChatMessage(id,'user',text);
-  const key=aiKey();
-  if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
-  const sendBtn=document.getElementById('diarchatsend-'+id);
-  if(sendBtn)sendBtn.disabled=true;
-  showDiarChatTyping(id);
-  try{
-    const prompt=buildDiarChatPrompt(id,text);
-    const result=await callAI(prompt,key,'auto',1400);
-    hideDiarChatTyping(id);
-    appendDiarChatMessage(id,'assistant',result);
-    maybeRenderDiarApplyButton(id,result);
-  }catch(e){
-    hideDiarChatTyping(id);
-    appendDiarChatMessage(id,'assistant',t('❌ Não foi possível obter resposta: ')+e.message);
-  }finally{
-    if(sendBtn)sendBtn.disabled=false;
-    const msgs=document.getElementById('diarchatmsgs-'+id);
-    if(msgs)msgs.scrollTop=msgs.scrollHeight;
-    const ta=document.getElementById('diarchatin-'+id);
-    if(ta)ta.focus();
-  }
-}
-function sendDiarChatChip(id,chipEl){sendDiarChat(id,chipEl?.textContent||'')}
 function buildDiarChatPrompt(id,question){
   const card=document.getElementById(id);if(!card)return'';
   if(card.dataset.diarized!=='true'){
@@ -6534,7 +6435,7 @@ function buildDiarChatPrompt(id,question){
     const ctx=text.length>maxCtx?text.slice(0,maxCtx)+'\n…':text;
     const history=getDiarChatHistory(id);
     const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
-    return `Você é um assistente analisando um texto. Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO].\n\nTEXTO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
+    return `Você é um assistente analisando um texto. Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO]. Ao afirmar algo com base no texto, cite a fonte com [1], [2] etc. (números sequenciais). No final da resposta, inclua uma seção FONTES: listando cada marcador seguido do trecho EXATO do texto original (copie literalmente, sem parafrasear), um por linha, no formato [1]: trecho exato aqui.\n\nTEXTO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
   }
   const utterances=JSON.parse(card.dataset.utterances||'[]');
   const speakers=JSON.parse(card.dataset.speakers||'{}');
@@ -6546,35 +6447,41 @@ function buildDiarChatPrompt(id,question){
   const ctx=roteiro.length>maxCtx?roteiro.slice(0,maxCtx)+'\n…':roteiro;
   const history=getDiarChatHistory(id);
   const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
-  return `Você é um assistente analisando uma transcrição diarizada no modo "${modeLabel}". Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO].\n\nTRANSCRIÇÃO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
+  return `Você é um assistente analisando uma transcrição diarizada no modo "${modeLabel}". Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO]. Ao afirmar algo com base no texto, cite a fonte com [1], [2] etc. (números sequenciais). No final da resposta, inclua uma seção FONTES: listando cada marcador seguido do trecho EXATO do texto original (copie literalmente, sem parafrasear), um por linha, no formato [1]: trecho exato aqui.\n\nTRANSCRIÇÃO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
 }
 function appendDiarChatMessage(id,role,content){
   const card=document.getElementById(id);if(!card)return;
   const history=getDiarChatHistory(id);
   history.push({role,content,ts:Date.now()});
   setDiarChatHistory(id,history);
-  renderDiarChat(id);
 }
-function showDiarChatTyping(id){
-  const msgs=document.getElementById('diarchatmsgs-'+id);if(!msgs)return;
-  msgs.insertAdjacentHTML('beforeend',`<div class="diar-chat-typing" id="diarchattyping-${id}"><span></span><span></span><span></span></div>`);
-  msgs.scrollTop=msgs.scrollHeight;
+// Acha o textarea "de verdade" do card — durante o overlay (openConversaMode),
+// o editor foi reparented (appendChild) pra dentro de #cchat-textzone-${id},
+// deixando de ser filho de #${id}; por isso checamos lá primeiro.
+function _cchatFindTextarea(id){
+  const zone=document.getElementById('cchat-textzone-'+id);
+  if(zone){const ta=zone.querySelector('textarea');if(ta)return ta}
+  const card=document.getElementById(id);if(!card)return null;
+  return card.querySelector('.roteiro-view textarea')||card.querySelector('.cb textarea');
 }
-function hideDiarChatTyping(id){document.getElementById('diarchattyping-'+id)?.remove()}
-function maybeRenderDiarApplyButton(id,result){
+function maybeRenderCchatApplyButton(id,result){
   const match=result.match(/\[SUGESTÃO\][\s\S]*?\[\/SUGESTÃO\]/);
   if(!match)return;
-  const msgs=document.getElementById('diarchatmsgs-'+id);if(!msgs)return;
-  const last=msgs.querySelector('.diar-chat-msg-assistant:last-of-type');if(!last)return;
+  const msgs=document.getElementById('cchat-msgs-'+id);if(!msgs)return;
+  const last=msgs.querySelector('.cchat-msg.cchat-assistant:last-of-type');if(!last)return;
   const actions=document.createElement('div');actions.className='diar-chat-actions';
-  actions.innerHTML=`<button onclick="applyDiarChatEdit('${id}',this.dataset.edit)" data-edit="${escJs(match[0])}">${t('✓ Aplicar sugestão')}</button>`;
+  // data-edit é lido via this.dataset (não reavaliado como código JS), então usa
+  // escHtml (escapa o atributo) e não escJs (que converteria \n reais em "\n"
+  // literal — bug: escJs é pra string JS dentro de onclick="fn('...')", não pra
+  // atributo data-* lido puro).
+  actions.innerHTML=`<button onclick="applyDiarChatEdit('${id}',this.dataset.edit)" data-edit="${escHtml(match[0])}">${t('✓ Aplicar sugestão')}</button>`;
   last.appendChild(actions);
 }
 function applyDiarChatEdit(id,raw){
   const card=document.getElementById(id);if(!card)return;
   const newText=(raw.match(/\[SUGESTÃO\]([\s\S]*?)\[\/SUGESTÃO\]/)||[,raw])[1].trim();
   if(!newText)return;
-  const ta=card.querySelector('.roteiro-view textarea');if(!ta)return;
+  const ta=_cchatFindTextarea(id);if(!ta)return;
   pushCardHistory(id);
   ta.value=newText;autoR(ta);
   card.dataset.bblStale='true';
@@ -6611,6 +6518,7 @@ function openConversaMode(id){
     <div class="cchat-header">
       <span class="cchat-title">💬 ${escHtml(title)}</span>
       <div class="cchat-viewslot"></div>
+      <button class="cchat-clear" onclick="clearCchatHistory('${id}')" title="${t('Limpar conversa')}">🗑️</button>
       <button class="cchat-close" onclick="closeConversaMode('${id}')" title="${t('Fechar')}">✕</button>
     </div>
     <div class="cchat-tabs" id="cchat-tabs-${id}">
@@ -6704,6 +6612,11 @@ function closeConversaMode(id){
   delete card._cchatEditor;delete card._cchatOrigParent;delete card._cchatOrigNext;
   saveHistory();
 }
+function clearCchatHistory(id){
+  if(!confirm(t('Limpar toda a conversa deste card? Essa ação não pode ser desfeita.')))return;
+  setDiarChatHistory(id,[]);
+  renderCchat(id);
+}
 function switchCchatTab(id,tab){
   const textzone=document.getElementById('cchat-textzone-'+id);
   const chatzone=document.getElementById('cchat-chatzone-'+id);
@@ -6741,7 +6654,23 @@ function initCchatDivider(id){
     document.body.style.userSelect='';
   });
 }
-function renderCchat(id){
+// Extrai a seção "FONTES:" (citações [N]: trecho exato) do conteúdo de uma
+// mensagem do assistente. Retorna {body,map} — body é o texto sem a seção
+// FONTES, map é {"1":"trecho exato", ...}. Reutilizada por renderCchat e
+// cchatGoToCitation.
+function _parseCchatFontes(content){
+  content=content||'';
+  const m=content.match(/\n?FONTES:\s*\n([\s\S]*)$/i);
+  if(!m)return{body:content,map:{}};
+  const body=content.slice(0,m.index).replace(/\s+$/,'');
+  const map={};
+  m[1].split('\n').forEach(line=>{
+    const lm=line.match(/^\s*\[(\d+)\]:\s*(.+?)\s*$/);
+    if(lm)map[lm[1]]=lm[2];
+  });
+  return{body,map};
+}
+async function renderCchat(id){
   const msgs=document.getElementById('cchat-msgs-'+id);if(!msgs)return;
   const history=getDiarChatHistory(id);
   const card=document.getElementById(id);
@@ -6749,13 +6678,38 @@ function renderCchat(id){
     ?'💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.'
     :'💬 Pergunte algo sobre este texto ou use um dos atalhos abaixo.';
   if(!history.length){msgs.innerHTML=`<div class="cchat-empty">${escHtml(t(emptyKey))}</div>`;return}
-  msgs.innerHTML=history.map(m=>{
+  try{await _loadMarkdownLibs()}catch(e){}
+  const canMd=!!(window.marked&&window.DOMPurify);
+  msgs.innerHTML=history.map((m,idx)=>{
     const isUser=m.role==='user';
     const cls=isUser?'cchat-user':'cchat-assistant';
     const meta=isUser?'':`<div class="cchat-meta">🤖 ${t('Assistente')}</div>`;
-    return `<div class="cchat-msg ${cls}">${meta}${escHtml(m.content||'')}</div>`;
+    if(isUser)return `<div class="cchat-msg ${cls}">${meta}${escHtml(m.content||'')}</div>`;
+    const{body,map}=_parseCchatFontes(m.content||'');
+    let html=canMd?DOMPurify.sanitize(marked.parse(body)):escHtml(body);
+    html=html.replace(/\[(\d+)\]/g,(full,n)=>map[n]!==undefined
+      ?`<button type="button" class="cchat-cite" data-cite="${n}" data-msg-idx="${idx}" onclick="cchatGoToCitation('${id}',${idx},${n})">[${n}]</button>`
+      :full);
+    return `<div class="cchat-msg ${cls}">${meta}${html}</div>`;
   }).join('');
   msgs.scrollTop=msgs.scrollHeight;
+}
+// Clique num chip de citação [N]: acha o trecho exato na seção FONTES da
+// mensagem, seleciona no textarea do card (que pode estar reparented pra
+// dentro do overlay — ver _cchatFindTextarea).
+function cchatGoToCitation(id,msgIdx,n){
+  const history=getDiarChatHistory(id);
+  const content=(history[msgIdx]&&history[msgIdx].content)||'';
+  const trecho=_parseCchatFontes(content).map[String(n)];
+  if(!trecho){toast(t('Trecho não encontrado no texto'),true);return}
+  const ta=_cchatFindTextarea(id);
+  if(!ta){toast(t('Trecho não encontrado no texto'),true);return}
+  let start=ta.value.indexOf(trecho);
+  if(start<0)start=ta.value.toLowerCase().indexOf(trecho.toLowerCase());
+  if(start<0){toast(t('Trecho não encontrado no texto'),true);return}
+  if(window.innerWidth<=640)switchCchatTab(id,'texto');
+  ta.focus();
+  ta.setSelectionRange(start,start+trecho.length);
 }
 function cchatAutoGrow(ta){
   ta.style.height='auto';
@@ -6779,8 +6733,8 @@ async function sendCchat(id,chipText){
     const result=await callAI(prompt,key,'auto',1400);
     hideCchatTyping(id);
     appendDiarChatMessage(id,'assistant',result);
-    renderCchat(id);
-    maybeRenderDiarApplyButton(id,result);
+    await renderCchat(id);
+    maybeRenderCchatApplyButton(id,result);
   }catch(e){
     hideCchatTyping(id);
     appendDiarChatMessage(id,'assistant',t('❌ Não foi possível obter resposta: ')+e.message);
@@ -7869,6 +7823,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           <button class="icon-btn" onclick="toggleLensMenu('${id}')" title="${t('✨ Transformar com IA')}">${ICO.magicWand}</button>
           <button class="icon-btn" onclick="askAI('${id}')" title="${t('Perguntar IA')}">${ICO.askAI}</button>
+          <button class="icon-btn" onclick="openConversaMode('${id}')" title="${t('Conversar sobre este texto')}">💬</button>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
           <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
@@ -8001,7 +7956,16 @@ function cardMarkdown(id){
   const isoDt=new Date(c.dataset.dt||Date.now()).toISOString().slice(0,19);
   const mode=c.dataset.mode||'livre',prov=c.dataset.prov||'whisper';
   const fmTags=tags.length?`\ntags: [${tags.map(x=>x.trim().replace(/\s+/g,'-')).join(', ')}]`:'';
-  return `---\ndate: ${isoDt}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n# ${name}\n\n${txt}\n`;
+  let out=`---\ndate: ${isoDt}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n# ${name}\n\n${txt}\n`;
+  const hist=getDiarChatHistory(id);
+  if(hist.length){
+    out+='\n## '+t('Conversa')+'\n\n';
+    hist.forEach(m=>{
+      const who=m.role==='user'?t('Você'):t('Assistente');
+      out+=`**${who}:** ${m.content||''}\n\n`;
+    });
+  }
+  return out;
 }
 function copyCardMarkdown(id){
   const md=cardMarkdown(id);
