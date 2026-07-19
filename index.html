@@ -2434,7 +2434,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.8';
+const VOX_VERSION='2026.07.19.9';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6724,11 +6724,14 @@ async function renderCchat(id){
   const msgs=document.getElementById('cchat-msgs-'+id);if(!msgs)return;
   const history=getDiarChatHistory(id);
   const card=document.getElementById(id);
-  // Balãozinho fixo com o texto original no topo do chat — no mobile as abas
-  // Chat/Texto escondem uma à outra, então sem isso dava pra "perder" o texto
-  // de vista sem trocar de aba. Sempre lido fresco do textarea (reflete
-  // edição feita na aba Texto enquanto o overlay está aberto).
-  const sourceText=_cchatFindTextarea(id)?.value||'';
+  // Balãozinho fixo com o texto original no topo do chat — só no mobile
+  // (≤640px), onde as abas Chat/Texto escondem uma à outra e dava pra
+  // "perder" o texto de vista sem trocar de aba. No iPad/desktop o split
+  // já mostra texto e chat lado a lado ao mesmo tempo — repetir aqui seria
+  // duplicação pura (achado pelo Rafa testando no iPad). Sempre lido fresco
+  // do textarea (reflete edição feita na aba Texto enquanto o overlay
+  // está aberto).
+  const sourceText=window.innerWidth<=640?(_cchatFindTextarea(id)?.value||''):'';
   const sourceHtml=sourceText
     ?`<div class="cchat-msg cchat-assistant cchat-source"><div class="cchat-meta">📄 ${t('Texto original')}</div>${escHtml(sourceText)}</div>`
     :'';
