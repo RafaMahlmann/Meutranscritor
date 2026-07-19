@@ -62,9 +62,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .wrap.wrap-masonry{max-width:1600px}
 header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
 .hd{display:flex;align-items:center;justify-content:space-between;padding:13px 0}
-.brand{display:flex;align-items:center;gap:11px;cursor:pointer;position:relative}
-.ver-balloon{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:7px 13px;font-size:12.5px;font-weight:700;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,0.18);white-space:nowrap;z-index:60;animation:fadeDown .15s ease}
-.ver-balloon.on{display:block}
+.brand{display:flex;align-items:center;gap:11px;cursor:pointer}
 /* Textinho abaixo do nome/versão — sinaliza que clicar em qualquer parte do
    .brand (ícone, nome, versão) abre o vídeo de abertura e a tela de
    compartilhamento (onclick mora no .brand inteiro, não só no ícone). */
@@ -1374,7 +1372,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 <!-- HEADER -->
 <header>
   <div class="wrap hd">
-    <div class="brand" id="brandTrigger" onclick="_brandClick(event)" ontouchstart="_brandTouchStart(event)" ontouchmove="_brandTouchMove(event)" ontouchend="_brandTouchEnd(event)" ontouchcancel="_brandTouchCancel(event)" onmousedown="_brandMouseDown(event)" onmouseup="_brandMouseUp(event)" onmouseleave="_brandMouseUp(event)" title="Compartilhe" data-i18n-title>
+    <div class="brand" id="brandTrigger" onclick="openAbout()" title="Compartilhe" data-i18n-title>
       <div class="brand-icon" id="brandIcon">Abertura</div>
       <div class="brand-text">
         <div class="brand-name" id="appTitle">Vox · My Transcriber</div>
@@ -1382,7 +1380,6 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <div class="brand-stats" id="brandStats"><span id="bsc">0 gravações</span><span id="bstime">0 min</span></div>
         <div class="brand-share-hint" data-i18n>Compartilhe</div>
       </div>
-      <div class="ver-balloon" id="verBalloon"></div>
     </div>
     <div class="hd-actions">
       <button class="gbtn" id="btnSearch" onclick="toggleSearch()">
@@ -2434,7 +2431,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.4';
+const VOX_VERSION='2026.07.19.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3097,52 +3094,6 @@ function openAbout(){
   playIntroVideo();
 }
 function closeAbout(){document.getElementById('aboutOverlay').style.display='none'}
-
-// ── SEGURAR O ÍCONE/NOME (4s) MOSTRA A VERSÃO ── mesma técnica de long-press
-// do botão de gravar (_recBtnTouchStart): timer no touchstart/mousedown,
-// cancela se o dedo/mouse se mexer >10px, e o click normal (que dispara
-// mesmo depois de um toque longo) é suprimido via _brandLongPressFired pra
-// não abrir o vídeo de abertura junto com o balãozinho.
-let _brandLpTimer=null,_brandLongPressFired=false,_brandLpStartX=0,_brandLpStartY=0;
-function _brandPressStart(x,y){
-  _brandLongPressFired=false;
-  _brandLpStartX=x;_brandLpStartY=y;
-  _brandLpTimer=setTimeout(()=>{
-    _brandLpTimer=null;_brandLongPressFired=true;
-    navigator.vibrate?.(15);
-    _showVerBalloon();
-  },4000);
-}
-function _brandPressMove(x,y){
-  if(!_brandLpTimer)return;
-  if(Math.abs(x-_brandLpStartX)>10||Math.abs(y-_brandLpStartY)>10){clearTimeout(_brandLpTimer);_brandLpTimer=null}
-}
-function _brandPressEnd(){
-  if(_brandLpTimer){clearTimeout(_brandLpTimer);_brandLpTimer=null}
-}
-function _brandTouchStart(e){if(e.touches.length!==1)return;_brandPressStart(e.touches[0].clientX,e.touches[0].clientY)}
-function _brandTouchMove(e){if(e.touches.length!==1)return;_brandPressMove(e.touches[0].clientX,e.touches[0].clientY)}
-function _brandTouchEnd(){_brandPressEnd()}
-function _brandTouchCancel(){_brandPressEnd();_brandLongPressFired=false}
-function _brandMouseDown(e){_brandPressStart(e.clientX,e.clientY)}
-function _brandMouseUp(){_brandPressEnd()}
-function _brandClick(e){
-  if(_brandLongPressFired){_brandLongPressFired=false;e.preventDefault();e.stopPropagation();return}
-  openAbout();
-}
-function _showVerBalloon(){
-  const b=document.getElementById('verBalloon');if(!b)return;
-  b.textContent='v'+VOX_VERSION;
-  b.classList.add('on');
-  setTimeout(()=>document.addEventListener('click',_verBalloonAway),0);
-}
-function _verBalloonAway(e){
-  const trigger=document.getElementById('brandTrigger');
-  if(trigger&&!trigger.contains(e.target)){
-    document.getElementById('verBalloon')?.classList.remove('on');
-    document.removeEventListener('click',_verBalloonAway);
-  }
-}
 
 function playIntroVideo(){
   const overlay=document.getElementById('vintroOverlay');
@@ -6639,8 +6590,10 @@ function openConversaMode(id){
   if(ta){ta.style.minHeight='300px';ta.style.height='100%'}
   // Renderiza histórico do chat
   renderCchat(id);
-  // Ativar aba default: Chat no mobile
-  if(window.innerWidth<=640)switchCchatTab(id,'chat');
+  // Ativar aba default: Texto no mobile (texto é rei — pessoa abre e já vê o
+  // que vai discutir, sem precisar descobrir a aba escondida; troca pra Chat
+  // é 1 toque ali do lado)
+  if(window.innerWidth<=640)switchCchatTab(id,'texto');
   // Foco no input
   const input=document.getElementById('cchat-input-'+id);
   if(input)setTimeout(()=>input.focus(),100);
