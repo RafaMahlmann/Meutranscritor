@@ -2440,7 +2440,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.12';
+const VOX_VERSION='2026.07.19.13';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6482,7 +6482,76 @@ function setDiarChatHistory(id,history){
   card.dataset.chatHistory=JSON.stringify(history.slice(-50));
   saveHistory();
 }
-function buildDiarChatPrompt(id,question){
+// ── Funil de Contexto (3 camadas) — 12000 chars fixos cortava textos médios
+// pela metade (achado pelo Rafa: 25k chars de texto real perdia tudo depois
+// da 5ª de 8 seções). Em vez de um teto único, o orçamento varia por
+// provedor (cada um tem um limite de tokens/minuto real e diferente); quando
+// mesmo assim não cabe, recorta por relevância à pergunta (local, sem custo)
+// antes de cortar cegamente; e só quando a pergunta é panorâmica demais pro
+// recorte ajudar, resume o texto inteiro (custa chamadas extras de IA).
+const CCHAT_CTX_BUDGET={groq:35000,openai:200000,assembly:150000,custom:12000};
+function _cchatCtxBudget(){
+  const tgt=_txtAITarget();
+  return CCHAT_CTX_BUDGET[tgt?.pv]||12000;
+}
+const CCHAT_STOPWORDS=new Set('a o as os de da do das dos em um uma uns umas que e é com para por no na nos nas se ou como mais mas já também sobre este esta isso isto qual quais quando onde quem seu sua seus suas the of in is to for and or on with what how why when where who'.split(' '));
+function _cchatNorm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9\s]/g,' ')}
+// Camada 2: sem IA, local, instantâneo — pontua cada parágrafo pela
+// sobreposição de palavras com a pergunta e monta o contexto com os mais
+// relevantes, na ORDEM ORIGINAL (preserva trechos literais — citações [N]
+// continuam achando o texto de verdade). Retorna null se a pergunta não
+// bateu em nada (sinal de pergunta panorâmica tipo "resuma tudo", onde
+// recorte por palavra-chave não ajuda — cai pra Camada 3).
+function _cchatSmartExcerpt(text,question,budget){
+  const paras=text.split(/\n{1,}/).map(p=>p.trim()).filter(Boolean);
+  const qWords=_cchatNorm(question).split(/\s+/).filter(w=>w.length>2&&!CCHAT_STOPWORDS.has(w));
+  if(!qWords.length)return null;
+  const qSet=new Set(qWords);
+  const scored=paras.map((p,idx)=>{
+    let score=0;
+    _cchatNorm(p).split(/\s+/).forEach(w=>{if(qSet.has(w))score++});
+    return{idx,p,score};
+  });
+  if(!scored.some(s=>s.score>0))return null;
+  const budgetLeft=budget-300;
+  const picked=[];let used=0;
+  [...scored].sort((a,b)=>b.score-a.score).forEach(s=>{
+    if(s.score<=0||used+s.p.length>budgetLeft)return;
+    picked.push(s);used+=s.p.length;
+  });
+  if(!picked.length)return null;
+  picked.sort((a,b)=>a.idx-b.idx);
+  let out='',lastIdx=-1;
+  picked.forEach(s=>{out+=(lastIdx>=0?(s.idx>lastIdx+1?'\n\n[…]\n\n':'\n\n'):'')+s.p;lastIdx=s.idx});
+  return out;
+}
+// Camada 3: reaproveita o chunking das lentes (_splitLensChunks) pra resumir
+// cada bloco de forma densa (preserva nomes/números/citações — o bastante
+// pra responder perguntas específicas só com o resumo) e usa a concatenação
+// como contexto. Citações exatas ficam mais fracas aqui (a IA vê resumo, não
+// o literal) — aceitável nesse caso extremo, avisado ao Rafa na proposta.
+async function _cchatDigest(text,question,key,budget){
+  const chunks=_splitLensChunks(text,LENS_CHUNK_CHARS);
+  const summaries=[];
+  for(let i=0;i<chunks.length;i++){
+    toast('🧩 '+t('Lendo texto longo — parte {i} de {n}…').replace('{i}',i+1).replace('{n}',chunks.length));
+    const prompt=`Resuma o trecho abaixo (parte ${i+1} de ${chunks.length} de um texto maior) de forma densa e factual — preserve nomes, números, citações marcantes e a ordem dos acontecimentos, o bastante pra alguém responder perguntas específicas usando só esse resumo. ${_promptLang()}\n\nTrecho:\n${chunks[i]}`;
+    summaries.push((await callAI(prompt,key,'auto',700,{temperature:0.3})).trim());
+  }
+  let digest=summaries.map((s,i)=>`[Parte ${i+1} de ${chunks.length}]\n${s}`).join('\n\n');
+  if(digest.length>budget)digest=digest.slice(0,budget)+'\n…';
+  return digest;
+}
+// Ponto único que decide entre as 3 camadas — usado pelos dois ramos
+// (diarizado e texto puro) de buildDiarChatPrompt.
+async function _cchatBuildContext(rawText,question,key){
+  const budget=_cchatCtxBudget();
+  if(rawText.length<=budget)return rawText;
+  const excerpt=_cchatSmartExcerpt(rawText,question,budget);
+  if(excerpt!==null)return excerpt;
+  return await _cchatDigest(rawText,question,key,budget);
+}
+async function buildDiarChatPrompt(id,question,key){
   const card=document.getElementById(id);if(!card)return'';
   if(card.dataset.diarized!=='true'){
     // _cchatFindTextarea (não card.querySelector direto!) — com o Modo
@@ -6491,13 +6560,7 @@ function buildDiarChatPrompt(id,question){
     // direto do card aqui sempre dava vazio, mandando pra IA um prompt sem
     // TEXTO nenhum — só pergunta + histórico (bug real, achado pelo Rafa).
     const text=(_cchatFindTextarea(id)?.value||'').trim();
-    // 12000 cortava textos médios pela metade (achado pelo Rafa: um texto de
-    // 25k chars — 8 crônicas — perdia tudo depois da 5ª). 40000 cobre textos
-    // bem mais longos com folga; callAI já tem retry automático com espera
-    // pra 429 de TPM (planos grátis tipo Groq), então um estouro ocasional
-    // num texto excepcionalmente grande se resolve sozinho.
-    const maxCtx=40000;
-    const ctx=text.length>maxCtx?text.slice(0,maxCtx)+'\n…':text;
+    const ctx=await _cchatBuildContext(text,question,key);
     const history=getDiarChatHistory(id);
     const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
     return `Você é um assistente analisando um texto. Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO]. Ao afirmar algo com base no texto, cite a fonte com [1], [2] etc. (números sequenciais). No final da resposta, inclua uma seção FONTES: listando cada marcador seguido do trecho EXATO do texto original (copie literalmente, sem parafrasear), um por linha, no formato [1]: trecho exato aqui.\n\nTEXTO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
@@ -6508,8 +6571,7 @@ function buildDiarChatPrompt(id,question){
   const roteiro=buildRoteiro(utterances,speakers,withTimes);
   const mode=card.dataset.mode||'livre';
   const modeLabel=SESSION_MODES[mode]?.label||t('📝 Livre');
-  const maxCtx=40000;
-  const ctx=roteiro.length>maxCtx?roteiro.slice(0,maxCtx)+'\n…':roteiro;
+  const ctx=await _cchatBuildContext(roteiro,question,key);
   const history=getDiarChatHistory(id);
   const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
   return `Você é um assistente analisando uma transcrição diarizada no modo "${modeLabel}". Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO]. Ao afirmar algo com base no texto, cite a fonte com [1], [2] etc. (números sequenciais). No final da resposta, inclua uma seção FONTES: listando cada marcador seguido do trecho EXATO do texto original (copie literalmente, sem parafrasear), um por linha, no formato [1]: trecho exato aqui.\n\nTRANSCRIÇÃO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
@@ -6841,7 +6903,7 @@ async function sendCchat(id,chipText){
   if(sendBtn)sendBtn.disabled=true;
   showCchatTyping(id);
   try{
-    const prompt=buildDiarChatPrompt(id,text);
+    const prompt=await buildDiarChatPrompt(id,text,key);
     const result=await callAI(prompt,key,'auto',1400);
     hideCchatTyping(id);
     appendDiarChatMessage(id,'assistant',result);
