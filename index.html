@@ -1343,6 +1343,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-msg.cchat-user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
 #cchat-overlay .cchat-msg.cchat-assistant{background:var(--bg);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)}
 #cchat-overlay .cchat-msg .cchat-meta{font-size:10px;opacity:0.7;margin-bottom:2px}
+#cchat-overlay .cchat-msg.cchat-source{max-width:92%;white-space:pre-wrap}
 #cchat-overlay .cchat-cite{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700;cursor:pointer;margin:0 1px;vertical-align:2px}
 #cchat-overlay .cchat-cite:hover{background:var(--accent2)}
 #cchat-overlay .cchat-empty{text-align:center;color:var(--text);opacity:0.5;padding:40px 20px;font-size:13px}
@@ -2433,7 +2434,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.6';
+const VOX_VERSION='2026.07.19.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6571,12 +6572,12 @@ function openConversaMode(id){
           <button onclick="sendCchatChip('${id}',this)">${t('Corrija a pontuação')}</button>
         </div>
         <div class="cchat-messages" id="cchat-msgs-${id}"></div>
-        <div class="cchat-input-row">
-          <textarea id="cchat-input-${id}" rows="2" placeholder="${t('Pergunte sobre este texto…')}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCchat('${id}')}" oninput="cchatAutoGrow(this)"></textarea>
-          <button class="cchat-mic" id="cchat-mic-${id}" onclick="cchatMic('${id}')" title="${t('Ditar pergunta')}">${ICO.mic}</button>
-          <button class="cchat-send" id="cchat-send-${id}" onclick="sendCchat('${id}')">➤</button>
-        </div>
       </div>
+    </div>
+    <div class="cchat-input-row">
+      <textarea id="cchat-input-${id}" rows="2" placeholder="${t('Pergunte sobre este texto…')}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCchat('${id}')}" oninput="cchatAutoGrow(this)"></textarea>
+      <button class="cchat-mic" id="cchat-mic-${id}" onclick="cchatMic('${id}')" title="${t('Ditar pergunta')}">${ICO.mic}</button>
+      <button class="cchat-send" id="cchat-send-${id}" onclick="sendCchat('${id}')">➤</button>
     </div>`;
   document.body.appendChild(overlay);
   // A tela cresce a partir do ponto do botão que abriu — não do centro.
@@ -6718,13 +6719,21 @@ async function renderCchat(id){
   const msgs=document.getElementById('cchat-msgs-'+id);if(!msgs)return;
   const history=getDiarChatHistory(id);
   const card=document.getElementById(id);
+  // Balãozinho fixo com o texto original no topo do chat — no mobile as abas
+  // Chat/Texto escondem uma à outra, então sem isso dava pra "perder" o texto
+  // de vista sem trocar de aba. Sempre lido fresco do textarea (reflete
+  // edição feita na aba Texto enquanto o overlay está aberto).
+  const sourceText=_cchatFindTextarea(id)?.value||'';
+  const sourceHtml=sourceText
+    ?`<div class="cchat-msg cchat-assistant cchat-source"><div class="cchat-meta">📄 ${t('Texto original')}</div>${escHtml(sourceText)}</div>`
+    :'';
   const emptyKey=card&&card.dataset.diarized==='true'
     ?'💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.'
     :'💬 Pergunte algo sobre este texto ou use um dos atalhos abaixo.';
-  if(!history.length){msgs.innerHTML=`<div class="cchat-empty">${escHtml(t(emptyKey))}</div>`;return}
+  if(!history.length){msgs.innerHTML=sourceHtml+`<div class="cchat-empty">${escHtml(t(emptyKey))}</div>`;return}
   try{await _loadMarkdownLibs()}catch(e){}
   const canMd=!!(window.marked&&window.DOMPurify);
-  msgs.innerHTML=history.map((m,idx)=>{
+  msgs.innerHTML=sourceHtml+history.map((m,idx)=>{
     const isUser=m.role==='user';
     const cls=isUser?'cchat-user':'cchat-assistant';
     const meta=isUser?'':`<div class="cchat-meta">🤖 ${t('Assistente')}</div>`;
