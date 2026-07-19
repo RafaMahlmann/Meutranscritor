@@ -2433,7 +2433,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.2';
+const VOX_VERSION='2026.07.19.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6037,18 +6037,22 @@ function sendTxt(){
 async function processAudio(file,durSec,fromRec){
   const sn=document.getElementById('snameInput').value.trim();
   const mode=sessionMode;
-  if(cfg.diarEnabled&&cfg.diarProvider==='gladia'&&cfg.apiKeyGladia){
-    recTargetTA=null;recTargetCard=null; // diarização sempre cria card próprio
+  if(recTargetTA){
+    // Existe um alvo travado (gravar aqui num card já existente, ou ditar na
+    // caixinha do chat do Modo Conversa) — sempre transcrição simples, nunca
+    // diarização: diarização sempre cria card próprio (roteiro com locutores)
+    // e não tem como "entrar" dentro de um textarea alheio. Checar isso ANTES
+    // do cfg.diarEnabled global evita que a preferência geral de diarização
+    // sequestre uma gravação que já tinha destino certo.
+    await doTranscribe(file,durSec,fromRec,sn,mode);
+  }else if(cfg.diarEnabled&&cfg.diarProvider==='gladia'&&cfg.apiKeyGladia){
     await doDiarizeGladia(file,durSec,fromRec,sn,mode);
   }else if(cfg.diarEnabled&&cfg.diarProvider==='assemblyai'&&cfg.apiKeyAssembly){
-    recTargetTA=null;recTargetCard=null;
     await doDiarizeAssembly(file,durSec,fromRec,sn,mode);
   }else if(cfg.diarEnabled&&cfg.diarProvider==='openai'&&cfg.apiKey){
-    recTargetTA=null;recTargetCard=null;
     await doDiarizeOpenAI(file,durSec,fromRec,sn,mode);
   }else if(cfg.diarEnabled&&cfg.diarProvider==='pyannote'){
     // pyannote.ai: preparado na UI; integração backend em brush futuro
-    recTargetTA=null;recTargetCard=null;
     toast(t('🎯 pyannote.ai ainda não está integrado. Usando transcrição padrão.'),true);
     await doTranscribe(file,durSec,fromRec,sn,mode);
   }else{
@@ -6615,7 +6619,7 @@ function openConversaMode(id){
         <div class="cchat-messages" id="cchat-msgs-${id}"></div>
         <div class="cchat-input-row">
           <textarea id="cchat-input-${id}" rows="2" placeholder="${t('Pergunte sobre este texto…')}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCchat('${id}')}" oninput="cchatAutoGrow(this)"></textarea>
-          <button class="cchat-mic" id="cchat-mic-${id}" onclick="cchatMic('${id}')" title="${t('Ditar pergunta')}">🎤</button>
+          <button class="cchat-mic" id="cchat-mic-${id}" onclick="cchatMic('${id}')" title="${t('Ditar pergunta')}"></button>
           <button class="cchat-send" id="cchat-send-${id}" onclick="sendCchat('${id}')">➤</button>
         </div>
       </div>
