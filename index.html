@@ -1327,6 +1327,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-header .cchat-clear:hover{background:var(--hover)}
 #cchat-overlay .cchat-split{display:flex;flex:1;overflow:hidden}
 #cchat-overlay .cchat-textzone{flex:1;overflow-y:auto;padding:16px;min-width:0}
+#cchat-overlay .cchat-textzone>.cb,#cchat-overlay .cchat-textzone>.roteiro-view{min-height:100%}
 #cchat-overlay .cchat-textzone textarea{width:100%;height:100%;min-height:300px;border:none;outline:none;resize:none;font-size:14px;line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
 #cchat-overlay .cchat-divider{width:6px;background:var(--border);cursor:col-resize;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center}
 #cchat-overlay .cchat-divider::after{content:'';position:absolute;inset:-4px 0;cursor:col-resize}
@@ -2439,7 +2440,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.10';
+const VOX_VERSION='2026.07.19.11';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6617,13 +6618,22 @@ function openConversaMode(id){
   // Move editor para zona-texto
   document.getElementById('cchat-textzone-'+id).appendChild(editorWrap);
   const ta=editorWrap.querySelector('textarea');
-  if(ta){ta.style.minHeight='300px';ta.style.height='100%'}
+  if(ta){ta.style.minHeight='300px'}
   // Renderiza histórico do chat
   renderCchat(id);
   // Ativar aba default: Texto no mobile (texto é rei — pessoa abre e já vê o
   // que vai discutir, sem precisar descobrir a aba escondida; troca pra Chat
   // é 1 toque ali do lado)
   if(window.innerWidth<=640)switchCchatTab(id,'texto');
+  // height:100% não resolvia (editorWrap/.cb não tem altura definida — CSS
+  // ignora % de altura contra pai automático), então o texto ficava preso
+  // numa caixinha de ~300px em vez de usar o espaço todo da coluna. Cresce
+  // pro tamanho real do conteúdo (min-height do editorWrap, em CSS, garante
+  // que preencha a coluna mesmo com texto curto); quem rola é o
+  // .cchat-textzone (um scroll só, sem caixinha aninhada). Só DEPOIS do
+  // switchCchatTab acima — no mobile a zona começa display:none, e
+  // scrollHeight de elemento escondido sempre mede 0.
+  if(ta){ta.style.height='auto';ta.style.height=Math.max(ta.scrollHeight,300)+'px'}
   // Foco no input
   const input=document.getElementById('cchat-input-'+id);
   if(input)setTimeout(()=>input.focus(),100);
@@ -8647,7 +8657,12 @@ function setStatus(txt,type){
   else if(type==='err')d.style.background='var(--danger)';
   else d.classList.add('off');
 }
-function autoR(el){if(el.closest&&el.closest('.focus-active'))return;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,380)+'px'}
+function autoR(el){
+  if(el.closest&&el.closest('.focus-active'))return;
+  const inCchat=el.closest&&el.closest('#cchat-overlay');
+  el.style.height='auto';
+  el.style.height=(inCchat?el.scrollHeight:Math.min(el.scrollHeight,380))+'px';
+}
 function checkSend(){const btn=document.getElementById('btnSend');const has=document.getElementById('itxt').value.trim().length>0;btn.classList.toggle('active',has&&!isRec&&!isProc&&!stagedFile)}
 function toast(msg,err=false){
   const w=document.getElementById('toastWrap');
