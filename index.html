@@ -1074,7 +1074,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .summary-loading{display:flex;align-items:center;gap:10px;padding:20px;color:var(--text3);font-size:13px}
 
 /* ── TOAST ── */
-.toast-wrap{position:fixed;top:68px;left:50%;transform:translateX(-50%);z-index:500;display:none}
+.toast-wrap{position:fixed;top:68px;left:50%;transform:translateX(-50%);z-index:10001;display:none} /* sempre por cima de qualquer overlay (inclusive #cchat-overlay, 9999) — é o próprio propósito do toast */
 .toast-wrap.on{display:block;animation:toastIn 0.3s ease}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .toast{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:9px 16px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;font-family:var(--font);box-shadow:0 8px 32px rgba(0,0,0,0.2);white-space:nowrap}
@@ -1340,6 +1340,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-send:hover{filter:brightness(1.1)}
 #cchat-overlay .cchat-mic{background:var(--danger);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:15px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 #cchat-overlay .cchat-mic:hover{filter:brightness(1.1)}
+#cchat-overlay .cchat-mic svg{width:16px;height:16px}
 #cchat-overlay .cchat-msg{font-size:13px;padding:10px 14px;border-radius:18px;max-width:85%;line-height:1.4;word-wrap:break-word}
 #cchat-overlay .cchat-msg.cchat-user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
 #cchat-overlay .cchat-msg.cchat-assistant{background:var(--bg);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)}
@@ -2433,7 +2434,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.3';
+const VOX_VERSION='2026.07.19.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6619,7 +6620,7 @@ function openConversaMode(id){
         <div class="cchat-messages" id="cchat-msgs-${id}"></div>
         <div class="cchat-input-row">
           <textarea id="cchat-input-${id}" rows="2" placeholder="${t('Pergunte sobre este texto…')}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCchat('${id}')}" oninput="cchatAutoGrow(this)"></textarea>
-          <button class="cchat-mic" id="cchat-mic-${id}" onclick="cchatMic('${id}')" title="${t('Ditar pergunta')}"></button>
+          <button class="cchat-mic" id="cchat-mic-${id}" onclick="cchatMic('${id}')" title="${t('Ditar pergunta')}">${ICO.mic}</button>
           <button class="cchat-send" id="cchat-send-${id}" onclick="sendCchat('${id}')">➤</button>
         </div>
       </div>
@@ -6798,6 +6799,14 @@ function cchatGoToCitation(id,msgIdx,n){
   if(window.innerWidth<=640)switchCchatTab(id,'texto');
   ta.focus();
   ta.setSelectionRange(start,start+trecho.length);
+  // setSelectionRange sozinho não garante rolar até a seleção (varia por
+  // navegador) — aproxima a linha pelo nº de quebras antes do trecho, pra
+  // ficar óbvio que o clique fez alguma coisa mesmo num texto longo.
+  const lineNum=ta.value.slice(0,start).split('\n').length;
+  const cs=getComputedStyle(ta);
+  let lh=parseFloat(cs.lineHeight);
+  if(!lh||isNaN(lh))lh=(parseFloat(cs.fontSize)||14)*1.4;
+  ta.scrollTop=Math.max(0,(lineNum-3)*lh);
 }
 function cchatAutoGrow(ta){
   ta.style.height='auto';
