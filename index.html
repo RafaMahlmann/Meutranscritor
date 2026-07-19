@@ -2440,7 +2440,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.11';
+const VOX_VERSION='2026.07.19.12';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2712,6 +2712,7 @@ let I18N_EN={
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
 "Resuma os pontos principais":"Summarize the main points","Quais decisões foram tomadas?":"What decisions were made?","Liste as próximas ações":"List next actions","Corrija a pontuação":"Fix punctuation",
 "Pergunte sobre esta conversa…":"Ask about this conversation…","Pergunte sobre este texto…":"Ask about this text…","Enviar":"Send",
+"Ditar pergunta":"Dictate question","Texto original":"Original text",
 "💬 Pergunte algo sobre este texto ou use um dos atalhos abaixo.":"💬 Ask something about this text or use one of the shortcuts below.",
 "💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.":"💬 Ask something about this conversation or use one of the shortcuts below.",
 "❌ Não foi possível obter resposta: ":"❌ Could not get a response: ","✓ Aplicar sugestão":"✓ Apply suggestion","✅ Sugestão aplicada. Ctrl+Z desfaz.":"✅ Suggestion applied. Ctrl+Z undoes.","Usuário":"User"};
@@ -6490,7 +6491,12 @@ function buildDiarChatPrompt(id,question){
     // direto do card aqui sempre dava vazio, mandando pra IA um prompt sem
     // TEXTO nenhum — só pergunta + histórico (bug real, achado pelo Rafa).
     const text=(_cchatFindTextarea(id)?.value||'').trim();
-    const maxCtx=12000;
+    // 12000 cortava textos médios pela metade (achado pelo Rafa: um texto de
+    // 25k chars — 8 crônicas — perdia tudo depois da 5ª). 40000 cobre textos
+    // bem mais longos com folga; callAI já tem retry automático com espera
+    // pra 429 de TPM (planos grátis tipo Groq), então um estouro ocasional
+    // num texto excepcionalmente grande se resolve sozinho.
+    const maxCtx=40000;
     const ctx=text.length>maxCtx?text.slice(0,maxCtx)+'\n…':text;
     const history=getDiarChatHistory(id);
     const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
@@ -6502,7 +6508,7 @@ function buildDiarChatPrompt(id,question){
   const roteiro=buildRoteiro(utterances,speakers,withTimes);
   const mode=card.dataset.mode||'livre';
   const modeLabel=SESSION_MODES[mode]?.label||t('📝 Livre');
-  const maxCtx=12000;
+  const maxCtx=40000;
   const ctx=roteiro.length>maxCtx?roteiro.slice(0,maxCtx)+'\n…':roteiro;
   const history=getDiarChatHistory(id);
   const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
