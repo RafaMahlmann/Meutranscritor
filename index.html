@@ -646,6 +646,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 
 /* ── IBAR ── */
 .ibar{position:fixed;left:max(18px,calc((100vw - 1100px)/2 + 20px));right:max(18px,calc((100vw - 1100px)/2 + 20px));bottom:18px;background:transparent;z-index:100;pointer-events:none}
+.ibar.rec-on{z-index:10000} /* fica por cima do #cchat-overlay (9999) pra bolha de gravação aparecer ao ditar no chat */
 .ibar-inner{position:relative;min-height:64px;padding:10px 12px;pointer-events:auto;display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid var(--border);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,0.16)}
 .ibar #diarBanner{position:absolute!important;left:0;bottom:calc(100% + 8px);width:min(620px,100%);margin-bottom:0!important}
 .fstage{display:none;position:absolute;left:0;bottom:calc(100% + 8px);width:min(540px,100%);background:var(--bg-card);border:1px solid rgba(16,185,129,0.35);border-radius:16px;padding:10px 12px;margin:0;box-shadow:0 14px 42px rgba(0,0,0,0.18);animation:slideIn 0.25s ease}
@@ -1335,6 +1336,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-input-row textarea:focus{border-color:var(--accent)}
 #cchat-overlay .cchat-send{background:var(--accent);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 #cchat-overlay .cchat-send:hover{filter:brightness(1.1)}
+#cchat-overlay .cchat-mic{background:var(--danger);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:15px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+#cchat-overlay .cchat-mic:hover{filter:brightness(1.1)}
 #cchat-overlay .cchat-msg{font-size:13px;padding:10px 14px;border-radius:18px;max-width:85%;line-height:1.4;word-wrap:break-word}
 #cchat-overlay .cchat-msg.cchat-user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
 #cchat-overlay .cchat-msg.cchat-assistant{background:var(--bg);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)}
@@ -2427,7 +2430,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.18.7';
+const VOX_VERSION='2026.07.19.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5803,7 +5806,7 @@ function makeRecorder(stream){
   mr.ondataavailable=e=>{if(e.data.size>0)mr._buf.push(e.data)};
   return mr;
 }
-async function startRec(targetCardId=null){
+async function startRec(targetCardId=null,targetTA=null){
   if(isRec||isProc||stagedFile)return;
   // Botão principal/atalho de espaço chegam aqui sem alvo explícito. Se existe um card
   // com o cursor piscando (activeTA/activeTACard — rastreados em Lista, Masonry e também
@@ -5811,18 +5814,26 @@ async function startRec(targetCardId=null){
   // ali dentro, igual ao botão "Gravar aqui" de cada card — só que automático, sem
   // precisar caçar o botãozinho certo. Sem nenhum card focado, segue o fluxo global de
   // sempre (cria card novo). Mesmo comportamento em desktop e mobile.
-  if(!targetCardId&&activeTA&&activeTACard&&document.contains(activeTA))targetCardId=activeTACard;
-  if(!targetCardId){recTargetTA=null;recTargetCard=null} // gravação global: limpa alvo antigo
-  if(targetCardId){
-    const el=document.getElementById(targetCardId);
-    if(el){
-      const ta=el.querySelector('textarea');activeTA=ta;activeTACard=targetCardId;recTargetTA=ta;recTargetCard=targetCardId;
-      // Só força o cursor pro final se a pessoa NÃO estava com o editor em foco. Se
-      // estava (ex: clicou no meio do texto antes de apertar gravar), respeita a posição
-      // real — mantida sincronizada pelo listener em _mountFocusEditor.
-      const otEl=(_focusEditorCardId===targetCardId)?_focusEditorInstance?.textarea:null;
-      if(document.activeElement!==ta&&document.activeElement!==otEl)ta.selectionStart=ta.selectionEnd=ta.value.length;
-      ta.focus();el.querySelector('.rec-here')?.classList.add('recording-this')
+  if(targetTA){
+    // Alvo explícito (ex: microfone do input do Modo Conversa) — não é textarea de
+    // card, então pula a busca por .card/.rec-here e mira o elemento direto.
+    activeTA=targetTA;activeTACard=targetCardId;recTargetTA=targetTA;recTargetCard=targetCardId;
+    if(document.activeElement!==targetTA)targetTA.selectionStart=targetTA.selectionEnd=targetTA.value.length;
+    targetTA.focus();
+  }else{
+    if(!targetCardId&&activeTA&&activeTACard&&document.contains(activeTA))targetCardId=activeTACard;
+    if(!targetCardId){recTargetTA=null;recTargetCard=null} // gravação global: limpa alvo antigo
+    if(targetCardId){
+      const el=document.getElementById(targetCardId);
+      if(el){
+        const ta=el.querySelector('textarea');activeTA=ta;activeTACard=targetCardId;recTargetTA=ta;recTargetCard=targetCardId;
+        // Só força o cursor pro final se a pessoa NÃO estava com o editor em foco. Se
+        // estava (ex: clicou no meio do texto antes de apertar gravar), respeita a posição
+        // real — mantida sincronizada pelo listener em _mountFocusEditor.
+        const otEl=(_focusEditorCardId===targetCardId)?_focusEditorInstance?.textarea:null;
+        if(document.activeElement!==ta&&document.activeElement!==otEl)ta.selectionStart=ta.selectionEnd=ta.value.length;
+        ta.focus();el.querySelector('.rec-here')?.classList.add('recording-this')
+      }
     }
   }
   try{
@@ -6550,6 +6561,7 @@ function openConversaMode(id){
         <div class="cchat-messages" id="cchat-msgs-${id}"></div>
         <div class="cchat-input-row">
           <textarea id="cchat-input-${id}" rows="2" placeholder="${t('Pergunte sobre este texto…')}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCchat('${id}')}" oninput="cchatAutoGrow(this)"></textarea>
+          <button class="cchat-mic" id="cchat-mic-${id}" onclick="cchatMic('${id}')" title="${t('Ditar pergunta')}">🎤</button>
           <button class="cchat-send" id="cchat-send-${id}" onclick="sendCchat('${id}')">➤</button>
         </div>
       </div>
@@ -6732,6 +6744,11 @@ function cchatGoToCitation(id,msgIdx,n){
 function cchatAutoGrow(ta){
   ta.style.height='auto';
   ta.style.height=Math.min(ta.scrollHeight,window.innerHeight*0.3)+'px';
+}
+function cchatMic(id){
+  if(isRec||isProc||stagedFile)return;
+  const ta=document.getElementById('cchat-input-'+id);
+  if(ta)startRec(id,ta);
 }
 async function sendCchat(id,chipText){
   const card=document.getElementById(id);if(!card)return;
