@@ -926,7 +926,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .tx-lock-row{display:flex;align-items:center;gap:9px;margin:10px 0 0;font-size:13px;color:var(--text2);cursor:pointer;user-select:none}
 .tx-lock-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
 .tx-pass-wrap{position:relative;margin-top:8px}
-.key-eye-wrap{position:relative}
+.key-eye-wrap{position:relative;border-radius:11px;transition:box-shadow .3s ease}
+/* Destaque de "cole aqui" ao escolher um provedor de diarização (setDiarProvider,
+   activate=true) — pulso 1x (nunca loop) + anel que persiste até a pessoa focar
+   o campo ou 4s passarem, aí desvanece pela transition acima. */
+.key-eye-wrap.key-highlight{box-shadow:0 0 0 3px var(--diar);animation:keyHighlightPulse 1s ease}
+@keyframes keyHighlightPulse{0%{box-shadow:0 0 0 0 var(--diar-glow)}50%{box-shadow:0 0 0 8px var(--diar-glow)}100%{box-shadow:0 0 0 3px var(--diar)}}
 .tx-pass-input{width:100%;box-sizing:border-box;background:var(--bg-input);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:10px 40px 10px 12px;font-family:var(--font);font-size:13px}
 .tx-pass-wrap .tx-pass-input{margin-top:0}
 .tx-eye-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text4);cursor:pointer;padding:6px;display:flex;align-items:center;border-radius:8px}
@@ -2434,7 +2439,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.9';
+const VOX_VERSION='2026.07.19.10';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4576,8 +4581,25 @@ function setDiarProvider(p,save=true,activate=false){
   document.getElementById('assemblySection').style.display=p==='assemblyai'?'block':'none';
   document.getElementById('pyannoteSection').style.display=p==='pyannote'?'block':'none';
   document.getElementById('openaiDiarSection').style.display=p==='openai'?'block':'none';
-  if(activate){cfg.diarEnabled=true;updateDiarStatus()}
+  if(activate){
+    cfg.diarEnabled=true;updateDiarStatus();
+    // Destaca o campo "cole aqui a chave" — pedido do Rafa pra ficar óbvio
+    // onde agir, em qualquer dispositivo (mesmo CSS/JS em todos).
+    const fieldId={assemblyai:'apiKeyAssembly',gladia:'apiKeyGladia',pyannote:'apiKeyPyannote'}[p];
+    if(fieldId)_highlightKeyField(fieldId);
+  }
   if(save)saveCfg(false);
+}
+function _highlightKeyField(fieldId){
+  const input=document.getElementById(fieldId);if(!input)return;
+  const wrap=input.closest('.key-eye-wrap');if(!wrap)return;
+  wrap.classList.remove('key-highlight');
+  void wrap.offsetWidth; // reflow — reinicia a animação se já tava destacado (clique duplo no botão)
+  wrap.classList.add('key-highlight');
+  setTimeout(()=>wrap.scrollIntoView({behavior:'smooth',block:'center'}),50);
+  const clear=()=>wrap.classList.remove('key-highlight');
+  input.addEventListener('focus',clear,{once:true});
+  setTimeout(clear,4000); // some sozinho se a pessoa não interagir
 }
 function toggleDiar(on){
   cfg.diarEnabled=on;
