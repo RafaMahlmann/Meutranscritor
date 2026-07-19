@@ -2434,7 +2434,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.7';
+const VOX_VERSION='2026.07.19.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6461,7 +6461,12 @@ function setDiarChatHistory(id,history){
 function buildDiarChatPrompt(id,question){
   const card=document.getElementById(id);if(!card)return'';
   if(card.dataset.diarized!=='true'){
-    const text=(card.querySelector('textarea')?.value||'').trim();
+    // _cchatFindTextarea (não card.querySelector direto!) — com o Modo
+    // Conversa aberto, o textarea real foi reparented pra dentro do overlay
+    // (appendChild em openConversaMode), deixando de ser filho do card. Ler
+    // direto do card aqui sempre dava vazio, mandando pra IA um prompt sem
+    // TEXTO nenhum — só pergunta + histórico (bug real, achado pelo Rafa).
+    const text=(_cchatFindTextarea(id)?.value||'').trim();
     const maxCtx=12000;
     const ctx=text.length>maxCtx?text.slice(0,maxCtx)+'\n…':text;
     const history=getDiarChatHistory(id);
