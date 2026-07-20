@@ -2444,7 +2444,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.16';
+const VOX_VERSION='2026.07.19.17';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6880,16 +6880,41 @@ async function renderCchat(id){
 // Clique num chip de citação [N]: acha o trecho exato na seção FONTES da
 // mensagem, seleciona no textarea do card (que pode estar reparented pra
 // dentro do overlay — ver _cchatFindTextarea).
+// Acha TODAS as ocorrências de um trecho (case-sensitive primeiro, depois
+// case-insensitive como fallback) — usado por cchatGoToCitation pra não
+// travar sempre na primeira ocorrência quando o trecho se repete no texto.
+function _cchatFindAllOccurrences(text,trecho){
+  const positions=[];
+  let idx=text.indexOf(trecho);
+  while(idx>=0){positions.push(idx);idx=text.indexOf(trecho,idx+1)}
+  if(positions.length)return positions;
+  const lowText=text.toLowerCase(),lowTrecho=trecho.toLowerCase();
+  idx=lowText.indexOf(lowTrecho);
+  while(idx>=0){positions.push(idx);idx=lowText.indexOf(lowTrecho,idx+1)}
+  return positions;
+}
 function cchatGoToCitation(id,msgIdx,n){
   const history=getDiarChatHistory(id);
   const content=(history[msgIdx]&&history[msgIdx].content)||'';
-  const trecho=_parseCchatFontes(content).map[String(n)];
+  const map=_parseCchatFontes(content).map;
+  const trecho=map[String(n)];
   if(!trecho){toast(t('Trecho não encontrado no texto'),true);return}
   const ta=_cchatFindTextarea(id);
   if(!ta){toast(t('Trecho não encontrado no texto'),true);return}
-  let start=ta.value.indexOf(trecho);
-  if(start<0)start=ta.value.toLowerCase().indexOf(trecho.toLowerCase());
-  if(start<0){toast(t('Trecho não encontrado no texto'),true);return}
+  const positions=_cchatFindAllOccurrences(ta.value,trecho);
+  if(!positions.length){toast(t('Trecho não encontrado no texto'),true);return}
+  // Bug real (achado pelo Rafa): quando o trecho citado não é único no
+  // texto (frase curta/genérica que se repete), sempre pegar a 1ª ocorrência
+  // fazia citações depois da 3ª/4ª caírem num lugar mais cedo e errado do
+  // texto. Com mais de uma ocorrência, prefere a mais perto de onde a
+  // citação N (de "total" citações) deveria estar proporcionalmente no
+  // texto — citação 1 de 8 espera perto do início, 8 de 8 perto do fim.
+  let start=positions[0];
+  if(positions.length>1){
+    const total=Math.max(n,...Object.keys(map).map(Number));
+    const expected=total>1?(n-1)/(total-1)*ta.value.length:0;
+    start=positions.reduce((best,p)=>Math.abs(p-expected)<Math.abs(best-expected)?p:best);
+  }
   if(window.innerWidth<=640)switchCchatTab(id,'texto');
   ta.focus();
   ta.setSelectionRange(start,start+trecho.length);
