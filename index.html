@@ -2440,7 +2440,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.14';
+const VOX_VERSION='2026.07.19.15';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6874,11 +6874,20 @@ function cchatGoToCitation(id,msgIdx,n){
   // setSelectionRange sozinho não garante rolar até a seleção (varia por
   // navegador) — aproxima a linha pelo nº de quebras antes do trecho, pra
   // ficar óbvio que o clique fez alguma coisa mesmo num texto longo.
+  // OBS: lineNum conta '\n' literais, não linhas visuais quebradas por
+  // largura — em parágrafos longos o alvo fica acima do ponto real, mas
+  // sempre visível o suficiente pra seleção aparecer.
   const lineNum=ta.value.slice(0,start).split('\n').length;
   const cs=getComputedStyle(ta);
   let lh=parseFloat(cs.lineHeight);
   if(!lh||isNaN(lh))lh=(parseFloat(cs.fontSize)||14)*1.4;
-  ta.scrollTop=Math.max(0,(lineNum-3)*lh);
+  const target=Math.max(0,(lineNum-3)*lh);
+  // No Modo Conversa o textarea cresce inteiro (sem scroll próprio — ver
+  // openConversaMode) e quem rola é o .cchat-textzone; rolar ta.scrollTop
+  // ali não faz nada e a seleção ficava fora da vista em texto longo.
+  const zone=document.getElementById('cchat-textzone-'+id);
+  if(zone&&zone.scrollHeight>zone.clientHeight)zone.scrollTop=target;
+  else ta.scrollTop=target;
 }
 function cchatAutoGrow(ta){
   ta.style.height='auto';
