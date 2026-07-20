@@ -1331,9 +1331,32 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-header .cchat-clear{background:none;border:none;font-size:15px;cursor:pointer;color:var(--text);padding:4px 8px;border-radius:6px;line-height:1}
 #cchat-overlay .cchat-header .cchat-clear:hover{background:var(--hover)}
 #cchat-overlay .cchat-split{display:flex;flex:1;overflow:hidden}
-#cchat-overlay .cchat-textzone{flex:1;overflow-y:auto;padding:16px;min-width:0}
-#cchat-overlay .cchat-textzone>.cb,#cchat-overlay .cchat-textzone>.roteiro-view{min-height:100%}
-#cchat-overlay .cchat-textzone textarea{width:100%;height:100%;min-height:300px;border:none;outline:none;resize:none;font-size:14px;line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
+#cchat-overlay .cchat-textzone{flex:1;overflow-y:auto;padding:16px;min-width:0;display:flex;flex-direction:column;position:relative}
+/* O painel de lentes (.lens-panel genérico) fica em fluxo normal nos outros
+   usos (card curto na lista) — aqui dentro, com texto podendo ser bem
+   longo, isso empurrava o painel centenas de pixels pra baixo, fora da
+   vista (achado testando). Flutua ancorado no topo em vez de empurrar o
+   texto. */
+#cchat-overlay .cchat-textzone .lens-panel{position:absolute;top:44px;left:16px;right:16px;z-index:20;max-height:min(60vh,420px);overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,0.18)}
+#cchat-overlay .cchat-textslot{flex:1;min-height:100%}
+#cchat-overlay .cchat-textslot>.cb,#cchat-overlay .cchat-textslot>.roteiro-view,#cchat-overlay .cchat-textslot>.cchat-transform-pane{min-height:100%}
+#cchat-overlay .cchat-textzone textarea{width:100%;height:100%;min-height:300px;border:none;outline:none;resize:none;font-size:var(--cf-sz,14px);line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
+/* Abas de transformação (Original + resultados de IA), estilo "chip", uma
+   camada acima do .cchat-tabs (Chat/Texto) — visual mais leve/compacto
+   porque pode ter várias, com scroll horizontal se não couber. */
+#cchat-overlay .cchat-texttabs{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;margin-bottom:10px;flex-shrink:0}
+#cchat-overlay .cchat-ttab{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer;white-space:nowrap;flex-shrink:0}
+#cchat-overlay .cchat-ttab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+#cchat-overlay .cchat-ttab-x{opacity:0.7;font-size:10px;line-height:1}
+#cchat-overlay .cchat-ttab-x:hover{opacity:1}
+#cchat-overlay .cchat-ttab-add{font-size:14px;font-weight:700;padding:5px 12px;border-radius:20px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer;flex-shrink:0}
+#cchat-overlay .cchat-ttab-add:hover{background:var(--accent-glow)}
+#cchat-overlay .cchat-transform-pane{width:100%;height:100%}
+#cchat-overlay .cchat-transform-ta{width:100%;height:100%;min-height:300px;border:none;outline:none;resize:none;font-size:var(--cf-sz,14px);line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
+#cchat-overlay .cchat-tab-actions{display:none;gap:8px;margin-top:10px;flex-shrink:0}
+#cchat-overlay .cchat-tab-actions.on{display:flex}
+#cchat-overlay .cchat-tab-actions button{font-size:12px;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer}
+#cchat-overlay .cchat-tab-actions button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 #cchat-overlay .cchat-divider{width:6px;background:var(--border);cursor:col-resize;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center}
 #cchat-overlay .cchat-divider::after{content:'';position:absolute;inset:-4px 0;cursor:col-resize}
 #cchat-overlay .cchat-divider:hover{background:var(--accent)}
@@ -1353,7 +1376,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-mic{background:var(--danger);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:15px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 #cchat-overlay .cchat-mic:hover{filter:brightness(1.1)}
 #cchat-overlay .cchat-mic svg{width:16px;height:16px}
-#cchat-overlay .cchat-msg{font-size:13px;padding:10px 14px;border-radius:18px;max-width:85%;line-height:1.4;word-wrap:break-word}
+#cchat-overlay .cchat-msg{font-size:var(--cf-sz,13px);padding:10px 14px;border-radius:18px;max-width:85%;line-height:1.4;word-wrap:break-word}
 #cchat-overlay .cchat-msg.cchat-user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
 #cchat-overlay .cchat-msg.cchat-assistant{background:var(--bg);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)}
 #cchat-overlay .cchat-msg .cchat-meta{font-size:10px;opacity:0.7;margin-bottom:2px}
@@ -1379,7 +1402,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   #cchat-overlay .cchat-divider{display:none}
   #cchat-overlay .cchat-chatzone{display:none;width:100%!important;max-width:none!important;min-width:0!important;border-left:none}
   #cchat-overlay .cchat-textzone{display:none}
-  #cchat-overlay .cchat-textzone.mobile-active{display:block}
+  #cchat-overlay .cchat-textzone.mobile-active{display:flex}
   #cchat-overlay .cchat-chatzone.mobile-active{display:flex}
   #cchat-overlay .cchat-input-row{width:100%!important;max-width:none!important;min-width:0!important;margin-left:0}
 }
@@ -2449,7 +2472,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.18';
+const VOX_VERSION='2026.07.19.19';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3421,8 +3444,15 @@ function setFontSize(s){
   const sizes={s:'13px',m:'15px',g:'19px'};
   document.documentElement.style.setProperty('--cf-sz',sizes[s]||'15px');
   localStorage.setItem('vox_fontsize',s);
-  ['S','M','G'].forEach(k=>document.getElementById('fz'+k)?.classList.remove('fz-on'));
+  // Sincroniza os dois conjuntos de botões AAA: o global (rodapé) e o do
+  // Modo Conversa (cchat-fz*, só existe quando a tela está aberta — os
+  // ?. protegem contra elemento ausente).
+  ['S','M','G'].forEach(k=>{
+    document.getElementById('fz'+k)?.classList.remove('fz-on');
+    document.getElementById('cchat-fz'+k)?.classList.remove('fz-on');
+  });
   document.getElementById('fz'+s.toUpperCase())?.classList.add('fz-on');
+  document.getElementById('cchat-fz'+s.toUpperCase())?.classList.add('fz-on');
 }
 function loadFontSize(){
   const s=localStorage.getItem('vox_fontsize')||'m';
@@ -6608,13 +6638,130 @@ function appendDiarChatMessage(id,role,content){
   setDiarChatHistory(id,history);
 }
 // Acha o textarea "de verdade" do card — durante o overlay (openConversaMode),
-// o editor foi reparented (appendChild) pra dentro de #cchat-textzone-${id},
-// deixando de ser filho de #${id}; por isso checamos lá primeiro.
+// o editor foi reparented (appendChild) pra dentro de #cchat-textslot-${id},
+// deixando de ser filho de #${id}; por isso checamos lá primeiro. Sempre
+// aponta pro ORIGINAL, nunca pra uma aba de transformação temporária (chat,
+// citações e "aplicar sugestão" têm que se basear sempre no texto de
+// verdade) — por isso busca especificamente [data-cchat-pane="original"],
+// já que com várias abas montadas ao mesmo tempo "o primeiro textarea da
+// zona" deixou de ser confiável.
 function _cchatFindTextarea(id){
   const zone=document.getElementById('cchat-textzone-'+id);
-  if(zone){const ta=zone.querySelector('textarea');if(ta)return ta}
+  if(zone){
+    const original=zone.querySelector('[data-cchat-pane="original"]');
+    if(original){const ta=original.querySelector('textarea')||(original.tagName==='TEXTAREA'?original:null);if(ta)return ta}
+    const ta=zone.querySelector('textarea');if(ta)return ta;
+  }
   const card=document.getElementById(id);if(!card)return null;
   return card.querySelector('.roteiro-view textarea')||card.querySelector('.cb textarea');
+}
+// ── Modo Conversa: abas de transformação (Original + resultados de IA) ──
+// Efêmero — some ao fechar a tela, igual o rascunho do Modo Avançado, só
+// que em abas (estilo navegador) em vez de duas folhas, e disponível pra
+// qualquer card (inclusive diarizado — o Avançado de hoje não cobre isso).
+// Reaproveita 100% do motor de lentes já existente (generateLens, LENSES,
+// _lensCatsGridHtml) — só muda pra onde o resultado vai.
+const _cchatTabs={}; // {[cardId]: [{tabId,label,text}, ...]} — não inclui a aba 'original'
+const _cchatActiveTab={}; // {[cardId]: 'original' ou um tabId de _cchatTabs[id]}
+const CCHAT_MAX_TABS=6; // Original + até 5 transformações abertas ao mesmo tempo
+function _cchatInitTabs(id){
+  _cchatTabs[id]=[];
+  _cchatActiveTab[id]='original';
+}
+function _cchatRenderTextTabs(id){
+  const bar=document.getElementById('cchat-texttabs-'+id);if(!bar)return;
+  const active=_cchatActiveTab[id]||'original';
+  let html=`<button type="button" class="cchat-ttab${active==='original'?' active':''}" onclick="_cchatSwitchTab('${id}','original')">${t('Original')}</button>`;
+  (_cchatTabs[id]||[]).forEach(tb=>{
+    html+=`<button type="button" class="cchat-ttab${active===tb.tabId?' active':''}" onclick="_cchatSwitchTab('${id}','${tb.tabId}')">${escHtml(tb.label)}<span class="cchat-ttab-x" onclick="event.stopPropagation();_cchatCloseTab('${id}','${tb.tabId}')" title="${t('Fechar')}">✕</span></button>`;
+  });
+  html+=`<button type="button" class="cchat-ttab-add" onclick="_cchatOpenLensMenu('${id}')" title="${t('✨ Transformar com IA')}">+</button>`;
+  bar.innerHTML=html;
+}
+function _cchatSwitchTab(id,tabId){
+  _cchatActiveTab[id]=tabId;
+  const slot=document.getElementById('cchat-textslot-'+id);
+  if(slot){
+    Array.from(slot.children).forEach(el=>{
+      el.style.display=(el.dataset.cchatPane===tabId)?'':'none';
+    });
+  }
+  const actions=document.getElementById('cchat-tabactions-'+id);
+  if(actions)actions.classList.toggle('on',tabId!=='original');
+  _cchatRenderTextTabs(id);
+}
+function _cchatActiveTabText(id){
+  const active=_cchatActiveTab[id]||'original';
+  if(active==='original')return _cchatFindTextarea(id)?.value||'';
+  const tb=(_cchatTabs[id]||[]).find(t=>t.tabId===active);
+  return tb?tb.text:'';
+}
+function _cchatCloseTab(id,tabId){
+  const arr=_cchatTabs[id]||[];
+  const idx=arr.findIndex(t=>t.tabId===tabId);
+  if(idx<0)return;
+  arr.splice(idx,1);
+  document.querySelector(`#cchat-textslot-${id} [data-cchat-pane="${tabId}"]`)?.remove();
+  if(_cchatActiveTab[id]===tabId)_cchatActiveTab[id]='original';
+  _cchatSwitchTab(id,_cchatActiveTab[id]);
+}
+function _cchatOpenLensMenu(id){
+  const panel=document.getElementById('cchat-lensmenu-'+id);if(!panel)return;
+  if(panel.classList.contains('on')){panel.classList.remove('on');panel.innerHTML='';return}
+  if((_cchatTabs[id]||[]).length>=CCHAT_MAX_TABS-1){toast(t('ℹ️ Máximo de abas abertas — feche alguma antes de criar outra.'),true);return}
+  document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
+  panel.innerHTML=_lensCatsGridHtml(k=>`_cchatRunLens('${id}','${k}')`,()=>'');
+  panel.classList.add('on');
+  setTimeout(()=>document.addEventListener('click',_lensPanelAway),0);
+}
+async function _cchatRunLens(id,lensKey){
+  const panel=document.getElementById('cchat-lensmenu-'+id);
+  if(panel){panel.classList.remove('on');panel.innerHTML=''}
+  const L=LENSES[lensKey];if(!L)return;
+  const key=aiKey();
+  if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
+  const sourceText=_cchatActiveTabText(id).trim();
+  if(!sourceText){toast(t('ℹ️ Nada para transformar'),true);return}
+  toast('✨ '+L.label+'…');
+  try{
+    const result=await generateLens(L,sourceText,key);
+    _cchatAddTab(id,L.label,result);
+  }catch(e){toast('❌ '+e.message,true)}
+}
+function _cchatAddTab(id,label,text){
+  const tabId='ct'+Date.now();
+  _cchatTabs[id]=_cchatTabs[id]||[];
+  _cchatTabs[id].push({tabId,label,text});
+  const slot=document.getElementById('cchat-textslot-'+id);
+  if(slot){
+    const pane=document.createElement('div');
+    pane.className='cchat-transform-pane';
+    pane.dataset.cchatPane=tabId;
+    pane.innerHTML=`<textarea class="cchat-transform-ta">${escHtml(text)}</textarea>`;
+    slot.appendChild(pane);
+  }
+  _cchatSwitchTab(id,tabId);
+  toast('✅ '+t('Nova aba criada!'));
+}
+// As duas ações abaixo agem sobre a aba de transformação ATIVA — não fazem
+// nada se a aba ativa for a 'original' (botões só aparecem nesse caso, ver
+// _cchatSwitchTab, mas o guard aqui protege contra chamada direta também).
+function _cchatSaveReplace(id){
+  const active=_cchatActiveTab[id];if(!active||active==='original')return;
+  const tb=(_cchatTabs[id]||[]).find(t=>t.tabId===active);if(!tb)return;
+  const ta=_cchatFindTextarea(id);if(!ta)return;
+  pushCardHistory(id);
+  ta.value=tb.text;autoR(ta);updateFooter(id);saveHistory();
+  toast('✅ '+t('Original substituído! Ctrl+Z desfaz.'));
+  _cchatCloseTab(id,active);
+}
+function _cchatSaveNew(id){
+  const active=_cchatActiveTab[id];if(!active||active==='original')return;
+  const tb=(_cchatTabs[id]||[]).find(t=>t.tabId===active);if(!tb)return;
+  const card=document.getElementById(id);
+  const mode=card?.dataset.mode||'livre';
+  setLastAICard(addCard(tb.text,null,0,'texto',cfg.provider,true,null,null,[],tb.label+' — '+(card?.dataset.sessionName||fmtDt(card?.dataset.dt||'')),mode,false));
+  toast('✅ '+t('Novo card criado!'));
 }
 function maybeRenderCchatApplyButton(id,result){
   const match=result.match(/\[SUGESTÃO\][\s\S]*?\[\/SUGESTÃO\]/);
@@ -6675,6 +6822,11 @@ function openConversaMode(id){
     <div class="cchat-header">
       <span class="cchat-title">💬 ${escHtml(title)}</span>
       <div class="cchat-viewslot"></div>
+      <div class="font-sz-wrap" title="${t('Tamanho do texto')}" data-i18n-title>
+        <button class="font-sz-btn" id="cchat-fzS" onclick="setFontSize('s')" style="font-size:11px">A</button>
+        <button class="font-sz-btn" id="cchat-fzM" onclick="setFontSize('m')" style="font-size:14px">A</button>
+        <button class="font-sz-btn" id="cchat-fzG" onclick="setFontSize('g')" style="font-size:18px">A</button>
+      </div>
       <button class="cchat-clear" onclick="clearCchatHistory('${id}')" title="${t('Limpar conversa')}">🗑️</button>
       <button class="cchat-close" onclick="closeConversaMode('${id}')" title="${t('Fechar')}">✕</button>
     </div>
@@ -6683,7 +6835,15 @@ function openConversaMode(id){
       <div class="cchat-tab" data-tab="texto" onclick="switchCchatTab('${id}','texto')">${t('Texto')}</div>
     </div>
     <div class="cchat-split">
-      <div class="cchat-textzone" id="cchat-textzone-${id}"></div>
+      <div class="cchat-textzone" id="cchat-textzone-${id}">
+        <div class="cchat-texttabs" id="cchat-texttabs-${id}"></div>
+        <div class="cchat-textslot" id="cchat-textslot-${id}"></div>
+        <div class="lens-panel" id="cchat-lensmenu-${id}"></div>
+        <div class="cchat-tab-actions" id="cchat-tabactions-${id}">
+          <button class="primary" onclick="_cchatSaveReplace('${id}')">💾 ${t('Substituir original')}</button>
+          <button onclick="_cchatSaveNew('${id}')">+ ${t('Novo card')}</button>
+        </div>
+      </div>
       <div class="cchat-divider" id="cchat-divider-${id}"></div>
       <div class="cchat-chatzone" id="cchat-chatzone-${id}">
         <div class="cchat-chips" id="cchat-chips-${id}">
@@ -6701,6 +6861,9 @@ function openConversaMode(id){
       <button class="cchat-send" id="cchat-send-${id}" onclick="sendCchat('${id}')">➤</button>
     </div>`;
   document.body.appendChild(overlay);
+  // Abas de transformação (Original + resultados de IA) — efêmero, reseta
+  // toda vez que a tela abre.
+  _cchatInitTabs(id);
   // A tela cresce a partir do ponto do botão que abriu — não do centro.
   // Fallback (centro) se por algum motivo o botão não foi encontrado.
   overlay.style.transformOrigin=originRect
@@ -6708,10 +6871,15 @@ function openConversaMode(id){
     :'center';
   overlay.classList.add('cchat-enter');
   document.body.style.overflow='hidden';
-  // Move editor para zona-texto
-  document.getElementById('cchat-textzone-'+id).appendChild(editorWrap);
+  // Move editor para dentro do slot de texto (não a zona direto — a zona
+  // agora também hospeda a barra de abas Original/transformações)
+  editorWrap.dataset.cchatPane='original';
+  document.getElementById('cchat-textslot-'+id).appendChild(editorWrap);
+  _cchatRenderTextTabs(id);
   const ta=editorWrap.querySelector('textarea');
   if(ta){ta.style.minHeight='300px'}
+  // Sincroniza o controle AAA recém-criado com o tamanho já salvo
+  setFontSize(localStorage.getItem('vox_fontsize')||'m');
   // Renderiza histórico do chat
   renderCchat(id);
   // Ativar aba default: Texto no mobile (texto é rei — pessoa abre e já vê o
@@ -6775,11 +6943,14 @@ function closeConversaMode(id){
   if(editorWrap&&card._cchatOrigParent){
     const ta=editorWrap.querySelector('textarea');
     if(ta){ta.style.minHeight='';ta.style.height=''}
+    delete editorWrap.dataset.cchatPane;
     card._cchatOrigParent.insertBefore(editorWrap,card._cchatOrigNext||null);
   }
   // Remove placeholder
   const placeholder=document.getElementById('cchat-placeholder-'+id);
   if(placeholder)placeholder.remove();
+  // Abas de transformação são efêmeras — descarta o estado ao fechar
+  delete _cchatTabs[id];delete _cchatActiveTab[id];
   // Remove overlay
   overlay.remove();
   document.body.style.overflow='';
