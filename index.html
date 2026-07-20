@@ -2440,7 +2440,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.13';
+const VOX_VERSION='2026.07.19.14';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6563,7 +6563,7 @@ async function buildDiarChatPrompt(id,question,key){
     const ctx=await _cchatBuildContext(text,question,key);
     const history=getDiarChatHistory(id);
     const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
-    return `Você é um assistente analisando um texto. Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO]. Ao afirmar algo com base no texto, cite a fonte com [1], [2] etc. (números sequenciais). No final da resposta, inclua uma seção FONTES: listando cada marcador seguido do trecho EXATO do texto original (copie literalmente, sem parafrasear), um por linha, no formato [1]: trecho exato aqui.\n\nTEXTO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
+    return `Você é um assistente analisando um texto. Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO]. Ao afirmar algo com base no texto, cite a fonte com [1], [2] etc. (números sequenciais). OBRIGATÓRIO: termine TODA resposta com uma seção de fontes neste formato exato (um marcador por linha, cada trecho COPIADO LITERALMENTE do texto original, 8 a 25 palavras, sem parafrasear, sem aspas, sem reticências):\nFONTES:\n[1]: primeiro trecho exato copiado do texto\n[2]: segundo trecho exato copiado do texto\nNunca omita a seção FONTES quando usar marcadores [N] na resposta — sem ela os marcadores não funcionam.\n\nTEXTO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
   }
   const utterances=JSON.parse(card.dataset.utterances||'[]');
   const speakers=JSON.parse(card.dataset.speakers||'{}');
@@ -6574,7 +6574,7 @@ async function buildDiarChatPrompt(id,question,key){
   const ctx=await _cchatBuildContext(roteiro,question,key);
   const history=getDiarChatHistory(id);
   const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
-  return `Você é um assistente analisando uma transcrição diarizada no modo "${modeLabel}". Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO]. Ao afirmar algo com base no texto, cite a fonte com [1], [2] etc. (números sequenciais). No final da resposta, inclua uma seção FONTES: listando cada marcador seguido do trecho EXATO do texto original (copie literalmente, sem parafrasear), um por linha, no formato [1]: trecho exato aqui.\n\nTRANSCRIÇÃO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
+  return `Você é um assistente analisando uma transcrição diarizada no modo "${modeLabel}". Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO]. Ao afirmar algo com base no texto, cite a fonte com [1], [2] etc. (números sequenciais). OBRIGATÓRIO: termine TODA resposta com uma seção de fontes neste formato exato (um marcador por linha, cada trecho COPIADO LITERALMENTE do texto original, 8 a 25 palavras, sem parafrasear, sem aspas, sem reticências):\nFONTES:\n[1]: primeiro trecho exato copiado do texto\n[2]: segundo trecho exato copiado do texto\nNunca omita a seção FONTES quando usar marcadores [N] na resposta — sem ela os marcadores não funcionam.\n\nTRANSCRIÇÃO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
 }
 function appendDiarChatMessage(id,role,content){
   const card=document.getElementById(id);if(!card)return;
