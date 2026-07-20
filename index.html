@@ -1349,8 +1349,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-ttab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 #cchat-overlay .cchat-ttab-x{opacity:0.7;font-size:10px;line-height:1}
 #cchat-overlay .cchat-ttab-x:hover{opacity:1}
-#cchat-overlay .cchat-ttab-add{font-size:14px;font-weight:700;padding:5px 12px;border-radius:20px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer;flex-shrink:0}
-#cchat-overlay .cchat-ttab-add:hover{background:var(--accent-glow)}
+#cchat-overlay .cchat-transform-btn{border:1px solid var(--border2);background:var(--bg-input);color:var(--text2);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-right:8px}
+#cchat-overlay .cchat-transform-btn:hover{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
 #cchat-overlay .cchat-transform-pane{width:100%;height:100%}
 #cchat-overlay .cchat-transform-ta{width:100%;height:100%;min-height:300px;border:none;outline:none;resize:none;font-size:var(--cf-sz,14px);line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
 #cchat-overlay .cchat-tab-actions{display:none;gap:8px;margin-top:10px;flex-shrink:0}
@@ -2472,7 +2472,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.19';
+const VOX_VERSION='2026.07.19.20';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6675,7 +6675,6 @@ function _cchatRenderTextTabs(id){
   (_cchatTabs[id]||[]).forEach(tb=>{
     html+=`<button type="button" class="cchat-ttab${active===tb.tabId?' active':''}" onclick="_cchatSwitchTab('${id}','${tb.tabId}')">${escHtml(tb.label)}<span class="cchat-ttab-x" onclick="event.stopPropagation();_cchatCloseTab('${id}','${tb.tabId}')" title="${t('Fechar')}">✕</span></button>`;
   });
-  html+=`<button type="button" class="cchat-ttab-add" onclick="_cchatOpenLensMenu('${id}')" title="${t('✨ Transformar com IA')}">+</button>`;
   bar.innerHTML=html;
 }
 function _cchatSwitchTab(id,tabId){
@@ -6822,6 +6821,7 @@ function openConversaMode(id){
     <div class="cchat-header">
       <span class="cchat-title">💬 ${escHtml(title)}</span>
       <div class="cchat-viewslot"></div>
+      <button class="cchat-transform-btn" onclick="_cchatOpenLensMenu('${id}')" title="${t('Transformar com IA')}">✨ ${t('Transformar')}</button>
       <div class="font-sz-wrap" title="${t('Tamanho do texto')}" data-i18n-title>
         <button class="font-sz-btn" id="cchat-fzS" onclick="setFontSize('s')" style="font-size:11px">A</button>
         <button class="font-sz-btn" id="cchat-fzM" onclick="setFontSize('m')" style="font-size:14px">A</button>
