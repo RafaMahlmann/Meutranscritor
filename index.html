@@ -10,6 +10,11 @@
 <meta name="theme-color" content="#10b981">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="icon-192.png">
+<!-- Sem isso, a aba do navegador (Windows/Android/iPad enquanto só navegando,
+     antes de "adicionar à tela inicial") cai no favicon.ico padrão, que não
+     existe — mostra ícone genérico em vez do ícone do app (achado pelo Rafa). -->
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -2444,7 +2449,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.17';
+const VOX_VERSION='2026.07.19.18';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6953,6 +6958,11 @@ async function sendCchat(id,chipText){
   if(input&&!chipText){input.value='';cchatAutoGrow(input)}
   appendDiarChatMessage(id,'user',text);
   renderCchat(id);
+  // No mobile, mandar uma pergunta enquanto está na aba Texto trocava pra
+  // Chat sozinho — senão a pessoa manda, some, e não vê nem a IA "digitando"
+  // nem a resposta chegar (achado pelo Rafa: "ele não consegue ver o que a
+  // IA respondeu").
+  if(window.innerWidth<=640)switchCchatTab(id,'chat');
   const key=aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
   const sendBtn=document.getElementById('cchat-send-'+id);
