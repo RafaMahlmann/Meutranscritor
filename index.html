@@ -1337,7 +1337,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    longo, isso empurrava o painel centenas de pixels pra baixo, fora da
    vista (achado testando). Flutua ancorado no topo em vez de empurrar o
    texto. */
-#cchat-overlay .cchat-textzone .lens-panel{position:absolute;top:44px;left:16px;right:16px;z-index:20;max-height:min(60vh,420px);overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,0.18)}
+#cchat-overlay .cchat-textzone .lens-panel{position:absolute;top:44px;left:16px;right:16px;z-index:20;max-height:min(60vh,420px);overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,0.18);background:var(--bg-card)}
 #cchat-overlay .cchat-textslot{flex:1;min-height:100%}
 #cchat-overlay .cchat-textslot>.cb,#cchat-overlay .cchat-textslot>.roteiro-view,#cchat-overlay .cchat-textslot>.cchat-transform-pane{min-height:100%}
 #cchat-overlay .cchat-textzone textarea{width:100%;height:100%;min-height:300px;border:none;outline:none;resize:none;font-size:var(--cf-sz,14px);line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
@@ -1351,8 +1351,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-ttab-x:hover{opacity:1}
 #cchat-overlay .cchat-transform-btn{border:1px solid var(--border2);background:var(--bg-input);color:var(--text2);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-right:8px}
 #cchat-overlay .cchat-transform-btn:hover{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
-#cchat-overlay .cchat-transform-pane{width:100%;height:100%}
-#cchat-overlay .cchat-transform-ta{width:100%;height:100%;min-height:300px;border:none;outline:none;resize:none;font-size:var(--cf-sz,14px);line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
+#cchat-overlay .cchat-transform-pane{width:100%;min-height:100%}
+#cchat-overlay .cchat-transform-preview{cursor:text;min-height:300px}
+#cchat-overlay .cchat-transform-ta{width:100%;min-height:300px;border:none;outline:none;resize:none;font-size:var(--cf-sz,14px);line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
 #cchat-overlay .cchat-tab-actions{display:none;gap:8px;margin-top:10px;flex-shrink:0}
 #cchat-overlay .cchat-tab-actions.on{display:flex}
 #cchat-overlay .cchat-tab-actions button{font-size:12px;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer}
@@ -2472,7 +2473,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.19.20';
+const VOX_VERSION='2026.07.19.21';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6724,10 +6725,10 @@ async function _cchatRunLens(id,lensKey){
   toast('✨ '+L.label+'…');
   try{
     const result=await generateLens(L,sourceText,key);
-    _cchatAddTab(id,L.label,result);
+    await _cchatAddTab(id,L.label,result);
   }catch(e){toast('❌ '+e.message,true)}
 }
-function _cchatAddTab(id,label,text){
+async function _cchatAddTab(id,label,text){
   const tabId='ct'+Date.now();
   _cchatTabs[id]=_cchatTabs[id]||[];
   _cchatTabs[id].push({tabId,label,text});
@@ -6736,11 +6737,44 @@ function _cchatAddTab(id,label,text){
     const pane=document.createElement('div');
     pane.className='cchat-transform-pane';
     pane.dataset.cchatPane=tabId;
-    pane.innerHTML=`<textarea class="cchat-transform-ta">${escHtml(text)}</textarea>`;
+    pane.innerHTML=`<div class="md-preview cchat-transform-preview" onclick="_cchatEnterTabEdit('${id}','${tabId}')"></div><textarea class="cchat-transform-ta" style="display:none" onblur="_cchatExitTabEdit('${id}','${tabId}')"></textarea>`;
     slot.appendChild(pane);
+    await _cchatRenderTabPreview(id,tabId);
   }
   _cchatSwitchTab(id,tabId);
   toast('✅ '+t('Nova aba criada!'));
+}
+// Abas de transformação nascem já em "modo Markdown" (negrito, títulos,
+// listas de verdade renderizados) — clicar no texto entra em edição (cru);
+// sair do campo (blur) relê o valor, atualiza o estado guardado em
+// _cchatTabs (pra "Substituir original"/"Novo card"/encadear outra
+// transformação usarem o texto EDITADO, não a saída crua da IA) e volta
+// pro Markdown. Mesma engine de renderização do "👁 Ver em Markdown" de
+// cada card (toggleCardPreview, marked+DOMPurify) — só troca o gatilho de
+// botão manual por clique/blur automático, só nas abas de transformação
+// (a aba Original não muda: mantém seu próprio fluxo de edição já testado).
+async function _cchatRenderTabPreview(id,tabId){
+  const pane=document.querySelector(`#cchat-textslot-${id} [data-cchat-pane="${tabId}"]`);if(!pane)return;
+  const preview=pane.querySelector('.cchat-transform-preview'),ta=pane.querySelector('.cchat-transform-ta');
+  const tb=(_cchatTabs[id]||[]).find(t=>t.tabId===tabId);if(!tb)return;
+  ta.value=tb.text;
+  try{await _loadMarkdownLibs();preview.innerHTML=DOMPurify.sanitize(marked.parse(tb.text))}
+  catch(e){preview.textContent=tb.text}
+  preview.style.display='';ta.style.display='none';
+}
+function _cchatEnterTabEdit(id,tabId){
+  const pane=document.querySelector(`#cchat-textslot-${id} [data-cchat-pane="${tabId}"]`);if(!pane)return;
+  const preview=pane.querySelector('.cchat-transform-preview'),ta=pane.querySelector('.cchat-transform-ta');
+  preview.style.display='none';ta.style.display='';
+  ta.style.height='auto';ta.style.height=Math.max(ta.scrollHeight,300)+'px';
+  ta.focus();
+}
+function _cchatExitTabEdit(id,tabId){
+  const tb=(_cchatTabs[id]||[]).find(t=>t.tabId===tabId);if(!tb)return;
+  const pane=document.querySelector(`#cchat-textslot-${id} [data-cchat-pane="${tabId}"]`);if(!pane)return;
+  const ta=pane.querySelector('.cchat-transform-ta');
+  tb.text=ta.value;
+  _cchatRenderTabPreview(id,tabId);
 }
 // As duas ações abaixo agem sobre a aba de transformação ATIVA — não fazem
 // nada se a aba ativa for a 'original' (botões só aparecem nesse caso, ver
