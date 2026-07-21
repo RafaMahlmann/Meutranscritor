@@ -2478,7 +2478,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.1';
+const VOX_VERSION='2026.07.21.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6118,7 +6118,14 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
   const _t0=Date.now();
   try{
     let text,actualSec=durSec;
-    if(file.size>24*1024*1024){const r=await splitChunks(file,pid,key);text=r.text;actualSec=r.sec}
+    if(file.size>24*1024*1024){
+      // Vídeo grande (ex: gravação de tela) nunca tenta decodeAudioData nativo —
+      // carregar um contêiner de vídeo inteiro num ArrayBuffer + decodificar em PCM
+      // bruto estoura a memória de abas móveis (Safari no iPhone mata a aba e
+      // recarrega, sem erro capturável). FFmpeg sabe extrair só o áudio direto.
+      const r=file.type.startsWith('video/')?await splitChunksFFmpeg(file,pid,key):await splitChunks(file,pid,key);
+      text=r.text;actualSec=r.sec;
+    }
     else{
       // Formato arriscado pra esse provedor (ex: OGG fora do Groq, AMR/WMA/3GP de
       // gravadores antigos) → converte ANTES de enviar, silenciosamente.
@@ -9165,14 +9172,17 @@ async function splitChunksFFmpeg(file,pid,key){
   const inName='in'+(_extOf(file)?'.'+_extOf(file):'');
   await ff.writeFile(inName,await FFmpegUtil.fetchFile(file));
   setPL(pid,t('🔧 Convertendo áudio…'));
-  await ff.exec(['-i',inName,'-ar',String(CHUNK_SR),'-ac','1','-f','segment','-segment_time',String(CHUNK_SEC),'p%03d.wav']);
-  const list=(await ff.listDir('.')).filter(f=>/^p\d+\.wav$/.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name));
+  // MP3 comprimido em vez de WAV cru — um bloco de 10min em WAV pesa ~19MB; em
+  // MP3 a 64kbps pesa uma fração disso, o que importa muito num vídeo longo
+  // (ex: gravação de tela), onde o pico de memória do navegador é o risco real.
+  await ff.exec(['-i',inName,'-ar',String(CHUNK_SR),'-ac','1','-c:a','libmp3lame','-b:a','64k','-f','segment','-segment_time',String(CHUNK_SEC),'p%03d.mp3']);
+  const list=(await ff.listDir('.')).filter(f=>/^p\d+\.mp3$/.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name));
   if(!list.length)throw new Error(t('Não foi possível processar este arquivo de áudio.'));
   const res=[];
   for(let i=0;i<list.length;i++){
     setPL(pid,t('Transcrevendo {i}/{n}…').replace('{i}',i+1).replace('{n}',list.length));
     const data=await ff.readFile(list[i].name);
-    const cf=new File([data.buffer],`p${i+1}.wav`,{type:'audio/wav'});
+    const cf=new File([data.buffer],`p${i+1}.mp3`,{type:'audio/mp3'});
     res.push((await txChunk(cf,key)).trim());
     await ff.deleteFile(list[i].name).catch(()=>{});
   }
