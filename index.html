@@ -2478,7 +2478,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.4';
+const VOX_VERSION='2026.07.21.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2735,6 +2735,7 @@ let I18N_EN={
 "🔧 Preparando suporte a esse áudio (só na primeira vez)…":"🔧 Preparing support for this audio (first time only)…",
 "🔧 Convertendo áudio…":"🔧 Converting audio…",
 "🔧 Extraindo áudio do vídeo…":"🔧 Extracting audio from video…",
+"⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio":"⚠️ Couldn't save — storage space might be full",
 "Não foi possível processar este arquivo de áudio.":"Couldn't process this audio file.",
 "Solte o áudio aqui":"Drop the audio here",
 "O Vox vai preparar a transcrição":"Vox will prepare the transcription",
@@ -3253,9 +3254,9 @@ function showBrowserBanner(title,msg,color){
 }
 
 // ── INIT ──
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
   applyStaticI18n();_syncLangUI();
-  loadCfg();loadHistory();updateStats();checkSend();applyView();loadFontSize();
+  loadCfg();await loadHistory();updateStats();checkSend();applyView();loadFontSize();
   loadFolders();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();
   initAudioDropzone();
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
@@ -4933,7 +4934,11 @@ function factoryResetConfirm(){
   const keep=keepCards?['vox_history','vox_folders']:[];
   // enumera tudo que é nosso e apaga (exceto o que o usuário pediu pra manter)
   Object.keys(localStorage).filter(k=>k.startsWith('vox_')&&!keep.includes(k)).forEach(k=>localStorage.removeItem(k));
-  location.reload();
+  if(keepCards){location.reload();return}
+  // O histórico de verdade mora no IndexedDB agora — sem isso, "apagar tudo"
+  // limparia só a cópia órfã do localStorage e deixaria as transcrições
+  // reais intactas no banco.
+  idbDelete('vox_history').catch(()=>{}).finally(()=>location.reload());
 }
 function forceReset(){
   // 1. Libera áudios
@@ -5019,14 +5024,64 @@ function watchStuck(){
 }
 watchStuck();
 
+// ── ARMAZENAMENTO: IndexedDB pro histórico (localStorage tem teto de ~5MB por
+// site — pequeno pra quem grava bastante; IndexedDB cresce com o espaço livre
+// do aparelho). Só o histórico de transcrições (o que pode ficar grande) mora
+// aqui — configs pequenas (tema, idioma, chaves, pastas) continuam no
+// localStorage, não precisam de banco de dados pra um punhado de KB.
+const IDB_NAME='vox_db',IDB_STORE='kv';
+let _idbPromise=null,_idbWarnShown=false;
+function _openIDB(){
+  if(_idbPromise)return _idbPromise;
+  _idbPromise=new Promise((resolve,reject)=>{
+    const req=indexedDB.open(IDB_NAME,1);
+    req.onupgradeneeded=()=>{req.result.createObjectStore(IDB_STORE)};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+  return _idbPromise;
+}
+function idbGet(key){
+  return _openIDB().then(db=>new Promise((resolve,reject)=>{
+    const req=db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get(key);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  }));
+}
+function idbSet(key,value){
+  return _openIDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put(value,key);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+  }));
+}
+function idbDelete(key){
+  return _openIDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+  }));
+}
+
 // ── HISTORY ──
-function loadHistory(){
-  const s=localStorage.getItem('vox_history');
-  if(s){
-    const items=JSON.parse(s);
+let _historyCache=[];
+async function loadHistory(){
+  let items=await idbGet('vox_history').catch(()=>undefined);
+  if(items===undefined){
+    // Migração única do localStorage antigo pro IndexedDB — não apaga a cópia
+    // antiga (fica órfã, sem custo real) até termos certeza que não precisamos
+    // mais dela.
+    const s=localStorage.getItem('vox_history');
+    items=s?JSON.parse(s):[];
+    if(items.length)await idbSet('vox_history',items).catch(()=>{});
+  }
+  _historyCache=items||[];
+  if(_historyCache.length){
     // sort: pinned first
-    items.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
-    items.forEach(it=>{
+    const sorted=[..._historyCache].sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
+    sorted.forEach(it=>{
       if(it.diarized){
         addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',it.folder||'',it.chatHistory||'[]');
       }else{
@@ -5070,7 +5125,14 @@ function saveHistory(){
       items.push({...base,chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
     }
   });
-  localStorage.setItem('vox_history',JSON.stringify(items));
+  // Continua síncrona pra fora (os ~40 lugares que chamam saveHistory() não
+  // precisam virar async) — atualiza a cópia em memória na hora e grava no
+  // IndexedDB em segundo plano.
+  _historyCache=items;
+  idbSet('vox_history',items).catch(err=>{
+    console.error('Falha ao salvar histórico:',err);
+    if(!_idbWarnShown){_idbWarnShown=true;toast(t('⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio'),true)}
+  });
   localStorage.setItem('vox_stats',JSON.stringify(stats));
   updateRecencyBadges();
 }
@@ -5078,7 +5140,7 @@ function saveHistory(){
 // ── PROJETO: SALVAR / CONTINUAR (backup portátil) ──
 function exportProject(){
   saveHistory();
-  const history=JSON.parse(localStorage.getItem('vox_history')||'[]');
+  const history=_historyCache||[];
   if(!history.length){toast(t('ℹ️ Nada para salvar ainda — grave algo primeiro'),true);return}
   const data={
     app:'vox',version:1,exportedAt:new Date().toISOString(),
