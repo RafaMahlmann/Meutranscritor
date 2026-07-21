@@ -2229,6 +2229,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <div class="storage-meter-bar"><div class="storage-meter-fill" id="storageMeterFill"></div></div>
         </div>
         <div class="tx-tut" id="storageMeterExplain" style="margin-bottom:16px"></div>
+        <div class="tx-tut" id="pwaInstallTip" style="display:none;margin-bottom:16px;border:1px solid rgba(16,185,129,0.3)" data-i18n-html>📲 <strong>Proteja seus dados no iPhone/iPad:</strong> o Safari pode apagar dados de sites que ficam muitos dias sem ser abertos. Instalar o Vox na tela de início evita isso — toque no ícone de <strong>Compartilhar</strong> (o quadrado com a seta) e depois em <strong>"Adicionar à Tela de Início"</strong>.</div>
       </div>
 
       <div class="section-title" data-i18n>Apagar transcrições</div>
@@ -2497,7 +2498,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.6';
+const VOX_VERSION='2026.07.21.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2761,6 +2762,7 @@ let I18N_EN={
 "O Vox guarda tudo aqui, direto no seu aparelho — nada vai pra nuvem. O espaço livre do aparelho está ficando mais apertado; se quiser, exporte as transcrições antigas (viram um arquivo no seu computador) e apague aqui embaixo pra abrir espaço.":"Vox keeps everything right here, on your own device — nothing goes to the cloud. Your device's free space is getting tighter; if you'd like, export your old transcriptions (they become a file on your computer) and delete them below to free up space.",
 "O Vox guarda tudo aqui, direto no seu aparelho — nada vai pra nuvem. Suas transcrições são só texto, então ocupam bem pouco espaço: pra maioria das pessoas isso nunca chega a ser um problema. Se um dia quiser liberar espaço mesmo assim, é só exportar as antigas (viram um arquivo no seu computador) e apagar aqui embaixo.":"Vox keeps everything right here, on your own device — nothing goes to the cloud. Your transcriptions are just text, so they take up very little space: for most people this never becomes a real problem. If you ever want to free up space anyway, just export the old ones (they become a file on your computer) and delete them below.",
 "Não foi possível processar este arquivo de áudio.":"Couldn't process this audio file.",
+"📲 <strong>Proteja seus dados no iPhone/iPad:</strong> o Safari pode apagar dados de sites que ficam muitos dias sem ser abertos. Instalar o Vox na tela de início evita isso — toque no ícone de <strong>Compartilhar</strong> (o quadrado com a seta) e depois em <strong>\"Adicionar à Tela de Início\"</strong>.":"📲 <strong>Protect your data on iPhone/iPad:</strong> Safari can delete data for sites that go many days without being opened. Installing Vox on your Home Screen prevents this — tap the <strong>Share</strong> icon (the square with an arrow) and then <strong>\"Add to Home Screen\"</strong>.",
 "Solte o áudio aqui":"Drop the audio here",
 "O Vox vai preparar a transcrição":"Vox will prepare the transcription",
 "Também funciona com vídeo que tenha áudio.":"Video with audio works too.",
@@ -3276,6 +3278,23 @@ function showBrowserBanner(title,msg,color){
   b.innerHTML=`<div style="flex:1"><strong>${title}</strong> — ${msg}</div><button onclick="this.parentElement.remove()" style="background:rgba(255,255,255,0.25);border:none;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap">${t('OK, entendi')}</button>`;
   document.body.prepend(b);
 }
+// Pede armazenamento persistente ao navegador — blinda o IndexedDB contra
+// limpeza automática sob pressão de espaço. Silencioso: a maioria dos
+// navegadores decide sozinha (sem prompt pro usuário), e navegadores sem
+// suporte simplesmente ignoram a chamada.
+function _requestPersistentStorage(){
+  navigator.storage?.persist?.().catch(()=>{});
+}
+// No iOS, storage.persist() não existe/não ajuda de verdade — o que protege
+// os dados é instalar como PWA (tela de início). Mostra a dica só pra quem
+// está no Safari do iPhone/iPad E ainda não instalou.
+function _updatePwaTip(){
+  const el=document.getElementById('pwaInstallTip');
+  if(!el)return;
+  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isStandalone=window.navigator.standalone===true||window.matchMedia?.('(display-mode: standalone)')?.matches;
+  el.style.display=(isIOS&&!isStandalone)?'block':'none';
+}
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',async()=>{
@@ -3294,6 +3313,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     document.getElementById('btnFolders').classList.add('folders-on');
   }
   updateSpeedBadge();syncLocalModel();checkMicPermission();checkBrowser();
+  _requestPersistentStorage();_updatePwaTip();
   // Vídeo de abertura: primeira execução ou após reset de fábrica
   maybeAutoPlayIntro();
   const vintroVideo=document.getElementById('vintroVideo');
