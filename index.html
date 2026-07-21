@@ -2478,7 +2478,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.2';
+const VOX_VERSION='2026.07.21.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4998,15 +4998,20 @@ function bulkDelete(mode){
 }
 
 // ── STUCK DETECTOR ──
-let procStartTime=null;
+// Antes media tempo total desde o início do processamento — um arquivo grande
+// (ex: vídeo de 32min) que realmente está avançando (FFmpeg convertendo aos
+// poucos) passava dos 120s e disparava um falso "travado". Agora mede tempo
+// desde a ÚLTIMA atualização de progresso real (setPL) — só acusa travamento
+// quando o trabalho para de verdade, não quando só está demorando.
+let procStartTime=null,procHeartbeat=null;
 function watchStuck(){
   setInterval(()=>{
     if(isProc){
-      if(!procStartTime)procStartTime=Date.now();
-      const secs=Math.floor((Date.now()-procStartTime)/1000);
+      if(!procStartTime)procStartTime=procHeartbeat=Date.now();
+      const secs=Math.floor((Date.now()-procHeartbeat)/1000);
       if(secs>120)document.getElementById('stuckBanner').style.display='block';
     }else{
-      procStartTime=null;
+      procStartTime=procHeartbeat=null;
       document.getElementById('stuckBanner').style.display='none';
     }
   },5000);
@@ -9169,6 +9174,13 @@ async function splitChunks(file,pid,key){
 async function splitChunksFFmpeg(file,pid,key){
   setPL(pid,t('🔧 Preparando suporte a esse áudio (só na primeira vez)…'));
   const ff=await _loadFFmpeg();
+  // Registra o progresso a cada chamada (não só no primeiro load — _loadFFmpeg
+  // reaproveita a instância já carregada e ignoraria um onProgress passado
+  // aqui). Isso alimenta a barra de status com % real durante a conversão de
+  // um vídeo longo (ex: gravação de tela), que pode levar minutos num único
+  // ff.exec — sem isso, a mensagem fica parada em "Convertendo áudio…" o tempo
+  // todo e o detector de travamento acusa falso positivo.
+  ff.on('progress',({progress})=>{if(progress>0&&progress<=1)setPL(pid,t('🔧 Convertendo áudio…')+' '+Math.round(progress*100)+'%')});
   const inName='in'+(_extOf(file)?'.'+_extOf(file):'');
   await ff.writeFile(inName,await FFmpegUtil.fetchFile(file));
   setPL(pid,t('🔧 Convertendo áudio…'));
@@ -9213,7 +9225,7 @@ async function txChunk(file,key){
   }
   throw new Error(t('limite de uso da IA — tente novamente em instantes'));
 }
-function setPL(pid,txt){const e=document.getElementById('pl-'+pid);if(e)e.textContent=txt}
+function setPL(pid,txt){procHeartbeat=Date.now();const e=document.getElementById('pl-'+pid);if(e)e.textContent=txt}
 function encWAV(s,sr){
   const n=s.length,buf=new ArrayBuffer(44+n*2),v=new DataView(buf);
   const ws=(o,st)=>{for(let i=0;i<st.length;i++)v.setUint8(o+i,st.charCodeAt(i))};
