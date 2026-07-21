@@ -2478,7 +2478,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.3';
+const VOX_VERSION='2026.07.21.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2734,6 +2734,7 @@ let I18N_EN={
 "ℹ️ Texto editado: bolhas e Modo Conversa foram desativados neste card":"ℹ️ Text edited: bubbles and Conversation Mode were disabled on this card",
 "🔧 Preparando suporte a esse áudio (só na primeira vez)…":"🔧 Preparing support for this audio (first time only)…",
 "🔧 Convertendo áudio…":"🔧 Converting audio…",
+"🔧 Extraindo áudio do vídeo…":"🔧 Extracting audio from video…",
 "Não foi possível processar este arquivo de áudio.":"Couldn't process this audio file.",
 "Solte o áudio aqui":"Drop the audio here",
 "O Vox vai preparar a transcrição":"Vox will prepare the transcription",
@@ -6127,8 +6128,27 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
       // Vídeo grande (ex: gravação de tela) nunca tenta decodeAudioData nativo —
       // carregar um contêiner de vídeo inteiro num ArrayBuffer + decodificar em PCM
       // bruto estoura a memória de abas móveis (Safari no iPhone mata a aba e
-      // recarrega, sem erro capturável). FFmpeg sabe extrair só o áudio direto.
-      const r=file.type.startsWith('video/')?await splitChunksFFmpeg(file,pid,key):await splitChunks(file,pid,key);
+      // recarrega, sem erro capturável).
+      let r;
+      if(file.type.startsWith('video/')){
+        try{
+          // Extrai só a trilha de áudio por CÓPIA direta do stream (sem decodificar
+          // nem recodificar nada) — testado com gravações de tela reais do iPhone:
+          // ~400ms pra um vídeo de 430MB/22min, contra mais de 1h transcodificando
+          // tudo pra MP3 (o vídeo em si não precisa ser tocado, só descartado).
+          // O resultado é um arquivo de áudio pequeno, que a decodificação nativa
+          // já dá conta (mesmo caminho usado pra áudio puro).
+          const audioFile=await extractAudioTrack(file,pid);
+          r=await splitChunks(audioFile,pid,key);
+        }catch(e){
+          // Codec de áudio incomum que a cópia direta não suportou — rede de
+          // segurança: transcodifica tudo via FFmpeg (mais lento, mas cobre
+          // qualquer caso raro).
+          r=await splitChunksFFmpeg(file,pid,key);
+        }
+      }else{
+        r=await splitChunks(file,pid,key);
+      }
       text=r.text;actualSec=r.sec;
     }
     else{
@@ -9145,6 +9165,23 @@ async function transcodeToMp3(file,pid){
   return new File([data.buffer],file.name.replace(/\.[a-z0-9]+$/i,'')+'.mp3',{type:'audio/mp3'});
 }
 
+// Extrai só a trilha de áudio de um vídeo por CÓPIA direta do stream (-c:a copy)
+// — sem decodificar nem recodificar nada, então o tamanho/duração do vídeo não
+// importa pro tempo de execução (é só leitura+gravação de bytes). Isso resolve
+// o caso real de gravações de tela do iPhone, cujo áudio já vem em AAC (compatível
+// com contêiner .m4a sem conversão). Se o codec de origem não for compatível,
+// o exec falha e quem chamou cai pro caminho de transcodificação completa.
+async function extractAudioTrack(file,pid){
+  setPL(pid,t('🔧 Preparando suporte a esse áudio (só na primeira vez)…'));
+  const ff=await _loadFFmpeg();
+  const inName='in'+(_extOf(file)?'.'+_extOf(file):'');
+  await ff.writeFile(inName,await FFmpegUtil.fetchFile(file));
+  setPL(pid,t('🔧 Extraindo áudio do vídeo…'));
+  await ff.exec(['-i',inName,'-vn','-c:a','copy','out.m4a']);
+  const data=await ff.readFile('out.m4a');
+  await ff.deleteFile(inName).catch(()=>{});await ff.deleteFile('out.m4a').catch(()=>{});
+  return new File([data.buffer],file.name.replace(/\.[a-z0-9]+$/i,'')+'.m4a',{type:'audio/mp4'});
+}
 // ── CHUNKING ──
 async function splitChunks(file,pid,key){
   setPL(pid,t('Decodificando áudio…'));
