@@ -2508,7 +2508,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.13';
+const VOX_VERSION='2026.07.21.14';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2771,6 +2771,7 @@ let I18N_EN={
 "Copiar seleção":"Copy selection",
 "Copiar seleção — segure e arraste pra mover/colar em outro lugar":"Copy selection — hold and drag to move/paste it elsewhere",
 "📋 Trecho colado!":"📋 Snippet pasted!",
+"📋 Trecho colado no final da aba (estava em Markdown)!":"📋 Snippet pasted at the end of the tab (it was in Markdown view)!",
 "📄 Nova aba criada com o trecho!":"📄 New tab created with the snippet!",
 "⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio":"⚠️ Couldn't save — storage space might be full",
 "💾 Espaço neste aparelho":"💾 Space on this device",
@@ -9182,26 +9183,38 @@ function _floatDropTarget(cardId,x,y){
 async function _floatCompleteDrop(cardId,target,x,y){
   const activeTabId=_cchatActiveTab[cardId]||'original';
   if(target.kind==='pane'){
-    let ta;
+    let ta,wasPreview=false;
     if(activeTabId==='original'){
       ta=_cchatFindTextarea(cardId);
+      const card=document.getElementById(cardId);
+      if(card?.dataset.previewOn){wasPreview=true;toggleCardPreview(cardId)} // volta pro textarea cru, igual um clique no 👁
     }else{
       const paneEl=document.querySelector(`#cchat-textslot-${cardId} [data-cchat-pane="${activeTabId}"]`);
       const preview=paneEl?.querySelector('.cchat-transform-preview');
-      if(preview&&preview.style.display!=='none')_cchatEnterTabEdit(cardId,activeTabId); // vira textarea, igual um clique já faz
+      if(preview&&preview.style.display!=='none'){wasPreview=true;_cchatEnterTabEdit(cardId,activeTabId)} // vira textarea, igual um clique já faz
       ta=paneEl?.querySelector('.cchat-transform-ta');
     }
     if(!ta){_hideFloatHandle();return}
-    const dropIdx=_caretIndexFromPoint(ta,x,y);
-    const sameEditableTab=_floatSelOrigin?.kind==='tab-editable'&&_floatSelOrigin.cardId===cardId&&_floatSelOrigin.tabId===activeTabId;
-    if(sameEditableTab){
-      const{start,end}=_floatSelOrigin;
-      let idx=dropIdx;
-      if(idx>end)idx-=(end-start);else if(idx>start)idx=start;
-      const without=ta.value.slice(0,start)+ta.value.slice(end);
-      ta.value=without.slice(0,idx)+_floatSelText+without.slice(idx);
+    if(wasPreview){
+      // A posição do mouse valia pro texto RENDERIZADO (negrito, títulos —
+      // sinais de markdown escondidos); o texto cru por trás tem outra
+      // geometria (** visíveis, linhas quebram diferente) — usar a mesma
+      // coordenada ali colaria num lugar errado, sem avisar. Mais seguro
+      // colar sempre no final quando isso acontece.
+      const sep=ta.value.trimEnd().length>0?'\n\n':'';
+      ta.value=ta.value.trimEnd()+sep+_floatSelText;
     }else{
-      ta.value=ta.value.slice(0,dropIdx)+_floatSelText+ta.value.slice(dropIdx);
+      const dropIdx=_caretIndexFromPoint(ta,x,y);
+      const sameEditableTab=_floatSelOrigin?.kind==='tab-editable'&&_floatSelOrigin.cardId===cardId&&_floatSelOrigin.tabId===activeTabId;
+      if(sameEditableTab){
+        const{start,end}=_floatSelOrigin;
+        let idx=dropIdx;
+        if(idx>end)idx-=(end-start);else if(idx>start)idx=start;
+        const without=ta.value.slice(0,start)+ta.value.slice(end);
+        ta.value=without.slice(0,idx)+_floatSelText+without.slice(idx);
+      }else{
+        ta.value=ta.value.slice(0,dropIdx)+_floatSelText+ta.value.slice(dropIdx);
+      }
     }
     if(activeTabId==='original'){
       autoR(ta);updateFooter(cardId);saveHistory();
@@ -9210,7 +9223,7 @@ async function _floatCompleteDrop(cardId,target,x,y){
       if(tb)tb.text=ta.value;
       ta.style.height='auto';ta.style.height=Math.max(ta.scrollHeight,300)+'px';
     }
-    toast(t('📋 Trecho colado!'));
+    toast(wasPreview?t('📋 Trecho colado no final da aba (estava em Markdown)!'):t('📋 Trecho colado!'));
   }else if(target.kind==='empty'){
     await _cchatAddTab(cardId,t('Trecho colado'),_floatSelText);
     toast(t('📄 Nova aba criada com o trecho!'));
