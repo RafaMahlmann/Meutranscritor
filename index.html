@@ -2242,6 +2242,26 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <div class="tx-tut" id="pwaInstallTip" style="display:none;margin-bottom:16px;border:1px solid rgba(16,185,129,0.3)" data-i18n-html>📲 <strong>Proteja seus dados no iPhone/iPad:</strong> o Safari pode apagar dados de sites que ficam muitos dias sem ser abertos. Instalar o Vox na tela de início evita isso — toque no ícone de <strong>Compartilhar</strong> (o quadrado com a seta) e depois em <strong>"Adicionar à Tela de Início"</strong>.</div>
       </div>
 
+      <div class="section-title" style="margin-top:16px" data-i18n>📖 Dicionário e correções aprendidas</div>
+      <p class="fhint" style="margin-bottom:8px" data-i18n>Ao revisar palavras repetidas/suspeitas num texto, escolher "sempre ignorar" ou "sempre trocar" guarda a regra aqui — visível e editável a qualquer momento, nunca escondida.</p>
+      <div class="maint-box" style="margin-bottom:8px;flex-direction:column;align-items:stretch;gap:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="maint-title" data-i18n>Palavras ignoradas</span>
+          <span id="personalDictCount" style="font-size:12px;color:var(--text4);font-weight:600">0</span>
+        </div>
+        <div id="personalDictList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        <p id="personalDictEmpty" style="font-size:12px;color:var(--text4)" data-i18n>Nenhuma ainda.</p>
+      </div>
+      <div class="maint-box" style="margin-bottom:8px;flex-direction:column;align-items:stretch;gap:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="maint-title" data-i18n>Correções aprendidas</span>
+          <span id="learnedRulesCount" style="font-size:12px;color:var(--text4);font-weight:600">0</span>
+        </div>
+        <div id="learnedRulesList" style="display:flex;flex-direction:column;gap:6px"></div>
+        <p id="learnedRulesEmpty" style="font-size:12px;color:var(--text4)" data-i18n>Nenhuma ainda.</p>
+      </div>
+      <button class="maint-btn" style="margin-bottom:16px" onclick="clearLearningData()" data-i18n>Esquecer tudo</button>
+
       <div class="section-title" data-i18n>Apagar transcrições</div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div class="maint-box">
@@ -2508,7 +2528,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.15';
+const VOX_VERSION='2026.07.22.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2772,6 +2792,16 @@ let I18N_EN={
 "Copiar seleção — segure e arraste pra mover/colar em outro lugar":"Copy selection — hold and drag to move/paste it elsewhere",
 "📋 Trecho colado!":"📋 Snippet pasted!",
 "📋 Trecho colado no final da aba (estava em Markdown)!":"📋 Snippet pasted at the end of the tab (it was in Markdown view)!",
+"📖 Dicionário e correções aprendidas":"📖 Dictionary and learned corrections",
+"Ao revisar palavras repetidas/suspeitas num texto, escolher \"sempre ignorar\" ou \"sempre trocar\" guarda a regra aqui — visível e editável a qualquer momento, nunca escondida.":"When reviewing repeated/suspicious words in a text, choosing \"always ignore\" or \"always replace\" saves the rule here — visible and editable at any time, never hidden.",
+"Palavras ignoradas":"Ignored words",
+"Nenhuma ainda.":"None yet.",
+"Correções aprendidas":"Learned corrections",
+"Remover":"Remove",
+"Esquecer tudo":"Forget everything",
+"ℹ️ Já está vazio":"ℹ️ Already empty",
+"Esquecer todo o dicionário pessoal e as correções aprendidas?":"Forget the entire personal dictionary and learned corrections?",
+"🗑️ Dicionário e correções esquecidos":"🗑️ Dictionary and corrections forgotten",
 "📄 Nova aba criada com o trecho!":"📄 New tab created with the snippet!",
 "⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio":"⚠️ Couldn't save — storage space might be full",
 "💾 Espaço neste aparelho":"💾 Space on this device",
@@ -3317,7 +3347,7 @@ function _updatePwaTip(){
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',async()=>{
   applyStaticI18n();_syncLangUI();
-  loadCfg();await loadHistory();updateStats();checkSend();applyView();loadFontSize();
+  loadCfg();loadLearningData();await loadHistory();updateStats();checkSend();applyView();loadFontSize();
   loadFolders();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();initFloatSelHandle();
   initAudioDropzone();
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
@@ -4748,10 +4778,60 @@ function updateDiarStatus(){
   const lbl=document.getElementById('diarChipLbl');
   if(lbl)lbl.textContent=cfg.diarEnabled?t('Diarização ON'):t('Diarização');
 }
+// ── DICIONÁRIO PESSOAL + CORREÇÕES APRENDIDAS (Fase 0 da revisão de repetições) ──
+// Duas listas simples, globais (não por pasta — foi a decisão explícita do
+// Rafa: "deixa geral pra pessoa que tá usando ali o aplicativo"), guardadas
+// no localStorage (é pouca coisa, não precisa do IndexedDB). Sempre visível
+// e editável — nunca um comportamento silencioso.
+let _personalDict=[],_learnedRules=[]; // dict: string[]; rules: {from,to}[]
+function loadLearningData(){
+  try{_personalDict=JSON.parse(localStorage.getItem('vox_personal_dict')||'[]')}catch(e){_personalDict=[]}
+  try{_learnedRules=JSON.parse(localStorage.getItem('vox_learned_rules')||'[]')}catch(e){_learnedRules=[]}
+}
+function saveLearningData(){
+  localStorage.setItem('vox_personal_dict',JSON.stringify(_personalDict));
+  localStorage.setItem('vox_learned_rules',JSON.stringify(_learnedRules));
+}
+function addToPersonalDict(word){
+  const w=(word||'').trim().toLowerCase();if(!w)return;
+  if(!_personalDict.includes(w)){_personalDict.push(w);saveLearningData();renderLearningPanel()}
+}
+function removeFromPersonalDict(word){
+  _personalDict=_personalDict.filter(w=>w!==word);saveLearningData();renderLearningPanel();
+}
+function addLearnedRule(from,to){
+  const f=(from||'').trim(),tt=(to||'').trim();if(!f||!tt||f===tt)return;
+  _learnedRules=_learnedRules.filter(r=>r.from.toLowerCase()!==f.toLowerCase()); // uma regra por palavra-origem
+  _learnedRules.push({from:f,to:tt});saveLearningData();renderLearningPanel();
+}
+function removeLearnedRule(idx){
+  _learnedRules.splice(idx,1);saveLearningData();renderLearningPanel();
+}
+function clearLearningData(){
+  if(!_personalDict.length&&!_learnedRules.length){toast(t('ℹ️ Já está vazio'));return}
+  if(!confirm(t('Esquecer todo o dicionário pessoal e as correções aprendidas?')))return;
+  _personalDict=[];_learnedRules=[];saveLearningData();renderLearningPanel();
+  toast(t('🗑️ Dicionário e correções esquecidos'));
+}
+function renderLearningPanel(){
+  const dictList=document.getElementById('personalDictList'),dictEmpty=document.getElementById('personalDictEmpty'),dictCount=document.getElementById('personalDictCount');
+  if(dictList){
+    dictList.innerHTML=_personalDict.map(w=>`<span class="ext-chip">${escHtml(w)} <span onclick="removeFromPersonalDict('${escJs(w)}')" style="cursor:pointer;opacity:0.6" title="${t('Remover')}">✕</span></span>`).join('');
+    if(dictEmpty)dictEmpty.style.display=_personalDict.length?'none':'block';
+    if(dictCount)dictCount.textContent=_personalDict.length;
+  }
+  const rulesList=document.getElementById('learnedRulesList'),rulesEmpty=document.getElementById('learnedRulesEmpty'),rulesCount=document.getElementById('learnedRulesCount');
+  if(rulesList){
+    rulesList.innerHTML=_learnedRules.map((r,i)=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2)"><span style="flex:1"><strong>${escHtml(r.from)}</strong> → ${escHtml(r.to)}</span><span onclick="removeLearnedRule(${i})" style="cursor:pointer;opacity:0.6;flex-shrink:0" title="${t('Remover')}">✕</span></div>`).join('');
+    if(rulesEmpty)rulesEmpty.style.display=_learnedRules.length?'none':'block';
+    if(rulesCount)rulesCount.textContent=_learnedRules.length;
+  }
+}
 function openModal(){
   document.getElementById('overlay').classList.add('on');
   updateRamBadge();
   updateStorageMeter();
+  renderLearningPanel();
   if(cfg.provider==='local'){updateLocalPanel();checkLocalStatusNow()}
 }
 function closeModal(){document.getElementById('overlay').classList.remove('on')}
