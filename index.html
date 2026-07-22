@@ -2508,7 +2508,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.10';
+const VOX_VERSION='2026.07.21.11';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2766,6 +2766,8 @@ let I18N_EN={
 "🔧 Convertendo áudio…":"🔧 Converting audio…",
 "🔧 Extraindo áudio do vídeo…":"🔧 Extracting audio from video…",
 "📋 Trecho copiado!":"📋 Snippet copied!",
+"📋 Trecho copiado para um novo card!":"📋 Snippet copied to a new card!",
+"📋 Trecho copiado pro card!":"📋 Snippet copied to the card!",
 "Copiar seleção":"Copy selection",
 "⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio":"⚠️ Couldn't save — storage space might be full",
 "💾 Espaço neste aparelho":"💾 Space on this device",
@@ -9033,7 +9035,7 @@ function exitAdvanced(id,viaUndo=false){
 }
 
 // ── DRAG TO MERGE CARDS / MOVER PRA PASTA (auto-scroll + abre pastas na borda) ──
-let _dragSrcId=null,_dragGhost=null,_dragActive=false,_dragEl=null,_dragX=0,_dragY=0,_dragScrollV=0,_dragRAF=null,_dragSrcIsFolder=false;
+let _dragSrcId=null,_dragGhost=null,_dragActive=false,_dragEl=null,_dragX=0,_dragY=0,_dragScrollV=0,_dragRAF=null,_dragSrcIsFolder=false,_dragSelText=null;
 
 // ── SELEÇÃO DE TEXTO NO CARD: o ⠿ "respira" quando há uma seleção ativa ──
 // Delegação num só listener em #cardsList (em vez de um por card) — sobrevive
@@ -9200,7 +9202,7 @@ function _dragLoop(){
 }
 
 function _startDrag(el,e0,isTouch=false,isFolder=false){
-  _dragSrcId=isFolder?(el.dataset.fid||''):el.id;_dragEl=el;_dragActive=false;_dragScrollV=0;_dragSrcIsFolder=isFolder;
+  _dragSrcId=isFolder?(el.dataset.fid||''):el.id;_dragEl=el;_dragActive=false;_dragScrollV=0;_dragSrcIsFolder=isFolder;_dragSelText=null;
   const ox=e0.clientX,oy=e0.clientY;
   function getCoords(e){if(isTouch){const t=e.touches[0]||e.changedTouches[0];return{x:t.clientX,y:t.clientY}}return{x:e.clientX,y:e.clientY}}
 
@@ -9216,7 +9218,13 @@ function _startDrag(el,e0,isTouch=false,isFolder=false){
         const fname=folders.find(x=>x.id===_dragSrcId)?.name||'';
         _dragGhost.innerHTML=`<div style="padding:10px 14px;font-size:12px;color:var(--text2)">📁 ${escHtml(fname)}</div>`;
       }else{
-        const text=el.querySelector('textarea')?.value||'';
+        // Havia uma seleção de texto no card quando o arrasto começou? Carrega
+        // só o trecho (vira cópia no destino, a origem não muda) em vez do
+        // card inteiro.
+        const ta=el.querySelector('textarea');
+        const hasSel=ta&&ta.selectionStart!==ta.selectionEnd;
+        _dragSelText=hasSel?ta.value.slice(ta.selectionStart,ta.selectionEnd):null;
+        const text=hasSel?_dragSelText:(ta?.value||'');
         _dragGhost.innerHTML=`<div style="padding:10px 14px;font-size:12px;color:var(--text2);max-height:80px;overflow:hidden">${escHtml(text.slice(0,120))}${text.length>120?'…':''}</div>`;
       }
       document.body.appendChild(_dragGhost);
@@ -9272,6 +9280,26 @@ function _startDrag(el,e0,isTouch=false,isFolder=false){
       if(cardTarget)assignCardToFolder(cardTarget.id,_dragSrcId);
       _dragSrcId=null;_dragEl=null;_dragSrcIsFolder=false;
       return;
+    }
+    // Arrastou só um TRECHO selecionado (não o card inteiro) — vira cópia:
+    // a origem nunca muda, só o destino ganha o texto.
+    if(_dragSelText!=null){
+      if(folderEl){
+        const newId=addCard(_dragSelText,null,0,'texto',cfg.provider,true,null,null,[],'','livre',false,folderEl.dataset.fid||'');
+        toast(t('📋 Trecho copiado para um novo card!'));
+      }else{
+        const target=_cardUnderCursor(x,y,el.id);
+        if(target){
+          const dstTa=target.querySelector('textarea');
+          if(dstTa){
+            const sep=dstTa.value.trimEnd().length>0?'\n\n':'';
+            dstTa.value=dstTa.value.trimEnd()+sep+_dragSelText;
+            autoR(dstTa);updateFooter(target.id);saveHistory();
+            toast(t('📋 Trecho copiado pro card!'));
+          }
+        }
+      }
+      _dragSrcId=null;_dragEl=null;_dragSelText=null;return;
     }
     if(folderEl){assignCardToFolder(_dragSrcId,folderEl.dataset.fid||'');_dragSrcId=null;_dragEl=null;return}
     const target=_cardUnderCursor(x,y,el.id);
