@@ -2508,7 +2508,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.11';
+const VOX_VERSION='2026.07.21.12';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -9101,7 +9101,10 @@ function _startFloatClick(e0,isTouch=false){
   function onUp(){
     document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
     document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
-    if(!moved&&text){navigator.clipboard.writeText(text).then(()=>toast(t('📋 Trecho copiado!')));_hideFloatHandle()}
+    if(!moved&&text){navigator.clipboard.writeText(text).then(()=>toast(t('📋 Trecho copiado!')))}
+    // Arrastar pra soltar em outro lugar ainda não existe — some o ⠿ em vez
+    // de deixá-lo preso aceso sem fazer nada.
+    _hideFloatHandle();
   }
   if(isTouch){document.addEventListener('touchmove',onMove,{passive:true});document.addEventListener('touchend',onUp)}
   else{document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp)}
@@ -9132,6 +9135,17 @@ function initFloatSelHandle(){
   document.addEventListener('keyup',_onFloatSelUp);
   document.addEventListener('mousedown',e=>{if(!e.target.closest('#floatingSelHandle'))_hideFloatHandle()});
   document.addEventListener('touchstart',e=>{if(!e.target.closest('#floatingSelHandle'))_hideFloatHandle()},{passive:true});
+  // O navegador tem o PRÓPRIO recurso nativo de "arrastar o texto selecionado"
+  // (clicar em cima do trecho azul e arrastar) — totalmente separado do nosso
+  // ⠿. Se o dedo/cursor pegar o texto em vez do ícone, o navegador assume esse
+  // arrasto nativo por conta própria, sem passar pelo nosso código — e se o
+  // ponto de soltura não for aceito, alguns navegadores já removeram o texto
+  // da origem antes de descobrir isso, apagando o trecho sem colar em lugar
+  // nenhum. Bloqueia esse recurso nativo por completo — a única forma de
+  // carregar um trecho passa a ser o nosso ⠿.
+  document.addEventListener('dragstart',e=>{
+    if(e.target.closest('#cardsList, #cchat-overlay'))e.preventDefault();
+  });
 }
 
 function initCardDrag(el){
