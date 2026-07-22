@@ -575,6 +575,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 @keyframes dragHandleBreath{0%,100%{opacity:.45;transform:scale(1);color:var(--text4)}50%{opacity:1;transform:scale(1.2);color:var(--accent)}}
 .drag-handle.sel-active{animation:dragHandleBreath 1.8s ease-in-out infinite}
 .drag-handle.sel-active:hover{animation-play-state:paused;opacity:1;transform:scale(1)}
+/* Mesmo ⠿, mesma respiração — só que flutuante, nasce perto de onde o texto
+   foi selecionado. Cobre lugares sem um handle fixo (respostas da IA no
+   chat, abas de texto do Modo Conversa). */
+#floatingSelHandle{position:fixed;z-index:9999;background:var(--bg-card);border:1px solid var(--border2);box-shadow:0 2px 10px rgba(0,0,0,0.18);display:none}
+#floatingSelHandle.show{display:flex}
 #dragGhost{position:fixed;pointer-events:none;z-index:9999;opacity:0.85;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.25);transform:rotate(2deg) scale(1.02);transition:none;max-width:340px;overflow:hidden;background:var(--bg-card);border:2px solid var(--accent)}
 
 /* ── FOLDERS SIDEBAR ── */
@@ -2503,7 +2508,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.9';
+const VOX_VERSION='2026.07.21.10';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2761,6 +2766,7 @@ let I18N_EN={
 "🔧 Convertendo áudio…":"🔧 Converting audio…",
 "🔧 Extraindo áudio do vídeo…":"🔧 Extracting audio from video…",
 "📋 Trecho copiado!":"📋 Snippet copied!",
+"Copiar seleção":"Copy selection",
 "⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio":"⚠️ Couldn't save — storage space might be full",
 "💾 Espaço neste aparelho":"💾 Space on this device",
 "{used} de {quota} usados":"{used} of {quota} used",
@@ -3306,7 +3312,7 @@ function _updatePwaTip(){
 document.addEventListener('DOMContentLoaded',async()=>{
   applyStaticI18n();_syncLangUI();
   loadCfg();await loadHistory();updateStats();checkSend();applyView();loadFontSize();
-  loadFolders();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();
+  loadFolders();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();initFloatSelHandle();
   initAudioDropzone();
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
   if(!localStorage.getItem('vox_welcomed')&&!document.querySelector('#cardsList .card:not(.proc-card)')){
@@ -7201,6 +7207,7 @@ function closeConversaMode(id){
   document.body.style.overflow='';
   // Limpa referências
   delete card._cchatEditor;delete card._cchatOrigParent;delete card._cchatOrigNext;
+  _hideFloatHandle(); // não deixa o ⠿ flutuante órfão depois que a tela some
   saveHistory();
 }
 function clearCchatHistory(id){
@@ -9048,6 +9055,81 @@ function initSelectionGlow(){
     if(e.target.tagName!=='TEXTAREA')return;
     e.target.closest('.card')?.querySelector('.drag-handle')?.classList.remove('sel-active');
   },true); // blur também não borbulha — captura
+}
+
+// ── ⠿ FLUTUANTE: mesma função, em lugares sem handle fixo ──
+// O card já tem um ⠿ de sobra no cabeçalho (initSelectionGlow acima). Em
+// qualquer outro texto copiável do app (respostas da IA no chat, abas
+// Original/Transformar do Modo Conversa), nasce um ⠿ flutuante do lado de
+// onde a seleção terminou — mesmo ícone, mesma respiração, clique copia.
+let _floatSelText='',_floatSelHandle=null;
+function _ensureFloatHandle(){
+  if(_floatSelHandle)return _floatSelHandle;
+  const h=document.createElement('div');
+  h.id='floatingSelHandle';
+  h.className='drag-handle sel-active';
+  h.title=t('Copiar seleção');
+  h.textContent='⠿';
+  h.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();_startFloatClick({clientX:e.clientX,clientY:e.clientY})});
+  h.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();const tt=e.touches[0];_startFloatClick({clientX:tt.clientX,clientY:tt.clientY},true)},{passive:false});
+  document.body.appendChild(h);
+  _floatSelHandle=h;
+  return h;
+}
+function _showFloatHandle(text,x,y){
+  _floatSelText=text;
+  const h=_ensureFloatHandle();
+  const vw=window.innerWidth;
+  h.style.left=Math.min(x+10,vw-40)+'px';
+  h.style.top=Math.max(8,y-38)+'px';
+  h.classList.add('show');
+}
+function _hideFloatHandle(){
+  _floatSelText='';
+  _floatSelHandle?.classList.remove('show');
+}
+// Clique (sem arrastar) copia o trecho capturado quando o ⠿ flutuante nasceu.
+// Arrastar pra soltar em outro lugar é um passo futuro — por ora, só copia.
+function _startFloatClick(e0,isTouch=false){
+  const ox=e0.clientX,oy=e0.clientY;
+  const text=_floatSelText;
+  function getCoords(e){if(isTouch){const t=e.touches[0]||e.changedTouches[0];return{x:t.clientX,y:t.clientY}}return{x:e.clientX,y:e.clientY}}
+  let moved=false;
+  function onMove(e){const{x,y}=getCoords(e);if(Math.hypot(x-ox,y-oy)>=8)moved=true}
+  function onUp(){
+    document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
+    if(!moved&&text){navigator.clipboard.writeText(text).then(()=>toast(t('📋 Trecho copiado!')));_hideFloatHandle()}
+  }
+  if(isTouch){document.addEventListener('touchmove',onMove,{passive:true});document.addEventListener('touchend',onUp)}
+  else{document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp)}
+}
+// Detecção global, restrita ao Modo Conversa por enquanto (#cchat-overlay
+// cobre tanto as abas de texto quanto a zona do chat) — escuta em document
+// porque o overlay é criado/destruído dinamicamente, não existe no boot.
+function _onFloatSelUp(e){
+  const overlay=e.target.closest?.('#cchat-overlay');
+  if(!overlay||e.target.closest('#floatingSelHandle'))return;
+  let text='';
+  if(e.target.tagName==='TEXTAREA'){
+    const ta=e.target;
+    if(ta.selectionStart===ta.selectionEnd){_hideFloatHandle();return}
+    text=ta.value.slice(ta.selectionStart,ta.selectionEnd);
+  }else{
+    const sel=window.getSelection();
+    text=sel&&overlay.contains(sel.anchorNode)?sel.toString():'';
+    if(!text){_hideFloatHandle();return}
+  }
+  if(!text.trim()){_hideFloatHandle();return}
+  const c=e.changedTouches?.[0]||e;
+  _showFloatHandle(text,c.clientX,c.clientY);
+}
+function initFloatSelHandle(){
+  document.addEventListener('mouseup',_onFloatSelUp);
+  document.addEventListener('touchend',_onFloatSelUp);
+  document.addEventListener('keyup',_onFloatSelUp);
+  document.addEventListener('mousedown',e=>{if(!e.target.closest('#floatingSelHandle'))_hideFloatHandle()});
+  document.addEventListener('touchstart',e=>{if(!e.target.closest('#floatingSelHandle'))_hideFloatHandle()},{passive:true});
 }
 
 function initCardDrag(el){
