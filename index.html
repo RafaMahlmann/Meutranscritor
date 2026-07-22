@@ -2508,7 +2508,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.12';
+const VOX_VERSION='2026.07.21.13';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2769,6 +2769,9 @@ let I18N_EN={
 "📋 Trecho copiado para um novo card!":"📋 Snippet copied to a new card!",
 "📋 Trecho copiado pro card!":"📋 Snippet copied to the card!",
 "Copiar seleção":"Copy selection",
+"Copiar seleção — segure e arraste pra mover/colar em outro lugar":"Copy selection — hold and drag to move/paste it elsewhere",
+"📋 Trecho colado!":"📋 Snippet pasted!",
+"📄 Nova aba criada com o trecho!":"📄 New tab created with the snippet!",
 "⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio":"⚠️ Couldn't save — storage space might be full",
 "💾 Espaço neste aparelho":"💾 Space on this device",
 "{used} de {quota} usados":"{used} of {quota} used",
@@ -6891,9 +6894,9 @@ function _cchatInitTabs(id){
 function _cchatRenderTextTabs(id){
   const bar=document.getElementById('cchat-texttabs-'+id);if(!bar)return;
   const active=_cchatActiveTab[id]||'original';
-  let html=`<button type="button" class="cchat-ttab${active==='original'?' active':''}" onclick="_cchatSwitchTab('${id}','original')">${t('Original')}</button>`;
+  let html=`<button type="button" class="cchat-ttab${active==='original'?' active':''}" data-tabid="original" onclick="_cchatSwitchTab('${id}','original')">${t('Original')}</button>`;
   (_cchatTabs[id]||[]).forEach(tb=>{
-    html+=`<button type="button" class="cchat-ttab${active===tb.tabId?' active':''}" onclick="_cchatSwitchTab('${id}','${tb.tabId}')">${escHtml(tb.label)}<span class="cchat-ttab-x" onclick="event.stopPropagation();_cchatCloseTab('${id}','${tb.tabId}')" title="${t('Fechar')}">✕</span></button>`;
+    html+=`<button type="button" class="cchat-ttab${active===tb.tabId?' active':''}" data-tabid="${tb.tabId}" onclick="_cchatSwitchTab('${id}','${tb.tabId}')">${escHtml(tb.label)}<span class="cchat-ttab-x" onclick="event.stopPropagation();_cchatCloseTab('${id}','${tb.tabId}')" title="${t('Fechar')}">✕</span></button>`;
   });
   bar.innerHTML=html;
 }
@@ -7069,6 +7072,7 @@ function openConversaMode(id){
   // Cria overlay
   const overlay=document.createElement('div');
   overlay.id='cchat-overlay';
+  overlay.dataset.cardId=id; // pro ⠿ flutuante saber a qual card este overlay pertence
   const title=(card.dataset.sessionName||card.querySelector('.sname-badge')?.textContent||'').trim()||fmtDt(card.dataset.dt||'');
   overlay.innerHTML=`
     <div class="cchat-header">
@@ -9063,23 +9067,33 @@ function initSelectionGlow(){
 // O card já tem um ⠿ de sobra no cabeçalho (initSelectionGlow acima). Em
 // qualquer outro texto copiável do app (respostas da IA no chat, abas
 // Original/Transformar do Modo Conversa), nasce um ⠿ flutuante do lado de
-// onde a seleção terminou — mesmo ícone, mesma respiração, clique copia.
-let _floatSelText='',_floatSelHandle=null;
+// onde a seleção terminou — mesmo ícone, mesma respiração, clique copia,
+// segurar e arrastar carrega o trecho pra outro lugar.
+//
+// Regra de mover x copiar: só sabemos cortar com segurança da ORIGEM quando
+// ela veio de um textarea de verdade (Original, ou uma aba de transformação
+// já em modo de edição) — ali temos a posição exata [start,end]. Se a
+// seleção veio de texto RENDERIZADO (uma mensagem do chat, ou uma aba ainda
+// em modo Markdown/pré-visualização), não existe um jeito confiável de
+// mapear aquilo de volta pra uma posição no texto-fonte por trás da
+// formatação — então esses casos são sempre CÓPIA, nunca corte, pra nunca
+// arriscar apagar algo sem conseguir colar de volta.
+let _floatSelText='',_floatSelHandle=null,_floatSelOrigin=null,_floatSelCardId=null;
 function _ensureFloatHandle(){
   if(_floatSelHandle)return _floatSelHandle;
   const h=document.createElement('div');
   h.id='floatingSelHandle';
   h.className='drag-handle sel-active';
-  h.title=t('Copiar seleção');
+  h.title=t('Copiar seleção — segure e arraste pra mover/colar em outro lugar');
   h.textContent='⠿';
-  h.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();_startFloatClick({clientX:e.clientX,clientY:e.clientY})});
-  h.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();const tt=e.touches[0];_startFloatClick({clientX:tt.clientX,clientY:tt.clientY},true)},{passive:false});
+  h.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();_startFloatDrag({clientX:e.clientX,clientY:e.clientY})});
+  h.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();const tt=e.touches[0];_startFloatDrag({clientX:tt.clientX,clientY:tt.clientY},true)},{passive:false});
   document.body.appendChild(h);
   _floatSelHandle=h;
   return h;
 }
-function _showFloatHandle(text,x,y){
-  _floatSelText=text;
+function _showFloatHandle(text,x,y,cardId){
+  _floatSelText=text;_floatSelCardId=cardId;
   const h=_ensureFloatHandle();
   const vw=window.innerWidth;
   h.style.left=Math.min(x+10,vw-40)+'px';
@@ -9087,27 +9101,8 @@ function _showFloatHandle(text,x,y){
   h.classList.add('show');
 }
 function _hideFloatHandle(){
-  _floatSelText='';
+  _floatSelText='';_floatSelOrigin=null;_floatSelCardId=null;
   _floatSelHandle?.classList.remove('show');
-}
-// Clique (sem arrastar) copia o trecho capturado quando o ⠿ flutuante nasceu.
-// Arrastar pra soltar em outro lugar é um passo futuro — por ora, só copia.
-function _startFloatClick(e0,isTouch=false){
-  const ox=e0.clientX,oy=e0.clientY;
-  const text=_floatSelText;
-  function getCoords(e){if(isTouch){const t=e.touches[0]||e.changedTouches[0];return{x:t.clientX,y:t.clientY}}return{x:e.clientX,y:e.clientY}}
-  let moved=false;
-  function onMove(e){const{x,y}=getCoords(e);if(Math.hypot(x-ox,y-oy)>=8)moved=true}
-  function onUp(){
-    document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-    document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
-    if(!moved&&text){navigator.clipboard.writeText(text).then(()=>toast(t('📋 Trecho copiado!')))}
-    // Arrastar pra soltar em outro lugar ainda não existe — some o ⠿ em vez
-    // de deixá-lo preso aceso sem fazer nada.
-    _hideFloatHandle();
-  }
-  if(isTouch){document.addEventListener('touchmove',onMove,{passive:true});document.addEventListener('touchend',onUp)}
-  else{document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp)}
 }
 // Detecção global, restrita ao Modo Conversa por enquanto (#cchat-overlay
 // cobre tanto as abas de texto quanto a zona do chat) — escuta em document
@@ -9115,19 +9110,152 @@ function _startFloatClick(e0,isTouch=false){
 function _onFloatSelUp(e){
   const overlay=e.target.closest?.('#cchat-overlay');
   if(!overlay||e.target.closest('#floatingSelHandle'))return;
+  const cardId=overlay.dataset.cardId;
   let text='';
   if(e.target.tagName==='TEXTAREA'){
     const ta=e.target;
     if(ta.selectionStart===ta.selectionEnd){_hideFloatHandle();return}
     text=ta.value.slice(ta.selectionStart,ta.selectionEnd);
+    const pane=ta.closest('[data-cchat-pane]');
+    const tabId=pane?pane.dataset.cchatPane:'original';
+    _floatSelOrigin={kind:'tab-editable',cardId,tabId,start:ta.selectionStart,end:ta.selectionEnd};
   }else{
     const sel=window.getSelection();
     text=sel&&overlay.contains(sel.anchorNode)?sel.toString():'';
     if(!text){_hideFloatHandle();return}
+    _floatSelOrigin={kind:'readonly',cardId};
   }
   if(!text.trim()){_hideFloatHandle();return}
   const c=e.changedTouches?.[0]||e;
-  _showFloatHandle(text,c.clientX,c.clientY);
+  _showFloatHandle(text,c.clientX,c.clientY,cardId);
+}
+// Acha um índice de caractere dentro do textarea a partir de um ponto na tela
+// — o navegador não tem uma API pronta pra isso (existe caretRangeFromPoint,
+// mas só funciona em texto de verdade no DOM, não no conteúdo "desenhado" de
+// um <textarea>). Técnica padrão: um <div> espelho, invisível, com a MESMA
+// fonte/largura/preenchimento do textarea (então quebra linha igual), onde a
+// gente mede onde um marcador cairia em cada posição candidata — busca
+// binária pela linha (Y), depois um refino linear pela coluna (X).
+function _caretIndexFromPoint(ta,clientX,clientY){
+  const cs=getComputedStyle(ta);
+  const div=document.createElement('div');
+  ['boxSizing','width','paddingTop','paddingRight','paddingBottom','paddingLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','lineHeight','textTransform','wordSpacing','tabSize'].forEach(p=>{div.style[p]=cs[p]});
+  div.style.position='absolute';div.style.visibility='hidden';div.style.whiteSpace='pre-wrap';div.style.wordWrap='break-word';div.style.top='0';div.style.left='-9999px';
+  document.body.appendChild(div);
+  const text=ta.value;
+  const marker=document.createElement('span');marker.textContent='.';
+  const rect=ta.getBoundingClientRect();
+  const relX=clientX-rect.left+ta.scrollLeft,relY=clientY-rect.top+ta.scrollTop;
+  const setUpTo=i=>{div.textContent='';div.appendChild(document.createTextNode(text.slice(0,i)));div.appendChild(marker)};
+  let lo=0,hi=text.length;
+  while(lo<hi){
+    const mid=(lo+hi)>>1;
+    setUpTo(mid);
+    if(marker.offsetTop<relY-4)lo=mid+1;else hi=mid;
+  }
+  let bestIdx=lo,bestDist=Infinity;
+  const start=Math.max(0,lo-80),end=Math.min(text.length,lo+80);
+  for(let i=start;i<=end;i++){
+    setUpTo(i);
+    if(Math.abs(marker.offsetTop-relY)<6){
+      const dx=Math.abs(marker.offsetLeft-relX);
+      if(dx<bestDist){bestDist=dx;bestIdx=i}
+    }
+  }
+  document.body.removeChild(div);
+  return Math.max(0,Math.min(text.length,bestIdx));
+}
+// Onde o ⠿ flutuante foi solto: em cima de uma aba (troca), em cima do
+// conteúdo da aba ativa (cola ali), ou em espaço vazio (cria aba nova).
+function _floatDropTarget(cardId,x,y){
+  _dragGhost&&(_dragGhost.style.display='none');
+  const el=document.elementFromPoint(x,y);
+  _dragGhost&&(_dragGhost.style.display='');
+  if(!el)return{kind:'empty'};
+  const tabBtn=el.closest(`#cchat-texttabs-${cardId} .cchat-ttab`);
+  if(tabBtn)return{kind:'tabbtn',tabId:tabBtn.dataset.tabid};
+  const pane=el.closest(`#cchat-textslot-${cardId} [data-cchat-pane]`);
+  if(pane)return{kind:'pane',tabId:pane.dataset.cchatPane};
+  if(el.closest('#cchat-overlay'))return{kind:'empty'};
+  return{kind:'outside'};
+}
+async function _floatCompleteDrop(cardId,target,x,y){
+  const activeTabId=_cchatActiveTab[cardId]||'original';
+  if(target.kind==='pane'){
+    let ta;
+    if(activeTabId==='original'){
+      ta=_cchatFindTextarea(cardId);
+    }else{
+      const paneEl=document.querySelector(`#cchat-textslot-${cardId} [data-cchat-pane="${activeTabId}"]`);
+      const preview=paneEl?.querySelector('.cchat-transform-preview');
+      if(preview&&preview.style.display!=='none')_cchatEnterTabEdit(cardId,activeTabId); // vira textarea, igual um clique já faz
+      ta=paneEl?.querySelector('.cchat-transform-ta');
+    }
+    if(!ta){_hideFloatHandle();return}
+    const dropIdx=_caretIndexFromPoint(ta,x,y);
+    const sameEditableTab=_floatSelOrigin?.kind==='tab-editable'&&_floatSelOrigin.cardId===cardId&&_floatSelOrigin.tabId===activeTabId;
+    if(sameEditableTab){
+      const{start,end}=_floatSelOrigin;
+      let idx=dropIdx;
+      if(idx>end)idx-=(end-start);else if(idx>start)idx=start;
+      const without=ta.value.slice(0,start)+ta.value.slice(end);
+      ta.value=without.slice(0,idx)+_floatSelText+without.slice(idx);
+    }else{
+      ta.value=ta.value.slice(0,dropIdx)+_floatSelText+ta.value.slice(dropIdx);
+    }
+    if(activeTabId==='original'){
+      autoR(ta);updateFooter(cardId);saveHistory();
+    }else{
+      const tb=(_cchatTabs[cardId]||[]).find(x2=>x2.tabId===activeTabId);
+      if(tb)tb.text=ta.value;
+      ta.style.height='auto';ta.style.height=Math.max(ta.scrollHeight,300)+'px';
+    }
+    toast(t('📋 Trecho colado!'));
+  }else if(target.kind==='empty'){
+    await _cchatAddTab(cardId,t('Trecho colado'),_floatSelText);
+    toast(t('📄 Nova aba criada com o trecho!'));
+  }
+  // 'tabbtn' ou 'outside': o usuário só trocou de aba durante o arrasto, sem
+  // soltar em cima de conteúdo — não faz nada além disso.
+  _hideFloatHandle();
+}
+function _startFloatDrag(e0,isTouch=false){
+  const ox=e0.clientX,oy=e0.clientY;
+  const text=_floatSelText,cardId=_floatSelCardId;
+  function getCoords(e){if(isTouch){const t=e.touches[0]||e.changedTouches[0];return{x:t.clientX,y:t.clientY}}return{x:e.clientX,y:e.clientY}}
+  let moved=false;
+  function onMove(e){
+    const{x,y}=getCoords(e);
+    if(!moved){
+      if(Math.hypot(x-ox,y-oy)<8)return;
+      moved=true;
+      _dragGhost=document.createElement('div');_dragGhost.id='dragGhost';
+      _dragGhost.innerHTML=`<div style="padding:10px 14px;font-size:12px;color:var(--text2);max-height:80px;overflow:hidden">${escHtml(text.slice(0,120))}${text.length>120?'…':''}</div>`;
+      document.body.appendChild(_dragGhost);
+    }
+    _dragGhost.style.left=(x+14)+'px';_dragGhost.style.top=(y-24)+'px';
+    // Segurar em cima de outra aba troca pra ela — mesmo truque do
+    // auto-abrir pastas na borda da tela no arrasto de card.
+    if(cardId){
+      const target=_floatDropTarget(cardId,x,y);
+      if(target.kind==='tabbtn'&&target.tabId&&_cchatActiveTab[cardId]!==target.tabId)_cchatSwitchTab(cardId,target.tabId);
+    }
+  }
+  function onUp(e){
+    document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
+    _dragGhost?.remove();_dragGhost=null;
+    if(!moved){
+      if(text){navigator.clipboard.writeText(text).then(()=>toast(t('📋 Trecho copiado!')))}
+      _hideFloatHandle();
+      return;
+    }
+    const{x,y}=getCoords(e);
+    if(cardId)_floatCompleteDrop(cardId,_floatDropTarget(cardId,x,y),x,y);
+    else _hideFloatHandle();
+  }
+  if(isTouch){document.addEventListener('touchmove',onMove,{passive:true});document.addEventListener('touchend',onUp)}
+  else{document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp)}
 }
 function initFloatSelHandle(){
   document.addEventListener('mouseup',_onFloatSelUp);
@@ -9311,6 +9439,11 @@ function _startDrag(el,e0,isTouch=false,isFolder=false){
             autoR(dstTa);updateFooter(target.id);saveHistory();
             toast(t('📋 Trecho copiado pro card!'));
           }
+        }else{
+          // Soltou em espaço vazio (nenhum card, nenhuma pasta sob o cursor)
+          // — cria um card novo só com o trecho, na lista.
+          addCard(_dragSelText,null,0,'texto',cfg.provider,true,null,null,[],'','livre',false,'');
+          toast(t('📋 Trecho copiado para um novo card!'));
         }
       }
       _dragSrcId=null;_dragEl=null;_dragSelText=null;return;
