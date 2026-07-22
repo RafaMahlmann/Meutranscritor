@@ -2503,7 +2503,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.8';
+const VOX_VERSION='2026.07.21.9';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2760,6 +2760,7 @@ let I18N_EN={
 "🔧 Preparando suporte a esse áudio (só na primeira vez)…":"🔧 Preparing support for this audio (first time only)…",
 "🔧 Convertendo áudio…":"🔧 Converting audio…",
 "🔧 Extraindo áudio do vídeo…":"🔧 Extracting audio from video…",
+"📋 Trecho copiado!":"📋 Snippet copied!",
 "⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio":"⚠️ Couldn't save — storage space might be full",
 "💾 Espaço neste aparelho":"💾 Space on this device",
 "{used} de {quota} usados":"{used} of {quota} used",
@@ -9166,7 +9167,20 @@ function _startDrag(el,e0,isTouch=false,isFolder=false){
     el.classList.remove('dragging');
     _dragGhost?.remove();_dragGhost=null;_removeDragFolderTip();
     document.querySelectorAll('.card.drag-over,.folder-item.drag-over').forEach(c=>c.classList.remove('drag-over'));
-    if(!_dragActive){_dragSrcId=null;_dragEl=null;_dragSrcIsFolder=false;return}
+    if(!_dragActive){
+      // Clique simples no ⠿ (sem arrastar) — se havia uma seleção de texto no
+      // card, isso vira o atalho "copiar só o trecho selecionado". Sem
+      // seleção, continua sem fazer nada (o botão 📋 do cabeçalho já cobre
+      // "copiar o card inteiro").
+      if(!isFolder){
+        const ta=el.querySelector('textarea');
+        if(ta&&ta.selectionStart!==ta.selectionEnd){
+          const sel=ta.value.slice(ta.selectionStart,ta.selectionEnd);
+          navigator.clipboard.writeText(sel).then(()=>toast(t('📋 Trecho copiado!')));
+        }
+      }
+      _dragSrcId=null;_dragEl=null;_dragSrcIsFolder=false;return;
+    }
     _dragActive=false;
     const{x,y}=getCoords(e);
     const folderEl=_folderUnderCursor(x,y);
