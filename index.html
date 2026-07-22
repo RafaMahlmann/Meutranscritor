@@ -570,6 +570,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .drag-handle{cursor:grab;padding:2px 8px;color:var(--text4);font-size:16px;line-height:1;user-select:none;flex-shrink:0;border-radius:6px;display:flex;align-items:center;transition:all .15s}
 .drag-handle:hover{color:var(--accent);background:var(--accent-glow)}
 .drag-handle:active{cursor:grabbing}
+/* "Respiração": aviso discreto de que há texto selecionado no card — o ⠿
+   ganha uma segunda função nesse estado (ver initSelectionGlow). */
+@keyframes dragHandleBreath{0%,100%{opacity:.45;transform:scale(1);color:var(--text4)}50%{opacity:1;transform:scale(1.2);color:var(--accent)}}
+.drag-handle.sel-active{animation:dragHandleBreath 1.8s ease-in-out infinite}
+.drag-handle.sel-active:hover{animation-play-state:paused;opacity:1;transform:scale(1)}
 #dragGhost{position:fixed;pointer-events:none;z-index:9999;opacity:0.85;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.25);transform:rotate(2deg) scale(1.02);transition:none;max-width:340px;overflow:hidden;background:var(--bg-card);border:2px solid var(--accent)}
 
 /* ── FOLDERS SIDEBAR ── */
@@ -2498,7 +2503,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.21.7';
+const VOX_VERSION='2026.07.21.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3300,7 +3305,7 @@ function _updatePwaTip(){
 document.addEventListener('DOMContentLoaded',async()=>{
   applyStaticI18n();_syncLangUI();
   loadCfg();await loadHistory();updateStats();checkSend();applyView();loadFontSize();
-  loadFolders();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();
+  loadFolders();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();
   initAudioDropzone();
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
   if(!localStorage.getItem('vox_welcomed')&&!document.querySelector('#cardsList .card:not(.proc-card)')){
@@ -9021,6 +9026,28 @@ function exitAdvanced(id,viaUndo=false){
 
 // ── DRAG TO MERGE CARDS / MOVER PRA PASTA (auto-scroll + abre pastas na borda) ──
 let _dragSrcId=null,_dragGhost=null,_dragActive=false,_dragEl=null,_dragX=0,_dragY=0,_dragScrollV=0,_dragRAF=null,_dragSrcIsFolder=false;
+
+// ── SELEÇÃO DE TEXTO NO CARD: o ⠿ "respira" quando há uma seleção ativa ──
+// Delegação num só listener em #cardsList (em vez de um por card) — sobrevive
+// à criação/remoção de cards sem precisar re-ligar nada.
+function _updateSelGlow(ta){
+  const card=ta.closest?.('.card');if(!card)return;
+  const handle=card.querySelector('.drag-handle');if(!handle)return;
+  handle.classList.toggle('sel-active',ta.selectionStart!==ta.selectionEnd);
+}
+function initSelectionGlow(){
+  const list=document.getElementById('cardsList');
+  if(!list)return;
+  const onSelEvt=e=>{if(e.target.tagName==='TEXTAREA')_updateSelGlow(e.target)};
+  list.addEventListener('mouseup',onSelEvt);
+  list.addEventListener('keyup',onSelEvt);
+  list.addEventListener('touchend',onSelEvt);
+  list.addEventListener('select',onSelEvt,true); // não borbulha em todo navegador — captura
+  list.addEventListener('blur',e=>{
+    if(e.target.tagName!=='TEXTAREA')return;
+    e.target.closest('.card')?.querySelector('.drag-handle')?.classList.remove('sel-active');
+  },true); // blur também não borbulha — captura
+}
 
 function initCardDrag(el){
   const handle=el.querySelector('.drag-handle');
