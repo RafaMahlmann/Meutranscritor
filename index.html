@@ -2528,7 +2528,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.22.1';
+const VOX_VERSION='2026.07.22.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5684,6 +5684,96 @@ function _updateExtCount(id){
   const btn=document.getElementById('extadd-'+id);
   if(el)el.textContent=n>0?`${n} `+t(n>1?'selecionados':'selecionado'):t('0 selecionados');
   if(btn){btn.disabled=n===0;btn.textContent=n>0?`+ `+t('adicionar')+` ${n} `+t(n>1?'tags':'tag'):t('+ adicionar');}
+}
+
+// ── REVISÃO DE REPETIÇÕES (Fase 1 — scanner determinístico, ZERO IA) ──
+// Conta ocorrências de cada palavra no texto (reaproveita o normalizador de
+// acento/maiúscula e a lista de stopwords que já existem no Funil de
+// Contexto do Modo Conversa — CCHAT_STOPWORDS/_cchatNorm). Só palavras que
+// se repetem 3+ vezes e não estão no dicionário pessoal / já têm regra
+// aprendida viram candidatas — tudo isso roda no navegador, instantâneo,
+// sem gastar um token sequer. A Fase 2 manda só essas candidatas pra IA.
+function scanTextForReview(text){
+  const re=/[\p{L}\p{N}]+/gu;
+  const groups={};
+  let m;
+  while((m=re.exec(text))){
+    const raw=m[0];
+    if(raw.length<3||/^\d+$/.test(raw))continue;
+    const key=_cchatNorm(raw).trim();
+    if(!key||CCHAT_STOPWORDS.has(key))continue;
+    if(!groups[key])groups[key]={key,label:raw,count:0,positions:[]};
+    groups[key].count++;
+    groups[key].positions.push({start:m.index,end:m.index+raw.length,form:raw});
+  }
+  const dictSet=new Set(_personalDict);
+  const ruleSet=new Set(_learnedRules.map(r=>r.from.toLowerCase()));
+  const keys=Object.keys(groups).filter(k=>!dictSet.has(k)&&!ruleSet.has(k));
+  // Agrupa grafias parecidas (ex: "lovable"/"loveble") ANTES de cortar por
+  // frequência — senão duas grafias da mesma palavra podem cada uma ficar
+  // abaixo do limite sozinha, mesmo somando 3+ juntas (foi exatamente o
+  // caso real que o Rafa relatou).
+  const clusters=_clusterSimilarSpellings(keys);
+  const candidates=[];
+  clusters.forEach(cluster=>{
+    const total=cluster.reduce((a,k)=>a+groups[k].count,0);
+    if(total<3)return;
+    const sorted=[...cluster].sort((a,b)=>groups[b].count-groups[a].count);
+    const main=sorted[0];
+    candidates.push({
+      key:main,label:groups[main].label,count:total,
+      variants:sorted.length>1?sorted.map(k=>({key:k,label:groups[k].label,count:groups[k].count})):undefined,
+      positions:sorted.flatMap(k=>groups[k].positions).sort((a,b)=>a.start-b.start)
+    });
+  });
+  candidates.sort((a,b)=>b.count-a.count);
+  return{candidates};
+}
+// Distância de edição simples (Levenshtein) — clássica pra achar a MESMA
+// palavra grafada diferente (ex: "Lovable"/"Loveble"), sem precisar de IA.
+function _levenshtein(a,b){
+  const m=a.length,n=b.length;
+  if(!m)return n;if(!n)return m;
+  let prev=Array.from({length:n+1},(_,i)=>i);
+  for(let i=1;i<=m;i++){
+    const cur=[i];
+    for(let j=1;j<=n;j++)cur[j]=a[i-1]===b[j-1]?prev[j-1]:1+Math.min(prev[j-1],prev[j],cur[j-1]);
+    prev=cur;
+  }
+  return prev[n];
+}
+// União de palavras com grafia parecida (union-find simples) — junta
+// transitivamente (A~B, B~C ⇒ A,B,C no mesmo grupo). Filtro de 1ª letra
+// igual antes do Levenshtein evita comparar tudo com tudo em textos grandes.
+function _clusterSimilarSpellings(keys){
+  const parent={};keys.forEach(k=>parent[k]=k);
+  function find(k){while(parent[k]!==k)k=parent[k];return k}
+  function union(a,b){const ra=find(a),rb=find(b);if(ra!==rb)parent[ra]=rb}
+  // Só compara palavras que já compartilham a primeira letra — em vez de
+  // varrer tudo contra tudo (O(n²) puro), agrupa em baldes por 1ª letra
+  // primeiro. Num texto com milhares de palavras distintas, isso corta a
+  // quantidade de comparações em ~26x sem mudar nenhum resultado.
+  const buckets={};
+  keys.forEach(k=>{const b=k[0];(buckets[b]=buckets[b]||[]).push(k)});
+  Object.values(buckets).forEach(bucket=>{
+    for(let i=0;i<bucket.length;i++){
+      for(let j=i+1;j<bucket.length;j++){
+        const a=bucket[i],b=bucket[j];
+        // Primeira E última letra iguais — variações verbais/plurais em
+        // português (usa/usam/usar, carro/carros) quase sempre mudam o
+        // final, então essa checagem barata já descarta a maioria dos
+        // falsos positivos antes mesmo de calcular a distância de edição.
+        if(a[a.length-1]!==b[b.length-1])continue;
+        const maxLen=Math.max(a.length,b.length);
+        if(maxLen<5||Math.abs(a.length-b.length)>2)continue;
+        const dist=_levenshtein(a,b);
+        if(dist>0&&dist<=Math.max(1,Math.floor(maxLen*0.2)))union(a,b);
+      }
+    }
+  });
+  const out={};
+  keys.forEach(k=>{const r=find(k);(out[r]=out[r]||[]).push(k)});
+  return Object.values(out);
 }
 
 // ── CARD UNDO/REDO ──
