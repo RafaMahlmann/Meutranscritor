@@ -525,6 +525,22 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .ext-add-btn{background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:3px 12px;font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition)}
 .ext-add-btn:disabled{opacity:0.35;cursor:default}
 .ext-count{font-size:11px;color:var(--text3);flex:1;text-align:right}
+.review-word{border-bottom:0.5px solid var(--border2);padding:6px 0}
+.review-word:last-child{border-bottom:none}
+.review-word-head{display:flex;align-items:center;gap:8px;cursor:pointer}
+.review-arrow{display:inline-flex;font-size:10px;color:var(--text4);transition:transform .15s ease}
+.review-arrow.open{transform:rotate(90deg)}
+.review-word-label{font-size:12.5px;color:var(--text2)}
+.review-occurrences{margin:6px 0 4px 20px;display:flex;flex-direction:column;gap:6px}
+.review-occ{display:flex;align-items:center;gap:8px;font-size:12px}
+.review-occ-ctx{display:flex;align-items:flex-start;gap:6px;flex:1;color:var(--text3);cursor:pointer}
+.review-occ-ctx input{margin-top:2px;flex-shrink:0}
+.review-occ-ctx mark{background:var(--accent-glow);color:var(--accent);border-radius:3px;padding:0 2px}
+.review-occ-verdict{flex-shrink:0;font-size:11px}
+.review-occ-verdict.ok{color:var(--text4)}
+.review-occ-verdict.warn{color:var(--accent);display:flex;align-items:center;gap:4px}
+.review-occ-suggestion{font-size:11px;padding:2px 6px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg-card);color:var(--text);font-family:var(--font)}
+.review-word-actions{display:flex;gap:6px;margin:4px 0 0 20px}
 .ctag-voice-btn{font-size:11px;padding:2px 8px;border-radius:20px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--font);font-weight:600;transition:all var(--transition)}
 .ctag-voice-btn:hover{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.08)}
 .ctag-voice-btn.vt-rec{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.12);animation:vtblink 1s infinite}
@@ -2528,7 +2544,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.22.3';
+const VOX_VERSION='2026.07.22.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2829,7 +2845,32 @@ let I18N_EN={
 "Ditar pergunta":"Dictate question","Texto original":"Original text",
 "💬 Pergunte algo sobre este texto ou use um dos atalhos abaixo.":"💬 Ask something about this text or use one of the shortcuts below.",
 "💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.":"💬 Ask something about this conversation or use one of the shortcuts below.",
-"❌ Não foi possível obter resposta: ":"❌ Could not get a response: ","✓ Aplicar sugestão":"✓ Apply suggestion","✅ Sugestão aplicada. Ctrl+Z desfaz.":"✅ Suggestion applied. Ctrl+Z undoes.","Usuário":"User"};
+"❌ Não foi possível obter resposta: ":"❌ Could not get a response: ","✓ Aplicar sugestão":"✓ Apply suggestion","✅ Sugestão aplicada. Ctrl+Z desfaz.":"✅ Suggestion applied. Ctrl+Z undoes.","Usuário":"User",
+// FASE 3/4 — painel interativo de revisão de repetições
+"Revisar palavras repetidas ou fora de contexto":"Review repeated or out-of-context words",
+"🔍 revisar":"🔍 review",
+"ℹ️ Card vazio — nada para revisar":"ℹ️ Empty card — nothing to review",
+"🔍 Nenhuma repetição suspeita encontrada":"🔍 No suspicious repetitions found",
+"🔍 REVISÃO — {n} palavras repetidas":"🔍 REVIEW — {n} repeated words",
+"🤖 Perguntar à IA sobre estas {n} palavras":"🤖 Ask AI about these {n} words",
+"grafias:":"spellings:",
+"ok":"ok",
+"correção manual":"manual correction",
+"marcar todas":"select all",
+"sempre ignorar":"always ignore",
+"sempre trocar por…":"always replace with…",
+"0 selecionadas":"0 selected","selecionadas":"selected","selecionada":"selected",
+"Corrigir selecionadas":"Fix selected",
+"📖 \"{word}\" adicionada ao dicionário pessoal":"📖 \"{word}\" added to personal dictionary",
+"✅ Revisão concluída — nada mais pendente":"✅ Review complete — nothing left pending",
+"Sempre trocar \"{word}\" por:":"Always replace \"{word}\" with:",
+"✏️ Regra salva: sempre trocar \"{from}\" por \"{to}\"":"✏️ Rule saved: always replace \"{from}\" with \"{to}\"",
+"⏳ perguntando à IA…":"⏳ asking AI…",
+"✅ Revisão da IA pronta!":"✅ AI review ready!",
+"⚠️ O texto mudou desde a revisão — reabra o painel":"⚠️ The text changed since the review — reopen the panel",
+"ℹ️ Nada selecionado com correção definida":"ℹ️ Nothing selected has a correction set",
+"✅ {n} correções aplicadas":"✅ {n} corrections applied"
+};
 
 // ── STATE ──
 let MR=null,chunks=[],recStart=null,recTimer=null;
@@ -5443,11 +5484,13 @@ function tagsBlock(id,tags){
     tags.map(t=>`<button class="ctag" onclick="filterTag('${escJs(t)}')">#${escHtml(t)}<span class="ctag-rm" onclick="event.stopPropagation();removeTag('${id}','${escJs(t)}')">×</span></button>`).join('')+
     `<button class="ctag-suggest-btn" onclick="suggestTags('${id}')" title="${t('Sugerir tags com IA')}">${t('+ tag IA')}</button>`+
     `<button class="ctag-gear-btn" onclick="openExtractPanel('${id}')" title="${t('Extrair todos os termos do texto')}">${t('⚙ extrair')}</button>`+
+    `<button class="ctag-gear-btn" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${t('🔍 revisar')}</button>`+
     `<button class="ctag-voice-btn" id="vtbtn-${id}" onclick="startVoiceTag('${id}')" title="${t('Falar tags')}">${t('🎤 falar')}</button>`+
     `<input class="ctag-input" placeholder="${t('tag manual')}" onkeydown="handleTagInput(event,'${id}')" maxlength="20">`+
     `</div></div>`+
     `<div class="tag-suggestions${isCollapsed?' collapsed':''}" id="tagsug-${id}"></div>`+
     `<div class="ext-panel" id="extpanel-${id}"></div>`+
+    `<div class="ext-panel" id="reviewpanel-${id}"></div>`+
     `<div class="vt-panel" id="vtpanel-${id}"></div>`;
 }
 // FASE 3 (só mobile) — abre/fecha o cabeçalho recolhido de UM card (.ch-open
@@ -5813,6 +5856,226 @@ async function judgeRepeatedWords(text,candidates,key){
   const prompt=_buildReviewPrompt(text,candidates);
   const res=await callAI(prompt,key,'auto');
   return _parseReviewResponse(res);
+}
+
+// ── REVISÃO DE REPETIÇÕES (Fase 3 — painel interativo) ──
+// Reaproveita a casca visual do Extrair Termos (.ext-panel/.ext-panel-head/
+// .ext-sm-btn/.ext-add-btn/.ext-actions/.ext-count) mas com layout de lista
+// expansível por palavra em vez de chips. Fluxo em 2 tempos: primeiro mostra
+// as candidatas do scanner (zero custo); só chama a IA se o usuário clicar em
+// "perguntar à IA" — e mesmo aí, manda só as candidatas, não o texto inteiro.
+const _review={};
+function openReviewPanel(id){
+  const card=document.getElementById(id);if(!card)return;
+  const panel=document.getElementById('reviewpanel-'+id);if(!panel)return;
+  if(panel.classList.contains('on')){reviewClose(id);return;}
+  // NÃO usar .trim() aqui: as posições do scanner são índices dentro deste
+  // texto exato, e depois são usadas pra recortar/substituir direto dentro do
+  // textarea real (reviewApplySelected) — cortar espaços do início deslocaria
+  // todas as posições e corromperia o texto na hora de aplicar a correção.
+  const raw=card.querySelector('.cb textarea')?.value||'';
+  if(!raw.trim()){toast(t('ℹ️ Card vazio — nada para revisar'),true);return;}
+  const {candidates}=scanTextForReview(raw);
+  panel.classList.add('on');
+  if(!candidates.length){
+    panel.innerHTML=`<div class="ext-panel-head"><span>${t('🔍 Nenhuma repetição suspeita encontrada')}</span><button class="ext-sm-btn" onclick="reviewClose('${id}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
+    return;
+  }
+  _review[id]={text:raw,candidates,judgments:{},judged:false,sel:new Set(),expanded:new Set()};
+  _buildReviewUI(id);
+}
+function reviewClose(id){
+  delete _review[id];
+  const panel=document.getElementById('reviewpanel-'+id);
+  if(panel){panel.classList.remove('on');panel.innerHTML='';}
+}
+// Chaves 1-indexadas ("N.M") — têm que bater com a numeração usada em
+// _buildReviewPrompt/_parseReviewResponse (Fase 2), que começam em [1]/(1).
+function _reviewOccKey(ci,oi){return (ci+1)+'.'+(oi+1)}
+function _buildReviewUI(id){
+  const s=_review[id];if(!s)return;
+  const panel=document.getElementById('reviewpanel-'+id);if(!panel)return;
+  const n=s.candidates.length;
+  let html=`<div class="ext-panel-head"><span>${t('🔍 REVISÃO — {n} palavras repetidas').replace('{n}',n)}</span><button class="ext-sm-btn" onclick="reviewClose('${id}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
+  if(!s.judged){
+    html+=`<div class="ext-actions" style="margin-bottom:2px"><button class="ext-add-btn" id="reviewask-${id}" onclick="_reviewAskAI('${id}')">${t('🤖 Perguntar à IA sobre estas {n} palavras').replace('{n}',n)}</button></div>`;
+  }
+  s.candidates.forEach((c,ci)=>{
+    const open=s.expanded.has(ci);
+    html+=`<div class="review-word">`;
+    html+=`<div class="review-word-head" onclick="_reviewToggleExpand('${id}',${ci})"><span class="review-arrow${open?' open':''}">▶</span><span class="review-word-label">${escHtml(c.label)} · ${c.count}x${c.variants?' · '+t('grafias:')+' '+c.variants.map(v=>escHtml(v.label)).join(', '):''}</span></div>`;
+    if(open){
+      html+=`<div class="review-occurrences">`;
+      c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach((p,oi)=>{
+        const key=_reviewOccKey(ci,oi);
+        const j=s.judgments[key];
+        const s0=Math.max(0,p.start-REVIEW_CONTEXT_CHARS),e0=Math.min(s.text.length,p.end+REVIEW_CONTEXT_CHARS);
+        const before=escHtml(s.text.slice(s0,p.start)),word=escHtml(s.text.slice(p.start,p.end)),after=escHtml(s.text.slice(p.end,e0));
+        html+=`<div class="review-occ">`;
+        if(j&&j.ok){
+          html+=`<span class="review-occ-ctx"><span>…${before}<mark>${word}</mark>${after}…</span></span>`;
+          html+=`<span class="review-occ-verdict ok">✓ ${t('ok')}</span>`;
+        }else{
+          const checked=s.sel.has(key);
+          const val=escHtml(j?.suggestion||'');
+          html+=`<label class="review-occ-ctx"><input type="checkbox" data-key="${key}" ${checked?'checked':''} onchange="_reviewToggleSel('${id}','${key}',this.checked)"><span>…${before}<mark>${word}</mark>${after}…</span></label>`;
+          html+=`<span class="review-occ-verdict${j?' warn':''}">${j?'⚠':''} <input class="review-occ-suggestion" placeholder="${t('correção manual')}" data-key="${key}" value="${val}" oninput="_reviewEditSuggestion('${id}','${key}',this.value)"></span>`;
+        }
+        html+=`</div>`;
+      });
+      html+=`</div>`;
+      html+=`<div class="review-word-actions">`;
+      html+=`<button class="ext-sm-btn" onclick="_reviewSelectAllInWord('${id}',${ci})">${t('marcar todas')}</button>`;
+      html+=`<button class="ext-sm-btn" onclick="_reviewIgnoreWordAlways('${id}',${ci})">${t('sempre ignorar')}</button>`;
+      html+=`<button class="ext-sm-btn" onclick="_reviewAlwaysReplaceWord('${id}',${ci})">${t('sempre trocar por…')}</button>`;
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  });
+  html+=`<div class="ext-actions"><span class="ext-count" id="reviewcount-${id}">${t('0 selecionadas')}</span><button class="ext-add-btn" id="reviewapply-${id}" onclick="reviewApplySelected('${id}')" disabled>${t('Corrigir selecionadas')}</button></div>`;
+  panel.innerHTML=html;
+  _updateReviewCount(id); // corrige contagem/estado do botão após reconstruir o HTML (ex: pré-seleção da IA)
+}
+function _reviewToggleExpand(id,ci){
+  const s=_review[id];if(!s)return;
+  if(s.expanded.has(ci))s.expanded.delete(ci);else s.expanded.add(ci);
+  _buildReviewUI(id);
+}
+function _reviewToggleSel(id,key,checked){
+  const s=_review[id];if(!s)return;
+  if(checked)s.sel.add(key);else s.sel.delete(key);
+  _updateReviewCount(id);
+}
+function _reviewEditSuggestion(id,key,value){
+  const s=_review[id];if(!s)return;
+  if(!s.judgments[key])s.judgments[key]={ok:false,suggestion:value};
+  else s.judgments[key].suggestion=value;
+  if(value.trim())s.sel.add(key);else s.sel.delete(key);
+  const cb=document.querySelector(`#reviewpanel-${id} input[type=checkbox][data-key="${key}"]`);
+  if(cb)cb.checked=s.sel.has(key);
+  _updateReviewCount(id);
+}
+function _reviewSelectAllInWord(id,ci){
+  const s=_review[id];if(!s)return;
+  const c=s.candidates[ci];if(!c)return;
+  c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach((p,oi)=>{
+    const key=_reviewOccKey(ci,oi),j=s.judgments[key];
+    if(j&&j.ok)return;
+    s.sel.add(key);
+  });
+  _buildReviewUI(id);
+}
+function _updateReviewCount(id){
+  const s=_review[id];if(!s)return;
+  const n=s.sel.size;
+  const el=document.getElementById('reviewcount-'+id);
+  const btn=document.getElementById('reviewapply-'+id);
+  if(el)el.textContent=n>0?`${n} `+t(n>1?'selecionadas':'selecionada'):t('0 selecionadas');
+  if(btn)btn.disabled=n===0;
+}
+// Remove uma candidata (ignorar/trocar sempre) e reindexa com segurança as
+// chaves "N.M" guardadas em judgments/sel e os índices em expanded — sem
+// isso, remover a palavra do meio da lista faria os julgamentos e seleções
+// das palavras seguintes apontarem pra palavra errada.
+function _reviewRemoveCandidate(id,ci){
+  const s=_review[id];if(!s)return;
+  s.candidates.splice(ci,1);
+  const remapKey=k=>{
+    const dot=k.indexOf('.'),n=parseInt(k.slice(0,dot)),rest=k.slice(dot);
+    if(n-1===ci)return null;
+    return (n-1>ci?n-1:n)+rest;
+  };
+  const newJudgments={};
+  Object.keys(s.judgments).forEach(k=>{const nk=remapKey(k);if(nk)newJudgments[nk]=s.judgments[k]});
+  s.judgments=newJudgments;
+  const newSel=new Set();
+  s.sel.forEach(k=>{const nk=remapKey(k);if(nk)newSel.add(nk)});
+  s.sel=newSel;
+  const newExpanded=new Set();
+  s.expanded.forEach(oldCi=>{if(oldCi!==ci)newExpanded.add(oldCi>ci?oldCi-1:oldCi)});
+  s.expanded=newExpanded;
+}
+function _reviewDoneOrRender(id){
+  const s=_review[id];if(!s)return;
+  if(!s.candidates.length){
+    const panel=document.getElementById('reviewpanel-'+id);
+    if(panel)panel.innerHTML=`<div class="ext-panel-head"><span>${t('✅ Revisão concluída — nada mais pendente')}</span><button class="ext-sm-btn" onclick="reviewClose('${id}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
+    return;
+  }
+  _buildReviewUI(id);
+}
+function _reviewIgnoreWordAlways(id,ci){
+  const s=_review[id];if(!s)return;
+  const c=s.candidates[ci];if(!c)return;
+  addToPersonalDict(c.key);
+  (c.variants||[]).forEach(v=>addToPersonalDict(v.key));
+  const label=c.label;
+  _reviewRemoveCandidate(id,ci);
+  toast(t('📖 "{word}" adicionada ao dicionário pessoal').replace('{word}',label));
+  _reviewDoneOrRender(id);
+}
+function _reviewAlwaysReplaceWord(id,ci){
+  const s=_review[id];if(!s)return;
+  const c=s.candidates[ci];if(!c)return;
+  let def='';
+  for(let oi=0;oi<Math.min(c.positions.length,REVIEW_MAX_OCCURRENCES);oi++){
+    const j=s.judgments[_reviewOccKey(ci,oi)];
+    if(j&&!j.ok&&j.suggestion){def=j.suggestion;break;}
+  }
+  const to=prompt(t('Sempre trocar "{word}" por:').replace('{word}',c.label),def);
+  if(to===null)return;
+  const toTrim=to.trim();if(!toTrim)return;
+  addLearnedRule(c.key,toTrim);
+  (c.variants||[]).forEach(v=>addLearnedRule(v.key,toTrim));
+  const label=c.label;
+  _reviewRemoveCandidate(id,ci);
+  toast(t('✏️ Regra salva: sempre trocar "{from}" por "{to}"').replace('{from}',label).replace('{to}',toTrim));
+  _reviewDoneOrRender(id);
+}
+async function _reviewAskAI(id){
+  const s=_review[id];if(!s||s.judged)return;
+  const key=aiKey();
+  if(!key){toast(t('🔑 Configure uma chave de IA para usar esta função'),true);openModal();return;}
+  const btn=document.getElementById('reviewask-'+id);
+  if(btn){btn.disabled=true;btn.textContent=t('⏳ perguntando à IA…');}
+  try{
+    const judgments=await judgeRepeatedWords(s.text,s.candidates,key);
+    s.judgments=judgments;s.judged=true;s.sel=new Set();
+    Object.keys(judgments).forEach(k=>{if(!judgments[k].ok)s.sel.add(k)});
+    toast(t('✅ Revisão da IA pronta!'));
+    _buildReviewUI(id);
+  }catch(e){
+    toast('❌ '+e.message,true);
+    if(btn){btn.disabled=false;btn.textContent=t('🤖 Perguntar à IA sobre estas {n} palavras').replace('{n}',s.candidates.length);}
+  }
+}
+// ── REVISÃO DE REPETIÇÕES (Fase 4 — aplicar correções + desfazer) ──
+// Mesmo padrão de undo dos outros editores de card: pushCardHistory ANTES de
+// tocar no valor, autoR+updateFooter+saveHistory+updateCardUndoBtns depois.
+function reviewApplySelected(id){
+  const s=_review[id];if(!s)return;
+  const card=document.getElementById(id);const ta=card?.querySelector('.cb textarea');if(!ta)return;
+  if(ta.value!==s.text){toast(t('⚠️ O texto mudou desde a revisão — reabra o painel'),true);return;}
+  const repls=[];
+  s.candidates.forEach((c,ci)=>{
+    c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach((p,oi)=>{
+      const key=_reviewOccKey(ci,oi);
+      if(!s.sel.has(key))return;
+      const j=s.judgments[key];
+      const to=(j&&j.suggestion||'').trim();
+      if(!to)return;
+      repls.push({start:p.start,end:p.end,to});
+    });
+  });
+  if(!repls.length){toast(t('ℹ️ Nada selecionado com correção definida'),true);return;}
+  repls.sort((a,b)=>b.start-a.start); // de trás pra frente, senão as posições seguintes deslocam
+  pushCardHistory(id);
+  let text=ta.value;
+  repls.forEach(r=>{text=text.slice(0,r.start)+r.to+text.slice(r.end)});
+  ta.value=text;
+  autoR(ta);updateFooter(id);saveHistory();updateCardUndoBtns(id);
+  toast(t('✅ {n} correções aplicadas').replace('{n}',repls.length));
+  reviewClose(id);
 }
 
 // ── CARD UNDO/REDO ──
