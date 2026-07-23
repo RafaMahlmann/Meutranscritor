@@ -2528,7 +2528,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.22.2';
+const VOX_VERSION='2026.07.22.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5774,6 +5774,45 @@ function _clusterSimilarSpellings(keys){
   const out={};
   keys.forEach(k=>{const r=find(k);(out[r]=out[r]||[]).push(k)});
   return Object.values(out);
+}
+
+// ── REVISÃO DE REPETIÇÕES (Fase 2 — julgamento por IA, só dos candidatos) ──
+// Em vez de mandar o texto inteiro pra IA (custo proporcional ao tamanho do
+// documento), manda só as palavras candidatas da Fase 1 + um pedacinho de
+// contexto de cada ocorrência (custo proporcional à quantidade de palavras
+// suspeitas, não ao tamanho do texto — um documento de 50 mil caracteres
+// com 8 candidatas custa quase o mesmo que um de 5 mil com 8 candidatas).
+const REVIEW_CONTEXT_CHARS=60; // caracteres de contexto de cada lado da ocorrência
+const REVIEW_MAX_OCCURRENCES=5; // não manda ocorrência demais de uma palavra super repetida
+function _buildReviewPrompt(text,candidates){
+  let body='';
+  candidates.forEach((c,idx)=>{
+    body+=`\n[${idx+1}] "${c.label}" (${c.count}x)`;
+    c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach((p,oi)=>{
+      const s=Math.max(0,p.start-REVIEW_CONTEXT_CHARS),e=Math.min(text.length,p.end+REVIEW_CONTEXT_CHARS);
+      const snippet=(text.slice(s,p.start)+'**'+text.slice(p.start,p.end)+'**'+text.slice(p.end,e)).replace(/\s+/g,' ');
+      body+=`\n  (${oi+1}) ...${snippet}...`;
+    });
+  });
+  return `Você é um revisor de transcrições de fala em português. Abaixo estão palavras que se repetem no texto, cada uma com trechos de contexto ao redor de algumas ocorrências (a palavra em questão está entre **asteriscos**). Para CADA ocorrência marcada, diga se a palavra faz sentido ali ou parece um erro de transcrição (ex: som parecido, palavra errada por engano do reconhecimento de voz). Responda APENAS com uma lista, uma linha por ocorrência avaliada, no formato exato:\nN.M:OK\nou\nN.M:TROCAR:sugestão\nOnde N é o número da palavra entre colchetes e M o número da ocorrência entre parênteses. Não repita o contexto, não explique nada além disso.\n${body}`;
+}
+function _parseReviewResponse(res){
+  const judgments={};
+  res.split(/\n/).forEach(l=>{
+    const mm=l.match(/^\s*\[?(\d+)\]?\.(\d+)\s*:\s*(OK|TROCAR)\s*(?::\s*(.+))?$/i);
+    if(!mm)return;
+    const k=`${mm[1]}.${mm[2]}`;
+    judgments[k]=/^OK$/i.test(mm[3])?{ok:true}:{ok:false,suggestion:(mm[4]||'').trim()};
+  });
+  return judgments;
+}
+// Só chama a IA se houver candidatas — se a Fase 1 não achou nada suspeito,
+// nem vale a pena gastar um token perguntando.
+async function judgeRepeatedWords(text,candidates,key){
+  if(!candidates.length)return{};
+  const prompt=_buildReviewPrompt(text,candidates);
+  const res=await callAI(prompt,key,'auto');
+  return _parseReviewResponse(res);
 }
 
 // ── CARD UNDO/REDO ──
