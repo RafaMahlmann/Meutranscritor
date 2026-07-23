@@ -2544,7 +2544,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.22.4';
+const VOX_VERSION='2026.07.22.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5865,45 +5865,58 @@ async function judgeRepeatedWords(text,candidates,key){
 // as candidatas do scanner (zero custo); só chama a IA se o usuário clicar em
 // "perguntar à IA" — e mesmo aí, manda só as candidatas, não o texto inteiro.
 const _review={};
-function openReviewPanel(id){
-  const card=document.getElementById(id);if(!card)return;
-  const panel=document.getElementById('reviewpanel-'+id);if(!panel)return;
-  if(panel.classList.contains('on')){reviewClose(id);return;}
+// panelKey é o id do próprio <div> do painel — sempre único (o card tem o
+// seu, o Modo Conversa tem outro pro mesmo cardId) — e é o que identifica o
+// estado em _review. cardId (guardado dentro do estado) é o que resolve o
+// textarea de verdade via _cchatFindTextarea, que já sabe achar o texto
+// original tanto dentro do card quanto dentro do Modo Conversa (o editor é
+// literalmente o mesmo elemento, só muda de lugar no DOM quando abre o
+// Modo Conversa) — assim os dois pontos de entrada reaproveitam 100% da
+// mesma lógica, sem duplicar nada.
+function openReviewPanel(cardId,panelKey){
+  panelKey=panelKey||('reviewpanel-'+cardId);
+  const panel=document.getElementById(panelKey);if(!panel)return;
+  if(panel.classList.contains('on')){reviewClose(panelKey);return;}
+  document.querySelectorAll('.lens-panel.on').forEach(x=>{if(x!==panel){x.classList.remove('on');x.innerHTML=''}});
+  // Se o Modo Conversa deste card estiver aberto noutra aba (transformação),
+  // troca pra "Original" — é o texto que este painel sempre revisa.
+  const overlay=document.getElementById('cchat-overlay');
+  if(overlay&&overlay.dataset.cardId===cardId&&_cchatActiveTab[cardId]!=='original')_cchatSwitchTab(cardId,'original');
   // NÃO usar .trim() aqui: as posições do scanner são índices dentro deste
   // texto exato, e depois são usadas pra recortar/substituir direto dentro do
   // textarea real (reviewApplySelected) — cortar espaços do início deslocaria
   // todas as posições e corromperia o texto na hora de aplicar a correção.
-  const raw=card.querySelector('.cb textarea')?.value||'';
+  const raw=_cchatFindTextarea(cardId)?.value||'';
   if(!raw.trim()){toast(t('ℹ️ Card vazio — nada para revisar'),true);return;}
   const {candidates}=scanTextForReview(raw);
   panel.classList.add('on');
   if(!candidates.length){
-    panel.innerHTML=`<div class="ext-panel-head"><span>${t('🔍 Nenhuma repetição suspeita encontrada')}</span><button class="ext-sm-btn" onclick="reviewClose('${id}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
+    panel.innerHTML=`<div class="ext-panel-head"><span>${t('🔍 Nenhuma repetição suspeita encontrada')}</span><button class="ext-sm-btn" onclick="reviewClose('${panelKey}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
     return;
   }
-  _review[id]={text:raw,candidates,judgments:{},judged:false,sel:new Set(),expanded:new Set()};
-  _buildReviewUI(id);
+  _review[panelKey]={cardId,text:raw,candidates,judgments:{},judged:false,sel:new Set(),expanded:new Set()};
+  _buildReviewUI(panelKey);
 }
-function reviewClose(id){
-  delete _review[id];
-  const panel=document.getElementById('reviewpanel-'+id);
+function reviewClose(panelKey){
+  delete _review[panelKey];
+  const panel=document.getElementById(panelKey);
   if(panel){panel.classList.remove('on');panel.innerHTML='';}
 }
 // Chaves 1-indexadas ("N.M") — têm que bater com a numeração usada em
 // _buildReviewPrompt/_parseReviewResponse (Fase 2), que começam em [1]/(1).
 function _reviewOccKey(ci,oi){return (ci+1)+'.'+(oi+1)}
-function _buildReviewUI(id){
-  const s=_review[id];if(!s)return;
-  const panel=document.getElementById('reviewpanel-'+id);if(!panel)return;
+function _buildReviewUI(panelKey){
+  const s=_review[panelKey];if(!s)return;
+  const panel=document.getElementById(panelKey);if(!panel)return;
   const n=s.candidates.length;
-  let html=`<div class="ext-panel-head"><span>${t('🔍 REVISÃO — {n} palavras repetidas').replace('{n}',n)}</span><button class="ext-sm-btn" onclick="reviewClose('${id}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
+  let html=`<div class="ext-panel-head"><span>${t('🔍 REVISÃO — {n} palavras repetidas').replace('{n}',n)}</span><button class="ext-sm-btn" onclick="reviewClose('${panelKey}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
   if(!s.judged){
-    html+=`<div class="ext-actions" style="margin-bottom:2px"><button class="ext-add-btn" id="reviewask-${id}" onclick="_reviewAskAI('${id}')">${t('🤖 Perguntar à IA sobre estas {n} palavras').replace('{n}',n)}</button></div>`;
+    html+=`<div class="ext-actions" style="margin-bottom:2px"><button class="ext-add-btn" id="reviewask-${panelKey}" onclick="_reviewAskAI('${panelKey}')">${t('🤖 Perguntar à IA sobre estas {n} palavras').replace('{n}',n)}</button></div>`;
   }
   s.candidates.forEach((c,ci)=>{
     const open=s.expanded.has(ci);
     html+=`<div class="review-word">`;
-    html+=`<div class="review-word-head" onclick="_reviewToggleExpand('${id}',${ci})"><span class="review-arrow${open?' open':''}">▶</span><span class="review-word-label">${escHtml(c.label)} · ${c.count}x${c.variants?' · '+t('grafias:')+' '+c.variants.map(v=>escHtml(v.label)).join(', '):''}</span></div>`;
+    html+=`<div class="review-word-head" onclick="_reviewToggleExpand('${panelKey}',${ci})"><span class="review-arrow${open?' open':''}">▶</span><span class="review-word-label">${escHtml(c.label)} · ${c.count}x${c.variants?' · '+t('grafias:')+' '+c.variants.map(v=>escHtml(v.label)).join(', '):''}</span></div>`;
     if(open){
       html+=`<div class="review-occurrences">`;
       c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach((p,oi)=>{
@@ -5918,58 +5931,58 @@ function _buildReviewUI(id){
         }else{
           const checked=s.sel.has(key);
           const val=escHtml(j?.suggestion||'');
-          html+=`<label class="review-occ-ctx"><input type="checkbox" data-key="${key}" ${checked?'checked':''} onchange="_reviewToggleSel('${id}','${key}',this.checked)"><span>…${before}<mark>${word}</mark>${after}…</span></label>`;
-          html+=`<span class="review-occ-verdict${j?' warn':''}">${j?'⚠':''} <input class="review-occ-suggestion" placeholder="${t('correção manual')}" data-key="${key}" value="${val}" oninput="_reviewEditSuggestion('${id}','${key}',this.value)"></span>`;
+          html+=`<label class="review-occ-ctx"><input type="checkbox" data-key="${key}" ${checked?'checked':''} onchange="_reviewToggleSel('${panelKey}','${key}',this.checked)"><span>…${before}<mark>${word}</mark>${after}…</span></label>`;
+          html+=`<span class="review-occ-verdict${j?' warn':''}">${j?'⚠':''} <input class="review-occ-suggestion" placeholder="${t('correção manual')}" data-key="${key}" value="${val}" oninput="_reviewEditSuggestion('${panelKey}','${key}',this.value)"></span>`;
         }
         html+=`</div>`;
       });
       html+=`</div>`;
       html+=`<div class="review-word-actions">`;
-      html+=`<button class="ext-sm-btn" onclick="_reviewSelectAllInWord('${id}',${ci})">${t('marcar todas')}</button>`;
-      html+=`<button class="ext-sm-btn" onclick="_reviewIgnoreWordAlways('${id}',${ci})">${t('sempre ignorar')}</button>`;
-      html+=`<button class="ext-sm-btn" onclick="_reviewAlwaysReplaceWord('${id}',${ci})">${t('sempre trocar por…')}</button>`;
+      html+=`<button class="ext-sm-btn" onclick="_reviewSelectAllInWord('${panelKey}',${ci})">${t('marcar todas')}</button>`;
+      html+=`<button class="ext-sm-btn" onclick="_reviewIgnoreWordAlways('${panelKey}',${ci})">${t('sempre ignorar')}</button>`;
+      html+=`<button class="ext-sm-btn" onclick="_reviewAlwaysReplaceWord('${panelKey}',${ci})">${t('sempre trocar por…')}</button>`;
       html+=`</div>`;
     }
     html+=`</div>`;
   });
-  html+=`<div class="ext-actions"><span class="ext-count" id="reviewcount-${id}">${t('0 selecionadas')}</span><button class="ext-add-btn" id="reviewapply-${id}" onclick="reviewApplySelected('${id}')" disabled>${t('Corrigir selecionadas')}</button></div>`;
+  html+=`<div class="ext-actions"><span class="ext-count" id="reviewcount-${panelKey}">${t('0 selecionadas')}</span><button class="ext-add-btn" id="reviewapply-${panelKey}" onclick="reviewApplySelected('${panelKey}')" disabled>${t('Corrigir selecionadas')}</button></div>`;
   panel.innerHTML=html;
-  _updateReviewCount(id); // corrige contagem/estado do botão após reconstruir o HTML (ex: pré-seleção da IA)
+  _updateReviewCount(panelKey); // corrige contagem/estado do botão após reconstruir o HTML (ex: pré-seleção da IA)
 }
-function _reviewToggleExpand(id,ci){
-  const s=_review[id];if(!s)return;
+function _reviewToggleExpand(panelKey,ci){
+  const s=_review[panelKey];if(!s)return;
   if(s.expanded.has(ci))s.expanded.delete(ci);else s.expanded.add(ci);
-  _buildReviewUI(id);
+  _buildReviewUI(panelKey);
 }
-function _reviewToggleSel(id,key,checked){
-  const s=_review[id];if(!s)return;
+function _reviewToggleSel(panelKey,key,checked){
+  const s=_review[panelKey];if(!s)return;
   if(checked)s.sel.add(key);else s.sel.delete(key);
-  _updateReviewCount(id);
+  _updateReviewCount(panelKey);
 }
-function _reviewEditSuggestion(id,key,value){
-  const s=_review[id];if(!s)return;
+function _reviewEditSuggestion(panelKey,key,value){
+  const s=_review[panelKey];if(!s)return;
   if(!s.judgments[key])s.judgments[key]={ok:false,suggestion:value};
   else s.judgments[key].suggestion=value;
   if(value.trim())s.sel.add(key);else s.sel.delete(key);
-  const cb=document.querySelector(`#reviewpanel-${id} input[type=checkbox][data-key="${key}"]`);
+  const cb=document.querySelector(`#${panelKey} input[type=checkbox][data-key="${key}"]`);
   if(cb)cb.checked=s.sel.has(key);
-  _updateReviewCount(id);
+  _updateReviewCount(panelKey);
 }
-function _reviewSelectAllInWord(id,ci){
-  const s=_review[id];if(!s)return;
+function _reviewSelectAllInWord(panelKey,ci){
+  const s=_review[panelKey];if(!s)return;
   const c=s.candidates[ci];if(!c)return;
   c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach((p,oi)=>{
     const key=_reviewOccKey(ci,oi),j=s.judgments[key];
     if(j&&j.ok)return;
     s.sel.add(key);
   });
-  _buildReviewUI(id);
+  _buildReviewUI(panelKey);
 }
-function _updateReviewCount(id){
-  const s=_review[id];if(!s)return;
+function _updateReviewCount(panelKey){
+  const s=_review[panelKey];if(!s)return;
   const n=s.sel.size;
-  const el=document.getElementById('reviewcount-'+id);
-  const btn=document.getElementById('reviewapply-'+id);
+  const el=document.getElementById('reviewcount-'+panelKey);
+  const btn=document.getElementById('reviewapply-'+panelKey);
   if(el)el.textContent=n>0?`${n} `+t(n>1?'selecionadas':'selecionada'):t('0 selecionadas');
   if(btn)btn.disabled=n===0;
 }
@@ -5977,8 +5990,8 @@ function _updateReviewCount(id){
 // chaves "N.M" guardadas em judgments/sel e os índices em expanded — sem
 // isso, remover a palavra do meio da lista faria os julgamentos e seleções
 // das palavras seguintes apontarem pra palavra errada.
-function _reviewRemoveCandidate(id,ci){
-  const s=_review[id];if(!s)return;
+function _reviewRemoveCandidate(panelKey,ci){
+  const s=_review[panelKey];if(!s)return;
   s.candidates.splice(ci,1);
   const remapKey=k=>{
     const dot=k.indexOf('.'),n=parseInt(k.slice(0,dot)),rest=k.slice(dot);
@@ -5995,27 +6008,27 @@ function _reviewRemoveCandidate(id,ci){
   s.expanded.forEach(oldCi=>{if(oldCi!==ci)newExpanded.add(oldCi>ci?oldCi-1:oldCi)});
   s.expanded=newExpanded;
 }
-function _reviewDoneOrRender(id){
-  const s=_review[id];if(!s)return;
+function _reviewDoneOrRender(panelKey){
+  const s=_review[panelKey];if(!s)return;
   if(!s.candidates.length){
-    const panel=document.getElementById('reviewpanel-'+id);
-    if(panel)panel.innerHTML=`<div class="ext-panel-head"><span>${t('✅ Revisão concluída — nada mais pendente')}</span><button class="ext-sm-btn" onclick="reviewClose('${id}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
+    const panel=document.getElementById(panelKey);
+    if(panel)panel.innerHTML=`<div class="ext-panel-head"><span>${t('✅ Revisão concluída — nada mais pendente')}</span><button class="ext-sm-btn" onclick="reviewClose('${panelKey}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
     return;
   }
-  _buildReviewUI(id);
+  _buildReviewUI(panelKey);
 }
-function _reviewIgnoreWordAlways(id,ci){
-  const s=_review[id];if(!s)return;
+function _reviewIgnoreWordAlways(panelKey,ci){
+  const s=_review[panelKey];if(!s)return;
   const c=s.candidates[ci];if(!c)return;
   addToPersonalDict(c.key);
   (c.variants||[]).forEach(v=>addToPersonalDict(v.key));
   const label=c.label;
-  _reviewRemoveCandidate(id,ci);
+  _reviewRemoveCandidate(panelKey,ci);
   toast(t('📖 "{word}" adicionada ao dicionário pessoal').replace('{word}',label));
-  _reviewDoneOrRender(id);
+  _reviewDoneOrRender(panelKey);
 }
-function _reviewAlwaysReplaceWord(id,ci){
-  const s=_review[id];if(!s)return;
+function _reviewAlwaysReplaceWord(panelKey,ci){
+  const s=_review[panelKey];if(!s)return;
   const c=s.candidates[ci];if(!c)return;
   let def='';
   for(let oi=0;oi<Math.min(c.positions.length,REVIEW_MAX_OCCURRENCES);oi++){
@@ -6028,22 +6041,22 @@ function _reviewAlwaysReplaceWord(id,ci){
   addLearnedRule(c.key,toTrim);
   (c.variants||[]).forEach(v=>addLearnedRule(v.key,toTrim));
   const label=c.label;
-  _reviewRemoveCandidate(id,ci);
+  _reviewRemoveCandidate(panelKey,ci);
   toast(t('✏️ Regra salva: sempre trocar "{from}" por "{to}"').replace('{from}',label).replace('{to}',toTrim));
-  _reviewDoneOrRender(id);
+  _reviewDoneOrRender(panelKey);
 }
-async function _reviewAskAI(id){
-  const s=_review[id];if(!s||s.judged)return;
+async function _reviewAskAI(panelKey){
+  const s=_review[panelKey];if(!s||s.judged)return;
   const key=aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA para usar esta função'),true);openModal();return;}
-  const btn=document.getElementById('reviewask-'+id);
+  const btn=document.getElementById('reviewask-'+panelKey);
   if(btn){btn.disabled=true;btn.textContent=t('⏳ perguntando à IA…');}
   try{
     const judgments=await judgeRepeatedWords(s.text,s.candidates,key);
     s.judgments=judgments;s.judged=true;s.sel=new Set();
     Object.keys(judgments).forEach(k=>{if(!judgments[k].ok)s.sel.add(k)});
     toast(t('✅ Revisão da IA pronta!'));
-    _buildReviewUI(id);
+    _buildReviewUI(panelKey);
   }catch(e){
     toast('❌ '+e.message,true);
     if(btn){btn.disabled=false;btn.textContent=t('🤖 Perguntar à IA sobre estas {n} palavras').replace('{n}',s.candidates.length);}
@@ -6052,9 +6065,9 @@ async function _reviewAskAI(id){
 // ── REVISÃO DE REPETIÇÕES (Fase 4 — aplicar correções + desfazer) ──
 // Mesmo padrão de undo dos outros editores de card: pushCardHistory ANTES de
 // tocar no valor, autoR+updateFooter+saveHistory+updateCardUndoBtns depois.
-function reviewApplySelected(id){
-  const s=_review[id];if(!s)return;
-  const card=document.getElementById(id);const ta=card?.querySelector('.cb textarea');if(!ta)return;
+function reviewApplySelected(panelKey){
+  const s=_review[panelKey];if(!s)return;
+  const ta=_cchatFindTextarea(s.cardId);if(!ta)return;
   if(ta.value!==s.text){toast(t('⚠️ O texto mudou desde a revisão — reabra o painel'),true);return;}
   const repls=[];
   s.candidates.forEach((c,ci)=>{
@@ -6069,13 +6082,13 @@ function reviewApplySelected(id){
   });
   if(!repls.length){toast(t('ℹ️ Nada selecionado com correção definida'),true);return;}
   repls.sort((a,b)=>b.start-a.start); // de trás pra frente, senão as posições seguintes deslocam
-  pushCardHistory(id);
+  pushCardHistory(s.cardId);
   let text=ta.value;
   repls.forEach(r=>{text=text.slice(0,r.start)+r.to+text.slice(r.end)});
   ta.value=text;
-  autoR(ta);updateFooter(id);saveHistory();updateCardUndoBtns(id);
+  autoR(ta);updateFooter(s.cardId);saveHistory();updateCardUndoBtns(s.cardId);
   toast(t('✅ {n} correções aplicadas').replace('{n}',repls.length));
-  reviewClose(id);
+  reviewClose(panelKey);
 }
 
 // ── CARD UNDO/REDO ──
@@ -7552,6 +7565,7 @@ function openConversaMode(id){
       <span class="cchat-title">💬 ${escHtml(title)}</span>
       <div class="cchat-viewslot"></div>
       <button class="cchat-transform-btn" onclick="_cchatOpenLensMenu('${id}')" title="${t('Transformar com IA')}">✨ ${t('Transformar')}</button>
+      <button class="cchat-transform-btn" onclick="openReviewPanel('${id}','cchat-reviewpanel-${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${t('🔍 revisar')}</button>
       <div class="font-sz-wrap" title="${t('Tamanho do texto')}" data-i18n-title>
         <button class="font-sz-btn" id="cchat-fzS" onclick="setFontSize('s')" style="font-size:11px">A</button>
         <button class="font-sz-btn" id="cchat-fzM" onclick="setFontSize('m')" style="font-size:14px">A</button>
@@ -7569,6 +7583,7 @@ function openConversaMode(id){
         <div class="cchat-texttabs" id="cchat-texttabs-${id}"></div>
         <div class="cchat-textslot" id="cchat-textslot-${id}"></div>
         <div class="lens-panel" id="cchat-lensmenu-${id}"></div>
+        <div class="ext-panel lens-panel" id="cchat-reviewpanel-${id}"></div>
         <div class="cchat-tab-actions" id="cchat-tabactions-${id}">
           <button class="primary" onclick="_cchatSaveReplace('${id}')">💾 ${t('Substituir original')}</button>
           <button onclick="_cchatSaveNew('${id}')">+ ${t('Novo card')}</button>
