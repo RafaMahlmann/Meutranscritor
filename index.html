@@ -876,6 +876,22 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .exp-drop{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;min-width:230px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;overflow:hidden;animation:fadeDown 0.15s ease}
 .exp-drop.on{display:block}
 @keyframes fadeDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.brain-panel{display:none;position:fixed;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:10000;overflow:hidden;animation:fadeDown 0.15s ease}
+.brain-panel.on{display:block}
+.brain-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.brain-row:last-child{border-bottom:none}
+.brain-row-ico{flex-shrink:0;display:inline-flex;color:var(--accent)}
+.brain-row-ico svg{width:17px;height:17px}
+.brain-row.cat-diar .brain-row-ico{color:var(--diar)}
+.brain-row-main{flex:1;min-width:0}
+.brain-row-cat{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px}
+.brain-row-val{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brain-seta{width:22px;height:22px;flex-shrink:0;border:none;border-radius:6px;background:var(--bg-input);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all var(--transition)}
+.brain-seta:hover{background:var(--border2);color:var(--text)}
+.brain-dots{display:flex;gap:4px;flex-shrink:0}
+.brain-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);transition:transform 0.15s ease}
+.brain-dot.on{transform:scale(1.35);background:var(--accent)}
+.brain-row.cat-diar .brain-dot.on{background:var(--diar)}
 .exp-header{padding:10px 14px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--text3)}
 .exp-btn{width:100%;background:none;border:none;color:var(--text2);padding:9px 14px;font-size:13px;font-family:var(--font);font-weight:500;text-align:left;cursor:pointer;display:flex;align-items:center;gap:9px;transition:background var(--transition)}
 .exp-btn:hover{background:var(--bg-input)}
@@ -1527,9 +1543,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         </div>
       </div>
       <div class="cfg-wrap">
-        <button class="gbtn on-accent" id="btnCfg" onclick="openModal()" title="Configurações" data-i18n-title>
+        <button class="gbtn on-accent" id="btnBrain" onclick="toggleBrainPanel(this)" title="Trocar rapidamente os provedores de IA" data-i18n-title>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12,5 C14,4 16.5,4.3 17.5,6 C19,7.5 19.3,9 18.3,10.3 C19.5,11.5 19.5,13.2 18.3,14.3 C19,15.8 18.3,17.5 16.5,18.3 C15,19 13.3,19.3 12,19"/><path d="M12,5 C10,4 7.5,4.3 6.5,6 C5,7.5 4.7,9 5.7,10.3 C4.5,11.5 4.5,13.2 5.7,14.3 C5,15.8 5.7,17.5 7.5,18.3 C9,19 10.7,19.3 12,19"/><path d="M12,5 L12,19"/></svg>
+          <span data-i18n>IA</span>
+        </button>
+        <button class="gbtn" id="btnCfg" onclick="openModal()" title="Configurações" data-i18n-title>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span id="cfgLabel">Whisper</span>
+          <span data-i18n>Configurações</span>
         </button>
         <!-- SPEED BADGE — todos os provedores -->
         <button id="speedBadge" onclick="toggleModelPicker()" style="display:none;position:absolute;top:calc(100% + 2px);right:0;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0 2px;text-align:right;line-height:1.5;z-index:10;white-space:nowrap">
@@ -1574,6 +1594,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
     </div>
   </div>
 </header>
+
+<!-- MENU DO CÉREBRO — troca rápida de provedor (transcrição/IA de texto/diarização),
+     compartilhado entre o cabeçalho principal e o do Modo Conversa (dois gatilhos,
+     um painel só, posicionado via JS perto de quem foi clicado). -->
+<div class="brain-panel" id="brainPanel"></div>
 
 <!-- STATS -->
 <div class="stats wrap">
@@ -2555,7 +2580,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.24.4';
+const VOX_VERSION='2026.07.24.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2884,7 +2909,13 @@ let I18N_EN={
 "✅ Revisão da IA pronta!":"✅ AI review ready!",
 "⚠️ O texto mudou desde a revisão — reabra o painel":"⚠️ The text changed since the review — reopen the panel",
 "ℹ️ Nada selecionado com correção definida":"ℹ️ Nothing selected has a correction set",
-"✅ {n} correções aplicadas":"✅ {n} corrections applied"
+"✅ {n} correções aplicadas":"✅ {n} corrections applied",
+// Menu do cérebro — troca rápida de provedor (transcrição/IA de texto/diarização)
+"Trocar rapidamente os provedores de IA":"Quickly switch AI providers",
+"IA":"AI",
+"Personalizado":"Custom",
+"Anterior":"Previous",
+"Próximo":"Next"
 };
 
 // ── STATE ──
@@ -4614,6 +4645,7 @@ function setTxtProvider(p,save=true){
   document.getElementById('txtaiCustomPanel').style.display=p==='custom'?'block':'none';
   if(save)localStorage.setItem('vox_cfg',JSON.stringify(cfg));
   updateLocal100Badge();
+  _refreshBrainPanelIfOpen();
 }
 async function testTxtAI(){
   const out=document.getElementById('txtaiTestResult');
@@ -4690,14 +4722,12 @@ function setProvider(p,save=true){
   document.getElementById('togL').className='api-tog-btn'+(p==='local'?' on':'');
   document.getElementById('localPanel').style.display=p==='local'?'block':'none';
   setTimeout(updateSpeedBadge,0);
-  const labels={whisper:'Whisper',grok:'Grok STT',groqwhisper:'Groq 🟢',local:'🖥️ '+t('Local')};
-  document.getElementById('cfgLabel').textContent=labels[p]||'Whisper';
   document.getElementById('keyLabel').textContent=p==='grok'?t('Grok Key (ativa)'):p==='groqwhisper'?t('Groq Key (ativa)'):p==='local'?t('(sem chave necessária)'):'OpenAI API Key';
-  document.getElementById('btnCfg').className='gbtn '+(p==='grok'?'on-grok':p==='groqwhisper'?'on-groq':'on-accent');
   document.getElementById('brandIcon').textContent=p==='grok'?'🟠':p==='groqwhisper'?'🟢':p==='local'?'🖥️':'🎙️';
   if(p==='local'){updateLocalPanel();setTimeout(()=>checkAndStartServer(closeModal),300)}
   _updateKeyRowFocus(p);updateLocal100Badge();
   if(save)saveCfg(false);
+  _refreshBrainPanelIfOpen();
 }
 function _updateKeyRowFocus(p){
   // whisper → destaca OpenAI, esmaece Grok e Groq
@@ -4811,6 +4841,7 @@ function setDiarProvider(p,save=true,activate=false){
     if(fieldId)_highlightKeyField(fieldId);
   }
   if(save)saveCfg(false);
+  _refreshBrainPanelIfOpen();
 }
 function _highlightKeyField(fieldId){
   const input=document.getElementById(fieldId);if(!input)return;
@@ -7657,6 +7688,7 @@ function openConversaMode(id){
       <div class="cchat-viewslot"></div>
       <button class="cchat-transform-btn" onclick="_cchatOpenLensMenu('${id}')" title="${t('Transformar com IA')}">✨ ${t('Transformar')}</button>
       <button class="cchat-transform-btn" onclick="openReviewPanel('${id}','cchat-reviewpanel-${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}"><span class="cchat-transform-btn-ico">${ICO.checkSquare}</span> ${t('revisar')}</button>
+      <button class="cchat-transform-btn" id="btnBrainConv" onclick="toggleBrainPanel(this)" title="${t('Trocar rapidamente os provedores de IA')}"><span class="cchat-transform-btn-ico">${ICO.brain}</span> ${t('IA')}</button>
       <div class="font-sz-wrap" title="${t('Tamanho do texto')}" data-i18n-title>
         <button class="font-sz-btn" id="cchat-fzS" onclick="setFontSize('s')" style="font-size:11px">A</button>
         <button class="font-sz-btn" id="cchat-fzM" onclick="setFontSize('m')" style="font-size:14px">A</button>
@@ -8144,8 +8176,85 @@ const ICO={
   eraser:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>',
   diarView:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
   stop:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>',
-  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  brain:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12,5 C14,4 16.5,4.3 17.5,6 C19,7.5 19.3,9 18.3,10.3 C19.5,11.5 19.5,13.2 18.3,14.3 C19,15.8 18.3,17.5 16.5,18.3 C15,19 13.3,19.3 12,19"/><path d="M12,5 C10,4 7.5,4.3 6.5,6 C5,7.5 4.7,9 5.7,10.3 C4.5,11.5 4.5,13.2 5.7,14.3 C5,15.8 5.7,17.5 7.5,18.3 C9,19 10.7,19.3 12,19"/><path d="M12,5 L12,19"/></svg>'
 };
+// ── MENU DO CÉREBRO — troca rápida de provedor, sem abrir Configurações ──
+// Reaproveita 100% as funções de troca que já existem (setProvider/
+// setTxtProvider/setDiarProvider) — o menu só decide QUAL valor mandar pra
+// elas e redesenha sua própria lista depois. Nenhuma lógica de troca nova.
+// Padrão "roleta" inspirado no projeto VTO do Rafa (ver conversa): uma
+// opção visível por vez, setas + bolinhas de posição — mas SEM a trava de
+// "arma e confirma" de lá, porque aqui trocar de provedor não grava nada
+// irreversível e o objetivo é velocidade (ex: uma API caiu, troca na hora).
+const BRAIN_CATS=[
+  {key:'transcricao',cfgField:'provider',setter:'setProvider',icoKey:'mic',
+    opts:[['whisper','Whisper'],['groqwhisper','Groq'],['grok','Grok'],['local',t('Local')]]},
+  {key:'ia_texto',cfgField:'txtProvider',setter:'setTxtProvider',icoKey:'messageCircle',
+    opts:[['groq','Groq'],['openai','OpenAI'],['custom',t('Personalizado')]]},
+  {key:'diarizacao',cfgField:'diarProvider',setter:'setDiarProvider',icoKey:'users',cls:'cat-diar',
+    opts:[['assemblyai','AssemblyAI'],['gladia','Gladia'],['pyannote','Pyannote'],['openai','OpenAI']]}
+];
+function _brainCatLabel(key){
+  return {transcricao:t('Transcrição'),ia_texto:t('IA de texto'),diarizacao:t('Diarização')}[key]||'';
+}
+function toggleBrainPanel(originEl){
+  const panel=document.getElementById('brainPanel');
+  if(panel.classList.contains('on')){closeBrainPanel();return;}
+  document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
+  panel.dataset.originId=originEl.id;
+  _renderBrainPanel();
+  panel.classList.add('on');
+  _positionBrainPanel(originEl);
+  setTimeout(()=>document.addEventListener('click',_brainPanelAway),0);
+}
+function closeBrainPanel(){
+  const panel=document.getElementById('brainPanel');
+  panel.classList.remove('on');panel.innerHTML='';
+  document.removeEventListener('click',_brainPanelAway);
+}
+function _brainPanelAway(e){
+  const panel=document.getElementById('brainPanel');
+  if(panel.contains(e.target)||e.target.closest('#btnBrain,#btnBrainConv'))return;
+  closeBrainPanel();
+}
+function _refreshBrainPanelIfOpen(){
+  const panel=document.getElementById('brainPanel');
+  if(panel&&panel.classList.contains('on'))_renderBrainPanel();
+}
+function _positionBrainPanel(originEl){
+  const panel=document.getElementById('brainPanel');
+  const r=originEl.getBoundingClientRect();
+  const panelW=Math.min(300,window.innerWidth-24);
+  let left=r.right-panelW;
+  left=Math.max(12,Math.min(left,window.innerWidth-panelW-12));
+  panel.style.width=panelW+'px';
+  panel.style.top=(r.bottom+6)+'px';
+  panel.style.left=left+'px';
+}
+function _renderBrainPanel(){
+  const panel=document.getElementById('brainPanel');if(!panel)return;
+  panel.innerHTML=BRAIN_CATS.map((cat,ci)=>{
+    const idx=Math.max(0,cat.opts.findIndex(o=>o[0]===cfg[cat.cfgField]));
+    const cur=cat.opts[idx];
+    const dots=cat.opts.map((_,i)=>`<span class="brain-dot${i===idx?' on':''}"></span>`).join('');
+    return `<div class="brain-row ${cat.cls||''}">`+
+      `<span class="brain-row-ico">${ICO[cat.icoKey]}</span>`+
+      `<div class="brain-row-main"><div class="brain-row-cat">${_brainCatLabel(cat.key)}</div><div class="brain-row-val">${escHtml(cur[1])}</div></div>`+
+      `<button class="brain-seta" onclick="_brainMove(${ci},-1)" aria-label="${t('Anterior')}">▲</button>`+
+      `<div class="brain-dots">${dots}</div>`+
+      `<button class="brain-seta" onclick="_brainMove(${ci},1)" aria-label="${t('Próximo')}">▼</button>`+
+      `</div>`;
+  }).join('');
+  const originEl=document.getElementById(panel.dataset.originId);
+  if(originEl)_positionBrainPanel(originEl);
+}
+function _brainMove(ci,dir){
+  const cat=BRAIN_CATS[ci];
+  const idx=Math.max(0,cat.opts.findIndex(o=>o[0]===cfg[cat.cfgField]));
+  const next=(idx+dir+cat.opts.length)%cat.opts.length;
+  window[cat.setter](cat.opts[next][0]);
+}
 function mainLensLabel(k){
   if(!k)return '';
   if(k.startsWith('recipe:')){
