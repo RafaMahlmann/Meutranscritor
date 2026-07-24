@@ -541,6 +541,11 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .review-occ-verdict.warn{color:var(--accent);display:flex;align-items:center;gap:4px}
 .review-occ-suggestion{font-size:11px;padding:2px 6px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg-card);color:var(--text);font-family:var(--font)}
 .review-word-actions{display:flex;gap:6px;margin:4px 0 0 20px}
+.review-word-check{flex-shrink:0;margin:0}
+.review-ask-box{background:var(--bg-card);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.review-ask-hint{font-size:12px;color:var(--text3);margin:0 0 8px;line-height:1.4}
+.review-ask-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.review-ask-row .ext-count{flex:1}
 .ctag-voice-btn{font-size:11px;padding:2px 8px;border-radius:20px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--font);font-weight:600;transition:all var(--transition)}
 .ctag-voice-btn:hover{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.08)}
 .ctag-voice-btn.vt-rec{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.12);animation:vtblink 1s infinite}
@@ -2545,7 +2550,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.24.1';
+const VOX_VERSION='2026.07.24.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2853,11 +2858,15 @@ let I18N_EN={
 "ℹ️ Card vazio — nada para revisar":"ℹ️ Empty card — nothing to review",
 "🔍 Nenhuma repetição suspeita encontrada":"🔍 No suspicious repetitions found",
 "🔍 REVISÃO — {n} palavras repetidas":"🔍 REVIEW — {n} repeated words",
-"🤖 Perguntar à IA sobre estas {n} palavras":"🤖 Ask AI about these {n} words",
+"A IA vai dar uma olhada nas palavras marcadas abaixo e avisar se cada uma faz sentido aqui ou parece um erro de transcrição — aí você decide se quer trocar ou deixar como está.":"The AI will take a look at the words checked below and tell you if each one makes sense here or looks like a transcription mistake — then you decide whether to replace it or leave it as is.",
+"🤖 Perguntar à IA sobre as palavras marcadas":"🤖 Ask AI about the checked words",
+"{n} de {m} palavras selecionadas":"{n} of {m} words selected",
+"ℹ️ Selecione ao menos uma palavra antes de perguntar à IA":"ℹ️ Select at least one word before asking the AI",
 "grafias:":"spellings:",
 "ok":"ok",
 "correção manual":"manual correction",
 "marcar todas":"select all",
+"desmarcar todas":"deselect all",
 "sempre ignorar":"always ignore",
 "sempre trocar por…":"always replace with…",
 "0 selecionadas":"0 selected","selecionadas":"selected","selecionada":"selected",
@@ -5894,7 +5903,12 @@ function openReviewPanel(cardId,panelKey){
     panel.innerHTML=`<div class="ext-panel-head"><span>${t('🔍 Nenhuma repetição suspeita encontrada')}</span><button class="ext-sm-btn" onclick="reviewClose('${panelKey}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
     return;
   }
-  _review[panelKey]={cardId,text:raw,candidates,judgments:{},judged:false,sel:new Set(),expanded:new Set()};
+  // wordSel começa com TODAS marcadas — perguntar sobre tudo continua sendo
+  // o padrão de 1 clique só; quem tem um texto grande com muita candidata
+  // (visto na prática: 300+) desmarca as que não interessam antes de gastar
+  // o pedido de IA, em vez de perguntar sobre um monte de coisa que nem
+  // sabe se quer perguntar.
+  _review[panelKey]={cardId,text:raw,candidates,judgments:{},judged:false,sel:new Set(),expanded:new Set(),wordSel:new Set(candidates.map((_,i)=>i))};
   _buildReviewUI(panelKey);
 }
 function reviewClose(panelKey){
@@ -5911,12 +5925,23 @@ function _buildReviewUI(panelKey){
   const n=s.candidates.length;
   let html=`<div class="ext-panel-head"><span>${t('🔍 REVISÃO — {n} palavras repetidas').replace('{n}',n)}</span><button class="ext-sm-btn" onclick="reviewClose('${panelKey}')" style="margin-left:auto;padding:1px 7px">✕</button></div>`;
   if(!s.judged){
-    html+=`<div class="ext-actions" style="margin-bottom:2px"><button class="ext-add-btn" id="reviewask-${panelKey}" onclick="_reviewAskAI('${panelKey}')">${t('🤖 Perguntar à IA sobre estas {n} palavras').replace('{n}',n)}</button></div>`;
+    const wn=s.wordSel.size,allWordsSelected=wn===n;
+    html+=`<div class="review-ask-box">`;
+    html+=`<p class="review-ask-hint">${t('A IA vai dar uma olhada nas palavras marcadas abaixo e avisar se cada uma faz sentido aqui ou parece um erro de transcrição — aí você decide se quer trocar ou deixar como está.')}</p>`;
+    html+=`<div class="review-ask-row">`;
+    html+=`<button class="ext-sm-btn" id="reviewwordselall-${panelKey}" onclick="_reviewSelectAllWords('${panelKey}')">${allWordsSelected?t('desmarcar todas'):t('marcar todas')}</button>`;
+    html+=`<span class="ext-count" id="reviewwordcount-${panelKey}">${t('{n} de {m} palavras selecionadas').replace('{n}',wn).replace('{m}',n)}</span>`;
+    html+=`</div>`;
+    html+=`<button class="ext-add-btn" id="reviewask-${panelKey}" onclick="_reviewAskAI('${panelKey}')"${wn===0?' disabled':''}>${t('🤖 Perguntar à IA sobre as palavras marcadas')}</button>`;
+    html+=`</div>`;
   }
   s.candidates.forEach((c,ci)=>{
     const open=s.expanded.has(ci);
+    const wchecked=s.wordSel.has(ci);
     html+=`<div class="review-word">`;
-    html+=`<div class="review-word-head" onclick="_reviewToggleExpand('${panelKey}',${ci})"><span class="review-arrow${open?' open':''}">▶</span><span class="review-word-label">${escHtml(c.label)} · ${c.count}x${c.variants?' · '+t('grafias:')+' '+c.variants.map(v=>escHtml(v.label)).join(', '):''}</span></div>`;
+    html+=`<div class="review-word-head" onclick="_reviewToggleExpand('${panelKey}',${ci})">`;
+    if(!s.judged)html+=`<input type="checkbox" class="review-word-check" ${wchecked?'checked':''} onclick="event.stopPropagation()" onchange="_reviewToggleWordSel('${panelKey}',${ci},this.checked)">`;
+    html+=`<span class="review-arrow${open?' open':''}">▶</span><span class="review-word-label">${escHtml(c.label)} · ${c.count}x${c.variants?' · '+t('grafias:')+' '+c.variants.map(v=>escHtml(v.label)).join(', '):''}</span></div>`;
     if(open){
       html+=`<div class="review-occurrences">`;
       c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach((p,oi)=>{
@@ -5938,7 +5963,9 @@ function _buildReviewUI(panelKey){
       });
       html+=`</div>`;
       html+=`<div class="review-word-actions">`;
-      html+=`<button class="ext-sm-btn" onclick="_reviewSelectAllInWord('${panelKey}',${ci})">${t('marcar todas')}</button>`;
+      const occKeys=[];c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach((p,oi)=>{const k=_reviewOccKey(ci,oi);if(!(s.judgments[k]&&s.judgments[k].ok))occKeys.push(k)});
+      const occAllSelected=occKeys.length>0&&occKeys.every(k=>s.sel.has(k));
+      html+=`<button class="ext-sm-btn" data-selall-ci="${ci}" onclick="_reviewSelectAllInWord('${panelKey}',${ci})">${occAllSelected?t('desmarcar todas'):t('marcar todas')}</button>`;
       html+=`<button class="ext-sm-btn" onclick="_reviewIgnoreWordAlways('${panelKey}',${ci})">${t('sempre ignorar')}</button>`;
       html+=`<button class="ext-sm-btn" onclick="_reviewAlwaysReplaceWord('${panelKey}',${ci})">${t('sempre trocar por…')}</button>`;
       html+=`</div>`;
@@ -5968,15 +5995,54 @@ function _reviewEditSuggestion(panelKey,key,value){
   if(cb)cb.checked=s.sel.has(key);
   _updateReviewCount(panelKey);
 }
+// Alterna (não só marca): se já estava tudo selecionado, desmarca; senão,
+// marca tudo. Atualização cirúrgica no DOM (não reconstrói o painel
+// inteiro) — importante pra não perder a posição de rolagem em textos com
+// muita palavra candidata.
 function _reviewSelectAllInWord(panelKey,ci){
   const s=_review[panelKey];if(!s)return;
   const c=s.candidates[ci];if(!c)return;
+  const keys=[];
   c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach((p,oi)=>{
     const key=_reviewOccKey(ci,oi),j=s.judgments[key];
     if(j&&j.ok)return;
-    s.sel.add(key);
+    keys.push(key);
   });
-  _buildReviewUI(panelKey);
+  if(!keys.length)return;
+  const allSelected=keys.every(k=>s.sel.has(k));
+  keys.forEach(k=>{if(allSelected)s.sel.delete(k);else s.sel.add(k)});
+  keys.forEach(k=>{
+    const cb=document.querySelector(`#${panelKey} input[type=checkbox][data-key="${k}"]`);
+    if(cb)cb.checked=!allSelected;
+  });
+  const btn=document.querySelector(`#${panelKey} [data-selall-ci="${ci}"]`);
+  if(btn)btn.textContent=allSelected?t('marcar todas'):t('desmarcar todas');
+  _updateReviewCount(panelKey);
+}
+function _reviewToggleWordSel(panelKey,ci,checked){
+  const s=_review[panelKey];if(!s)return;
+  if(checked)s.wordSel.add(ci);else s.wordSel.delete(ci);
+  _updateReviewWordCount(panelKey);
+}
+function _updateReviewWordCount(panelKey){
+  const s=_review[panelKey];if(!s)return;
+  const n=s.candidates.length,wn=s.wordSel.size;
+  const el=document.getElementById('reviewwordcount-'+panelKey);
+  if(el)el.textContent=t('{n} de {m} palavras selecionadas').replace('{n}',wn).replace('{m}',n);
+  const askBtn=document.getElementById('reviewask-'+panelKey);
+  if(askBtn)askBtn.disabled=wn===0;
+  const selAllBtn=document.getElementById('reviewwordselall-'+panelKey);
+  if(selAllBtn)selAllBtn.textContent=wn===n?t('desmarcar todas'):t('marcar todas');
+}
+// Mesma lógica de alternância do _reviewSelectAllInWord, mas pro conjunto
+// inteiro de palavras candidatas (a seleção de QUAIS palavras entram no
+// pedido de IA, não das ocorrências dentro de uma palavra já expandida).
+function _reviewSelectAllWords(panelKey){
+  const s=_review[panelKey];if(!s)return;
+  const allSelected=s.wordSel.size===s.candidates.length;
+  if(allSelected)s.wordSel.clear();else s.wordSel=new Set(s.candidates.map((_,i)=>i));
+  document.querySelectorAll(`#${panelKey} .review-word-check`).forEach(cb=>{cb.checked=!allSelected});
+  _updateReviewWordCount(panelKey);
 }
 function _updateReviewCount(panelKey){
   const s=_review[panelKey];if(!s)return;
@@ -6007,6 +6073,9 @@ function _reviewRemoveCandidate(panelKey,ci){
   const newExpanded=new Set();
   s.expanded.forEach(oldCi=>{if(oldCi!==ci)newExpanded.add(oldCi>ci?oldCi-1:oldCi)});
   s.expanded=newExpanded;
+  const newWordSel=new Set();
+  s.wordSel.forEach(oldCi=>{if(oldCi!==ci)newWordSel.add(oldCi>ci?oldCi-1:oldCi)});
+  s.wordSel=newWordSel;
 }
 function _reviewDoneOrRender(panelKey){
   const s=_review[panelKey];if(!s)return;
@@ -6047,19 +6116,35 @@ function _reviewAlwaysReplaceWord(panelKey,ci){
 }
 async function _reviewAskAI(panelKey){
   const s=_review[panelKey];if(!s||s.judged)return;
+  if(!s.wordSel.size){toast(t('ℹ️ Selecione ao menos uma palavra antes de perguntar à IA'),true);return;}
   const key=aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA para usar esta função'),true);openModal();return;}
   const btn=document.getElementById('reviewask-'+panelKey);
   if(btn){btn.disabled=true;btn.textContent=t('⏳ perguntando à IA…');}
   try{
-    const judgments=await judgeRepeatedWords(s.text,s.candidates,key);
+    // Manda só as palavras marcadas (economia de tokens de propósito) — mas
+    // isso muda a numeração "N.M" que a IA devolve, que passa a ser relativa
+    // à posição DENTRO do subconjunto enviado, não ao array completo de
+    // candidatas. Por isso remapeia de volta pro índice original (selectedIdx)
+    // antes de guardar em s.judgments, senão os julgamentos apareceriam
+    // grudados nas palavras erradas.
+    const selectedIdx=[...s.wordSel].sort((a,b)=>a-b);
+    const subset=selectedIdx.map(ci=>s.candidates[ci]);
+    const rawJudgments=await judgeRepeatedWords(s.text,subset,key);
+    const judgments={};
+    Object.keys(rawJudgments).forEach(k=>{
+      const dot=k.indexOf('.'),pos=parseInt(k.slice(0,dot))-1,rest=k.slice(dot);
+      const originalCi=selectedIdx[pos];
+      if(originalCi===undefined)return;
+      judgments[(originalCi+1)+rest]=rawJudgments[k];
+    });
     s.judgments=judgments;s.judged=true;s.sel=new Set();
     Object.keys(judgments).forEach(k=>{if(!judgments[k].ok)s.sel.add(k)});
     toast(t('✅ Revisão da IA pronta!'));
     _buildReviewUI(panelKey);
   }catch(e){
     toast('❌ '+e.message,true);
-    if(btn){btn.disabled=false;btn.textContent=t('🤖 Perguntar à IA sobre estas {n} palavras').replace('{n}',s.candidates.length);}
+    if(btn){btn.disabled=false;btn.textContent=t('🤖 Perguntar à IA sobre as palavras marcadas');}
   }
 }
 // ── REVISÃO DE REPETIÇÕES (Fase 4 — aplicar correções + desfazer) ──
