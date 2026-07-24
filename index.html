@@ -1266,7 +1266,6 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      visíveis — os demais badges (diarizado/tipo/nome de sessão/fixado) e o
      selo de "recente" somem até expandir. */
   .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.diar,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge-type,
   .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .sname-badge,
   .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin,
   .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{display:none}
@@ -1389,6 +1388,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-ttab-x:hover{opacity:1}
 #cchat-overlay .cchat-transform-btn{border:1px solid var(--border2);background:var(--bg-input);color:var(--text2);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-right:8px}
 #cchat-overlay .cchat-transform-btn:hover{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
+#cchat-overlay .cchat-transform-btn-ico{display:inline-flex;vertical-align:-2px}
+#cchat-overlay .cchat-transform-btn-ico svg{width:13px;height:13px}
 #cchat-overlay .cchat-transform-pane{width:100%;min-height:100%}
 #cchat-overlay .cchat-transform-preview{cursor:text;min-height:300px}
 #cchat-overlay .cchat-transform-ta{width:100%;min-height:300px;border:none;outline:none;resize:none;font-size:var(--cf-sz,14px);line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
@@ -2544,7 +2545,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.22.5';
+const VOX_VERSION='2026.07.24.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2848,7 +2849,7 @@ let I18N_EN={
 "❌ Não foi possível obter resposta: ":"❌ Could not get a response: ","✓ Aplicar sugestão":"✓ Apply suggestion","✅ Sugestão aplicada. Ctrl+Z desfaz.":"✅ Suggestion applied. Ctrl+Z undoes.","Usuário":"User",
 // FASE 3/4 — painel interativo de revisão de repetições
 "Revisar palavras repetidas ou fora de contexto":"Review repeated or out-of-context words",
-"🔍 revisar":"🔍 review",
+"revisar":"review",
 "ℹ️ Card vazio — nada para revisar":"ℹ️ Empty card — nothing to review",
 "🔍 Nenhuma repetição suspeita encontrada":"🔍 No suspicious repetitions found",
 "🔍 REVISÃO — {n} palavras repetidas":"🔍 REVIEW — {n} repeated words",
@@ -5484,7 +5485,6 @@ function tagsBlock(id,tags){
     tags.map(t=>`<button class="ctag" onclick="filterTag('${escJs(t)}')">#${escHtml(t)}<span class="ctag-rm" onclick="event.stopPropagation();removeTag('${id}','${escJs(t)}')">×</span></button>`).join('')+
     `<button class="ctag-suggest-btn" onclick="suggestTags('${id}')" title="${t('Sugerir tags com IA')}">${t('+ tag IA')}</button>`+
     `<button class="ctag-gear-btn" onclick="openExtractPanel('${id}')" title="${t('Extrair todos os termos do texto')}">${t('⚙ extrair')}</button>`+
-    `<button class="ctag-gear-btn" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${t('🔍 revisar')}</button>`+
     `<button class="ctag-voice-btn" id="vtbtn-${id}" onclick="startVoiceTag('${id}')" title="${t('Falar tags')}">${t('🎤 falar')}</button>`+
     `<input class="ctag-input" placeholder="${t('tag manual')}" onkeydown="handleTagInput(event,'${id}')" maxlength="20">`+
     `</div></div>`+
@@ -7058,6 +7058,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
           <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           <button class="icon-btn" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">${ICO.diarView}</button>
+          <button class="icon-btn" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
           <button class="icon-btn" onclick="diarToStandardCard('${id}')" title="${t('Virar card padrão')}">💾</button>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
           <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
@@ -7565,7 +7566,7 @@ function openConversaMode(id){
       <span class="cchat-title">💬 ${escHtml(title)}</span>
       <div class="cchat-viewslot"></div>
       <button class="cchat-transform-btn" onclick="_cchatOpenLensMenu('${id}')" title="${t('Transformar com IA')}">✨ ${t('Transformar')}</button>
-      <button class="cchat-transform-btn" onclick="openReviewPanel('${id}','cchat-reviewpanel-${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${t('🔍 revisar')}</button>
+      <button class="cchat-transform-btn" onclick="openReviewPanel('${id}','cchat-reviewpanel-${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}"><span class="cchat-transform-btn-ico">${ICO.checkSquare}</span> ${t('revisar')}</button>
       <div class="font-sz-wrap" title="${t('Tamanho do texto')}" data-i18n-title>
         <button class="font-sz-btn" id="cchat-fzS" onclick="setFontSize('s')" style="font-size:11px">A</button>
         <button class="font-sz-btn" id="cchat-fzM" onclick="setFontSize('m')" style="font-size:14px">A</button>
@@ -8921,8 +8922,6 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   const provStr=prov||'whisper';
   const badgeCls=provStr==='grok'?' grok':provStr==='groqwhisper'?' groq':'';
   const provLabel=provStr==='grok'?'🟠 Grok':provStr==='groqwhisper'?'🟢 Groq':'🤖 Whisper';
-  const typeLabel=type==='gravacao'?t('Gravação'):type==='arquivo'?t('Arquivo'):t('Texto');
-  const typeIco=type==='gravacao'?'🎙️':type==='arquivo'?'📁':'✏️';
   const modeLabel=SESSION_MODES[mode]?.label||t('📝 Livre');
   let audioHtml='';
   if(file&&type!=='texto'){try{const url=URL.createObjectURL(file);blobReg.set(id,url);audioHtml=`<div class="card-audio" style="padding:0 14px 8px"><audio controls src="${url}" style="width:100%;height:32px;border-radius:8px"></audio></div>`;updateRamBadge()}catch(e){}}
@@ -8942,7 +8941,6 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot"></span>
           <span class="badge${badgeCls}">${provLabel}</span>
-          <span class="badge badge-type">${typeIco} ${typeLabel}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
           ${sn?`<span class="sname-badge" title="${escHtml(sn)}">${escHtml(sn)}</span>`:''}
           ${pinned?'<span class="badge pin">📌</span>':''}
@@ -8955,6 +8953,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
           <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
+          <button class="icon-btn" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
           <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
           <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
