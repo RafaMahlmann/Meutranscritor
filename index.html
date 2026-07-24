@@ -344,6 +344,8 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .icon-btn:hover{background:var(--bg-input);color:var(--text2)}
 .icon-btn:disabled{opacity:0.28;cursor:default;pointer-events:none}
 .icon-btn svg{width:13px;height:13px}
+.icon-btn-copy{color:#eab308}
+.icon-btn-copy:hover{background:rgba(234,179,8,0.12);color:#ca8a04}
 .icon-btn.rec-here{color:var(--ca,var(--accent));background:var(--cag,var(--accent-glow))}
 .icon-btn.pinned{color:#f59e0b}
 .icon-btn.recording-this{background:var(--danger);color:white;animation:pulse-red 1.5s infinite}
@@ -542,10 +544,13 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .review-occ-suggestion{font-size:11px;padding:2px 6px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg-card);color:var(--text);font-family:var(--font)}
 .review-word-actions{display:flex;gap:6px;margin:4px 0 0 20px}
 .review-word-check{flex-shrink:0;margin:0}
-.review-ask-box{background:var(--bg-card);border-radius:10px;padding:10px 12px;margin-bottom:8px}
-.review-ask-hint{font-size:12px;color:var(--text3);margin:0 0 8px;line-height:1.4}
-.review-ask-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.review-ask-row .ext-count{flex:1}
+.review-ask-box{background:var(--bg-card);border:1px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow-card)}
+.review-ask-hint{font-size:12.5px;color:var(--text2);margin:0 0 12px;line-height:1.5}
+.review-ask-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.review-ask-row .ext-count{flex:1;text-align:right;font-size:11.5px}
+.review-ask-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:10px 14px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);display:flex;align-items:center;justify-content:center;gap:6px}
+.review-ask-btn:hover{background:var(--accent2)}
+.review-ask-btn:disabled{opacity:0.4;cursor:default}
 .ctag-voice-btn{font-size:11px;padding:2px 8px;border-radius:20px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--font);font-weight:600;transition:all var(--transition)}
 .ctag-voice-btn:hover{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.08)}
 .ctag-voice-btn.vt-rec{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.12);animation:vtblink 1s infinite}
@@ -2550,7 +2555,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.24.3';
+const VOX_VERSION='2026.07.24.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5932,7 +5937,7 @@ function _buildReviewUI(panelKey){
     html+=`<button class="ext-sm-btn" id="reviewwordselall-${panelKey}" onclick="_reviewSelectAllWords('${panelKey}')">${allWordsSelected?t('desmarcar todas'):t('marcar todas')}</button>`;
     html+=`<span class="ext-count" id="reviewwordcount-${panelKey}">${t('{n} de {m} palavras selecionadas').replace('{n}',wn).replace('{m}',n)}</span>`;
     html+=`</div>`;
-    html+=`<button class="ext-add-btn" id="reviewask-${panelKey}" onclick="_reviewAskAI('${panelKey}')"${wn===0?' disabled':''}>${t('🤖 Perguntar à IA sobre as palavras marcadas')}</button>`;
+    html+=`<button class="review-ask-btn" id="reviewask-${panelKey}" onclick="_reviewAskAI('${panelKey}')"${wn===0?' disabled':''}>${t('🤖 Perguntar à IA sobre as palavras marcadas')}</button>`;
     html+=`</div>`;
   }
   s.candidates.forEach((c,ci)=>{
@@ -7147,7 +7152,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <button class="icon-btn" onclick="diarToStandardCard('${id}')" title="${t('Virar card padrão')}">💾</button>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
           <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
-          <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
+          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
           <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
           <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
@@ -9039,7 +9044,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
           <button class="icon-btn" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
-          <button class="icon-btn" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
+          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
           <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
           <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
