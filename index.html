@@ -1545,7 +1545,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <div class="cfg-wrap">
         <button class="gbtn on-accent" id="btnBrain" onclick="toggleBrainPanel(this)" title="Trocar rapidamente os provedores de IA" data-i18n-title>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12,5 C14,4 16.5,4.3 17.5,6 C19,7.5 19.3,9 18.3,10.3 C19.5,11.5 19.5,13.2 18.3,14.3 C19,15.8 18.3,17.5 16.5,18.3 C15,19 13.3,19.3 12,19"/><path d="M12,5 C10,4 7.5,4.3 6.5,6 C5,7.5 4.7,9 5.7,10.3 C4.5,11.5 4.5,13.2 5.7,14.3 C5,15.8 5.7,17.5 7.5,18.3 C9,19 10.7,19.3 12,19"/><path d="M12,5 L12,19"/></svg>
-          <span data-i18n>IA</span>
+          <span data-i18n>Cérebro</span>
         </button>
         <button class="gbtn" id="btnCfg" onclick="openModal()" title="Configurações" data-i18n-title>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -2580,7 +2580,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.24.5';
+const VOX_VERSION='2026.07.25.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2915,7 +2915,10 @@ let I18N_EN={
 "IA":"AI",
 "Personalizado":"Custom",
 "Anterior":"Previous",
-"Próximo":"Next"
+"Próximo":"Next",
+"Cérebro":"Brain",
+"configurada":"configured",
+"configuradas":"configured"
 };
 
 // ── STATE ──
@@ -7688,7 +7691,7 @@ function openConversaMode(id){
       <div class="cchat-viewslot"></div>
       <button class="cchat-transform-btn" onclick="_cchatOpenLensMenu('${id}')" title="${t('Transformar com IA')}">✨ ${t('Transformar')}</button>
       <button class="cchat-transform-btn" onclick="openReviewPanel('${id}','cchat-reviewpanel-${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}"><span class="cchat-transform-btn-ico">${ICO.checkSquare}</span> ${t('revisar')}</button>
-      <button class="cchat-transform-btn" id="btnBrainConv" onclick="toggleBrainPanel(this)" title="${t('Trocar rapidamente os provedores de IA')}"><span class="cchat-transform-btn-ico">${ICO.brain}</span> ${t('IA')}</button>
+      <button class="cchat-transform-btn" id="btnBrainConv" onclick="toggleBrainPanel(this)" title="${t('Trocar rapidamente os provedores de IA')}"><span class="cchat-transform-btn-ico">${ICO.brain}</span> ${t('Cérebro')}</button>
       <div class="font-sz-wrap" title="${t('Tamanho do texto')}" data-i18n-title>
         <button class="font-sz-btn" id="cchat-fzS" onclick="setFontSize('s')" style="font-size:11px">A</button>
         <button class="font-sz-btn" id="cchat-fzM" onclick="setFontSize('m')" style="font-size:14px">A</button>
@@ -8232,18 +8235,49 @@ function _positionBrainPanel(originEl){
   panel.style.top=(r.bottom+6)+'px';
   panel.style.left=left+'px';
 }
+// Quantas opções desta categoria já têm chave configurada (pra mostrar
+// "3 configuradas" ao lado do nome). Groq/OpenAI são compartilhadas entre
+// Transcrição e IA de texto (mesma chave, ver aba Configurações → IA de
+// texto: "Usa a mesma Groq/OpenAI Key da aba Transcrição") — por isso os
+// mesmos campos cfg.apiKeyGroq/cfg.apiKey aparecem nas duas contagens.
+function _brainConfiguredCount(catKey){
+  if(catKey==='transcricao'){
+    let n=1; // 'local' não precisa de chave, sempre conta
+    if(cfg.apiKey)n++;
+    if(cfg.apiKeyGroq)n++;
+    if(cfg.apiKeyGrok)n++;
+    return n;
+  }
+  if(catKey==='ia_texto'){
+    let n=0;
+    if(cfg.apiKeyGroq)n++;
+    if(cfg.apiKey)n++;
+    if(cfg.txtBaseUrl)n++;
+    return n;
+  }
+  if(catKey==='diarizacao'){
+    let n=0;
+    if(cfg.apiKeyAssembly)n++;
+    if(cfg.apiKeyGladia)n++;
+    if(cfg.apiKeyPyannote)n++;
+    if(cfg.apiKey)n++;
+    return n;
+  }
+  return 0;
+}
 function _renderBrainPanel(){
   const panel=document.getElementById('brainPanel');if(!panel)return;
   panel.innerHTML=BRAIN_CATS.map((cat,ci)=>{
     const idx=Math.max(0,cat.opts.findIndex(o=>o[0]===cfg[cat.cfgField]));
     const cur=cat.opts[idx];
     const dots=cat.opts.map((_,i)=>`<span class="brain-dot${i===idx?' on':''}"></span>`).join('');
+    const n=_brainConfiguredCount(cat.key);
     return `<div class="brain-row ${cat.cls||''}">`+
       `<span class="brain-row-ico">${ICO[cat.icoKey]}</span>`+
-      `<div class="brain-row-main"><div class="brain-row-cat">${_brainCatLabel(cat.key)}</div><div class="brain-row-val">${escHtml(cur[1])}</div></div>`+
-      `<button class="brain-seta" onclick="_brainMove(${ci},-1)" aria-label="${t('Anterior')}">▲</button>`+
+      `<div class="brain-row-main"><div class="brain-row-cat">${_brainCatLabel(cat.key)} · ${n} ${n===1?t('configurada'):t('configuradas')}</div><div class="brain-row-val">${escHtml(cur[1])}</div></div>`+
+      `<button class="brain-seta" onclick="event.stopPropagation();_brainMove(${ci},-1)" aria-label="${t('Anterior')}">▲</button>`+
       `<div class="brain-dots">${dots}</div>`+
-      `<button class="brain-seta" onclick="_brainMove(${ci},1)" aria-label="${t('Próximo')}">▼</button>`+
+      `<button class="brain-seta" onclick="event.stopPropagation();_brainMove(${ci},1)" aria-label="${t('Próximo')}">▼</button>`+
       `</div>`;
   }).join('');
   const originEl=document.getElementById(panel.dataset.originId);
