@@ -122,7 +122,7 @@ header.has-speed-badge{padding-bottom:18px}
 .ob-modal{max-width:480px;width:100%;overflow:hidden}
 .ob-prog{height:3px;background:var(--border);flex-shrink:0}
 .ob-prog-fill{height:100%;background:var(--accent);width:16.6%;transition:width .35s cubic-bezier(.4,0,.2,1)}
-.ob-body{padding:26px 28px 12px;max-height:74vh;overflow-y:auto}
+.ob-body{padding:48px 28px 12px;max-height:74vh;overflow-y:auto}
 .ob-tela{display:none}
 .ob-h{font-size:19px;font-weight:700;letter-spacing:-0.4px;line-height:1.32;margin-bottom:12px;color:var(--text)}
 .ob-p{font-size:13.5px;color:var(--text2);line-height:1.7;margin-bottom:13px}
@@ -2531,7 +2531,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      mudança, não importa em qual tela o campo está. -->
 <div class="overlay" id="onboardOverlay" style="display:none;z-index:610">
   <div class="modal ob-modal" style="position:relative">
-    <button class="ob-lang" onclick="setLang(currentLang==='pt'?'en':'pt')" title="Language / Idioma">🌐 <span id="obLangLabel">PT</span></button>
+    <button class="ob-lang" onclick="_obToggleLang()" title="Language / Idioma">🌐 <span id="obLangLabel">PT</span></button>
     <div class="ob-prog"><div class="ob-prog-fill" id="obProgFill"></div></div>
     <div class="mb ob-body">
 
@@ -2755,7 +2755,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.26.4';
+const VOX_VERSION='2026.07.26.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3588,6 +3588,10 @@ function _obOpen(){
   document.getElementById('onboardOverlay').style.display='flex';
   _obRender();
 }
+function _obToggleLang(){
+  localStorage.setItem('vox_reopen_onboarding','1');
+  setLang(currentLang==='pt'?'en':'pt');
+}
 function _obSkip(){skipOnboard();openModal()}
 function _toggleOnboardOther(){
   const p=document.getElementById('onboardOtherPanel');
@@ -3811,6 +3815,10 @@ function _updatePwaTip(){
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',async()=>{
   applyStaticI18n();_syncLangUI();
+  if(localStorage.getItem('vox_reopen_onboarding')==='1'){
+    localStorage.removeItem('vox_reopen_onboarding');
+    setTimeout(_obOpen,0);
+  }
   loadCfg();loadLearningData();await loadHistory();updateStats();checkSend();applyView();loadFontSize();
   loadFolders();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();initFloatSelHandle();
   initAudioDropzone();
