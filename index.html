@@ -2537,6 +2537,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
     <div class="ob-prog"><div class="ob-prog-fill" id="obProgFill"></div></div>
     <div class="mb ob-body">
 
+      <!-- TELA 0 — boas-vindas -->
+      <div class="ob-tela" data-step="0">
+        <h2 class="ob-h" data-i18n>Bem-vindo ao Vox</h2>
+        <p class="ob-p" data-i18n>Pense em voz alta — sua fala vira raciocínio pronto pra trabalhar, com vários cérebros de IA te ajudando a lapidar.</p>
+        <button class="ob-btn" onclick="_obNext()" data-i18n>Começar →</button>
+      </div>
+
       <!-- TELA 1 — o superpoder -->
       <div class="ob-tela" data-step="1">
         <h2 class="ob-h" data-i18n>Aqui você escolhe qual inteligência artificial trabalha pra você</h2>
@@ -2757,7 +2764,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.26.7';
+const VOX_VERSION='2026.07.26.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3115,7 +3122,10 @@ let I18N_EN={
 "Novidade sem espera":"New models, no waiting",
 "Saiu um modelo melhor mês que vem? Você usa no mesmo dia, sem depender de atualização nossa.":"A better model comes out next month? You use it the same day, without waiting for an update from us.",
 "O menu do cérebro tem três linhas porque são três trabalhos diferentes: <strong>transcrever</strong> o áudio, <strong>separar as vozes</strong> de quem falou, e <strong>pensar</strong> em cima do texto. Cada um pode usar um serviço diferente — e você troca cada um na sua própria roleta.":"The brain menu has three rows because these are three different jobs: <strong>transcribing</strong> the audio, <strong>separating the voices</strong> of who spoke, and <strong>thinking</strong> about the text. Each one can use a different service — and you switch each one on its own dial.",
-// Onboarding assistido — Fase 2/3: as 6 telas
+// Onboarding assistido — Fase 2/3: as 7 telas
+"Bem-vindo ao Vox":"Welcome to Vox",
+"Pense em voz alta — sua fala vira raciocínio pronto pra trabalhar, com vários cérebros de IA te ajudando a lapidar.":"Think out loud — your speech turns into reasoning ready to work with, helped by several AI brains to polish it.",
+"Começar →":"Start →",
 "Aqui você escolhe qual inteligência artificial trabalha pra você":"Here you choose which artificial intelligence works for you",
 "A maioria dos aplicativos já escolheu uma por você, embutiu o custo na mensalidade, e pronto. O Vox faz diferente: você conecta as que quiser e troca entre elas numa girada — como quem gira a rodinha do mouse.":"Most apps already picked one for you, baked the cost into the subscription, and that's that. Vox does it differently: you connect as many as you like and switch between them with a flick — like spinning a mouse wheel.",
 "Isso importa porque cada uma pensa de um jeito. Uma escreve melhor, outra é mais rápida, outra é quase de graça. Ter várias é ter escolha em cada trabalho.":"This matters because each one thinks differently. One writes better, another is faster, another is nearly free. Having several means having a choice on every job.",
@@ -3521,7 +3531,7 @@ async function requestMic(){
 // disso persiste de propósito: fechar e reabrir recomeça do zero, que é o
 // esperado pra um fluxo de primeira vez.
 const OB_TOTAL=6;
-let _obStep=1,_obData={caso:'economia'};
+let _obStep=0,_obData={caso:'economia'};
 // Um elemento com data-caso só aparece nos caminhos listados nele. Vale
 // tanto pra tela inteira quanto pra um botão solto dentro dela — é o que
 // deixa o caminho "privacidade" pular a diarização sem código extra.
@@ -3543,11 +3553,11 @@ function _obRender(){
   });
   // Progresso conta só as telas do caminho atual (privacidade tem uma a menos)
   let total=0,atual=0;
-  for(let s=1;s<=OB_TOTAL;s++){if(!_obTemTela(s))continue;total++;if(s<=_obStep)atual++}
+  for(let s=0;s<=OB_TOTAL;s++){if(!_obTemTela(s))continue;total++;if(s<=_obStep)atual++}
   const fill=document.getElementById('obProgFill');
   if(fill)fill.style.width=(total?atual/total*100:0)+'%';
   const back=document.getElementById('obBack');
-  if(back)back.style.visibility=_obStep>1?'visible':'hidden';
+  if(back)back.style.visibility=_obStep>0?'visible':'hidden';
   if(_obStep===5)_obRender5();
   const body=ov.querySelector('.ob-body');if(body)body.scrollTop=0;
 }
@@ -3574,11 +3584,11 @@ function _obNext(){
   finishOnboard(); // acabaram as telas do caminho — encerra sem deixar ninguém preso
 }
 function _obBack(){
-  for(let n=_obStep-1;n>=1;n--){if(_obTemTela(n)){_obGo(n);return}}
+  for(let n=_obStep-1;n>=0;n--){if(_obTemTela(n)){_obGo(n);return}}
 }
 function _obEscolhe(caso){_obData.caso=caso;_obNext()}
 function _obOpen(){
-  _obStep=1;_obData={caso:'economia'};
+  _obStep=0;_obData={caso:'economia'};
   document.getElementById('onboardOverlay').style.display='flex';
   _obRender();
 }
