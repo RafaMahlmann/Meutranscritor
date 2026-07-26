@@ -122,7 +122,7 @@ header.has-speed-badge{padding-bottom:18px}
 .ob-modal{max-width:480px;width:100%;overflow:hidden}
 .ob-prog{height:3px;background:var(--border);flex-shrink:0}
 .ob-prog-fill{height:100%;background:var(--accent);width:16.6%;transition:width .35s cubic-bezier(.4,0,.2,1)}
-.ob-body{padding:48px 28px 12px;max-height:74vh;overflow-y:auto}
+.ob-body{padding:14px 28px 12px;max-height:74vh;overflow-y:auto}
 .ob-tela{display:none}
 .ob-h{font-size:19px;font-weight:700;letter-spacing:-0.4px;line-height:1.32;margin-bottom:12px;color:var(--text)}
 .ob-p{font-size:13.5px;color:var(--text2);line-height:1.7;margin-bottom:13px}
@@ -162,7 +162,11 @@ header.has-speed-badge{padding-bottom:18px}
 .ob-skip{text-align:right}
 .ob-skip-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 .ob-skip-hint{font-size:11px;color:var(--text4);line-height:1.45;margin:0;max-width:220px;opacity:0.8}
-.ob-lang{position:absolute;top:12px;right:14px;z-index:10;background:var(--bg-input);border:1px solid var(--border);color:var(--text3);border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:4px}
+/* Faixa própria pro seletor de idioma. Antes ele era absoluto por cima do
+   conteúdo e batia no título das telas de texto mais longo — agora tem
+   espaço reservado, então não tem como sobrepor em tela nenhuma. */
+.ob-top{display:flex;justify-content:flex-end;align-items:center;padding:10px 14px 0}
+.ob-lang{background:var(--bg-input);border:1px solid var(--border);color:var(--text3);border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:4px}
 .ob-lang:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 .theme-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--bg-input);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
 .skin-wrap{position:relative}
@@ -2532,9 +2536,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      propósito: finishOnboard() lê por ID, então continua funcionando sem
      mudança, não importa em qual tela o campo está. -->
 <div class="overlay" id="onboardOverlay" style="display:none;z-index:610">
-  <div class="modal ob-modal" style="position:relative">
-    <button class="ob-lang" onclick="_obToggleLang()" title="Language / Idioma">🌐 <span id="obLangLabel">PT</span></button>
+  <div class="modal ob-modal">
     <div class="ob-prog"><div class="ob-prog-fill" id="obProgFill"></div></div>
+    <div class="ob-top">
+      <button class="ob-lang" onclick="_obToggleLang()" title="Language / Idioma" data-i18n-title>🌐 <span id="obLangLabel">PT</span></button>
+    </div>
     <div class="mb ob-body">
 
       <!-- TELA 0 — boas-vindas -->
@@ -2764,7 +2770,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.26.8';
+const VOX_VERSION='2026.07.26.9';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
