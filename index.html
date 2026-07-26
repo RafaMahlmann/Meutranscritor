@@ -942,6 +942,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .brain-row-main{flex:1;min-width:0}
 .brain-row-cat{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px}
 .brain-row-val{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brain-row-val.off{color:var(--text4);font-weight:500}
+.brain-row{cursor:ns-resize}
 .brain-seta{width:22px;height:22px;flex-shrink:0;border:none;border-radius:6px;background:var(--bg-input);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all var(--transition)}
 .brain-seta:hover{background:var(--border2);color:var(--text)}
 .brain-dots{display:flex;gap:4px;flex-shrink:0}
@@ -1545,6 +1547,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       </div>
     </div>
     <div class="hd-actions">
+      <button class="gbtn" id="btnSetup" onclick="_obOpen()" title="Refazer as configurações iniciais" data-i18n-title>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg>
+        <span data-i18n>Configurações iniciais</span>
+      </button>
       <button class="gbtn" id="btnSearch" onclick="toggleSearch()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span data-i18n>Buscar</span>
@@ -2731,7 +2737,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.26.1';
+const VOX_VERSION='2026.07.26.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3132,7 +3138,18 @@ let I18N_EN={
 "Isso precisa de um segundo serviço, porque o Groq não faz separação de vozes. O <strong>AssemblyAI</strong> é o melhor nisso hoje e dá <strong>100 horas por mês de graça</strong>, sem cartão. Passando disso, custa cerca de <strong>R$ 0,03</strong> por minuto de áudio.":"This needs a second service, because Groq doesn't separate voices. <strong>AssemblyAI</strong> is the best at it today and gives you <strong>100 hours a month free</strong>, no card required. Beyond that, it costs about <strong>$0.006</strong> per minute of audio.",
 "🔗 Criar conta grátis no AssemblyAI":"🔗 Create a free AssemblyAI account",
 "← Voltar":"← Back",
-"Já conheço APIs — configurar direto":"I know APIs — set up directly"
+"Já conheço APIs — configurar direto":"I know APIs — set up directly",
+"Configurações iniciais":"Setup guide",
+"Refazer as configurações iniciais":"Run the setup guide again",
+"Este provedor ainda não tem chave configurada":"This provider doesn't have a key set up yet",
+// Pendências antigas de tradução, encontradas numa varredura do app inteiro
+"Transcription":"Transcription",
+"gravações":"recordings",
+"Separa automaticamente as vozes: Profissional, Paciente, etc. Requer um pequeno saldo inicial na AssemblyAI (a partir de US$5).":"Automatically separates the voices: Professional, Patient, etc. Requires a small initial balance on AssemblyAI (from US$5).",
+"?":"?",
+"Recolher cabeçalho (etiquetas + Transformar)":"Collapse header (tags + Transform)",
+"Parar":"Stop",
+"Voltar à lista":"Back to the list"
 };
 
 // ── STATE ──
@@ -8655,6 +8672,12 @@ function _brainConfiguredCount(catKey){
   }
   return 0;
 }
+// Uma opção fictícia (modo de teste) roda por trás numa API real, então
+// herda o status dela — senão apareceria apagada mesmo funcionando.
+function _brainValConfigurado(cat,val){
+  if(VOX_TEST_MODE&&val.startsWith('fake'))val=_brainPickRealProvider(cat);
+  return _brainProviderHasKey(cat.key,val);
+}
 function _renderBrainPanel(){
   const panel=document.getElementById('brainPanel');if(!panel)return;
   panel.innerHTML=BRAIN_CATS.map((cat,ci)=>{
@@ -8662,14 +8685,31 @@ function _renderBrainPanel(){
     const cur=cat.opts[idx];
     const dots=cat.opts.map((_,i)=>`<span class="brain-dot${i===idx?' on':''}"></span>`).join('');
     const n=_brainConfiguredCount(cat.key)+(VOX_TEST_MODE?6:0);
-    return `<div class="brain-row ${cat.cls||''}">`+
+    // Sem chave configurada o nome fica apagado — dá pra ver de relance que
+    // aquele provedor está selecionado mas não vai funcionar ainda.
+    const off=_brainValConfigurado(cat,cur[0])?'':' off';
+    const semChave=off?` title="${t('Este provedor ainda não tem chave configurada')}"`:'';
+    return `<div class="brain-row ${cat.cls||''}" data-ci="${ci}">`+
       `<span class="brain-row-ico">${ICO[cat.icoKey]}</span>`+
-      `<div class="brain-row-main"><div class="brain-row-cat">${_brainCatLabel(cat.key)} · ${n} ${n===1?t('configurada'):t('configuradas')}</div><div class="brain-row-val">${escHtml(cur[1])}</div></div>`+
+      `<div class="brain-row-main"><div class="brain-row-cat">${_brainCatLabel(cat.key)} · ${n} ${n===1?t('configurada'):t('configuradas')}</div><div class="brain-row-val${off}"${semChave}>${escHtml(cur[1])}</div></div>`+
       `<button class="brain-seta" onclick="event.stopPropagation();_brainMove(${ci},-1)" aria-label="${t('Anterior')}">▲</button>`+
       `<div class="brain-dots">${dots}</div>`+
       `<button class="brain-seta" onclick="event.stopPropagation();_brainMove(${ci},1)" aria-label="${t('Próximo')}">▼</button>`+
       `</div>`;
   }).join('');
+  // Roleta de verdade: rodinha do mouse em cima da linha troca o provedor
+  // (mesmo gesto do projeto VTO). Listener no painel, uma vez só — o
+  // conteúdo é reconstruído a cada troca, então prender em cada linha
+  // vazaria listener. passive:false porque precisa do preventDefault pra
+  // rolar a linha em vez da página.
+  if(!panel._rodaOn){
+    panel.addEventListener('wheel',e=>{
+      const row=e.target.closest('.brain-row');if(!row)return;
+      e.preventDefault();
+      _brainMove(+row.dataset.ci,e.deltaY>0?1:-1);
+    },{passive:false});
+    panel._rodaOn=true;
+  }
   const originEl=document.getElementById(panel.dataset.originId);
   if(originEl)_positionBrainPanel(originEl);
 }
