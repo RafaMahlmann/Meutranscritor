@@ -148,6 +148,14 @@ header.has-speed-badge{padding-bottom:18px}
 .ob-more:hover{color:var(--text2)}
 .ob-ok{background:var(--accent-glow);border-radius:12px;padding:13px 15px;font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start}
 .ob-ok-ico{color:var(--accent);font-weight:700;flex-shrink:0}
+/* Entrada do cartão de reconhecimento: discreta, só pra a resposta da
+   pessoa não aparecer do nada. Quem pediu menos movimento não vê nada. */
+@keyframes obPop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.ob-pop{animation:obPop .28s ease-out}
+@media(prefers-reduced-motion:reduce){
+  .ob-pop{animation:none}
+  .ob-prog-fill{transition:none}
+}
 .ob-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 28px 18px;border-top:1px solid var(--border)}
 .ob-back,.ob-skip{background:none;border:none;font-size:12px;color:var(--text4);cursor:pointer;font-family:var(--font);padding:4px 0}
 .ob-back:hover,.ob-skip:hover{color:var(--text2)}
@@ -2566,6 +2574,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <input type="text" class="ob-key" style="margin-bottom:0" id="onboardOpenaiKey" placeholder="OpenAI — sk-…" autocomplete="off" spellcheck="false" oninput="_onboardSync()">
           <input type="text" class="ob-key" style="margin-bottom:0" id="onboardGrokKey" placeholder="Grok (xAI) — xai-…" autocomplete="off" spellcheck="false" oninput="_onboardSync()">
         </div>
+        <div class="ob-ok" id="obKeyOk" style="display:none;margin:10px 0 0"><span class="ob-ok-ico">✓</span><span id="obKeyOkTxt"></span></div>
         <button class="ob-btn" id="obBtn4" onclick="_obNext()" disabled data-i18n>Continuar →</button>
       </div>
 
@@ -2580,8 +2589,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 
       <!-- TELA 5 — reforço -->
       <div class="ob-tela" data-step="5">
-        <div class="ob-ok"><span class="ob-ok-ico">✓</span><span id="obOkTxt" data-i18n>Chave do Groq reconhecida. Isso te dá 2.000 transcrições por dia, de graça. Guardei no seu aparelho — na próxima vez já vem preenchida.</span></div>
-        <h2 class="ob-h" data-i18n>Pronto. Você já pode transcrever.</h2>
+        <div class="ob-ok"><span class="ob-ok-ico">✓</span><span id="obOkTxt"></span></div>
+        <h2 class="ob-h" id="obH5"></h2>
         <button class="ob-btn" data-caso="economia,vozes" onclick="_obNext()" data-i18n>Quer também separar as vozes? →</button>
         <button class="ob-btn-ghost" onclick="finishOnboard()" data-i18n>Começar a usar agora</button>
       </div>
@@ -2593,6 +2602,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <p class="ob-p" data-i18n-html>Isso precisa de um segundo serviço, porque o Groq não faz separação de vozes. O <strong>AssemblyAI</strong> é o melhor nisso hoje e dá <strong>100 horas por mês de graça</strong>, sem cartão. Passando disso, custa cerca de <strong>R$ 0,03</strong> por minuto de áudio.</p>
         <a href="https://www.assemblyai.com/dashboard/signup" target="_blank" rel="noopener noreferrer" class="ob-link" data-i18n>🔗 Criar conta grátis no AssemblyAI</a>
         <input type="text" class="ob-key" style="margin-top:12px" id="onboardAssemblyKey" placeholder="AssemblyAI — …" autocomplete="off" spellcheck="false" oninput="_onboardSync()">
+        <div class="ob-ok" id="obAsmOk" style="display:none;margin:10px 0 0"><span class="ob-ok-ico">✓</span><span data-i18n>Chave do AssemblyAI reconhecida — 100 horas por mês, de graça.</span></div>
         <button class="ob-btn" onclick="finishOnboard()" data-i18n>🚀 Começar a transcrever!</button>
       </div>
 
@@ -2721,7 +2731,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.25.4';
+const VOX_VERSION='2026.07.26.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3105,7 +3115,15 @@ let I18N_EN={
 "Existe uma versão do transcritor que roda na sua própria máquina. Sem chave, sem cadastro, sem internet no meio do caminho — seu áudio nunca sai daí.":"There's a version of the transcriber that runs on your own machine. No key, no sign-up, no internet in between — your audio never leaves it.",
 "Em troca, ela usa o processador do seu computador e é mais lenta que os serviços online. Vale a pena quando o sigilo pesa mais que a velocidade — consulta médica, entrevista confidencial, documento sensível.":"In exchange, it uses your computer's processor and is slower than the online services. It's worth it when confidentiality matters more than speed — a medical appointment, a confidential interview, a sensitive document.",
 "A instalação do transcritor local tem seu próprio passo a passo, dentro das Configurações → Local. Você pode fazer isso a qualquer momento.":"Installing the local transcriber has its own step-by-step guide, under Settings → Local. You can do that at any time.",
-"Chave do Groq reconhecida. Isso te dá 2.000 transcrições por dia, de graça. Guardei no seu aparelho — na próxima vez já vem preenchida.":"Groq key recognized. That gives you 2,000 transcriptions a day, free. I saved it on your device — next time it'll already be filled in.",
+"Chave do Groq reconhecida — 2.000 transcrições por dia, de graça.":"Groq key recognized — 2,000 transcriptions a day, free.",
+"Chave do Grok reconhecida — transcrição pela xAI.":"Grok key recognized — transcription by xAI.",
+"Chave da OpenAI reconhecida — transcrição com o Whisper original.":"OpenAI key recognized — transcription with the original Whisper.",
+"Chave guardada. Vamos usar essa quando você transcrever.":"Key saved. We'll use this one when you transcribe.",
+"Chave do AssemblyAI reconhecida — 100 horas por mês, de graça.":"AssemblyAI key recognized — 100 hours a month, free.",
+"Guardei no seu aparelho — na próxima vez já vem preenchida.":"Saved on your device — next time it'll already be filled in.",
+"Você ainda não colou nenhuma chave — dá pra fazer isso depois, nas Configurações.":"You haven't pasted a key yet — you can do that later, in Settings.",
+"Pronto. Seu caminho está escolhido.":"Done. Your path is set.",
+"Você escolheu manter tudo no seu computador. O transcritor local se instala nas Configurações → Local, quando você quiser.":"You chose to keep everything on your computer. The local transcriber installs under Settings → Local, whenever you want.",
 "Pronto. Você já pode transcrever.":"Done. You can start transcribing.",
 "Quer também separar as vozes? →":"Want to separate the voices too? →",
 "Começar a usar agora":"Start using it now",
@@ -3489,7 +3507,25 @@ function _obRender(){
   if(fill)fill.style.width=(total?atual/total*100:0)+'%';
   const back=document.getElementById('obBack');
   if(back)back.style.visibility=_obStep>1?'visible':'hidden';
+  if(_obStep===5)_obRender5();
   const body=ov.querySelector('.ob-body');if(body)body.scrollTop=0;
+}
+// A tela de reforço muda conforme o que a pessoa fez: no caminho local não
+// existe chave nenhuma, então dizer "chave reconhecida" ali seria mentira.
+function _obRender5(){
+  const ok=document.getElementById('obOkTxt'),h=document.getElementById('obH5');
+  if(!ok||!h)return;
+  if(_obData.caso==='privacidade'){
+    h.textContent=t('Pronto. Seu caminho está escolhido.');
+    ok.textContent=t('Você escolheu manter tudo no seu computador. O transcritor local se instala nas Configurações → Local, quando você quiser.');
+    return;
+  }
+  const msg=_obMsgChave();
+  // Sem chave o título não pode prometer que já dá pra transcrever — não dá.
+  h.textContent=msg?t('Pronto. Você já pode transcrever.'):t('Pronto. Seu caminho está escolhido.');
+  ok.textContent=msg
+    ?msg+' '+t('Guardei no seu aparelho — na próxima vez já vem preenchida.')
+    :t('Você ainda não colou nenhuma chave — dá pra fazer isso depois, nas Configurações.');
 }
 function _obGo(n){_obStep=n;_obRender()}
 function _obNext(){
@@ -3520,13 +3556,46 @@ function _toggleOnboardOther(){
   p.style.display=on?'none':'flex';
   document.getElementById('onboardOtherArrow').textContent=on?'▸':'▾';
 }
+// Reconhece o serviço pelo começo da chave, só pra confirmar pra pessoa o
+// que ela acabou de colar — é reforço visual, NÃO validação. O app aceita
+// qualquer chave (quem usa um provedor compatível cola a dele e funciona),
+// então formato desconhecido não é erro: só recebe uma confirmação neutra.
+const OB_PREFIXOS=[
+  {p:'gsk_',msg:'Chave do Groq reconhecida — 2.000 transcrições por dia, de graça.'},
+  {p:'xai-',msg:'Chave do Grok reconhecida — transcrição pela xAI.'},
+  {p:'sk-', msg:'Chave da OpenAI reconhecida — transcrição com o Whisper original.'}
+];
+function _obMsgChave(){
+  const v=['onboardGroqKey','onboardOpenaiKey','onboardGrokKey']
+    .map(id=>document.getElementById(id)?.value.trim()).find(x=>x);
+  if(!v)return '';
+  const achou=OB_PREFIXOS.find(x=>v.startsWith(x.p));
+  return achou?t(achou.msg):t('Chave guardada. Vamos usar essa quando você transcrever.');
+}
+function _obPop(el){
+  if(!el)return;
+  el.style.display='flex';
+  el.classList.remove('ob-pop');void el.offsetWidth;el.classList.add('ob-pop');
+}
 // Só as chaves de TRANSCRIÇÃO liberam o botão da tela 4 — a do AssemblyAI
 // vive na tela 6 e é opcional, não pode travar o avanço aqui.
 function _onboardSync(){
-  const any=['onboardGroqKey','onboardOpenaiKey','onboardGrokKey']
-    .some(id=>document.getElementById(id)?.value.trim());
+  const msg=_obMsgChave();
   const b=document.getElementById('obBtn4');
-  if(b)b.disabled=!any;
+  if(b)b.disabled=!msg;
+  // Reforço na hora: a pessoa cola e o app responde reconhecendo (o "juice"
+  // do padrão Verisure — resposta dada nunca some no vazio).
+  const box=document.getElementById('obKeyOk'),txt=document.getElementById('obKeyOkTxt');
+  if(box&&txt){
+    if(msg){txt.textContent=msg;if(box.style.display==='none')_obPop(box)}
+    else box.style.display='none';
+  }
+  const asm=document.getElementById('obAsmOk');
+  if(asm){
+    const temAsm=!!document.getElementById('onboardAssemblyKey')?.value.trim();
+    if(temAsm){if(asm.style.display==='none')_obPop(asm)}
+    else asm.style.display='none';
+  }
 }
 function finishOnboard(){
   const groq=document.getElementById('onboardGroqKey').value.trim();
