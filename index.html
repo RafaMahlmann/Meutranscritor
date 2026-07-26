@@ -944,6 +944,16 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .brain-row-val{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brain-row-val.off{color:var(--text4);font-weight:500}
 .brain-row{cursor:ns-resize}
+/* Touch (iPad/celular): não existe rodinha, e dedo não acerta alvo de 22px.
+   Aumenta setas e "?" pro mínimo confortável, e dá mais altura à linha pro
+   arrasto ter espaço. touch-action:none impede o navegador de sequestrar o
+   gesto vertical como rolagem da página antes do nosso handler agir. */
+@media (pointer:coarse){
+  .brain-seta{width:36px;height:36px;font-size:12px;border-radius:9px}
+  .brain-row{padding:13px 12px;touch-action:none}
+  .brain-dot{width:7px;height:7px}
+  .gbtn-help{width:30px;height:30px;font-size:13px}
+}
 .brain-seta{width:22px;height:22px;flex-shrink:0;border:none;border-radius:6px;background:var(--bg-input);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all var(--transition)}
 .brain-seta:hover{background:var(--border2);color:var(--text)}
 .brain-dots{display:flex;gap:4px;flex-shrink:0}
@@ -2737,7 +2747,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.26.2';
+const VOX_VERSION='2026.07.26.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -8708,6 +8718,30 @@ function _renderBrainPanel(){
       e.preventDefault();
       _brainMove(+row.dataset.ci,e.deltaY>0?1:-1);
     },{passive:false});
+    // Equivalente da rodinha no touch (iPad/celular): arrastar o dedo pra
+    // cima/baixo em cima da linha gira a roleta, igual ao seletor de data
+    // do iOS. Sem isso, no touch só restariam as setinhas — que existem,
+    // mas não é "roleta". O ci fica guardado numa variável porque o
+    // innerHTML é reconstruído a cada troca: a linha onde o dedo começou
+    // deixa de existir no meio do arrasto.
+    let tY=null,tCi=null;
+    panel.addEventListener('touchstart',e=>{
+      const row=e.target.closest('.brain-row');if(!row)return;
+      // Deixa as setinhas funcionarem como toque normal, sem virar arrasto
+      if(e.target.closest('.brain-seta'))return;
+      tY=e.touches[0].clientY;tCi=+row.dataset.ci;
+    },{passive:true});
+    panel.addEventListener('touchmove',e=>{
+      if(tY===null)return;
+      const y=e.touches[0].clientY,d=tY-y;
+      if(Math.abs(d)<22)return;      // margem pra não disparar em toque trêmulo
+      if(e.cancelable)e.preventDefault(); // segura a rolagem da página durante o giro
+      _brainMove(tCi,d>0?1:-1);
+      tY=y;
+    },{passive:false});
+    const fimToque=()=>{tY=null;tCi=null};
+    panel.addEventListener('touchend',fimToque,{passive:true});
+    panel.addEventListener('touchcancel',fimToque,{passive:true});
     panel._rodaOn=true;
   }
   const originEl=document.getElementById(panel.dataset.originId);
