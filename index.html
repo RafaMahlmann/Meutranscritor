@@ -945,7 +945,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .brain-row.cat-diar .brain-row-ico{color:var(--diar)}
 .brain-row-main{flex:1;min-width:0}
 .brain-row-cat{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px}
-.brain-row-val{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brain-row-val{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .25s ease}
+/* O 1.56 na curva é o que passa do ponto e volta — é daí que vem a mola. */
+@media (prefers-reduced-motion:reduce){.brain-row-val{transition:none}}
 .brain-row-val.off{color:var(--text4);font-weight:500}
 .brain-row{cursor:ns-resize}
 /* Touch (iPad/celular): não existe rodinha, e dedo não acerta alvo de 22px.
@@ -2755,7 +2757,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.26.6';
+const VOX_VERSION='2026.07.26.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -8584,6 +8586,9 @@ const BRAIN_CATS=[
 // sem querer.
 const VOX_TEST_MODE=localStorage.getItem('vox_test_mode')==='1';
 const _fakeSelection={};
+// Qual linha acabou de girar e pra que lado, pra molinha animar só ela.
+// Zerado assim que o painel usa (uma animação por giro, não por render).
+let _brainMola=null;
 if(VOX_TEST_MODE){
   BRAIN_CATS.forEach(cat=>{
     const _fakeBirds=['Sabiá','Bem-te-vi','Tucano','Arara','João-de-barro','Curió'];
@@ -8756,6 +8761,25 @@ function _renderBrainPanel(){
     panel.addEventListener('touchcancel',fimToque,{passive:true});
     panel._rodaOn=true;
   }
+  // Molinha: o nome novo nasce deslocado no sentido do giro e assenta no
+  // lugar com uma passadinha além (o overshoot da curva no CSS) — dá a
+  // sensação de peso físico. Como o innerHTML acabou de ser reconstruído,
+  // o deslocamento inicial precisa ser aplicado SEM transição e com um
+  // reflow forçado no meio; senão o navegador animaria a ida também, e o
+  // efeito viraria um vaivém em vez de um assentamento.
+  if(_brainMola){
+    const alvo=panel.querySelector(`.brain-row[data-ci="${_brainMola.ci}"] .brain-row-val`);
+    if(alvo){
+      alvo.style.transition='none';
+      alvo.style.transform=`translateY(${_brainMola.dir>0?7:-7}px)`;
+      alvo.style.opacity='0.35';
+      void alvo.offsetWidth;
+      alvo.style.transition='';
+      alvo.style.transform='';
+      alvo.style.opacity='';
+    }
+    _brainMola=null;
+  }
   const originEl=document.getElementById(panel.dataset.originId);
   if(originEl)_positionBrainPanel(originEl);
 }
@@ -8764,6 +8788,10 @@ function _brainMove(ci,dir){
   const idx=Math.max(0,cat.opts.findIndex(o=>o[0]===_brainCurrentValue(cat)));
   const next=(idx+dir+cat.opts.length)%cat.opts.length;
   const nextVal=cat.opts[next][0];
+  // Marca qual linha girou e pra que lado — o _renderBrainPanel (chamado
+  // logo abaixo, de dentro do setter) lê isso pra dar a molinha só nela.
+  // Tem que ser ANTES do setter, senão a renderização acontece primeiro.
+  _brainMola={ci,dir};
   if(VOX_TEST_MODE&&nextVal.startsWith('fake')){
     // opção fictícia: mostra o nome do pássaro, mas por trás dos panos ativa
     // de verdade uma opção REAL da MESMA categoria (transcrição->transcrição,
