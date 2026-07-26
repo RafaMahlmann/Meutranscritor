@@ -2580,7 +2580,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.25.1';
+const VOX_VERSION='2026.07.25.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2918,7 +2918,9 @@ let I18N_EN={
 "Próximo":"Next",
 "Cérebro":"Brain",
 "configurada":"configured",
-"configuradas":"configured"
+"configuradas":"configured",
+"Simulada":"Simulated",
+"teste":"test"
 };
 
 // ── STATE ──
@@ -8198,6 +8200,61 @@ const BRAIN_CATS=[
   {key:'diarizacao',cfgField:'diarProvider',setter:'setDiarProvider',icoKey:'users',cls:'cat-diar',
     opts:[['assemblyai','AssemblyAI'],['gladia','Gladia'],['pyannote','Pyannote'],['openai','OpenAI']]}
 ];
+// ── ⚠️ ARTIFÍCIO DE TESTE — PROVISÓRIO, REMOVER ANTES DE COMERCIALIZAR ──
+// Documentado em PLANO_DIRETOR/LEIA_PRIMEIRO_IA.md, seção "Artifícios de
+// teste temporários". Ligado só se localStorage.vox_test_mode==='1' (nunca
+// por padrão, nunca visível pra usuário real). Adiciona 6 opções fictícias
+// por categoria SÓ pra testar a roleta (setas/bolinhas/contador) com mais
+// itens do que as chaves reais do Rafa permitem hoje. Selecionar uma opção
+// fictícia NUNCA chama setProvider/setTxtProvider/setDiarProvider nem toca
+// em cfg — fica isolada em _fakeSelection, então não tem como esse
+// artifício quebrar uma função real do app, mesmo se a flag ficar ligada
+// sem querer.
+const VOX_TEST_MODE=localStorage.getItem('vox_test_mode')==='1';
+const _fakeSelection={};
+if(VOX_TEST_MODE){
+  BRAIN_CATS.forEach(cat=>{
+    const _fakeBirds=['Sabiá','Bem-te-vi','Tucano','Arara','João-de-barro','Curió'];
+    _fakeBirds.forEach((nome,i)=>cat.opts.push([`fake${i+1}`,`${nome} (${t('teste')})`]));
+  });
+}
+function _brainCurrentValue(cat){
+  if(VOX_TEST_MODE&&_fakeSelection[cat.key])return _fakeSelection[cat.key];
+  return cfg[cat.cfgField];
+}
+// Diz se uma opção REAL (não fictícia) desta categoria já tem chave
+// configurada — mesma lógica de _brainConfiguredCount, mas por opção.
+function _brainProviderHasKey(catKey,val){
+  if(catKey==='transcricao'){
+    if(val==='local')return true;
+    if(val==='whisper')return !!cfg.apiKey;
+    if(val==='groqwhisper')return !!cfg.apiKeyGroq;
+    if(val==='grok')return !!cfg.apiKeyGrok;
+  }
+  if(catKey==='ia_texto'){
+    if(val==='groq')return !!cfg.apiKeyGroq;
+    if(val==='openai')return !!cfg.apiKey;
+    if(val==='custom')return !!cfg.txtBaseUrl;
+  }
+  if(catKey==='diarizacao'){
+    if(val==='assemblyai')return !!cfg.apiKeyAssembly;
+    if(val==='gladia')return !!cfg.apiKeyGladia;
+    if(val==='pyannote')return !!cfg.apiKeyPyannote;
+    if(val==='openai')return !!cfg.apiKey;
+  }
+  return false;
+}
+// Uma "API fictícia" (pássaro) precisa funcionar de verdade quando
+// selecionada — pedido do Rafa, pra poder testar o app inteiro com ela
+// "ativa", não só o visual da roleta. Por trás dos panos ela sempre aponta
+// pra uma opção REAL já configurada (a primeira com chave); se nenhuma
+// tiver chave, cai na primeira opção real mesmo — o app já sabe avisar
+// "configure sua chave" nesse caso, igual avisaria pra qualquer pessoa.
+function _brainPickRealProvider(cat){
+  const realOpts=cat.opts.filter(o=>!o[0].startsWith('fake'));
+  const withKey=realOpts.find(o=>_brainProviderHasKey(cat.key,o[0]));
+  return (withKey||realOpts[0])[0];
+}
 function _brainCatLabel(key){
   return {transcricao:t('Transcrição'),ia_texto:t('IA de texto'),diarizacao:t('Diarização')}[key]||'';
 }
@@ -8268,10 +8325,10 @@ function _brainConfiguredCount(catKey){
 function _renderBrainPanel(){
   const panel=document.getElementById('brainPanel');if(!panel)return;
   panel.innerHTML=BRAIN_CATS.map((cat,ci)=>{
-    const idx=Math.max(0,cat.opts.findIndex(o=>o[0]===cfg[cat.cfgField]));
+    const idx=Math.max(0,cat.opts.findIndex(o=>o[0]===_brainCurrentValue(cat)));
     const cur=cat.opts[idx];
     const dots=cat.opts.map((_,i)=>`<span class="brain-dot${i===idx?' on':''}"></span>`).join('');
-    const n=_brainConfiguredCount(cat.key);
+    const n=_brainConfiguredCount(cat.key)+(VOX_TEST_MODE?6:0);
     return `<div class="brain-row ${cat.cls||''}">`+
       `<span class="brain-row-ico">${ICO[cat.icoKey]}</span>`+
       `<div class="brain-row-main"><div class="brain-row-cat">${_brainCatLabel(cat.key)} · ${n} ${n===1?t('configurada'):t('configuradas')}</div><div class="brain-row-val">${escHtml(cur[1])}</div></div>`+
@@ -8285,9 +8342,20 @@ function _renderBrainPanel(){
 }
 function _brainMove(ci,dir){
   const cat=BRAIN_CATS[ci];
-  const idx=Math.max(0,cat.opts.findIndex(o=>o[0]===cfg[cat.cfgField]));
+  const idx=Math.max(0,cat.opts.findIndex(o=>o[0]===_brainCurrentValue(cat)));
   const next=(idx+dir+cat.opts.length)%cat.opts.length;
-  window[cat.setter](cat.opts[next][0]);
+  const nextVal=cat.opts[next][0];
+  if(VOX_TEST_MODE&&nextVal.startsWith('fake')){
+    // opção fictícia: mostra o nome do pássaro, mas por trás dos panos ativa
+    // de verdade uma opção REAL da MESMA categoria (transcrição->transcrição,
+    // diarização->diarização) — nunca inventa um valor que o resto do app
+    // não reconheça, então tudo continua funcionando de verdade.
+    _fakeSelection[cat.key]=nextVal;
+    window[cat.setter](_brainPickRealProvider(cat));
+    return;
+  }
+  if(VOX_TEST_MODE)delete _fakeSelection[cat.key]; // voltou pra uma opção real — some a simulação
+  window[cat.setter](nextVal);
 }
 function mainLensLabel(k){
   if(!k)return '';
