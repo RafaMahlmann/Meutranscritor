@@ -104,6 +104,19 @@ header.has-speed-badge{padding-bottom:18px}
 .gbtn.on-grok{background:var(--grok-glow);color:var(--grok)}
 .gbtn.on-groq{background:var(--groq-glow);color:var(--groq)}
 .gbtn.on-diar{background:var(--diar-glow);color:var(--diar)}
+/* Botão só-ícone (engrenagem das Configurações): aperta o padding lateral pra
+   não virar um retângulo largo com um ícone pequeno perdido no meio. */
+.gbtn-ico{padding-left:9px;padding-right:9px}
+/* "?" ao lado do Cérebro — discreto de propósito: quem já sabe o que é ignora,
+   quem não sabe encontra. Mesma altura dos .gbtn vizinhos pra não desalinhar. */
+.gbtn-help{width:22px;height:22px;flex-shrink:0;border:1px solid var(--border2);background:transparent;color:var(--text4);border-radius:50%;font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-left:-2px;transition:all var(--transition)}
+.gbtn-help:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+/* Itens da lista de vantagens dentro do painel de ajuda do cérebro. */
+.bhelp-item{display:flex;gap:11px;align-items:flex-start;margin-bottom:13px}
+.bhelp-item:last-of-type{margin-bottom:0}
+.bhelp-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:6px}
+.bhelp-t{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:2px}
+.bhelp-d{font-size:13px;color:var(--text2);line-height:1.6}
 .theme-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--bg-input);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
 .skin-wrap{position:relative}
 .skin-pop{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:11px;min-width:184px;animation:fadeDown .15s ease}
@@ -1547,9 +1560,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12,5 C14,4 16.5,4.3 17.5,6 C19,7.5 19.3,9 18.3,10.3 C19.5,11.5 19.5,13.2 18.3,14.3 C19,15.8 18.3,17.5 16.5,18.3 C15,19 13.3,19.3 12,19"/><path d="M12,5 C10,4 7.5,4.3 6.5,6 C5,7.5 4.7,9 5.7,10.3 C4.5,11.5 4.5,13.2 5.7,14.3 C5,15.8 5.7,17.5 7.5,18.3 C9,19 10.7,19.3 12,19"/><path d="M12,5 L12,19"/></svg>
           <span data-i18n>Cérebro</span>
         </button>
-        <button class="gbtn" id="btnCfg" onclick="openModal()" title="Configurações" data-i18n-title>
+        <button class="gbtn-help" id="btnBrainHelp" onclick="openBrainHelp()" title="Por que existem vários cérebros?" data-i18n-title aria-label="Por que existem vários cérebros?">?</button>
+        <button class="gbtn gbtn-ico" id="btnCfg" onclick="openModal()" title="Configurações" data-i18n-title>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span data-i18n>Configurações</span>
         </button>
         <!-- SPEED BADGE — todos os provedores -->
         <button id="speedBadge" onclick="toggleModelPicker()" style="display:none;position:absolute;top:calc(100% + 2px);right:0;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0 2px;text-align:right;line-height:1.5;z-index:10;white-space:nowrap">
@@ -2522,6 +2535,48 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- AJUDA DO CÉREBRO — aberta pelo "?" ao lado do botão Cérebro. Explica o
+     superpoder (poder escolher/trocar de IA) pra quem pulou o onboarding ou
+     já usa o app há meses e nunca entendeu por que aquilo importa. -->
+<div class="overlay" id="brainHelpOverlay" onclick="if(event.target===this)closeBrainHelp()">
+  <div class="modal" style="max-width:500px;position:relative">
+    <div class="mb" style="padding:32px 28px 26px">
+      <button class="mh-close" onclick="closeBrainHelp()" style="position:absolute;top:14px;right:14px">✕</button>
+      <div style="width:46px;height:46px;border-radius:14px;background:var(--accent-glow);color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12,5 C14,4 16.5,4.3 17.5,6 C19,7.5 19.3,9 18.3,10.3 C19.5,11.5 19.5,13.2 18.3,14.3 C19,15.8 18.3,17.5 16.5,18.3 C15,19 13.3,19.3 12,19"/><path d="M12,5 C10,4 7.5,4.3 6.5,6 C5,7.5 4.7,9 5.7,10.3 C4.5,11.5 4.5,13.2 5.7,14.3 C5,15.8 5.7,17.5 7.5,18.3 C9,19 10.7,19.3 12,19"/><path d="M12,5 L12,19"/></svg>
+      </div>
+      <h2 style="font-size:19px;font-weight:700;letter-spacing:-0.3px;margin-bottom:14px" data-i18n>Por que o Vox deixa você trocar de cérebro</h2>
+      <p style="font-size:13.5px;color:var(--text2);line-height:1.7;margin-bottom:13px" data-i18n>Pergunte a mesma coisa pra duas pessoas de formações diferentes e você recebe duas respostas — nenhuma errada, cada uma enxergando de um ângulo. Com as inteligências artificiais é igual: cada uma foi treinada de um jeito, então cada uma percebe coisas diferentes no seu texto.</p>
+      <p style="font-size:13.5px;color:var(--text2);line-height:1.7;margin-bottom:22px" data-i18n>Por isso a troca aqui é uma girada só. Quanto mais fácil trocar, mais você experimenta — e é experimentando que aparece o que você sozinho não tinha visto.</p>
+      <div class="section-title" style="margin-top:0;margin-bottom:12px" data-i18n>Na prática, isso te dá três coisas</div>
+      <div class="bhelp-item">
+        <span class="bhelp-dot"></span>
+        <div>
+          <div class="bhelp-t" data-i18n>Preço</div>
+          <div class="bhelp-d" data-i18n>A mesma transcrição custa R$ 0,10 por hora num serviço e R$ 1,80 em outro. Poder escolher é dinheiro no bolso.</div>
+        </div>
+      </div>
+      <div class="bhelp-item">
+        <span class="bhelp-dot"></span>
+        <div>
+          <div class="bhelp-t" data-i18n>Continuidade</div>
+          <div class="bhelp-d" data-i18n>Quando um serviço fica fora do ar, você troca em dois cliques e continua trabalhando.</div>
+        </div>
+      </div>
+      <div class="bhelp-item">
+        <span class="bhelp-dot"></span>
+        <div>
+          <div class="bhelp-t" data-i18n>Novidade sem espera</div>
+          <div class="bhelp-d" data-i18n>Saiu um modelo melhor mês que vem? Você usa no mesmo dia, sem depender de atualização nossa.</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
+        <p style="font-size:12.5px;color:var(--text3);line-height:1.65;margin:0" data-i18n-html>O menu do cérebro tem três linhas porque são três trabalhos diferentes: <strong>transcrever</strong> o áudio, <strong>separar as vozes</strong> de quem falou, e <strong>pensar</strong> em cima do texto. Cada um pode usar um serviço diferente — e você troca cada um na sua própria roleta.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- SENHA DO BACKUP DE CHAVES: input real (não prompt()) — deixa o navegador/
      cofre de senhas (Chrome, iCloud Keychain etc.) oferecer salvar/preencher.
      Usado tanto pra criar o backup quanto pra restaurar. -->
@@ -2580,7 +2635,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.25.2';
+const VOX_VERSION='2026.07.25.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2920,7 +2975,20 @@ let I18N_EN={
 "configurada":"configured",
 "configuradas":"configured",
 "Simulada":"Simulated",
-"teste":"test"
+"teste":"test",
+// Onboarding assistido — Fase 1: ajuda do cérebro ("?" no cabeçalho)
+"Por que existem vários cérebros?":"Why are there several brains?",
+"Por que o Vox deixa você trocar de cérebro":"Why Vox lets you switch brains",
+"Pergunte a mesma coisa pra duas pessoas de formações diferentes e você recebe duas respostas — nenhuma errada, cada uma enxergando de um ângulo. Com as inteligências artificiais é igual: cada uma foi treinada de um jeito, então cada uma percebe coisas diferentes no seu texto.":"Ask the same question to two people from different backgrounds and you get two answers — neither wrong, each seeing it from its own angle. With AI it's the same: each one was trained differently, so each one notices different things in your text.",
+"Por isso a troca aqui é uma girada só. Quanto mais fácil trocar, mais você experimenta — e é experimentando que aparece o que você sozinho não tinha visto.":"That's why switching here takes a single flick. The easier it is to switch, the more you experiment — and it's by experimenting that you find what you hadn't seen on your own.",
+"Na prática, isso te dá três coisas":"In practice, that gives you three things",
+"Preço":"Price",
+"A mesma transcrição custa R$ 0,10 por hora num serviço e R$ 1,80 em outro. Poder escolher é dinheiro no bolso.":"The same transcription costs $0.02 an hour on one service and $0.36 on another. Being able to choose is money in your pocket.",
+"Continuidade":"Continuity",
+"Quando um serviço fica fora do ar, você troca em dois cliques e continua trabalhando.":"When one service goes down, you switch in two clicks and keep working.",
+"Novidade sem espera":"New models, no waiting",
+"Saiu um modelo melhor mês que vem? Você usa no mesmo dia, sem depender de atualização nossa.":"A better model comes out next month? You use it the same day, without waiting for an update from us.",
+"O menu do cérebro tem três linhas porque são três trabalhos diferentes: <strong>transcrever</strong> o áudio, <strong>separar as vozes</strong> de quem falou, e <strong>pensar</strong> em cima do texto. Cada um pode usar um serviço diferente — e você troca cada um na sua própria roleta.":"The brain menu has three rows because these are three different jobs: <strong>transcribing</strong> the audio, <strong>separating the voices</strong> of who spoke, and <strong>thinking</strong> about the text. Each one can use a different service — and you switch each one on its own dial."
 };
 
 // ── STATE ──
@@ -3310,6 +3378,14 @@ function openAbout(){
   playIntroVideo();
 }
 function closeAbout(){document.getElementById('aboutOverlay').style.display='none'}
+// Ajuda do cérebro: fecha o menu de troca antes de abrir (senão o painel
+// flutuante fica por cima do overlay, já que ele vive em z-index alto pra
+// funcionar dentro do Modo Conversa).
+function openBrainHelp(){
+  closeBrainPanel();
+  document.getElementById('brainHelpOverlay').style.display='flex';
+}
+function closeBrainHelp(){document.getElementById('brainHelpOverlay').style.display='none'}
 
 function playIntroVideo(){
   const overlay=document.getElementById('vintroOverlay');
