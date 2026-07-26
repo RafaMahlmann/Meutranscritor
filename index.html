@@ -160,6 +160,10 @@ header.has-speed-badge{padding-bottom:18px}
 .ob-back,.ob-skip{background:none;border:none;font-size:12px;color:var(--text4);cursor:pointer;font-family:var(--font);padding:4px 0}
 .ob-back:hover,.ob-skip:hover{color:var(--text2)}
 .ob-skip{text-align:right}
+.ob-skip-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.ob-skip-hint{font-size:11px;color:var(--text4);line-height:1.45;margin:0;max-width:220px;opacity:0.8}
+.ob-lang{position:absolute;top:12px;right:14px;z-index:10;background:var(--bg-input);border:1px solid var(--border);color:var(--text3);border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:4px}
+.ob-lang:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 .theme-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--bg-input);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
 .skin-wrap{position:relative}
 .skin-pop{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:11px;min-width:184px;animation:fadeDown .15s ease}
@@ -2526,7 +2530,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      propósito: finishOnboard() lê por ID, então continua funcionando sem
      mudança, não importa em qual tela o campo está. -->
 <div class="overlay" id="onboardOverlay" style="display:none;z-index:610">
-  <div class="modal ob-modal">
+  <div class="modal ob-modal" style="position:relative">
+    <button class="ob-lang" onclick="setLang(currentLang==='pt'?'en':'pt')" title="Language / Idioma">🌐 <span id="obLangLabel">PT</span></button>
     <div class="ob-prog"><div class="ob-prog-fill" id="obProgFill"></div></div>
     <div class="mb ob-body">
 
@@ -2625,7 +2630,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
     </div>
     <div class="ob-foot">
       <button class="ob-back" id="obBack" onclick="_obBack()" data-i18n>← Voltar</button>
-      <button class="ob-skip" onclick="_obSkip()" data-i18n>Já conheço APIs — configurar direto</button>
+      <div class="ob-skip-wrap">
+        <button class="ob-skip" onclick="_obSkip()" data-i18n>Já conheço APIs — configurar direto</button>
+        <p class="ob-skip-hint" data-i18n>Você será levado direto às configurações para conectar suas chaves de acesso.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -2747,7 +2755,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.26.3';
+const VOX_VERSION='2026.07.26.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -2764,6 +2772,8 @@ function setLang(lang){
 function _syncLangUI(){
   const btn=document.getElementById('btnLang');
   if(btn)btn.textContent=currentLang==='en'?'🌐 EN':'🌐 PT';
+  const obLbl=document.getElementById('obLangLabel');
+  if(obLbl)obLbl.textContent=currentLang==='en'?'EN':'PT';
 }
 function applyStaticI18n(){
   if(currentLang==='pt')return;
@@ -2783,6 +2793,8 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// AJUSTES ONBOARDING
+"Você será levado direto às configurações para conectar suas chaves de acesso.":"You'll be taken straight to settings to connect your access keys.",
 // FASE 5 — Tags/Transformar recolhíveis no Modo Documento (mobile)
 "Recolher tags":"Collapse tags",
 "Expandir tags":"Expand tags",
