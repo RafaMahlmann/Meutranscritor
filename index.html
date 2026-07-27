@@ -1210,6 +1210,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .maint-btn:hover{background:rgba(255,59,48,0.08)}
 .ram-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,149,0,0.12);color:var(--warning);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px}
 .free-badge{display:inline-flex;align-items:center;gap:4px;background:var(--groq-glow);color:var(--groq);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
+/* Selo de sigilo: a cor vem do nível (inline), a borda dá o contorno de "selo". */
+.selo-sigilo{display:inline-flex;align-items:center;gap:3px;border:1px solid;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;background:transparent;transition:all var(--transition);white-space:nowrap}
+.selo-sigilo:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.selo-sigilo:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .limit-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,149,0,0.12);color:var(--warning);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
 .local-badge{display:inline-flex;align-items:center;gap:4px;background:var(--accent-glow);color:var(--accent);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
 .paid-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,59,48,0.1);color:var(--danger);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
@@ -2792,7 +2796,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.27.7';
+const VOX_VERSION='2026.07.27.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3252,6 +3256,18 @@ let I18N_EN={
 "esperando…":"waiting…",
 "{p} gastou todo o espaço da resposta pensando e não chegou a escrever. Tente de novo, ou use um modelo que não raciocina antes de responder.":"{p} spent its whole answer budget thinking and never got to writing. Try again, or use a model that doesn't reason before answering.",
 "devolveu uma resposta vazia":"returned an empty response",
+"Nem sai da sua máquina":"Never leaves your machine",
+"Sai, mas não fica guardado":"Leaves, but isn't stored",
+"Fica guardado por pouco tempo":"Stored for a short while",
+"Usado para treinar o modelo":"Used to train the model",
+"Sigilo":"Privacy",
+"Ranking de sigilo":"Privacy ranking",
+"Cada nota vem do contrato do próprio serviço, não da nossa opinião. A lista está ordenada por sigilo, depois por preço.":"Each score comes from the service's own terms, not from our opinion. The list is sorted by privacy, then by price.",
+"Cérebro":"Brain",
+"Preço":"Price",
+"grátis":"free",
+"Conferido em":"Checked on",
+"Políticas de privacidade mudam — se você vai tratar material sensível, vale conferir na página do próprio serviço.":"Privacy policies change — if you're handling sensitive material, it's worth checking on the service's own page.",
 "Começa por aqui — leve e boa qualidade":"Start here — light and good quality",
 "Só vale com máquina forte · pesa 3× mais":"Only worth it on a strong machine · 3× heavier",
 "Ligue o transcritor":"Start the transcriber",
@@ -5193,6 +5209,146 @@ function cfgTab(name){
 // Exemplos prontos da aba "Minha API": preenchem os campos sozinhos e, quando
 // dá pra saber que vai funcionar sem intervenção (Ollama local, ou reaproveitar
 // a chave do Grok que a pessoa já tem), já testam a conexão na hora.
+// ─────────────────────────────────────────────────────────────────────────────
+// CADASTRO DE CÉREBROS — a unidade aqui é o MODELO, não o fornecedor.
+// A mesma empresa vende um grátis e um pago que se comportam como IAs
+// diferentes: a Z.ai tem o GLM-4.7-Flash (grátis) e o GLM-5.2 (4º do mundo), e
+// tratar os dois como "Z.ai" foi o que fez o app ficar oferecendo a geração
+// anterior sem ninguém perceber.
+//
+// SELO DE SIGILO: cada nota é FATO VERIFICÁVEL, tirado do contrato do serviço —
+// nunca julgamento nosso. Conferido em 27/07/2026, um por um. Política de
+// privacidade muda: reconferir antes de cada publicação que mexa nesta lista.
+const SIGILO={
+  4:{nome:t('Nem sai da sua máquina'),      cor:'#10b981'},
+  3:{nome:t('Sai, mas não fica guardado'),  cor:'#10b981'},
+  2:{nome:t('Fica guardado por pouco tempo'),cor:'#ff9500'},
+  1:{nome:t('Usado para treinar o modelo'), cor:'#ff3b30'}
+};
+const SIGILO_CONFERIDO='27/07/2026';
+
+const CEREBROS={
+  zai:{nome:'Z.ai',ico:'⚡',cat:'texto',sigilo:3,
+    site:'https://z.ai',chaveEm:'https://z.ai/manage-apikey/apikey-list',
+    url:'https://api.z.ai/api/paas/v4',
+    modelos:[
+      {id:'glm-4.7-flash',nome:'GLM-4.7 Flash',selo:t('Grátis real'),destaque:true,preco:[0,0],
+       desc:t('A porta de entrada da lista: não custa nada, sem prazo pra acabar e sem cartão. Lê até 200 mil palavras de uma vez e se sai muito bem quando a tarefa é seguir instrução à risca.')},
+      {id:'glm-5.2',nome:'GLM-5.2',selo:t('4º do mundo'),preco:[1.40,4.40],
+       desc:t('Entrou na conversa dos grandes de vez: 4º lugar no índice geral de inteligência e 1º entre todos os modelos abertos. Lê 1 milhão de palavras de uma vez, por uma fração do preço dos concorrentes de mesmo nível.'),
+       curio:t('Ele é aberto: a empresa publicou os pesos com licença livre, coisa que nenhum dos concorrentes de topo faz.')}
+    ]},
+  groq:{nome:'Groq',ico:'⚡',cat:'texto',sigilo:2,sigiloSobe:true,
+    site:'https://groq.com',chaveEm:'https://console.groq.com/keys',
+    url:'https://api.groq.com/openai/v1',
+    modelos:[
+      {id:'llama-3.3-70b-versatile',nome:'Llama 3.3 70B',selo:t('Quase grátis'),destaque:true,preco:[0,0],
+       desc:t('A resposta sai quase instantânea — é a mais rápida da lista com folga larga. Tem uso gratuito generoso e reaproveita a mesma chave que você já usa pra transcrever.'),
+       curio:t('O chip do Groq não é uma placa de vídeo adaptada: foi desenhado do zero, só pra rodar inteligência artificial. É daí que vem a velocidade.')}
+    ]},
+  gemini:{nome:'Gemini',ico:'✨',cat:'texto',sigilo:1,
+    site:'https://ai.google.dev',chaveEm:'https://aistudio.google.com/app/apikey',
+    url:'https://generativelanguage.googleapis.com/v1beta/openai',
+    modelos:[
+      {id:'gemini-2.5-flash-lite',nome:'Gemini Flash Lite',selo:t('Grátis com ressalva'),preco:[0.10,0.40],
+       desc:t('Sem cartão de crédito, e é a mais indicada quando o serviço é vasculhar documento longo e cruzar informação. Atenção: no nível grátis, o Google pode usar o texto enviado pra melhorar os produtos dele.')}
+    ]},
+  cerebras:{nome:'Cerebras',ico:'🧩',cat:'texto',sigilo:3,
+    site:'https://cerebras.ai',chaveEm:'https://cloud.cerebras.ai',
+    url:'https://api.cerebras.ai/v1',
+    modelos:[
+      {id:'llama-3.3-70b',nome:'Llama 3.3 70B',selo:t('Grátis · 1M por dia'),preco:[0,0],
+       desc:t('O mais rápido de todos, e com a política de dados mais rigorosa da lista: não guarda nada, apaga na hora. Um milhão de palavras por dia sem pagar.')}
+    ]},
+  deepseek:{nome:'DeepSeek',ico:'🐋',cat:'texto',sigilo:1,
+    site:'https://www.deepseek.com',chaveEm:'https://platform.deepseek.com/api_keys',
+    url:'https://api.deepseek.com/v1',
+    modelos:[
+      {id:'deepseek-v4',nome:'DeepSeek V4',selo:t('Ganha 5 milhões'),preco:[0.14,0.28],
+       desc:t('Ganha 5 milhões de tokens ao criar conta, e depois continua sendo uma das mais baratas do mercado. É a escolha de quem tem volume. Os termos dela permitem usar o que passa pela API pra treinar, e os servidores ficam na China.')}
+    ]},
+  claude:{nome:'Anthropic (Claude)',ico:'🟪',cat:'texto',sigilo:2,
+    site:'https://www.anthropic.com',chaveEm:'https://console.anthropic.com/settings/keys',
+    url:'https://api.anthropic.com/v1',
+    modelos:[
+      {id:'claude-sonnet-5',nome:'Claude Sonnet 5',selo:t('US$ 5 pra experimentar'),preco:[2.00,10.00],
+       desc:t('É a que escreve melhor, e isso não é gosto: lidera os principais rankings de texto. O texto sai mais natural e ela segura o fio da meada em documento longo. Conta nova ganha US$ 5, que dão umas 120 análises.')}
+    ]},
+  kimi:{nome:'Kimi (Moonshot)',ico:'🌙',cat:'texto',sigilo:1,
+    site:'https://kimi.ai',chaveEm:'https://platform.kimi.ai/console/api-keys',
+    url:'https://api.moonshot.ai/v1',
+    modelos:[
+      {id:'kimi-k3',nome:'Kimi K3',selo:t('1º em escrita criativa'),preco:[3.00,15.00],
+       desc:t('Lidera o ranking de escrita criativa, na frente do Claude. Lê 1 milhão de palavras com preço igual do começo ao fim. A política diz que o que você manda pode ser usado pra treinar — ótimo pra texto que vai virar público, não pra material confidencial.'),
+       curio:t('Enquanto quase todos disputam quem resolve melhor conta de matemática, o Kimi foi treinado com foco em escrever bem.')}
+    ]},
+  openai:{nome:'OpenAI',ico:'🤖',cat:'texto',sigilo:2,
+    site:'https://openai.com',chaveEm:'https://platform.openai.com/api-keys',
+    url:'https://api.openai.com/v1',
+    modelos:[
+      {id:'gpt-4o-mini',nome:'GPT',selo:t('Pago'),preco:[2.50,15.00],
+       desc:t('A mais versátil e a mais previsível: texto limpo, bem estruturado, entregue rápido. O tom padrão puxa pro corporativo — se você quer voz mais solta, vai precisar pedir.'),
+       curio:t('Foi o formato da API dela que virou padrão da indústria. Quase todos os outros copiaram — e é por isso que o Vox conversa com todos do mesmo jeito.')}
+    ]},
+  ollama:{nome:'Ollama',ico:'🖥️',cat:'texto',sigilo:4,local:true,
+    site:'https://ollama.com',url:'http://localhost:11434/v1',
+    modelos:[
+      {id:'llama3.2',nome:'Llama 3.2',selo:t('Local · Grátis'),preco:[0,0],
+       desc:t('Roda dentro do seu computador: nada sai da máquina, nenhuma chave, nenhuma conta. A qualidade fica abaixo das de nuvem e exige um PC razoável, mas é a única opção quando o texto não pode sair daí.')}
+    ]}
+};
+
+// Percorre o cadastro devolvendo {prov,modelo} — usado pelos cartões, pelo
+// ranking e (quando existir) pela ronda de testes ao vivo.
+function _cerebrosLista(cat='texto'){
+  const out=[];
+  Object.entries(CEREBROS).forEach(([pid,p])=>{
+    if(cat&&p.cat!==cat)return;
+    p.modelos.forEach(m=>out.push({pid,prov:p,modelo:m}));
+  });
+  return out;
+}
+// Ordem do ranking, decidida pelo Rafa: sigilo primeiro, preço depois,
+// qualidade por último pra desempatar (a qualidade entra pela ordem em que os
+// modelos foram escritos no cadastro).
+function _cerebrosPorSigilo(){
+  return _cerebrosLista(null).sort((a,b)=>
+    (b.prov.sigilo-a.prov.sigilo) || (a.modelo.preco[0]-b.modelo.preco[0]));
+}
+function _seloSigiloHtml(n,clicavel=true){
+  const s=SIGILO[n];if(!s)return '';
+  return `<span class="selo-sigilo" ${clicavel?'onclick="event.stopPropagation();abrirRankingSigilo()" role="button" tabindex="0"':''}
+    style="border-color:${s.cor};color:${s.cor}" title="${escHtml(s.nome)}">🔒 ${t('Sigilo')} ${n}</span>`;
+}
+function abrirRankingSigilo(){
+  const linhas=_cerebrosPorSigilo().map((c,i)=>{
+    const s=SIGILO[c.prov.sigilo];
+    const preco=c.modelo.preco[0]===0?t('grátis'):('US$ '+c.modelo.preco[0].toFixed(2));
+    return `<tr>
+      <td style="color:var(--text4);font-variant-numeric:tabular-nums">${i+1}</td>
+      <td>${c.prov.ico} <strong>${escHtml(c.prov.nome)}</strong><br><span style="font-size:11px;color:var(--text4)">${escHtml(c.modelo.nome)}</span></td>
+      <td style="white-space:nowrap"><span style="color:${s.cor};font-weight:700">${c.prov.sigilo}</span> <span style="font-size:11px;color:var(--text4)">${escHtml(s.nome)}</span></td>
+      <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${preco}</td>
+    </tr>`;
+  }).join('');
+  const escala=[4,3,2,1].map(n=>`<div style="display:flex;gap:9px;align-items:baseline;margin-bottom:6px">
+    <span style="font-weight:700;color:${SIGILO[n].cor};flex:none;width:14px">${n}</span>
+    <span style="font-size:13px;color:var(--text3)">${escHtml(SIGILO[n].nome)}</span></div>`).join('');
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal" style="max-width:640px">
+    <button class="tx-close" onclick="closeTxOverlay()">✕</button>
+    <div class="tx-title">🔒 ${t('Ranking de sigilo')}</div>
+    <div class="tx-sub" style="line-height:1.7">${t('Cada nota vem do contrato do próprio serviço, não da nossa opinião. A lista está ordenada por sigilo, depois por preço.')}</div>
+    <div style="margin:14px 0 18px;padding:13px 15px;background:var(--bg-input);border-radius:12px">${escala}</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="text-align:left;color:var(--text4);font-size:11px;text-transform:uppercase;letter-spacing:.06em">
+        <th style="padding:7px 8px">#</th><th style="padding:7px 8px">${t('Cérebro')}</th><th style="padding:7px 8px">${t('Sigilo')}</th><th style="padding:7px 8px">${t('Preço')}</th></tr></thead>
+      <tbody>${linhas}</tbody></table></div>
+    <div style="font-size:11px;color:var(--text4);margin-top:14px;line-height:1.6">${t('Conferido em')} ${SIGILO_CONFERIDO}. ${t('Políticas de privacidade mudam — se você vai tratar material sensível, vale conferir na página do próprio serviço.')}</div>
+    <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Entendi')}</button></div></div>`;
+  ov.classList.add('on');
+}
+
 const TXTAI_PRESETS={
   ollama:{url:'http://localhost:11434/v1',model:'llama3.2',needsKey:false},
   lmstudio:{url:'http://localhost:1234/v1',model:'local-model',needsKey:false},
