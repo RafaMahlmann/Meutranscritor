@@ -1996,8 +1996,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
             </div>
           </button>
         </div>
-        <button onclick="openLocalServer();waitAndCloseOfflineFromModal()" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;width:100%;background:var(--accent);color:white;border:none;border-radius:12px;padding:11px 16px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition)" onmouseover="this.style.background='var(--accent2)'" onmouseout="this.style.background='var(--accent)'" data-i18n>
-          🚀 Iniciar servidor Whisper
+        <button onclick="copiarCaminhoServidor();waitAndCloseOfflineFromModal()" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;width:100%;background:var(--accent);color:white;border:none;border-radius:12px;padding:11px 16px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition)" onmouseover="this.style.background='var(--accent2)'" onmouseout="this.style.background='var(--accent)'" data-i18n>
+          📋 Copiar caminho para iniciar o servidor
         </button>
         <div style="margin-top:10px">
           <div style="font-size:11px;color:var(--text4);margin-bottom:5px" data-i18n>Caminho do iniciar_whisper.bat (para iniciar com 1 clique)</div>
@@ -2791,7 +2791,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.27.3';
+const VOX_VERSION='2026.07.27.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3251,6 +3251,24 @@ let I18N_EN={
 "esperando…":"waiting…",
 "Começa por aqui — leve e boa qualidade":"Start here — light and good quality",
 "Só vale com máquina forte · pesa 3× mais":"Only worth it on a strong machine · 3× heavier",
+"Ligue o transcritor":"Start the transcriber",
+"O Vox não encontrou o transcritor. Ele roda numa janela própria, que precisa estar aberta.":"Vox couldn't find the transcriber. It runs in its own window, which needs to be open.",
+"Abra o arquivo <strong>iniciar_whisper.bat</strong>":"Open the file <strong>iniciar_whisper.bat</strong>",
+"Aperte Enter para usar o modelo Rápido":"Press Enter to use the Fast model",
+"Espere aparecer <strong>\"Modelo carregado! Servidor pronto.\"</strong>":"Wait for <strong>\"Modelo carregado! Servidor pronto.\"</strong> to appear",
+"📋 Copiar caminho do arquivo":"📋 Copy the file path",
+"Assim que ele ligar, esta tela fecha sozinha.":"As soon as it starts, this screen closes by itself.",
+"Instale o transcritor no seu computador":"Install the transcriber on your computer",
+"São 5 passos e uns 15 minutos — a maior parte é o computador baixando sozinho. Você não precisa saber programar.":"It's 5 steps and about 15 minutes — most of it is your computer downloading on its own. You don't need to know how to program.",
+"Instale o Python, marcando <strong>\"Add Python to PATH\"</strong>":"Install Python, ticking <strong>\"Add Python to PATH\"</strong>",
+"Baixe a pasta do transcritor":"Download the transcriber folder",
+"Dois cliques no <strong>instalar.bat</strong>, depois no <strong>iniciar_whisper.bat</strong>":"Double-click <strong>instalar.bat</strong>, then <strong>iniciar_whisper.bat</strong>",
+"Não precisa instalar FFmpeg — vários tutoriais mandam, e não precisa.":"You don't need to install FFmpeg — plenty of tutorials say you do, and you don't.",
+"Abrir o guia completo":"Open the full guide",
+"📋 Copiar caminho para iniciar o servidor":"📋 Copy the path to start the server",
+"💡 Configure o caminho do iniciar_whisper.bat nas Configurações → Local":"💡 Set the path to iniciar_whisper.bat under Settings → Local",
+"📋 Caminho copiado — cole no Iniciar do Windows e dê Enter.":"📋 Path copied — paste it into the Windows Start menu and press Enter.",
+"O caminho é:":"The path is:",
 "⏳ O servidor ainda não voltou. Se for a primeira vez com esse modelo, ele ainda está baixando — deixe rodando e recarregue a página daqui a pouco.":"⏳ The server hasn't come back yet. If this is your first time with this model, it's still downloading — leave it running and reload the page in a little while."
 };
 
@@ -3528,27 +3546,50 @@ function showOfflineInstructions(model){
     ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);z-index:700;display:flex;align-items:center;justify-content:center';
     document.body.appendChild(ov);
   }
+  // Duas telas pra dois problemas diferentes. Quem NUNCA instalou precisa do passo
+  // a passo; quem já tem, só precisa ligar. Antes as duas situações recebiam o
+  // mesmo texto — "abra o servidor" — e quem nunca tinha instalado batia numa
+  // parede: abrir qual servidor?
+  let jaTranscreveu=false;
+  try{jaTranscreveu=Object.keys(JSON.parse(localStorage.getItem('vox_speed_stats')||'{}')).some(k=>k.indexOf('local_')===0)}catch(e){}
+  const instalado=!!cfg.localBatPath||jaTranscreveu;
+  const passo='display:flex;gap:9px;text-align:left;font-size:12.5px;color:var(--text3);line-height:1.55;margin-bottom:9px';
+  const num='flex:none;width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px';
+  const corpo=instalado?`
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">${t('Ligue o transcritor')}</h2>
+      <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:16px">${t('O Vox não encontrou o transcritor. Ele roda numa janela própria, que precisa estar aberta.')}</p>
+      <div style="${passo}"><span style="${num}">1</span><span>${t('Abra o arquivo <strong>iniciar_whisper.bat</strong>')}</span></div>
+      <div style="${passo}"><span style="${num}">2</span><span>${t('Aperte Enter para usar o modelo Rápido')}</span></div>
+      <div style="${passo}"><span style="${num}">3</span><span>${t('Espere aparecer <strong>"Modelo carregado! Servidor pronto."</strong>')}</span></div>
+      ${cfg.localBatPath?`<button onclick="copiarCaminhoServidor()" style="display:block;width:100%;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:11px 20px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;margin:14px 0 8px">${t('📋 Copiar caminho do arquivo')}</button>`:''}
+      <p style="font-size:11px;color:var(--text4);line-height:1.6;margin:14px 0 16px">${t('Assim que ele ligar, esta tela fecha sozinha.')}</p>`
+  :`
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">${t('Instale o transcritor no seu computador')}</h2>
+      <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:8px">${t('São 5 passos e uns 15 minutos — a maior parte é o computador baixando sozinho. Você não precisa saber programar.')}</p>
+      <div style="${passo}"><span style="${num}">1</span><span>${t('Instale o Python, marcando <strong>"Add Python to PATH"</strong>')}</span></div>
+      <div style="${passo}"><span style="${num}">2</span><span>${t('Baixe a pasta do transcritor')}</span></div>
+      <div style="${passo}"><span style="${num}">3</span><span>${t('Dois cliques no <strong>instalar.bat</strong>, depois no <strong>iniciar_whisper.bat</strong>')}</span></div>
+      <p style="font-size:11px;color:var(--text4);line-height:1.6;margin:12px 0 14px">${t('Não precisa instalar FFmpeg — vários tutoriais mandam, e não precisa.')}</p>
+      <a href="https://github.com/RafaMahlmann/Meutranscritor/tree/main/transcritor-local" target="_blank" rel="noopener noreferrer" style="display:block;width:100%;box-sizing:border-box;background:var(--accent);color:white;text-decoration:none;border-radius:14px;padding:13px 20px;font-size:14px;font-weight:700;font-family:var(--font);margin-bottom:14px">${t('Abrir o guia completo')}</a>`;
   ov.innerHTML=`
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.3);animation:modalIn 0.25s ease">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:28px 24px;max-width:360px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.3);animation:modalIn 0.25s ease">
       <div style="font-size:40px;margin-bottom:12px">🖥️</div>
-      <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">${t('Iniciar servidor Whisper')}</h2>
-      <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:6px">${t('Modelo selecionado:')} <strong>${labels[model]||model}</strong></p>
-      <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:20px">${t('Para usar o modo Local, abra o servidor clicando no botão abaixo:')}</p>
-      <button onclick="openLocalServer();waitAndCloseOffline()" style="display:block;width:100%;background:var(--accent);color:white;border:none;border-radius:14px;padding:13px 20px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;margin-bottom:10px">
-        ${t('🚀 Abrir servidor Whisper')}
-      </button>
-      <p style="font-size:11px;color:var(--text4);line-height:1.6;margin-bottom:16px">${t('Após abrir, aguarde aparecer')}<br><strong>${t('"Modelo carregado! Servidor pronto."')}</strong></p>
+      ${corpo}
       <button onclick="document.getElementById('offlineOverlay').style.display='none';setProvider('whisper')" style="background:none;border:none;font-size:12px;color:var(--text4);cursor:pointer;font-family:var(--font)">${t('Cancelar — usar outro provedor')}</button>
     </div>`;
   ov.style.display='flex';
+  waitAndCloseOffline(); // liga o monitor: quando o servidor subir, a tela sai sozinha
 }
-function openLocalServer(){
+// O botão antigo tentava window.open('file:///…') pra abrir o .bat. Navegador
+// NENHUM faz isso — testado: devolve null. E o erro caía num catch vazio, então
+// o botão não fazia nada e nem avisava que não fez. Copiar o caminho funciona,
+// e a pessoa cola no Iniciar do Windows.
+function copiarCaminhoServidor(){
   const path=cfg.localBatPath;
-  if(path){
-    try{window.open('file:///'+path.replace(/\\/g,'/'))}catch(e){}
-  }else{
-    toast(t('💡 Configure o caminho do .bat nas configurações → aba Local'));
-  }
+  if(!path){toast(t('💡 Configure o caminho do iniciar_whisper.bat nas Configurações → Local'),true);return}
+  navigator.clipboard.writeText(path)
+    .then(()=>toast(t('📋 Caminho copiado — cole no Iniciar do Windows e dê Enter.')))
+    .catch(()=>toast(t('O caminho é:')+' '+path,true));
 }
 function waitAndCloseOfflineFromModal(){
   // chamado pelo botão dentro do modal — apenas atualiza o status
@@ -3568,9 +3609,13 @@ function waitAndCloseOfflineFromModal(){
     },3000);
   },2000);
 }
+let _monitorOffline=null;
 function waitAndCloseOffline(){
-  // monitora até servidor ficar online e fecha overlay automaticamente
-  const check=setInterval(async()=>{
+  // monitora até servidor ficar online e fecha overlay automaticamente.
+  // Guarda contra monitor duplicado: agora quem liga isso é a própria tela de
+  // servidor desligado, que pode ser aberta várias vezes seguidas.
+  if(_monitorOffline)clearInterval(_monitorOffline);
+  const check=_monitorOffline=setInterval(async()=>{
     try{
       const r=await fetch('http://localhost:8000/v1/local/model');
       if(r.ok){
