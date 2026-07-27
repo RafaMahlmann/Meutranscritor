@@ -1952,6 +1952,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       </div>
       <div class="cfg-tab-pane" id="cfgPaneTrans">
       <div class="section-title" data-i18n>API de transcrição</div>
+      <p class="fhint" style="margin-bottom:10px" data-i18n>Quem transforma o áudio em texto. Comece pelo Groq: são 2.000 transcrições por dia sem pagar nada.</p>
+      <!-- Cartões desenhados a partir do cadastro CEREBROS, no mesmo padrão da
+           aba de diarização. Antes daqui só existiam os quatro botões abaixo,
+           sem uma linha explicando quem era quem. -->
+      <div id="cardsTranscricao"></div>
       <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr 1fr">
         <button class="api-tog-btn on" id="togW" onclick="setProvider('whisper')">🤖 Whisper</button>
         <button class="api-tog-btn" id="togG" onclick="setProvider('grok')">🟠 Grok STT</button>
@@ -2796,7 +2801,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.27.8';
+const VOX_VERSION='2026.07.27.9';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3265,6 +3270,19 @@ let I18N_EN={
 "Cada nota vem do contrato do próprio serviço, não da nossa opinião. A lista está ordenada por sigilo, depois por preço.":"Each score comes from the service's own terms, not from our opinion. The list is sorted by privacy, then by price.",
 "Cérebro":"Brain",
 "Preço":"Price",
+"Quem transforma o áudio em texto. Comece pelo Groq: são 2.000 transcrições por dia sem pagar nada.":"Who turns audio into text. Start with Groq: 2,000 transcriptions a day at no cost.",
+"Ver todos os provedores":"See all providers",
+"/hora de áudio":"/hour of audio",
+" por milhão de palavras":" per million words",
+"Transcritor local":"Local transcriber",
+"Na sua máquina":"On your machine",
+"Grátis · não sai do PC":"Free · never leaves your PC",
+"⭐ Recomendado — 2.000/dia grátis":"⭐ Recommended — 2,000/day free",
+"O melhor lugar pra começar: 2.000 transcrições por dia sem pagar nada, e é rápido. Roda o Whisper Large v3 Turbo, então a qualidade é a mesma dos pagos.":"The best place to start: 2,000 transcriptions a day at no cost, and it's fast. It runs Whisper Large v3 Turbo, so the quality matches the paid ones.",
+"A chave é a mesma que serve pro cérebro de IA de texto. Configurou aqui, já pode usar lá.":"It's the same key that works for the text AI brain. Set it up here and you can use it there.",
+"É o Whisper original, da empresa que o criou. Comportamento previsível e boa qualidade em muitos idiomas — a escolha de quem prefere ficar no ecossistema que já usa.":"It's the original Whisper, from the company that created it. Predictable behavior and good quality across many languages — the choice for those who prefer staying in the ecosystem they already use.",
+"Essa mesma chave serve nas três abas do Vox: transcreve, separa vozes e pensa sobre o texto. É a única da lista que faz as três.":"This same key works in all three Vox tabs: it transcribes, separates voices and thinks about the text. It's the only one on the list that does all three.",
+"Transcrição pela xAI, com a mesma chave que serve pro cérebro de IA de texto. O crédito gratuito generoso deles vem do programa de compartilhamento de dados — vale saber antes de mandar material sensível.":"Transcription by xAI, with the same key that works for the text AI brain. Their generous free credit comes from the data-sharing program — worth knowing before sending sensitive material.",
 "grátis":"free",
 "Conferido em":"Checked on",
 "Políticas de privacidade mudam — se você vai tratar material sensível, vale conferir na página do próprio serviço.":"Privacy policies change — if you're handling sensitive material, it's worth checking on the service's own page.",
@@ -5295,8 +5313,69 @@ const CEREBROS={
     modelos:[
       {id:'llama3.2',nome:'Llama 3.2',selo:t('Local · Grátis'),preco:[0,0],
        desc:t('Roda dentro do seu computador: nada sai da máquina, nenhuma chave, nenhuma conta. A qualidade fica abaixo das de nuvem e exige um PC razoável, mas é a única opção quando o texto não pode sair daí.')}
+    ]},
+
+  // ── TRANSCRIÇÃO ── a aba que até hoje só tinha quatro botões pelados.
+  // O preço aqui é por HORA DE ÁUDIO, não por milhão de tokens.
+  tr_local:{nome:t('Transcritor local'),ico:'🖥️',cat:'transcricao',sigilo:4,local:true,
+    usar:"setProvider('local')",site:'https://github.com/RafaMahlmann/Meutranscritor/tree/main/transcritor-local',
+    modelos:[
+      {id:'local',nome:t('Na sua máquina'),selo:t('Grátis · não sai do PC'),destaque:true,preco:[0,0],porHora:0,
+       desc:t('Roda na sua máquina. Sem chave, sem cadastro, sem gastar API — seu áudio não sai daí, e transcrever não custa nada além da energia elétrica.')}
+    ]},
+  tr_groq:{nome:'Groq',ico:'🟢',cat:'transcricao',sigilo:2,sigiloSobe:true,
+    usar:"setProvider('groqwhisper')",site:'https://console.groq.com/keys',
+    modelos:[
+      {id:'groqwhisper',nome:'Whisper Large v3 Turbo',selo:t('⭐ Recomendado — 2.000/dia grátis'),destaque:true,preco:[0,0],porHora:0.04,
+       desc:t('O melhor lugar pra começar: 2.000 transcrições por dia sem pagar nada, e é rápido. Roda o Whisper Large v3 Turbo, então a qualidade é a mesma dos pagos.'),
+       curio:t('A chave é a mesma que serve pro cérebro de IA de texto. Configurou aqui, já pode usar lá.')}
+    ]},
+  tr_openai:{nome:'OpenAI',ico:'🎙️',cat:'transcricao',sigilo:2,
+    usar:"setProvider('whisper')",site:'https://platform.openai.com/api-keys',
+    modelos:[
+      {id:'whisper',nome:'Whisper',selo:t('Pago'),preco:[0,0],porHora:0.36,
+       desc:t('É o Whisper original, da empresa que o criou. Comportamento previsível e boa qualidade em muitos idiomas — a escolha de quem prefere ficar no ecossistema que já usa.'),
+       curio:t('Essa mesma chave serve nas três abas do Vox: transcreve, separa vozes e pensa sobre o texto. É a única da lista que faz as três.')}
+    ]},
+  tr_xai:{nome:'xAI (Grok)',ico:'🟠',cat:'transcricao',sigilo:1,
+    usar:"setProvider('grok')",site:'https://x.ai',
+    modelos:[
+      {id:'grok',nome:'Grok STT',selo:t('Pago'),preco:[0,0],porHora:0.10,
+       desc:t('Transcrição pela xAI, com a mesma chave que serve pro cérebro de IA de texto. O crédito gratuito generoso deles vem do programa de compartilhamento de dados — vale saber antes de mandar material sensível.')}
     ]}
 };
+
+// Desenha o cartão de um cérebro no padrão da aba de diarização, que é o que
+// funciona: quem é, pra que serve, quanto custa, e um botão que já leva pro
+// campo certo. O selo de sigilo entra ao lado do nome.
+function _cardCerebroHtml(c,acao){
+  const m=c.modelo,p=c.prov;
+  const precoTxt=m.porHora!==undefined
+    ? (m.porHora===0?t('grátis'):('US$ '+m.porHora.toFixed(2)+t('/hora de áudio')))
+    : (m.preco[0]===0?t('grátis'):('US$ '+m.preco[0].toFixed(2)+t(' por milhão de palavras')));
+  return `<div class="maint-box" style="margin-bottom:8px${m.destaque?';border:1.5px solid var(--accent)':''}">
+    <div class="maint-info">
+      <div class="maint-title">${p.ico} ${escHtml(p.nome)} ${m.selo?`<span class="free-badge">${escHtml(m.selo)}</span>`:''} ${_seloSigiloHtml(p.sigilo)}</div>
+      <div class="maint-desc">${escHtml(m.desc)}</div>
+      ${m.curio?`<div class="maint-desc" style="margin-top:5px;font-style:italic;opacity:.85">${escHtml(m.curio)}</div>`:''}
+      <div class="maint-foot">
+        ${p.site?`<a href="${escHtml(p.site)}" target="_blank" rel="noopener noreferrer">🌐 ${t('site oficial')}</a> · `:''}
+        <span style="color:var(--text4)">${precoTxt}</span>
+      </div>
+    </div>
+    <button type="button" class="preset-use-btn" onclick="${acao||p.usar||''}">${t('Usar')}</button>
+  </div>`;
+}
+// Destaques abertos, o resto atrás de "ver todos" — é assim que 20 opções não
+// viram bagunça (foi o excesso de opção solta que obrigou o Roo Code a
+// redesenhar as configurações inteiras).
+function _renderCardsCerebro(cat,containerId){
+  const el=document.getElementById(containerId);if(!el)return;
+  const lista=_cerebrosLista(cat);
+  const abertos=lista.filter(c=>c.modelo.destaque),resto=lista.filter(c=>!c.modelo.destaque);
+  el.innerHTML=abertos.map(c=>_cardCerebroHtml(c)).join('')
+    +(resto.length?`<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;padding:6px 0">${t('Ver todos os provedores')} (${resto.length})</summary><div style="margin-top:8px">${resto.map(c=>_cardCerebroHtml(c)).join('')}</div></details>`:'');
+}
 
 // Percorre o cadastro devolvendo {prov,modelo} — usado pelos cartões, pelo
 // ranking e (quando existir) pela ronda de testes ao vivo.
@@ -5447,6 +5526,7 @@ function loadCfg(){
   document.getElementById('apiKeyGladia').value=cfg.apiKeyGladia||'';
   document.getElementById('apiKeyPyannote').value=cfg.apiKeyPyannote||'';
   document.getElementById('localBatPathInput').value=cfg.localBatPath||'';
+  _renderCardsCerebro('transcricao','cardsTranscricao');
   // Desliga quem ligou nas poucas horas em que a caixinha existiu — sem servidor
   // que diarize, deixar ligado só rende erro em toda gravação.
   if(cfg.diarLocal){cfg.diarLocal=false;localStorage.setItem('vox_cfg',JSON.stringify(cfg))}
