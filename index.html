@@ -2791,7 +2791,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.27.4';
+const VOX_VERSION='2026.07.27.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3249,6 +3249,8 @@ let I18N_EN={
 "Trocando para":"Switching to",
 "Se você já usou esse modelo antes, leva uns 30 segundos. Se for a primeira vez, ele precisa ser baixado (1 a 3 GB) e pode levar vários minutos — pode deixar rodando.":"If you've used this model before, it takes about 30 seconds. If it's the first time, it has to be downloaded (1 to 3 GB) and can take several minutes — feel free to leave it running.",
 "esperando…":"waiting…",
+"{p} gastou todo o espaço da resposta pensando e não chegou a escrever. Tente de novo, ou use um modelo que não raciocina antes de responder.":"{p} spent its whole answer budget thinking and never got to writing. Try again, or use a model that doesn't reason before answering.",
+"devolveu uma resposta vazia":"returned an empty response",
 "Começa por aqui — leve e boa qualidade":"Start here — light and good quality",
 "Só vale com máquina forte · pesa 3× mais":"Only worth it on a strong machine · 3× heavier",
 "Ligue o transcritor":"Start the transcriber",
@@ -5092,6 +5094,9 @@ function aiKey(){const tgt=_txtAITarget();return tgt?tgt.key:''}
 // Traduz erro cru da API (em inglês, técnico) numa mensagem que a pessoa entende
 // e sabe o que fazer — em vez de "Invalid API Key" seco na tela.
 function _friendlyAIError(err,tgt){
+  // Erro que nós mesmos escrevemos já vem explicado e traduzido — não pode ser
+  // trocado pela mensagem genérica do fim desta função, senão a explicação some.
+  if(err&&err.jaAmigavel)return err;
   const m=(err?.message||'').toLowerCase(),name=tgt?.name||'IA';
   if(m.includes('sem resposta')||m.includes('failed to fetch')||m.includes('networkerror'))
     return new Error('🌐 '+t('Não conseguimos falar com {p} agora — confira se o serviço está no ar (ou, se for local, se ele está ligado) e sua conexão.').replace('{p}',name));
@@ -5129,7 +5134,19 @@ async function callAI(prompt,key,provider='auto',maxTokens=800,opts={}){
         }
         if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||tgt.name+': '+res.status)}
         const d=await res.json();
-        const text=d.choices[0].message.content.trim();
+        const msg=d.choices?.[0]?.message||{};
+        const text=(msg.content||'').trim();
+        // Modelos que "pensam" antes de responder (GLM-5.2, Kimi K3 e afins) mandam o
+        // raciocínio em msg.reasoning e devolvem content=null quando o limite de tokens
+        // acaba no meio do pensamento. Antes isso virava null.trim() → TypeError → erro
+        // genérico na tela, e o provedor levava a culpa por um problema nosso.
+        if(!text){
+          const vazio=(msg.reasoning||msg.reasoning_details)
+            ?new Error('🧠 '+t('{p} gastou todo o espaço da resposta pensando e não chegou a escrever. Tente de novo, ou use um modelo que não raciocina antes de responder.').replace('{p}',tgt.name))
+            :new Error('❌ '+tgt.name+': '+t('devolveu uma resposta vazia'));
+          vazio.jaAmigavel=true;
+          throw vazio;
+        }
         if(ti>0)toast('⚠️ '+t('{a} falhou — usamos {b} como alternativa.').replace('{a}',targets[0].name).replace('{b}',tgt.name));
         return text;
       }
@@ -5160,7 +5177,11 @@ const TXTAI_PRESETS={
   gemini:{url:'https://generativelanguage.googleapis.com/v1beta/openai',model:'gemini-2.5-flash-lite',needsKey:true,keyUrl:'https://aistudio.google.com/app/apikey'},
   deepseek:{url:'https://api.deepseek.com/v1',model:'deepseek-v4-flash',needsKey:true,keyUrl:'https://platform.deepseek.com/api_keys'},
   qwen:{url:'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',model:'qwen-plus',needsKey:true,keyUrl:'https://modelstudio.console.alibabacloud.com'},
-  zai:{url:'https://api.z.ai/api/openai/v1',model:'glm-4.7-flash',needsKey:true,keyUrl:'https://z.ai/manage-apikey/apikey-list'},
+  // O endereço /api/openai/v1 devolve 404 NOT_FOUND (testado em 27/07/2026, com curl).
+  // O que está no ar é /api/paas/v4 — ele responde com erro de autenticação de verdade,
+  // que é o sinal de rota viva. Quem colava chave da Z.ai aqui batia em 404 e achava
+  // que a chave estava errada.
+  zai:{url:'https://api.z.ai/api/paas/v4',model:'glm-4.7-flash',needsKey:true,keyUrl:'https://z.ai/manage-apikey/apikey-list'},
   kimi:{url:'https://api.moonshot.ai/v1',model:'kimi-k2.6',needsKey:true,keyUrl:'https://platform.kimi.ai/console/api-keys'},
   claude:{url:'https://api.anthropic.com/v1',model:'claude-sonnet-5',needsKey:true,keyUrl:'https://console.anthropic.com/settings/keys'}
 };
