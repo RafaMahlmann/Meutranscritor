@@ -2791,7 +2791,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.27.1';
+const VOX_VERSION='2026.07.27.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3245,7 +3245,11 @@ let I18N_EN={
 "O servidor local respondeu com erro {s}.":"The local server answered with error {s}.",
 "O servidor local não devolveu as vozes separadas — confira se a sua instalação tem a parte de diarização.":"The local server didn't return separated voices — check whether your install includes the diarization part.",
 "O servidor local devolveu os trechos sem nenhum texto.":"The local server returned the segments with no text at all.",
-"✅ Diarização concluída — sem sair do seu computador.":"✅ Diarization done — without leaving your computer."
+"✅ Diarização concluída — sem sair do seu computador.":"✅ Diarization done — without leaving your computer.",
+"Trocando para":"Switching to",
+"Se você já usou esse modelo antes, leva uns 30 segundos. Se for a primeira vez, ele precisa ser baixado (1 a 3 GB) e pode levar vários minutos — pode deixar rodando.":"If you've used this model before, it takes about 30 seconds. If it's the first time, it has to be downloaded (1 to 3 GB) and can take several minutes — feel free to leave it running.",
+"esperando…":"waiting…",
+"⏳ O servidor ainda não voltou. Se for a primeira vez com esse modelo, ele ainda está baixando — deixe rodando e recarregue a página daqui a pouco.":"⏳ The server hasn't come back yet. If this is your first time with this model, it's still downloading — leave it running and reload the page in a little while."
 };
 
 // ── STATE ──
@@ -3431,13 +3435,16 @@ async function setLocalModel(model){
     cfg.localModel=model;
     localStorage.setItem('vox_cfg',JSON.stringify(cfg));
     // aguarda servidor reiniciar e volta
-    await waitServerReady();
+    await waitServerReady(switchOverlayTick);
     hideSwitchOverlay();
     updateSpeedBadge();
     toast(t('✅ Modelo trocado para ')+(labels[model]||model)+'!');
   }catch(e){
     hideSwitchOverlay();
-    toast(t('❌ Servidor não respondeu. Ele está rodando?'),true);
+    // Estourar a espera NÃO é o mesmo que servidor fora do ar: o download do
+    // modelo pode simplesmente ainda estar rolando. Mensagens diferentes.
+    if(e&&e.message==='timeout')toast(t('⏳ O servidor ainda não voltou. Se for a primeira vez com esse modelo, ele ainda está baixando — deixe rodando e recarregue a página daqui a pouco.'),true);
+    else toast(t('❌ Servidor não respondeu. Ele está rodando?'),true);
   }
 }
 function showSwitchOverlay(label){
@@ -3446,23 +3453,36 @@ function showSwitchOverlay(label){
     ov=document.createElement('div');
     ov.id='switchOverlay';
     ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);z-index:700;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px';
-    ov.innerHTML=`
-      <div style="font-size:42px">⚙️</div>
-      <div style="color:white;font-size:17px;font-weight:700;font-family:var(--font)">Trocando para ${label}…</div>
-      <div style="color:rgba(255,255,255,0.7);font-size:13px;font-family:var(--font);text-align:center;max-width:280px;line-height:1.6">O servidor está reiniciando.<br>Aguarde cerca de 30 segundos.</div>
-      <div style="display:flex;gap:6px;margin-top:4px">${[0,1,2].map(i=>`<div style="width:8px;height:8px;border-radius:50%;background:white;opacity:0.4;animation:blink 1.2s ${i*0.3}s infinite"></div>`).join('')}</div>`;
     document.body.appendChild(ov);
   }
+  // Reconstruir SEMPRE: o overlay era criado uma vez e reaproveitado, entao da
+  // segunda troca em diante mostrava o nome do modelo ANTERIOR.
+  ov.innerHTML=`
+    <div style="font-size:42px">⚙️</div>
+    <div style="color:white;font-size:17px;font-weight:700;font-family:var(--font)">${t('Trocando para')} ${label}…</div>
+    <div style="color:rgba(255,255,255,0.7);font-size:13px;font-family:var(--font);text-align:center;max-width:300px;line-height:1.6">${t('Se você já usou esse modelo antes, leva uns 30 segundos. Se for a primeira vez, ele precisa ser baixado (1 a 3 GB) e pode levar vários minutos — pode deixar rodando.')}</div>
+    <div id="switchTimer" style="color:rgba(255,255,255,0.5);font-size:12px;font-family:var(--font);font-variant-numeric:tabular-nums"></div>
+    <div style="display:flex;gap:6px;margin-top:4px">${[0,1,2].map(i=>`<div style="width:8px;height:8px;border-radius:50%;background:white;opacity:0.4;animation:blink 1.2s ${i*0.3}s infinite"></div>`).join('')}</div>`;
   ov.style.display='flex';
+}
+function switchOverlayTick(seg){
+  const el=document.getElementById('switchTimer');if(!el)return;
+  const m=Math.floor(seg/60),s=seg%60;
+  el.textContent=(m?m+' min '+String(s).padStart(2,'0')+'s':seg+'s')+' '+t('esperando…');
 }
 function hideSwitchOverlay(){
   const ov=document.getElementById('switchOverlay');
   if(ov)ov.style.display='none';
 }
-async function waitServerReady(){
+async function waitServerReady(onTick){
   await new Promise(r=>setTimeout(r,3000)); // aguarda shutdown
-  for(let i=0;i<40;i++){
+  // Na PRIMEIRA vez com um modelo, o servidor BAIXA os arquivos antes de subir
+  // (medium ~1,5 GB, large-v3 ~3 GB). Os 83s de espera de antes estouravam com o
+  // download em pleno andamento e o app dizia "servidor offline" — assustando por
+  // nada. Agora espera ate 10 minutos e vai mostrando o tempo decorrido.
+  for(let i=0;i<300;i++){
     await new Promise(r=>setTimeout(r,2000));
+    if(onTick)try{onTick(3+(i+1)*2)}catch(e){}
     try{
       const r=await fetch('http://localhost:8000/v1/local/model');
       if(r.ok){const d=await r.json();cfg.localModel=d.model;return}
@@ -5294,13 +5314,16 @@ async function setLocalModelFromModal(model){
     if(!res.ok)throw new Error();
     cfg.localModel=model;
     localStorage.setItem('vox_cfg',JSON.stringify(cfg));
-    await waitServerReady();
+    await waitServerReady(switchOverlayTick);
     hideSwitchOverlay();
     updateSpeedBadge();
     toast(t('✅ Modelo trocado para ')+(labels[model]||model)+'!');
   }catch(e){
     hideSwitchOverlay();
-    showOfflineInstructions(model);
+    // Idem: só mostra o passo a passo de "servidor fora do ar" quando ele realmente
+    // não respondeu. Se a espera estourou, o download provavelmente continua.
+    if(e&&e.message==='timeout')toast(t('⏳ O servidor ainda não voltou. Se for a primeira vez com esse modelo, ele ainda está baixando — deixe rodando e recarregue a página daqui a pouco.'),true);
+    else showOfflineInstructions(model);
   }
 }
 function setDiarProvider(p,save=true,activate=false){
