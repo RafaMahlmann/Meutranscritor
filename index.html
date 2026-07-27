@@ -2791,7 +2791,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.27.5';
+const VOX_VERSION='2026.07.27.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5119,10 +5119,13 @@ async function callAI(prompt,key,provider='auto',maxTokens=800,opts={}){
     try{
       // Até 3 tentativas NESSE provedor: se ele devolver 429 (limite por minuto),
       // espera o tempo que ele mesmo indicar ("try again in Xs") e refaz sozinho.
-      for(let attempt=0;attempt<3;attempt++){
+      // Corpo do pedido fora do laço: se um parâmetro for recusado, a gente tira
+      // e refaz — e a remoção precisa valer na tentativa seguinte.
+      const corpo={model:tgt.model,max_tokens:maxTokens,temperature,messages};
+      for(let attempt=0;attempt<4;attempt++){
         const res=await fetch(tgt.url,{
           method:'POST',headers:{'Authorization':'Bearer '+tgt.key,'Content-Type':'application/json'},
-          body:JSON.stringify({model:tgt.model,max_tokens:maxTokens,temperature,messages})
+          body:JSON.stringify(corpo)
         }).catch(()=>{throw new Error(tgt.name+': '+t('sem resposta — a API está no ar?'))});
         if(res.status===429&&attempt<2){
           const e=await res.json().catch(()=>({}));
@@ -5132,16 +5135,35 @@ async function callAI(prompt,key,provider='auto',maxTokens=800,opts={}){
           await new Promise(r=>setTimeout(r,wait*1000));
           continue;
         }
-        if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||tgt.name+': '+res.status)}
+        if(!res.ok){
+          const e=await res.json().catch(()=>({}));
+          const emsg=e.error?.message||e.message||'';
+          // Modelo exigente com parâmetro (o Kimi K3 só aceita temperatura 1, e
+          // recusa com 400 seco). Em vez de manter lista de quem é chato com o quê,
+          // tiramos o parâmetro reclamado e tentamos de novo — uma vez cada.
+          if(res.status===400&&attempt<3){
+            if(/temperature/i.test(emsg)&&'temperature' in corpo){delete corpo.temperature;continue}
+            // Modelos de raciocínio novos recusam max_tokens e pedem max_completion_tokens.
+            if(/max_tokens/i.test(emsg)&&'max_tokens' in corpo){
+              corpo.max_completion_tokens=corpo.max_tokens;delete corpo.max_tokens;continue;
+            }
+          }
+          throw new Error(emsg||tgt.name+': '+res.status);
+        }
         const d=await res.json();
         const msg=d.choices?.[0]?.message||{};
-        const text=(msg.content||'').trim();
+        // Alguns modelos (MiniMax, por ex.) embutem o rascunho do raciocínio no
+        // próprio texto, entre <think>…</think>. Sem tirar, a pessoa lê o modelo
+        // pensando em voz alta em vez da resposta.
+        const text=(msg.content||'').replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
         // Modelos que "pensam" antes de responder (GLM-5.2, Kimi K3 e afins) mandam o
         // raciocínio em msg.reasoning e devolvem content=null quando o limite de tokens
         // acaba no meio do pensamento. Antes isso virava null.trim() → TypeError → erro
         // genérico na tela, e o provedor levava a culpa por um problema nosso.
         if(!text){
-          const vazio=(msg.reasoning||msg.reasoning_details)
+          // reasoning · reasoning_content · reasoning_details: cada plataforma
+          // batizou esse campo de um jeito. Todas contam a mesma história.
+          const vazio=(msg.reasoning||msg.reasoning_content||msg.reasoning_details)
             ?new Error('🧠 '+t('{p} gastou todo o espaço da resposta pensando e não chegou a escrever. Tente de novo, ou use um modelo que não raciocina antes de responder.').replace('{p}',tgt.name))
             :new Error('❌ '+tgt.name+': '+t('devolveu uma resposta vazia'));
           vazio.jaAmigavel=true;
