@@ -1210,6 +1210,15 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .maint-btn:hover{background:rgba(255,59,48,0.08)}
 .ram-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,149,0,0.12);color:var(--warning);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px}
 .free-badge{display:inline-flex;align-items:center;gap:4px;background:var(--groq-glow);color:var(--groq);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
+/* Linha do ranking que leva pro cartão — precisa PARECER um link (o Rafa pediu
+   "hiperlink" com essas palavras). */
+.rank-link{cursor:pointer;color:var(--text);text-decoration:none}
+.rank-link:hover,.rank-link:focus-visible{color:var(--accent);text-decoration:underline}
+.rank-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+/* Pisca a borda do cartão quando se chega nele vindo do ranking. */
+@keyframes cardFlash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+.card-flash{animation:cardFlash 1.4s ease-out}
+@media (prefers-reduced-motion:reduce){.card-flash{animation:none;outline:2px solid var(--accent);outline-offset:2px}}
 /* Selo de sigilo: a cor vem do nível (inline), a borda dá o contorno de "selo". */
 .selo-sigilo{display:inline-flex;align-items:center;gap:3px;border:1px solid;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;background:transparent;transition:all var(--transition);white-space:nowrap}
 .selo-sigilo:hover{filter:brightness(1.15);transform:translateY(-1px)}
@@ -2144,6 +2153,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       </div>
       <div class="txtai-test">
         <button class="maint-btn" onclick="testTxtAI()" data-i18n>⚡ Testar conexão</button>
+        <button type="button" class="diar-help-btn" onclick="explicarTesteConexao()" title="O que esse teste faz?" data-i18n-title aria-label="O que esse teste faz?">?</button>
         <span class="txtai-test-result" id="txtaiTestResult"></span>
       </div>
       </div><!-- /cfgPaneText -->
@@ -2708,7 +2718,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.28.1';
+const VOX_VERSION='2026.07.28.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3193,6 +3203,9 @@ let I18N_EN={
 "Numa aba nova, sem sair daqui. Lá você cria uma chave de API e copia ela. Depois é só voltar e colar no campo que já vai estar esperando.":"In a new tab, without leaving here. There you create an API key and copy it. Then just come back and paste it into the field that will already be waiting.",
 "Entendi, abrir o site":"Got it, open the site",
 "Agora não":"Not now",
+"O que esse teste faz?":"What does this test do?",
+"Ele manda uma pergunta bem curta e barata — \"responda apenas: ok\" — pro cérebro que você configurou aqui em cima, só pra confirmar que o endereço, o modelo e a chave estão certos. Tudo isso antes de você usar de verdade numa transformação, e sem gastar quase nada: a pergunta é minúscula, custa uma fração de centavo.<br><br>Ele testa <strong>um cérebro por vez</strong>, não todos juntos. Se por acaso esse não responder, o Vox tenta em silêncio outro que você já tenha configurado antes — por isso o resultado sempre mostra o nome de qual foi usado. Se aparecer um nome diferente do que você esperava, é porque o primeiro falhou.":"It sends a very short, cheap question — \"just answer: ok\" — to the brain you set up above, just to confirm the address, model and key are right. All before you actually use it in a real transformation, and at almost no cost: the question is tiny, a fraction of a cent.<br><br>It tests <strong>one brain at a time</strong>, not all of them together. If that one happens not to respond, Vox quietly tries another one you've already set up — that's why the result always shows the name of whichever one was used. If a different name shows up than you expected, it's because the first one failed.",
+"preço no site do serviço":"price on the service's website",
 "Boa alternativa pra quem já usa a OpenAI: reaproveita a mesma chave da aba Transcrição. Pelos termos comerciais, o que passa pela API não é usado pra treinar e é apagado em 30 dias.":"A good alternative for those already using OpenAI: it reuses the same key from the Transcription tab. Under their commercial terms, what goes through the API isn't used for training and is deleted within 30 days.",
 "⚙️ Avançado — endereço e modelo":"⚙️ Advanced — address and model",
 "↻ Atualizar lista":"↻ Refresh list",
@@ -5320,25 +5333,25 @@ const CEREBROS={
   di_assembly:{nome:'AssemblyAI',ico:'🟣',cat:'diarizacao',sigilo:1,
     usar:"setDiarProvider('assemblyai',true,true)",site:'https://www.assemblyai.com',
     modelos:[
-      {id:'assemblyai',nome:t('Diarização AssemblyAI'),selo:t('⭐ Recomendado — US$ 50 grátis'),destaque:true,preco:[0,0],
+      {id:'assemblyai',nome:t('Diarização AssemblyAI'),selo:t('⭐ Recomendado — US$ 50 grátis'),destaque:true,porHora:0.36,
        desc:t('É a escolha da maioria: qualidade excelente, integração estável e cerca de US$ 50 em créditos pra começar. Mas leia antes: por padrão os termos permitem usar o seu áudio pra treinar os modelos deles, e quem está no crédito gratuito não pode recusar — só quem paga consegue desligar.')}
     ]},
   di_gladia:{nome:'Gladia',ico:'💠',cat:'diarizacao',sigilo:1,
     usar:"setDiarProvider('gladia',true,true)",site:'https://www.gladia.io',
     modelos:[
-      {id:'gladia',nome:t('Diarização Gladia'),selo:t('10 horas grátis por mês'),destaque:true,preco:[0,0],
+      {id:'gladia',nome:t('Diarização Gladia'),selo:t('10 horas grátis por mês'),destaque:true,
        desc:t('Dez horas por mês de graça, renovando sozinho — prática pra quem usa com frequência. O treino segue o plano: no gratuito o seu áudio é usado pra melhorar os modelos deles; nos pagos, não. E dá pra escolher por quanto tempo eles guardam, até zero.')}
     ]},
   di_pyannote:{nome:'pyannote.ai',ico:'🎯',cat:'diarizacao',sigilo:0,
     usar:"setDiarProvider('pyannote',true,true)",site:'https://www.pyannote.ai',
     modelos:[
-      {id:'pyannote',nome:t('Diarização pyannote'),selo:t('Alta precisão'),preco:[0,0],
+      {id:'pyannote',nome:t('Diarização pyannote'),selo:t('Alta precisão'),
        desc:t('Feita pelos criadores do principal sistema aberto de diarização — indicada pra quem busca a maior precisão possível. O áudio é apagado dos servidores assim que o processamento termina, e a empresa fica na Europa. Só não dizem se usam o material pra treinar.')}
     ]},
   di_openai:{nome:'OpenAI',ico:'🤖',cat:'diarizacao',sigilo:2,
     usar:"setDiarProvider('openai',true,true)",site:'https://platform.openai.com',
     modelos:[
-      {id:'openai',nome:t('Diarização OpenAI'),selo:t('Pago'),preco:[0,0],
+      {id:'openai',nome:t('Diarização OpenAI'),selo:t('Pago'),porHora:0.36,
        desc:t('Boa alternativa pra quem já usa a OpenAI: reaproveita a mesma chave da aba Transcrição. Pelos termos comerciais, o que passa pela API não é usado pra treinar e é apagado em 30 dias.')}
     ]},
 
@@ -5375,19 +5388,28 @@ const CEREBROS={
 // Desenha o cartão de um cérebro no padrão da aba de diarização, que é o que
 // funciona: quem é, pra que serve, quanto custa, e um botão que já leva pro
 // campo certo. O selo de sigilo entra ao lado do nome.
+// Compartilhada pelo cartão e pelo ranking — antes cada um tinha sua própria
+// conta de preço, e só a do cartão incluía a unidade. Foi assim que o ranking
+// acabou mostrando "US$ 1.40" sem dizer de quê, e também foi assim que modelos
+// PAGOS de diarização (sem porHora definido) caíam no branch errado e apareciam
+// como "grátis". Preço desconhecido nunca vira "grátis" — vira um aviso honesto.
+function _precoTxt(m){
+  if(m.porHora!==undefined)
+    return m.porHora===0?t('grátis'):('US$ '+m.porHora.toFixed(2)+t('/hora de áudio'));
+  if(m.preco)
+    return m.preco[0]===0?t('grátis'):('US$ '+m.preco[0].toFixed(2)+t(' por milhão de palavras'));
+  return t('preço no site do serviço');
+}
 function _cardCerebroHtml(c,acao){
   const m=c.modelo,p=c.prov;
-  const precoTxt=m.porHora!==undefined
-    ? (m.porHora===0?t('grátis'):('US$ '+m.porHora.toFixed(2)+t('/hora de áudio')))
-    : (m.preco[0]===0?t('grátis'):('US$ '+m.preco[0].toFixed(2)+t(' por milhão de palavras')));
-  return `<div class="maint-box" style="margin-bottom:8px${m.destaque?';border:1.5px solid var(--accent)':''}">
+  return `<div class="maint-box" data-pid="${escHtml(c.pid)}" data-mid="${escHtml(m.id)}" style="margin-bottom:8px${m.destaque?';border:1.5px solid var(--accent)':''}">
     <div class="maint-info">
       <div class="maint-title">${p.ico} ${escHtml(p.nome)} ${m.selo?`<span class="free-badge">${escHtml(m.selo)}</span>`:''} ${_seloSigiloHtml(p.sigilo)}</div>
       <div class="maint-desc">${escHtml(m.desc)}</div>
       ${m.curio?`<div class="maint-desc" style="margin-top:5px;font-style:italic;opacity:.85">${escHtml(m.curio)}</div>`:''}
       <div class="maint-foot">
         ${p.site?`<a href="${escHtml(p.site)}" target="_blank" rel="noopener noreferrer">🌐 ${t('site oficial')}</a> · `:''}
-        <span style="color:var(--text4)">${precoTxt}</span>
+        <span style="color:var(--text3)">${_precoTxt(m)}</span>
       </div>
     </div>
     <button type="button" class="preset-use-btn" onclick="${acao||p.usar||''}">${t('Usar')}</button>
@@ -5426,9 +5448,18 @@ function _cerebrosLista(cat='texto',filtrarChave=true){
 // Ordem do ranking, decidida pelo Rafa: sigilo primeiro, preço depois,
 // qualidade por último pra desempatar (a qualidade entra pela ordem em que os
 // modelos foram escritos no cadastro).
+// Valor pra ORDENAR por preço, não pra mostrar — preço desconhecido (Gladia,
+// pyannote) não pode virar 0 aqui, senão a ordenação despenca esses modelos
+// pagos pro topo da lista, entre os grátis de verdade. Infinity joga pro fim
+// do próprio nível de sigilo, que é o lugar honesto pra "não sabemos o preço".
+function _precoOrdenar(m){
+  if(m.porHora!==undefined)return m.porHora;
+  if(m.preco)return m.preco[0];
+  return Infinity;
+}
 function _cerebrosPorSigilo(){
   return _cerebrosLista(null,false).sort((a,b)=>
-    (b.prov.sigilo-a.prov.sigilo) || (a.modelo.preco[0]-b.modelo.preco[0]));
+    (b.prov.sigilo-a.prov.sigilo) || (_precoOrdenar(a.modelo)-_precoOrdenar(b.modelo)));
 }
 function _seloSigiloHtml(n,clicavel=true){
   const s=SIGILO[n];if(!s)return '';
@@ -5438,30 +5469,55 @@ function _seloSigiloHtml(n,clicavel=true){
 function abrirRankingSigilo(){
   const linhas=_cerebrosPorSigilo().map((c,i)=>{
     const s=SIGILO[c.prov.sigilo];
-    const preco=c.modelo.preco[0]===0?t('grátis'):('US$ '+c.modelo.preco[0].toFixed(2));
+    // O nome do cérebro inteiro é o link — clicando, fecha o ranking e vai
+    // direto pro cartão certo (o Rafa testou e achou ruim ter que procurar na
+    // lista depois de ver o ranking). E provedor+modelo na MESMA linha, sem
+    // legenda pequena embaixo: era assim que os dois cartões do Z.ai pareciam
+    // duplicados no relatório dele.
     return `<tr>
-      <td style="color:var(--text4);font-variant-numeric:tabular-nums">${i+1}</td>
-      <td>${c.prov.ico} <strong>${escHtml(c.prov.nome)}</strong><br><span style="font-size:11px;color:var(--text4)">${escHtml(c.modelo.nome)}</span></td>
-      <td style="white-space:nowrap"><span style="color:${s.cor};font-weight:700">${c.prov.sigilo===0?'?':c.prov.sigilo}</span> <span style="font-size:11px;color:var(--text4)">${escHtml(s.nome)}</span></td>
-      <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${preco}</td>
+      <td style="color:var(--text3);font-variant-numeric:tabular-nums">${i+1}</td>
+      <td><span class="rank-link" role="button" tabindex="0"
+            onclick="irParaCardCerebro('${escJs(c.prov.cat)}','${escJs(c.pid)}','${escJs(c.modelo.id)}')"
+            onkeydown="if(event.key==='Enter')irParaCardCerebro('${escJs(c.prov.cat)}','${escJs(c.pid)}','${escJs(c.modelo.id)}')"
+          >${c.prov.ico} <strong>${escHtml(c.prov.nome)}</strong> — ${escHtml(c.modelo.nome)}</span></td>
+      <td style="white-space:nowrap"><span style="color:${s.cor};font-weight:700">${c.prov.sigilo===0?'?':c.prov.sigilo}</span> <span style="font-size:12.5px;color:var(--text2)">${escHtml(s.nome)}</span></td>
+      <td style="font-variant-numeric:tabular-nums">${_precoTxt(c.modelo)}</td>
     </tr>`;
   }).join('');
   const escala=[4,3,2,1,0].map(n=>`<div style="display:flex;gap:9px;align-items:baseline;margin-bottom:6px">
     <span style="font-weight:700;color:${SIGILO[n].cor};flex:none;width:14px">${n===0?'?':n}</span>
-    <span style="font-size:13px;color:var(--text3)">${escHtml(SIGILO[n].nome)}</span></div>`).join('');
+    <span style="font-size:13.5px;color:var(--text2)">${escHtml(SIGILO[n].nome)}</span></div>`).join('');
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal" style="max-width:640px">
     <button class="tx-close" onclick="closeTxOverlay()">✕</button>
     <div class="tx-title">🔒 ${t('Ranking de sigilo')}</div>
     <div class="tx-sub" style="line-height:1.7">${t('Cada nota vem do contrato do próprio serviço, não da nossa opinião. A lista está ordenada por sigilo, depois por preço.')}</div>
     <div style="margin:14px 0 18px;padding:13px 15px;background:var(--bg-input);border-radius:12px">${escala}</div>
-    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="text-align:left;color:var(--text4);font-size:11px;text-transform:uppercase;letter-spacing:.06em">
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13.5px">
+      <thead><tr style="text-align:left;color:var(--text2);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em">
         <th style="padding:7px 8px">#</th><th style="padding:7px 8px">${t('Cérebro')}</th><th style="padding:7px 8px">${t('Sigilo')}</th><th style="padding:7px 8px">${t('Preço')}</th></tr></thead>
       <tbody>${linhas}</tbody></table></div>
-    <div style="font-size:11px;color:var(--text4);margin-top:14px;line-height:1.6">${t('Conferido em')} ${SIGILO_CONFERIDO}. ${t('Políticas de privacidade mudam — se você vai tratar material sensível, vale conferir na página do próprio serviço.')}</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:14px;line-height:1.6">${t('Conferido em')} ${SIGILO_CONFERIDO}. ${t('Políticas de privacidade mudam — se você vai tratar material sensível, vale conferir na página do próprio serviço.')}</div>
     <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Entendi')}</button></div></div>`;
   ov.classList.add('on');
+}
+// Leva da linha do ranking direto pro cartão do cérebro — sem precisar procurar
+// na lista. Abre o modal de configurações (idempotente), troca pra aba certa e
+// pisca a borda do cartão pra ele achar na hora.
+function irParaCardCerebro(cat,pid,mid){
+  closeTxOverlay();
+  const abaDe={texto:'Text',transcricao:'Trans',diarizacao:'Diar'};
+  const containerDe={texto:'cardsTexto',transcricao:'cardsTranscricao',diarizacao:'cardsDiarizacao'};
+  openModal();
+  cfgTab(abaDe[cat]);
+  setTimeout(()=>{
+    const cont=document.getElementById(containerDe[cat]);
+    const card=cont&&[...cont.querySelectorAll('.maint-box')].find(el=>el.dataset.pid===pid&&el.dataset.mid===mid);
+    if(!card)return;
+    card.scrollIntoView({behavior:'smooth',block:'center'});
+    card.classList.add('card-flash');
+    setTimeout(()=>card.classList.remove('card-flash'),1500);
+  },80);
 }
 
 const TXTAI_PRESETS={
@@ -5579,6 +5635,18 @@ function setTxtProvider(p,save=true){
   if(save)localStorage.setItem('vox_cfg',JSON.stringify(cfg));
   updateLocal100Badge();
   _refreshBrainPanelIfOpen();
+}
+// Explica o que "Testar conexão" faz de verdade — o Rafa pediu depois de usar
+// o botão sem saber se testava um cérebro só ou todos, e como. Reflete o
+// comportamento real de callAI('auto'): tenta o que está configurado aqui
+// primeiro e, se falhar, cai silenciosamente pra outro que já esteja salvo.
+function explicarTesteConexao(){
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
+    <div class="tx-title">⚡ ${t('O que esse teste faz?')}</div>
+    <div class="tx-sub" style="line-height:1.7">${t('Ele manda uma pergunta bem curta e barata — "responda apenas: ok" — pro cérebro que você configurou aqui em cima, só pra confirmar que o endereço, o modelo e a chave estão certos. Tudo isso antes de você usar de verdade numa transformação, e sem gastar quase nada: a pergunta é minúscula, custa uma fração de centavo.<br><br>Ele testa <strong>um cérebro por vez</strong>, não todos juntos. Se por acaso esse não responder, o Vox tenta em silêncio outro que você já tenha configurado antes — por isso o resultado sempre mostra o nome de qual foi usado. Se aparecer um nome diferente do que você esperava, é porque o primeiro falhou.')}</div>
+    <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Entendi')}</button></div></div>`;
+  ov.classList.add('on');
 }
 async function testTxtAI(){
   const out=document.getElementById('txtaiTestResult');
