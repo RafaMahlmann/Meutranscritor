@@ -1260,6 +1260,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .cfg-tab-btn.on{background:var(--bg-card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.08)}
 .local-100-badge{display:none;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:0.4px;color:var(--accent);background:var(--accent-glow);padding:3px 9px;border-radius:20px;white-space:nowrap}
 .local-100-badge.on{display:inline-flex}
+/* "Avançado": fechado por padrão. Quem nunca abrir nunca vai saber que existe,
+   que é justamente o objetivo — e quem sabe o que faz abre e mexe. */
+.cfg-avancado{margin-top:14px;border-top:1px solid var(--border);padding-top:8px}
+.cfg-avancado>summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--text3);list-style:none;padding:4px 0}
+.cfg-avancado>summary::-webkit-details-marker{display:none}
+.cfg-avancado>summary::before{content:'▸ ';color:var(--text4)}
+.cfg-avancado[open]>summary::before{content:'▾ '}
+.cfg-avancado>summary:hover{color:var(--accent)}
 .txtai-test{display:flex;align-items:center;gap:10px;margin-top:12px}
 .txtai-test-result{font-size:12px;font-weight:600}
 ::-webkit-scrollbar{width:5px}
@@ -2103,18 +2111,29 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <p class="fhint" data-i18n>Usa a mesma OpenAI Key da aba Transcrição.</p>
       </div>
       <div id="txtaiCustomPanel" style="display:none;margin-top:12px">
-        <div class="frow">
-          <label><span data-i18n>Endereço da API (compatível com OpenAI)</span></label>
-          <input type="text" id="txtBaseUrl" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false" oninput="saveCfg(false)">
-        </div>
-        <div class="frow">
-          <label><span data-i18n>Modelo</span></label>
-          <input type="text" id="txtModel" placeholder="llama3.2" autocomplete="off" spellcheck="false" oninput="saveCfg(false)">
-        </div>
+        <!-- Simples na frente, preciso atrás de um clique. A CHAVE fica sempre
+             visível porque é nela que o botão "Usar" do cartão foca — esconder
+             ela dentro do recolhido deixaria a pessoa sem ver onde colar. -->
         <div class="frow">
           <label><span data-i18n>Chave (se a API exigir)</span></label>
           <div class="key-eye-wrap"><input type="password" id="txtKey" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('txtKey',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
         </div>
+        <details class="cfg-avancado">
+          <summary data-i18n>⚙️ Avançado — endereço e modelo</summary>
+          <div class="frow" style="margin-top:10px">
+            <label><span data-i18n>Endereço da API (compatível com OpenAI)</span></label>
+            <input type="text" id="txtBaseUrl" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false" oninput="saveCfg(false)">
+          </div>
+          <div class="frow">
+            <label>
+              <span data-i18n>Modelo</span>
+              <button type="button" class="maint-btn" style="font-size:11px;padding:3px 9px" onclick="atualizarModelos()" data-i18n>↻ Atualizar lista</button>
+            </label>
+            <input type="text" id="txtModel" placeholder="llama3.2" autocomplete="off" spellcheck="false" oninput="saveCfg(false)" list="listaModelos">
+            <datalist id="listaModelos"></datalist>
+            <div id="modelosAviso" style="font-size:11px;color:var(--text4);margin-top:5px"></div>
+          </div>
+        </details>
         <div class="section-title" style="margin-top:14px" data-i18n>Carteira de cérebros — clique pra preencher sozinho</div>
         <p class="fhint" style="margin-top:-6px;margin-bottom:8px" data-i18n>Comece pelas gratuitas — dá pra montar uma boa coleção sem gastar nada. Toque no selo 🔒 de cada uma pra ver como ela trata os seus dados.</p>
         <!-- Cartões vindos do cadastro CEREBROS (_renderCardsCerebro). Aqui havia
@@ -2718,7 +2737,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.27.10';
+const VOX_VERSION='2026.07.27.11';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3189,6 +3208,12 @@ let I18N_EN={
 "Preço":"Price",
 "Quem transforma o áudio em texto. Comece pelo Groq: são 2.000 transcrições por dia sem pagar nada.":"Who turns audio into text. Start with Groq: 2,000 transcriptions a day at no cost.",
 "Ver todos os provedores":"See all providers",
+"⚙️ Avançado — endereço e modelo":"⚙️ Advanced — address and model",
+"↻ Atualizar lista":"↻ Refresh list",
+"Preencha o endereço da API primeiro.":"Fill in the API address first.",
+"Perguntando ao provedor…":"Asking the provider…",
+"{n} modelos encontrados — clique no campo do modelo pra escolher.":"{n} models found — click the model field to pick one.",
+"Esse provedor não lista os modelos dele. Continue digitando o nome à mão.":"This provider doesn't list its models. Just keep typing the name by hand.",
 "Comece pelas gratuitas — dá pra montar uma boa coleção sem gastar nada. Toque no selo 🔒 de cada uma pra ver como ela trata os seus dados.":"Start with the free ones — you can build a good collection without spending anything. Tap each one's 🔒 badge to see how it treats your data.",
 "Grátis real":"Genuinely free",
 "4º do mundo":"4th in the world",
@@ -5428,6 +5453,35 @@ const TXTAI_PRESETS={
   kimi:{url:'https://api.moonshot.ai/v1',model:'kimi-k2.6',needsKey:true,keyUrl:'https://platform.kimi.ai/console/api-keys'},
   claude:{url:'https://api.anthropic.com/v1',model:'claude-sonnet-5',needsKey:true,keyUrl:'https://console.anthropic.com/settings/keys'}
 };
+// Pergunta pro provedor quais modelos ele tem AGORA, em vez de a gente manter
+// nome de modelo escrito no código. Foi por não ter isto que o app ficou
+// oferecendo GLM-4.7 e Kimi K2.6 depois de os dois terem sido superados — em um
+// mês, dois modelos nossos envelheceram sem ninguém notar.
+// Se o provedor não implementa /models, nada quebra: o campo continua sendo de
+// digitar, como sempre foi.
+async function atualizarModelos(){
+  const aviso=document.getElementById('modelosAviso');
+  const dl=document.getElementById('listaModelos');
+  if(!aviso||!dl)return;
+  // Barra no fim quebra a chamada em alguns provedores (o Gemini é o caso
+  // conhecido) — o mesmo cuidado que _txtAITargets já toma.
+  const base=(document.getElementById('txtBaseUrl').value||'').trim().replace(/\/+$/,'');
+  if(!base){aviso.textContent=t('Preencha o endereço da API primeiro.');return}
+  const key=(document.getElementById('txtKey').value||'').trim();
+  aviso.textContent=t('Perguntando ao provedor…');
+  try{
+    const res=await fetch(base+'/models',{headers:key?{'Authorization':'Bearer '+key}:{}});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const d=await res.json();
+    const ids=(d.data||d.models||[]).map(m=>m.id||m.name).filter(Boolean).sort();
+    if(!ids.length)throw new Error('lista vazia');
+    dl.innerHTML=ids.map(i=>`<option value="${escHtml(i)}"></option>`).join('');
+    aviso.textContent=t('{n} modelos encontrados — clique no campo do modelo pra escolher.').replace('{n}',ids.length);
+  }catch(e){
+    dl.innerHTML='';
+    aviso.textContent=t('Esse provedor não lista os modelos dele. Continue digitando o nome à mão.');
+  }
+}
 // modeloId é opcional e existe por um motivo específico: um provedor tem VÁRIOS
 // modelos no cadastro, e sem isto o botão do GLM-5.2 preenchia o GLM-4.7-Flash —
 // exatamente o erro de tratar o fornecedor como unidade que esta reforma veio
