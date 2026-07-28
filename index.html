@@ -2701,7 +2701,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.27.12';
+const VOX_VERSION='2026.07.27.13';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3171,7 +3171,6 @@ let I18N_EN={
 "Cérebro":"Brain",
 "Preço":"Price",
 "Quem transforma o áudio em texto. Comece pelo Groq: são 2.000 transcrições por dia sem pagar nada.":"Who turns audio into text. Start with Groq: 2,000 transcriptions a day at no cost.",
-"Ver todos os provedores":"See all providers",
 "O serviço não informa":"The service doesn't say",
 "Diarização AssemblyAI":"AssemblyAI diarization",
 "⭐ Recomendado — US$ 50 grátis":"⭐ Recommended — US$ 50 free",
@@ -3183,6 +3182,10 @@ let I18N_EN={
 "Alta precisão":"High accuracy",
 "Feita pelos criadores do principal sistema aberto de diarização — indicada pra quem busca a maior precisão possível. O áudio é apagado dos servidores assim que o processamento termina, e a empresa fica na Europa. Só não dizem se usam o material pra treinar.":"Built by the creators of the leading open diarization system — the pick for those after the highest possible accuracy. Audio is deleted from the servers as soon as processing ends, and the company is based in Europe. They just don't say whether they use the material for training.",
 "Diarização OpenAI":"OpenAI diarization",
+"Vamos abrir o site da {p}":"We'll open {p}'s website",
+"Numa aba nova, sem sair daqui. Lá você cria uma chave de API e copia ela. Depois é só voltar e colar no campo que já vai estar esperando.":"In a new tab, without leaving here. There you create an API key and copy it. Then just come back and paste it into the field that will already be waiting.",
+"Entendi, abrir o site":"Got it, open the site",
+"Agora não":"Not now",
 "Boa alternativa pra quem já usa a OpenAI: reaproveita a mesma chave da aba Transcrição. Pelos termos comerciais, o que passa pela API não é usado pra treinar e é apagado em 30 dias.":"A good alternative for those already using OpenAI: it reuses the same key from the Transcription tab. Under their commercial terms, what goes through the API isn't used for training and is deleted within 30 days.",
 "⚙️ Avançado — endereço e modelo":"⚙️ Advanced — address and model",
 "↻ Atualizar lista":"↻ Refresh list",
@@ -5374,9 +5377,11 @@ function _cardCerebroHtml(c,acao){
     <button type="button" class="preset-use-btn" onclick="${acao||p.usar||''}">${t('Usar')}</button>
   </div>`;
 }
-// Destaques abertos, o resto atrás de "ver todos" — é assim que 20 opções não
-// viram bagunça (foi o excesso de opção solta que obrigou o Roo Code a
-// redesenhar as configurações inteiras).
+// Todos os cartões aparecem direto — sem "ver todos" pra clicar. O Rafa testou
+// com o collapse (destaque aberto, resto atrás de um clique) e achou confuso:
+// quem entra numa aba de configuração quer ver as opções, não caçar um botão
+// escondido. A hierarquia continua só visualmente (destaque = borda), a lista
+// inteira fica visível.
 function _renderCardsCerebro(cat,containerId){
   const el=document.getElementById(containerId);if(!el)return;
   const lista=_cerebrosLista(cat);
@@ -5385,8 +5390,7 @@ function _renderCardsCerebro(cat,containerId){
   // caminho próprio traz o seu em prov.usar.
   const acaoDe=c=>c.prov.usar||(cat==='texto'?`applyTxtAIPreset('${c.pid}','${escJs(c.modelo.id)}')`:'');
   const abertos=lista.filter(c=>c.modelo.destaque),resto=lista.filter(c=>!c.modelo.destaque);
-  el.innerHTML=abertos.map(c=>_cardCerebroHtml(c,acaoDe(c))).join('')
-    +(resto.length?`<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;padding:6px 0">${t('Ver todos os provedores')} (${resto.length})</summary><div style="margin-top:8px">${resto.map(c=>_cardCerebroHtml(c,acaoDe(c))).join('')}</div></details>`:'');
+  el.innerHTML=[...abertos,...resto].map(c=>_cardCerebroHtml(c,acaoDe(c))).join('');
 }
 
 // Percorre o cadastro devolvendo {prov,modelo} — usado pelos cartões, pelo
@@ -5512,10 +5516,34 @@ function applyTxtAIPreset(preset,modeloId){
     toast(t('🖥️ Preenchido! Testando conexão local…'));
     testTxtAI();
   }else{
-    document.getElementById('txtKey').focus();
-    toast(t('Cole sua chave nesse campo e clique em "Testar conexão"'));
-    if(p.keyUrl)window.open(p.keyUrl,'_blank','noopener,noreferrer');
+    // Antes o clique já saía pro site externo sem avisar nada. O Rafa clicou
+    // achando que ia "usar o provedor" e caiu de surpresa numa página de fora
+    // sem entender por quê — quem não mexe com API não espera isso.
+    _confirmarAbrirSiteChave(CEREBROS[preset]?.nome||preset,p.keyUrl);
   }
+}
+let _pendingKeyUrl=null;
+// Aviso genérico de propósito: o passo é sempre o mesmo em qualquer provedor
+// (pega a chave, cola de volta), só muda o nome do site — não precisa de um
+// texto por provedor.
+function _confirmarAbrirSiteChave(nome,keyUrl){
+  _pendingKeyUrl=keyUrl||null;
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal" style="max-width:380px;text-align:center">
+    <div style="font-size:34px;margin-bottom:10px">🔑</div>
+    <div class="tx-title">${t('Vamos abrir o site da {p}').replace('{p}',escHtml(nome))}</div>
+    <div class="tx-sub" style="line-height:1.7">${t('Numa aba nova, sem sair daqui. Lá você cria uma chave de API e copia ela. Depois é só voltar e colar no campo que já vai estar esperando.')}</div>
+    <div class="tx-row" style="flex-direction:column;gap:8px;margin-top:16px">
+      <button class="tx-btn primary" onclick="closeTxOverlay();_abrirSiteChaveConfirmado()">${t('Entendi, abrir o site')}</button>
+      <button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Agora não')}</button>
+    </div></div>`;
+  ov.classList.add('on');
+}
+function _abrirSiteChaveConfirmado(){
+  document.getElementById('txtKey').focus();
+  toast(t('Cole sua chave nesse campo e clique em "Testar conexão"'));
+  if(_pendingKeyUrl)window.open(_pendingKeyUrl,'_blank','noopener,noreferrer');
+  _pendingKeyUrl=null;
 }
 // Mantém o nome antigo porque cfgTab('Text') já chama isto — e o trabalho é o
 // mesmo de antes, só que generalizado: redesenhar os cartões da aba de texto.
