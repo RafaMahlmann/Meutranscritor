@@ -2926,6 +2926,8 @@ let I18N_EN={
 "Leituras incompatíveis":"Incompatible readings",
 "Nenhum choque: os métodos que pousaram na mesma frase leram ela do mesmo jeito.":"No clash: the methods that landed on the same sentence read it the same way.",
 "Onde as leituras se encontram":"Where the readings meet",
+"Colidiram, mas não consegui dizer se batem ou se brigam":"They collided, but I couldn't tell whether they agree or clash",
+"Os métodos pousaram na mesma frase e a classificação não voltou. Ficam aqui crus, para você julgar — em vez de eu chutar que concordam.":"The methods landed on the same sentence and the classification didn't come back. They're left raw here for you to judge — rather than me guessing they agree.",
 "Métodos diferentes chegaram ao mesmo lugar. Isso indica onde a frase é clara — não é prova de que a leitura esteja certa.":"Different methods arrived at the same place. That shows where the sentence is clear — it is not proof that the reading is right.",
 "Vistas por um método só":"Seen by one method only",
 "Ninguém mais olhou para essas frases. Pode ser o achado mais fino do exame — ou o mais frágil.":"Nobody else looked at these sentences. It may be the sharpest finding of the examination — or the flimsiest.",
@@ -10449,8 +10451,11 @@ async function runExame(id,metodos){
 
   toast('🔬 '+t('{n} métodos lendo ao mesmo tempo…').replace('{n}',sel.length));
   const SYS='Você observa um texto e devolve observações discretas, cada uma presa a uma citação literal. Você jamais parafraseia a citação: ela é copiada palavra por palavra, porque é ela que prova que você não inventou. Responde só JSON.';
+  // 4000 e não 2600: modelo que raciocina antes de responder gasta o teto pensando
+  // e devolve vazio. Testando ao vivo com o GLM-5.2, com 2600 um dos quatro métodos
+  // caía fora toda vez. O JSON em si é curto — a folga é para o raciocínio.
   const brutos=await Promise.allSettled(sel.map(k=>
-    callAI(pedido(k),key,'auto',2600,{system:SYS,temperature:0.5})));
+    callAI(pedido(k),key,'auto',4000,{system:SYS,temperature:0.5})));
 
   const props=[];let inventadas=0,falharam=[];
   brutos.forEach((r,i)=>{
@@ -10474,28 +10479,39 @@ async function runExame(id,metodos){
     .sort((a,b)=>a.frase-b.frase);
   const colisoes=grupos.filter(g=>g.metodos>1),sozinhas=grupos.filter(g=>g.metodos===1);
 
-  // Uma única chamada decide, entre as colisões, quais são choque de verdade e quais
-  // são a mesma coisa dita com outras palavras. Só o choque interessa.
-  let rel={};
+  // Decide, entre as colisões, quais são choque de verdade e quais são a mesma coisa
+  // dita com outras palavras. Em lotes de 8: mandando as 16 de uma vez o modelo
+  // estoura o teto raciocinando e devolve vazio — e aí TUDO cairia em "concordam"
+  // sem ninguém perceber, justo a seção que vale menos. Ponto sem resposta fica
+  // marcado como não-classificado e é mostrado como tal, nunca como concordância.
+  const rel={};
   if(colisoes.length){
     toast('⚡ '+t('separando choque de repetição…'));
-    const alvos=colisoes.slice(0,16);
-    const r=await callAI(
-      `Pontos de um texto onde métodos de leitura diferentes observaram A MESMA frase.\n\n`+
-      alvos.map((g,i)=>`[${i+1}] frase: "${frases[g.frase]}"\n`+
-        g.itens.map(p=>`   - (${p.label}) ${p.afirma}`).join('\n')).join('\n\n')+
-      `\n\n---\nEm cada ponto, as observações CONCORDAM (dizem o mesmo com outras palavras) ou `+
-      `DISCORDAM (apontam leituras incompatíveis entre si)?\n\n`+
-      `JSON puro: [{"n":1,"relacao":"discordam","oque":"em até 16 palavras, o núcleo da tensão"}]\n`+
-      `Responda SÓ o JSON. ${_promptLang()}`,
-      key,'auto',1600,{system:'Você classifica relações entre leituras. Responde só JSON.',temperature:0.2})
-      .catch(()=>'');
-    _exJSON(r).forEach(o=>{const n=parseInt(o?.n,10);
-      if(n>=1&&n<=alvos.length)rel[alvos[n-1].frase]={rel:String(o.relacao||''),oque:String(o.oque||'')}});
+    const alvos=colisoes.slice(0,24),LOTE=8,blocos=[];
+    for(let i=0;i<alvos.length;i+=LOTE)blocos.push(alvos.slice(i,i+LOTE));
+    // Em paralelo, como a extração: em série isto sozinho levava metade dos 2 minutos
+    // que o exame inteiro demorava num modelo que raciocina.
+    await Promise.all(blocos.map(async bloco=>{
+      const r=await callAI(
+        `Pontos de um texto onde métodos de leitura diferentes observaram A MESMA frase.\n\n`+
+        bloco.map((g,j)=>`[${j+1}] frase: "${frases[g.frase]}"\n`+
+          g.itens.map(p=>`   - (${p.label}) ${p.afirma}`).join('\n')).join('\n\n')+
+        `\n\n---\nEm cada ponto, as observações CONCORDAM (dizem o mesmo com outras palavras) ou `+
+        `DISCORDAM (apontam leituras incompatíveis entre si)?\n\n`+
+        `JSON puro, um objeto por ponto: [{"n":1,"relacao":"discordam","oque":"em até 16 palavras, o núcleo da tensão"}]\n`+
+        `Responda SÓ o JSON. ${_promptLang()}`,
+        key,'auto',400*bloco.length+1200,
+        {system:'Você classifica relações entre leituras. Responde só JSON.',temperature:0.2})
+        .catch(()=>'');
+      _exJSON(r).forEach(o=>{const n=parseInt(o?.n,10);
+        if(n>=1&&n<=bloco.length)rel[bloco[n-1].frase]={rel:String(o.relacao||''),oque:String(o.oque||'')}});
+    }));
   }
 
+  const classificado=g=>!!rel[g.frase]?.rel;
   const choque=colisoes.filter(g=>/discord/i.test(rel[g.frase]?.rel||''));
-  const eco=colisoes.filter(g=>!/discord/i.test(rel[g.frase]?.rel||''));
+  const eco=colisoes.filter(g=>classificado(g)&&!/discord/i.test(rel[g.frase].rel));
+  const semRotulo=colisoes.filter(g=>!classificado(g));
   const md=[];
   md.push(`# 🔬 ${t('Exame')}`);
   md.push(`*${t('{n} métodos leram o mesmo texto. Cada observação está presa a uma frase sua — se não coube numa frase real, foi descartada antes de chegar aqui.').replace('{n}',vivos)}*`);
@@ -10513,6 +10529,15 @@ async function runExame(id,metodos){
     });
   }else md.push(`*${t('Nenhum choque: os métodos que pousaram na mesma frase leram ela do mesmo jeito.')}*\n`);
 
+  if(semRotulo.length){
+    md.push(`## ❓ ${t('Colidiram, mas não consegui dizer se batem ou se brigam')}`);
+    md.push(`*${t('Os métodos pousaram na mesma frase e a classificação não voltou. Ficam aqui crus, para você julgar — em vez de eu chutar que concordam.')}*\n`);
+    semRotulo.forEach(g=>{
+      md.push(`> ${frases[g.frase]}\n`);
+      g.itens.forEach(p=>md.push(`- **${p.label}** — ${p.afirma}`));
+      md.push('');
+    });
+  }
   if(eco.length){
     md.push(`## 🤝 ${t('Onde as leituras se encontram')}`);
     md.push(`*${t('Métodos diferentes chegaram ao mesmo lugar. Isso indica onde a frase é clara — não é prova de que a leitura esteja certa.')}*\n`);
