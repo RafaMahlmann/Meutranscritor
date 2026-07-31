@@ -2747,7 +2747,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.31.3';
+const VOX_VERSION='2026.07.31.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -10429,17 +10429,19 @@ function showTraduzirMenu(id, mode){
   document.querySelectorAll('.lens-panel.on').forEach(x=>{if(x!==p){x.classList.remove('on');x.innerHTML=''}});
   const selDe = cfg.traduzirUltimoDe || 'auto';
   const selPara = cfg.traduzirUltimoPara || (currentLang==='en'?'en':'pt');
-  if(!manual){
-    const aviso = window._traduzirAvisoIgual ? `<div class="trad-manual-hint trad-warn">${t('Texto já no idioma de destino')} — use a engrenagem para forçar outro idioma.</div>` : `<div class="trad-manual-hint">${t('No automático eu detecto o idioma e trago para o idioma do app.')}</div>`;
-    p.innerHTML=`<div class="lens-chips"><button class="lens-chip trad-auto" onclick="runTraduzirAuto('${escJs(id)}')">${ICO.globe} ${t('Traduzir')}</button>`+
-      `<button class="lens-chip trad-gear" onclick="showTraduzirMenu('${escJs(id)}','manual')" title="${t('Escolher idiomas manualmente')}">${ICO.gear}</button>`+
-      `<button class="lens-chip-x" onclick="closeLensPanel('${escJs(id)}')" title="${t('Fechar')}">✕</button></div>`+aviso;
-  }else{
-    p.innerHTML=`<div class="lens-chips"><span class="lens-chips-lbl">${ICO.gear} ${t('Traduzir')}</span>`+
-      `<button class="lens-chip-x" onclick="showTraduzirMenu('${escJs(id)}','auto')" title="${t('Voltar')}">✕</button></div>`+
-      _traduzirManuaisOpts(id,selDe,selPara);
-  }
-  p.classList.add('on');
+  // setTimeout: o innerHTML substitui o botão clicado, removendo-o do DOM.
+  // Se o evento de clique borbulhar até document, _lensPanelAway não encontra
+  // o target (closest retorna null) e fecha o painel. Adiamos a montagem para
+  // depois que o evento atual terminar de propagar.
+  const html=!manual
+    ?(`<div class="lens-chips"><button class="lens-chip trad-auto" onclick="runTraduzirAuto('${escJs(id)}')">${ICO.globe} ${t('Traduzir')}</button>`+
+       `<button class="lens-chip trad-gear" onclick="showTraduzirMenu('${escJs(id)}','manual')" title="${t('Escolher idiomas manualmente')}">${ICO.gear}</button>`+
+       `<button class="lens-chip-x" onclick="closeLensPanel('${escJs(id)}')" title="${t('Fechar')}">✕</button></div>`+
+       (window._traduzirAvisoIgual?`<div class="trad-manual-hint trad-warn">${t('Texto já no idioma de destino')} — use a engrenagem para forçar outro idioma.</div>`:`<div class="trad-manual-hint">${t('No automático eu detecto o idioma e trago para o idioma do app.')}</div>`))
+    :(`<div class="lens-chips"><span class="lens-chips-lbl">${ICO.gear} ${t('Traduzir')}</span>`+
+       `<button class="lens-chip-x" onclick="showTraduzirMenu('${escJs(id)}','auto')" title="${t('Voltar')}">✕</button></div>`+
+       _traduzirManuaisOpts(id,selDe,selPara));
+  setTimeout(()=>{if(p.isConnected){p.innerHTML=html;p.classList.add('on');}},0);
 }
 async function runTraduzirAuto(id){
   _traduzirDe='auto'; _traduzirPara=null;
@@ -10867,17 +10869,15 @@ function showTraduzirAdv(id, mode){
   const panel=document.getElementById('adv-lens-'+id);if(!panel)return;
   const selDe = cfg.traduzirUltimoDe || 'auto';
   const selPara = cfg.traduzirUltimoPara || (currentLang==='en'?'en':'pt');
-  if(!manual){
-    const aviso = window._traduzirAvisoIgual ? `<div class="trad-manual-hint trad-warn">${t('Texto já no idioma de destino')} — use a engrenagem para forçar outro idioma.</div>` : `<div class="trad-manual-hint">${t('No automático eu detecto o idioma e trago para o idioma do app.')}</div>`;
-    panel.innerHTML=`<div class="lens-chips"><button class="lens-chip trad-auto" onclick="runTraduzirAdvAuto('${escJs(id)}')">${ICO.globe} ${t('Traduzir')}</button>`+
-      `<button class="lens-chip trad-gear" onclick="showTraduzirAdv('${escJs(id)}','manual')" title="${t('Escolher idiomas manualmente')}">${ICO.gear}</button>`+
-      `<button class="lens-chip-x" onclick="toggleAdvLensMenu('${escJs(id)}')" title="${t('Fechar')}">✕</button></div>`+aviso;
-  }else{
-    panel.innerHTML=`<div class="lens-chips"><span class="lens-chips-lbl">${ICO.gear} ${t('Traduzir')}</span>`+
-      `<button class="lens-chip-x" onclick="showTraduzirAdv('${escJs(id)}','auto')" title="${t('Voltar')}">✕</button></div>`+
-      _traduzirManuaisOpts(id,selDe,selPara).replace(/runTraduzirManual/g,'runTraduzirAdvManual').replace(/tradSwap/g,'tradSwapA').replace(/tradDe-/g,'tradDeA-').replace(/tradPara-/g,'tradParaA-');
-  }
-  panel.classList.add('on');
+  const html=!manual
+    ?(`<div class="lens-chips"><button class="lens-chip trad-auto" onclick="runTraduzirAdvAuto('${escJs(id)}')">${ICO.globe} ${t('Traduzir')}</button>`+
+       `<button class="lens-chip trad-gear" onclick="showTraduzirAdv('${escJs(id)}','manual')" title="${t('Escolher idiomas manualmente')}">${ICO.gear}</button>`+
+       `<button class="lens-chip-x" onclick="toggleAdvLensMenu('${escJs(id)}')" title="${t('Fechar')}">✕</button></div>`+
+       (window._traduzirAvisoIgual?`<div class="trad-manual-hint trad-warn">${t('Texto já no idioma de destino')} — use a engrenagem para forçar outro idioma.</div>`:`<div class="trad-manual-hint">${t('No automático eu detecto o idioma e trago para o idioma do app.')}</div>`))
+    :(`<div class="lens-chips"><span class="lens-chips-lbl">${ICO.gear} ${t('Traduzir')}</span>`+
+       `<button class="lens-chip-x" onclick="showTraduzirAdv('${escJs(id)}','auto')" title="${t('Voltar')}">✕</button></div>`+
+       _traduzirManuaisOpts(id,selDe,selPara).replace(/runTraduzirManual/g,'runTraduzirAdvManual').replace(/tradSwap/g,'tradSwapA').replace(/tradDe-/g,'tradDeA-').replace(/tradPara-/g,'tradParaA-'));
+  setTimeout(()=>{if(panel.isConnected){panel.innerHTML=html;panel.classList.add('on');}},0);
 }
 async function runTraduzirAdvAuto(id){
   _traduzirDe='auto'; _traduzirPara=null;
