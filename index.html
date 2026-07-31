@@ -1041,6 +1041,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .trad-auto{border-color:var(--accent);color:var(--accent)}
 .trad-gear{border-color:var(--border2);color:var(--text2)}
 .trad-manual-hint{font-size:11px;color:var(--text3);padding:6px 4px 2px;line-height:1.4}
+.trad-warn{color:#b45309;background:rgba(180,83,9,0.10);border-radius:8px;padding:7px 9px;margin-top:2px}
 .trad-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 2px 2px}
 .trad-lbl{font-size:11px;font-weight:700;color:var(--text3)}
 .trad-sel{background:var(--bg-card);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:5px 7px;font-family:var(--font);font-size:12px;max-width:130px}
@@ -2746,7 +2747,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.31.2';
+const VOX_VERSION='2026.07.31.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -10429,10 +10430,10 @@ function showTraduzirMenu(id, mode){
   const selDe = cfg.traduzirUltimoDe || 'auto';
   const selPara = cfg.traduzirUltimoPara || (currentLang==='en'?'en':'pt');
   if(!manual){
+    const aviso = window._traduzirAvisoIgual ? `<div class="trad-manual-hint trad-warn">${t('Texto já no idioma de destino')} — use a engrenagem para forçar outro idioma.</div>` : `<div class="trad-manual-hint">${t('No automático eu detecto o idioma e trago para o idioma do app.')}</div>`;
     p.innerHTML=`<div class="lens-chips"><button class="lens-chip trad-auto" onclick="runTraduzirAuto('${escJs(id)}')">${ICO.globe} ${t('Traduzir')}</button>`+
       `<button class="lens-chip trad-gear" onclick="showTraduzirMenu('${escJs(id)}','manual')" title="${t('Escolher idiomas manualmente')}">${ICO.gear}</button>`+
-      `<button class="lens-chip-x" onclick="closeLensPanel('${escJs(id)}')" title="${t('Fechar')}">✕</button></div>`+
-      (manual?'':`<div class="trad-manual-hint">${t('No automático eu detecto o idioma e trago para o idioma do app.')}</div>`);
+      `<button class="lens-chip-x" onclick="closeLensPanel('${escJs(id)}')" title="${t('Fechar')}">✕</button></div>`+aviso;
   }else{
     p.innerHTML=`<div class="lens-chips"><span class="lens-chips-lbl">${ICO.gear} ${t('Traduzir')}</span>`+
       `<button class="lens-chip-x" onclick="showTraduzirMenu('${escJs(id)}','auto')" title="${t('Voltar')}">✕</button></div>`+
@@ -10461,15 +10462,15 @@ async function runLens(id,lensKey,focus=''){
   if(lensKey==='traduzir'){
     const card=document.getElementById(id);
     _traduzirTexto=(card&&card.querySelector('textarea')?.value||'');
-    // Sanity: detectar origem===destino antes de chamar LLM (economiza token)
+    // Aviso de sanidade (origem===destino): mostra DENTRO do menu, nunca esconde a
+    // opção manual. O usuário sempre pode forçar a tradução pela engrenagem.
     if(_traduzirDe==='auto'&&!_traduzirPara){_traduzirPara=(currentLang==='en'?'en':'pt');}
+    let avisoIgual=false;
     if(_traduzirPara){
       let det='und'; try{det=window.eldDetect&&window.eldDetect(_traduzirTexto||'');}catch(e){det='und';}
-      if(det!=='und'&&det===_traduzirPara){
-        const p=document.getElementById('lens-'+id); if(p){p.classList.remove('on');p.innerHTML='';}
-        toast(t('Texto já no idioma de destino')); return;
-      }
+      if(det!=='und'&&det===_traduzirPara){avisoIgual=true;}
     }
+    window._traduzirAvisoIgual=avisoIgual;
     showTraduzirMenu(id,'auto');return;
   }
   const card=document.getElementById(id);if(!card)return;
@@ -10850,10 +10851,12 @@ function advRunLensAndClose(id,key){
     const card=document.getElementById(id);
     _traduzirTexto=(card&&card.querySelector('textarea')?.value||'');
     if(_traduzirDe==='auto'&&!_traduzirPara){_traduzirPara=(currentLang==='en'?'en':'pt');}
+    let avisoIgual=false;
     if(_traduzirPara){
       let det='und'; try{det=window.eldDetect&&window.eldDetect(_traduzirTexto||'');}catch(e){det='und';}
-      if(det!=='und'&&det===_traduzirPara){if(panel){panel.classList.remove('on');panel.innerHTML='';} toast(t('Texto já no idioma de destino')); return;}
+      if(det!=='und'&&det===_traduzirPara){avisoIgual=true;}
     }
+    window._traduzirAvisoIgual=avisoIgual;
     showTraduzirAdv(id,'auto');return;
   }
   if(panel){panel.classList.remove('on');panel.innerHTML=''}
@@ -10865,10 +10868,10 @@ function showTraduzirAdv(id, mode){
   const selDe = cfg.traduzirUltimoDe || 'auto';
   const selPara = cfg.traduzirUltimoPara || (currentLang==='en'?'en':'pt');
   if(!manual){
+    const aviso = window._traduzirAvisoIgual ? `<div class="trad-manual-hint trad-warn">${t('Texto já no idioma de destino')} — use a engrenagem para forçar outro idioma.</div>` : `<div class="trad-manual-hint">${t('No automático eu detecto o idioma e trago para o idioma do app.')}</div>`;
     panel.innerHTML=`<div class="lens-chips"><button class="lens-chip trad-auto" onclick="runTraduzirAdvAuto('${escJs(id)}')">${ICO.globe} ${t('Traduzir')}</button>`+
       `<button class="lens-chip trad-gear" onclick="showTraduzirAdv('${escJs(id)}','manual')" title="${t('Escolher idiomas manualmente')}">${ICO.gear}</button>`+
-      `<button class="lens-chip-x" onclick="toggleAdvLensMenu('${escJs(id)}')" title="${t('Fechar')}">✕</button></div>`+
-      `<div class="trad-manual-hint">${t('No automático eu detecto o idioma e trago para o idioma do app.')}</div>`;
+      `<button class="lens-chip-x" onclick="toggleAdvLensMenu('${escJs(id)}')" title="${t('Fechar')}">✕</button></div>`+aviso;
   }else{
     panel.innerHTML=`<div class="lens-chips"><span class="lens-chips-lbl">${ICO.gear} ${t('Traduzir')}</span>`+
       `<button class="lens-chip-x" onclick="showTraduzirAdv('${escJs(id)}','auto')" title="${t('Voltar')}">✕</button></div>`+
