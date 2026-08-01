@@ -2747,7 +2747,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.31.4';
+const VOX_VERSION='2026.07.31.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -9900,7 +9900,7 @@ const LENSES={
         origemNome=_langNative(de);
       }
       const destinoNome=_langNative(para);
-      return `Traduza o texto abaixo de ${origemNome} para ${destinoNome}. NÃO explique. NÃO comente. Responda APENAS com a tradução.\n\n${_traduzirTexto||''}`;
+      return `Traduza o texto abaixo de ${origemNome} para ${destinoNome}. NÃO explique. NÃO comente. Responda APENAS com a tradução.`;
     }},
   plano:{cat:'estrutura',get label(){return t('Plano de ação')},icon:ICO.checkSquare,inplace:false,tag:'plano-de-acao',temp:0.4,get desc(){return t('O despejo de ideias vira plano sequenciado, com o passo de amanhã')},
     sys:'Você é gerente de projetos veterano: transforma intenção falada em plano executável. Sua regra de ouro: plano bom cabe na cabeça — poucos passos, ordem clara, dependências explícitas. Você nunca inventa prazo, custo ou recurso que a pessoa não citou; onde falta informação, o plano DIZ o que falta.',
@@ -10443,9 +10443,33 @@ function showTraduzirMenu(id, mode){
        _traduzirManuaisOpts(id,selDe,selPara));
   setTimeout(()=>{if(p.isConnected){p.innerHTML=html;p.classList.add('on');}},0);
 }
+async function _execTraduzir(id){
+  const card=document.getElementById(id);if(!card)return;
+  const text=(card.querySelector('textarea')?.value||'').trim();
+  if(!text){toast(t('ℹ️ Card vazio — nada para transformar'),true);return}
+  const key=aiKey();
+  if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
+  const L=LENSES.traduzir;if(!L)return;
+  const p=document.getElementById('lens-'+id);if(p){p.classList.remove('on');p.innerHTML=''}
+  _traduzirTexto=text;
+  if(_traduzirDe==='auto'&&!_traduzirPara){_traduzirPara=(currentLang==='en'?'en':'pt');}
+  // Sanity: evita gastar token com origem===destino
+  if(_traduzirDe==='auto'){
+    let det='und'; try{det=window.eldDetect&&window.eldDetect(text||'');}catch(e){det='und';}
+    if(det!=='und'&&det===_traduzirPara){toast(t('Texto já no idioma de destino')); return;}
+  }
+  toast('✨ '+L.label+'…');
+  try{
+    const result=await generateLens(L,text,key);
+    if(text.toLowerCase()===(result||'').toLowerCase().trim()){toast(t('Texto já no idioma de destino'));}
+    const mode=card.dataset.mode||'livre';
+    setLastAICard(addCard(result,null,0,'texto',cfg.provider,true,null,null,[L.tag,mode],L.label+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false));
+    toast('✅ '+L.label+' '+t('gerado! Ctrl+Z desfaz.'));
+  }catch(e){toast('❌ '+e.message,true)}
+}
 async function runTraduzirAuto(id){
   _traduzirDe='auto'; _traduzirPara=null;
-  try{await runLens(id,'traduzir')}finally{_traduzirDe='auto';_traduzirPara=null}
+  try{await _execTraduzir(id)}finally{_traduzirDe='auto';_traduzirPara=null}
 }
 async function runTraduzirManual(id){
   const de=document.getElementById('tradDe-'+id)?.value||'auto';
@@ -10453,7 +10477,7 @@ async function runTraduzirManual(id){
   cfg.traduzirUltimoDe=de; cfg.traduzirUltimoPara=para;
   try{localStorage.setItem('vox_cfg',JSON.stringify(cfg));}catch(e){}
   _traduzirDe=de; _traduzirPara=para;
-  try{await runLens(id,'traduzir')}finally{_traduzirDe='auto';_traduzirPara=null}
+  try{await _execTraduzir(id)}finally{_traduzirDe='auto';_traduzirPara=null}
 }
 function tradSwap(id){
   const de=document.getElementById('tradDe-'+id); const para=document.getElementById('tradPara-'+id);
@@ -10882,6 +10906,7 @@ function showTraduzirAdv(id, mode){
 async function runTraduzirAdvAuto(id){
   _traduzirDe='auto'; _traduzirPara=null;
   const panel=document.getElementById('adv-lens-'+id);if(panel){panel.classList.remove('on');panel.innerHTML=''}
+  const card=document.getElementById(id);_traduzirTexto=(card&&card.querySelector('textarea')?.value||'');
   try{await advRunLens(id,'traduzir')}finally{_traduzirDe='auto';_traduzirPara=null}
 }
 async function runTraduzirAdvManual(id){
@@ -10891,6 +10916,7 @@ async function runTraduzirAdvManual(id){
   try{localStorage.setItem('vox_cfg',JSON.stringify(cfg));}catch(e){}
   _traduzirDe=de; _traduzirPara=para;
   const panel=document.getElementById('adv-lens-'+id);if(panel){panel.classList.remove('on');panel.innerHTML=''}
+  const card=document.getElementById(id);_traduzirTexto=(card&&card.querySelector('textarea')?.value||'');
   try{await advRunLens(id,'traduzir')}finally{_traduzirDe='auto';_traduzirPara=null}
 }
 function tradSwapA(id){
