@@ -39,3 +39,18 @@ de outro. Elas NÃO são opcionais.
 - Dados de usuário no DOM: sempre `escHtml()` / `escJs()` / `safeColor()`.
 - Não adicione scripts de CDN (a CSP bloqueia; bibliotecas são vendorizadas).
 - Bump de `VOX_VERSION` (formato `ano.mês.dia.sequência`) em mudança visível.
+
+## 6. Testar o app navegando de verdade (não só ler código)
+
+- Use o simulador **`playwright-cli`** (instalado via `npm install -g @playwright/cli`,
+  pelo agente Kimi). Ele controla um **Chromium real** — melhor que o emulador do
+  Cloud Desktop. Comandos: `open <url>`, `goto`, `click <target>`, `fill <target> <txt>`,
+  `snapshot`, `eval <func>`. Sempre confirme o **comportamento observado** (ex.: o texto
+  final está num idioma diferente do original), não apenas "a função foi chamada".
+- `file://` é **bloqueado** pelo Chromium. Para testar `index.html`, suba um servidor HTTP
+  **totalmente destacado** (nunca em foreground no terminal, senão trava):
+  `Start-Process -WindowStyle Hidden py -ArgumentList "-m","http.server",<PORT> -RedirectStandardOutput log.txt`
+  e depois `playwright-cli goto http://localhost:<PORT>/index.html`.
+- NUNCA use `Start-Process -NoNewWindow` com `http.server` — o servidor segura o terminal
+  e a sessão "congela" (não é loop, é o processo filho esperando).
+- Ao terminar o teste, mate o servidor: `Stop-Process -Name python* -Force`.
