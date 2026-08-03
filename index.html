@@ -2747,7 +2747,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.07.31.5';
+const VOX_VERSION='2026.08.02.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -10450,14 +10450,16 @@ async function _execTraduzir(id){
   const key=aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
   const L=LENSES.traduzir;if(!L)return;
-  const p=document.getElementById('lens-'+id);if(p){p.classList.remove('on');p.innerHTML=''}
   _traduzirTexto=text;
   if(_traduzirDe==='auto'&&!_traduzirPara){_traduzirPara=(currentLang==='en'?'en':'pt');}
-  // Sanity: evita gastar token com origem===destino
+  // Sanity: evita gastar token com origem===destino. Checa ANTES de fechar o
+  // painel — senão o menu some sem explicação visível (só um toast passageiro),
+  // e parece um clique quebrado em vez de um aviso.
   if(_traduzirDe==='auto'){
     let det='und'; try{det=window.eldDetect&&window.eldDetect(text||'');}catch(e){det='und';}
     if(det!=='und'&&det===_traduzirPara){toast(t('Texto já no idioma de destino')); return;}
   }
+  const p=document.getElementById('lens-'+id);if(p){p.classList.remove('on');p.innerHTML=''}
   toast('✨ '+L.label+'…');
   try{
     const result=await generateLens(L,text,key);
