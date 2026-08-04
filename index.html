@@ -1084,11 +1084,15 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .tx-lock-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
 .tx-pass-wrap{position:relative;margin-top:8px}
 .key-eye-wrap{position:relative;border-radius:11px;transition:box-shadow .3s ease}
-/* Destaque de "cole aqui" ao escolher um provedor de diarização (setDiarProvider,
-   activate=true) — pulso 1x (nunca loop) + anel que persiste até a pessoa focar
-   o campo ou 4s passarem, aí desvanece pela transition acima. */
-.key-eye-wrap.key-highlight{box-shadow:0 0 0 3px var(--diar);animation:keyHighlightPulse 1s ease}
-@keyframes keyHighlightPulse{0%{box-shadow:0 0 0 0 var(--diar-glow)}50%{box-shadow:0 0 0 8px var(--diar-glow)}100%{box-shadow:0 0 0 3px var(--diar)}}
+/* Destaque de "cole aqui" ao escolher um provedor (setDiarProvider/setProvider/
+   applyTxtAIPreset, activate=true) — pulso 1x (nunca loop) + anel que persiste até
+   a pessoa focar o campo ou 4s passarem, aí desvanece pela transition acima.
+   Cor padrão é o accent geral do app; a aba Diarização tem identidade roxa fixa
+   (ver comentário perto de --diar), então ganha sua própria cor mais abaixo. */
+.key-eye-wrap.key-highlight{box-shadow:0 0 0 3px var(--accent);animation:keyHighlightPulse 1s ease}
+@keyframes keyHighlightPulse{0%{box-shadow:0 0 0 0 var(--accent-glow)}50%{box-shadow:0 0 0 8px var(--accent-glow)}100%{box-shadow:0 0 0 3px var(--accent)}}
+#cfgPaneDiar .key-eye-wrap.key-highlight{box-shadow:0 0 0 3px var(--diar);animation:keyHighlightPulseDiar 1s ease}
+@keyframes keyHighlightPulseDiar{0%{box-shadow:0 0 0 0 var(--diar-glow)}50%{box-shadow:0 0 0 8px var(--diar-glow)}100%{box-shadow:0 0 0 3px var(--diar)}}
 .tx-pass-input{width:100%;box-sizing:border-box;background:var(--bg-input);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:10px 40px 10px 12px;font-family:var(--font);font-size:13px}
 .tx-pass-wrap .tx-pass-input{margin-top:0}
 .tx-eye-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text4);cursor:pointer;padding:6px;display:flex;align-items:center;border-radius:8px}
@@ -1202,6 +1206,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .diar-guide ol li{margin-bottom:4px}
 .diar-guide a{color:var(--diar);text-decoration:none}
 .diar-guide a:hover{text-decoration:underline}
+/* Mesmo padrão do .diar-guide (passo a passo "como pegar a chave"), só que na
+   cor accent geral — usado nas abas Transcrição e IA de texto, que não têm a
+   identidade roxa fixa da Diarização. */
+.key-guide{background:var(--bg-input);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--text3);line-height:1.7;margin-top:8px}
+.key-guide ol{padding-left:16px;margin-top:6px}
+.key-guide ol li{margin-bottom:4px}
+.key-guide a{color:var(--accent);text-decoration:none}
+.key-guide a:hover{text-decoration:underline}
 .frow{margin-bottom:12px}
 .frow label{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
 .frow label .alink{font-size:10px;font-weight:600;text-decoration:none;color:var(--text3);background:var(--bg-input);padding:3px 8px;border-radius:6px;text-transform:none;letter-spacing:0;transition:all var(--transition)}
@@ -1989,9 +2001,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
            sem uma linha explicando quem era quem. -->
       <div id="cardsTranscricao"></div>
       <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr 1fr">
-        <button class="api-tog-btn on" id="togW" onclick="setProvider('whisper')">🤖 Whisper</button>
-        <button class="api-tog-btn" id="togG" onclick="setProvider('grok')">🟠 Grok STT</button>
-        <button class="api-tog-btn" id="togGQ" onclick="setProvider('groqwhisper')">🟢 Groq <span class="free-badge" style="font-size:9px">FREE</span></button>
+        <button class="api-tog-btn on" id="togW" onclick="setProvider('whisper',true,true)">🤖 Whisper</button>
+        <button class="api-tog-btn" id="togG" onclick="setProvider('grok',true,true)">🟠 Grok STT</button>
+        <button class="api-tog-btn" id="togGQ" onclick="setProvider('groqwhisper',true,true)">🟢 Groq <span class="free-badge" style="font-size:9px">FREE</span></button>
         <button class="api-tog-btn" id="togL" onclick="setProvider('local')">🖥️ <span data-i18n>Local</span> <span class="free-badge" style="font-size:9px" data-i18n>GRÁTIS</span></button>
       </div>
       <!-- PAINEL LOCAL (visível só quando local está ativo) -->
@@ -2065,15 +2077,47 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       <div class="frow key-row" id="keyRowWhisper" style="margin-top:12px">
         <label><span id="keyLabel">OpenAI API Key</span><div style="display:flex;gap:5px"><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="alink" data-i18n>🔑 Chaves</a><a href="https://platform.openai.com/usage" target="_blank" rel="noopener noreferrer" class="alink" data-i18n>📊 Uso</a></div></label>
         <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKey" placeholder="sk-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKey',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+        <div class="key-guide" data-i18n-html>
+          <strong>Em poucos minutos:</strong>
+          <ol>
+            <li>Crie sua conta (ou entre, se já tem) em <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer">platform.openai.com</a>.</li>
+            <li>Abra "API keys" e gere uma chave nova.</li>
+            <li>Cole aqui em cima — pronto.</li>
+          </ol>
+          <br>
+          💰 <strong>Custo:</strong> cerca de US$ 0,36 por hora de áudio — sem nível grátis.<br>
+          🎯 Essa mesma chave serve nas três abas do Vox: transcreve, separa vozes e pensa sobre o texto.
+        </div>
       </div>
       <div class="frow key-row" id="keyRowGrok">
         <label><span>Grok STT Key (xAI)</span><a href="https://console.x.ai" target="_blank" rel="noopener noreferrer" class="alink">xAI Console</a></label>
         <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyGrok" placeholder="xai-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="if(this.value.trim())setProvider('grok',false);saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyGrok',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+        <div class="key-guide" data-i18n-html>
+          <strong>Em poucos minutos:</strong>
+          <ol>
+            <li>Crie sua conta em <a href="https://console.x.ai" target="_blank" rel="noopener noreferrer">console.x.ai</a>.</li>
+            <li>Gere uma chave de API no console.</li>
+            <li>Cole aqui em cima — pronto.</li>
+          </ol>
+          <br>
+          💰 <strong>Custo:</strong> cerca de US$ 0,10 por hora de áudio. O crédito gratuito generoso vem do programa de compartilhamento de dados da xAI — vale saber antes de mandar material sensível.<br>
+          🎯 Essa mesma chave serve pro cérebro de IA de texto (aba "IA de texto").
+        </div>
       </div>
       <div class="frow key-row" id="keyRowGroq">
         <label><span>Groq Key <span class="free-badge" data-i18n>tier grátis</span></span><a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" class="alink">groq.com</a></label>
         <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyGroq" placeholder="gsk_…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="if(this.value.trim())setProvider('groqwhisper',false);saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyGroq',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
-        <p class="fhint" data-i18n>🟢 Whisper Large v3 Turbo · $0.04/hr · 2.000 req/dia grátis · chave sem expiração = "No expiry"</p>
+        <div class="key-guide" data-i18n-html>
+          <strong>Em poucos minutos:</strong>
+          <ol>
+            <li>Crie sua conta gratuita em <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com</a> — não pede cartão.</li>
+            <li>Gere uma chave de API no console.</li>
+            <li>Cole aqui em cima — pronto.</li>
+          </ol>
+          <br>
+          💰 <strong>Custo:</strong> Whisper Large v3 Turbo, US$ 0,04/hr, 2.000 transcrições grátis por dia — chave sem prazo pra expirar ("No expiry").<br>
+          🎯 Essa mesma chave serve pro cérebro de IA de texto (aba "IA de texto").
+        </div>
       </div>
       <div class="frow">
         <label><span data-i18n>Idioma padrão</span></label>
@@ -2140,8 +2184,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <div class="frow">
           <label><span data-i18n>Chave (se a API exigir)</span></label>
           <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="txtKey" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('txtKey',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+          <!-- Preenchido dinamicamente por applyTxtAIPreset — mesmo padrão "em
+               poucos minutos" da Diarização, mas trocando de provedor conforme
+               o cartão que a pessoa clicou lá embaixo. -->
+          <div class="key-guide" id="txtKeyHint" style="display:none"></div>
         </div>
-        <details class="cfg-avancado">
+        <details class="cfg-avancado" id="txtAdvDetails">
           <summary data-i18n>⚙️ Avançado — endereço e modelo</summary>
           <div class="frow" style="margin-top:10px">
             <label><span data-i18n>Endereço da API (compatível com OpenAI)</span></label>
@@ -2747,7 +2795,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.03.2';
+const VOX_VERSION='2026.08.03.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3045,6 +3093,13 @@ let I18N_EN={
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 de crédito</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free credit</small>",
 "<strong>Em poucos minutos:</strong> <ol> <li>Crie sua conta gratuita em <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a>.</li> <li>Copie sua chave de API no painel.</li> <li>Cole aqui em cima — pronto.</li> </ol> <br> 💰 Você ganha <strong>10 horas grátis todo mês</strong>, renovadas automaticamente. Depois disso, o custo fica em torno de <strong>US$ 0,61 por hora</strong>.<br> 🎯 <strong>Ideal para:</strong> quem usa com frequência e prefere não se preocupar com créditos acabando.":"<strong>In a few minutes:</strong> <ol> <li>Create your free account at <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a>.</li> <li>Copy your API key from the dashboard.</li> <li>Paste it above — done.</li> </ol> <br> 💰 You get <strong>10 free hours every month</strong>, renewed automatically. After that, the cost is around <strong>US$0.61 per hour</strong>.<br> 🎯 <strong>Great for:</strong> frequent users who prefer not to worry about credits running out.",
+// Guias "em poucos minutos" — abas Transcrição e IA de texto (mesmo padrão da Diarização)
+"<strong>Em poucos minutos:</strong> <ol> <li>Crie sua conta (ou entre, se já tem) em <a href=\"https://platform.openai.com\" target=\"_blank\" rel=\"noopener noreferrer\">platform.openai.com</a>.</li> <li>Abra \"API keys\" e gere uma chave nova.</li> <li>Cole aqui em cima — pronto.</li> </ol> <br> 💰 <strong>Custo:</strong> cerca de US$ 0,36 por hora de áudio — sem nível grátis.<br> 🎯 Essa mesma chave serve nas três abas do Vox: transcreve, separa vozes e pensa sobre o texto.":"<strong>In a few minutes:</strong> <ol> <li>Create your account (or sign in, if you already have one) at <a href=\"https://platform.openai.com\" target=\"_blank\" rel=\"noopener noreferrer\">platform.openai.com</a>.</li> <li>Open \"API keys\" and generate a new key.</li> <li>Paste it above — done.</li> </ol> <br> 💰 <strong>Cost:</strong> about US$0.36 per hour of audio — no free tier.<br> 🎯 This same key works across all three Vox tabs: transcription, speaker separation, and text AI.",
+"<strong>Em poucos minutos:</strong> <ol> <li>Crie sua conta em <a href=\"https://console.x.ai\" target=\"_blank\" rel=\"noopener noreferrer\">console.x.ai</a>.</li> <li>Gere uma chave de API no console.</li> <li>Cole aqui em cima — pronto.</li> </ol> <br> 💰 <strong>Custo:</strong> cerca de US$ 0,10 por hora de áudio. O crédito gratuito generoso vem do programa de compartilhamento de dados da xAI — vale saber antes de mandar material sensível.<br> 🎯 Essa mesma chave serve pro cérebro de IA de texto (aba \"IA de texto\").":"<strong>In a few minutes:</strong> <ol> <li>Create your account at <a href=\"https://console.x.ai\" target=\"_blank\" rel=\"noopener noreferrer\">console.x.ai</a>.</li> <li>Generate an API key in the console.</li> <li>Paste it above — done.</li> </ol> <br> 💰 <strong>Cost:</strong> about US$0.10 per hour of audio. The generous free credit comes from xAI's data-sharing program — worth knowing before sending sensitive material.<br> 🎯 This same key also works for the text AI brain (the \"Text AI\" tab).",
+"<strong>Em poucos minutos:</strong> <ol> <li>Crie sua conta gratuita em <a href=\"https://console.groq.com/keys\" target=\"_blank\" rel=\"noopener noreferrer\">console.groq.com</a> — não pede cartão.</li> <li>Gere uma chave de API no console.</li> <li>Cole aqui em cima — pronto.</li> </ol> <br> 💰 <strong>Custo:</strong> Whisper Large v3 Turbo, US$ 0,04/hr, 2.000 transcrições grátis por dia — chave sem prazo pra expirar (\"No expiry\").<br> 🎯 Essa mesma chave serve pro cérebro de IA de texto (aba \"IA de texto\").":"<strong>In a few minutes:</strong> <ol> <li>Create your free account at <a href=\"https://console.groq.com/keys\" target=\"_blank\" rel=\"noopener noreferrer\">console.groq.com</a> — no card required.</li> <li>Generate an API key in the console.</li> <li>Paste it above — done.</li> </ol> <br> 💰 <strong>Cost:</strong> Whisper Large v3 Turbo, US$0.04/hr, 2,000 free transcriptions per day — key never expires (\"No expiry\").<br> 🎯 This same key also works for the text AI brain (the \"Text AI\" tab).",
+"Em poucos minutos:":"In a few minutes:",
+"Crie sua conta em":"Create your account at",
+"Gere uma chave de API.":"Generate an API key.",
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
@@ -3293,7 +3348,10 @@ let I18N_EN={
 "Só vale com máquina forte · pesa 3× mais":"Only worth it on a strong machine · 3× heavier",
 "Ligue o transcritor":"Start the transcriber",
 "O Vox não encontrou o transcritor. Ele roda numa janela própria, que precisa estar aberta.":"Vox couldn't find the transcriber. It runs in its own window, which needs to be open.",
-"Abra o arquivo <strong>iniciar_whisper.bat</strong>":"Open the file <strong>iniciar_whisper.bat</strong>",
+"Abra o arquivo <strong>iniciar_whisper.bat</strong> — normalmente na pasta onde você baixou/extraiu o transcritor local (algo como <strong>whisper-local</strong> ou <strong>transcritor-local</strong>)":"Open the file <strong>iniciar_whisper.bat</strong> — usually in the folder where you downloaded/extracted the local transcriber (something like <strong>whisper-local</strong> or <strong>transcritor-local</strong>)",
+"Achou o arquivo? Cole o caminho aqui pra nunca mais precisar procurar:":"Found the file? Paste the path here so you never have to search again:",
+"Salvar caminho":"Save path",
+"📋 Caminho salvo! Da próxima vez é só copiar e colar.":"📋 Path saved! Next time just copy and paste.",
 "Aperte Enter para usar o modelo Rápido":"Press Enter to use the Fast model",
 "Espere aparecer <strong>\"Modelo carregado! Servidor pronto.\"</strong>":"Wait for <strong>\"Modelo carregado! Servidor pronto.\"</strong> to appear",
 "📋 Copiar caminho do arquivo":"📋 Copy the file path",
@@ -3602,10 +3660,15 @@ function showOfflineInstructions(model){
   const corpo=instalado?`
       <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">${t('Ligue o transcritor')}</h2>
       <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:16px">${t('O Vox não encontrou o transcritor. Ele roda numa janela própria, que precisa estar aberta.')}</p>
-      <div style="${passo}"><span style="${num}">1</span><span>${t('Abra o arquivo <strong>iniciar_whisper.bat</strong>')}</span></div>
+      <div style="${passo}"><span style="${num}">1</span><span>${t('Abra o arquivo <strong>iniciar_whisper.bat</strong> — normalmente na pasta onde você baixou/extraiu o transcritor local (algo como <strong>whisper-local</strong> ou <strong>transcritor-local</strong>)')}</span></div>
       <div style="${passo}"><span style="${num}">2</span><span>${t('Aperte Enter para usar o modelo Rápido')}</span></div>
       <div style="${passo}"><span style="${num}">3</span><span>${t('Espere aparecer <strong>"Modelo carregado! Servidor pronto."</strong>')}</span></div>
-      ${cfg.localBatPath?`<button onclick="copiarCaminhoServidor()" style="display:block;width:100%;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:11px 20px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;margin:14px 0 8px">${t('📋 Copiar caminho do arquivo')}</button>`:''}
+      ${cfg.localBatPath?`<button onclick="copiarCaminhoServidor()" style="display:block;width:100%;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:11px 20px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;margin:14px 0 8px">${t('📋 Copiar caminho do arquivo')}</button>`:`
+      <div style="text-align:left;margin:14px 0 4px">
+        <div style="font-size:11px;color:var(--text4);margin-bottom:5px">${t('Achou o arquivo? Cole o caminho aqui pra nunca mais precisar procurar:')}</div>
+        <input type="text" id="offlineBatPathInput" placeholder="C:\\...\\iniciar_whisper.bat" style="width:100%;box-sizing:border-box;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font)">
+        <button onclick="_salvarCaminhoDoOffline('${escJs(model)}')" style="width:100%;background:var(--bg-input);color:var(--text2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:6px">${t('Salvar caminho')}</button>
+      </div>`}
       <p style="font-size:11px;color:var(--text4);line-height:1.6;margin:14px 0 16px">${t('Assim que ele ligar, esta tela fecha sozinha.')}</p>`
   :`
       <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">${t('Instale o transcritor no seu computador')}</h2>
@@ -3634,6 +3697,20 @@ function copiarCaminhoServidor(){
   navigator.clipboard.writeText(path)
     .then(()=>toast(t('📋 Caminho copiado — cole no Iniciar do Windows e dê Enter.')))
     .catch(()=>toast(t('O caminho é:')+' '+path,true));
+}
+// Salva o caminho direto de dentro do próprio modal "Ligue o transcritor" — antes
+// só dava pra configurar em Configurações → Transcrição, longe de onde a pessoa
+// realmente precisa dele. Depois de salvo, o modal reabre já com o botão "Copiar
+// caminho do arquivo" no lugar do campo em branco.
+function _salvarCaminhoDoOffline(model){
+  const v=(document.getElementById('offlineBatPathInput')?.value||'').trim();
+  if(!v)return;
+  cfg.localBatPath=v;
+  localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+  const settingsInput=document.getElementById('localBatPathInput');
+  if(settingsInput)settingsInput.value=v;
+  toast(t('📋 Caminho salvo! Da próxima vez é só copiar e colar.'));
+  showOfflineInstructions(model);
 }
 function waitAndCloseOfflineFromModal(){
   // chamado pelo botão dentro do modal — apenas atualiza o status
@@ -5394,21 +5471,21 @@ const CEREBROS={
        desc:t('Roda na sua máquina. Sem chave, sem cadastro, sem gastar API — seu áudio não sai daí, e transcrever não custa nada além da energia elétrica.')}
     ]},
   tr_groq:{nome:'Groq',ico:'🟢',cat:'transcricao',sigilo:2,sigiloSobe:true,
-    usar:"setProvider('groqwhisper')",site:'https://console.groq.com/keys',
+    usar:"setProvider('groqwhisper',true,true)",site:'https://console.groq.com/keys',
     modelos:[
       {id:'groqwhisper',nome:'Whisper Large v3 Turbo',selo:t('⭐ Recomendado — 2.000/dia grátis'),destaque:true,preco:[0,0],porHora:0.04,
        desc:t('O melhor lugar pra começar: 2.000 transcrições por dia sem pagar nada, e é rápido. Roda o Whisper Large v3 Turbo, então a qualidade é a mesma dos pagos.'),
        curio:t('A chave é a mesma que serve pro cérebro de IA de texto. Configurou aqui, já pode usar lá.')}
     ]},
   tr_openai:{nome:'OpenAI',ico:'🎙️',cat:'transcricao',sigilo:2,
-    usar:"setProvider('whisper')",site:'https://platform.openai.com/api-keys',
+    usar:"setProvider('whisper',true,true)",site:'https://platform.openai.com/api-keys',
     modelos:[
       {id:'whisper',nome:'Whisper',selo:t('Pago'),preco:[0,0],porHora:0.36,
        desc:t('É o Whisper original, da empresa que o criou. Comportamento previsível e boa qualidade em muitos idiomas — a escolha de quem prefere ficar no ecossistema que já usa.'),
        curio:t('Essa mesma chave serve nas três abas do Vox: transcreve, separa vozes e pensa sobre o texto. É a única da lista que faz as três.')}
     ]},
   tr_xai:{nome:'xAI (Grok)',ico:'🟠',cat:'transcricao',sigilo:1,
-    usar:"setProvider('grok')",site:'https://x.ai',
+    usar:"setProvider('grok',true,true)",site:'https://x.ai',
     modelos:[
       {id:'grok',nome:'Grok STT',selo:t('Pago'),preco:[0,0],porHora:0.10,
        desc:t('Transcrição pela xAI, com a mesma chave que serve pro cérebro de IA de texto. O crédito gratuito generoso deles vem do programa de compartilhamento de dados — vale saber antes de mandar material sensível.')}
@@ -5599,12 +5676,31 @@ async function atualizarModelos(){
 // modelos no cadastro, e sem isto o botão do GLM-5.2 preenchia o GLM-4.7-Flash —
 // exatamente o erro de tratar o fornecedor como unidade que esta reforma veio
 // consertar. Sem o parâmetro, cai no modelo padrão do preset, como antes.
+function _hideTxtKeyHint(){
+  const el=document.getElementById('txtKeyHint');if(el){el.style.display='none';el.innerHTML=''}
+}
+// Mesmo padrão "em poucos minutos" da Diarização, montado a partir do cadastro
+// CEREBROS — um provedor novo não precisa de texto escrito à mão aqui.
+function _showTxtKeyHint(preset){
+  const el=document.getElementById('txtKeyHint');if(!el)return;
+  const p=CEREBROS[preset];
+  const url=p?.chaveEm||p?.site;
+  el.innerHTML=`<strong>${t('Em poucos minutos:')}</strong>
+    <ol>
+      <li>${t('Crie sua conta em')} ${url?`<a href="${escHtml(url)}" target="_blank" rel="noopener noreferrer">${escHtml(url.replace(/^https?:\/\//,''))}</a>`:escHtml(p?.nome||preset)}.</li>
+      <li>${t('Gere uma chave de API.')}</li>
+      <li>${t('Cole aqui em cima — pronto.')}</li>
+    </ol>`;
+  el.style.display='block';
+}
 function applyTxtAIPreset(preset,modeloId){
+  document.getElementById('txtAdvDetails').open=true; // mostra o endereço/modelo preenchidos, em vez de esconder atrás de um clique
   if(preset==='grok'){
     setTxtProvider('custom');
     document.getElementById('txtBaseUrl').value='https://api.x.ai/v1';
     document.getElementById('txtModel').value='grok-4.5';
     document.getElementById('txtKey').value=cfg.apiKeyGrok||'';
+    _hideTxtKeyHint();
     toast(t('🟠 Preenchido com a chave do Grok que você já tem — testando…'));
     testTxtAI();
     return;
@@ -5615,9 +5711,11 @@ function applyTxtAIPreset(preset,modeloId){
   document.getElementById('txtModel').value=modeloId||p.model;
   document.getElementById('txtKey').value='';
   if(!p.needsKey){
+    _hideTxtKeyHint();
     toast(t('🖥️ Preenchido! Testando conexão local…'));
     testTxtAI();
   }else{
+    _showTxtKeyHint(preset);
     // Antes o clique já saía pro site externo sem avisar nada. O Rafa clicou
     // achando que ia "usar o provedor" e caiu de surpresa numa página de fora
     // sem entender por quê — quem não mexe com API não espera isso.
@@ -5642,6 +5740,7 @@ function _confirmarAbrirSiteChave(nome,keyUrl){
   ov.classList.add('on');
 }
 function _abrirSiteChaveConfirmado(){
+  _highlightKeyField('txtKey');
   document.getElementById('txtKey').focus();
   toast(t('Cole sua chave nesse campo e clique em "Testar conexão"'));
   if(_pendingKeyUrl)window.open(_pendingKeyUrl,'_blank','noopener,noreferrer');
@@ -5751,7 +5850,7 @@ function loadCfg(){
   _syncFolderFmtBtns();
   updateDiarStatus();
 }
-function setProvider(p,save=true){
+function setProvider(p,save=true,activate=false){
   cfg.provider=p;
   document.getElementById('togW').className='api-tog-btn'+(p==='whisper'?' on':'');
   document.getElementById('togG').className='api-tog-btn'+(p==='grok'?' on-g':'');
@@ -5763,6 +5862,12 @@ function setProvider(p,save=true){
   document.getElementById('brandIcon').textContent=p==='grok'?'🟠':p==='groqwhisper'?'🟢':p==='local'?'🖥️':'🎙️';
   if(p==='local'){updateLocalPanel();setTimeout(()=>checkAndStartServer(closeModal),300)}
   _updateKeyRowFocus(p);updateLocal100Badge();updateDiarStatus();
+  if(activate){
+    // Mesmo destaque "cole aqui" da Diarização (_highlightKeyField) — pedido do
+    // Rafa pra ficar óbvio onde agir ao clicar "Usar" em qualquer provedor.
+    const fieldId={whisper:'apiKey',grok:'apiKeyGrok',groqwhisper:'apiKeyGroq'}[p];
+    if(fieldId)_highlightKeyField(fieldId);
+  }
   if(save)saveCfg(false);
   _refreshBrainPanelIfOpen();
 }
