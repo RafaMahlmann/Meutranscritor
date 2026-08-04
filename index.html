@@ -85,6 +85,14 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .brand-sub-row{display:flex;align-items:center;gap:6px}
 .ver-badge{font-size:9px;color:var(--text4);font-weight:600;letter-spacing:0.2px;cursor:default}
 .hd-actions{display:flex;align-items:center;gap:7px}
+/* FASE 6 (menu "Mais" do cabeçalho, só mobile — ver @media(max-width:640px)
+   mais abaixo). No desktop os dois wrappers usam display:contents: eles somem
+   da árvore de layout e os botões de dentro viram filhos diretos de
+   .hd-actions, exatamente como eram antes desta fase — zero mudança visual
+   fora do mobile. O botão ⋯ (.hd-more-btn) fica escondido no desktop. */
+.hd-more-wrap{display:contents}
+.hd-more-drop{display:contents}
+.gbtn.hd-more-btn{display:none}
 .cfg-wrap{display:inline-flex;align-items:center;position:relative;vertical-align:middle}
 #speedBadge{display:none;white-space:nowrap}
 header.has-speed-badge{padding-bottom:18px}
@@ -976,7 +984,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .exp-header{padding:10px 14px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--text3)}
 .exp-btn{width:100%;background:none;border:none;color:var(--text2);padding:9px 14px;font-size:13px;font-family:var(--font);font-weight:500;text-align:left;cursor:pointer;display:flex;align-items:center;gap:9px;transition:background var(--transition)}
 .exp-btn:hover{background:var(--bg-input)}
+/* Os ícones do cadastro ICO.* (reaproveitados na seção "Este card" do menu de
+   cima) não têm width/height inline — só viewBox — diferente dos <svg> escritos
+   à mão nos botões de baixo. Sem isto eles nasceriam no tamanho padrão do
+   navegador (bem maior que 14px) e estourariam o botão. */
+.exp-btn svg{width:14px;height:14px;flex-shrink:0}
 .exp-sep{border:none;border-top:1px solid var(--border);margin:4px 0}
+.exp-warn{padding:9px 14px;font-size:12px;color:var(--text3);line-height:1.5}
 .lens-panel{display:none;background:var(--bg-input);border-radius:12px;padding:6px;margin:0 14px 10px}
 .lens-panel.on{display:block}
 .lens-hd{font-size:10.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3);padding:6px 10px 0}
@@ -1318,6 +1332,21 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .brand-sub{display:none}
   .api-toggle{grid-template-columns:1fr 1fr}
 }
+/* FASE 6 — menu "Mais" (só mobile): Configurações iniciais/Lista/Resumo do dia
+   saem da fileira do cabeçalho e viram uma lista que abre ao tocar em ⋯,
+   deixando só Buscar e Exportar sempre visíveis — as duas ações mais usadas.
+   Mesmo padrão visual do menu Exportar (.exp-drop) que já existia. */
+@media(max-width:640px){
+  .gbtn.hd-more-btn{display:inline-flex}
+  .hd-more-wrap{display:block;position:relative}
+  .hd-more-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;min-width:200px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:6px;flex-direction:column;gap:2px;animation:fadeDown 0.15s ease}
+  .hd-more-drop.on{display:flex}
+  /* !important necessário: a regra "esconde rótulos" logo acima também mira
+     .hd-actions .gbtn span e tem mais especificidade (carrega um #id dentro
+     do :not()) — sem isto, os botões do menu abriam mudos, só com ícone. */
+  .hd-more-drop .gbtn span{display:inline!important}
+  .hd-more-drop .gbtn{width:100%;justify-content:flex-start;padding:9px 12px;border-radius:10px}
+}
 
 /* ── FASE 2 — topo fundido (só mobile): header (~74px) + .stats (~58px) iam
    juntos a ~132px de "moldura" fixa. Compactando padding/ícones/rótulos os
@@ -1617,21 +1646,35 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       </div>
     </div>
     <div class="hd-actions">
-      <button class="gbtn" id="btnSetup" onclick="_obOpen()" title="Refazer as configurações iniciais" data-i18n-title>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg>
-        <span data-i18n>Configurações iniciais</span>
-      </button>
+      <!-- FASE 6 (só mobile — ver @media(max-width:640px)): Configurações
+           iniciais/Lista/Resumo do dia saem da fileira e viram um menu "Mais"
+           (⋯), porque mesmo em ícone-só (Fase 2) a fileira inteira ainda vazava
+           da tela em telas estreitas. No desktop, display:contents nos dois
+           wrappers abaixo mantém o layout PIXEL-IDÊNTICO ao de antes — os
+           botões continuam filhos diretos de .hd-actions, só o botão ⋯ some. -->
+      <div class="hd-more-wrap" id="hdMoreWrap">
+        <button class="gbtn hd-more-btn" id="btnHdMore" onclick="toggleHdMore()" title="Mais opções" data-i18n-title>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+          <span data-i18n>Mais</span>
+        </button>
+        <div class="hd-more-drop" id="hdMoreDrop">
+          <button class="gbtn" id="btnSetup" onclick="toggleHdMore();_obOpen()" title="Refazer as configurações iniciais" data-i18n-title>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg>
+            <span data-i18n>Configurações iniciais</span>
+          </button>
+          <button class="gbtn" id="btnView" onclick="toggleHdMore();toggleView()" title="Alterna entre Lista, Masonry e Documento" data-i18n-title>
+            <span id="viewIcon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></span>
+            <span id="viewLabel" data-i18n>Lista</span>
+          </button>
+          <button class="gbtn" id="btnDaySummary" onclick="toggleHdMore();openDaySummary()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span data-i18n>Resumo do dia</span>
+          </button>
+        </div>
+      </div>
       <button class="gbtn" id="btnSearch" onclick="toggleSearch()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span data-i18n>Buscar</span>
-      </button>
-      <button class="gbtn" id="btnView" onclick="toggleView()" title="Alterna entre Lista, Masonry e Documento" data-i18n-title>
-        <span id="viewIcon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></span>
-        <span id="viewLabel" data-i18n>Lista</span>
-      </button>
-      <button class="gbtn" id="btnDaySummary" onclick="openDaySummary()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span data-i18n>Resumo do dia</span>
       </button>
       <div class="exp-wrap">
         <button class="gbtn" id="btnExport" onclick="toggleExp()">
@@ -1639,6 +1682,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <span data-i18n>Exportar</span>
         </button>
         <div class="exp-drop" id="expDrop">
+          <!-- Preenchido na hora de abrir por _renderExpCardSection() — mostra as
+               mesmas opções do botão de exportar de CADA card, aplicadas ao último
+               card que a pessoa tocou. Sem isso o "Exportar" de cima só sabia fazer
+               operações em massa (projeto/tudo/hoje), nunca uma nota só. -->
+          <div id="expCardSection"></div>
           <div class="exp-header" data-i18n>Projeto — continuar depois</div>
           <button class="exp-btn" onclick="exportProject()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -2795,7 +2843,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.03.3';
+const VOX_VERSION='2026.08.03.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3104,6 +3152,9 @@ let I18N_EN={
 "❌ Não recebemos nenhum áudio do compartilhamento.":"❌ We didn't receive any audio from the share.",
 "⚠️ Termine o que está em andamento antes de anexar o áudio compartilhado.":"⚠️ Finish what's in progress before attaching the shared audio.",
 "📎 Áudio recebido! Clique em Transcrever.":"📎 Audio received! Click Transcribe.",
+"Mais":"More",
+"Este card":"This card",
+"Toque num card primeiro pra exportar só ele.":"Tap a card first to export just it.",
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
@@ -4142,6 +4193,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(!document.getElementById('expDrop').contains(e.target)&&!document.getElementById('btnExport').contains(e.target))
       document.getElementById('expDrop').classList.remove('on');
   });
+  document.addEventListener('click',e=>{
+    if(!document.getElementById('hdMoreWrap').contains(e.target))
+      document.getElementById('hdMoreDrop').classList.remove('on');
+  });
   // FASE 1 — bottom sheet (mobile): tocar fora do .ibar com o sheet aberto fecha.
   document.addEventListener('click',e=>{
     const ibar=document.querySelector('.ibar');
@@ -5110,7 +5165,47 @@ function clearSearch(){
 }
 
 // ── EXPORT ──
-function toggleExp(){document.getElementById('expDrop').classList.toggle('on')}
+// Último card em que a pessoa tocou — não existia noção de "card selecionado"
+// fora do Modo Documento. Serve só pra saber que card a seção "Este card" do
+// Exportar de cima deve mirar; não afeta mais nada no app.
+let lastTouchedCardId=null;
+document.addEventListener('click',e=>{
+  const card=e.target.closest?.('.card');
+  if(card&&card.id)lastTouchedCardId=card.id;
+});
+// Mesmas opções do botão de exportar de CADA card (toggleExportMenu), só que
+// aplicadas ao último card tocado — usa os MESMOS rótulos (t()) e as MESMAS
+// funções, então qualquer opção nova ali aparece aqui também sem duplicar nada.
+function _renderExpCardSection(){
+  const el=document.getElementById('expCardSection');if(!el)return;
+  const id=lastTouchedCardId;
+  const card=id?document.getElementById(id):null;
+  if(!card){
+    el.innerHTML=`<div class="exp-header">${t('Este card')}</div>`+
+      `<div class="exp-warn">${t('Toque num card primeiro pra exportar só ele.')}</div>`+
+      `<hr class="exp-sep">`;
+    return;
+  }
+  const diarHead=card.dataset.diarized==='true'?
+    `<button class="exp-btn" onclick="toggleExp();openDiarExport('${id}')">${ICO.users}<span>${t('Exportar conversa (com controle)')}</span></button>`:'';
+  el.innerHTML=`<div class="exp-header">${t('Este card')}</div>`+diarHead+
+    `<button class="exp-btn" onclick="copyCard('${id}');toggleExp()">${ICO.copy}<span>${t('Copiar texto + tags')}</span></button>`+
+    `<button class="exp-btn" onclick="copyCardTextOnly('${id}');toggleExp()">${ICO.textOnly}<span>${t('Copiar só o texto')}</span></button>`+
+    `<button class="exp-btn" onclick="copyCardMarkdown('${id}');toggleExp()">${ICO.markdown}<span>${t('Copiar como Markdown')}</span></button>`+
+    `<button class="exp-btn" onclick="copyCardObsidian('${id}')">${ICO.obsidian}<span>${t('Copiar para Obsidian')}</span></button>`+
+    `<button class="exp-btn" onclick="shareCard('${id}');toggleExp()">${ICO.share}<span>${t('Compartilhar resultado')}</span></button>`+
+    `<button class="exp-btn" onclick="toggleExp();openTransferPanel('${id}')">${ICO.qr}<span>${t('Transferir (QR / link)')}</span></button>`+
+    `<button class="exp-btn" onclick="exportCard('${id}','txt');toggleExp()">${ICO.file}<span>${t('Baixar TXT')}</span></button>`+
+    `<button class="exp-btn" onclick="exportCard('${id}','md');toggleExp()">${ICO.file}<span>${t('Baixar Markdown')}</span></button>`+
+    `<button class="exp-btn" onclick="exportCard('${id}','html');toggleExp()">${ICO.file}<span>${t('Baixar HTML')}</span></button>`+
+    `<hr class="exp-sep">`;
+}
+function toggleExp(){
+  const drop=document.getElementById('expDrop');
+  if(!drop.classList.contains('on'))_renderExpCardSection();
+  drop.classList.toggle('on');
+}
+function toggleHdMore(){document.getElementById('hdMoreDrop').classList.toggle('on')}
 function exportAll(fmt,onlyToday=false){
   document.getElementById('expDrop').classList.remove('on');
   const cards=[...document.querySelectorAll('.card:not(.proc-card)')].reverse();
