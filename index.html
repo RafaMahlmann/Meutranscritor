@@ -106,6 +106,11 @@ header.has-speed-badge{padding-bottom:18px}
 .search-count{position:absolute;right:40px;font-size:11px;font-weight:600;color:rgba(99,135,215,0.7);pointer-events:none}
 .search-clear{position:absolute;right:12px;background:var(--text4);border:none;color:white;width:19px;height:19px;border-radius:50%;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all var(--transition)}
 .search-clear.vis{display:flex}
+/* Trecho com a palavra buscada em destaque, logo acima da textarea — só
+   aparece durante uma busca com posição exata (não em match por tolerância a
+   erro de digitação, onde a posição é só aproximada). */
+.search-snip{font-size:12px;color:var(--text3);background:var(--bg-input);border-radius:8px;padding:6px 10px;margin-bottom:8px;line-height:1.5}
+.search-snip mark{background:var(--accent-glow);color:var(--accent2);border-radius:3px;padding:0 2px;font-weight:700}
 .gbtn{background:var(--bg-input);border:none;color:var(--text3);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:5px;font-family:var(--font);letter-spacing:-0.1px}
 .gbtn:hover{background:var(--border2);color:var(--text)}
 .gbtn.on-accent{background:var(--accent-glow);color:var(--accent)}
@@ -2843,7 +2848,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.03.4';
+const VOX_VERSION='2026.08.03.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5124,6 +5129,73 @@ function toggleSearch(){
   if(searchActive)document.getElementById('searchInput').focus();
   else clearSearch();
 }
+// Ignora acento e caixa na comparação — "nao" acha "não" (o bug real que o
+// Rafa relatou: buscar sem til não encontrava nada). O texto do card nunca
+// muda, só a comparação interna da busca usa esta versão "achatada".
+function _normSearch(s){
+  return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+}
+// Distância de edição (Levenshtein) — só entra em jogo quando a busca exata já
+// não achou nada, pra tolerar erro de digitação sem virar "acha qualquer
+// coisa". Implementação clássica de duas linhas, sem biblioteca externa.
+function _levenshtein(a,b){
+  const al=a.length,bl=b.length;
+  if(!al)return bl;
+  if(!bl)return al;
+  let prev=Array.from({length:bl+1},(_,j)=>j);
+  for(let i=1;i<=al;i++){
+    const cur=[i];
+    for(let j=1;j<=bl;j++)cur[j]=a[i-1]===b[j-1]?prev[j-1]:1+Math.min(prev[j-1],prev[j],cur[j-1]);
+    prev=cur;
+  }
+  return prev[bl];
+}
+// Orçamento de erro cresce com o tamanho da palavra — mesmo modelo do
+// Meilisearch (referência de mercado em tolerância a erro de digitação):
+// palavra curta demais (≤3) não tolera nada, senão qualquer coisa "bate".
+function _typoBudget(len){return len<=3?0:len<=7?1:2}
+// Pontua o quanto um texto bate com a busca — usado pra ordenar os resultados
+// e pra decidir se um card com erro de digitação ainda deve aparecer.
+// 3=palavra inteira · 2=começo de palavra · 1=em qualquer lugar (substring) ·
+// 0.5=só por tolerância a erro de digitação (fuzzy) · 0=não bate.
+function _matchScore(textoNorm,qNorm){
+  if(!qNorm)return 1;
+  const idx=textoNorm.indexOf(qNorm);
+  if(idx<0){
+    const budget=_typoBudget(qNorm.length);
+    if(!budget)return 0;
+    const palavras=textoNorm.split(/[^\p{L}\p{N}]+/u);
+    for(const w of palavras){
+      if(!w||Math.abs(w.length-qNorm.length)>budget)continue;
+      if(_levenshtein(w,qNorm)<=budget)return 0.5;
+    }
+    return 0;
+  }
+  const antes=textoNorm[idx-1],depois=textoNorm[idx+qNorm.length];
+  const inicioDePalavra=!antes||!/[\p{L}\p{N}]/u.test(antes);
+  const fimDePalavra=!depois||!/[\p{L}\p{N}]/u.test(depois);
+  if(inicioDePalavra&&fimDePalavra)return 3;
+  if(inicioDePalavra)return 2;
+  return 1;
+}
+// Trecho com a palavra encontrada destacada — a textarea do card é texto puro
+// (não dá pra grifar dentro dela), então o trecho nasce como um elemento novo
+// logo acima, só enquanto a busca estiver ativa. Só aparece quando dá pra
+// apontar uma posição exata (bate exato); num match só por tolerância a erro
+// de digitação a posição é aproximada demais pra valer a pena mostrar.
+function _updateSearchSnippet(card,texto,idx,qLen){
+  // Sem :scope> de propósito: a textarea não é filha DIRETA do card (mora
+  // dentro de um wrapper .cb), então o trecho antigo também não é. Sem isto,
+  // cada busca nova empilhava mais um .search-snip em vez de trocar o velho.
+  card.querySelectorAll('.search-snip').forEach(el=>el.remove());
+  if(idx<0)return;
+  const ta=card.querySelector('textarea');if(!ta)return;
+  const ini=Math.max(0,idx-30),fim=Math.min(texto.length,idx+qLen+30);
+  const div=document.createElement('div');
+  div.className='search-snip';
+  div.innerHTML=(ini>0?'…':'')+escHtml(texto.slice(ini,idx))+'<mark>'+escHtml(texto.slice(idx,idx+qLen))+'</mark>'+escHtml(texto.slice(idx+qLen,fim))+(fim<texto.length?'…':'');
+  ta.insertAdjacentElement('beforebegin',div);
+}
 function doSearch(q){
   const cl=document.getElementById('searchClear');
   const cnt=document.getElementById('searchCount');
@@ -5132,23 +5204,33 @@ function doSearch(q){
   let shown=0;
   const isTag=q.startsWith('#');
   const isSpeaker=q.startsWith('@');
-  const tagQ=isTag?q.slice(1).toLowerCase():'';
-  const spkQ=isSpeaker?q.slice(1).toLowerCase():'';
+  const tagQ=isTag?_normSearch(q.slice(1)):'';
+  const spkQ=isSpeaker?_normSearch(q.slice(1)):'';
+  const qNorm=_normSearch(q);
   cards.forEach(card=>{
     const ta=card.querySelector('textarea');
     if(!ta)return;
-    let match;
-    if(!q){match=true}
+    let score;
+    if(!q){score=1}
     else if(isTag){
-      match=(card.dataset.tags||'').split(',').filter(t=>t).some(t=>t.toLowerCase().includes(tagQ));
+      score=(card.dataset.tags||'').split(',').filter(t=>t).some(t=>_normSearch(t).includes(tagQ))?3:0;
     }else if(isSpeaker){
       const spks=JSON.parse(card.dataset.speakers||'{}');
-      match=Object.values(spks).some(s=>s.toLowerCase().includes(spkQ));
+      score=Object.values(spks).some(s=>_normSearch(s).includes(spkQ))?3:0;
     }else{
-      match=ta.value.toLowerCase().includes(q.toLowerCase())||(card.dataset.tags||'').toLowerCase().includes(q.toLowerCase());
+      const textoNorm=_normSearch(ta.value);
+      const scoreTexto=_matchScore(textoNorm,qNorm);
+      const scoreTags=_matchScore(_normSearch(card.dataset.tags||''),qNorm);
+      score=Math.max(scoreTexto,scoreTags);
+      _updateSearchSnippet(card,ta.value,q?textoNorm.indexOf(qNorm):-1,qNorm.length);
     }
-    card.classList.toggle('hidden',!match);
-    if(match)shown++;
+    card.classList.toggle('hidden',score<=0);
+    // Reordena visualmente por relevância sem tocar no DOM — CSS order só faz
+    // efeito no Modo Lista (flex); Masonry usa columns e ignora order, e o
+    // Modo Documento navega pela ordem real do DOM, não pela visual. Ou seja:
+    // preserva pin, pastas e o índice do Modo Documento intactos.
+    card.style.order=q?String(Math.round((3-score)*10)):'';
+    if(score>0)shown++;
   });
   // busca é sempre global: ao buscar, ignora o filtro de pasta; ao limpar, reaplica
   if(q)document.querySelectorAll('.card.folder-hidden').forEach(c=>c.classList.remove('folder-hidden'));
@@ -5160,7 +5242,8 @@ function clearSearch(){
   document.getElementById('searchInput').value='';
   document.getElementById('searchClear').classList.remove('vis');
   document.getElementById('searchCount').textContent='';
-  document.querySelectorAll('.card').forEach(c=>c.classList.remove('hidden'));
+  document.querySelectorAll('.card').forEach(c=>{c.classList.remove('hidden');c.style.order=''});
+  document.querySelectorAll('.search-snip').forEach(el=>el.remove());
   applyFolderFilter();
 }
 
