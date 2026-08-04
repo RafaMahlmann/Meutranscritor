@@ -99,6 +99,14 @@ header.has-speed-badge{padding-bottom:18px}
 .search-wrap{padding:16px 0 0;display:none}
 .search-wrap.visible{display:block}
 .search-box{position:relative;display:flex;align-items:center}
+/* Faixa da busca por sentido, logo abaixo do campo. Discreta de propósito:
+   é um extra opcional, não pode competir com o resultado normal. */
+.sem-row{display:none;padding:7px 2px 0;font-size:12px;color:var(--text3);line-height:1.6}
+.sem-row.on{display:block}
+.sem-link{background:none;border:none;color:var(--accent);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline}
+.sem-hits{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.sem-hit{background:var(--bg-input);border:1px solid var(--border2);border-radius:9px;padding:5px 9px;font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sem-hit:hover{border-color:var(--accent);color:var(--accent)}
 .search-icon{position:absolute;left:16px;color:var(--text4);pointer-events:none}
 .search-input{width:100%;background:rgba(99,135,215,0.08);border:1px solid rgba(99,135,215,0.18);border-radius:13px;padding:11px 100px 11px 44px;color:var(--text);font-size:14px;font-family:var(--font);font-weight:500;outline:none;transition:all var(--transition)}
 .search-input:focus{border-color:rgba(99,135,215,0.42);background:rgba(99,135,215,0.12);box-shadow:0 0 0 3px rgba(99,135,215,0.11)}
@@ -1821,6 +1829,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <span class="search-count" id="searchCount"></span>
           <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
         </div>
+        <!-- Busca por sentido: só aparece com algo digitado. Fica DEPOIS da
+             busca normal de propósito — a exata é instantânea e de graça, e
+             só o que ela não achou justifica gastar chamada de API. -->
+        <div class="sem-row" id="semRow"></div>
       </div>
       <div class="empty" id="emptyState">
         <img src="Logo/icon-header.png" class="empty-icon" alt="" style="width:52px;height:52px;opacity:0.25">
@@ -2849,7 +2861,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.03.5';
+const VOX_VERSION='2026.08.03.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3161,6 +3173,26 @@ let I18N_EN={
 "Mais":"More",
 "Este card":"This card",
 "Toque num card primeiro pra exportar só ele.":"Tap a card first to export just it.",
+// Busca por sentido (embeddings)
+"Busca por sentido":"Meaning search",
+"Não achou o que queria?":"Didn't find what you wanted?",
+"buscar por sentido":"search by meaning",
+"Ligar busca por sentido?":"Turn on meaning search?",
+"Esta busca precisa de uma chave da OpenAI ou da Gemini — são as que sabem montar esse tipo de índice. A chave da Groq, sozinha, não faz isso.":"This search needs an OpenAI or Gemini key — those are the ones that can build this kind of index. A Groq key alone can't do it.",
+"Ela acha nota pelo ASSUNTO, não pela palavra exata — buscar \"médico\" encontra \"doutor\", \"consulta\" encontra \"atendimento\".<br><br>Pra isso o texto das suas {n} notas é enviado UMA vez pra {p} montar um índice, que fica guardado só aqui no seu aparelho. Custa poucos centavos e só acontece de novo quando você criar ou editar uma nota.<br><br>Dá pra desligar quando quiser.":"It finds notes by TOPIC, not by exact word — searching \"doctor\" finds \"physician\", \"appointment\" finds \"visit\".<br><br>To do that, the text of your {n} notes is sent ONCE to {p} to build an index, which is then stored only here on your device. It costs a few cents and only happens again when you create or edit a note.<br><br>You can turn it off whenever you want.",
+"Entendi, ligar":"Got it, turn on",
+"Abrir configurações":"Open settings",
+"Montando o índice…":"Building the index…",
+"Montando o índice… {f} de {t}":"Building the index… {f} of {t}",
+"Busca por sentido ligada!":"Meaning search is on!",
+"Busca por sentido desligada.":"Meaning search turned off.",
+"Não consegui montar o índice:":"Couldn't build the index:",
+"Nada parecido por sentido.":"Nothing similar by meaning.",
+"Também parecidos por sentido:":"Also similar by meaning:",
+"Busca por sentido indisponível agora.":"Meaning search unavailable right now.",
+"Nenhum provedor com busca por sentido configurado.":"No provider set up for meaning search.",
+"desligar":"turn off",
+"nota":"note",
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
@@ -3472,6 +3504,10 @@ let cfg={
   diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',apiKeyGladia:'',apiKeyPyannote:'',diarLocal:false,
   aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',favLenses:[],lensMenuStyle:'list',recipes:[],
   txtProvider:'groq',txtModelGroq:'llama-3.3-70b-versatile',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:'',traduzirAlvo:'',
+  // Busca por sentido: nasce DESLIGADA de propósito. Ligar significa mandar o
+  // texto das notas pra uma API montar o índice — num app que promete
+  // privacidade, isso é escolha consciente da pessoa, nunca padrão silencioso.
+  semSearch:false,
   assist:true
 };
 
@@ -5238,6 +5274,13 @@ function doSearch(q){
   else applyFolderFilter();
   cnt.textContent=q?(shown+' '+t(shown!==1?'resultados':'resultado')):'';
   updateRecencyBadges();
+  // Busca por sentido entra como SEGUNDA onda, nunca no lugar da primeira: a
+  // exata é instantânea e de graça. Só busca de texto (tag e locutor são
+  // exatas por natureza) e só com 3+ letras — abaixo disso não há sentido a
+  // extrair, só ruído.
+  if(isTag||isSpeaker||q.trim().length<3){_semRowHide();return}
+  if(cfg.semSearch)_semSchedule(q.trim());
+  else _semRow(`${t('Não achou o que queria?')} <button class="sem-link" onclick="_semAsk()">${t('buscar por sentido')}</button>`);
 }
 function clearSearch(){
   document.getElementById('searchInput').value='';
@@ -5245,7 +5288,178 @@ function clearSearch(){
   document.getElementById('searchCount').textContent='';
   document.querySelectorAll('.card').forEach(c=>{c.classList.remove('hidden');c.style.order=''});
   document.querySelectorAll('.search-snip').forEach(el=>el.remove());
+  _semRowHide();
   applyFolderFilter();
+}
+
+// ── BUSCA POR SENTIDO ────────────────────────────────────────────────────────
+// Acha nota por SIGNIFICADO, não por letra: "médico" encontra "doutor" sem
+// dicionário de sinônimo nenhum. Cada nota vira um "vetor" (uma impressão
+// digital numérica do sentido) guardado no IndexedDB que o app já usa; a
+// comparação é matemática pura, aqui no aparelho. A única coisa que sai é o
+// texto indo montar o vetor — por isso a função nasce desligada e só liga com
+// consentimento explícito (ver _semAsk).
+//
+// Não usamos modelo local (transformers.js, o caminho do Smart Connections do
+// Obsidian) de propósito: são ~25MB de modelo + biblioteca, e o Vox é um
+// index.html só, com CSP que barra script de fora. Chave do próprio usuário
+// custa ~US$0,02 por milhão de palavras (centavos, uma vez) e não pesa nada.
+const SEM_KEY='vox_embeddings';   // { [cardId]: {h:hash, v:[...] } }
+const SEM_MAXCHARS=4000;          // teto por nota: evita estourar limite e custo
+const SEM_BATCH=32;               // notas por chamada
+const SEM_MIN=0.34;               // similaridade mínima pra valer como achado
+let _semCache=null,_semTimer=null,_semBusy=false,_semSeq=0;
+// Qual provedor consegue fazer isto. Groq e AssemblyAI não servem embeddings,
+// então não entram na lista — melhor dizer isso na cara do que falhar depois.
+function _semTarget(){
+  if(cfg.apiKey)return{url:'https://api.openai.com/v1/embeddings',key:cfg.apiKey,model:'text-embedding-3-small',name:'OpenAI'};
+  const base=(cfg.txtBaseUrl||'').replace(/\/+$/,'');
+  if(base){
+    const gemini=/generativelanguage\.googleapis\.com/.test(base);
+    return{url:base+'/embeddings',key:cfg.txtKey||'',model:gemini?'text-embedding-004':'text-embedding-3-small',name:gemini?'Gemini':'sua API'};
+  }
+  return null;
+}
+function _semHash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return h+'_'+s.length}
+function _semText(card){return (card.querySelector('textarea')?.value||'').trim().slice(0,SEM_MAXCHARS)}
+function _cosine(a,b){
+  let d=0,na=0,nb=0;
+  for(let i=0;i<a.length;i++){d+=a[i]*b[i];na+=a[i]*a[i];nb+=b[i]*b[i]}
+  return (na&&nb)?d/Math.sqrt(na*nb):0;
+}
+async function _semLoad(){
+  if(_semCache)return _semCache;
+  try{_semCache=await idbGet(SEM_KEY)||{}}catch(e){_semCache={}}
+  return _semCache;
+}
+async function _semEmbed(textos){
+  const tgt=_semTarget();
+  if(!tgt)throw new Error(t('Nenhum provedor com busca por sentido configurado.'));
+  const res=await fetch(tgt.url,{method:'POST',headers:{'Content-Type':'application/json',...(tgt.key?{'Authorization':'Bearer '+tgt.key}:{})},body:JSON.stringify({model:tgt.model,input:textos})});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const d=await res.json();
+  return (d.data||[]).map(x=>x.embedding);
+}
+// Indexa só o que falta (nota nova ou editada desde a última vez) — reabrir a
+// busca não recobra nada. onProg recebe (feitas,total) pra mostrar progresso.
+async function _semIndex(onProg){
+  const store=await _semLoad();
+  const cards=[...document.querySelectorAll('.card:not(.proc-card)')];
+  const pend=[];
+  cards.forEach(c=>{
+    const txt=_semText(c);
+    if(!txt)return;
+    const h=_semHash(txt);
+    if(!store[c.id]||store[c.id].h!==h)pend.push({id:c.id,txt,h});
+  });
+  // Nota apagada não pode ficar ocupando espaço no índice pra sempre
+  const vivos=new Set(cards.map(c=>c.id));
+  Object.keys(store).forEach(id=>{if(!vivos.has(id))delete store[id]});
+  for(let i=0;i<pend.length;i+=SEM_BATCH){
+    const lote=pend.slice(i,i+SEM_BATCH);
+    const vecs=await _semEmbed(lote.map(x=>x.txt));
+    lote.forEach((x,j)=>{if(vecs[j])store[x.id]={h:x.h,v:vecs[j]}});
+    if(onProg)onProg(Math.min(i+SEM_BATCH,pend.length),pend.length);
+  }
+  if(pend.length)await idbSet(SEM_KEY,store);
+  return pend.length;
+}
+function _semRowHide(){const el=document.getElementById('semRow');if(el){el.classList.remove('on');el.innerHTML=''}}
+function _semRow(html){const el=document.getElementById('semRow');if(el){el.innerHTML=html;el.classList.add('on')}}
+// Consentimento: um app que promete que nada sai daqui não pode mandar o texto
+// das notas pra fora numa "melhoriazinha" silenciosa de busca.
+function _semAsk(){
+  const tgt=_semTarget();
+  const ov=_txOverlay();
+  if(!tgt){
+    ov.innerHTML=`<div class="tx-modal" style="max-width:380px;text-align:center">
+      <div style="font-size:34px;margin-bottom:10px">🧭</div>
+      <div class="tx-title">${t('Busca por sentido')}</div>
+      <div class="tx-sub" style="line-height:1.7">${t('Esta busca precisa de uma chave da OpenAI ou da Gemini — são as que sabem montar esse tipo de índice. A chave da Groq, sozinha, não faz isso.')}</div>
+      <div class="tx-row" style="flex-direction:column;gap:8px;margin-top:16px">
+        <button class="tx-btn primary" onclick="closeTxOverlay();openModal();cfgTab('Text')">${t('Abrir configurações')}</button>
+        <button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Agora não')}</button>
+      </div></div>`;
+    ov.classList.add('on');return;
+  }
+  const n=[...document.querySelectorAll('.card:not(.proc-card)')].length;
+  ov.innerHTML=`<div class="tx-modal" style="max-width:400px;text-align:center">
+    <div style="font-size:34px;margin-bottom:10px">🧭</div>
+    <div class="tx-title">${t('Ligar busca por sentido?')}</div>
+    <div class="tx-sub" style="line-height:1.7">${t('Ela acha nota pelo ASSUNTO, não pela palavra exata — buscar "médico" encontra "doutor", "consulta" encontra "atendimento".<br><br>Pra isso o texto das suas {n} notas é enviado UMA vez pra {p} montar um índice, que fica guardado só aqui no seu aparelho. Custa poucos centavos e só acontece de novo quando você criar ou editar uma nota.<br><br>Dá pra desligar quando quiser.').replace('{n}',n).replace('{p}',escHtml(tgt.name))}</div>
+    <div class="tx-row" style="flex-direction:column;gap:8px;margin-top:16px">
+      <button class="tx-btn primary" onclick="closeTxOverlay();_semEnable()">${t('Entendi, ligar')}</button>
+      <button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Agora não')}</button>
+    </div></div>`;
+  ov.classList.add('on');
+}
+// Grava direto no localStorage em vez de saveCfg(): saveCfg relê TODOS os
+// campos de chave do formulário de configurações pra remontar o cfg — trabalho
+// (e acoplamento) demais pra guardar um liga/desliga.
+function _semSave(){try{localStorage.setItem('vox_cfg',JSON.stringify(cfg))}catch(e){}}
+async function _semEnable(){
+  cfg.semSearch=true;_semSave();
+  _semRow(t('Montando o índice…'));
+  try{
+    await _semIndex((f,tot)=>_semRow(t('Montando o índice… {f} de {t}').replace('{f}',f).replace('{t}',tot)));
+    toast('🧭 '+t('Busca por sentido ligada!'));
+    doSearch(document.getElementById('searchInput').value||'');
+  }catch(e){
+    cfg.semSearch=false;_semSave();
+    _semRow(t('Não consegui montar o índice:')+' '+escHtml(e.message));
+  }
+}
+function _semDisable(){
+  cfg.semSearch=false;_semSave();
+  idbDelete(SEM_KEY).catch(()=>{});_semCache=null;
+  toast(t('Busca por sentido desligada.'));
+  doSearch(document.getElementById('searchInput').value||'');
+}
+// Roda DEPOIS da busca normal, com atraso: enquanto a pessoa digita não faz
+// sentido gastar chamada nenhuma. Só entra quem a busca exata não achou —
+// repetir card que já está na lista seria ruído, não achado.
+function _semSchedule(q){
+  clearTimeout(_semTimer);
+  const meu=++_semSeq;
+  _semTimer=setTimeout(async()=>{
+    if(_semBusy)return;
+    _semBusy=true;
+    try{
+      await _semIndex();
+      const [qv]=await _semEmbed([q]);
+      if(meu!==_semSeq||!qv)return; // a pessoa já digitou outra coisa
+      const store=await _semLoad();
+      const achados=[];
+      document.querySelectorAll('.card:not(.proc-card)').forEach(c=>{
+        if(!c.classList.contains('hidden'))return; // já apareceu na busca normal
+        const e=store[c.id];if(!e)return;
+        const s=_cosine(qv,e.v);
+        if(s>=SEM_MIN)achados.push({id:c.id,s});
+      });
+      achados.sort((a,b)=>b.s-a.s);
+      const top=achados.slice(0,6);
+      if(!top.length){_semRow(_semToggleHtml(t('Nada parecido por sentido.')));return}
+      const chips=top.map(a=>{
+        const c=document.getElementById(a.id);
+        const titulo=(c.dataset.sessionName||'').trim()||_semText(c).slice(0,42)||t('nota');
+        return `<button class="sem-hit" onclick="_semGo('${escJs(a.id)}')" title="${escHtml(titulo)}">${escHtml(titulo)}</button>`;
+      }).join('');
+      _semRow(_semToggleHtml(t('Também parecidos por sentido:'))+`<div class="sem-hits">${chips}</div>`);
+    }catch(e){
+      _semRow(_semToggleHtml(t('Busca por sentido indisponível agora.')));
+    }finally{_semBusy=false}
+  },600);
+}
+function _semToggleHtml(txt){
+  return `${escHtml(txt)} <button class="sem-link" onclick="_semDisable()">${t('desligar')}</button>`;
+}
+// Card achado por sentido está escondido (a busca exata não o pegou) — mostrar
+// sem revelar seria clicar e não acontecer nada.
+function _semGo(id){
+  const c=document.getElementById(id);if(!c)return;
+  c.classList.remove('hidden');c.style.order='-1';
+  c.scrollIntoView({behavior:'smooth',block:'center'});
+  c.classList.add('card-flash');setTimeout(()=>c.classList.remove('card-flash'),1200);
 }
 
 // ── EXPORT ──
