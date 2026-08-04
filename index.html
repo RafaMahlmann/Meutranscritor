@@ -2747,7 +2747,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.03.2';
+const VOX_VERSION='2026.08.03.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3045,6 +3045,10 @@ let I18N_EN={
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 de crédito</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free credit</small>",
 "<strong>Em poucos minutos:</strong> <ol> <li>Crie sua conta gratuita em <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a>.</li> <li>Copie sua chave de API no painel.</li> <li>Cole aqui em cima — pronto.</li> </ol> <br> 💰 Você ganha <strong>10 horas grátis todo mês</strong>, renovadas automaticamente. Depois disso, o custo fica em torno de <strong>US$ 0,61 por hora</strong>.<br> 🎯 <strong>Ideal para:</strong> quem usa com frequência e prefere não se preocupar com créditos acabando.":"<strong>In a few minutes:</strong> <ol> <li>Create your free account at <a href=\"https://app.gladia.io\" target=\"_blank\" rel=\"noopener noreferrer\">app.gladia.io</a>.</li> <li>Copy your API key from the dashboard.</li> <li>Paste it above — done.</li> </ol> <br> 💰 You get <strong>10 free hours every month</strong>, renewed automatically. After that, the cost is around <strong>US$0.61 per hour</strong>.<br> 🎯 <strong>Great for:</strong> frequent users who prefer not to worry about credits running out.",
+// Web Share Target (Android) — áudio recebido pelo menu nativo de compartilhar
+"❌ Não recebemos nenhum áudio do compartilhamento.":"❌ We didn't receive any audio from the share.",
+"⚠️ Termine o que está em andamento antes de anexar o áudio compartilhado.":"⚠️ Finish what's in progress before attaching the shared audio.",
+"📎 Áudio recebido! Clique em Transcrever.":"📎 Audio received! Click Transcribe.",
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
@@ -4081,6 +4085,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   handleTransferHash();
   handleKeysTransferHash();
   window.addEventListener('hashchange',()=>{handleTransferHash();handleKeysTransferHash()});
+  handleShareTarget(); // Android: áudio recebido pelo menu de compartilhar (sw.js deixou no IndexedDB)
 });
 
 // ── VIEW ──
@@ -7582,6 +7587,29 @@ function cancelFile(clearTarget=true){
   document.getElementById('ibox').classList.remove('frozen');
   document.getElementById('itxt').disabled=false;document.getElementById('itxt').placeholder=t('Digite ou 📎 anexe um áudio…');
   document.getElementById('btnRec').disabled=false;document.getElementById('btnAttach').disabled=false;
+}
+// Android Web Share Target: chega aqui depois do sw.js redirecionar pra
+// ?compartilhado=1 com o áudio já salvo no IndexedDB (vox_db/kv). O mesmo
+// caminho de "Anexar áudio" (stageFile) cuida do resto — a pessoa só confirma
+// "Transcrever". No iOS não existe equivalente: a Apple não deixa apps web
+// entrarem na Folha de Compartilhamento nativa.
+async function handleShareTarget(){
+  if(!location.search.includes('compartilhado=1'))return;
+  if(isRec||isProc||stagedFile){
+    // Não limpa a URL nem o IndexedDB — o áudio fica esperando lá, e um recarregar
+    // da página (depois que a pessoa terminar o que está fazendo) tenta de novo.
+    toast(t('⚠️ Termine o que está em andamento antes de anexar o áudio compartilhado.'),true);
+    return;
+  }
+  history.replaceState(null,'',location.pathname+location.hash);
+  try{
+    const file=await idbGet('share_target_pending');
+    if(!file){toast(t('❌ Não recebemos nenhum áudio do compartilhamento.'),true);return}
+    await idbDelete('share_target_pending');
+    recTargetTA=null;recTargetCard=null;
+    stageFile(file);
+    toast(t('📎 Áudio recebido! Clique em Transcrever.'));
+  }catch(e){}
 }
 function confirmTranscribe(){
   if(!stagedFile)return;
