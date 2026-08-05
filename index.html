@@ -141,6 +141,38 @@ header.has-speed-badge{padding-bottom:18px}
 .ach-prog{font-size:12px;color:var(--text3);padding:6px 0}
 .ach-aviso{font-size:11.5px;color:var(--text4);line-height:1.6;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
 .ach-antiga{white-space:pre-wrap;font-size:13px;line-height:1.7;color:var(--text);background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;max-height:46vh;overflow:auto;margin-bottom:12px}
+/* ── Painel de conectar chave (só OpenAI e Gemini) ── */
+.semc-intro{font-size:12.5px;color:var(--text3);line-height:1.6;margin:0 0 14px}
+.semc-ops{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.semc-op{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 8px;border:1.5px solid var(--border);border-radius:12px;background:var(--bg-card);cursor:pointer;font-family:var(--font);transition:all var(--transition)}
+.semc-op:hover{border-color:var(--border2)}
+.semc-op.on{border-color:var(--accent);background:var(--accent-glow)}
+.semc-op-ico{font-size:20px}
+.semc-op-nome{font-size:13px;font-weight:700;color:var(--text)}
+.semc-op-selo{font-size:10px;color:var(--text4);font-weight:600}
+.semc-op.on .semc-op-selo{color:var(--accent)}
+.semc-lbl{display:block;font-size:11.5px;font-weight:700;color:var(--text3);margin-bottom:6px}
+/* O .key-eye-wrap herdado das configurações nasce com largura de conteúdo — no
+   modal de 420px o campo ficava com 173px, parecendo que não cabe uma chave
+   inteira (e chave de API é longa). Aqui ele ocupa a linha toda. */
+#semConnectOverlay .key-eye-wrap{display:flex;width:100%;position:relative}
+#semConnectOverlay .key-eye-wrap input{width:100%;flex:1;padding-right:38px;font-size:13px}
+#semConnectOverlay .key-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;opacity:.6;padding:4px}
+#semConnectOverlay .key-eye:hover{opacity:1}
+.semc-link{display:inline-block;font-size:11.5px;color:var(--accent);text-decoration:none;margin-top:8px;font-weight:600}
+.semc-link:hover{text-decoration:underline}
+.semc-msg{font-size:12px;line-height:1.55;margin-top:10px;padding:9px 11px;border-radius:9px;background:var(--bg2);color:var(--text2)}
+.semc-msg.erro{background:rgba(220,38,38,0.09);color:var(--danger)}
+.semc-saibamais{display:block;width:100%;margin-top:14px;background:none;border:none;font-family:var(--font);font-size:11.5px;color:var(--text4);cursor:pointer;text-decoration:underline;padding:4px}
+.semc-saibamais:hover{color:var(--accent)}
+/* Alvo de toque: os .tx-btn herdados davam 37px de altura no celular, abaixo
+   dos 44px que iOS e Android recomendam pro dedo. Num painel cujo objetivo é
+   justamente não fazer a pessoa errar, o botão principal não pode ser apertado. */
+@media(max-width:640px){
+  #semConnectOverlay .tx-btn{min-height:46px;font-size:14px}
+  #semConnectOverlay .key-eye-wrap input{min-height:44px}
+  #semConnectOverlay .semc-op{padding:14px 8px}
+}
 .search-icon{position:absolute;left:16px;color:var(--text4);pointer-events:none}
 .search-input{width:100%;background:rgba(99,135,215,0.08);border:1px solid rgba(99,135,215,0.18);border-radius:13px;padding:11px 100px 11px 44px;color:var(--text);font-size:14px;font-family:var(--font);font-weight:500;outline:none;transition:all var(--transition)}
 .search-input:focus{border-color:rgba(99,135,215,0.42);background:rgba(99,135,215,0.12);box-shadow:0 0 0 3px rgba(99,135,215,0.11)}
@@ -2896,8 +2928,27 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <p style="font-size:12.5px;color:var(--text2);line-height:1.65;margin:0 0 14px" data-i18n-html>Ligando isso você ganha <strong>duas</strong> ferramentas, não uma: a busca por sentido e as <strong>Notas relacionadas</strong> (no menu ⋯ Mais), que junta sozinha as notas que falam do mesmo assunto. As duas leem o mesmo índice — monta uma vez, serve pras duas.</p>
         <p style="font-size:12.5px;color:var(--text3);line-height:1.65;margin:0 0 10px" data-i18n>Não quer mexer nas chaves agora? Sem problema — enquanto isso, o Vox já faz muita coisa boa sem precisar de nenhuma API especial:</p>
         <p style="font-size:12.5px;color:var(--text3);line-height:1.75;margin:0 0 16px" data-i18n-html>🔎 A busca comum já ignora acento e erro de digitação, e mostra o trecho encontrado em destaque · 📅 O <strong>Resumo do dia</strong> junta tudo que você gravou · 🎭 As <strong>lentes</strong> (resumo, plano de ação, tom) funcionam com qualquer cérebro configurado · 🔮 A <strong>diarização</strong> separa quem falou o quê · 📤 Dá pra exportar em TXT, Markdown, HTML ou direto pro Obsidian.</p>
-        <button class="tx-btn primary" style="width:100%" onclick="closeSemHelp();openModal();cfgTab('Text')" data-i18n>Configurar chave da OpenAI ou Gemini</button>
+        <button class="tx-btn primary" style="width:100%" onclick="closeSemHelp();openSemConnect()" data-i18n>Configurar chave da OpenAI ou Gemini</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONECTAR CHAVE DE SENTIDO — réplica enxuta de UM pedaço das configurações:
+     só os dois provedores que sabem fazer embeddings, o campo da chave e o
+     link pra pegá-la. Existe porque mandar quem só quer ligar a ferramenta
+     pra tela de configurações inteira (4 abas, 21 botões, provedores que nem
+     servem pra isto) fazia a pessoa se perder e concluir que não funciona. -->
+<div class="overlay" id="semConnectOverlay" onclick="if(event.target===this)closeSemConnect()">
+  <div class="modal" style="max-width:420px;position:relative">
+    <div class="mb" style="padding:28px 26px 24px">
+      <button class="mh-close" onclick="closeSemConnect()" style="position:absolute;top:14px;right:14px">✕</button>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:22px">🧭</span>
+        <h2 style="font-size:17px;font-weight:700;letter-spacing:-0.3px;margin:0" data-i18n>Conectar a busca por sentido</h2>
+      </div>
+      <div id="semConnectBody"></div>
+      <button class="semc-saibamais" onclick="openSemHelp()" data-i18n>O que é isso, afinal?</button>
     </div>
   </div>
 </div>
@@ -3010,7 +3061,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.05.6';
+const VOX_VERSION='2026.08.05.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3353,6 +3404,24 @@ let I18N_EN={
 "desligar":"turn off",
 // Protocolo de achado verificável (citações conferidas contra o texto real)
 "Esta fonte não confere: o trecho citado não está no texto.":"This source doesn't check out: the quoted passage isn't in the text.",
+// Painel de conectar chave (só OpenAI/Gemini)
+"Conectar a busca por sentido":"Connect meaning search",
+"Só estas duas sabem montar o índice de sentido. Escolha uma, cole a chave e pronto — dá pra trocar depois.":"Only these two can build the meaning index. Pick one, paste the key and that's it — you can switch later.",
+"tem plano grátis":"has a free tier",
+"paga por uso":"pay as you go",
+"Chave da {p}":"{p} key",
+"cole aqui":"paste here",
+"Não tem chave? Pegar em {onde}":"No key yet? Get one at {onde}",
+"Testar e ligar":"Test and turn on",
+"Testando…":"Testing…",
+"Cole a chave primeiro.":"Paste the key first.",
+"A chave não foi aceita pela {p}. Confira se copiou inteira.":"{p} didn't accept the key. Check that you copied all of it.",
+"A chave funciona, mas a cota da {p} está esgotada agora. Tente mais tarde ou use a outra opção.":"The key works, but your {p} quota is used up right now. Try later or use the other option.",
+"Não consegui falar com a {p} — confira sua conexão.":"Couldn't reach {p} — check your connection.",
+"Chave da {p} conectada!":"{p} key connected!",
+"O que é isso, afinal?":"So what is this, anyway?",
+"Você ainda não tem uma chave que sirva pra isso. São só duas que funcionam, e conectar leva menos de um minuto.":"You don't have a key that works for this yet. Only two of them do, and connecting takes under a minute.",
+"Conectar uma chave":"Connect a key",
 // Notas relacionadas (costurar)
 "🧵 Notas relacionadas":"🧵 Related notes",
 "Notas relacionadas":"Related notes",
@@ -5553,11 +5622,17 @@ function _semTarget(){
   // branch só aceita a URL da Gemini; qualquer outra coisa cai no null
   // abaixo, e quem chama mostra o card explicando que aquele provedor ainda
   // não é compatível (em vez de tentar e falhar do nada).
-  if(base&&/generativelanguage\.googleapis\.com/.test(base)){
+  // cfg.txtKey precisa estar PREENCHIDA. Antes bastava a URL da Gemini estar
+  // configurada — e escolher o preset Gemini na aba "IA de texto" já preenche
+  // a URL sozinho. Quem escolhia o provedor mas não colava a chave recebia o
+  // convite "Ligar busca por sentido?" com o botão "Entendi, ligar", como se
+  // estivesse tudo pronto; só depois de confirmar é que dava erro. Bug real,
+  // relatado pelo Rafa usando no iPhone.
+  if(base&&cfg.txtKey&&/generativelanguage\.googleapis\.com/.test(base)){
     // text-embedding-004 (o nome que eu tinha usado aqui antes) está
     // descontinuado — a Gemini devolve 404. Confirmado testando com chave de
     // verdade: gemini-embedding-001 é quem responde hoje.
-    return{url:base+'/embeddings',key:cfg.txtKey||'',model:'gemini-embedding-001',name:'Gemini'};
+    return{url:base+'/embeddings',key:cfg.txtKey,model:'gemini-embedding-001',name:'Gemini'};
   }
   return null;
 }
@@ -5621,15 +5696,110 @@ async function _semIndex(onProg){
 }
 function _semRowHide(){const el=document.getElementById('semRow');if(el){el.classList.remove('on');el.innerHTML=''}}
 function _semRow(html){const el=document.getElementById('semRow');if(el){el.innerHTML=html;el.classList.add('on')}}
+// ── LIGAR A CHAVE SEM SAIR DAQUI ──
+// Antes, quem não tinha chave era mandado pra tela de configurações INTEIRA:
+// 4 abas, 21 botões, uma lista de provedores em que a maioria nem serve pra
+// isto. Quem só queria ligar a ferramenta se perdia no caminho e concluía que
+// "não funciona". Este painel mostra só as DUAS que servem, pede a chave ali
+// mesmo, TESTA de verdade antes de dizer que deu certo, e volta sozinho pro
+// ponto onde a pessoa estava.
+const SEM_PROVEDORES={
+  gemini:{
+    nome:'Gemini', ico:'🔷',
+    selo:()=>t('tem plano grátis'),
+    obter:'https://aistudio.google.com/app/apikey',
+    onde:'aistudio.google.com',
+    base:'https://generativelanguage.googleapis.com/v1beta/openai',
+    url:'https://generativelanguage.googleapis.com/v1beta/openai/embeddings',
+    modelo:'gemini-embedding-001'
+  },
+  openai:{
+    nome:'OpenAI', ico:'🤖',
+    selo:()=>t('paga por uso'),
+    obter:'https://platform.openai.com/api-keys',
+    onde:'platform.openai.com',
+    url:'https://api.openai.com/v1/embeddings',
+    modelo:'text-embedding-3-small'
+  }
+};
+let _semProvEscolhido='gemini';
+function closeSemConnect(){document.getElementById('semConnectOverlay').classList.remove('on')}
+function openSemConnect(){
+  _semProvEscolhido='gemini';
+  document.getElementById('semConnectOverlay').classList.add('on');
+  _semConnectRender();
+}
+function _semConnectEscolher(p){_semProvEscolhido=p;_semConnectRender()}
+function _semConnectRender(msg,tipo){
+  const p=SEM_PROVEDORES[_semProvEscolhido];
+  const abas=Object.entries(SEM_PROVEDORES).map(([k,v])=>
+    `<button class="semc-op${k===_semProvEscolhido?' on':''}" onclick="_semConnectEscolher('${k}')">
+       <span class="semc-op-ico">${v.ico}</span>
+       <span class="semc-op-nome">${escHtml(v.nome)}</span>
+       <span class="semc-op-selo">${escHtml(v.selo())}</span>
+     </button>`).join('');
+  const aviso=msg?`<div class="semc-msg ${tipo||''}">${msg}</div>`:'';
+  document.getElementById('semConnectBody').innerHTML=`
+    <p class="semc-intro">${escHtml(t('Só estas duas sabem montar o índice de sentido. Escolha uma, cole a chave e pronto — dá pra trocar depois.'))}</p>
+    <div class="semc-ops">${abas}</div>
+    <label class="semc-lbl">${escHtml(t('Chave da {p}').replace('{p}',p.nome))}</label>
+    <div class="key-eye-wrap" id="semcKeyWrap">
+      <input type="password" id="semcKey" class="cfg-input" placeholder="${escHtml(t('cole aqui'))}" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')_semConnectSalvar()">
+      <button type="button" class="key-eye" onclick="const i=document.getElementById('semcKey');i.type=i.type==='password'?'text':'password'" aria-label="${escHtml(t('Mostrar senha'))}">👁</button>
+    </div>
+    <a class="semc-link" href="${p.obter}" target="_blank" rel="noopener">${escHtml(t('Não tem chave? Pegar em {onde}').replace('{onde}',p.onde))} ↗</a>
+    ${aviso}
+    <button class="tx-btn primary" style="width:100%;margin-top:14px" id="semcBtn" onclick="_semConnectSalvar()">${escHtml(t('Testar e ligar'))}</button>
+    <button class="tx-btn ghost" style="width:100%;margin-top:8px" onclick="closeSemConnect()">${escHtml(t('Agora não'))}</button>`;
+  setTimeout(()=>document.getElementById('semcKey')?.focus(),80);
+}
+// Testa a chave DE VERDADE antes de dizer que deu certo. Guardar uma chave que
+// não funciona e só descobrir depois, no meio da indexação, é o tipo de coisa
+// que faz a pessoa achar que o app está quebrado.
+async function _semConnectSalvar(){
+  const p=SEM_PROVEDORES[_semProvEscolhido];
+  const chave=(document.getElementById('semcKey')?.value||'').trim();
+  if(!chave){_semConnectRender(escHtml(t('Cole a chave primeiro.')),'erro');return}
+  const btn=document.getElementById('semcBtn');
+  if(btn){btn.disabled=true;btn.textContent=t('Testando…')}
+  try{
+    const res=await fetch(p.url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+chave},
+      body:JSON.stringify({model:p.modelo,input:['teste']})
+    });
+    if(!res.ok){
+      const txt=(await res.text()).slice(0,200);
+      let motivo=t('A chave não foi aceita pela {p}. Confira se copiou inteira.').replace('{p}',p.nome);
+      if(res.status===429)motivo=t('A chave funciona, mas a cota da {p} está esgotada agora. Tente mais tarde ou use a outra opção.').replace('{p}',p.nome);
+      _semConnectRender(escHtml(motivo),'erro');
+      return;
+    }
+  }catch(e){
+    _semConnectRender(escHtml(t('Não consegui falar com a {p} — confira sua conexão.').replace('{p}',p.nome)),'erro');
+    return;
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=t('Testar e ligar')}
+  }
+  // Passou no teste: grava e segue direto pra indexação, sem obrigar a pessoa
+  // a achar o botão de novo.
+  if(_semProvEscolhido==='openai')cfg.apiKey=chave;
+  else{cfg.txtBaseUrl=p.base;cfg.txtKey=chave;if(!cfg.txtModel)cfg.txtModel='gemini-flash-lite-latest'}
+  _semSave();
+  closeSemConnect();
+  toast('✅ '+t('Chave da {p} conectada!').replace('{p}',p.nome));
+  _semAsk();
+}
+
 // Consentimento: um app que promete que nada sai daqui não pode mandar o texto
 // das notas pra fora numa "melhoriazinha" silenciosa de busca.
 function _semAsk(){
   const tgt=_semTarget();
   if(!tgt){
-    // Falha detectada (nenhuma chave compatível) — em vez de um avisozinho
-    // seco, mostra o card completo: o que é, como funciona, quais IAs
-    // servem e por quê, e o que já dá pra usar sem mexer em nada.
-    openSemHelp();
+    // Sem chave compatível: abre o painel enxuto de conexão (duas opções, campo
+    // de chave, teste real). O card explicativo continua a um toque de
+    // distância pra quem quer entender antes de decidir.
+    openSemConnect();
     return;
   }
   const ov=_txOverlay();
@@ -5854,9 +6024,15 @@ async function openCostura(){
   // Sem índice de vetores não há o que comparar. Em vez de erro seco, oferece
   // o mesmo caminho que a busca já oferece — e o "?" que explica tudo.
   if(!cfg.semSearch){
-    body.innerHTML=`<p class="ach-empty">${escHtml(t('Esta ferramenta lê o índice que a busca por sentido monta — por isso ela precisa estar ligada.'))}</p>
+    // Diz em que passo a pessoa está ANTES de pedir qualquer coisa: sem chave,
+    // o caminho é conectar; com chave, é só ligar. Antes o texto era o mesmo
+    // nos dois casos e o botão levava pra lugares diferentes — quem não tinha
+    // chave achava que era um clique só e ficava sem entender o que aconteceu.
+    const temChave=!!_semTarget();
+    body.innerHTML=`<p class="ach-empty">${escHtml(t('Esta ferramenta lê o índice que a busca por sentido monta — por isso ela precisa estar ligada.'))}
+      ${temChave?'':'<br><br>'+escHtml(t('Você ainda não tem uma chave que sirva pra isso. São só duas que funcionam, e conectar leva menos de um minuto.'))}</p>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-        <button class="gbtn" onclick="closeCostura();_semAsk()">${escHtml(t('Ligar busca por sentido'))}</button>
+        <button class="gbtn" onclick="closeCostura();${temChave?'_semAsk()':'openSemConnect()'}">${escHtml(temChave?t('Ligar busca por sentido'):t('Conectar uma chave'))}</button>
         <button class="gbtn" onclick="closeCostura();openSemHelp()">${escHtml(t('O que é isso?'))}</button>
       </div>`;
     return;
