@@ -111,6 +111,29 @@ header.has-speed-badge{padding-bottom:18px}
 .sem-hits{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .sem-hit{background:var(--bg-input);border:1px solid var(--border2);border-radius:9px;padding:5px 9px;font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sem-hit:hover{border-color:var(--accent);color:var(--accent)}
+/* ── Achados (Costurar / Panorama / Ressurgir) ──
+   Os três falam a mesma língua visual: um bloco por achado, com a evidência
+   sempre visível dentro dele. A evidência não é enfeite — é o que separa
+   "a IA afirmou" de "a IA mostrou onde está escrito". */
+.ach-empty{color:var(--text3);font-size:13px;line-height:1.7;padding:6px 0}
+.ach-grupo{border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--bg2)}
+.ach-grupo-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.ach-grupo-t{font-size:13.5px;font-weight:700;color:var(--text)}
+.ach-grupo-sub{font-size:11px;color:var(--text3);font-weight:500}
+.ach-notas{display:flex;flex-direction:column;gap:6px}
+.ach-nota{display:flex;align-items:flex-start;gap:8px;background:var(--bg-card);border:1px solid var(--border2);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--text2);cursor:pointer;text-align:left;font-family:var(--font);width:100%;line-height:1.5}
+.ach-nota:hover{border-color:var(--accent);color:var(--accent)}
+.ach-nota-dt{font-size:10.5px;color:var(--text4);flex-shrink:0;font-weight:600;padding-top:1px}
+.ach-item{border-left:3px solid var(--accent);padding:2px 0 2px 12px;margin-bottom:16px}
+.ach-item-t{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:5px;line-height:1.5}
+.ach-item-d{font-size:12.5px;color:var(--text2);line-height:1.65;margin-bottom:8px}
+/* A citação é apresentada como citação mesmo — recuada e em itálico — pra ficar
+   claro que aquilo é fala da pessoa, não texto escrito pela IA. */
+.ach-cite{font-size:12px;color:var(--text3);font-style:italic;border-left:2px solid var(--border2);padding-left:9px;margin-bottom:7px;line-height:1.6}
+.ach-tipo{display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--accent-glow);color:var(--accent);margin-bottom:7px}
+.ach-prog{font-size:12px;color:var(--text3);padding:6px 0}
+.ach-aviso{font-size:11.5px;color:var(--text4);line-height:1.6;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.ach-antiga{white-space:pre-wrap;font-size:13px;line-height:1.7;color:var(--text);background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;max-height:46vh;overflow:auto;margin-bottom:12px}
 .search-icon{position:absolute;left:16px;color:var(--text4);pointer-events:none}
 .search-input{width:100%;background:rgba(99,135,215,0.08);border:1px solid rgba(99,135,215,0.18);border-radius:13px;padding:11px 100px 11px 44px;color:var(--text);font-size:14px;font-family:var(--font);font-weight:500;outline:none;transition:all var(--transition)}
 .search-input:focus{border-color:rgba(99,135,215,0.42);background:rgba(99,135,215,0.12);box-shadow:0 0 0 3px rgba(99,135,215,0.11)}
@@ -1678,6 +1701,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span data-i18n>Resumo do dia</span>
           </button>
+          <button class="gbtn" id="btnCostura" onclick="toggleHdMore();openCostura()" title="Agrupa notas sobre o mesmo assunto" data-i18n-title>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9c0 4 12 5 12 9"/></svg>
+            <span data-i18n>Notas relacionadas</span>
+          </button>
+          <button class="gbtn" id="btnPanorama" onclick="toggleHdMore();openPanorama()" title="Temas que se repetem, promessas soltas e mudanças de ideia" data-i18n-title>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+            <span data-i18n>O que você anda repetindo</span>
+          </button>
+          <button class="gbtn" id="btnRessurgir" onclick="toggleHdMore();openRessurgir()" title="Traz de volta uma nota antiga esquecida" data-i18n-title>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>
+            <span data-i18n>Resgatar nota antiga</span>
+          </button>
           <button class="gbtn gbtn-ico" id="btnCfg" onclick="toggleHdMore();openModal()" title="Configurações" data-i18n-title>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span data-i18n>Configurações</span>
@@ -2535,6 +2570,43 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- NOTAS RELACIONADAS ("costurar") — mesmo esqueleto visual do Resumo do dia:
+     título + ✕, corpo que troca de estado (carregando → resultado), ações no pé.
+     Não gasta chamada de IA nenhuma: roda em cima do índice de vetores que a
+     busca por sentido já montou e guardou no aparelho. -->
+<div class="overlay" id="costuraOverlay" onclick="if(event.target===this)closeCostura()">
+  <div class="modal wide">
+    <div class="mh"><h2 data-i18n>🧵 Notas relacionadas</h2><button class="mh-close" onclick="closeCostura()">✕</button></div>
+    <div class="mb">
+      <div id="costuraBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PANORAMA — "o que você anda repetindo". Único dos três que faz afirmação
+     interpretativa sobre a vida da pessoa, então é o único que passa pelo
+     protocolo de achado verificável (toda afirmação carrega trecho literal,
+     conferido no código contra o texto do card antes de aparecer). -->
+<div class="overlay" id="panoramaOverlay" onclick="if(event.target===this)closePanorama()">
+  <div class="modal wide">
+    <div class="mh"><h2 id="panoramaTitle" data-i18n>🧭 O que você anda repetindo</h2><button class="mh-close" onclick="closePanorama()">✕</button></div>
+    <div class="mb">
+      <div id="panoramaBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESSURGIR — uma nota antiga por vez, escolhida por regra (sem IA pra
+     escolher). A IA só escreve a linha de "por que vale reler agora". -->
+<div class="overlay" id="ressurgirOverlay" onclick="if(event.target===this)closeRessurgir()">
+  <div class="modal wide">
+    <div class="mh"><h2 data-i18n>✨ Resgatar uma nota antiga</h2><button class="mh-close" onclick="closeRessurgir()">✕</button></div>
+    <div class="mb">
+      <div id="ressurgirBody"></div>
+    </div>
+  </div>
+</div>
+
 <!-- MAPA DE LENTES (visual alternativo ao menu em cards) -->
 <div class="overlay" id="lensMapOverlay" onclick="if(event.target===this)closeLensOverlay()">
   <div class="modal wide">
@@ -2892,7 +2964,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.05.2';
+const VOX_VERSION='2026.08.05.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3235,6 +3307,21 @@ let I18N_EN={
 "desligar":"turn off",
 // Protocolo de achado verificável (citações conferidas contra o texto real)
 "Esta fonte não confere: o trecho citado não está no texto.":"This source doesn't check out: the quoted passage isn't in the text.",
+// Notas relacionadas (costurar)
+"🧵 Notas relacionadas":"🧵 Related notes",
+"Notas relacionadas":"Related notes",
+"Agrupa notas sobre o mesmo assunto":"Groups notes about the same subject",
+"Esta ferramenta lê o índice que a busca por sentido monta — por isso ela precisa estar ligada.":"This tool reads the index that meaning search builds — that's why it needs to be on.",
+"Ligar busca por sentido":"Turn on meaning search",
+"Comparando suas notas…":"Comparing your notes…",
+"Ainda são poucas notas indexadas pra encontrar grupos. Grave mais algumas e volte aqui.":"Not enough indexed notes yet to find groups. Record a few more and come back.",
+"Nenhum grupo claro por enquanto — suas notas estão bem espalhadas entre assuntos diferentes. Isso não é problema nenhum.":"No clear groups for now — your notes are spread across different subjects. That's not a problem at all.",
+"{n} notas sobre o mesmo assunto":"{n} notes about the same subject",
+"Juntar numa nota só":"Merge into one note",
+"Juntar cria uma nota nova com o texto de todas — as originais continuam onde estão, intactas. Nada é apagado.":"Merging creates a new note with the text of all of them — the originals stay right where they are, untouched. Nothing is deleted.",
+"(Analisando as {n} notas mais recentes.)":"(Analyzing the {n} most recent notes.)",
+"Costura":"Stitch",
+"Nota costurada criada! As originais continuam intactas.":"Stitched note created! The originals are untouched.",
 "nota":"note",
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
@@ -5530,6 +5617,185 @@ function _semGo(id){
   c.classList.remove('hidden');c.style.order='-1';
   c.scrollIntoView({behavior:'smooth',block:'center'});
   c.classList.add('card-flash');setTimeout(()=>c.classList.remove('card-flash'),1200);
+}
+
+// ── NOTAS RELACIONADAS ("costurar") ──
+// Acha grupos de notas sobre o mesmo assunto. Não gasta chamada de IA nenhuma:
+// roda inteiro em cima do índice de vetores que a busca por sentido já montou.
+// Por isso exige que ela esteja ligada — sem índice não há o que comparar.
+const COST_K=2.5;          // quão acima do par típico uma dupla precisa estar
+const COST_TETO=0.97;      // acima disso não é "mesmo assunto", é texto quase repetido
+const COST_GAP_MIN=0.08;   // distância mínima da mediana (ver o porquê no limiar)
+const COST_MAX_GRUPO=8;    // grupo maior que isso quase sempre é "corrente" (ver abaixo)
+const COST_MAX_CARDS=600;  // teto de segurança: acima disso o nº de pares explode
+const COST_BLOCO=40000;    // pares por bloco antes de devolver o fôlego pra tela
+
+// Cosseno de vetores JÁ normalizados vira produto escalar puro — sem raiz
+// quadrada por par. Com centenas de notas são dezenas de milhares de pares,
+// e as duas raízes por par eram o grosso do custo.
+function _costDot(a,b){let d=0;for(let i=0;i<a.length;i++)d+=a[i]*b[i];return d}
+function _costNormalizar(v){
+  let n=0;for(let i=0;i<v.length;i++)n+=v[i]*v[i];
+  n=Math.sqrt(n)||1;
+  const u=new Float32Array(v.length);
+  for(let i=0;i<v.length;i++)u[i]=v[i]/n;
+  return u;
+}
+// União transitiva (union-find): se A é parecida com B e B com C, as três caem
+// no mesmo grupo. É o que permite grupo de 3+ sem comparar tudo com tudo de novo.
+function _costUF(n){
+  const p=[...Array(n).keys()];
+  const find=x=>{while(p[x]!==x){p[x]=p[p[x]];x=p[x]}return x};
+  return{find,union:(a,b)=>{a=find(a);b=find(b);if(a!==b)p[a]=b}};
+}
+async function _costurarGrupos(onProg){
+  const store=await _semLoad();
+  const cards=[...document.querySelectorAll('.card:not(.proc-card)')].filter(c=>store[c.id]&&store[c.id].v);
+  if(cards.length<3)return{poucas:true,grupos:[],total:cards.length};
+  // Mais recentes primeiro: se houver teto a estourar, é o passado distante que
+  // fica de fora, não o que a pessoa acabou de gravar.
+  const usados=cards.slice(0,COST_MAX_CARDS);
+  const its=usados.map(c=>({id:c.id,u:_costNormalizar(store[c.id].v)}));
+  const N=its.length;
+  // 1ª passada: todas as similaridades entre pares, pra saber o que é "alto"
+  // NESTE acervo. Limiar fixo não serve — cada provedor tem um piso de ruído
+  // próprio (a Gemini, por exemplo, dá ~0.55 entre textos que não têm nada a
+  // ver), então o corte tem que nascer da distribuição, não de um número meu.
+  const sims=new Float32Array(N*(N-1)/2);
+  let k=0,soma=0,desdeUltimoFolego=0;
+  for(let i=0;i<N;i++){
+    for(let j=i+1;j<N;j++){
+      const s=_costDot(its[i].u,its[j].u);
+      sims[k++]=s;soma+=s;
+    }
+    desdeUltimoFolego+=N-i-1;
+    if(desdeUltimoFolego>=COST_BLOCO){
+      desdeUltimoFolego=0;
+      if(onProg)onProg(Math.round(i/N*100));
+      await new Promise(r=>setTimeout(r,0)); // devolve o fôlego pra tela não travar
+    }
+  }
+  // Mediana + dispersão da cauda superior — NÃO média + desvio padrão. A
+  // primeira versão usava média+desvio e, testando com acervos simulados, ela
+  // produziu limiar 1.0766: acima de 1.0, que é o máximo possível de
+  // similaridade. Nenhum par jamais passaria e a ferramenta ficaria
+  // silenciosamente inútil — sem erro, sem aviso, só "nunca acha nada". A
+  // mediana não é puxada pelas caudas, então não sofre disso.
+  const ord=Float32Array.from(sims.subarray(0,k)).sort();
+  const pct=p=>ord[Math.min(ord.length-1,Math.floor(ord.length*p))];
+  const mediana=pct(0.5),p95=pct(0.95);
+  let limiar=mediana+COST_K*Math.max(p95-mediana,0.005);
+  limiar=Math.min(limiar,COST_TETO);
+  // Por ÚLTIMO, e de propósito: o piso sobre a mediana vem DEPOIS do teto, não
+  // antes. Num acervo em que tudo parece com tudo (quem só grava sobre um
+  // assunto), aplicar o teto por último o deixava ABAIXO da mediana e o app
+  // declarava o acervo inteiro um grupo só — 100% de falso positivo, medido.
+  // Nesta ordem o limiar sobe acima do alcançável e nada é agrupado, que é a
+  // resposta certa: se o "grupo" seria tudo, não há informação ali.
+  limiar=Math.max(limiar,mediana+COST_GAP_MIN);
+  // 2ª passada: une os pares que passaram do limiar
+  const uf=_costUF(N);
+  k=0;
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){if(sims[k++]>=limiar)uf.union(i,j)}
+  const porRaiz={};
+  for(let i=0;i<N;i++){const r=uf.find(i);(porRaiz[r]=porRaiz[r]||[]).push(i)}
+  const grupos=[];
+  Object.values(porRaiz).forEach(idxs=>{
+    if(idxs.length<2||idxs.length>COST_MAX_GRUPO)return;
+    // Coesão real do grupo: média de TODOS os pares internos, não só dos que o
+    // uniram. É a defesa contra o "efeito corrente" — A parece com B, B parece
+    // com C, e C acaba no mesmo grupo de A sem ter nada a ver. Se a média
+    // interna não se sustenta, o grupo era corrente e não vai pra tela.
+    let s=0,n=0;
+    for(let a=0;a<idxs.length;a++)for(let b=a+1;b<idxs.length;b++){s+=_costDot(its[idxs[a]].u,its[idxs[b]].u);n++}
+    const coesao=s/n;
+    if(coesao<limiar*0.9)return;
+    // Nota mais "central" (a que mais parece com as outras) dá o nome ao grupo.
+    let melhor=idxs[0],melhorS=-1;
+    idxs.forEach(i=>{
+      let t=0;idxs.forEach(j=>{if(i!==j)t+=_costDot(its[i].u,its[j].u)});
+      if(t>melhorS){melhorS=t;melhor=i}
+    });
+    grupos.push({ids:idxs.map(i=>its[i].id),centro:its[melhor].id,coesao});
+  });
+  grupos.sort((a,b)=>b.coesao-a.coesao||b.ids.length-a.ids.length);
+  return{grupos,total:N,cortou:cards.length>COST_MAX_CARDS};
+}
+function _costTitulo(id){
+  const c=document.getElementById(id);if(!c)return t('nota');
+  return (c.dataset.sessionName||'').trim()||_semText(c).slice(0,60).replace(/\s+/g,' ').trim()||t('nota');
+}
+function _costData(id){
+  const c=document.getElementById(id);
+  const dt=c&&c.dataset.dt;
+  return dt?new Date(dt).toLocaleDateString(getLocale(),{day:'2-digit',month:'2-digit',year:'2-digit'}):'';
+}
+let _costGrupos=[];
+function closeCostura(){document.getElementById('costuraOverlay').classList.remove('on')}
+async function openCostura(){
+  const ov=document.getElementById('costuraOverlay');
+  const body=document.getElementById('costuraBody');
+  ov.classList.add('on');
+  // Sem índice de vetores não há o que comparar. Em vez de erro seco, oferece
+  // o mesmo caminho que a busca já oferece — e o "?" que explica tudo.
+  if(!cfg.semSearch){
+    body.innerHTML=`<p class="ach-empty">${escHtml(t('Esta ferramenta lê o índice que a busca por sentido monta — por isso ela precisa estar ligada.'))}</p>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="gbtn" onclick="closeCostura();_semAsk()">${escHtml(t('Ligar busca por sentido'))}</button>
+        <button class="gbtn" onclick="closeCostura();openSemHelp()">${escHtml(t('O que é isso?'))}</button>
+      </div>`;
+    return;
+  }
+  body.innerHTML=`<div class="summary-loading"><div class="dots"><span></span><span></span><span></span></div> ${escHtml(t('Comparando suas notas…'))}</div>`;
+  try{
+    await _semIndex(); // pega nota nova/editada desde a última vez
+    const r=await _costurarGrupos(p=>{
+      body.innerHTML=`<div class="summary-loading"><div class="dots"><span></span><span></span><span></span></div> ${escHtml(t('Comparando suas notas…'))} ${p}%</div>`;
+    });
+    if(r.poucas){
+      body.innerHTML=`<p class="ach-empty">${escHtml(t('Ainda são poucas notas indexadas pra encontrar grupos. Grave mais algumas e volte aqui.'))}</p>`;
+      return;
+    }
+    _costGrupos=r.grupos;
+    if(!r.grupos.length){
+      body.innerHTML=`<p class="ach-empty">${escHtml(t('Nenhum grupo claro por enquanto — suas notas estão bem espalhadas entre assuntos diferentes. Isso não é problema nenhum.'))}</p>`;
+      return;
+    }
+    body.innerHTML=r.grupos.map((g,i)=>`
+      <div class="ach-grupo">
+        <div class="ach-grupo-hd">
+          <div>
+            <div class="ach-grupo-t">${escHtml(_costTitulo(g.centro))}</div>
+            <div class="ach-grupo-sub">${escHtml(t('{n} notas sobre o mesmo assunto').replace('{n}',g.ids.length))}</div>
+          </div>
+          <button class="gbtn" onclick="_costJuntar(${i})">${escHtml(t('Juntar numa nota só'))}</button>
+        </div>
+        <div class="ach-notas">
+          ${g.ids.map(id=>`<button class="ach-nota" onclick="closeCostura();_semGo('${escJs(id)}')"><span class="ach-nota-dt">${escHtml(_costData(id))}</span><span>${escHtml(_costTitulo(id))}</span></button>`).join('')}
+        </div>
+      </div>`).join('')
+      +`<div class="ach-aviso">${escHtml(t('Juntar cria uma nota nova com o texto de todas — as originais continuam onde estão, intactas. Nada é apagado.'))}${r.cortou?' '+escHtml(t('(Analisando as {n} notas mais recentes.)').replace('{n}',COST_MAX_CARDS)):''}</div>`;
+  }catch(e){
+    body.innerHTML=`<p class="ach-empty">${escHtml(_friendlyAIError(e,_semTarget()).message)}</p>`;
+  }
+}
+// Junta CRIANDO uma nota nova — nunca apagando as originais. Perder gravação
+// por causa de um agrupamento que a pessoa nem revisou seria imperdoável; se
+// ela quiser limpar as antigas depois, apaga uma a uma, com consciência.
+function _costJuntar(i){
+  const g=_costGrupos[i];if(!g)return;
+  const partes=[],tags=new Set();
+  g.ids.forEach(id=>{
+    const c=document.getElementById(id);if(!c)return;
+    const txt=(c.querySelector('textarea')?.value||'').trim();
+    if(!txt)return;
+    partes.push(`=== ${_costTitulo(id)} (${_costData(id)}) ===\n${txt}`);
+    (c.dataset.tags||'').split(',').filter(x=>x).forEach(x=>tags.add(x));
+  });
+  if(!partes.length)return;
+  addCard(partes.join('\n\n'),null,0,'texto','texto',true,null,null,[...tags],t('Costura')+' — '+_costTitulo(g.centro),'livre',false,'');
+  closeCostura();
+  toast('🧵 '+t('Nota costurada criada! As originais continuam intactas.'));
 }
 
 // ── EXPORT ──
