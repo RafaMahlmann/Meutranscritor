@@ -2964,7 +2964,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.05.3';
+const VOX_VERSION='2026.08.05.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3322,6 +3322,26 @@ let I18N_EN={
 "(Analisando as {n} notas mais recentes.)":"(Analyzing the {n} most recent notes.)",
 "Costura":"Stitch",
 "Nota costurada criada! As originais continuam intactas.":"Stitched note created! The originals are untouched.",
+// Panorama
+"🧭 O que você anda repetindo":"🧭 What you keep coming back to",
+"O que você anda repetindo":"What you keep coming back to",
+"Temas que se repetem, promessas soltas e mudanças de ideia":"Recurring themes, loose promises and changes of mind",
+"Tema que volta":"Recurring theme",
+"Promessa solta":"Loose promise",
+"Mudou de ideia":"Changed your mind",
+"30 dias":"30 days",
+"3 meses":"3 months",
+"Tudo":"Everything",
+"Poucas notas neste período pra procurar padrão. Tente um período maior.":"Too few notes in this period to look for patterns. Try a longer period.",
+"Procurando padrões em {n} notas…":"Looking for patterns across {n} notes…",
+"Nada que se repita de forma clara neste período. Isso é uma resposta boa — quer dizer que suas notas estão variadas.":"Nothing clearly recurring in this period. That's a good answer — it means your notes are varied.",
+"{n} achado(s) foram descartados por não conseguirem apontar o trecho exato que os sustentava.":"{n} finding(s) were discarded for failing to point at the exact passage backing them.",
+"Cada achado acima só apareceu porque o trecho citado foi encontrado, palavra por palavra, na sua nota. O que a IA não conseguiu comprovar foi descartado sozinho.":"Every finding above only showed up because the quoted passage was found, word for word, in your note. Whatever the AI couldn't back up was discarded on its own.",
+"({n} descartado(s) agora.)":"({n} discarded just now.)",
+// Ressurgir
+"✨ Resgatar uma nota antiga":"✨ Bring back an old note",
+"Resgatar nota antiga":"Bring back an old note",
+"Traz de volta uma nota antiga esquecida":"Brings back a forgotten old note",
 "nota":"note",
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
@@ -5796,6 +5816,158 @@ function _costJuntar(i){
   addCard(partes.join('\n\n'),null,0,'texto','texto',true,null,null,[...tags],t('Costura')+' — '+_costTitulo(g.centro),'livre',false,'');
   closeCostura();
   toast('🧵 '+t('Nota costurada criada! As originais continuam intactas.'));
+}
+
+// ── PANORAMA — "o que você anda repetindo" ──
+// Único dos três que faz afirmação INTERPRETATIVA sobre a vida da pessoa, e por
+// isso o único que precisa do protocolo de achado verificável: toda afirmação
+// carrega um trecho literal, e o trecho é conferido no código (indexOf) contra
+// o texto do card antes de virar pixel na tela. Achado que não sustenta a
+// própria citação simplesmente não nasce.
+//
+// Por que isso não é exagero: quando a IA inventa um padrão, ele sai com a
+// mesma fluência e a mesma segurança de um padrão verdadeiro — não existe
+// "sotaque de invenção" no texto. E sobre a própria vida a pessoa tende a
+// aceitar (é o mecanismo do horóscopo). Sem a trava, isto aqui seria uma
+// máquina de horóscopo alimentada com as notas mais íntimas de alguém — e
+// pareceria brilhante enquanto errava.
+const PAN_MAX_CHARS=20000;   // orçamento de contexto de UMA chamada
+const PAN_MAX_NOTA=1500;     // por nota (o tema aparece cedo; o resto é cauda)
+const PAN_TIPOS={
+  TEMA:{rot:()=>t('Tema que volta'),minFontes:1},
+  PROMESSA:{rot:()=>t('Promessa solta'),minFontes:1},
+  // Mudança de ideia SÓ existe comparando dois momentos — uma citação só não
+  // pode provar que algo mudou. Exigir duas é o que separa "ele mudou de ideia"
+  // de "a IA achou que ele mudou".
+  MUDANCA:{rot:()=>t('Mudou de ideia'),minFontes:2}
+};
+let _panPeriodo=30;
+function closePanorama(){document.getElementById('panoramaOverlay').classList.remove('on')}
+// Monta o material e a tradução id-curto → card. A IA nunca vê o id real do
+// card (longo, e ela erraria ao copiar): vê "n1", "n2"…
+function _panColeta(dias){
+  const cards=[...document.querySelectorAll('.card:not(.proc-card)')];
+  const limite=dias?Date.now()-dias*86400000:0;
+  const sel=[];
+  let total=0;
+  for(const c of cards){ // já vêm do mais novo pro mais antigo
+    const dt=c.dataset.dt?new Date(c.dataset.dt).getTime():0;
+    if(limite&&dt&&dt<limite)continue;
+    const txt=(c.querySelector('textarea')?.value||'').trim();
+    if(txt.length<40)continue; // nota curta demais não sustenta padrão
+    const corte=txt.slice(0,PAN_MAX_NOTA);
+    if(total+corte.length>PAN_MAX_CHARS)break;
+    total+=corte.length;
+    sel.push({id:c.id,txt:corte,data:_costData(c.id),nome:_costTitulo(c.id)});
+  }
+  return sel;
+}
+function _panPrompt(notas){
+  const material=notas.map((n,i)=>`--- n${i+1} (${n.data}) ---\n${n.txt}`).join('\n\n');
+  return `Você analisa as anotações faladas de UMA pessoa ao longo do tempo, procurando o que ela mesma não consegue ver relendo uma nota por vez.
+
+Procure três coisas, e SOMENTE estas três:
+1. TEMA — um assunto que voltou em notas diferentes sem que ela tenha percebido.
+2. PROMESSA — algo que ela disse em voz alta que ia fazer e não voltou a mencionar depois.
+3. MUDANCA — uma posição que mudou ao longo do tempo.
+
+REGRAS QUE VALEM MAIS QUE ACHAR ALGO:
+- Cada achado precisa ser sustentado por trecho COPIADO LITERALMENTE das notas, palavra por palavra, sem parafrasear, sem corrigir, sem reticências (8 a 25 palavras). Trecho que você não copiar exatamente será descartado automaticamente e o achado inteiro morre junto.
+- MUDANCA exige DUAS fontes, de notas diferentes — uma de antes e uma de depois.
+- Mudar de ideia é amadurecer, não é defeito: descreva sem julgar, sem tom de cobrança.
+- Se não houver padrão de verdade, responda apenas NADA. Não achar nada é uma resposta correta e útil — é MUITO melhor que forçar um padrão fraco.
+- Não interprete além do que está escrito. Não deduza sentimento, motivo ou diagnóstico.
+
+FORMATO (repita o bloco por achado, nada fora dele):
+###
+TIPO: TEMA
+TITULO: (uma linha curta, sem ponto final)
+RESUMO: (uma ou duas frases, direto, sem floreio)
+FONTE: n3 | trecho copiado exatamente da nota n3
+FONTE: n7 | outro trecho copiado exatamente da nota n7
+###
+
+${_promptLang()}
+
+NOTAS:
+${material}`;
+}
+// Camada lógica do protocolo: separa achado sustentado de achado inventado.
+// Não usa IA pra julgar — usa indexOf. Um verificador de IA pode errar por
+// simpatia; indexOf não tem opinião.
+function _panParse(resposta,notas){
+  const achados=[],descartados=[];
+  const blocos=(resposta||'').split(/^###\s*$/m);
+  blocos.forEach(bl=>{
+    const tipo=(bl.match(/^\s*TIPO:\s*(\w+)/mi)||[])[1];
+    if(!tipo||!PAN_TIPOS[tipo.toUpperCase()])return;
+    const T=tipo.toUpperCase();
+    const titulo=((bl.match(/^\s*TITULO:\s*(.+)$/mi)||[])[1]||'').trim();
+    const resumo=((bl.match(/^\s*RESUMO:\s*(.+)$/mi)||[])[1]||'').trim();
+    if(!titulo)return;
+    const fontes=[];
+    let mot='';
+    (bl.match(/^\s*FONTE:\s*.+$/gmi)||[]).forEach(linha=>{
+      const m=linha.match(/^\s*FONTE:\s*n?(\d+)\s*\|\s*(.+?)\s*$/i);
+      if(!m){mot=mot||'formato';return}
+      const nota=notas[parseInt(m[1],10)-1];
+      if(!nota){mot=mot||'nota inexistente';return}
+      const trecho=m[2].replace(/^["'«»]+|["'«»]+$/g,'').trim();
+      // A conferência: o trecho existe MESMO no texto completo do card?
+      const ta=document.getElementById(nota.id)?.querySelector('textarea');
+      if(!ta||!_cchatCiteOk(ta.value,trecho)){mot='citação não confere';return}
+      fontes.push({cardId:nota.id,trecho,data:nota.data,nome:nota.nome});
+    });
+    if(fontes.length<PAN_TIPOS[T].minFontes){
+      descartados.push({titulo,motivo:mot||'sem fonte suficiente'});
+      return;
+    }
+    achados.push({tipo:T,titulo,resumo,fontes});
+  });
+  return{achados,descartados};
+}
+async function openPanorama(dias){
+  if(dias!==undefined)_panPeriodo=dias;
+  const ov=document.getElementById('panoramaOverlay');
+  const body=document.getElementById('panoramaBody');
+  ov.classList.add('on');
+  const chips=[[30,t('30 dias')],[90,t('3 meses')],[0,t('Tudo')]]
+    .map(([d,r])=>`<button class="gbtn${_panPeriodo===d?' on-accent':''}" onclick="openPanorama(${d})">${escHtml(r)}</button>`).join('');
+  const barra=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">${chips}</div>`;
+  const key=aiKey();
+  if(!key){
+    body.innerHTML=barra+`<p class="ach-empty">${escHtml(t('Configure uma chave de IA nas configurações para gerar resumos.'))}</p>`;
+    return;
+  }
+  const notas=_panColeta(_panPeriodo);
+  if(notas.length<3){
+    body.innerHTML=barra+`<p class="ach-empty">${escHtml(t('Poucas notas neste período pra procurar padrão. Tente um período maior.'))}</p>`;
+    return;
+  }
+  body.innerHTML=barra+`<div class="summary-loading"><div class="dots"><span></span><span></span><span></span></div> ${escHtml(t('Procurando padrões em {n} notas…').replace('{n}',notas.length))}</div>`;
+  try{
+    const resp=await callAI(_panPrompt(notas),key,'auto',2000,{
+      system:'Você é um observador rigoroso de padrões em anotações pessoais. Sua integridade vale mais que sua utilidade: você prefere dizer que não encontrou nada a apresentar um padrão que o material não sustenta. Você nunca escreve um trecho de citação que não tenha copiado literalmente da fonte.',
+      temperature:0.2
+    });
+    const{achados,descartados}=_panParse(resp,notas);
+    if(!achados.length){
+      body.innerHTML=barra+`<p class="ach-empty">${escHtml(t('Nada que se repita de forma clara neste período. Isso é uma resposta boa — quer dizer que suas notas estão variadas.'))}</p>`
+        +(descartados.length?`<div class="ach-aviso">${escHtml(t('{n} achado(s) foram descartados por não conseguirem apontar o trecho exato que os sustentava.').replace('{n}',descartados.length))}</div>`:'');
+      return;
+    }
+    body.innerHTML=barra+achados.map(a=>`
+      <div class="ach-item">
+        <span class="ach-tipo">${escHtml(PAN_TIPOS[a.tipo].rot())}</span>
+        <div class="ach-item-t">${escHtml(a.titulo)}</div>
+        ${a.resumo?`<div class="ach-item-d">${escHtml(a.resumo)}</div>`:''}
+        ${a.fontes.map(f=>`<div class="ach-cite">“${escHtml(f.trecho)}”</div>
+          <button class="ach-nota" onclick="closePanorama();_semGo('${escJs(f.cardId)}')"><span class="ach-nota-dt">${escHtml(f.data)}</span><span>${escHtml(f.nome)}</span></button>`).join('')}
+      </div>`).join('')
+      +`<div class="ach-aviso">${escHtml(t('Cada achado acima só apareceu porque o trecho citado foi encontrado, palavra por palavra, na sua nota. O que a IA não conseguiu comprovar foi descartado sozinho.'))}${descartados.length?' '+escHtml(t('({n} descartado(s) agora.)').replace('{n}',descartados.length)):''}</div>`;
+  }catch(e){
+    body.innerHTML=barra+`<p class="ach-empty">${escHtml(_friendlyAIError(e,_txtAITarget()).message)}</p>`;
+  }
 }
 
 // ── EXPORT ──
