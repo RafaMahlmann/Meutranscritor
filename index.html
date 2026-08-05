@@ -2887,7 +2887,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.04.3';
+const VOX_VERSION='2026.08.05.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5360,12 +5360,18 @@ let _semCache=null,_semTimer=null,_semBusy=false,_semSeq=0;
 function _semTarget(){
   if(cfg.apiKey)return{url:'https://api.openai.com/v1/embeddings',key:cfg.apiKey,model:'text-embedding-3-small',name:'OpenAI'};
   const base=(cfg.txtBaseUrl||'').replace(/\/+$/,'');
-  if(base){
-    const gemini=/generativelanguage\.googleapis\.com/.test(base);
+  // Só Gemini e OpenAI sabem gerar embeddings — qualquer outro provedor
+  // configurado em "IA de texto" (Groq, DeepSeek, OpenRouter, Ollama etc.)
+  // não tem essa rota. Assumir que "tem endereço = compatível" batia direto
+  // num "Failed to fetch" sem explicação nenhuma pro usuário — por isso este
+  // branch só aceita a URL da Gemini; qualquer outra coisa cai no null
+  // abaixo, e quem chama mostra o card explicando que aquele provedor ainda
+  // não é compatível (em vez de tentar e falhar do nada).
+  if(base&&/generativelanguage\.googleapis\.com/.test(base)){
     // text-embedding-004 (o nome que eu tinha usado aqui antes) está
     // descontinuado — a Gemini devolve 404. Confirmado testando com chave de
     // verdade: gemini-embedding-001 é quem responde hoje.
-    return{url:base+'/embeddings',key:cfg.txtKey||'',model:gemini?'gemini-embedding-001':'text-embedding-3-small',name:gemini?'Gemini':'sua API'};
+    return{url:base+'/embeddings',key:cfg.txtKey||'',model:'gemini-embedding-001',name:'Gemini'};
   }
   return null;
 }
@@ -5451,7 +5457,8 @@ async function _semEnable(){
     doSearch(document.getElementById('searchInput').value||'');
   }catch(e){
     cfg.semSearch=false;_semSave();
-    _semRow(t('Não consegui montar o índice:')+' '+escHtml(e.message));
+    const amigavel=_friendlyAIError(e,_semTarget());
+    _semRow(t('Não consegui montar o índice:')+' '+escHtml(amigavel.message));
   }
 }
 function _semDisable(){
