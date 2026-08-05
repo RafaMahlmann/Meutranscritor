@@ -97,6 +97,13 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .hd-more-drop .gbtn span{display:inline!important}
 .hd-more-drop .gbtn{width:100%;justify-content:flex-start;padding:9px 12px;border-radius:10px}
 .gbtn.hd-more-btn{display:inline-flex}
+/* No celular o botão ⋯ fica colado no canto direito, então um menu que cresce
+   pra DIREITA encosta na borda da tela (medido: chegava exatamente em 423px de
+   423px). Ancorado à direita ele cresce pra dentro e sobra folga — e o limite
+   de largura garante que continue cabendo mesmo em telas bem estreitas. */
+@media(max-width:640px){
+  .hd-more-drop{left:auto;right:0;max-width:calc(100vw - 24px)}
+}
 .cfg-wrap{display:inline-flex;align-items:center;position:relative;vertical-align:middle}
 #speedBadge{display:none;white-space:nowrap}
 header.has-speed-badge{padding-bottom:18px}
@@ -2964,7 +2971,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.05.4';
+const VOX_VERSION='2026.08.05.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3342,6 +3349,12 @@ let I18N_EN={
 "✨ Resgatar uma nota antiga":"✨ Bring back an old note",
 "Resgatar nota antiga":"Bring back an old note",
 "Traz de volta uma nota antiga esquecida":"Brings back a forgotten old note",
+"Ainda não há nota antiga o bastante pra resgatar. Daqui a algumas semanas esta ferramenta fica boa.":"There's no note old enough to bring back yet. In a few weeks this tool gets good.",
+"há mais de um ano":"over a year ago",
+"há {n} meses":"{n} months ago",
+"há {n} dias":"{n} days ago",
+"Abrir esta nota":"Open this note",
+"Ver outra":"Show another",
 "nota":"note",
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
@@ -5968,6 +5981,73 @@ async function openPanorama(dias){
   }catch(e){
     body.innerHTML=barra+`<p class="ach-empty">${escHtml(_friendlyAIError(e,_txtAITarget()).message)}</p>`;
   }
+}
+
+// ── RESSURGIR — trazer de volta uma nota antiga ──
+// Quem escolhe é REGRA, não IA: idade + densidade + não ter aparecido faz
+// pouco tempo. A IA só escreve, depois, uma linha sobre por que pode valer a
+// releitura — e se não houver chave configurada, a função continua funcionando
+// inteira, só sem essa linha. Escolher por IA custaria uma chamada, seria mais
+// lento e não escolheria melhor que "faz tempo e tem conteúdo".
+const RES_DIAS=60, RES_MIN_CHARS=200, RES_MEMORIA=12;
+function _resVistas(){try{return JSON.parse(localStorage.getItem('vox_ressurgidas')||'[]')}catch(e){return[]}}
+function _resMarcar(id){
+  const v=_resVistas().filter(x=>x!==id);
+  v.push(id);
+  // Só as últimas: memória curta de propósito, senão num acervo pequeno a
+  // função se esgota sozinha e nunca mais mostra nada.
+  try{localStorage.setItem('vox_ressurgidas',JSON.stringify(v.slice(-RES_MEMORIA)))}catch(e){}
+}
+function _resEscolher(){
+  const vistas=new Set(_resVistas());
+  const agora=Date.now();
+  const eleg=[...document.querySelectorAll('.card:not(.proc-card)')].map(c=>{
+    const txt=(c.querySelector('textarea')?.value||'').trim();
+    const dt=c.dataset.dt?new Date(c.dataset.dt).getTime():0;
+    return{id:c.id,txt,dias:dt?Math.floor((agora-dt)/86400000):0};
+  }).filter(x=>x.txt.length>=RES_MIN_CHARS);
+  // Degrau: primeiro o que é de fato antigo; se o acervo ainda é novo, afrouxa
+  // pra 30 e depois pra 7 dias — melhor mostrar algo de duas semanas atrás do
+  // que dizer "não tenho nada" pra quem começou a usar o app mês passado.
+  for(const minDias of [RES_DIAS,30,7]){
+    let pool=eleg.filter(x=>x.dias>=minDias&&!vistas.has(x.id));
+    if(!pool.length)pool=eleg.filter(x=>x.dias>=minDias); // já mostrei todas: repete
+    if(pool.length)return pool[Math.floor(Math.random()*pool.length)];
+  }
+  return null;
+}
+function closeRessurgir(){document.getElementById('ressurgirOverlay').classList.remove('on')}
+async function openRessurgir(){
+  const ov=document.getElementById('ressurgirOverlay');
+  const body=document.getElementById('ressurgirBody');
+  ov.classList.add('on');
+  const nota=_resEscolher();
+  if(!nota){
+    body.innerHTML=`<p class="ach-empty">${escHtml(t('Ainda não há nota antiga o bastante pra resgatar. Daqui a algumas semanas esta ferramenta fica boa.'))}</p>`;
+    return;
+  }
+  _resMarcar(nota.id);
+  const quando=nota.dias>=365?t('há mais de um ano'):nota.dias>=60?t('há {n} meses').replace('{n}',Math.floor(nota.dias/30)):t('há {n} dias').replace('{n}',nota.dias);
+  const cab=`<div class="ach-grupo-sub" style="margin-bottom:10px">${escHtml(_costData(nota.id))} · ${escHtml(quando)}</div>`;
+  const acoes=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button class="gbtn" onclick="closeRessurgir();_semGo('${escJs(nota.id)}')">${escHtml(t('Abrir esta nota'))}</button>
+      <button class="gbtn" onclick="openRessurgir()">${escHtml(t('Ver outra'))}</button>
+    </div>`;
+  const corpo=`<div class="ach-antiga">${escHtml(nota.txt)}</div>`;
+  body.innerHTML=cab+corpo+acoes;
+  // A linha da IA é um bônus que chega depois — a nota já está lida na tela
+  // antes dela. Se a chamada falhar ou não houver chave, ninguém percebe falta.
+  const key=aiKey();
+  if(!key)return;
+  try{
+    const linha=await callAI(
+      `Abaixo está uma anotação que a pessoa fez ${quando} e provavelmente esqueceu. Escreva UMA frase curta (máximo 20 palavras) dizendo por que pode valer a pena reler isso hoje. Sem saudação, sem aspas, sem repetir o conteúdo, sem inventar nada que não esteja no texto. Se não houver nada de relevante, escreva apenas: Só um registro do que você estava pensando na época. ${_promptLang()}\n\nAnotação:\n${nota.txt.slice(0,3000)}`,
+      key,'auto',120,{temperature:0.4}
+    );
+    const lim=(linha||'').trim().replace(/^["']|["']$/g,'');
+    if(lim&&document.getElementById('ressurgirOverlay').classList.contains('on'))
+      body.innerHTML=cab+`<div class="ach-item-d" style="font-style:italic">${escHtml(lim)}</div>`+corpo+acoes;
+  }catch(e){/* silencioso de propósito: a nota é o valor, a frase é enfeite */}
 }
 
 // ── EXPORT ──
