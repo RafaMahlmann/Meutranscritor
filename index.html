@@ -85,14 +85,18 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .brand-sub-row{display:flex;align-items:center;gap:6px}
 .ver-badge{font-size:9px;color:var(--text4);font-weight:600;letter-spacing:0.2px;cursor:default}
 .hd-actions{display:flex;align-items:center;gap:7px}
-/* FASE 6 (menu "Mais" do cabeçalho, só mobile — ver @media(max-width:640px)
-   mais abaixo). No desktop os dois wrappers usam display:contents: eles somem
-   da árvore de layout e os botões de dentro viram filhos diretos de
-   .hd-actions, exatamente como eram antes desta fase — zero mudança visual
-   fora do mobile. O botão ⋯ (.hd-more-btn) fica escondido no desktop. */
-.hd-more-wrap{display:contents}
-.hd-more-drop{display:contents}
-.gbtn.hd-more-btn{display:none}
+/* FASE 6 (menu "Mais" do cabeçalho). O submenu ⋯ fica ATIVO em TODAS as
+   larguras (iPhone ≤640px, iPad 641–1024px e Windows ≥1025px): os itens de
+   configuração (Config. iniciais, Buscar, Resumo do dia, Configurações,
+   Idioma, Aparência) vivem dentro do dropdown, e só Cérebro, View, Buscar e
+   Exportar ficam fora. Os wrappers sempre são position:relative/block pra o
+   dropdown posicionar; o botão ⋯ sempre visível. */
+.hd-more-wrap{display:block;position:relative}
+.hd-more-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;min-width:200px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:6px;flex-direction:column;gap:2px;animation:fadeDown 0.15s ease}
+.hd-more-drop.on{display:flex}
+.hd-more-drop .gbtn span{display:inline!important}
+.hd-more-drop .gbtn{width:100%;justify-content:flex-start;padding:9px 12px;border-radius:10px}
+.gbtn.hd-more-btn{display:inline-flex}
 .cfg-wrap{display:inline-flex;align-items:center;position:relative;vertical-align:middle}
 #speedBadge{display:none;white-space:nowrap}
 header.has-speed-badge{padding-bottom:18px}
@@ -1345,22 +1349,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .brand-sub{display:none}
   .api-toggle{grid-template-columns:1fr 1fr}
 }
-/* FASE 6 — menu "Mais" (só mobile): Configurações iniciais/Lista/Resumo do dia
-   saem da fileira do cabeçalho e viram uma lista que abre ao tocar em ⋯,
-   deixando só Buscar e Exportar sempre visíveis — as duas ações mais usadas.
-   Mesmo padrão visual do menu Exportar (.exp-drop) que já existia. */
-@media(max-width:640px){
-  .gbtn.hd-more-btn{display:inline-flex}
-  .hd-more-wrap{display:block;position:relative}
-  .hd-more-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;min-width:200px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:6px;flex-direction:column;gap:2px;animation:fadeDown 0.15s ease}
-  .hd-more-drop.on{display:flex}
-  /* !important necessário: a regra "esconde rótulos" logo acima também mira
-     .hd-actions .gbtn span e tem mais especificidade (carrega um #id dentro
-     do :not()) — sem isto, os botões do menu abriam mudos, só com ícone. */
-  .hd-more-drop .gbtn span{display:inline!important}
-  .hd-more-drop .gbtn{width:100%;justify-content:flex-start;padding:9px 12px;border-radius:10px}
-}
-
+/* FASE 6 — menu "Mais" (⋯) ativo em TODAS as larguras: Configurações iniciais/
+   Buscar/Resumo do dia/Configurações/Idioma/Aparência vivem dentro do dropdown
+   (hdMoreDrop, definido no CSS base) e só Cérebro/View/Buscar/Exportar ficam
+   fora. Mesmo padrão visual do menu Exportar (.exp-drop) que já existia. */
 /* ── FASE 2 — topo fundido (só mobile): header (~74px) + .stats (~58px) iam
    juntos a ~132px de "moldura" fixa. Compactando padding/ícones/rótulos os
    dois somam bem menos, sobrando altura de tela pra texto. Nada disto entra
@@ -1659,12 +1651,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
       </div>
     </div>
     <div class="hd-actions">
-      <!-- FASE 6 (só mobile — ver @media(max-width:640px)): Configurações
-           iniciais/Lista/Resumo do dia saem da fileira e viram um menu "Mais"
-           (⋯), porque mesmo em ícone-só (Fase 2) a fileira inteira ainda vazava
-           da tela em telas estreitas. No desktop, display:contents nos dois
-           wrappers abaixo mantém o layout PIXEL-IDÊNTICO ao de antes — os
-           botões continuam filhos diretos de .hd-actions, só o botão ⋯ some. -->
+      <!-- FASE 6: menu "Mais" (⋯) ATIVO em TODAS as larguras (iPhone, iPad e
+           Windows). Os itens de configuração abaixo vivem dentro do dropdown
+           (hdMoreDrop); só Cérebro/View/Buscar/Exportar ficam fora da fileira.
+           O CSS base já posiciona o dropdown e mostra o botão ⋯ sempre. -->
       <div class="hd-more-wrap" id="hdMoreWrap">
         <button class="gbtn hd-more-btn" id="btnHdMore" onclick="toggleHdMore()" title="Mais opções" data-i18n-title>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
@@ -2788,6 +2778,42 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   </div>
 </div>
 
+<!-- Explica a busca por sentido — mesmo padrão visual do "Por que trocar de
+     cérebro" (brainHelpOverlay). Dois gatilhos levam aqui: o "?" de quem tá
+     usando pela primeira vez, e o aviso automático de quem tentou ligar sem
+     ter uma chave que sirva (openSemHelp é chamado dos dois lugares). -->
+<div class="overlay" id="semHelpOverlay" onclick="if(event.target===this)closeSemHelp()">
+  <div class="modal" style="max-width:500px;position:relative">
+    <div class="mb" style="padding:32px 28px 26px">
+      <button class="mh-close" onclick="closeSemHelp()" style="position:absolute;top:14px;right:14px">✕</button>
+      <div style="width:46px;height:46px;border-radius:14px;background:var(--accent-glow);color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px">🧭</div>
+      <h2 style="font-size:19px;font-weight:700;letter-spacing:-0.3px;margin-bottom:14px" data-i18n>O que é a busca por sentido</h2>
+      <p style="font-size:13.5px;color:var(--text2);line-height:1.7;margin-bottom:13px" data-i18n>Pensa assim: a busca comum é feita palavra por palavra — se você não escreve exatamente igual ao que tá na nota, ela não acha. A busca por sentido é diferente. Você digita "médico", e ela acha a nota onde você falou "doutor". Digita "dinheiro", ela acha onde você falou "grana". Ela procura pelo ASSUNTO, não pela palavra em si.</p>
+      <p style="font-size:13.5px;color:var(--text2);line-height:1.7;margin-bottom:22px" data-i18n>Por trás disso, cada nota vira uma espécie de "impressão digital" numérica do que ela quer dizer, e a comparação entre impressões acontece aqui no seu aparelho. Só o texto sai, uma vez, pra IA gerar essa impressão — depois disso, tudo fica guardado só com você.</p>
+      <div class="section-title" style="margin-top:0;margin-bottom:12px" data-i18n>Quais IAs sabem fazer isso — e por quê</div>
+      <div class="bhelp-item">
+        <span class="bhelp-dot"></span>
+        <div>
+          <div class="bhelp-t">✅ Gemini / OpenAI</div>
+          <div class="bhelp-d" data-i18n>São treinadas também num modo especial chamado "embeddings" — é literalmente o trabalho de transformar texto em impressão digital de sentido. É um tipo de treino à parte, não é "ser mais inteligente".</div>
+        </div>
+      </div>
+      <div class="bhelp-item">
+        <span class="bhelp-dot"></span>
+        <div>
+          <div class="bhelp-t">⏳ Groq, xAI (Grok), AssemblyAI, transcritor local</div>
+          <div class="bhelp-d" data-i18n>Excelentes no que fazem — transcrever rápido, separar vozes, conversar sobre o texto — mas nenhuma delas foi treinada nesse modo especial. Não é defeito, é só um trabalho que elas não oferecem (ainda).</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px">
+        <p style="font-size:12.5px;color:var(--text3);line-height:1.65;margin:0 0 10px" data-i18n>Não quer mexer nas chaves agora? Sem problema — enquanto isso, o Vox já faz muita coisa boa sem precisar de nenhuma API especial:</p>
+        <p style="font-size:12.5px;color:var(--text3);line-height:1.75;margin:0 0 16px" data-i18n-html>🔎 A busca comum já ignora acento e erro de digitação, e mostra o trecho encontrado em destaque · 📅 O <strong>Resumo do dia</strong> junta tudo que você gravou · 🎭 As <strong>lentes</strong> (resumo, plano de ação, tom) funcionam com qualquer cérebro configurado · 🔮 A <strong>diarização</strong> separa quem falou o quê · 📤 Dá pra exportar em TXT, Markdown, HTML ou direto pro Obsidian.</p>
+        <button class="tx-btn primary" style="width:100%" onclick="closeSemHelp();openModal();cfgTab('Text')" data-i18n>Configurar chave da OpenAI ou Gemini</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- SENHA DO BACKUP DE CHAVES: input real (não prompt()) — deixa o navegador/
      cofre de senhas (Chrome, iCloud Keychain etc.) oferecer salvar/preencher.
      Usado tanto pra criar o backup quanto pra restaurar. -->
@@ -2861,7 +2887,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.03.6';
+const VOX_VERSION='2026.08.04.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3175,6 +3201,16 @@ let I18N_EN={
 "Toque num card primeiro pra exportar só ele.":"Tap a card first to export just it.",
 // Busca por sentido (embeddings)
 "Busca por sentido":"Meaning search",
+"O que é a busca por sentido":"What meaning search is",
+"O que é isso?":"What's this?",
+"Pensa assim: a busca comum é feita palavra por palavra — se você não escreve exatamente igual ao que tá na nota, ela não acha. A busca por sentido é diferente. Você digita \"médico\", e ela acha a nota onde você falou \"doutor\". Digita \"dinheiro\", ela acha onde você falou \"grana\". Ela procura pelo ASSUNTO, não pela palavra em si.":"Think of it this way: regular search works word by word — if you don't type it exactly like it appears in the note, it won't find it. Meaning search is different. You type \"doctor\", and it finds the note where you said \"physician\". Type \"money\", it finds where you said \"cash\". It searches by TOPIC, not by the exact word.",
+"Por trás disso, cada nota vira uma espécie de \"impressão digital\" numérica do que ela quer dizer, e a comparação entre impressões acontece aqui no seu aparelho. Só o texto sai, uma vez, pra IA gerar essa impressão — depois disso, tudo fica guardado só com você.":"Behind the scenes, each note becomes a kind of numeric \"fingerprint\" of what it means, and comparing fingerprints happens right here on your device. Only the text goes out, once, for the AI to generate that fingerprint — after that, everything stays stored only with you.",
+"Quais IAs sabem fazer isso — e por quê":"Which AIs can do this — and why",
+"São treinadas também num modo especial chamado \"embeddings\" — é literalmente o trabalho de transformar texto em impressão digital de sentido. É um tipo de treino à parte, não é \"ser mais inteligente\".":"They're also trained in a special mode called \"embeddings\" — that's literally the job of turning text into a fingerprint of meaning. It's a separate kind of training, not about \"being smarter\".",
+"Excelentes no que fazem — transcrever rápido, separar vozes, conversar sobre o texto — mas nenhuma delas foi treinada nesse modo especial. Não é defeito, é só um trabalho que elas não oferecem (ainda).":"Excellent at what they do — fast transcription, separating voices, chatting about the text — but none of them were trained in that special mode. It's not a flaw, it's just a job they don't offer (yet).",
+"Não quer mexer nas chaves agora? Sem problema — enquanto isso, o Vox já faz muita coisa boa sem precisar de nenhuma API especial:":"Don't want to touch your keys right now? No problem — in the meantime, Vox already does a lot of good stuff without needing any special API:",
+"🔎 A busca comum já ignora acento e erro de digitação, e mostra o trecho encontrado em destaque · 📅 O <strong>Resumo do dia</strong> junta tudo que você gravou · 🎭 As <strong>lentes</strong> (resumo, plano de ação, tom) funcionam com qualquer cérebro configurado · 🔮 A <strong>diarização</strong> separa quem falou o quê · 📤 Dá pra exportar em TXT, Markdown, HTML ou direto pro Obsidian.":"🔎 Regular search already ignores accents and typos, and highlights the matching excerpt · 📅 The <strong>Day summary</strong> pulls together everything you recorded · 🎭 The <strong>lenses</strong> (summary, action plan, tone) work with any brain you've set up · 🔮 <strong>Speaker separation</strong> tells who said what · 📤 You can export as TXT, Markdown, HTML, or straight to Obsidian.",
+"Configurar chave da OpenAI ou Gemini":"Set up an OpenAI or Gemini key",
 "Não achou o que queria?":"Didn't find what you wanted?",
 "buscar por sentido":"search by meaning",
 "Ligar busca por sentido?":"Turn on meaning search?",
@@ -4069,6 +4105,8 @@ function openBrainHelp(){
   document.getElementById('brainHelpOverlay').style.display='flex';
 }
 function closeBrainHelp(){document.getElementById('brainHelpOverlay').style.display='none'}
+function openSemHelp(){document.getElementById('semHelpOverlay').style.display='flex'}
+function closeSemHelp(){document.getElementById('semHelpOverlay').style.display='none'}
 
 function playIntroVideo(){
   const overlay=document.getElementById('vintroOverlay');
@@ -5280,7 +5318,7 @@ function doSearch(q){
   // extrair, só ruído.
   if(isTag||isSpeaker||q.trim().length<3){_semRowHide();return}
   if(cfg.semSearch)_semSchedule(q.trim());
-  else _semRow(`${t('Não achou o que queria?')} <button class="sem-link" onclick="_semAsk()">${t('buscar por sentido')}</button>`);
+  else _semRow(`${t('Não achou o que queria?')} <button class="sem-link" onclick="_semAsk()">${t('buscar por sentido')}</button><button class="gbtn-help" onclick="openSemHelp()" title="${t('O que é isso?')}" aria-label="${t('O que é isso?')}">?</button>`);
 }
 function clearSearch(){
   document.getElementById('searchInput').value='';
@@ -5307,7 +5345,15 @@ function clearSearch(){
 const SEM_KEY='vox_embeddings';   // { [cardId]: {h:hash, v:[...] } }
 const SEM_MAXCHARS=4000;          // teto por nota: evita estourar limite e custo
 const SEM_BATCH=32;               // notas por chamada
-const SEM_MIN=0.34;               // similaridade mínima pra valer como achado
+// SEM_MIN morreu depois de testar com chave de verdade (Gemini): a régua de
+// similaridade dela não passa perto de zero pra textos SEM relação nenhuma —
+// "futebol" contra notas de médico/bolo/reunião ainda bateu ~0,52-0,56. Um
+// número fixo funcionaria só por acaso, e diferente pra cada provedor. Em vez
+// disso, cada card compete contra a MÉDIA e o DESVIO da própria coleção pra
+// aquela busca (z-score): "isso aqui é estranhamente parecido, comparado ao
+// resto do que eu tenho" — se auto-calibra sozinho, não importa o provedor.
+const SEM_Z_MIN=1.0;              // precisa destoar pra cima da média
+const SEM_FLOOR=0.35;             // e ainda bater um mínimo absoluto de bom senso
 let _semCache=null,_semTimer=null,_semBusy=false,_semSeq=0;
 // Qual provedor consegue fazer isto. Groq e AssemblyAI não servem embeddings,
 // então não entram na lista — melhor dizer isso na cara do que falhar depois.
@@ -5316,7 +5362,10 @@ function _semTarget(){
   const base=(cfg.txtBaseUrl||'').replace(/\/+$/,'');
   if(base){
     const gemini=/generativelanguage\.googleapis\.com/.test(base);
-    return{url:base+'/embeddings',key:cfg.txtKey||'',model:gemini?'text-embedding-004':'text-embedding-3-small',name:gemini?'Gemini':'sua API'};
+    // text-embedding-004 (o nome que eu tinha usado aqui antes) está
+    // descontinuado — a Gemini devolve 404. Confirmado testando com chave de
+    // verdade: gemini-embedding-001 é quem responde hoje.
+    return{url:base+'/embeddings',key:cfg.txtKey||'',model:gemini?'gemini-embedding-001':'text-embedding-3-small',name:gemini?'Gemini':'sua API'};
   }
   return null;
 }
@@ -5370,18 +5419,14 @@ function _semRow(html){const el=document.getElementById('semRow');if(el){el.inne
 // das notas pra fora numa "melhoriazinha" silenciosa de busca.
 function _semAsk(){
   const tgt=_semTarget();
-  const ov=_txOverlay();
   if(!tgt){
-    ov.innerHTML=`<div class="tx-modal" style="max-width:380px;text-align:center">
-      <div style="font-size:34px;margin-bottom:10px">🧭</div>
-      <div class="tx-title">${t('Busca por sentido')}</div>
-      <div class="tx-sub" style="line-height:1.7">${t('Esta busca precisa de uma chave da OpenAI ou da Gemini — são as que sabem montar esse tipo de índice. A chave da Groq, sozinha, não faz isso.')}</div>
-      <div class="tx-row" style="flex-direction:column;gap:8px;margin-top:16px">
-        <button class="tx-btn primary" onclick="closeTxOverlay();openModal();cfgTab('Text')">${t('Abrir configurações')}</button>
-        <button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Agora não')}</button>
-      </div></div>`;
-    ov.classList.add('on');return;
+    // Falha detectada (nenhuma chave compatível) — em vez de um avisozinho
+    // seco, mostra o card completo: o que é, como funciona, quais IAs
+    // servem e por quê, e o que já dá pra usar sem mexer em nada.
+    openSemHelp();
+    return;
   }
+  const ov=_txOverlay();
   const n=[...document.querySelectorAll('.card:not(.proc-card)')].length;
   ov.innerHTML=`<div class="tx-modal" style="max-width:400px;text-align:center">
     <div style="font-size:34px;margin-bottom:10px">🧭</div>
@@ -5429,13 +5474,24 @@ function _semSchedule(q){
       const [qv]=await _semEmbed([q]);
       if(meu!==_semSeq||!qv)return; // a pessoa já digitou outra coisa
       const store=await _semLoad();
-      const achados=[];
+      const candidatos=[];
       document.querySelectorAll('.card:not(.proc-card)').forEach(c=>{
         if(!c.classList.contains('hidden'))return; // já apareceu na busca normal
         const e=store[c.id];if(!e)return;
-        const s=_cosine(qv,e.v);
-        if(s>=SEM_MIN)achados.push({id:c.id,s});
+        candidatos.push({id:c.id,s:_cosine(qv,e.v)});
       });
+      let achados;
+      if(candidatos.length>=4){
+        // Coleção grande o bastante pra média/desvio fazerem sentido.
+        const media=candidatos.reduce((a,c)=>a+c.s,0)/candidatos.length;
+        const variancia=candidatos.reduce((a,c)=>a+(c.s-media)**2,0)/candidatos.length;
+        const desvio=Math.sqrt(variancia)||0.0001; // nunca zero, senão vira NaN
+        achados=candidatos.filter(c=>c.s>=SEM_FLOOR&&(c.s-media)/desvio>=SEM_Z_MIN);
+      }else{
+        // Poucos candidatos: não dá pra tirar média/desvio confiável — só o
+        // piso absoluto mesmo, como rede de segurança.
+        achados=candidatos.filter(c=>c.s>=SEM_FLOOR+0.15);
+      }
       achados.sort((a,b)=>b.s-a.s);
       const top=achados.slice(0,6);
       if(!top.length){_semRow(_semToggleHtml(t('Nada parecido por sentido.')));return}
