@@ -1611,6 +1611,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #cchat-overlay .cchat-msg.cchat-source{max-width:92%;white-space:pre-wrap}
 #cchat-overlay .cchat-cite{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700;cursor:pointer;margin:0 1px;vertical-align:2px}
 #cchat-overlay .cchat-cite:hover{background:var(--accent2)}
+/* Citação que não passou na conferência (o trecho não existe no texto): fica
+   visível de propósito, riscada e apagada, em vez de sumir. Sumir esconderia
+   que a IA apoiou aquela frase em fonte inventada — justamente o que a pessoa
+   precisa saber pra desconfiar da frase. */
+#cchat-overlay .cchat-cite.bad{background:transparent;color:var(--text3);border:1px dashed var(--border2);text-decoration:line-through;cursor:help}
 #cchat-overlay .cchat-empty{text-align:center;color:var(--text);opacity:0.5;padding:40px 20px;font-size:13px}
 #cchat-overlay .cchat-typing{display:flex;gap:4px;padding:10px 14px;align-self:flex-start}
 #cchat-overlay .cchat-typing span{width:6px;height:6px;background:var(--text);opacity:0.4;border-radius:50%;animation:cchat-bounce 1.4s infinite ease-in-out both}
@@ -2887,7 +2892,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.05.1';
+const VOX_VERSION='2026.08.05.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3228,6 +3233,8 @@ let I18N_EN={
 "Busca por sentido indisponível agora.":"Meaning search unavailable right now.",
 "Nenhum provedor com busca por sentido configurado.":"No provider set up for meaning search.",
 "desligar":"turn off",
+// Protocolo de achado verificável (citações conferidas contra o texto real)
+"Esta fonte não confere: o trecho citado não está no texto.":"This source doesn't check out: the quoted passage isn't in the text.",
 "nota":"note",
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
@@ -9623,7 +9630,10 @@ async function renderCchat(id){
   // duplicação pura (achado pelo Rafa testando no iPad). Sempre lido fresco
   // do textarea (reflete edição feita na aba Texto enquanto o overlay
   // está aberto).
-  const sourceText=window.innerWidth<=640?(_cchatFindTextarea(id)?.value||''):'';
+  // Lido SEMPRE (não só no mobile): além do balãozinho de texto original, é
+  // contra este texto que cada citação é conferida antes de virar chip.
+  const textoReal=_cchatFindTextarea(id)?.value||'';
+  const sourceText=window.innerWidth<=640?textoReal:'';
   const sourceHtml=sourceText
     ?`<div class="cchat-msg cchat-assistant cchat-source"><div class="cchat-meta">📄 ${t('Texto original')}</div>${escHtml(sourceText)}</div>`
     :'';
@@ -9640,9 +9650,19 @@ async function renderCchat(id){
     if(isUser)return `<div class="cchat-msg ${cls}">${meta}${escHtml(m.content||'')}</div>`;
     const{body,map}=_parseCchatFontes(m.content||'');
     let html=canMd?DOMPurify.sanitize(marked.parse(body)):escHtml(body);
-    html=html.replace(/\[(\d+)\]/g,(full,n)=>map[n]!==undefined
-      ?`<button type="button" class="cchat-cite" data-cite="${n}" data-msg-idx="${idx}" onclick="cchatGoToCitation('${id}',${idx},${n})">[${n}]</button>`
-      :full);
+    // A citação só vira chip clicável depois de PASSAR na conferência: o
+    // trecho que a IA disse ter copiado precisa existir no texto de verdade.
+    // Antes daqui a checagem era só "a IA escreveu algo na seção FONTES?" —
+    // então uma citação inventada aparecia azul e clicável igualzinho às
+    // verdadeiras, e só ao clicar (se alguém clicasse) o app descobria. Uma
+    // afirmação apoiada em fonte falsa ficava lida e acreditada no caminho.
+    html=html.replace(/\[(\d+)\]/g,(full,n)=>{
+      const trecho=map[n];
+      if(trecho===undefined)return full; // IA nem listou a fonte — texto morto
+      if(!_cchatCiteOk(textoReal,trecho))
+        return `<span class="cchat-cite bad" title="${escHtml(t('Esta fonte não confere: o trecho citado não está no texto.'))}">[${n}]</span>`;
+      return `<button type="button" class="cchat-cite" data-cite="${n}" data-msg-idx="${idx}" onclick="cchatGoToCitation('${id}',${idx},${n})">[${n}]</button>`;
+    });
     return `<div class="cchat-msg ${cls}">${meta}${html}</div>`;
   }).join('');
   msgs.scrollTop=msgs.scrollHeight;
@@ -9655,14 +9675,32 @@ async function renderCchat(id){
 // travar sempre na primeira ocorrência quando o trecho se repete no texto.
 function _cchatFindAllOccurrences(text,trecho){
   const positions=[];
+  if(!text||!trecho)return positions;
   let idx=text.indexOf(trecho);
   while(idx>=0){positions.push(idx);idx=text.indexOf(trecho,idx+1)}
   if(positions.length)return positions;
   const lowText=text.toLowerCase(),lowTrecho=trecho.toLowerCase();
   idx=lowText.indexOf(lowTrecho);
   while(idx>=0){positions.push(idx);idx=lowText.indexOf(lowTrecho,idx+1)}
+  if(positions.length)return positions;
+  // 3º nível: ignora acento também (mesma normalização da busca, _normSearch).
+  // A IA às vezes "corrige" um acento ao copiar o trecho — sem isto uma
+  // citação legítima morria por diferença puramente cosmética. Só vale quando
+  // a normalização preserva o comprimento (verdade no português: "não"→"nao",
+  // 3 caracteres nos dois); se mudasse, o índice apontaria pro lugar errado no
+  // texto original e o clique levaria a pessoa pra outro ponto do texto.
+  const nText=_normSearch(text);
+  if(nText.length!==text.length)return positions;
+  const nTrecho=_normSearch(trecho);
+  idx=nText.indexOf(nTrecho);
+  while(idx>=0){positions.push(idx);idx=nText.indexOf(nTrecho,idx+1)}
   return positions;
 }
+// Camada lógica do protocolo de citação: o trecho que a IA jurou ter copiado
+// existe mesmo no texto? É `indexOf`, não IA — não tem opinião, não erra por
+// simpatia. Separado em função porque agora roda em DOIS momentos: ao desenhar
+// a resposta (pra citação inventada nunca virar chip clicável) e ao clicar.
+function _cchatCiteOk(text,trecho){return _cchatFindAllOccurrences(text,trecho).length>0}
 function cchatGoToCitation(id,msgIdx,n){
   const history=getDiarChatHistory(id);
   const content=(history[msgIdx]&&history[msgIdx].content)||'';
