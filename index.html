@@ -2596,7 +2596,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      conferido no código contra o texto do card antes de aparecer). -->
 <div class="overlay" id="panoramaOverlay" onclick="if(event.target===this)closePanorama()">
   <div class="modal wide">
-    <div class="mh"><h2 id="panoramaTitle" data-i18n>🧭 O que você anda repetindo</h2><button class="mh-close" onclick="closePanorama()">✕</button></div>
+    <div class="mh"><h2 id="panoramaTitle" data-i18n>🧭 O que você anda repetindo</h2><div style="display:flex;gap:6px;align-items:center"><button class="gbtn-help" onclick="openPanHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?">?</button><button class="mh-close" onclick="closePanorama()">✕</button></div></div>
     <div class="mb">
       <div id="panoramaBody"></div>
     </div>
@@ -2889,10 +2889,49 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <div class="bhelp-d" data-i18n>Excelentes no que fazem — transcrever rápido, separar vozes, conversar sobre o texto — mas nenhuma delas foi treinada nesse modo especial. Não é defeito, é só um trabalho que elas não oferecem (ainda).</div>
         </div>
       </div>
+      <!-- O mesmo índice alimenta DUAS ferramentas. Sem dizer isso aqui, a
+           pessoa decide se vale configurar uma chave achando que ganha só a
+           busca — e o card ficaria desatualizado em relação ao próprio app. -->
       <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px">
+        <p style="font-size:12.5px;color:var(--text2);line-height:1.65;margin:0 0 14px" data-i18n-html>Ligando isso você ganha <strong>duas</strong> ferramentas, não uma: a busca por sentido e as <strong>Notas relacionadas</strong> (no menu ⋯ Mais), que junta sozinha as notas que falam do mesmo assunto. As duas leem o mesmo índice — monta uma vez, serve pras duas.</p>
         <p style="font-size:12.5px;color:var(--text3);line-height:1.65;margin:0 0 10px" data-i18n>Não quer mexer nas chaves agora? Sem problema — enquanto isso, o Vox já faz muita coisa boa sem precisar de nenhuma API especial:</p>
         <p style="font-size:12.5px;color:var(--text3);line-height:1.75;margin:0 0 16px" data-i18n-html>🔎 A busca comum já ignora acento e erro de digitação, e mostra o trecho encontrado em destaque · 📅 O <strong>Resumo do dia</strong> junta tudo que você gravou · 🎭 As <strong>lentes</strong> (resumo, plano de ação, tom) funcionam com qualquer cérebro configurado · 🔮 A <strong>diarização</strong> separa quem falou o quê · 📤 Dá pra exportar em TXT, Markdown, HTML ou direto pro Obsidian.</p>
         <button class="tx-btn primary" style="width:100%" onclick="closeSemHelp();openModal();cfgTab('Text')" data-i18n>Configurar chave da OpenAI ou Gemini</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AJUDA DO PANORAMA — mesmo padrão dos outros dois cards de ajuda. Aqui ele
+     é mais necessário que nos outros: o Panorama é a única função que afirma
+     algo sobre a VIDA da pessoa, e ninguém tem como saber, olhando a tela, que
+     existe uma trava impedindo a IA de inventar. Sem explicar isso, ou ela
+     confia demais (perigoso) ou desconfia de tudo (e a função não serve). -->
+<div class="overlay" id="panHelpOverlay" onclick="if(event.target===this)closePanHelp()">
+  <div class="modal" style="max-width:500px;position:relative">
+    <div class="mb" style="padding:32px 28px 26px">
+      <button class="mh-close" onclick="closePanHelp()" style="position:absolute;top:14px;right:14px">✕</button>
+      <div style="width:46px;height:46px;border-radius:14px;background:var(--accent-glow);color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px">🧭</div>
+      <h2 style="font-size:19px;font-weight:700;letter-spacing:-0.3px;margin-bottom:14px" data-i18n>O que este painel faz</h2>
+      <p style="font-size:13.5px;color:var(--text2);line-height:1.7;margin-bottom:13px" data-i18n>Você lê uma nota por vez — é assim que a cabeça humana funciona. Só que algumas coisas só aparecem quando se olha várias notas juntas: um assunto que você voltou a tocar cinco vezes sem perceber, uma promessa que você fez em voz alta e nunca mais mencionou, uma ideia que mudou ao longo dos meses.</p>
+      <p style="font-size:13.5px;color:var(--text2);line-height:1.7;margin-bottom:22px" data-i18n>Este painel lê várias notas de uma vez e aponta só essas três coisas. Ele não resume, não aconselha e não tenta adivinhar o que você sentiu.</p>
+      <div class="section-title" style="margin-top:0;margin-bottom:12px" data-i18n>Por que dá pra confiar no que aparece aqui</div>
+      <div class="bhelp-item">
+        <span class="bhelp-dot"></span>
+        <div>
+          <div class="bhelp-t" data-i18n>Todo achado mostra a prova</div>
+          <div class="bhelp-d" data-i18n>Junto de cada achado vem o trecho da sua nota, copiado palavra por palavra. Antes de aparecer na tela, o app procura esse trecho dentro da nota. Se não encontrar exatamente, o achado inteiro é jogado fora sozinho — você nem chega a ver.</div>
+        </div>
+      </div>
+      <div class="bhelp-item">
+        <span class="bhelp-dot"></span>
+        <div>
+          <div class="bhelp-t" data-i18n>Por que essa trava existe</div>
+          <div class="bhelp-d" data-i18n>Quando uma IA inventa um padrão, ele sai escrito com a mesma segurança de um padrão verdadeiro — não tem como diferenciar pela leitura. Pior: quando é sobre a nossa própria vida, a gente tende a achar que encaixa (é o mesmo efeito do horóscopo). Por isso a conferência não é feita por outra IA, e sim por uma busca literal do texto: ela não tem opinião nem vontade de agradar.</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px">
+        <p style="font-size:12.5px;color:var(--text3);line-height:1.65;margin:0" data-i18n>Se aparecer "nada que se repita", isso é resposta de verdade e não falha — quer dizer que suas notas andaram variadas. E lembre: mudar de ideia não é defeito nenhum. O painel aponta a mudança sem julgar, porque só você sabe se foi amadurecimento ou distração.</p>
       </div>
     </div>
   </div>
@@ -2971,7 +3010,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.05.5';
+const VOX_VERSION='2026.08.05.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3330,6 +3369,17 @@ let I18N_EN={
 "Costura":"Stitch",
 "Nota costurada criada! As originais continuam intactas.":"Stitched note created! The originals are untouched.",
 // Panorama
+"Ligando isso você ganha <strong>duas</strong> ferramentas, não uma: a busca por sentido e as <strong>Notas relacionadas</strong> (no menu ⋯ Mais), que junta sozinha as notas que falam do mesmo assunto. As duas leem o mesmo índice — monta uma vez, serve pras duas.":"Turning this on gets you <strong>two</strong> tools, not one: meaning search and <strong>Related notes</strong> (in the ⋯ More menu), which gathers notes about the same subject on its own. Both read the same index — build it once, serves both.",
+"O mesmo índice também liga as <strong>Notas relacionadas</strong>, no menu ⋯ Mais — monta uma vez, serve pras duas.":"The same index also turns on <strong>Related notes</strong>, in the ⋯ More menu — build it once, serves both.",
+"O que este painel faz":"What this panel does",
+"Você lê uma nota por vez — é assim que a cabeça humana funciona. Só que algumas coisas só aparecem quando se olha várias notas juntas: um assunto que você voltou a tocar cinco vezes sem perceber, uma promessa que você fez em voz alta e nunca mais mencionou, uma ideia que mudou ao longo dos meses.":"You read one note at a time — that's how the human head works. But some things only show up when you look at many notes together: a subject you came back to five times without noticing, a promise you made out loud and never mentioned again, an idea that shifted over the months.",
+"Este painel lê várias notas de uma vez e aponta só essas três coisas. Ele não resume, não aconselha e não tenta adivinhar o que você sentiu.":"This panel reads many notes at once and points at those three things only. It doesn't summarize, doesn't advise and doesn't try to guess what you felt.",
+"Por que dá pra confiar no que aparece aqui":"Why you can trust what shows up here",
+"Todo achado mostra a prova":"Every finding shows its proof",
+"Junto de cada achado vem o trecho da sua nota, copiado palavra por palavra. Antes de aparecer na tela, o app procura esse trecho dentro da nota. Se não encontrar exatamente, o achado inteiro é jogado fora sozinho — você nem chega a ver.":"Every finding comes with the passage from your note, copied word for word. Before it reaches the screen, the app looks for that passage inside the note. If it isn't found exactly, the whole finding is thrown out on its own — you never even see it.",
+"Por que essa trava existe":"Why this lock exists",
+"Quando uma IA inventa um padrão, ele sai escrito com a mesma segurança de um padrão verdadeiro — não tem como diferenciar pela leitura. Pior: quando é sobre a nossa própria vida, a gente tende a achar que encaixa (é o mesmo efeito do horóscopo). Por isso a conferência não é feita por outra IA, e sim por uma busca literal do texto: ela não tem opinião nem vontade de agradar.":"When an AI makes up a pattern, it comes out written with the same confidence as a true one — there's no telling them apart by reading. Worse: when it's about our own life, we tend to feel it fits (same effect as horoscopes). That's why the check isn't done by another AI, but by a literal text search: it has no opinion and no wish to please.",
+"Se aparecer \"nada que se repita\", isso é resposta de verdade e não falha — quer dizer que suas notas andaram variadas. E lembre: mudar de ideia não é defeito nenhum. O painel aponta a mudança sem julgar, porque só você sabe se foi amadurecimento ou distração.":"If it says \"nothing recurring\", that's a real answer and not a failure — it means your notes have been varied. And remember: changing your mind is no flaw. The panel points at the change without judging, because only you know whether it was growth or drift.",
 "🧭 O que você anda repetindo":"🧭 What you keep coming back to",
 "O que você anda repetindo":"What you keep coming back to",
 "Temas que se repetem, promessas soltas e mudanças de ideia":"Recurring themes, loose promises and changes of mind",
@@ -4234,6 +4284,8 @@ function openBrainHelp(){
 function closeBrainHelp(){document.getElementById('brainHelpOverlay').style.display='none'}
 function openSemHelp(){document.getElementById('semHelpOverlay').style.display='flex'}
 function closeSemHelp(){document.getElementById('semHelpOverlay').style.display='none'}
+function openPanHelp(){document.getElementById('panHelpOverlay').style.display='flex'}
+function closePanHelp(){document.getElementById('panHelpOverlay').style.display='none'}
 
 function playIntroVideo(){
   const overlay=document.getElementById('vintroOverlay');
@@ -5469,7 +5521,14 @@ function clearSearch(){
 // Obsidian) de propósito: são ~25MB de modelo + biblioteca, e o Vox é um
 // index.html só, com CSP que barra script de fora. Chave do próprio usuário
 // custa ~US$0,02 por milhão de palavras (centavos, uma vez) e não pesa nada.
-const SEM_KEY='vox_embeddings';   // { [cardId]: {h:hash, v:[...] } }
+// Chaveado pelo HASH DO TEXTO, não pelo id do card. Motivo achado testando: o
+// histórico salvo (vox_history) não guarda o id — a cada recarga da página os
+// cards nascem com id novo, o índice inteiro virava órfão e era reconstruído
+// via API. Quem tem 300 notas pagava uma reindexação completa toda vez que
+// abria o app, sem nunca saber. Pelo hash o índice sobrevive a recargas, e
+// nota editada continua sendo reindexada (o hash muda junto com o texto).
+const SEM_KEY='vox_embeddings_v2';   // { [hashDoTexto]: [...vetor] }
+const SEM_KEY_ANTIGA='vox_embeddings';
 const SEM_MAXCHARS=4000;          // teto por nota: evita estourar limite e custo
 const SEM_BATCH=32;               // notas por chamada
 // SEM_MIN morreu depois de testar com chave de verdade (Gemini): a régua de
@@ -5511,8 +5570,20 @@ function _cosine(a,b){
 }
 async function _semLoad(){
   if(_semCache)return _semCache;
-  try{_semCache=await idbGet(SEM_KEY)||{}}catch(e){_semCache={}}
+  try{
+    _semCache=await idbGet(SEM_KEY)||{};
+    // O índice velho era chaveado por id de card, que muda a cada recarga —
+    // não há nada aproveitável ali, só espaço ocupado. Sai de cena na primeira
+    // vez que o novo formato é carregado.
+    idbDelete(SEM_KEY_ANTIGA).catch(()=>{});
+  }catch(e){_semCache={}}
   return _semCache;
+}
+// Vetor de um card, achado pelo conteúdo. Ponto único de leitura do índice —
+// quem precisa do vetor pergunta aqui, não indexa o objeto na mão.
+function _semVetor(store,card){
+  const txt=_semText(card);
+  return txt?store[_semHash(txt)]:null;
 }
 async function _semEmbed(textos){
   const tgt=_semTarget();
@@ -5527,20 +5598,22 @@ async function _semEmbed(textos){
 async function _semIndex(onProg){
   const store=await _semLoad();
   const cards=[...document.querySelectorAll('.card:not(.proc-card)')];
-  const pend=[];
+  const pend=[],vivos=new Set();
   cards.forEach(c=>{
     const txt=_semText(c);
     if(!txt)return;
     const h=_semHash(txt);
-    if(!store[c.id]||store[c.id].h!==h)pend.push({id:c.id,txt,h});
+    vivos.add(h);
+    // Duas notas com o mesmo texto dividem o mesmo vetor — indexar de novo
+    // seria pagar duas vezes pela mesma conta.
+    if(!store[h]&&!pend.some(p=>p.h===h))pend.push({txt,h});
   });
-  // Nota apagada não pode ficar ocupando espaço no índice pra sempre
-  const vivos=new Set(cards.map(c=>c.id));
-  Object.keys(store).forEach(id=>{if(!vivos.has(id))delete store[id]});
+  // Texto que não existe mais em nota nenhuma não pode ocupar espaço pra sempre
+  Object.keys(store).forEach(h=>{if(!vivos.has(h))delete store[h]});
   for(let i=0;i<pend.length;i+=SEM_BATCH){
     const lote=pend.slice(i,i+SEM_BATCH);
     const vecs=await _semEmbed(lote.map(x=>x.txt));
-    lote.forEach((x,j)=>{if(vecs[j])store[x.id]={h:x.h,v:vecs[j]}});
+    lote.forEach((x,j)=>{if(vecs[j])store[x.h]=vecs[j]});
     if(onProg)onProg(Math.min(i+SEM_BATCH,pend.length),pend.length);
   }
   if(pend.length)await idbSet(SEM_KEY,store);
@@ -5565,6 +5638,7 @@ function _semAsk(){
     <div style="font-size:34px;margin-bottom:10px">🧭</div>
     <div class="tx-title">${t('Ligar busca por sentido?')}</div>
     <div class="tx-sub" style="line-height:1.7">${t('Ela acha nota pelo ASSUNTO, não pela palavra exata — buscar "médico" encontra "doutor", "consulta" encontra "atendimento".<br><br>Pra isso o texto das suas {n} notas é enviado UMA vez pra {p} montar um índice, que fica guardado só aqui no seu aparelho. Custa poucos centavos e só acontece de novo quando você criar ou editar uma nota.<br><br>Dá pra desligar quando quiser.').replace('{n}',n).replace('{p}',escHtml(tgt.name))}</div>
+    <div class="tx-sub" style="line-height:1.7;margin-top:10px;opacity:.85">${t('O mesmo índice também liga as <strong>Notas relacionadas</strong>, no menu ⋯ Mais — monta uma vez, serve pras duas.')}</div>
     <div class="tx-row" style="flex-direction:column;gap:8px;margin-top:16px">
       <button class="tx-btn primary" onclick="closeTxOverlay();_semEnable()">${t('Entendi, ligar')}</button>
       <button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Agora não')}</button>
@@ -5611,8 +5685,8 @@ function _semSchedule(q){
       const candidatos=[];
       document.querySelectorAll('.card:not(.proc-card)').forEach(c=>{
         if(!c.classList.contains('hidden'))return; // já apareceu na busca normal
-        const e=store[c.id];if(!e)return;
-        candidatos.push({id:c.id,s:_cosine(qv,e.v)});
+        const v=_semVetor(store,c);if(!v)return;
+        candidatos.push({id:c.id,s:_cosine(qv,v)});
       });
       let achados;
       if(candidatos.length>=4){
@@ -5656,10 +5730,10 @@ function _semGo(id){
 // Acha grupos de notas sobre o mesmo assunto. Não gasta chamada de IA nenhuma:
 // roda inteiro em cima do índice de vetores que a busca por sentido já montou.
 // Por isso exige que ela esteja ligada — sem índice não há o que comparar.
-const COST_K=2.5;          // quão acima do par típico uma dupla precisa estar
+const COST_K=4;            // quão acima do par típico uma dupla precisa estar
 const COST_TETO=0.97;      // acima disso não é "mesmo assunto", é texto quase repetido
-const COST_GAP_MIN=0.08;   // distância mínima da mediana (ver o porquê no limiar)
-const COST_MAX_GRUPO=8;    // grupo maior que isso quase sempre é "corrente" (ver abaixo)
+const COST_GAP_MIN=0.04;   // distância mínima da mediana (ver o porquê no limiar)
+const COST_MAX_GRUPO=8;    // teto de sanidade visual — grupo maior vira parede de texto
 const COST_MAX_CARDS=600;  // teto de segurança: acima disso o nº de pares explode
 const COST_BLOCO=40000;    // pares por bloco antes de devolver o fôlego pra tela
 
@@ -5674,21 +5748,16 @@ function _costNormalizar(v){
   for(let i=0;i<v.length;i++)u[i]=v[i]/n;
   return u;
 }
-// União transitiva (union-find): se A é parecida com B e B com C, as três caem
-// no mesmo grupo. É o que permite grupo de 3+ sem comparar tudo com tudo de novo.
-function _costUF(n){
-  const p=[...Array(n).keys()];
-  const find=x=>{while(p[x]!==x){p[x]=p[p[x]];x=p[x]}return x};
-  return{find,union:(a,b)=>{a=find(a);b=find(b);if(a!==b)p[a]=b}};
-}
+// Posição do par (i,j), i<j, dentro do vetor triangular de similaridades.
+function _costIdx(i,j,N){return i*N-((i*(i+1))/2)+(j-i-1)}
 async function _costurarGrupos(onProg){
   const store=await _semLoad();
-  const cards=[...document.querySelectorAll('.card:not(.proc-card)')].filter(c=>store[c.id]&&store[c.id].v);
+  const cards=[...document.querySelectorAll('.card:not(.proc-card)')].filter(c=>_semVetor(store,c));
   if(cards.length<3)return{poucas:true,grupos:[],total:cards.length};
   // Mais recentes primeiro: se houver teto a estourar, é o passado distante que
   // fica de fora, não o que a pessoa acabou de gravar.
   const usados=cards.slice(0,COST_MAX_CARDS);
-  const its=usados.map(c=>({id:c.id,u:_costNormalizar(store[c.id].v)}));
+  const its=usados.map(c=>({id:c.id,u:_costNormalizar(_semVetor(store,c))}));
   const N=its.length;
   // 1ª passada: todas as similaridades entre pares, pra saber o que é "alto"
   // NESTE acervo. Limiar fixo não serve — cada provedor tem um piso de ruído
@@ -5708,16 +5777,17 @@ async function _costurarGrupos(onProg){
       await new Promise(r=>setTimeout(r,0)); // devolve o fôlego pra tela não travar
     }
   }
-  // Mediana + dispersão da cauda superior — NÃO média + desvio padrão. A
-  // primeira versão usava média+desvio e, testando com acervos simulados, ela
-  // produziu limiar 1.0766: acima de 1.0, que é o máximo possível de
-  // similaridade. Nenhum par jamais passaria e a ferramenta ficaria
-  // silenciosamente inútil — sem erro, sem aviso, só "nunca acha nada". A
-  // mediana não é puxada pelas caudas, então não sofre disso.
+  // A escala vem do RUÍDO (metade de baixo da distribuição), não da cauda de
+  // cima. Testando com embeddings de verdade da Gemini, a cauda superior já
+  // está contaminada pelos próprios pares verdadeiros — num acervo de 10 notas
+  // com 2 grupos, o percentil 95 caía NO MEIO deles, e o limiar saía tão alto
+  // que nada passava (medido: 0 grupos num acervo onde os grupos eram óbvios).
+  // A metade de baixo é só ruído, então medir a dispersão ali é honesto.
   const ord=Float32Array.from(sims.subarray(0,k)).sort();
   const pct=p=>ord[Math.min(ord.length-1,Math.floor(ord.length*p))];
-  const mediana=pct(0.5),p95=pct(0.95);
-  let limiar=mediana+COST_K*Math.max(p95-mediana,0.005);
+  const mediana=pct(0.5);
+  const escalaRuido=Math.max(mediana-pct(0.25),0.005);
+  let limiar=mediana+COST_K*escalaRuido;
   limiar=Math.min(limiar,COST_TETO);
   // Por ÚLTIMO, e de propósito: o piso sobre a mediana vem DEPOIS do teto, não
   // antes. Num acervo em que tudo parece com tudo (quem só grava sobre um
@@ -5726,30 +5796,42 @@ async function _costurarGrupos(onProg){
   // Nesta ordem o limiar sobe acima do alcançável e nada é agrupado, que é a
   // resposta certa: se o "grupo" seria tudo, não há informação ali.
   limiar=Math.max(limiar,mediana+COST_GAP_MIN);
-  // 2ª passada: une os pares que passaram do limiar
-  const uf=_costUF(N);
-  k=0;
-  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){if(sims[k++]>=limiar)uf.union(i,j)}
-  const porRaiz={};
-  for(let i=0;i<N;i++){const r=uf.find(i);(porRaiz[r]=porRaiz[r]||[]).push(i)}
+  const sim=(a,b)=>a===b?1:sims[_costIdx(Math.min(a,b),Math.max(a,b),N)];
+  // Agrupamento por ligação COMPLETA: dois grupos só se fundem quando TODOS os
+  // pares entre eles passam do limiar. A versão anterior unia por transitividade
+  // (A~B, B~C ⇒ A,B,C juntos), o que deixava um único par borderline grudar dois
+  // assuntos que não têm nada a ver — e com dados reais isso acontecia mesmo.
+  // Exigindo coesão total, corrente vira impossível por construção, e não por
+  // um filtro estatístico depois. Resultado medido: os mesmos grupos certos em
+  // toda a faixa de K entre 3 e 7, em vez de depender de acertar o número.
+  const cand=[];
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){const s=sims[_costIdx(i,j,N)];if(s>=limiar)cand.push([i,j,s])}
+  cand.sort((a,b)=>b[2]-a[2]); // começa pelos pares mais fortes
+  const gid=[...Array(N).keys()];
+  const membros=its.map((_,i)=>[i]);
+  cand.forEach(([i,j])=>{
+    const a=gid[i],b=gid[j];
+    if(a===b)return;
+    if(membros[a].length+membros[b].length>COST_MAX_GRUPO)return;
+    let ok=true;
+    for(const x of membros[a]){for(const y of membros[b])if(sim(x,y)<limiar){ok=false;break}if(!ok)break}
+    if(!ok)return;
+    membros[b].forEach(y=>gid[y]=a);
+    membros[a]=membros[a].concat(membros[b]);
+    membros[b]=[];
+  });
   const grupos=[];
-  Object.values(porRaiz).forEach(idxs=>{
-    if(idxs.length<2||idxs.length>COST_MAX_GRUPO)return;
-    // Coesão real do grupo: média de TODOS os pares internos, não só dos que o
-    // uniram. É a defesa contra o "efeito corrente" — A parece com B, B parece
-    // com C, e C acaba no mesmo grupo de A sem ter nada a ver. Se a média
-    // interna não se sustenta, o grupo era corrente e não vai pra tela.
+  membros.forEach(idxs=>{
+    if(idxs.length<2)return;
     let s=0,n=0;
-    for(let a=0;a<idxs.length;a++)for(let b=a+1;b<idxs.length;b++){s+=_costDot(its[idxs[a]].u,its[idxs[b]].u);n++}
-    const coesao=s/n;
-    if(coesao<limiar*0.9)return;
+    for(let a=0;a<idxs.length;a++)for(let b=a+1;b<idxs.length;b++){s+=sim(idxs[a],idxs[b]);n++}
     // Nota mais "central" (a que mais parece com as outras) dá o nome ao grupo.
     let melhor=idxs[0],melhorS=-1;
     idxs.forEach(i=>{
-      let t=0;idxs.forEach(j=>{if(i!==j)t+=_costDot(its[i].u,its[j].u)});
+      let t=0;idxs.forEach(j=>{if(i!==j)t+=sim(i,j)});
       if(t>melhorS){melhorS=t;melhor=i}
     });
-    grupos.push({ids:idxs.map(i=>its[i].id),centro:its[melhor].id,coesao});
+    grupos.push({ids:idxs.map(i=>its[i].id),centro:its[melhor].id,coesao:s/n});
   });
   grupos.sort((a,b)=>b.coesao-a.coesao||b.ids.length-a.ids.length);
   return{grupos,total:N,cortou:cards.length>COST_MAX_CARDS};
@@ -6617,7 +6699,11 @@ const TXTAI_PRESETS={
   ollama:{url:'http://localhost:11434/v1',model:'llama3.2',needsKey:false},
   lmstudio:{url:'http://localhost:1234/v1',model:'local-model',needsKey:false},
   openrouter:{url:'https://openrouter.ai/api/v1',model:'meta-llama/llama-3.3-70b-instruct:free',needsKey:true,keyUrl:'https://openrouter.ai/keys'},
-  gemini:{url:'https://generativelanguage.googleapis.com/v1beta/openai',model:'gemini-2.5-flash-lite',needsKey:true,keyUrl:'https://aistudio.google.com/app/apikey'},
+  // "-latest" em vez de um nome fixo de versão: testando com chave de verdade,
+  // gemini-2.5-flash-lite devolveu 404 com "no longer available to new users"
+  // — ou seja, quem criasse conta hoje e escolhesse Gemini pegava um preset
+  // quebrado. O alias sempre aponta pro modelo atual e não envelhece sozinho.
+  gemini:{url:'https://generativelanguage.googleapis.com/v1beta/openai',model:'gemini-flash-lite-latest',needsKey:true,keyUrl:'https://aistudio.google.com/app/apikey'},
   deepseek:{url:'https://api.deepseek.com/v1',model:'deepseek-v4-flash',needsKey:true,keyUrl:'https://platform.deepseek.com/api_keys'},
   qwen:{url:'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',model:'qwen-plus',needsKey:true,keyUrl:'https://modelstudio.console.alibabacloud.com'},
   // O endereço /api/openai/v1 devolve 404 NOT_FOUND (testado em 27/07/2026, com curl).
