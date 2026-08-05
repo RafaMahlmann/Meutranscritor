@@ -92,11 +92,28 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
    Exportar ficam fora. Os wrappers sempre são position:relative/block pra o
    dropdown posicionar; o botão ⋯ sempre visível. */
 .hd-more-wrap{display:block;position:relative}
-.hd-more-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;min-width:200px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:6px;flex-direction:column;gap:2px;animation:fadeDown 0.15s ease}
+.hd-more-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;min-width:284px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:6px;flex-direction:column;gap:2px;animation:fadeDown 0.15s ease}
 .hd-more-drop.on{display:flex}
 .hd-more-drop .gbtn span{display:inline!important}
 .hd-more-drop .gbtn{width:100%;justify-content:flex-start;padding:9px 12px;border-radius:10px}
 .gbtn.hd-more-btn{display:inline-flex}
+/* ── Itens do menu "Mais" com subtexto ──
+   O rótulo sozinho não dizia do que a ferramenta precisa, e as três exigem
+   coisas diferentes (embeddings / IA de texto / nada). A linha de baixo conta
+   isso ANTES de a pessoa abrir e esbarrar num aviso. */
+.hd-more-item{}
+.hdm-item{display:flex;align-items:stretch;gap:3px;width:100%}
+.hd-more-drop .hdm-item .gbtn{flex:1;align-items:flex-start;text-align:left;min-width:0;padding:8px 10px}
+/* Precisa derrotar ".hd-more-drop .gbtn span{display:inline!important}" — essa
+   regra tem UM SELETOR A MAIS (o elemento "span"), então com !important nos
+   dois lados ela vencia mesmo com !important aqui também: título e subtexto
+   ficavam grudados na mesma linha corrida. Repetir ".gbtn span" no seletor
+   iguala a especificidade e o meu, por vir depois no arquivo, prevalece. */
+.hd-more-drop .gbtn span.hdm-txt{display:flex!important;flex-direction:column;gap:1px;min-width:0;flex:1}
+.hd-more-drop .gbtn span.hdm-t{display:block!important;font-size:12.5px;font-weight:600;line-height:1.3}
+.hd-more-drop .gbtn span.hdm-sub{display:block!important;font-size:10.5px;font-weight:500;color:var(--text4);line-height:1.35;white-space:normal;letter-spacing:0}
+.hdm-help{flex-shrink:0;width:26px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text4);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;align-self:center;height:26px;line-height:1}
+.hdm-help:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 /* No celular o botão ⋯ fica colado no canto direito, então um menu que cresce
    pra DIREITA encosta na borda da tela (medido: chegava exatamente em 423px de
    423px). Ancorado à direita ele cresce pra dentro e sobra folga — e o limite
@@ -1732,26 +1749,45 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg>
             <span data-i18n>Configurações iniciais</span>
           </button>
-          <button class="gbtn" id="btnSearch" onclick="toggleHdMore();toggleSearch()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <span data-i18n>Buscar</span>
-          </button>
-          <button class="gbtn" id="btnDaySummary" onclick="toggleHdMore();openDaySummary()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span data-i18n>Resumo do dia</span>
-          </button>
-          <button class="gbtn" id="btnCostura" onclick="toggleHdMore();openCostura()" title="Agrupa notas sobre o mesmo assunto" data-i18n-title>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9c0 4 12 5 12 9"/></svg>
-            <span data-i18n>Notas relacionadas</span>
-          </button>
-          <button class="gbtn" id="btnPanorama" onclick="toggleHdMore();openPanorama()" title="Temas que se repetem, promessas soltas e mudanças de ideia" data-i18n-title>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
-            <span data-i18n>O que você anda repetindo</span>
-          </button>
-          <button class="gbtn" id="btnRessurgir" onclick="toggleHdMore();openRessurgir()" title="Traz de volta uma nota antiga esquecida" data-i18n-title>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>
-            <span data-i18n>Resgatar nota antiga</span>
-          </button>
+          <!-- Ferramentas de descoberta: cada uma diz, na própria linha, o que faz
+               e de que ela precisa. Sem isso a pessoa só descobria o requisito
+               DEPOIS de abrir e esbarrar no aviso — e as três têm exigências
+               diferentes, então um recado único seria mentira: só as Notas
+               relacionadas precisam de embeddings; o Panorama usa a IA de texto
+               comum; o Resgatar funciona sem chave nenhuma. O "?" ao lado abre
+               o card que explica o que é embeddings e quais IAs oferecem. -->
+          <div class="hdm-item">
+            <button class="gbtn" id="btnSearch" onclick="toggleHdMore();toggleSearch()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="hdm-txt"><span class="hdm-t" data-i18n>Buscar</span><span class="hdm-sub" data-i18n>Por palavra · não precisa de chave</span></span>
+            </button>
+          </div>
+          <div class="hdm-item">
+            <button class="gbtn" id="btnDaySummary" onclick="toggleHdMore();openDaySummary()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="hdm-txt"><span class="hdm-t" data-i18n>Resumo do dia</span><span class="hdm-sub" data-i18n>Junta o que você gravou hoje · usa sua IA de texto</span></span>
+            </button>
+          </div>
+          <div class="hdm-item">
+            <button class="gbtn" id="btnCostura" onclick="toggleHdMore();openCostura()" title="Agrupa notas sobre o mesmo assunto" data-i18n-title>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9c0 4 12 5 12 9"/></svg>
+              <span class="hdm-txt"><span class="hdm-t" data-i18n>Notas relacionadas</span><span class="hdm-sub" data-i18n>Junta notas do mesmo assunto · precisa de chave com embeddings (OpenAI ou Gemini)</span></span>
+            </button>
+            <button class="hdm-help" onclick="toggleHdMore();openSemHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?">?</button>
+          </div>
+          <div class="hdm-item">
+            <button class="gbtn" id="btnPanorama" onclick="toggleHdMore();openPanorama()" title="Temas que se repetem, promessas soltas e mudanças de ideia" data-i18n-title>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+              <span class="hdm-txt"><span class="hdm-t" data-i18n>O que você anda repetindo</span><span class="hdm-sub" data-i18n>Temas, promessas e mudanças de ideia · usa sua IA de texto</span></span>
+            </button>
+            <button class="hdm-help" onclick="toggleHdMore();openPanHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?">?</button>
+          </div>
+          <div class="hdm-item">
+            <button class="gbtn" id="btnRessurgir" onclick="toggleHdMore();openRessurgir()" title="Traz de volta uma nota antiga esquecida" data-i18n-title>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>
+              <span class="hdm-txt"><span class="hdm-t" data-i18n>Resgatar nota antiga</span><span class="hdm-sub" data-i18n>Traz de volta o que você esqueceu · funciona sem chave</span></span>
+            </button>
+          </div>
           <button class="gbtn gbtn-ico" id="btnCfg" onclick="toggleHdMore();openModal()" title="Configurações" data-i18n-title>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span data-i18n>Configurações</span>
@@ -3061,7 +3097,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.05.7';
+const VOX_VERSION='2026.08.05.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3422,6 +3458,12 @@ let I18N_EN={
 "O que é isso, afinal?":"So what is this, anyway?",
 "Você ainda não tem uma chave que sirva pra isso. São só duas que funcionam, e conectar leva menos de um minuto.":"You don't have a key that works for this yet. Only two of them do, and connecting takes under a minute.",
 "Conectar uma chave":"Connect a key",
+// Subtextos do menu "Mais" — cada ferramenta diz do que precisa
+"Por palavra · não precisa de chave":"By word · no key needed",
+"Junta o que você gravou hoje · usa sua IA de texto":"Gathers what you recorded today · uses your text AI",
+"Junta notas do mesmo assunto · precisa de chave com embeddings (OpenAI ou Gemini)":"Groups notes about the same subject · needs a key with embeddings (OpenAI or Gemini)",
+"Temas, promessas e mudanças de ideia · usa sua IA de texto":"Themes, promises and changes of mind · uses your text AI",
+"Traz de volta o que você esqueceu · funciona sem chave":"Brings back what you forgot · works without a key",
 // Notas relacionadas (costurar)
 "🧵 Notas relacionadas":"🧵 Related notes",
 "Notas relacionadas":"Related notes",
