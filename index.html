@@ -34,13 +34,21 @@
   --font:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --transition:0.2s cubic-bezier(0.4,0,0.2,1);
 }
+/* Escuro clareado (relatado pelo Rafa: ilegível no monitor dele). O que mudou e
+   por quê:
+   - o fundo era #000 puro. Preto absoluto contra texto claro causa "halation"
+     (o texto parece borrar/vibrar) e cansa a vista — nenhum sistema operacional
+     usa preto puro no modo escuro por isso;
+   - --text4 era #48484a sobre #1c1c1e: contraste de 1,9:1, ou seja, ilegível
+     mesmo com vista boa. Era o principal culpado, e é o que mais subiu aqui.
+   Os tons continuam escuros de propósito — só saíram do extremo. */
 [data-theme="dark"]{
-  --bg:#000000;--bg2:#1c1c1e;--bg3:rgba(28,28,30,0.7);--bg-header:rgba(0,0,0,0.88);
-  --bg-input:rgba(255,255,255,0.08);--bg-card:#1c1c1e;--border:rgba(255,255,255,0.07);
-  --border2:rgba(255,255,255,0.13);--shadow-card:0 1px 3px rgba(0,0,0,0.5),0 8px 32px rgba(0,0,0,0.6);
+  --bg:#131315;--bg2:#202023;--bg3:rgba(32,32,35,0.7);--bg-header:rgba(19,19,21,0.88);
+  --bg-input:rgba(255,255,255,0.10);--bg-card:#212124;--border:rgba(255,255,255,0.11);
+  --border2:rgba(255,255,255,0.18);--shadow-card:0 1px 3px rgba(0,0,0,0.5),0 8px 32px rgba(0,0,0,0.6);
   --shadow-hover:0 2px 12px rgba(0,0,0,0.6),0 16px 48px rgba(0,0,0,0.7);
   --shadow-input:0 2px 8px rgba(0,0,0,0.5),0 8px 24px rgba(0,0,0,0.5);
-  --text:#f5f5f7;--text2:#c7c7cc;--text3:#8e8e93;--text4:#48484a;
+  --text:#f5f5f7;--text2:#cfcfd4;--text3:#9d9da4;--text4:#8a8a93;
 }
 /* ── SKINS (cor de acento, funciona em claro e escuro) ── */
 [data-skin="amber"]{--accent:#d99a2b;--accent2:#b87f1c;--accent-glow:rgba(217,154,43,0.20)}
@@ -79,7 +87,10 @@
 [data-theme="dark"] .card[data-tc]{background:color-mix(in srgb,var(--ca) 13%,var(--bg-card))}
 /* A bolinha do cabeçalho vira o gatilho: sem etiqueta ela é um contorno vazio
    (convida a clicar); com etiqueta, fica cheia da cor escolhida. */
-.cdot-btn{width:15px;height:15px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid var(--border2);background:transparent;padding:0;transition:transform var(--transition),border-color var(--transition)}
+/* touch-action:none e user-select:none impedem o navegador de sequestrar o
+   "segurar" pra rolagem ou pra seleção de texto no celular — sem isso o
+   long-press nunca chega até o nosso código no iPhone. */
+.cdot-btn{width:15px;height:15px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid var(--border2);background:transparent;padding:0;transition:transform var(--transition),border-color var(--transition);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .cdot-btn:hover{transform:scale(1.25);border-color:var(--ca,var(--accent))}
 .card[data-tc] .cdot-btn{background:var(--ca);border-color:var(--ca)}
 .cdot-wrap{position:relative;display:inline-flex;align-items:center}
@@ -3157,7 +3168,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.05.9';
+const VOX_VERSION='2026.08.06.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3502,6 +3513,7 @@ let I18N_EN={
 "Esta fonte não confere: o trecho citado não está no texto.":"This source doesn't check out: the quoted passage isn't in the text.",
 // Etiquetas de cor
 "Etiqueta de cor":"Color label",
+"Toque para trocar a cor · segure para escolher":"Tap to change color · hold to pick",
 "Sem etiqueta":"No label",
 "Etiquetas":"Labels",
 "Verde":"Green","Azul":"Blue","Roxo":"Purple","Laranja":"Orange",
@@ -4985,6 +4997,38 @@ function _restaurarEtiqueta(id,it){
 }
 const TAG_NOMES=()=>[t('Verde'),t('Azul'),t('Roxo'),t('Laranja'),t('Rosa'),t('Ciano'),t('Amarelo'),t('Vermelho')];
 let corFiltroAtivo=null; // null = mostra todas
+// Toque rápido troca a cor na hora; segurar abre o menu pra escolher direto.
+// A ideia é que o caso comum (só quero marcar isto de alguma cor) não custe
+// duas ações — e quem já sabe qual cor quer não precise ficar ciclando.
+const CDOT_SEGURAR=450; // ms até virar "segurar"
+let _cdotTimer=null,_cdotAbriu=false;
+function cdotDown(id){
+  _cdotAbriu=false;
+  clearTimeout(_cdotTimer);
+  _cdotTimer=setTimeout(()=>{
+    _cdotAbriu=true;
+    // Vibradinha curta: sem ela não dá pra saber que o "segurar" pegou, já que
+    // o menu abre embaixo do próprio dedo.
+    if(navigator.vibrate)try{navigator.vibrate(12)}catch(e){}
+    toggleCdotPop(id);
+  },CDOT_SEGURAR);
+}
+function cdotUp(id){
+  clearTimeout(_cdotTimer);
+  if(_cdotAbriu)return; // já resolveu como "segurar" — não cicla também
+  ciclarCorCard(id);
+}
+function cdotCancelar(){clearTimeout(_cdotTimer)}
+// Ordem: sem etiqueta → verde → azul → ... → vermelho → sem etiqueta.
+// Fechar o ciclo de volta no "sem etiqueta" é o que permite DESMARCAR só
+// tocando, sem precisar abrir menu nenhum.
+function ciclarCorCard(id){
+  const c=document.getElementById(id);
+  if(!c)return;
+  const atual=c.dataset.tc;
+  const prox=(atual===undefined||atual==='')?0:parseInt(atual)+1;
+  setCardCor(id,prox>=TAG_CORES.length?null:prox);
+}
 function toggleCdotPop(id){
   const pop=document.getElementById('cdotPop-'+id);
   if(!pop)return;
@@ -9868,7 +9912,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       <div class="ch">
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
-          <span class="cdot-wrap"><button type="button" class="cdot-btn" onclick="event.stopPropagation();toggleCdotPop('${id}')" title="${t('Etiqueta de cor')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
+          <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar">${t('🔮 Diarizado')}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
@@ -12153,7 +12197,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       <div class="ch">
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
-          <span class="cdot-wrap"><button type="button" class="cdot-btn" onclick="event.stopPropagation();toggleCdotPop('${id}')" title="${t('Etiqueta de cor')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
+          <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
           ${sn?`<span class="sname-badge" title="${escHtml(sn)}">${escHtml(sn)}</span>`:''}
