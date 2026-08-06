@@ -56,6 +56,62 @@
 .c7{--ca:#f43f5e;--cag:rgba(244,63,94,0.12);--cat:rgba(244,63,94,0.06)}
 /* Cards neutros: faixinha + elementos usam o acento da skin (sem arco-íris) */
 .card{--ca:var(--accent)!important;--cag:var(--accent-glow)!important;--cat:transparent!important}
+/* ── ETIQUETAS DE COR (data-tc) ──
+   Conceito diferente do .c0–.c7 automático (que continua desligado pela regra
+   acima, de propósito — cor sorteada por ordem de criação virava arco-íris sem
+   significado). Aqui a cor só existe quando a PESSOA escolhe: é etiqueta, não
+   enfeite. Por isso mora num atributo próprio (data-tc) e não no ci.
+   O seletor tem especificidade maior que ".card" e também usa !important —
+   é o que faz a escolha da pessoa vencer a neutralização acima. */
+.card[data-tc="0"]{--ca:#10b981!important;--cag:rgba(16,185,129,0.12)!important}
+.card[data-tc="1"]{--ca:#3b82f6!important;--cag:rgba(59,130,246,0.12)!important}
+.card[data-tc="2"]{--ca:#a78bfa!important;--cag:rgba(167,139,250,0.12)!important}
+.card[data-tc="3"]{--ca:#f97316!important;--cag:rgba(249,115,22,0.12)!important}
+.card[data-tc="4"]{--ca:#ec4899!important;--cag:rgba(236,72,153,0.12)!important}
+.card[data-tc="5"]{--ca:#06b6d4!important;--cag:rgba(6,182,212,0.12)!important}
+.card[data-tc="6"]{--ca:#eab308!important;--cag:rgba(234,179,8,0.12)!important}
+.card[data-tc="7"]{--ca:#f43f5e!important;--cag:rgba(244,63,94,0.12)!important}
+/* Fundo colorido de verdade, mas suave. color-mix mistura a cor da etiqueta com
+   o fundo normal do card — então funciona sozinho no tema claro E no escuro,
+   sem precisar de duas paletas. 7% é o ponto em que a cor se lê à distância e
+   o texto por cima continua com contraste de leitura confortável. */
+.card[data-tc]{background:color-mix(in srgb,var(--ca) 7%,var(--bg-card))}
+[data-theme="dark"] .card[data-tc]{background:color-mix(in srgb,var(--ca) 13%,var(--bg-card))}
+/* A bolinha do cabeçalho vira o gatilho: sem etiqueta ela é um contorno vazio
+   (convida a clicar); com etiqueta, fica cheia da cor escolhida. */
+.cdot-btn{width:15px;height:15px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid var(--border2);background:transparent;padding:0;transition:transform var(--transition),border-color var(--transition)}
+.cdot-btn:hover{transform:scale(1.25);border-color:var(--ca,var(--accent))}
+.card[data-tc] .cdot-btn{background:var(--ca);border-color:var(--ca)}
+.cdot-wrap{position:relative;display:inline-flex;align-items:center}
+.cdot-pop{display:none;position:absolute;top:calc(100% + 7px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:210;padding:10px;animation:fadeDown .15s ease;width:max-content}
+.cdot-pop.on{display:block}
+.cdot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.cdot-sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;transition:transform var(--transition)}
+.cdot-sw:hover{transform:scale(1.18)}
+.cdot-sw.on{border-color:var(--text);box-shadow:0 0 0 2px var(--bg-card) inset}
+.cdot-none{width:100%;margin-top:8px;background:none;border:1px solid var(--border);border-radius:9px;padding:6px;font-family:var(--font);font-size:11.5px;color:var(--text3);cursor:pointer}
+.cdot-none:hover{border-color:var(--danger);color:var(--danger)}
+/* Filtro de etiquetas no painel lateral — mesma linguagem visual das pastas */
+#corFiltro:not(:empty){margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.cf-hd{font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--text4);margin-bottom:8px;padding:0 2px}
+.cf-row{display:flex;flex-wrap:wrap;gap:7px}
+.cf-dot{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;position:relative;display:flex;align-items:center;justify-content:center;transition:transform var(--transition)}
+.cf-dot:hover{transform:scale(1.12)}
+.cf-dot.on{border-color:var(--text)}
+/* Contagem dentro da bolinha: diz de cara quanto tem de cada cor, sem legenda */
+.cf-n{font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.45);line-height:1}
+/* Alvo de toque no celular. A bolinha continua pequena de propósito (ela divide
+   espaço com os badges do cabeçalho), mas ganha uma área invisível ao redor —
+   mesmo hit-slop que o app já usa no botão de pastas. As cores do popover, essas,
+   crescem de verdade: ali o dedo precisa acertar a cor certa entre oito. */
+@media(max-width:640px){
+  .cdot-btn{position:relative;width:17px;height:17px}
+  .cdot-btn::after{content:'';position:absolute;inset:-14px}
+  .cdot-sw{width:40px;height:40px}
+  .cdot-grid{gap:9px}
+  .cdot-none{padding:11px;font-size:13px}
+  .cf-dot{width:34px;height:34px}
+}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased}
 .wrap{max-width:1100px;margin:0 auto;padding:0 20px;width:100%}
 /* Sem qualificar por "main" — precisa valer também pra .stats (a barra de
@@ -2018,6 +2074,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <span data-i18n>Nova pasta</span>
       </button>
       <div id="folderList"></div>
+      <!-- Filtro por etiqueta de cor. Nasce vazio e só aparece quando existe
+           pelo menos um card etiquetado — fileira de bolinhas vazias seria
+           promessa de organização que a pessoa ainda não fez. -->
+      <div id="corFiltro"></div>
     </aside>
   </div>
 </main>
@@ -3097,7 +3157,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.05.8';
+const VOX_VERSION='2026.08.05.9';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3440,6 +3500,12 @@ let I18N_EN={
 "desligar":"turn off",
 // Protocolo de achado verificável (citações conferidas contra o texto real)
 "Esta fonte não confere: o trecho citado não está no texto.":"This source doesn't check out: the quoted passage isn't in the text.",
+// Etiquetas de cor
+"Etiqueta de cor":"Color label",
+"Sem etiqueta":"No label",
+"Etiquetas":"Labels",
+"Verde":"Green","Azul":"Blue","Roxo":"Purple","Laranja":"Orange",
+"Rosa":"Pink","Ciano":"Cyan","Amarelo":"Yellow","Vermelho":"Red",
 // Painel de conectar chave (só OpenAI/Gemini)
 "Conectar a busca por sentido":"Connect meaning search",
 "Só estas duas sabem montar o índice de sentido. Escolha uma, cole a chave e pronto — dá pra trocar depois.":"Only these two can build the meaning index. Pick one, paste the key and that's it — you can switch later.",
@@ -4823,6 +4889,10 @@ function getFolderCounts(){
   return counts;
 }
 function renderFolders(){
+  // O filtro de etiquetas vive no mesmo painel e muda pelas mesmas razões
+  // (card criado, apagado, importado) — desenhar junto evita ficar espalhando
+  // chamada de atualização por todo lado.
+  renderFiltroCores();
   const list=document.getElementById('folderList');
   if(!list)return;
   const counts=getFolderCounts();
@@ -4900,10 +4970,81 @@ function selectFolder(id){
   const nameEl=document.querySelector('.folder-item.active .folder-name');
   if(nameEl&&nameEl.scrollWidth>nameEl.clientWidth)toast('📁 '+nameEl.textContent);
 }
+// ── ETIQUETAS DE COR ──
+// A pessoa marca o card com uma cor pra achar depois de bater o olho. É
+// etiqueta, não enfeite: por isso é escolhida (nunca sorteada) e por isso
+// existe o filtro — cor que não filtra nada vira só ruído visual na tela.
+const TAG_CORES=['#10b981','#3b82f6','#a78bfa','#f97316','#ec4899','#06b6d4','#eab308','#f43f5e'];
+// Repõe a etiqueta ao recriar o card (na abertura do app e ao importar projeto).
+// Fica fora do addCard de propósito: aquela função já tem 14 parâmetros, e um
+// 15º só pra isso deixaria toda chamada existente mais difícil de ler.
+function _restaurarEtiqueta(id,it){
+  if(!id||it==null||it.tc===undefined||it.tc===null)return;
+  const n=parseInt(it.tc);
+  if(!isNaN(n)&&n>=0&&n<TAG_CORES.length)document.getElementById(id)?.setAttribute('data-tc',String(n));
+}
+const TAG_NOMES=()=>[t('Verde'),t('Azul'),t('Roxo'),t('Laranja'),t('Rosa'),t('Ciano'),t('Amarelo'),t('Vermelho')];
+let corFiltroAtivo=null; // null = mostra todas
+function toggleCdotPop(id){
+  const pop=document.getElementById('cdotPop-'+id);
+  if(!pop)return;
+  const jaAberto=pop.classList.contains('on');
+  document.querySelectorAll('.cdot-pop.on').forEach(p=>p.classList.remove('on'));
+  if(jaAberto)return;
+  const atual=document.getElementById(id)?.dataset.tc||'';
+  const nomes=TAG_NOMES();
+  pop.innerHTML=`<div class="cdot-grid">${TAG_CORES.map((cor,i)=>
+    `<button type="button" class="cdot-sw${String(i)===atual?' on':''}" style="background:${cor}" onclick="event.stopPropagation();setCardCor('${escJs(id)}',${i})" title="${escHtml(nomes[i])}" aria-label="${escHtml(nomes[i])}"></button>`
+  ).join('')}</div>
+  <button type="button" class="cdot-none" onclick="event.stopPropagation();setCardCor('${escJs(id)}',null)">${escHtml(t('Sem etiqueta'))}</button>`;
+  pop.classList.add('on');
+}
+function setCardCor(id,i){
+  const c=document.getElementById(id);
+  if(!c)return;
+  if(i===null)delete c.dataset.tc;
+  else c.dataset.tc=String(i);
+  document.querySelectorAll('.cdot-pop.on').forEach(p=>p.classList.remove('on'));
+  saveHistory();
+  renderFiltroCores();
+  applyFolderFilter(); // se um filtro de cor estiver ligado, o card some/aparece na hora
+}
+// Fecha o popover ao clicar fora — mesmo comportamento dos outros menus do app.
+document.addEventListener('click',e=>{
+  if(!e.target.closest?.('.cdot-wrap'))
+    document.querySelectorAll('.cdot-pop.on').forEach(p=>p.classList.remove('on'));
+});
+function selecionarFiltroCor(i){
+  corFiltroAtivo=(corFiltroAtivo===i)?null:i; // clicar de novo na mesma cor desliga
+  renderFiltroCores();
+  applyFolderFilter();
+}
+// Só desenha as cores que EXISTEM em algum card — uma fileira de 8 bolinhas
+// sempre visível, com 7 delas vazias, seria promessa de organização que não
+// existe. A fileira cresce conforme a pessoa etiqueta.
+function renderFiltroCores(){
+  const box=document.getElementById('corFiltro');
+  if(!box)return;
+  const usadas=new Map();
+  document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+    const tc=c.dataset.tc;
+    if(tc!==undefined&&tc!=='')usadas.set(+tc,(usadas.get(+tc)||0)+1);
+  });
+  if(!usadas.size){box.innerHTML='';return}
+  const nomes=TAG_NOMES();
+  const ordem=[...usadas.keys()].sort((a,b)=>a-b);
+  box.innerHTML=`<div class="cf-hd">${escHtml(t('Etiquetas'))}</div>
+    <div class="cf-row">${ordem.map(i=>
+      `<button type="button" class="cf-dot${corFiltroAtivo===i?' on':''}" style="background:${TAG_CORES[i]}" onclick="selecionarFiltroCor(${i})" title="${escHtml(nomes[i])} (${usadas.get(i)})" aria-label="${escHtml(nomes[i])}"><span class="cf-n">${usadas.get(i)}</span></button>`
+    ).join('')}</div>`;
+}
 function applyFolderFilter(){
   document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
     const inFolder=activeFolderId===null||(c.dataset.folder||'')===activeFolderId;
-    c.classList.toggle('folder-hidden',!inFolder);
+    // Os dois filtros se somam (pasta E cor) — é o que a pessoa espera ao
+    // deixar os dois ligados, e é o que torna a cor útil DENTRO de uma pasta.
+    const naCor=corFiltroAtivo===null||(c.dataset.tc!==undefined&&+c.dataset.tc===corFiltroAtivo);
+    c.classList.toggle('folder-hidden',!(inFolder&&naCor));
   });
   if(viewMode==='doc')applyFocusCard();
   updateRecencyBadges();
@@ -7823,11 +7964,13 @@ async function loadHistory(){
     // sort: pinned first
     const sorted=[..._historyCache].sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
     sorted.forEach(it=>{
+      let _novoId;
       if(it.diarized){
-        addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',it.folder||'',it.chatHistory||'[]');
+        _novoId=addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',it.folder||'',it.chatHistory||'[]');
       }else{
-        addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]');
+        _novoId=addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]');
       }
+      _restaurarEtiqueta(_novoId,it);
     });
     const st=localStorage.getItem('vox_stats');
     if(st)stats=JSON.parse(st);
@@ -7856,6 +7999,9 @@ function saveHistory(){
     const base={
       type:c.dataset.type||'texto',prov:c.dataset.prov||'whisper',
       cost:parseFloat(c.dataset.cost)||0,ci:parseInt(c.dataset.ci)||0,
+      // tc = etiqueta de cor escolhida pela pessoa (só existe se ela escolheu).
+      // Não confundir com ci, que é a cor automática por ordem de criação.
+      ...(c.dataset.tc!==undefined&&c.dataset.tc!==''?{tc:parseInt(c.dataset.tc)}:{}),
       dt:c.dataset.dt||'',tags:(c.dataset.tags||'').split(',').filter(t=>t),
       sessionName:c.dataset.sessionName||'',mode:c.dataset.mode||'livre',
       pinned:c.dataset.pinned==='true',folder:c.dataset.folder||''
@@ -7936,11 +8082,13 @@ function _restoreProject(data){
     const sig=(it.dt||'')+'|'+(it.text||'').slice(0,60);
     if(existing.has(sig)){skipped++;return}
     existing.add(sig);
+    let _novoId;
     if(it.diarized){
-      addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',it.folder||'',it.chatHistory||'[]');
+      _novoId=addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',it.folder||'',it.chatHistory||'[]');
     }else{
-      addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]');
+      _novoId=addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]');
     }
+    _restaurarEtiqueta(_novoId,it);
     added++;
   });
   saveHistory();
@@ -9720,7 +9868,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       <div class="ch">
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
-          <span class="cdot"></span>
+          <span class="cdot-wrap"><button type="button" class="cdot-btn" onclick="event.stopPropagation();toggleCdotPop('${id}')" title="${t('Etiqueta de cor')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar">${t('🔮 Diarizado')}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
@@ -12005,7 +12153,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       <div class="ch">
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
-          <span class="cdot"></span>
+          <span class="cdot-wrap"><button type="button" class="cdot-btn" onclick="event.stopPropagation();toggleCdotPop('${id}')" title="${t('Etiqueta de cor')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
           ${sn?`<span class="sname-badge" title="${escHtml(sn)}">${escHtml(sn)}</span>`:''}
