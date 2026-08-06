@@ -3168,7 +3168,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.06.1';
+const VOX_VERSION='2026.08.06.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -10488,6 +10488,14 @@ function openConversaMode(id){
   // Move editor para dentro do slot de texto (não a zona direto — a zona
   // agora também hospeda a barra de abas Original/transformações)
   editorWrap.dataset.cchatPane='original';
+  // Reseta o display inline: se a última sessão do Modo Conversa deste card
+  // terminou com uma aba de transformação ativa (não "Original"), _cchatSwitchTab
+  // deixou editorWrap com style.display='none' — e esse estilo inline sobrevive
+  // à reinserção no card em closeConversaMode(), porque nada ali o limpava. Sem
+  // este reset, reabrir o Modo Conversa reaproveita o MESMO nó DOM já escondido,
+  // e o texto Original nasce invisível até a pessoa clicar manualmente na aba
+  // Original (bug real, relatado pelo Rafa e reproduzido).
+  editorWrap.style.display='';
   document.getElementById('cchat-textslot-'+id).appendChild(editorWrap);
   _cchatRenderTextTabs(id);
   const ta=editorWrap.querySelector('textarea');
@@ -10558,6 +10566,12 @@ function closeConversaMode(id){
     const ta=editorWrap.querySelector('textarea');
     if(ta){ta.style.minHeight='';ta.style.height=''}
     delete editorWrap.dataset.cchatPane;
+    // Mesma causa do reset em openConversaMode: se a aba ativa ao fechar era
+    // uma transformação (não "Original"), editorWrap está com display:none
+    // desde o último _cchatSwitchTab. Sem isto, o card volta pra tela normal
+    // com o texto literalmente invisível — era o primeiro sintoma que o Rafa
+    // via, antes mesmo de tentar reabrir o Modo Conversa.
+    editorWrap.style.display='';
     card._cchatOrigParent.insertBefore(editorWrap,card._cchatOrigNext||null);
   }
   // Remove placeholder
