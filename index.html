@@ -3169,7 +3169,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.06.3';
+const VOX_VERSION='2026.08.07.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3618,6 +3618,11 @@ let I18N_EN={
 "grafias:":"spellings:",
 "ok":"ok",
 "correção manual":"manual correction",
+"correção":"correction",
+"🧪 testar corretor (leve)":"🧪 test proofreader (light)",
+"🧪 testar (reescrever)":"🧪 test (rewrite)",
+"🧪 Testando o corretor…":"🧪 Testing the proofreader…",
+"🧪 Relatório do teste criado como card novo!":"🧪 Test report created as a new card!",
 "marcar todas":"select all",
 "desmarcar todas":"deselect all",
 "sempre ignorar":"always ignore",
@@ -8571,6 +8576,178 @@ async function judgeRepeatedWords(text,candidates,key){
   return _parseReviewResponse(res);
 }
 
+// ── CORRETOR DE REDAÇÃO (agrupado) ──
+// Diferente do revisor de repetições acima, que pergunta "esta PALAVRA está
+// certa aqui?" mandando um pedaço de contexto por ocorrência. Medindo com um
+// ditado real de 941 palavras, aquele formato manda 53 mil caracteres — dez
+// vezes o tamanho do texto — porque a mesma frase vai junto várias vezes, uma
+// por palavra marcada nela. Aqui o texto vai INTEIRO, uma vez só (4,8 mil
+// caracteres no mesmo teste): 11x mais barato, e ainda dá à IA o contexto
+// completo pra corrigir melhor.
+// O formato de resposta usa "-/+" de propósito: é a convenção de diff que todo
+// modelo já viu milhões de vezes, então até cérebro fraco (Llama no Groq)
+// acerta o formato sem precisar de JSON, que eles quebram com frequência.
+const CORRETOR_MAX_TOKENS=4000;
+function _buildCorretorPrompt(texto,estilo){
+  const regraEstilo=estilo==='reescrever'
+    ? 'Reescreva a frase inteira quando isso deixar o texto claramente melhor. Ainda assim, não invente conteúdo novo nem mude o que a pessoa quis dizer.'
+    : 'Mexa o MÍNIMO necessário. Preserve a voz de quem falou — o texto não pode ficar formal nem corporativo. Não invente conteúdo, não resuma, não reordene ideias.';
+  return `Você é um professor de português corrigindo a transcrição de uma fala. O texto abaixo foi ditado em voz alta, então tem vícios de linguagem, muletas repetidas e frases que começam sempre igual.
+
+Sua tarefa: AGRUPAR as correções por TIPO DE MUDANÇA, não listar uma por uma. Se várias correções fazem a mesma coisa, elas são UM grupo só, com vários pares dentro — mesmo que as palavras sejam diferentes. Exemplo: tirar "Ok?", "Certo?" e "correto?" é um grupo só ("tirar perguntas de confirmação"), não três grupos.
+Nunca crie dois grupos com o mesmo rótulo. Se você ia repetir um rótulo, junte tudo num grupo só.
+
+Classifique cada grupo com um destes dois tipos:
+VICIO = vício de fala óbvio (muleta, repetição desnecessária, começo de frase repetido). Praticamente qualquer pessoa aceitaria a correção.
+GOSTO = escolha de palavra ou de estilo. Alguém poderia discordar com razão.
+
+${regraEstilo}
+
+Ao tirar uma palavra, conserte o que ficou em volta: não deixe vírgula, espaço nem pontuação sobrando, e se a palavra tirada era o começo da frase, a palavra seguinte começa com letra maiúscula.
+
+Responda EXATAMENTE neste formato, sem nenhuma palavra antes ou depois:
+
+#GRUPO|VICIO|rótulo curto do que muda
+-trecho exato como está no texto
++trecho corrigido
+-outro trecho exato
++outro trecho corrigido
+#GRUPO|GOSTO|outro rótulo curto
+-trecho exato
++trecho corrigido
+
+Regras do formato, todas obrigatórias:
+- A linha "-" é CÓPIA LITERAL, letra por letra, de um pedaço que existe no texto. Copie e cole mentalmente: não conserte, não complete, não troque maiúscula por minúscula, não tire nem acrescente palavra nenhuma. Se você não tiver certeza de que consegue copiar exato, não inclua esse par.
+- Cada "-" precisa de um "+" na linha logo abaixo.
+- Use trechos curtos: só o que muda, mais o mínimo em volta pra aquele pedaço ser único no texto.
+- Para apagar um trecho sem trocar por nada, deixe a linha "+" vazia.
+
+TEXTO:
+${texto}`;
+}
+// Devolve [{tipo,rotulo,pares:[{de,para}]}]. Tolerante de propósito: aceita
+// espaço sobrando, "#GRUPO" com ou sem acento no tipo, e ignora qualquer linha
+// solta que o modelo tenha inventado fora do formato — é melhor aproveitar 90%
+// de uma resposta torta do que descartar tudo e cobrar outra chamada.
+// NÃO parear "-" com o "+" logo abaixo: visto no teste real com o Llama, o
+// modelo às vezes despeja TODOS os "-" do grupo e só depois todos os "+".
+// Parear na hora daria pares trocados — e um par trocado não é um erro visível,
+// é uma correção que aplica a substituição errada e corta pedaço do texto. Por
+// isso junta as duas listas do grupo e casa por POSIÇÃO, que dá o mesmo
+// resultado certo tanto no formato alternado quanto no formato em bloco.
+function _parseCorretorResponse(res){
+  const grupos=[];let atual=null;
+  const fechar=()=>{
+    if(!atual)return;
+    const n=Math.min(atual._de.length,atual._para.length);
+    for(let i=0;i<n;i++)atual.pares.push({de:atual._de[i],para:atual._para[i]});
+    atual.descasados=Math.abs(atual._de.length-atual._para.length);
+    delete atual._de;delete atual._para;
+  };
+  String(res||'').split(/\r?\n/).forEach(linha=>{
+    const g=linha.match(/^\s*#\s*GRUPO\s*\|\s*([A-Za-zÍÇíç]+)\s*\|\s*(.*)$/);
+    if(g){
+      fechar();
+      const tipo=/^v[ií]cio$/i.test(g[1].trim())?'VICIO':'GOSTO';
+      atual={tipo,rotulo:g[2].trim()||t('correção'),pares:[],_de:[],_para:[]};
+      grupos.push(atual);return;
+    }
+    if(!atual)return;
+    if(/^\s*-/.test(linha)){atual._de.push(linha.replace(/^\s*-/,''));return}
+    if(/^\s*\+/.test(linha))atual._para.push(linha.replace(/^\s*\+/,''));
+  });
+  fechar();
+  // Grupo sem par nenhum é ruído — o modelo abriu um cabeçalho e não entregou.
+  return grupos.filter(g=>g.pares.length);
+}
+// Acha onde o trecho pedido pela IA realmente começa e termina no texto.
+// Medido com o Llama num ditado real: 4 de 12 trechos não batiam letra por
+// letra — mas nenhum era invenção, eram espaço sobrando, maiúscula trocada e
+// um typo ("mesmo coisa" por "mesma coisa"). Exigir cópia perfeita jogaria um
+// terço das correções boas no lixo; por isso vai afrouxando aos poucos, do
+// mais seguro pro mais tolerante, e só desiste quando nem parecido acha.
+// Devolve {start,end,modo} ou null.
+function _corretorLocalizar(texto,trecho){
+  if(!trecho)return null;
+  let i=texto.indexOf(trecho);
+  if(i>=0)return{start:i,end:i+trecho.length,modo:'exato'};
+  const alvo=trecho.trim();
+  if(!alvo)return null;
+  i=texto.indexOf(alvo);
+  if(i>=0)return{start:i,end:i+alvo.length,modo:'espaço'};
+  const baixo=texto.toLowerCase();
+  i=baixo.indexOf(alvo.toLowerCase());
+  if(i>=0)return{start:i,end:i+alvo.length,modo:'maiúscula'};
+  // Último recurso: varre o texto procurando o pedaço mais parecido do mesmo
+  // tamanho. Só considera posições que começam em início de palavra, senão
+  // seriam milhares de comparações inúteis num texto longo.
+  const limite=Math.max(2,Math.round(alvo.length*0.15));
+  let melhor=null,melhorD=1e9;
+  const re=/\S+/g;let m;
+  while((m=re.exec(texto))){
+    const cand=texto.substr(m.index,alvo.length);
+    if(Math.abs(cand.length-alvo.length)>limite)continue;
+    const d=_levenshtein(cand.toLowerCase(),alvo.toLowerCase());
+    if(d<melhorD){melhorD=d;melhor=m.index;if(!d)break}
+  }
+  if(melhor!==null&&melhorD<=limite)return{start:melhor,end:melhor+alvo.length,modo:'aproximado'};
+  return null;
+}
+// Confere par a par se dá pra localizar o trecho "de" no texto. É a checagem
+// que decide se dá pra confiar na resposta: se o modelo inventou o trecho em
+// vez de copiar, a substituição erraria o alvo silenciosamente.
+function _corretorConferir(texto,grupos){
+  let achados=0,perdidos=0;const exemplosPerdidos=[],porModo={};
+  grupos.forEach(g=>g.pares.forEach(p=>{
+    const loc=_corretorLocalizar(texto,p.de);
+    if(loc){achados++;porModo[loc.modo]=(porModo[loc.modo]||0)+1}
+    else{perdidos++;if(exemplosPerdidos.length<5)exemplosPerdidos.push(p.de)}
+  }));
+  return{achados,perdidos,exemplosPerdidos,porModo};
+}
+// TEMPORÁRIO — banco de provas do prompt, não é a função final.
+// Roda o corretor no texto do card e joga a resposta CRUA num card novo, junto
+// do diagnóstico (agrupou? os trechos batem com o texto?). Serve pra decidir se
+// vale construir a tela agrupada antes de gastar tempo construindo ela — e pra
+// comparar cérebros diferentes lado a lado, com a chave do próprio aparelho.
+async function _corretorTeste(cardId,estilo){
+  estilo=estilo||'leve';
+  const ta=_cchatFindTextarea(cardId);
+  const texto=(ta?.value||'').trim();
+  if(!texto){toast(t('ℹ️ Card vazio — nada para revisar'),true);return}
+  const key=aiKey();
+  if(!key){toast(t('🔑 Configure uma chave de IA para usar esta função'),true);openModal();return}
+  const alvo=_txtAITarget();
+  toast(t('🧪 Testando o corretor…'));
+  const prompt=_buildCorretorPrompt(texto,estilo);
+  const t0=Date.now();
+  let cru='';
+  try{
+    cru=await callAI(prompt,key,'auto',CORRETOR_MAX_TOKENS);
+  }catch(e){toast('❌ '+e.message,true);return}
+  const seg=((Date.now()-t0)/1000).toFixed(1);
+  const grupos=_parseCorretorResponse(cru);
+  const pares=grupos.reduce((a,g)=>a+g.pares.length,0);
+  const {achados,perdidos,exemplosPerdidos}=_corretorConferir(texto,grupos);
+  const vicios=grupos.filter(g=>g.tipo==='VICIO').length;
+  const relatorio=
+`🧪 TESTE DO CORRETOR
+cérebro: ${alvo?.name||'?'} · ${alvo?.model||'?'}
+estilo: ${estilo} · ${seg}s
+texto: ${texto.length} caracteres · prompt: ${prompt.length} caracteres
+
+AGRUPOU? ${grupos.length} grupos (${vicios} vício, ${grupos.length-vicios} gosto) para ${pares} correções
+TRECHOS CONFEREM? ${achados} batem, ${perdidos} não batem${exemplosPerdidos.length?'\nnão bateram: '+exemplosPerdidos.map(x=>JSON.stringify(x)).join(' · '):''}
+
+GRUPOS LIDOS:
+${grupos.map(g=>`[${g.tipo}] ${g.rotulo} (${g.pares.length})`).join('\n')||'(nenhum)'}
+
+RESPOSTA CRUA:
+${cru}`;
+  addCard(relatorio,null,0,'texto',alvo?.name||'teste');
+  toast(t('🧪 Relatório do teste criado como card novo!'));
+}
+
 // ── REVISÃO DE REPETIÇÕES (Fase 3 — painel interativo) ──
 // Reaproveita a casca visual do Extrair Termos (.ext-panel/.ext-panel-head/
 // .ext-sm-btn/.ext-add-btn/.ext-actions/.ext-count) mas com layout de lista
@@ -8637,6 +8814,12 @@ function _buildReviewUI(panelKey){
     html+=`<span class="ext-count" id="reviewwordcount-${panelKey}">${t('{n} de {m} palavras selecionadas').replace('{n}',wn).replace('{m}',n)}</span>`;
     html+=`</div>`;
     html+=`<button class="review-ask-btn" id="reviewask-${panelKey}" onclick="_reviewAskAI('${panelKey}')"${wn===0?' disabled':''}>${t('🤖 Perguntar à IA sobre as palavras marcadas')}</button>`;
+    // TEMPORÁRIO — banco de provas do corretor agrupado (ver _corretorTeste).
+    // Sai daqui assim que a tela definitiva existir.
+    html+=`<div class="review-ask-row" style="margin-top:8px">`;
+    html+=`<button class="ext-sm-btn" onclick="_corretorTeste('${escJs(s.cardId)}','leve')">${t('🧪 testar corretor (leve)')}</button>`;
+    html+=`<button class="ext-sm-btn" onclick="_corretorTeste('${escJs(s.cardId)}','reescrever')">${t('🧪 testar (reescrever)')}</button>`;
+    html+=`</div>`;
     html+=`</div>`;
   }
   s.candidates.forEach((c,ci)=>{
