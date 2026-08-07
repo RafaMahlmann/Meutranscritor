@@ -9142,6 +9142,72 @@ Responda só assim, duas linhas:
   const m1=r.match(/^\s*1\s*:\s*(.+)$/m),m2=r.match(/^\s*2\s*:\s*(.+)$/m);
   return[m1?lim(m1[1]):'',m2?lim(m2[1]):''];
 }
+// ── LOTE: TODAS AS FRASES NUMA CHAMADA SÓ ──
+// A técnica nº 1 que a comunidade usa pra caber em chave gratuita, e a que
+// resolve o nosso problema de verdade. Antes: 2 chamadas POR FRASE conferida
+// (inglês + alemão) — num texto com 10 correções, 20 chamadas, que estoura
+// tanto o Groq quanto a Z.ai. Agora: 2 chamadas no TOTAL, independente de
+// quantas frases forem. O texto que vai junto é praticamente o mesmo; o que
+// desaparece é o custo fixo de abrir 20 conversas em vez de 2.
+// Limite: caber no contexto. Por isso o lote é fatiado em blocos.
+// ⚠️ Lote resolve limite de CHAMADAS por minuto, não de TOKENS por minuto.
+// Medido: com o Groq esgotado, um pedido de 20 tokens passa (HTTP 200) e um de
+// 1200 é recusado (HTTP 429) — ou seja, o teto que a gente bate é de token, e
+// juntar 8 frases numa chamada só manda a MESMA quantidade de token. Ajuda no
+// custo fixo e na contagem de requisições; não faz caber mais texto por minuto.
+// Por isso o bloco é pequeno: pedaço menor tem mais chance de passar quando a
+// cota está apertada, e o que falha vira 'indeterminado' em vez de travar tudo.
+const GRAM_LOTE_MAX=12; // pares por chamada — conservador de propósito
+function _gramMontarLote(pares,idioma){
+  const linhas=pares.map((p,i)=>`${i+1}a: "${p.a}"\n${i+1}b: "${p.b}"`).join('\n');
+  return `Traduza para ${idioma}, ao pé da letra. Cada par (Na e Nb) são duas versões da MESMA frase: use as MESMAS palavras sempre que o sentido for o mesmo, e só mude onde o sentido realmente mudou. Mantenha exatamente quem faz o quê.
+
+Responda só as traduções, uma por linha, com o mesmo número e letra:
+1a: ...
+1b: ...
+2a: ...
+2b: ...
+
+${linhas}`;
+}
+function _gramLerLote(res,n){
+  const out=Array.from({length:n},()=>({a:'',b:''}));
+  String(res||'').split(/\r?\n/).forEach(l=>{
+    const m=l.match(/^\s*(\d+)\s*([ab])\s*[:.\)]\s*(.+)$/i);
+    if(!m)return;
+    const i=parseInt(m[1])-1;
+    if(i<0||i>=n)return;
+    out[i][m[2].toLowerCase()]=m[3].trim().replace(/^["']|["'.]$/g,'');
+  });
+  return out;
+}
+// Confere uma lista inteira de pares com 2 chamadas por bloco (uma por idioma),
+// em vez de 2 por frase. Devolve um veredito por par, na mesma ordem.
+async function _gramCompararLote(pares,key){
+  const limpos=pares.map(p=>({a:_gramTirarMuletasPT(p.a),b:_gramTirarMuletasPT(p.b)}));
+  const vereditos=[];
+  for(let ini=0;ini<limpos.length;ini+=GRAM_LOTE_MAX){
+    const bloco=limpos.slice(ini,ini+GRAM_LOTE_MAX);
+    const [rEn,rDe]=await Promise.all([
+      callAI(_gramMontarLote(bloco,'INGLÊS'),key,'auto',2000,{temperature:0}).catch(()=>''),
+      callAI(_gramMontarLote(bloco,'ALEMÃO'),key,'auto',2000,{temperature:0}).catch(()=>'')
+    ]);
+    const en=_gramLerLote(rEn,bloco.length), de=_gramLerLote(rDe,bloco.length);
+    bloco.forEach((_,i)=>{
+      const okEn=en[i].a&&en[i].b, okDe=de[i].a&&de[i].b;
+      const igualEn=okEn?_gramNormEN(en[i].a)===_gramNormEN(en[i].b):null;
+      const igualDe=okDe?_gramNormDE(de[i].a)===_gramNormDE(de[i].b):null;
+      let veredito;
+      if(igualEn===null&&igualDe===null)veredito='indeterminado';
+      else if(igualEn===false||igualDe===false)veredito='mudou';
+      else if(igualEn===true&&igualDe===true)veredito='igual';
+      else veredito='indeterminado';
+      vereditos.push({veredito,igualEn,igualDe,en:en[i],de:de[i],
+        testemunhasDiscordam:igualEn!==null&&igualDe!==null&&igualEn!==igualDe});
+    });
+  }
+  return vereditos;
+}
 // ── OS TRÊS IDIOMAS JUNTOS ──
 // Português é a origem; inglês e alemão são as duas testemunhas independentes.
 // Regra de decisão, e ela é conservadora de propósito:
