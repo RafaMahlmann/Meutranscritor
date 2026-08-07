@@ -8795,6 +8795,139 @@ function _corretorVotar(texto,rodadas,limiar){
       tipo:vencedor.tipo,rotulo:vencedor.rotulo,votos,k,aprovada:votos>=limiar};
   });
 }
+// ── CORRETOR CONSTRITO (minimal-edit) ──
+// A literatura de correção gramatical separa dois problemas que eu tinha
+// misturado: "minimal-edit" (mexer só o mínimo pra consertar) e "fluency-edit"
+// (reescrever pra ficar mais fluido). São riscos completamente diferentes, e a
+// técnica central do minimal-edit é: QUEM ESCOLHE O TRECHO É O CÓDIGO, não a
+// IA. Ela só opina sobre um pedaço que já foi delimitado por fora.
+// Isso não é detalhe de implementação — é o que torna impossível, por
+// construção, o pior erro que a versão livre cometia: marcar um trecho longo,
+// devolver um curto e levar junto conteúdo de verdade ("Beleza. Então vamos
+// abrir a frente que eu quero melhorar aí." virando só "Vamos "). Aqui a IA
+// não tem como expressar esse erro: ela responde MANTER, TIRAR ou TROCAR por
+// UMA palavra, sobre uma posição exata que o scanner já achou.
+// De quebra resolve três outros problemas de uma vez: não precisa de busca
+// aproximada (a posição é conhecida), não tem trecho ambíguo (é um índice) e o
+// espaço de resposta fica minúsculo — que é justamente o que um cérebro fraco
+// consegue fazer bem.
+function _corretorOcorrencias(texto,limite){
+  const {candidates}=scanTextForReview(texto);
+  const ocs=[];
+  candidates.forEach(c=>{
+    c.positions.slice(0,REVIEW_MAX_OCCURRENCES).forEach(p=>{
+      // Frase inteira em volta: contexto suficiente pra julgar, curto o
+      // bastante pra não explodir o custo.
+      let ini=texto.lastIndexOf('.',p.start-1);
+      const q=texto.lastIndexOf('?',p.start-1),e=texto.lastIndexOf('!',p.start-1);
+      ini=Math.max(ini,q,e)+1;
+      let fim=texto.length;
+      [texto.indexOf('.',p.end),texto.indexOf('?',p.end),texto.indexOf('!',p.end)].forEach(x=>{if(x>=0&&x<fim)fim=x});
+      ocs.push({start:p.start,end:p.end,palavra:texto.slice(p.start,p.end),
+        frase:texto.slice(ini,Math.min(fim+1,texto.length)).trim(),chave:c.key});
+    });
+  });
+  ocs.sort((a,b)=>a.start-b.start);
+  return limite?ocs.slice(0,limite):ocs;
+}
+function _buildCorretorConstritoPrompt(ocs){
+  const lista=ocs.map((o,i)=>`${i+1}. «${o.palavra}» em: "${o.frase}"`).join('\n');
+  return `Você é um professor de português revisando uma transcrição de fala. Abaixo há trechos de um texto ditado em voz alta, cada um com UMA palavra marcada entre «aspas angulares».
+
+Para CADA item, decida o que fazer SÓ com a palavra marcada — não mexa em mais nada da frase:
+MANTER = a palavra faz falta ali, tirar prejudicaria a frase.
+TIRAR = é muleta de fala (então, né, tipo, assim, ok, certo) e a frase fica melhor e continua completa sem ela.
+TROCAR = a palavra está repetitiva ou errada, e UMA outra palavra fica melhor no lugar.
+
+Regras:
+- Na dúvida, MANTER. Tirar palavra de conteúdo é erro grave; deixar uma muleta é só um detalhe.
+- Nunca proponha tirar palavra que carregue informação (substantivo, verbo principal, número, nome).
+- TROCAR é sempre por UMA palavra só, nunca por uma frase.
+
+Responda uma linha por item, no formato exato, sem nenhum texto a mais:
+N:MANTER
+N:TIRAR
+N:TROCAR:palavra
+
+${lista}`;
+}
+function _parseCorretorConstrito(res,ocs){
+  const out={};
+  String(res||'').split(/\r?\n/).forEach(l=>{
+    // Sem âncora no começo da linha de propósito: visto no teste, o modelo
+    // numera duas vezes ("1. 1:TIRAR"). Procurar em vez de ancorar acha o par
+    // número+veredito onde quer que ele esteja, e ignora a numeração dele.
+    const m=l.match(/(\d+)\s*[:.\)]\s*(MANTER|TIRAR|TROCAR)\s*(?::\s*([^\s].*?))?\s*$/i);
+    if(!m)return;
+    const i=parseInt(m[1])-1;
+    if(i<0||i>=ocs.length)return;
+    const acao=m[2].toUpperCase();
+    if(acao==='TROCAR'){
+      const nova=(m[3]||'').trim().replace(/^[«"']|[»"'.]$/g,'');
+      // TROCAR só vale por UMA palavra — se veio frase, ignora o item inteiro
+      // em vez de aplicar algo que não foi combinado.
+      if(!nova||/\s/.test(nova))return;
+      out[i]={acao:'TROCAR',nova};
+    }else out[i]={acao};
+  });
+  return out;
+}
+// Muletas de fala que podem sair sem mudar o que foi dito. É LISTA FECHADA de
+// propósito: a IA pode pedir pra tirar qualquer palavra, mas só as daqui são
+// obedecidas. Testando, sobrou um buraco perigoso mesmo no formato constrito —
+// a IA conseguia pedir TIRAR «não», e o "não" inverte a frase inteira. Com
+// lista fechada, qualquer palavra fora dela vira MANTER automaticamente, sem
+// depender de a IA ter bom senso. Palavra de conteúdo nunca some por acidente.
+const CORRETOR_MULETAS=new Set(['então','né','ne','tipo','assim','ok','certo','correto','beleza','sabe','entendeu','aí','olha','veja','bom','pois','enfim','digamos','vamos','tá','ta','hein','uai','pô','po','cara','meio','realmente','basicamente','simplesmente','literalmente','exatamente','totalmente','praticamente','justamente']);
+// Trava: devolve as decisões já filtradas + o que foi rebaixado e por quê.
+// Roda SEMPRE, mesmo que a IA tenha vindo de um cérebro bom — a trava não é
+// desconfiança do modelo, é o contrato do que esta função tem direito de fazer.
+function _corretorTravar(ocs,decisoes){
+  const ok={},rebaixadas=[];
+  Object.keys(decisoes).forEach(k=>{
+    const i=+k,d=decisoes[i],o=ocs[i];
+    if(!o)return;
+    const w=(o.palavra||'').toLowerCase();
+    if(d.acao==='TIRAR'&&!CORRETOR_MULETAS.has(w)){
+      rebaixadas.push({palavra:o.palavra,pedido:'TIRAR',motivo:'não está na lista de muletas'});
+      return;
+    }
+    if(d.acao==='TROCAR'){
+      // Trocar por ela mesma não é correção; trocar por muleta é piorar.
+      const nova=(d.nova||'').toLowerCase();
+      if(!nova||nova===w){rebaixadas.push({palavra:o.palavra,pedido:'TROCAR',motivo:'trocaria por ela mesma'});return}
+      if(CORRETOR_MULETAS.has(nova)){rebaixadas.push({palavra:o.palavra,pedido:'TROCAR:'+d.nova,motivo:'trocaria por muleta'});return}
+    }
+    ok[i]=d;
+  });
+  return{decisoes:ok,rebaixadas};
+}
+// Aplica as decisões. Como cada edição é UM token numa posição conhecida, dá
+// pra aplicar de trás pra frente sem nenhum risco de sobreposição — e conserta
+// o espaço/pontuação que sobra ao tirar a palavra, que era o defeito que
+// escapava na versão livre.
+function _corretorAplicarConstrito(texto,ocs,decisoes){
+  const eds=[];
+  Object.keys(decisoes).forEach(k=>{
+    const i=+k,d=decisoes[i],o=ocs[i];
+    if(!o||d.acao==='MANTER')return;
+    if(d.acao==='TROCAR'){eds.push({start:o.start,end:o.end,para:d.nova,acao:'TROCAR',palavra:o.palavra});return}
+    // TIRAR: leva junto a vírgula órfã e o espaço de UM lado só. Comer os dois
+    // lados grudava as palavras vizinhas ("Beleza. Então vamos" virava
+    // "Beleza.vamos") — por isso o comeuDepois.
+    let s=o.start,e=o.end,comeuDepois=false;
+    while(e<texto.length&&texto[e]===' '){e++;comeuDepois=true}
+    if(texto[e]===','){e++;while(e<texto.length&&texto[e]===' ')e++;}
+    else if(!comeuDepois&&s>0&&texto[s-1]===' ')s--;
+    eds.push({start:s,end:e,para:'',acao:'TIRAR',palavra:o.palavra});
+  });
+  eds.sort((a,b)=>b.start-a.start);
+  let out=texto;
+  eds.forEach(x=>{out=out.slice(0,x.start)+x.para+out.slice(x.end)});
+  // Se a palavra tirada abria a frase, a próxima assume a maiúscula.
+  out=out.replace(/(^|[.!?]\s+)([a-záàâãéêíóôõúç])/g,(m0,a,b)=>a+b.toUpperCase());
+  return{texto:out,edicoes:eds};
+}
 // TEMPORÁRIO — banco de provas do prompt, não é a função final.
 // Roda o corretor no texto do card e joga a resposta CRUA num card novo, junto
 // do diagnóstico (agrupou? os trechos batem com o texto?). Serve pra decidir se
