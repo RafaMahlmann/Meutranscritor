@@ -8949,6 +8949,70 @@ async function _corretorOrdenarPorSentido(original,opcoes){
   return opcoes.map((texto,i)=>({texto,semelhanca:_cosine(vs[0],vs[i+1])}))
     .sort((a,b)=>b.semelhanca-a.semelhanca);
 }
+// ── NORMALIZAÇÃO GRAMATICAL (sem IA, sem dicionário, instantânea) ──
+// Ideia do Rafa: em vez de comparar texto com texto, reduzir cada campo da
+// ficha à sua forma gramatical básica e comparar ISSO. É o que conserta o
+// alarme falso que derrubou a ficha de sentido — o modelo escreve "pago" numa
+// leitura e "pagar" na outra, "o fornecedor" e "os fornecedores", e a
+// comparação literal achava que o sentido tinha mudado quando não mudou nada.
+
+// Artigos, preposições e contrações: não carregam quem fez o quê.
+const GRAM_VAZIAS=new Set(['o','a','os','as','um','uma','uns','umas','de','do','da','dos','das','em','no','na','nos','nas','ao','aos','a','as','para','pra','pro','por','pelo','pela','pelos','pelas','com','que','e','ou','se','ha','há','the']);
+// Verbos irregulares onde a raiz muda por completo — nenhuma regra de sufixo
+// resolve "vou/ir/fui", então vai na mão. São poucos e cobrem quase todo o
+// uso irregular real da fala.
+const GRAM_IRREGULARES={
+  vou:'ir',vai:'ir',vamos:'ir',vao:'ir',fui:'ir',foi:'ir',fomos:'ir',foram:'ir',ia:'ir',iam:'ir',ir:'ir',
+  sou:'ser',eh:'ser',e:'ser',somos:'ser',sao:'ser',era:'ser',eram:'ser',sera:'ser',ser:'ser',sendo:'ser',sido:'ser',
+  estou:'estar',esta:'estar',estamos:'estar',estao:'estar',estava:'estar',estavam:'estar',esteve:'estar',estar:'estar',
+  tenho:'ter',tem:'ter',temos:'ter',tinha:'ter',tinham:'ter',teve:'ter',tiveram:'ter',ter:'ter',tendo:'ter',
+  faco:'fazer',faz:'fazer',fazemos:'fazer',fazia:'fazer',fez:'fazer',fizeram:'fazer',fazer:'fazer',feito:'fazer',
+  vejo:'ver',ve:'ver',vemos:'ver',via:'ver',viu:'ver',viram:'ver',ver:'ver',visto:'ver',
+  posso:'poder',pode:'poder',podemos:'poder',podia:'poder',pode_:'poder',puderam:'poder',poder:'poder',
+  digo:'dizer',diz:'dizer',dizemos:'dizer',dizia:'dizer',disse:'dizer',disseram:'dizer',dizer:'dizer',dito:'dizer',
+  ponho:'por',poe:'por',poem:'por',punha:'por',pos:'por',puseram:'por',por_:'por',posto:'por',
+  venho:'vir',vem:'vir',vimos:'vir',vinha:'vir',veio:'vir',vieram:'vir',vir:'vir',vindo:'vir',
+  dou:'dar',da_:'dar',damos:'dar',dava:'dar',deu:'dar',deram:'dar',dar:'dar',dado:'dar',
+  sei:'saber',sabe:'saber',sabemos:'saber',sabia:'saber',soube:'saber',souberam:'saber',saber:'saber',
+  quero:'querer',quer:'querer',queremos:'querer',queria:'querer',quis:'querer',quiseram:'querer',querer:'querer'
+};
+// Plural → singular. Regras da norma culta, na ordem em que precisam ser
+// aplicadas (as específicas antes da geral).
+function _gramSingular(w){
+  if(w.length<4)return w;
+  if(/oes$/.test(w))return w.slice(0,-3)+'ao';
+  if(/aes$/.test(w))return w.slice(0,-3)+'ao';
+  if(/aos$/.test(w))return w.slice(0,-1);
+  if(/ais$/.test(w))return w.slice(0,-2)+'l';
+  if(/eis$/.test(w))return w.slice(0,-3)+'el';
+  if(/ois$/.test(w))return w.slice(0,-2)+'l';
+  if(/uis$/.test(w))return w.slice(0,-2)+'l';
+  if(/ns$/.test(w))return w.slice(0,-2)+'m';
+  if(/(r|s|z)es$/.test(w))return w.slice(0,-2);
+  if(/s$/.test(w))return w.slice(0,-1);
+  return w;
+}
+// Sintagma (o "quem", o "sobre quem") → só as palavras que carregam sentido,
+// no singular, em ordem alfabética. "os fornecedores" e "o fornecedor" viram
+// a mesma coisa; "a empresa" e "o fornecedor", não.
+function _gramSintagma(s){
+  return _cchatNorm(s).split(/\s+/).filter(Boolean)
+    .filter(w=>!GRAM_VAZIAS.has(w))
+    .map(_gramSingular).filter(w=>w.length>1).sort().join(' ');
+}
+// Raiz do verbo. Não é lematização de verdade (que exigiria dicionário) — é o
+// suficiente pra responder "estes dois são o MESMO verbo?", que é tudo que a
+// comparação precisa. Irregular vai pela tabela; o resto compara pelo começo
+// da palavra, que é onde mora a raiz em português.
+function _gramMesmoVerbo(a,b){
+  const na=_cchatNorm(a).trim().split(/\s+/).pop()||'',nb=_cchatNorm(b).trim().split(/\s+/).pop()||'';
+  if(!na||!nb)return na===nb;
+  const ia=GRAM_IRREGULARES[na],ib=GRAM_IRREGULARES[nb];
+  if(ia||ib)return (ia||na)===(ib||nb);
+  if(na===nb)return true;
+  let i=0;while(i<na.length&&i<nb.length&&na[i]===nb[i])i++;
+  return i>=3&&i>=Math.min(na.length,nb.length)*0.5;
+}
 // ── FICHA DE SENTIDO (quem fez o quê) ──
 // Ideia do Rafa, e é a única coisa que pegou o erro que derrubou todo o resto.
 // A IA só EXTRAI (tarefa mecânica, que cérebro fraco faz bem e de forma
@@ -8956,30 +9020,47 @@ async function _corretorOrdenarPorSentido(original,opcoes){
 // achismo. É o oposto de pedir "esta correção está boa?", que a pesquisa
 // mostra que não funciona.
 //
-// ⚠️ EXPERIMENTAL — NÃO LIGAR NA INTERFACE AINDA. Numa bateria de 6 casos com
-// Groq/Llama acertou só 3. O que já está provado e o que ainda não:
+// ⚠️ EXPERIMENTAL — ainda não ligado na interface.
 //
-// FUNCIONA (repetido em vários testes):
+// Bateria de 9 casos com Groq/Llama (o cérebro mais fraco), medido:
+//   · 6/9 na classificação exata
+//   · 6/6 dos casos PERIGOSOS foram sinalizados — 4 como "grave" e 2 como
+//     "indeterminado". NENHUM passou como "igual". Essa é a propriedade que
+//     importa: nada perigoso é aprovado em silêncio.
+//   · 1 alarme falso em 3 casos inofensivos (tirar "Ok?" acusou mudança de
+//     QUANDO, que é ruído da extração).
+//
+// O QUE PEGA E MAIS NADA PEGAVA:
 //   "A empresa pagou o fornecedor" x "O fornecedor pagou a empresa"
-//   Embeddings deram 0.9748 pra INVERTIDA — primeiro lugar. A ficha pega,
-//   porque QUEM e SOBRE trocam de lugar. É o único método aqui que pega
-//   inversão de sujeito, que é o erro mais perigoso e mais invisível.
+//   Embeddings puseram a INVERTIDA em primeiro (0.9748 x 0.9257); comparação
+//   por conjunto de palavras não vê; votação não vê. A ficha vê, porque QUEM e
+//   SOBRE trocam de lugar.
 //
-// NÃO FUNCIONA AINDA:
-//   1. Comparação por string inteira é frágil demais. O modelo escreve "pago"
-//      numa leitura e "pagar" na outra, "na segunda" e "segunda" — e aí uma
-//      correção inofensiva (tirar "Então") vira alarme falso. Precisa comparar
-//      CAMPO A CAMPO com normalização, não a linha concatenada.
-//   2. Votar em 3 extrações PIORA: como as strings variam, muitas vezes não há
-//      maioria nenhuma e sobra ficha vazia — aí a comparação fica cega.
-//   3. NEGADO é instável no formato de várias ações; a versão de ficha única
-//      pegava negação melhor.
-//   4. A régua de gravidade está errada: trata "só mudou o verbo" como brando,
-//      mas "cancelar"→"renovar" muda só o verbo e inverte o sentido.
+// DECISÕES QUE VIERAM DE MEDIÇÃO, não de teoria:
+//   1. Uma ficha POR AÇÃO, não por frase — com ficha única, mudar a segunda
+//      oração ("cancelou"→"renovou") passava batido.
+//   2. Comparação CAMPO A CAMPO com normalização gramatical — comparar a linha
+//      inteira como texto dava alarme falso em "pago" x "pagar".
+//   3. NEGADO calculado por código (_gramNegado), não pela IA — era o campo
+//      mais errado dela, e é o mais perigoso de errar.
+//   4. Verbo de raiz diferente é GRAVE. A régua anterior tratava troca de
+//      verbo como branda assumindo sinônimo, mas "cancelar"→"renovar" é troca
+//      de verbo e inverte o negócio.
+//   5. Extração vazia devolve "indeterminado", nunca "igual" — antes, duas
+//      fichas vazias diziam "não mudou nada" justamente quando não se
+//      enxergou nada.
+//   6. NÃO votar em 3 extrações: as strings variam, quase nunca há maioria, e
+//      sobra ficha vazia. Piorou de verdade quando testei.
 //
-// Uma ficha POR AÇÃO (e não uma por frase) foi acerto: com ficha única, a
-// mudança "…o cliente cancelou o contrato" x "…renovou o contrato" passava
-// batida, porque a ficha só enxergava a primeira oração.
+// O QUE FALTA: o campo QUANDO ainda é ruidoso (fonte do alarme falso), e
+// "foi/fui" é ambíguo entre ser e ir, o que nenhuma regra de sufixo resolve.
+// Negação NÃO passa pela IA. Medindo, era o campo mais errado da ficha — o
+// modelo lia "O contrato não pode ser assinado" e marcava NEGADO:não. E é
+// justamente o campo mais perigoso, porque perder um "não" inverte a frase.
+// Detectar negação em português é trabalho de expressão regular: são poucas
+// palavras, todas fechadas. Código não esquece e não varia entre leituras.
+const GRAM_NEGACOES=/(^|\s)(nao|nunca|jamais|nem|sem|nenhum|nenhuma|ninguem|nada)(\s|$|,|\.|\?|!)/;
+function _gramNegado(frase){return GRAM_NEGACOES.test(_cchatNorm(frase))?'sim':'nao'}
 async function _corretorFichas(frase,key){
   const p=`Liste TODAS as ações da frase, uma linha por ação, no formato exato abaixo. Se houver duas ou três ações, liste as duas ou três — não resuma numa só.
 
@@ -8989,31 +9070,76 @@ Não escreva mais nada além das linhas.
 
 FRASE: "${frase}"`;
   const r=await callAI(p,key,'auto',400);
+  // O NEGADO que a IA devolveu é descartado e recalculado por código — ver
+  // _gramNegado. Ela continua preenchendo o campo porque tirá-lo do formato
+  // bagunçava o resto das colunas.
+  const neg=_gramNegado(frase);
   return r.split(/\n/).map(l=>l.split('|').map(x=>x.trim().toLowerCase()))
     .filter(a=>a.length>=5)
+    .map(a=>{a[4]=neg;return a})
     // O modelo às vezes repete o cabeçalho como se fosse dado, e às vezes
     // cola o rótulo do campo dentro do valor ("faz pagar", "sobre o
     // fornecedor"). Os dois viraram lixo no teste — saem aqui.
     .filter(a=>!/^quem$/.test(a[0])&&!/faz o que/.test(a[1]))
     .map(a=>a.slice(0,5).map(x=>x.replace(/^(faz|sobre|quando|negado)\s+/,'').replace(/^[-–—\s]*$/,'-')).join(' | '));
 }
-// Compara duas listas de fichas. Gravidade é regra fixa, não opinião:
-// mudou QUEM ou SOBRE = mudou quem fez o quê a quem. Mudou NEGADO = inverteu.
-// Só o verbo mudando costuma ser sinônimo — que é o caso legítimo.
+// Compara duas listas de fichas CAMPO A CAMPO, já normalizadas pela gramática.
+// Comparar a linha inteira como texto era o que estragava tudo: "pago" x
+// "pagar" e "o fornecedor" x "os fornecedores" davam alarme falso sem nada ter
+// mudado. Aqui cada campo é reduzido à forma básica antes de comparar.
+// A régua de gravidade também mudou: antes eu tratava "só mudou o verbo" como
+// brando, assumindo sinônimo. Está errado — "cancelar" e "renovar" mudam só o
+// verbo e invertem o negócio inteiro. Verbo de raiz diferente agora é grave.
+// "-", "não especificado", "não informado" e afins são todas a mesma coisa:
+// o campo não existe. Sem isso, tirar um "né?" fazia o modelo escrever "-"
+// numa leitura e "não especificado" na outra, e a comparação acusava mudança
+// de QUANDO onde nada tinha mudado.
+const GRAM_VAZIO=/^(-|--|n\/a|nao|nao especificado|nao informado|nao ha|nenhum|indefinido|sem informacao)?$/;
+function _gramCampoVazio(s){return GRAM_VAZIO.test(_cchatNorm(s).trim())}
+function _corretorFichaCampos(linha){
+  const p=String(linha).split('|').map(x=>x.trim());
+  const campo=s=>_gramCampoVazio(s)?'':_gramSintagma(s);
+  return{quem:campo(p[0]||''),verbo:p[1]||'',sobre:campo(p[2]||''),
+    quando:campo(p[3]||''),negado:/^s/i.test(p[4]||'')?'sim':'nao'};
+}
+function _corretorMesmaFicha(a,b){
+  return a.quem===b.quem&&a.sobre===b.sobre&&a.negado===b.negado&&_gramMesmoVerbo(a.verbo,b.verbo);
+}
 function _corretorCompararFichas(antes,depois){
-  const perdidas=antes.filter(x=>!depois.includes(x));
-  const novas=depois.filter(x=>!antes.includes(x));
+  // Se a extração falhou de um dos lados, NÃO existe comparação — e o pior
+  // erro possível aqui seria devolver "igual", que é exatamente o que a versão
+  // anterior fazia: duas fichas vazias davam "não mudou nada", justo no caso em
+  // que a gente não enxergou nada. Falha pro lado seguro.
+  if(!antes.length||!depois.length)
+    return{perdidas:[],novas:[],mudancas:[],gravidade:'indeterminado'};
+  const A=antes.map(_corretorFichaCampos),B=depois.map(_corretorFichaCampos);
+  const usados=new Set();
+  const perdidas=[],mudancas=[];
+  A.forEach((a,i)=>{
+    // Par mais provável: mesma ação, ainda que escrita diferente. Casa por
+    // QUEM primeiro (é o campo mais estável), depois pelo resto.
+    let j=B.findIndex((b,k)=>!usados.has(k)&&_corretorMesmaFicha(a,b));
+    if(j<0)j=B.findIndex((b,k)=>!usados.has(k)&&b.quem===a.quem);
+    if(j<0)j=B.findIndex((b,k)=>!usados.has(k)&&_gramMesmoVerbo(a.verbo,b.verbo));
+    if(j<0){perdidas.push(antes[i]);return}
+    usados.add(j);
+    const b=B[j],dif=[];
+    if(a.quem!==b.quem)dif.push('QUEM');
+    if(a.sobre!==b.sobre)dif.push('SOBRE');
+    if(a.negado!==b.negado)dif.push('NEGADO');
+    if(a.quando!==b.quando)dif.push('QUANDO');
+    if(!_gramMesmoVerbo(a.verbo,b.verbo))dif.push('VERBO');
+    if(dif.length)mudancas.push({de:antes[i],para:depois[j],campos:dif});
+  });
+  const novas=depois.filter((_,k)=>!usados.has(k));
   let gravidade='igual';
-  if(perdidas.length||novas.length){
-    gravidade='atencao';
-    const campo=(linhas,i)=>new Set(linhas.map(l=>l.split(' | ')[i]));
-    const mudou=i=>{
-      const a=campo(antes,i),b=campo(depois,i);
-      return a.size!==b.size||[...a].some(x=>!b.has(x));
-    };
-    if(mudou(0)||mudou(2)||mudou(4))gravidade='grave';
+  if(mudancas.length||perdidas.length||novas.length){
+    // Qualquer um destes campos mudando altera quem fez o quê a quem, quando,
+    // ou se aconteceu — ou seja, muda o fato, não a forma de dizer.
+    const grave=mudancas.some(m=>m.campos.some(c=>['QUEM','SOBRE','NEGADO','QUANDO','VERBO'].includes(c)));
+    gravidade=(grave||perdidas.length||novas.length)?'grave':'atencao';
   }
-  return{perdidas,novas,gravidade};
+  return{perdidas,novas,mudancas,gravidade};
 }
 // TEMPORÁRIO — banco de provas do prompt, não é a função final.
 // Roda o corretor no texto do card e joga a resposta CRUA num card novo, junto
