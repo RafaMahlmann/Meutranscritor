@@ -9085,6 +9085,69 @@ function _gramTirarMuletasPT(frase){
   return frase.split(/\b/).filter(p=>!CORRETOR_MULETAS.has(_cchatNorm(p).trim()))
     .join('').replace(/\s{2,}/g,' ').replace(/^[\s,.]+/,'').replace(/\s+([,.?!])/g,'$1').trim();
 }
+// ── SEGUNDO IDIOMA DE VERIFICAÇÃO: ALEMÃO ──
+// Ideia do Rafa de usar três idiomas. O alemão entra porque marca papel de um
+// jeito DIFERENTE do inglês: o inglês usa POSIÇÃO ("the company paid the
+// supplier"), o alemão usa CASO — muda o artigo e a terminação da palavra:
+//   "Das Unternehmen hat den Lieferanten bezahlt."  (den Lieferanten = objeto)
+//   "Der Lieferant hat das Unternehmen bezahlt."    (Der Lieferant  = sujeito)
+// Dois mecanismos independentes: se um deixar passar, é pouco provável que o
+// outro deixe pelo mesmo motivo. É isso que faz redundância valer a pena.
+//
+// Latim tem a mesma propriedade e foi testado ANTES do alemão: linguisticamente
+// perfeito, mas as chamadas penduravam por minutos (idioma de poucos dados pro
+// modelo), enquanto o alemão respondeu em 1,3s. Por isso alemão, não latim.
+//
+// ⚠️ A normalização do alemão é quase o OPOSTO da do inglês: aqui os artigos
+// NÃO saem, porque der/den/das/dem é exatamente onde mora a marcação de papel.
+// Tirar artigo em alemão seria apagar a informação que a gente foi buscar.
+const GRAM_MULETAS_DE=new Set(['dann','also','ja','halt','eben','mal','doch','nun','okay','ok','na','tja','weisst','weiss','sozusagen','quasi','irgendwie','eigentlich']);
+function _gramNormDE(s){
+  return _cchatNorm(s).split(/\s+/).filter(Boolean)
+    .filter(w=>!GRAM_MULETAS_DE.has(w))
+    .join(' ');
+}
+async function _gramTraduzirParDE(a,b,key){
+  const p=`Traduza as duas frases para ALEMÃO, ao pé da letra. Elas são versões da MESMA frase, então use as MESMAS palavras sempre que o sentido for o mesmo — só mude onde o sentido realmente mudou. Mantenha exatamente quem faz o quê.
+
+Responda só assim, duas linhas:
+1: (tradução da primeira)
+2: (tradução da segunda)
+
+1: "${a}"
+2: "${b}"`;
+  const r=await callAI(p,key,'auto',500,{temperature:0});
+  const lim=s=>s.trim().replace(/^["']|["'.]$/g,'');
+  const m1=r.match(/^\s*1\s*:\s*(.+)$/m),m2=r.match(/^\s*2\s*:\s*(.+)$/m);
+  return[m1?lim(m1[1]):'',m2?lim(m2[1]):''];
+}
+// ── OS TRÊS IDIOMAS JUNTOS ──
+// Português é a origem; inglês e alemão são as duas testemunhas independentes.
+// Regra de decisão, e ela é conservadora de propósito:
+//   os dois dizem "igual"      → igual (as duas testemunhas concordam)
+//   qualquer um diz "diferente"→ mudou (basta uma testemunha ver mudança)
+//   alguma tradução falhou     → indeterminado (nunca "igual")
+// Não é média nem votação: é OU. Deixar passar uma mudança de sentido custa
+// muito mais caro que um alarme falso a mais.
+async function _gramCompararTresIdiomas(a,b,key){
+  const [la,lb]=[_gramTirarMuletasPT(a),_gramTirarMuletasPT(b)];
+  const [en,de]=await Promise.all([
+    _gramTraduzirPar(la,lb,key),
+    _gramTraduzirParDE(la,lb,key)
+  ]);
+  const okEn=en[0]&&en[1], okDe=de[0]&&de[1];
+  const igualEn=okEn?_gramNormEN(en[0])===_gramNormEN(en[1]):null;
+  const igualDe=okDe?_gramNormDE(de[0])===_gramNormDE(de[1]):null;
+  let veredito;
+  if(igualEn===null&&igualDe===null)veredito='indeterminado';
+  else if(igualEn===false||igualDe===false)veredito='mudou';
+  else if(igualEn===true&&igualDe===true)veredito='igual';
+  else veredito='indeterminado'; // só uma testemunha respondeu — não basta
+  return{veredito,igualEn,igualDe,en,de,
+    // Quando as duas discordam entre si, é sinal de que a frase é ambígua o
+    // bastante pra merecer olho humano — vale mostrar as duas traduções.
+    testemunhasDiscordam:igualEn!==null&&igualDe!==null&&igualEn!==igualDe};
+}
 async function _gramCompararPorTraducao(a,b,key){
   const [ta,tb]=await _gramTraduzirPar(_gramTirarMuletasPT(a),_gramTirarMuletasPT(b),key);
   // Tradução vazia = não deu pra conferir. Nunca devolver "igual" nesse caso,
