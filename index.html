@@ -8949,6 +8949,72 @@ async function _corretorOrdenarPorSentido(original,opcoes){
   return opcoes.map((texto,i)=>({texto,semelhanca:_cosine(vs[0],vs[i+1])}))
     .sort((a,b)=>b.semelhanca-a.semelhanca);
 }
+// ── FICHA DE SENTIDO (quem fez o quê) ──
+// Ideia do Rafa, e é a única coisa que pegou o erro que derrubou todo o resto.
+// A IA só EXTRAI (tarefa mecânica, que cérebro fraco faz bem e de forma
+// estável); quem COMPARA é o código, com igualdade de string — exato, sem
+// achismo. É o oposto de pedir "esta correção está boa?", que a pesquisa
+// mostra que não funciona.
+//
+// ⚠️ EXPERIMENTAL — NÃO LIGAR NA INTERFACE AINDA. Numa bateria de 6 casos com
+// Groq/Llama acertou só 3. O que já está provado e o que ainda não:
+//
+// FUNCIONA (repetido em vários testes):
+//   "A empresa pagou o fornecedor" x "O fornecedor pagou a empresa"
+//   Embeddings deram 0.9748 pra INVERTIDA — primeiro lugar. A ficha pega,
+//   porque QUEM e SOBRE trocam de lugar. É o único método aqui que pega
+//   inversão de sujeito, que é o erro mais perigoso e mais invisível.
+//
+// NÃO FUNCIONA AINDA:
+//   1. Comparação por string inteira é frágil demais. O modelo escreve "pago"
+//      numa leitura e "pagar" na outra, "na segunda" e "segunda" — e aí uma
+//      correção inofensiva (tirar "Então") vira alarme falso. Precisa comparar
+//      CAMPO A CAMPO com normalização, não a linha concatenada.
+//   2. Votar em 3 extrações PIORA: como as strings variam, muitas vezes não há
+//      maioria nenhuma e sobra ficha vazia — aí a comparação fica cega.
+//   3. NEGADO é instável no formato de várias ações; a versão de ficha única
+//      pegava negação melhor.
+//   4. A régua de gravidade está errada: trata "só mudou o verbo" como brando,
+//      mas "cancelar"→"renovar" muda só o verbo e inverte o sentido.
+//
+// Uma ficha POR AÇÃO (e não uma por frase) foi acerto: com ficha única, a
+// mudança "…o cliente cancelou o contrato" x "…renovou o contrato" passava
+// batida, porque a ficha só enxergava a primeira oração.
+async function _corretorFichas(frase,key){
+  const p=`Liste TODAS as ações da frase, uma linha por ação, no formato exato abaixo. Se houver duas ou três ações, liste as duas ou três — não resuma numa só.
+
+QUEM | FAZ O QUE (infinitivo) | SOBRE QUEM/O QUE | QUANDO | NEGADO(sim/não)
+
+Não escreva mais nada além das linhas.
+
+FRASE: "${frase}"`;
+  const r=await callAI(p,key,'auto',400);
+  return r.split(/\n/).map(l=>l.split('|').map(x=>x.trim().toLowerCase()))
+    .filter(a=>a.length>=5)
+    // O modelo às vezes repete o cabeçalho como se fosse dado, e às vezes
+    // cola o rótulo do campo dentro do valor ("faz pagar", "sobre o
+    // fornecedor"). Os dois viraram lixo no teste — saem aqui.
+    .filter(a=>!/^quem$/.test(a[0])&&!/faz o que/.test(a[1]))
+    .map(a=>a.slice(0,5).map(x=>x.replace(/^(faz|sobre|quando|negado)\s+/,'').replace(/^[-–—\s]*$/,'-')).join(' | '));
+}
+// Compara duas listas de fichas. Gravidade é regra fixa, não opinião:
+// mudou QUEM ou SOBRE = mudou quem fez o quê a quem. Mudou NEGADO = inverteu.
+// Só o verbo mudando costuma ser sinônimo — que é o caso legítimo.
+function _corretorCompararFichas(antes,depois){
+  const perdidas=antes.filter(x=>!depois.includes(x));
+  const novas=depois.filter(x=>!antes.includes(x));
+  let gravidade='igual';
+  if(perdidas.length||novas.length){
+    gravidade='atencao';
+    const campo=(linhas,i)=>new Set(linhas.map(l=>l.split(' | ')[i]));
+    const mudou=i=>{
+      const a=campo(antes,i),b=campo(depois,i);
+      return a.size!==b.size||[...a].some(x=>!b.has(x));
+    };
+    if(mudou(0)||mudou(2)||mudou(4))gravidade='grave';
+  }
+  return{perdidas,novas,gravidade};
+}
 // TEMPORÁRIO — banco de provas do prompt, não é a função final.
 // Roda o corretor no texto do card e joga a resposta CRUA num card novo, junto
 // do diagnóstico (agrupou? os trechos batem com o texto?). Serve pra decidir se
