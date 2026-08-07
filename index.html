@@ -9107,10 +9107,21 @@ function _gramTirarMuletasPT(frase){
 // NÃO saem, porque der/den/das/dem é exatamente onde mora a marcação de papel.
 // Tirar artigo em alemão seria apagar a informação que a gente foi buscar.
 const GRAM_MULETAS_DE=new Set(['dann','also','ja','halt','eben','mal','doch','nun','okay','ok','na','tja','weisst','weiss','sozusagen','quasi','irgendwie','eigentlich']);
+// ORDENA as palavras — o contrário do que se faz no inglês. Motivo: o alemão
+// tem a regra do verbo em segunda posição, então tirar uma muleta do começo
+// REORDENA a frase inteira sem mudar nada do sentido:
+//   "Dann habe ich den Server bezahlt."  (com muleta: verbo antes do sujeito)
+//   "Ich habe den Server bezahlt."       (sem ela: sujeito antes do verbo)
+// Comparar em ordem acusaria mudança onde só saiu cacoete. Ordenar resolve — e
+// só é seguro fazer isso em alemão porque quem carrega o papel é o ARTIGO
+// (der/den/das), não a posição: "den Lieferanten" continua sendo objeto em
+// qualquer lugar da frase, e vira "Der Lieferant" quando vira sujeito. Ou seja,
+// a inversão de sujeito continua sendo detectada mesmo com as palavras
+// embaralhadas — que é justamente o que a gente foi buscar no alemão.
 function _gramNormDE(s){
   return _cchatNorm(s).split(/\s+/).filter(Boolean)
     .filter(w=>!GRAM_MULETAS_DE.has(w))
-    .join(' ');
+    .sort().join(' ');
 }
 async function _gramTraduzirParDE(a,b,key){
   const p=`Traduza as duas frases para ALEMÃO, ao pé da letra. Elas são versões da MESMA frase, então use as MESMAS palavras sempre que o sentido for o mesmo — só mude onde o sentido realmente mudou. Mantenha exatamente quem faz o quê.
