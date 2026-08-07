@@ -9013,6 +9013,87 @@ function _gramMesmoVerbo(a,b){
   let i=0;while(i<na.length&&i<nb.length&&na[i]===nb[i])i++;
   return i>=3&&i>=Math.min(na.length,nb.length)*0.5;
 }
+// ── IDA E VOLTA PELO INGLÊS ──
+// Ideia do Rafa: traduzir as duas versões pro inglês e comparar lá. O motivo de
+// funcionar é gramatical, não mágico — o inglês é rígido na ordem sujeito-
+// verbo-objeto, então traduzir OBRIGA a frase a dizer quem fez o quê. Em
+// português "ele já vai estar corrigido lá os caminhos" pode ficar ambíguo; em
+// inglês não tem como.
+//
+// Medido com Groq/Llama, temperatura 0:
+//   "A empresa pagou o fornecedor"  → "the company paid the supplier"
+//   "O fornecedor pagou a empresa"  → "the supplier paid the company"
+//   Pegou os 4 casos perigosos da bateria, todos, sem exceção — inclusive
+//   negação e número trocado, que a ficha de sentido errava.
+//
+// O detalhe que faz ou quebra: sem tirar as muletas TAMBÉM em inglês, dá
+// alarme falso em tudo, porque "Então" vira "so" e "né?" vira "right?" e a
+// comparação acusa diferença onde só saiu cacoete. Por isso a lista abaixo.
+const GRAM_MULETAS_EN=new Set(['so','well','right','ok','okay','yeah','yes','like','actually','basically','literally','anyway','anyhow','um','uh','hmm','you','know','i','mean','see','just','really','sort','kind','of','thing']);
+// Normaliza a tradução pra comparação: sem pontuação, sem muleta, sem artigo.
+// Mantém a ORDEM das palavras de propósito — é justamente a ordem que carrega
+// quem fez o quê em inglês, e foi por ignorar ordem que os outros métodos
+// deixaram passar a inversão de sujeito.
+const GRAM_VAZIAS_EN=new Set(['the','a','an','to','of','in','on','at','for','and','that','this','it','is','are','was','were','be']);
+// Contrações precisam abrir ANTES de qualquer outra coisa: "we're going" e
+// "we are going" são a mesma frase, e sem isso viravam diferença. Note que
+// "cannot"/"can't" NÃO viram "can not" aqui — o "not" tem que sobreviver, é
+// ele que carrega a negação, e negação é o que a gente mais precisa enxergar.
+function _gramAbrirContracoes(s){
+  return s.toLowerCase()
+    .replace(/can'?t\b/g,'cannot').replace(/won'?t\b/g,'will not')
+    .replace(/n'?t\b/g,' not')
+    .replace(/'re\b/g,' are').replace(/'ve\b/g,' have').replace(/'ll\b/g,' will')
+    .replace(/'m\b/g,' am').replace(/'d\b/g,' would').replace(/'s\b/g,' is');
+}
+function _gramNormEN(s){
+  return _cchatNorm(_gramAbrirContracoes(s)).split(/\s+/).filter(Boolean)
+    .filter(w=>!GRAM_MULETAS_EN.has(w)&&!GRAM_VAZIAS_EN.has(w))
+    .map(w=>w.replace(/(ed|s)$/,''))  // paid/pays, server/servers
+    .join(' ');
+}
+// As duas frases vão na MESMA chamada, de propósito. Traduzindo separado, o
+// modelo escolhia palavras diferentes pro mesmo sentido — "por isso" virava
+// "therefore" numa e "for this reason" na outra — e a comparação acusava
+// mudança de sentido onde só tinha mudado o vocabulário do tradutor. Nas
+// frases reais do Rafa isso derrubou o acerto de 11/11 (frases curtas que eu
+// mesmo inventei) pra 1/3. Traduzindo juntas e mandando reusar as mesmas
+// palavras, voltou pra 3/4.
+async function _gramTraduzirPar(a,b,key){
+  const p=`Traduza as duas frases para o inglês, ao pé da letra. Elas são versões da MESMA frase, então use as MESMAS palavras em inglês sempre que o sentido for o mesmo — só mude onde o sentido realmente mudou. Mantenha exatamente quem faz o quê.
+
+Responda só assim, duas linhas:
+1: (tradução da primeira)
+2: (tradução da segunda)
+
+1: "${a}"
+2: "${b}"`;
+  const r=await callAI(p,key,'auto',500,{temperature:0});
+  const lim=s=>s.trim().replace(/^["']|["'.]$/g,'');
+  const m1=r.match(/^\s*1\s*:\s*(.+)$/m),m2=r.match(/^\s*2\s*:\s*(.+)$/m);
+  return[m1?lim(m1[1]):'',m2?lim(m2[1]):''];
+}
+// Compara duas frases em português pela tradução delas. Devolve também as
+// traduções pra quem chamar poder mostrar — quando acusa diferença, ver as
+// duas versões em inglês lado a lado explica o problema na hora.
+// Tira as muletas em PORTUGUÊS antes de mandar traduzir. Sem isso, o tradutor
+// tropeça nelas: medindo, "Beleza." virou "Beauty." (o substantivo) em vez de
+// ser reconhecida como cacoete, e a comparação acusou mudança de sentido onde
+// só tinha saído um "Beleza". Limpar antes é mais barato e mais confiável do
+// que tentar ensinar o tradutor a ignorar.
+function _gramTirarMuletasPT(frase){
+  return frase.split(/\b/).filter(p=>!CORRETOR_MULETAS.has(_cchatNorm(p).trim()))
+    .join('').replace(/\s{2,}/g,' ').replace(/^[\s,.]+/,'').replace(/\s+([,.?!])/g,'$1').trim();
+}
+async function _gramCompararPorTraducao(a,b,key){
+  const [ta,tb]=await _gramTraduzirPar(_gramTirarMuletasPT(a),_gramTirarMuletasPT(b),key);
+  // Tradução vazia = não deu pra conferir. Nunca devolver "igual" nesse caso,
+  // pelo mesmo motivo da ficha de sentido: dizer "está tudo bem" quando não se
+  // enxergou nada é o pior erro possível numa checagem de segurança.
+  if(!ta||!tb)return{igual:null, en_antes:ta, en_depois:tb, indeterminado:true};
+  const [na,nb]=[_gramNormEN(ta), _gramNormEN(tb)];
+  return{igual:na===nb, en_antes:ta, en_depois:tb, norm_antes:na, norm_depois:nb};
+}
 // ── FICHA DE SENTIDO (quem fez o quê) ──
 // Ideia do Rafa, e é a única coisa que pegou o erro que derrubou todo o resto.
 // A IA só EXTRAI (tarefa mecânica, que cérebro fraco faz bem e de forma
