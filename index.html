@@ -8705,6 +8705,96 @@ function _corretorConferir(texto,grupos){
   }));
   return{achados,perdidos,exemplosPerdidos,porModo};
 }
+// ── ETAPA 2: CONFERÊNCIA MECÂNICA (grátis, não usa IA) ──
+// Regras que dá pra checar com certeza absoluta, sem opinião de ninguém. Roda
+// antes de qualquer auditoria de IA porque é de graça, é instantânea e nunca
+// erra — e porque a pesquisa sobre auto-correção é clara: modelo é ruim de
+// ACHAR o próprio erro, mas bom de CONSERTAR erro que já vem apontado. Então o
+// papel desta etapa é apontar, pra IA só ter que consertar.
+// Devolve a lista de edições já localizadas, cada uma com seus problemas.
+function _corretorAuditarMecanico(texto,grupos){
+  const eds=[];
+  grupos.forEach((g,gi)=>g.pares.forEach((p,pi)=>{
+    const loc=_corretorLocalizar(texto,p.de);
+    const e={gi,pi,tipo:g.tipo,rotulo:g.rotulo,de:p.de,para:p.para,loc,problemas:[]};
+    if(!loc){e.problemas.push('nao_encontrado');eds.push(e);return}
+    const alvo=texto.slice(loc.start,loc.end);
+    // Trecho que aparece em vários lugares: não dá pra saber qual a IA quis.
+    let n=0,i=texto.indexOf(alvo);
+    while(i>=0&&n<3){n++;i=texto.indexOf(alvo,i+1)}
+    if(n>1)e.problemas.push('ambiguo');
+    // Como o texto fica DEPOIS de aplicar só esta edição.
+    const depois=texto.slice(0,loc.start)+p.para+texto.slice(loc.end);
+    const janela=depois.slice(Math.max(0,loc.start-40),loc.start+p.para.length+40);
+    if(/\s{2,}/.test(janela))e.problemas.push('espaco_duplo');
+    if(/\s+[,.;:!?]/.test(janela))e.problemas.push('espaco_antes_pontuacao');
+    if(/[,;]\s*[,;.]/.test(janela))e.problemas.push('pontuacao_dobrada');
+    // Sem "^": a janela é um recorte arbitrário do meio do texto, então
+    // começar em minúscula é o normal — só vale como erro depois de um ponto
+    // que está DENTRO da janela.
+    if(/[.!?]\s+[a-záàâãéêíóôõúç]/.test(janela))e.problemas.push('minuscula_apos_ponto');
+    const pal=s=>(s.toLowerCase().match(/[\wáàâãéêíóôõúçü]+/g)||[]);
+    const antes=pal(p.de),depoisPal=pal(p.para);
+    const setAntes=new Set(antes),setDepois=new Set(depoisPal);
+    // Palavra que aparece no "para" e não existia no "de" é conteúdo novo —
+    // a IA deveria estar cortando muleta, não escrevendo por cima.
+    const novas=depoisPal.filter(w=>!setAntes.has(w)&&w.length>2);
+    if(novas.length)e.problemas.push('palavra_nova:'+novas.join(','));
+    // A checagem mais importante: a IA às vezes marca um trecho LONGO e devolve
+    // um trecho curto, levando junto conteúdo de verdade ("Beleza. Então vamos
+    // abrir a frente que eu quero melhorar aí." virando só "Vamos "). Isso passa
+    // batido na votação, porque todas as rodadas têm o mesmo vício. Muleta some
+    // à vontade; palavra de conteúdo, não.
+    const MULETAS=new Set(['então','né','ok','certo','correto','beleza','tipo','assim','sabe','entendeu','aí','olha','veja','bom','pois','eu','que','a','o','de','é','esse','essa','isso','por','exemplo','uma','um','no','na','e','me','se','tem','como','já','pra','para','com','mais','mesmo','mesma','coisa','vou','vai','está','estou','gente','posso','pode','ele','ela']);
+    const perdidas=antes.filter(w=>!setDepois.has(w)&&w.length>2&&!MULETAS.has(w));
+    if(perdidas.length)e.problemas.push('perda_de_conteudo:'+perdidas.join(','));
+    eds.push(e);
+  }));
+  // Duas edições que se cruzam corrompem o texto se aplicadas juntas.
+  eds.forEach((a,i)=>eds.forEach((b,j)=>{
+    if(j<=i||!a.loc||!b.loc)return;
+    if(a.loc.start<b.loc.end&&b.loc.start<a.loc.end){
+      if(!a.problemas.includes('sobrepoe'))a.problemas.push('sobrepoe');
+      if(!b.problemas.includes('sobrepoe'))b.problemas.push('sobrepoe');
+    }
+  }));
+  return eds;
+}
+// ── ETAPA 3: VOTAÇÃO POR EDIÇÃO ──
+// Método do artigo "Edit-level Majority Voting Mitigates Over-Correction in
+// LLM-based Grammatical Error Correction" (arXiv 2605.13624): em vez de pedir
+// pra IA se auto-avaliar (que a pesquisa mostra que piora), roda o MESMO
+// pedido k vezes e só mantém a correção que apareceu na maioria das rodadas.
+// Não é opinião de ninguém — é contagem. E cai como uma luva aqui porque
+// nosso formato já É uma lista de edições; não precisa extrair nada.
+// Agrupa por SOBREPOSIÇÃO de posição, não por texto igual: duas rodadas
+// costumam pedir o mesmo corte com recortes ligeiramente diferentes
+// ("Então me confirma" x "Então me "), e comparar string perderia esse voto.
+function _corretorVotar(texto,rodadas,limiar){
+  const k=rodadas.length;
+  limiar=limiar||Math.ceil(k/2);
+  const eds=[];
+  rodadas.forEach((grupos,ri)=>grupos.forEach(g=>g.pares.forEach(p=>{
+    const loc=_corretorLocalizar(texto,p.de);
+    if(loc)eds.push({ri,start:loc.start,end:loc.end,para:p.para,tipo:g.tipo,rotulo:g.rotulo});
+  })));
+  eds.sort((a,b)=>a.start-b.start||a.end-b.end);
+  const grupinhos=[];
+  eds.forEach(e=>{
+    const g=grupinhos[grupinhos.length-1];
+    if(g&&e.start<g.end){g.itens.push(e);g.end=Math.max(g.end,e.end);return}
+    grupinhos.push({start:e.start,end:e.end,itens:[e]});
+  });
+  return grupinhos.map(g=>{
+    const votos=new Set(g.itens.map(x=>x.ri)).size;
+    // Versão vencedora: a substituição que mais rodadas propuseram.
+    const cont={};g.itens.forEach(x=>{cont[x.para]=(cont[x.para]||0)+1});
+    const para=Object.keys(cont).sort((a,b)=>cont[b]-cont[a])[0];
+    const vencedor=g.itens.find(x=>x.para===para);
+    return{start:g.start,end:g.end,de:texto.slice(g.start,g.end),para,
+      tipo:vencedor.tipo,rotulo:vencedor.rotulo,votos,k,aprovada:votos>=limiar};
+  });
+}
 // TEMPORÁRIO — banco de provas do prompt, não é a função final.
 // Roda o corretor no texto do card e joga a resposta CRUA num card novo, junto
 // do diagnóstico (agrupou? os trechos batem com o texto?). Serve pra decidir se
