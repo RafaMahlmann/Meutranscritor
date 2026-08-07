@@ -8928,6 +8928,27 @@ function _corretorAplicarConstrito(texto,ocs,decisoes){
   out=out.replace(/(^|[.!?]\s+)([a-záàâãéêíóôõúç])/g,(m0,a,b)=>a+b.toUpperCase());
   return{texto:out,edicoes:eds};
 }
+// ── ORDENAR OPÇÕES POR SENTIDO (embeddings) ──
+// Usa o mesmo motor da busca por sentido pra medir qual reescrita ficou mais
+// perto do que a pessoa disse originalmente. Serve pra ORDENAR o que vai ser
+// mostrado — nunca pra aprovar ou barrar nada sozinho.
+//
+// O nome é "ordenar" e não "conferir" de propósito, porque medindo com a
+// Gemini (3072 dimensões) ele REPROVOU no caso mais perigoso de todos:
+//   original : "A empresa pagou o fornecedor na segunda."
+//   invertido: "O fornecedor pagou a empresa na segunda."  → 0.9748
+//   correto  : "A empresa quitou o fornecedor na segunda." → 0.9257
+// A frase com o sentido invertido ficou em PRIMEIRO. Embeddings capturam
+// assunto, não quem fez o quê — trocar sujeito por objeto mantém as mesmas
+// palavras, então a "impressão digital de sentido" quase não muda. É o mesmo
+// buraco da comparação por conjunto de palavras, só que mais caro.
+// Pega bem negação (0.9301 x 0.8855) e número trocado (0.985 x 0.9199).
+// Ou seja: ajuda a ordenar, não substitui os olhos de quem lê.
+async function _corretorOrdenarPorSentido(original,opcoes){
+  const vs=await _semEmbed([original,...opcoes]);
+  return opcoes.map((texto,i)=>({texto,semelhanca:_cosine(vs[0],vs[i+1])}))
+    .sort((a,b)=>b.semelhanca-a.semelhanca);
+}
 // TEMPORÁRIO — banco de provas do prompt, não é a função final.
 // Roda o corretor no texto do card e joga a resposta CRUA num card novo, junto
 // do diagnóstico (agrupou? os trechos batem com o texto?). Serve pra decidir se
