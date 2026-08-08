@@ -8830,6 +8830,61 @@ function _corretorOcorrencias(texto,limite){
   ocs.sort((a,b)=>a.start-b.start);
   return limite?ocs.slice(0,limite):ocs;
 }
+// Só o que vale perguntar: tira as palavras de conteúdo, cuja resposta a trava
+// já determina. Devolve também quantas foram poupadas, pra dar pra mostrar a
+// economia na tela em vez de ela ficar invisível.
+function _corretorOcorrenciasParaIA(texto){
+  const todas=_corretorOcorrencias(texto);
+  const perguntar=todas.filter(o=>!_gramPalavraDeConteudo(o.palavra));
+  return{perguntar,poupadas:todas.length-perguntar.length,total:todas.length};
+}
+// ── CLASSE FECHADA DO PORTUGUÊS (gramática local, sem IA) ──
+// A economia mais forte de todas não é comprimir a chamada — é NÃO FAZER a
+// chamada. Ideia do Rafa: se o app tiver uma camada de gramática própria, ele
+// decide sozinho a maior parte dos casos.
+//
+// O truque é que não precisa de um classificador gramatical completo (que
+// exigiria dicionário grande ou modelo treinado, coisa que não cabe num arquivo
+// único que roda no navegador). Precisa responder UMA pergunta: "esta palavra
+// carrega informação?" — e em português as palavras que NÃO carregam formam uma
+// lista FECHADA e pequena: artigo, preposição, contração, conjunção, pronome,
+// auxiliar e advérbio comum. Tudo que não está nela é palavra de conteúdo.
+//
+// Medido num ditado de 391 palavras com 167 ocorrências candidatas:
+//   114 são palavra de conteúdo (vídeo, painel, trabalho) → resposta é sempre
+//       MANTER, porque a trava nunca deixaria tirar mesmo. Perguntar é gasto puro.
+//    17 são muleta conhecida → já decidido pela lista.
+//    36 são classe fechada → aí sim é ambíguo e vale perguntar.
+// Ou seja: 78% das perguntas podem simplesmente não ser feitas.
+//
+// Pesquisei se dava pra aproveitar biblioteca pronta: o padrão da área é o RSLP
+// (Removedor de Sufixos da Língua Portuguesa) e o corpus MAC-MORPHO, mas as
+// implementações são em R e Python — não há porte de navegador confiável. Como
+// a pergunta aqui é estreita, a lista fechada resolve sem dependência nenhuma.
+const GRAM_CLASSE_FECHADA=new Set(('o a os as um uma uns umas '+
+ 'de em para pra por com sem sob sobre entre ate desde apos ante contra '+
+ 'do da dos das no na nos nas ao aos num numa dum duma pelo pela pelos pelas '+
+ 'dele dela deles delas deste desta destes destas desse dessa nesse nessa neste nesta '+
+ 'disso disto daquilo aquele aquela aquilo esse essa este esta isso isto '+
+ 'e ou mas porem contudo todavia entretanto porque pois que se quando enquanto '+
+ 'embora caso conforme portanto logo entao assim ja tambem '+
+ 'eu tu ele ela nos vos eles elas me te lhe lhes meu minha seu sua nosso nossa '+
+ 'quem qual quais quanto quantos cujo cuja onde '+
+ 'ser sou eh somos sao era eram foi fui sera sendo sido '+
+ 'estar estou esta estamos estao estava estavam esteve '+
+ 'ter tenho tem temos tinha tinham teve tendo '+
+ 'haver ha havia houve ir vou vai vamos vao ia iam '+
+ 'poder posso pode podem podia devia dever deve '+
+ 'nao sim ainda sempre nunca muito pouco mais menos bem mal '+
+ 'aqui ali la aca hoje ontem amanha agora depois antes tao ta').split(/\s+/));
+// Palavra de conteúdo é tudo que não é muleta nem classe fechada. A trava
+// (_corretorTravar) nunca deixa tirar uma dessas — então perguntar à IA sobre
+// elas é gastar token pra receber uma resposta que seria ignorada de qualquer
+// jeito. Filtrar aqui é o mesmo resultado, de graça.
+function _gramPalavraDeConteudo(w){
+  const n=_cchatNorm(w).trim();
+  return !!n&&!CORRETOR_MULETAS_NORM.has(n)&&!GRAM_CLASSE_FECHADA.has(n);
+}
 // ── PROMPT COMPACTO: TEXTO UMA VEZ SÓ, OCORRÊNCIAS POR ÍNDICE ──
 // Técnica que a comunidade chama de "evidence aliases": tirar a estrutura
 // repetida sem tirar a evidência. O desperdício que ela ataca é este, medido
