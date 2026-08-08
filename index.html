@@ -8830,6 +8830,58 @@ function _corretorOcorrencias(texto,limite){
   ocs.sort((a,b)=>a.start-b.start);
   return limite?ocs.slice(0,limite):ocs;
 }
+// ── PROMPT COMPACTO: TEXTO UMA VEZ SÓ, OCORRÊNCIAS POR ÍNDICE ──
+// Técnica que a comunidade chama de "evidence aliases": tirar a estrutura
+// repetida sem tirar a evidência. O desperdício que ela ataca é este, medido
+// num ditado de 391 palavras (520 tokens):
+//   · prompt de revisar que está no app hoje ... 6.279 tokens (12,1x o texto)
+//   · corretor constrito com contexto por item . 3.548 tokens ( 6,8x)
+// Os dois mandam 60 caracteres de contexto em volta de CADA ocorrência — com
+// 167 ocorrências, a mesma frase viaja dezenas de vezes. Aqui o texto vai uma
+// vez, numerado por frase, e cada ocorrência é só "palavra + número da frase".
+// Isso é o que faz a diferença entre caber e não caber numa chave gratuita.
+function _corretorFrasesNumeradas(texto){
+  const frases=[];const re=/[^.!?…]+[.!?…]*/g;let m;
+  while((m=re.exec(texto))){
+    const t=m[0].trim();
+    if(t)frases.push({n:frases.length+1,texto:t,start:m.index,end:m.index+m[0].length});
+  }
+  return frases;
+}
+function _buildCorretorCompactoPrompt(texto,ocs){
+  const frases=_corretorFrasesNumeradas(texto);
+  const daFrase=p=>{const f=frases.find(f=>p>=f.start&&p<f.end);return f?f.n:1};
+  // Agrupa por palavra: "«Então» → frases 1, 4, 9" em vez de repetir o contexto
+  // uma vez por ocorrência. É aqui que mora a maior parte da economia.
+  const porPalavra={};
+  ocs.forEach((o,i)=>{
+    const k=o.palavra.toLowerCase();
+    (porPalavra[k]=porPalavra[k]||[]).push({i:i+1,frase:daFrase(o.start)});
+  });
+  const lista=Object.keys(porPalavra).map(k=>
+    `«${k}» → ${porPalavra[k].map(x=>x.i+':F'+x.frase).join(' ')}`).join('\n');
+  const corpo=frases.map(f=>`[${f.n}] ${f.texto}`).join('\n');
+  return `Você é um professor de português revisando uma transcrição de fala. Abaixo está o texto com as frases numeradas, e depois a lista de palavras marcadas — cada item traz o NÚMERO DA MARCAÇÃO e em qual frase ela está (F = frase).
+
+Para CADA número, decida o que fazer SÓ com aquela palavra, naquela frase — não mexa em mais nada:
+MANTER = a palavra faz falta ali.
+TIRAR = é muleta de fala e a frase fica completa sem ela.
+TROCAR = está repetitiva ou errada, e UMA outra palavra fica melhor.
+
+Na dúvida, MANTER. Tirar palavra de conteúdo é erro grave; deixar uma muleta é detalhe.
+Nunca proponha tirar palavra que carregue informação. TROCAR é sempre por UMA palavra.
+
+Responda uma linha por número, sem nada a mais:
+N:MANTER
+N:TIRAR
+N:TROCAR:palavra
+
+TEXTO:
+${corpo}
+
+MARCAÇÕES:
+${lista}`;
+}
 function _buildCorretorConstritoPrompt(ocs){
   const lista=ocs.map((o,i)=>`${i+1}. «${o.palavra}» em: "${o.frase}"`).join('\n');
   return `Você é um professor de português revisando uma transcrição de fala. Abaixo há trechos de um texto ditado em voz alta, cada um com UMA palavra marcada entre «aspas angulares».
