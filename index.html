@@ -8879,6 +8879,13 @@ function _parseCorretorConstrito(res,ocs){
 // lista fechada, qualquer palavra fora dela vira MANTER automaticamente, sem
 // depender de a IA ter bom senso. Palavra de conteúdo nunca some por acidente.
 const CORRETOR_MULETAS=new Set(['então','né','ne','tipo','assim','ok','certo','correto','beleza','sabe','entendeu','aí','olha','veja','bom','pois','enfim','digamos','vamos','tá','ta','hein','uai','pô','po','cara','meio','realmente','basicamente','simplesmente','literalmente','exatamente','totalmente','praticamente','justamente']);
+// Versão SEM ACENTO da lista acima. Não é luxo: quem compara palavra quase
+// sempre passa por _cchatNorm, que tira acento — então "então" virava "entao"
+// e não casava com a lista, que tem acento. Efeito real, encontrado testando:
+// a limpeza de muletas nunca tirava "Então" (por isso o alemão vinha com
+// "Dann"), e a nota de risco acusava "sumiu conteúdo" ao tirar um simples
+// "Então". Toda comparação normalizada tem que usar ESTA lista.
+const CORRETOR_MULETAS_NORM=new Set([...CORRETOR_MULETAS].map(w=>_cchatNorm(w).trim()));
 // Trava: devolve as decisões já filtradas + o que foi rebaixado e por quê.
 // Roda SEMPRE, mesmo que a IA tenha vindo de um cérebro bom — a trava não é
 // desconfiança do modelo, é o contrato do que esta função tem direito de fazer.
@@ -9087,7 +9094,7 @@ Responda só assim, duas linhas:
 // só tinha saído um "Beleza". Limpar antes é mais barato e mais confiável do
 // que tentar ensinar o tradutor a ignorar.
 function _gramTirarMuletasPT(frase){
-  return frase.split(/\b/).filter(p=>!CORRETOR_MULETAS.has(_cchatNorm(p).trim()))
+  return frase.split(/\b/).filter(p=>!CORRETOR_MULETAS_NORM.has(_cchatNorm(p).trim()))
     .join('').replace(/\s{2,}/g,' ').replace(/^[\s,.]+/,'').replace(/\s+([,.?!])/g,'$1').trim();
 }
 // ── SEGUNDO IDIOMA DE VERIFICAÇÃO: ALEMÃO ──
@@ -9141,6 +9148,66 @@ Responda só assim, duas linhas:
   const lim=s=>s.trim().replace(/^["']|["'.]$/g,'');
   const m1=r.match(/^\s*1\s*:\s*(.+)$/m),m2=r.match(/^\s*2\s*:\s*(.+)$/m);
   return[m1?lim(m1[1]):'',m2?lim(m2[1]):''];
+}
+// ── NOTA DE RISCO (triagem grátis, antes de gastar chamada) ──
+// A ideia é a da cascata: só paga conferência cara quem tem risco de verdade.
+// Antes a triagem era binária (grave/atenção/igual) e quase tudo caía na fila
+// cara. Com nota dá pra ORDENAR e pagar só pelo topo — e, melhor ainda, a
+// maioria das correções tira muleta de lista fechada e tira NOTA ZERO, ou seja,
+// não precisa de conferência nenhuma.
+// Todos os sinais abaixo são determinísticos: não gastam token, não variam
+// entre execuções e não dependem de a IA estar num dia bom.
+const RISCO_NUMEROS=/\b(\d+|um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|vinte|trinta|quarenta|cinquenta|cem|mil|milh[õo]es?)\b/gi;
+const RISCO_TEMPO=/\b(hoje|ontem|amanh[ãa]|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo|janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|manh[ãa]|tarde|noite|semana|m[êe]s|ano)\b/gi;
+function _corretorRisco(de,para,extra){
+  extra=extra||{};
+  const pal=s=>(_cchatNorm(s).match(/[\wáàâãéêíóôõúçü]+/g)||[]);
+  const antes=pal(de),depois=pal(para);
+  const setA=new Set(antes),setD=new Set(depois);
+  let nota=0;const motivos=[];
+  const somar=(n,m)=>{nota+=n;motivos.push(m)};
+
+  // Negação e número/data são categoria à parte: mudam o FATO, não a forma.
+  if(_gramNegado(de)!==_gramNegado(para))somar(10,'mudou a negação');
+  const conj=(s,re)=>{const m=_cchatNorm(s).match(re);return (m||[]).sort().join(',')};
+  if(conj(de,RISCO_NUMEROS)!==conj(para,RISCO_NUMEROS))somar(8,'mudou número');
+  if(conj(de,RISCO_TEMPO)!==conj(para,RISCO_TEMPO))somar(6,'mudou data/tempo');
+
+  // Nome próprio: maiúscula no meio da frase. Trocar isso troca de quem se fala.
+  const proprios=s=>((s.match(/(?!^)\b[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][\wáàâãéêíóôõúçü]+/g)||[]).sort().join(','));
+  if(proprios(de)!==proprios(para))somar(5,'mexeu em nome próprio');
+
+  // Palavra de conteúdo que sumiu ou apareceu. Muleta não conta.
+  const perdidas=antes.filter(w=>!setD.has(w)&&w.length>2&&!CORRETOR_MULETAS_NORM.has(w));
+  const novas=depois.filter(w=>!setA.has(w)&&w.length>2&&!CORRETOR_MULETAS_NORM.has(w));
+  if(perdidas.length)somar(Math.min(9,perdidas.length*3),'sumiu: '+perdidas.join(','));
+  if(novas.length)somar(Math.min(9,novas.length*3),'apareceu: '+novas.join(','));
+
+  // MESMAS palavras em ORDEM diferente. Encontrado testando: sem esta regra,
+  // "A empresa pagou o fornecedor" → "O fornecedor pagou a empresa" tirava nota
+  // ZERO e era mandada como segura — o pior erro possível, porque é exatamente
+  // a inversão de sentido que nenhum outro mecanismo barato enxerga. Conjunto
+  // igual + ordem diferente é o retrato dessa inversão.
+  if(!perdidas.length&&!novas.length&&antes.length>2&&antes.join(' ')!==depois.join(' '))
+    somar(9,'mesmas palavras em outra ordem — pode ter trocado quem fez o quê');
+
+  // Quanto maior o pedaço mexido, mais chance de levar algo junto sem querer.
+  if(antes.length>5)somar(2,'trecho longo ('+antes.length+' palavras)');
+  if(extra.ambiguo)somar(2,'trecho aparece em mais de um lugar');
+  if(extra.sobrepoe)somar(4,'cruza com outra correção');
+
+  const faixa=nota===0?'seguro':nota<=3?'baixo':nota<=7?'médio':'alto';
+  return{nota,faixa,motivos,precisaConferir:nota>0};
+}
+// Separa a lista de correções em "pode aplicar direto" e "vale gastar
+// conferência", já ordenada da mais arriscada pra menos. Quem chama decide
+// quantas do topo mandar pra tradução, conforme o orçamento de chamada.
+function _corretorTriagem(edicoes){
+  const notas=edicoes.map(e=>({...e,risco:_corretorRisco(e.de,e.para,e)}));
+  const seguras=notas.filter(x=>!x.risco.precisaConferir);
+  const conferir=notas.filter(x=>x.risco.precisaConferir).sort((a,b)=>b.risco.nota-a.risco.nota);
+  return{seguras,conferir,
+    economia:edicoes.length?Math.round(seguras.length/edicoes.length*100):0};
 }
 // ── LOTE: TODAS AS FRASES NUMA CHAMADA SÓ ──
 // A técnica nº 1 que a comunidade usa pra caber em chave gratuita, e a que
