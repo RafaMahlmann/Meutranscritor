@@ -111,6 +111,19 @@
 .cf-dot.on{border-color:var(--text)}
 /* Contagem dentro da bolinha: diz de cara quanto tem de cada cor, sem legenda */
 .cf-n{font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.45);line-height:1}
+/* ⋮ de renomear: irmão da bolinha (nunca dentro — botão dentro de botão perde o
+   clique), acompanhando a borda em vez de flutuar longe dela. Fica no fluxo
+   normal do flex (nunca position:absolute) — assim reserva o próprio espaço e
+   não fica coberto pela bolinha seguinte quando o gap é pequeno. */
+.cf-wrap{position:relative;display:inline-flex;align-items:center}
+.cf-menu{width:16px;height:26px;padding:0;margin-left:1px;flex-shrink:0;
+  border:none;background:transparent;cursor:pointer;
+  color:var(--text4);font-size:13px;line-height:1;opacity:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity var(--transition),color var(--transition)}
+.cf-wrap:hover .cf-menu{opacity:.75}
+.cf-menu:hover{opacity:1!important;color:var(--text2)}
+.cf-menu:focus-visible{opacity:1}
 /* Alvo de toque no celular. A bolinha continua pequena de propósito (ela divide
    espaço com os badges do cabeçalho), mas ganha uma área invisível ao redor —
    mesmo hit-slop que o app já usa no botão de pastas. As cores do popover, essas,
@@ -122,6 +135,8 @@
   .cdot-grid{gap:9px}
   .cdot-none{padding:11px;font-size:13px}
   .cf-dot{width:34px;height:34px}
+  /* Sem hover em toque — o ⋮ precisa estar sempre visível, senão some pra sempre */
+  .cf-menu{opacity:.75;width:20px;height:34px;font-size:15px}
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased}
 .wrap{max-width:1100px;margin:0 auto;padding:0 20px;width:100%}
@@ -3217,7 +3232,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.12.2';
+const VOX_VERSION='2026.08.12.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3269,6 +3284,10 @@ let I18N_EN={
 "Card vazio — nada para perguntar":"Empty card — nothing to ask about",
 "Configure uma chave de IA!":"Set up an AI key!",
 "🔑 Precisa configurar uma inteligência artificial antes.":"🔑 Need to set up an AI before you can do that.",
+"Renomear etiqueta":"Rename label",
+"Nome desta etiqueta (vazio volta ao padrão):":"Name for this label (leave empty for default):",
+"✏️ Etiqueta renomeada":"✏️ Label renamed",
+"✏️ Nome devolvido ao padrão":"✏️ Name reset to default",
 "O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
 "💬 Pergunta: ":"💬 Question: ",
 // FASE 4 — pulos do gato (mobile)
@@ -5158,7 +5177,20 @@ function _restaurarEtiqueta(id,it){
   const n=parseInt(it.tc);
   if(!isNaN(n)&&n>=0&&n<TAG_CORES.length)document.getElementById(id)?.setAttribute('data-tc',String(n));
 }
-const TAG_NOMES=()=>[t('Verde'),t('Azul'),t('Roxo'),t('Laranja'),t('Rosa'),t('Ciano'),t('Amarelo'),t('Vermelho')];
+// Os nomes das etiquetas são do dono do aparelho, não nossos. O padrão é a cor
+// ("Verde"), mas quem usa quase sempre quer o SIGNIFICADO ("Urgente", "Cliente").
+// Nome vazio volta pro padrão de propósito: é como se desfaz sem menu de desfazer.
+const TAG_NOMES_PADRAO=()=>[t('Verde'),t('Azul'),t('Roxo'),t('Laranja'),t('Rosa'),t('Ciano'),t('Amarelo'),t('Vermelho')];
+function TAG_NOMES(){
+  const padrao=TAG_NOMES_PADRAO();
+  let salvos=[];
+  try{salvos=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){salvos=[]}
+  if(!Array.isArray(salvos))salvos=[];
+  return padrao.map((p,i)=>{
+    const s=salvos[i];
+    return (typeof s==='string'&&s.trim())?s.trim():p;
+  });
+}
 let corFiltroAtivo=null; // null = mostra todas
 // Toque rápido troca a cor na hora; segurar abre o menu pra escolher direto.
 // A ideia é que o caso comum (só quero marcar isto de alguma cor) não custe
@@ -5226,6 +5258,21 @@ function selecionarFiltroCor(i){
   renderFiltroCores();
   applyFolderFilter();
 }
+// Renomear a etiqueta. Segue o mesmo desenho de renameFolder(): prompt simples,
+// cancelar não faz nada, e o nome em branco devolve o padrão da cor.
+function renomearEtiqueta(i){
+  const nomes=TAG_NOMES();
+  const novo=prompt(t('Nome desta etiqueta (vazio volta ao padrão):'),nomes[i]);
+  if(novo===null)return;               // cancelou
+  let salvos=[];
+  try{salvos=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){salvos=[]}
+  if(!Array.isArray(salvos))salvos=[];
+  while(salvos.length<TAG_CORES.length)salvos.push('');
+  salvos[i]=novo.trim().slice(0,24);   // teto curto: nome comprido estoura o balãozinho
+  localStorage.setItem('vox_tag_nomes',JSON.stringify(salvos));
+  renderFiltroCores();
+  toast(novo.trim()?t('✏️ Etiqueta renomeada'):t('✏️ Nome devolvido ao padrão'));
+}
 // Só desenha as cores que EXISTEM em algum card — uma fileira de 8 bolinhas
 // sempre visível, com 7 delas vazias, seria promessa de organização que não
 // existe. A fileira cresce conforme a pessoa etiqueta.
@@ -5242,7 +5289,10 @@ function renderFiltroCores(){
   const ordem=[...usadas.keys()].sort((a,b)=>a-b);
   box.innerHTML=`<div class="cf-hd">${escHtml(t('Etiquetas'))}</div>
     <div class="cf-row">${ordem.map(i=>
-      `<button type="button" class="cf-dot${corFiltroAtivo===i?' on':''}" style="background:${TAG_CORES[i]}" onclick="selecionarFiltroCor(${i})" title="${escHtml(nomes[i])} (${usadas.get(i)})" aria-label="${escHtml(nomes[i])}"><span class="cf-n">${usadas.get(i)}</span></button>`
+      `<span class="cf-wrap">
+        <button type="button" class="cf-dot${corFiltroAtivo===i?' on':''}" style="background:${TAG_CORES[i]}" onclick="selecionarFiltroCor(${i})" title="${escHtml(nomes[i])} (${usadas.get(i)})" aria-label="${escHtml(nomes[i])}"><span class="cf-n">${usadas.get(i)}</span></button>
+        <button type="button" class="cf-menu" onclick="event.stopPropagation();renomearEtiqueta(${i})" title="${escHtml(t('Renomear etiqueta'))}" aria-label="${escHtml(t('Renomear etiqueta'))}">⋮</button>
+      </span>`
     ).join('')}</div>`;
 }
 function applyFolderFilter(){
