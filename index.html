@@ -879,6 +879,61 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-cfg-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px;display:flex;border-radius:7px;transition:all var(--transition)}
 .folder-cfg-btn:hover{background:var(--bg-input);color:var(--text2)}
 .folder-cfg-btn.active{color:var(--accent);background:var(--accent-glow)}
+.folder-fc-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px;display:flex;border-radius:7px;transition:all var(--transition)}
+.folder-fc-btn:hover{background:var(--bg-input);color:var(--text2)}
+/* ══ FLUXOGRAMA DE PASTAS — Fase 1 (ver e navegar) ══
+   Reusa o backdrop de .tx-overlay (fixed;inset:0;fundo escurecido), mas o
+   modal interno ocupa a tela toda — não é um cartão de 420px, é um canvas.
+   .fc-lines (svg) e .fc-nodes (div) são IRMÃOS dentro do wrap e recebem
+   sempre a MESMA transform em JS — se um for atualizado sem o outro, as
+   linhas descolam dos nós. */
+.fc-overlay{z-index:920}
+.fc-modal{background:var(--bg);width:100%;height:100%;max-width:none;max-height:none;
+  padding:0;border-radius:0;box-shadow:none;display:flex;flex-direction:column;overflow:hidden}
+.fc-topbar{display:flex;align-items:center;gap:10px;padding:12px 16px;
+  border-bottom:1px solid var(--border);flex-shrink:0}
+.fc-title{font-size:14px;font-weight:700;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-topbar-actions{display:flex;gap:6px;flex-shrink:0}
+.fc-fit-btn,.fc-close-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
+  background:var(--bg-card);color:var(--text2);cursor:pointer;display:flex;align-items:center;
+  justify-content:center;transition:background var(--transition),color var(--transition);padding:0}
+.fc-fit-btn:hover,.fc-close-btn:hover{background:var(--bg-input);color:var(--text)}
+/* touch-action:none é o que impede o navegador de roubar o gesto de pinça
+   pra rolar a página — sem isso o zoom de dois dedos nunca chega no JS. */
+.fc-canvas-wrap{position:relative;flex:1;overflow:hidden;touch-action:none;
+  background:var(--bg);cursor:grab}
+.fc-canvas-wrap:active{cursor:grabbing}
+.fc-lines{position:absolute;top:0;left:0;transform-origin:0 0;pointer-events:none;overflow:visible}
+.fc-link{fill:none;stroke:var(--border2);stroke-width:1.6}
+.fc-nodes{position:absolute;top:0;left:0;transform-origin:0 0}
+.fc-node{position:absolute;transform:translateY(-50%);width:190px;min-height:40px;
+  display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;
+  border:1.5px solid var(--border);background:var(--bg-card);color:var(--text);
+  cursor:pointer;text-align:left;font-family:var(--font)}
+.fc-node-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
+.fc-node-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.fc-node-count{font-size:10px;font-weight:700;color:var(--text4);flex-shrink:0}
+.fc-node-arrow{font-size:9px;color:var(--text4);flex-shrink:0;transition:transform var(--transition);display:inline-block}
+.fc-node-arrow-open{transform:rotate(90deg)}
+.fc-node-raiz{border-color:var(--accent);border-width:2px;font-weight:700}
+.fc-node-card{background:transparent;border-style:dashed;font-size:12px}
+.fc-node-mais{border-style:dashed;color:var(--text4);font-style:italic;justify-content:center;cursor:default}
+.fc-card-panel{display:none;position:absolute;top:0;right:0;bottom:0;width:min(360px,86vw);
+  background:var(--bg-card);border-left:1px solid var(--border);box-shadow:-8px 0 24px rgba(0,0,0,0.12);
+  flex-direction:column;z-index:2}
+.fc-card-panel.on{display:flex}
+.fc-card-panel-hd{display:flex;align-items:flex-start;gap:8px;padding:14px 14px 10px;border-bottom:1px solid var(--border)}
+.fc-card-panel-hd strong{flex:1;font-size:13px;color:var(--text);word-break:break-word}
+.fc-card-panel-dt{font-size:11px;color:var(--text4);white-space:nowrap}
+.fc-card-panel-close{background:none;border:none;color:var(--text4);cursor:pointer;padding:2px;flex-shrink:0}
+.fc-card-panel-body{flex:1;overflow-y:auto;padding:14px;font-size:13px;line-height:1.6;color:var(--text2);white-space:pre-wrap}
+.fc-card-panel-actions{padding:12px 14px;border-top:1px solid var(--border)}
+.fc-btn-primary{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;
+  padding:10px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer}
+.fc-btn-primary:hover{background:var(--accent2)}
+@media(max-width:640px){
+  .fc-card-panel{width:100%}
+}
 .folder-cfg-panel{display:none;background:var(--bg-input);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px}
 .folder-cfg-panel.on{display:block}
 .folder-cfg-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -2130,6 +2185,9 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <button class="folder-cfg-btn" id="btnFolderCfg" onclick="toggleFolderCfg()" title="Configurar download" data-i18n-title>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
+        <button class="folder-fc-btn" id="btnFolderFc" onclick="abrirFluxograma()" title="Ver como fluxograma" data-i18n-title>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="12" r="2.3"/><circle cx="18" cy="5" r="2.3"/><circle cx="18" cy="19" r="2.3"/><path d="M6.1 11.1 15.9 6"/><path d="M6.1 12.9 15.9 18"/></svg>
+        </button>
         <button class="folder-collapse-btn" onclick="toggleFolders()" title="Recolher" aria-label="Recolher pastas" data-i18n-title>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
         </button>
@@ -3232,7 +3290,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.12.3';
+const VOX_VERSION='2026.08.12.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3288,6 +3346,14 @@ let I18N_EN={
 "Nome desta etiqueta (vazio volta ao padrão):":"Name for this label (leave empty for default):",
 "✏️ Etiqueta renomeada":"✏️ Label renamed",
 "✏️ Nome devolvido ao padrão":"✏️ Name reset to default",
+"Ver como fluxograma":"View as flowchart",
+"Fluxograma de pastas":"Folder flowchart",
+"Enquadrar":"Fit to screen",
+"Fechar":"Close",
+"…e mais {n}":"…and {n} more",
+"(card vazio)":"(empty card)",
+"(sem nome)":"(no name)",
+"Ver na lista":"View in list",
 "O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
 "💬 Pergunta: ":"💬 Question: ",
 // FASE 4 — pulos do gato (mobile)
@@ -5163,6 +5229,276 @@ function selectFolder(id){
   // Nome cortado (reticências)? Mostra completo — cobre touch, onde title não aparece.
   const nameEl=document.querySelector('.folder-item.active .folder-name');
   if(nameEl&&nameEl.scrollWidth>nameEl.clientWidth)toast('📁 '+nameEl.textContent);
+}
+
+// ══ FLUXOGRAMA DE PASTAS — Fase 1 (ver e navegar) ══════════════════════════
+// Segundo desenho da MESMA árvore que já existe na lateral — mesmos dados
+// (folders[], parentId), mesmo Set de "aberto" (folderExpanded). Abrir uma
+// pasta aqui deixa ela aberta na lateral também, e vice-versa: um conceito
+// só, sem código de sincronia.
+const FC_COLUNA=230;   // distância horizontal entre um nível e o seguinte
+const FC_LINHA=54;     // distância vertical entre duas folhas vizinhas
+const FC_MAX_CARDS=30; // teto de cards desenhados por pasta — acima disso a
+                        // tela engasga; sobra o nó "…e mais N"
+const FC_NODE_W=190;   // tem que bater com o width do CSS .fc-node
+
+let _fcX=0,_fcY=0,_fcS=1;          // pan (x,y) e zoom da tela
+let _fcUltimoLayout=null;          // {nos,largura,altura} do último desenho
+let _fcCardAbertoId=null;
+const _fcPointers=new Map();       // pointerId -> {x,y}, pra distinguir pan de pinça
+let _fcPanAtivo=false,_fcPanStartX=0,_fcPanStartY=0,_fcOrigX=0,_fcOrigY=0;
+let _fcPinchDist=null,_fcPinchStartS=1;
+
+function _fcRotuloCard(c){
+  const sn=(c.dataset.sessionName||'').trim();
+  if(sn)return sn.slice(0,42);
+  const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
+  return txt?txt.slice(0,42):t('(card vazio)');
+}
+
+// Layout clássico de árvore por contagem de folhas: cada folha ocupa uma
+// linha, cada pai centraliza entre o primeiro e o último filho. Uma
+// recursão só — não precisa de duas passadas.
+function _fcLayout(){
+  const counts=getFolderCounts();
+  const nos=[];
+  let cursorY=0;
+
+  // Filhos VISÍVEIS de um nó: subpastas sempre; cards só se a pasta está aberta.
+  function filhosDe(id,aberta){
+    const subs=getFolderChildren(id).map(f=>({kind:'pasta',f}));
+    if(!aberta)return subs;
+    const cards=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')]
+      .filter(c=>(c.dataset.folder||'')===(id||''));
+    const mostrados=cards.slice(0,FC_MAX_CARDS).map(c=>({kind:'card',c}));
+    if(cards.length>FC_MAX_CARDS)mostrados.push({kind:'mais',n:cards.length-FC_MAX_CARDS});
+    return [...subs,...mostrados];
+  }
+
+  function pos(id,rotulo,tipo,cor,count,nivel,paiId){
+    const aberta=(tipo==='raiz')||folderExpanded.has(id);
+    const filhos=aberta?filhosDe(id,aberta):[];
+    // Se a pasta está FECHADA, filhos fica vazio de propósito (não desenha o
+    // que não é visível) — mas isso não pode decidir se a seta aparece, senão
+    // toda pasta fechada mostra sem seta e a pessoa não sabe que dá pra abrir.
+    // A pergunta certa é "existe algo pra mostrar", calculada sem depender
+    // de estar aberta: tem subpasta OU tem card DIRETO nela (não agregado).
+    const contDireta=tipo==='raiz'?counts.all:(counts[id]||0);
+    const temFilhosPotenciais=tipo!=='card'&&(getFolderChildren(id).length>0||contDireta>0);
+    let y;
+    if(!filhos.length){
+      y=cursorY;cursorY+=FC_LINHA;
+    }else{
+      const ys=filhos.map(ch=>{
+        if(ch.kind==='pasta')
+          return pos(ch.f.id,ch.f.name,'pasta',safeColor(ch.f.color),getFolderCount(ch.f.id,counts),nivel+1,id);
+        if(ch.kind==='card')
+          return pos(ch.c.id,_fcRotuloCard(ch.c),'card',null,0,nivel+1,id);
+        const yy=cursorY;cursorY+=FC_LINHA;
+        nos.push({id:'mais_'+id,tipo:'mais',rotulo:t('…e mais {n}').replace('{n}',ch.n),x:(nivel+1)*FC_COLUNA,y:yy,paiId:id});
+        return yy;
+      });
+      y=(ys[0]+ys[ys.length-1])/2;
+    }
+    nos.push({id,tipo,rotulo,cor,count,x:nivel*FC_COLUNA,y,paiId,aberta,temFilhos:temFilhosPotenciais});
+    return y;
+  }
+
+  pos(null,t('Tudo'),'raiz',null,counts.all,0,null);
+  const altura=Math.max(cursorY,FC_LINHA);
+  const niveis=Math.max(...nos.map(n=>n.x))/FC_COLUNA+1;
+  return {nos,largura:niveis*FC_COLUNA+FC_NODE_W,altura};
+}
+
+function _fcAplicarTransform(){
+  const tr=`translate(${_fcX}px,${_fcY}px) scale(${_fcS})`;
+  const lines=document.getElementById('fcLines');
+  const nodesEl=document.getElementById('fcNodes');
+  if(lines)lines.style.transform=tr;
+  if(nodesEl)nodesEl.style.transform=tr;
+}
+
+function _fcRender(){
+  const layout=_fcLayout();
+  _fcUltimoLayout=layout;
+  const {nos,largura,altura}=layout;
+  const porId=new Map(nos.map(n=>[n.id,n]));
+
+  const svg=document.getElementById('fcLines');
+  const nodesEl=document.getElementById('fcNodes');
+  if(!svg||!nodesEl)return;
+  svg.setAttribute('width',largura);
+  svg.setAttribute('height',altura);
+
+  let pathsHtml='';
+  nos.forEach(n=>{
+    if(n.tipo==='raiz')return;
+    const pai=porId.get(n.paiId);
+    if(!pai)return;
+    const x1=pai.x+FC_NODE_W,y1=pai.y,x2=n.x,y2=n.y;
+    pathsHtml+=`<path class="fc-link" d="M${x1} ${y1} C ${x1+60} ${y1}, ${x2-60} ${y2}, ${x2} ${y2}"/>`;
+  });
+  svg.innerHTML=pathsHtml;
+
+  let nodesHtml='';
+  nos.forEach(n=>{
+    const idAttr=n.id===null?'':escHtml(String(n.id));
+    if(n.tipo==='mais'){
+      nodesHtml+=`<div class="fc-node fc-node-mais" style="left:${n.x}px;top:${n.y}px">${escHtml(n.rotulo)}</div>`;
+      return;
+    }
+    const setaHtml=n.temFilhos?`<span class="fc-node-arrow${n.aberta?' fc-node-arrow-open':''}">▶</span>`:'';
+    const dotHtml=n.tipo==='pasta'?`<span class="fc-node-dot" style="background:${safeColor(n.cor)}"></span>`:'';
+    const countHtml=(n.tipo==='pasta'||n.tipo==='raiz')?`<span class="fc-node-count">${n.count}</span>`:'';
+    nodesHtml+=`<button type="button" class="fc-node fc-node-${n.tipo}" style="left:${n.x}px;top:${n.y}px" data-fc-id="${idAttr}" data-fc-tipo="${n.tipo}" title="${escHtml(n.rotulo)}">${setaHtml}${dotHtml}<span class="fc-node-label">${escHtml(n.rotulo)}</span>${countHtml}</button>`;
+  });
+  nodesEl.innerHTML=nodesHtml;
+}
+
+function _fcNodeClick(e){
+  const btn=e.target.closest('.fc-node');
+  if(!btn||btn.classList.contains('fc-node-mais'))return;
+  const tipo=btn.dataset.fcTipo;
+  const id=btn.dataset.fcId||null;
+  if(tipo==='raiz')return; // teto da árvore — nada a fazer ao tocar nela
+  if(tipo==='pasta'){
+    toggleFolderExpanded(id); // já salva e já redesenha a lateral sozinha
+    _fcRender();
+  }else if(tipo==='card'){
+    _fcAbrirCard(id);
+  }
+}
+
+// Pan de um dedo/mouse e pinça de dois dedos compartilham o mesmo Map de
+// ponteiros ativos. Só o gesto ativo no momento mexe em _fcX/_fcY/_fcS.
+function _fcPointerDown(e){
+  if(e.target.closest('.fc-node'))return; // deixa o clique do botão acontecer normal
+  // setPointerCapture pode falhar (NotFoundError) em cenários fora do comum —
+  // sem o try/catch, a exceção para a função ANTES de registrar o ponteiro no
+  // Map, e o pan/pinça param de responder silenciosamente. A captura em si é
+  // só otimização (mantém o arraste mesmo se o dedo sair da área); perder ela
+  // não pode custar o rastreamento do gesto.
+  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(err){}
+  _fcPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(_fcPointers.size===1){
+    _fcPanAtivo=true;_fcPanStartX=e.clientX;_fcPanStartY=e.clientY;_fcOrigX=_fcX;_fcOrigY=_fcY;
+  }else if(_fcPointers.size===2){
+    _fcPanAtivo=false;
+    const pts=[..._fcPointers.values()];
+    _fcPinchDist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+    _fcPinchStartS=_fcS;
+  }
+}
+function _fcPointerMove(e){
+  if(!_fcPointers.has(e.pointerId))return;
+  _fcPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(_fcPointers.size>=2&&_fcPinchDist){
+    const pts=[..._fcPointers.values()];
+    const dist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+    _fcS=Math.min(2.5,Math.max(0.3,_fcPinchStartS*(dist/_fcPinchDist)));
+    _fcAplicarTransform();
+    return;
+  }
+  if(_fcPanAtivo){
+    _fcX=_fcOrigX+(e.clientX-_fcPanStartX);
+    _fcY=_fcOrigY+(e.clientY-_fcPanStartY);
+    _fcAplicarTransform();
+  }
+}
+function _fcPointerUp(e){
+  _fcPointers.delete(e.pointerId);
+  if(_fcPointers.size<2)_fcPinchDist=null;
+  if(_fcPointers.size===0){
+    _fcPanAtivo=false;
+  }else if(_fcPointers.size===1){
+    const [p]=[..._fcPointers.values()];
+    _fcPanAtivo=true;_fcPanStartX=p.x;_fcPanStartY=p.y;_fcOrigX=_fcX;_fcOrigY=_fcY;
+  }
+}
+function _fcWheel(e){
+  e.preventDefault();
+  const fator=e.deltaY<0?1.1:0.9;
+  _fcS=Math.min(2.5,Math.max(0.3,_fcS*fator));
+  _fcAplicarTransform();
+}
+function _fcEnquadrar(){
+  const wrap=document.getElementById('fcCanvasWrap');
+  if(!wrap||!_fcUltimoLayout)return;
+  const {largura,altura}=_fcUltimoLayout;
+  const pad=40;
+  const escala=Math.min((wrap.clientWidth-pad*2)/largura,(wrap.clientHeight-pad*2)/altura,1.2);
+  _fcS=Math.min(2.5,Math.max(0.3,escala));
+  _fcX=pad;
+  _fcY=Math.max(pad,(wrap.clientHeight-altura*_fcS)/2);
+  _fcAplicarTransform();
+}
+
+function _fcAbrirCard(id){
+  const card=document.getElementById(id);
+  if(!card)return;
+  _fcCardAbertoId=id;
+  const sn=(card.dataset.sessionName||'').trim();
+  const dt=card.dataset.dt||'';
+  const dtStr=dt?new Date(dt).toLocaleString(getLocale()):'';
+  const texto=card.querySelector('textarea')?.value||'';
+  const panel=document.getElementById('fcCardPanel');
+  if(!panel)return;
+  panel.innerHTML=`<div class="fc-card-panel-hd"><strong>${escHtml(sn||t('(sem nome)'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharCard()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
+  panel.classList.add('on');
+}
+function _fcFecharCard(){
+  const panel=document.getElementById('fcCardPanel');
+  if(panel){panel.classList.remove('on');panel.innerHTML='';}
+  _fcCardAbertoId=null;
+}
+function _fcVerNaLista(id){
+  const card=document.getElementById(id);
+  const folderId=card?(card.dataset.folder||null):null;
+  fecharFluxograma();
+  selectFolder(folderId||null);
+  setTimeout(()=>{document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'center'})},50);
+}
+
+function abrirFluxograma(){
+  let ov=document.getElementById('fcOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='fcOverlay';
+    ov.className='tx-overlay fc-overlay';
+    ov.innerHTML=`<div class="fc-modal">
+      <div class="fc-topbar">
+        <span class="fc-title">🗂️ ${t('Fluxograma de pastas')}</span>
+        <div class="fc-topbar-actions">
+          <button type="button" class="fc-fit-btn" onclick="_fcEnquadrar()" title="${t('Enquadrar')}" aria-label="${t('Enquadrar')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+          <button type="button" class="fc-close-btn" onclick="fecharFluxograma()" title="${t('Fechar')}" aria-label="${t('Fechar')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+      </div>
+      <div class="fc-canvas-wrap" id="fcCanvasWrap">
+        <svg class="fc-lines" id="fcLines"></svg>
+        <div class="fc-nodes" id="fcNodes"></div>
+        <div class="fc-card-panel" id="fcCardPanel"></div>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    const wrap=document.getElementById('fcCanvasWrap');
+    wrap.addEventListener('pointerdown',_fcPointerDown);
+    wrap.addEventListener('pointermove',_fcPointerMove);
+    wrap.addEventListener('pointerup',_fcPointerUp);
+    wrap.addEventListener('pointercancel',_fcPointerUp);
+    wrap.addEventListener('wheel',_fcWheel,{passive:false});
+    document.getElementById('fcNodes').addEventListener('click',_fcNodeClick);
+  }
+  ov.classList.add('on');
+  _fcRender();
+  // clientWidth/Height do wrap só tem valor real depois que .on (display:flex)
+  // aplicar e o navegador rodar o reflow — daí o requestAnimationFrame.
+  requestAnimationFrame(_fcEnquadrar);
+}
+function fecharFluxograma(){
+  const ov=document.getElementById('fcOverlay');
+  if(ov)ov.classList.remove('on');
+  _fcFecharCard();
+  _fcPointers.clear();_fcPanAtivo=false;_fcPinchDist=null;
 }
 // ── ETIQUETAS DE COR ──
 // A pessoa marca o card com uma cor pra achar depois de bater o olho. É
@@ -14337,6 +14673,10 @@ function encWAV(s,sr){
 
 // ── KEYBOARD ──
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const fc=document.getElementById('fcOverlay');
+    if(fc&&fc.classList.contains('on')){e.preventDefault();fecharFluxograma();return}
+  }
   if(e.key==='Enter'&&!e.shiftKey&&document.activeElement===document.getElementById('itxt')&&!isRec&&!isProc&&!stagedFile){e.preventDefault();sendTxt()}
   if((e.ctrlKey||e.metaKey)&&(e.key==='z'||e.key==='Z')){
     const isRedo=e.shiftKey;
