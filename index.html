@@ -3990,6 +3990,7 @@ let I18N_EN={
 "Com o cadeado, o conteúdo viaja embaralhado dentro do próprio link, e a senha vocês combinam por fora. Se o link cair na mão errada, é texto sem sentido.":"With the lock on, the content travels scrambled inside the link itself, and you agree on the password separately. If the link falls into the wrong hands, it's meaningless text.",
 "Entendi":"Got it",
 "⚠️ Sem espaço pra guardar esta remessa. Adicione o que já chegou antes de continuar.":"⚠️ No room to store this batch. Add what already arrived before continuing.",
+"⚠️ Muita coisa esperando na fila de recebimento. Adicione o que já chegou (ou recuse) antes de receber mais.":"⚠️ Too much waiting in the receiving queue. Add what already arrived (or discard it) before receiving more.",
 "Recebendo uma pasta":"Receiving a folder",
 "{f} de {n} remessas chegaram":"{f} of {n} batches arrived",
 "Abra os outros links (ou escaneie os outros QRs) — em qualquer ordem. O Vox junta sozinho.":"Open the other links (or scan the other QRs) — in any order. Vox assembles it on its own.",
@@ -11455,7 +11456,17 @@ function _txUrls(b64,flags,prefix){
   return {urls,linkUrl:b64.length<=TX_LINK_MAX?`${base}#${p}1.${flags}.${sid}.1.1.${b64}`:null};
 }
 function _txOverlay(){let ov=document.getElementById('txOverlay');if(!ov){ov=document.createElement('div');ov.id='txOverlay';ov.className='tx-overlay';ov.addEventListener('click',e=>{if(e.target===ov)closeTxOverlay()});document.body.appendChild(ov)}return ov}
-function closeTxOverlay(){const ov=document.getElementById('txOverlay');if(ov){ov.classList.remove('on');ov.innerHTML=''}}
+// Fechar a tela apaga a senha e o conteúdo decifrado da memória. Não é paranoia
+// de laboratório: o Vox fica aberto o dia inteiro num aparelho que passa de mão,
+// e a senha da pasta é combinada entre duas pessoas — não tem por que ela seguir
+// viva depois que a tela some. Reabrir pede a senha de novo, que é o certo.
+function closeTxOverlay(){
+  const ov=document.getElementById('txOverlay');if(ov){ov.classList.remove('on');ov.innerHTML=''}
+  if(typeof _txpState!=='undefined'&&_txpState)_txpState.pass='';
+  if(typeof _txpRx!=='undefined')_txpRx=null;
+  if(typeof _txRx!=='undefined')_txRx=null;
+  if(typeof _txState!=='undefined')_txState=null;
+}
 function toggleTxEye(inputId,btn){
   const inp=document.getElementById(inputId);if(!inp)return;
   const show=inp.type==='password';
@@ -11524,7 +11535,7 @@ function handleTransferHash(){
     const nr=+p[4],ns=+p[6],r=+p[3],s=+p[5];
     // Confere a coerência ANTES de guardar: número fora de faixa aqui viraria
     // uma tela de progresso mentindo ("3 de 900") ou laço de memória.
-    if(r<1||r>nr||s<1||s>ns||nr>2000||ns>2000){toast(t('❌ Link de transferência inválido'),true);return}
+    if(r<1||r>nr||s<1||s>ns||nr>TXP_MAX_REMESSAS||ns>TXP_MAX_REMESSAS){toast(t('❌ Link de transferência inválido'),true);return}
     _txpReceberFatia(p[1],p[2],r,nr,s,ns,p[7]);
     return;
   }
@@ -11632,6 +11643,8 @@ const TXP_QR_MAX=800;       // conteúdo por remessa quando o veículo é o QR
 const TXP_LINK_MAX=20000;   // conteúdo por remessa quando o veículo é o link
 const TXP_QR_RENDER=1100;   // teto de segurança pra desenhar um QR ainda legível
 const TXP_QR_SUGERIDO=8;    // até esta quantidade de QRs, o QR ainda é agradável
+const TXP_RX_MAX_CHARS=3000000; // teto da fila de recebimento (ver _txpGuardar)
+const TXP_MAX_REMESSAS=500;     // teto de remessas declaradas num link
 // PARA ONDE VAI — o tamanho da remessa é ditado pelo destino, não por gosto.
 // Números conferidos em 12/08/2026, e cada um tem uma razão dura:
 //  · QR: ~800 é o que uma câmera de celular lê sem drama num QR impresso na tela.
@@ -12009,6 +12022,17 @@ function _txpGuardar(flags,fid,r,nr,s,ns,slice){
   try{store=JSON.parse(localStorage.getItem('vox_txrx_pasta')||'{}')}catch(e){}
   const agora=Date.now();
   Object.keys(store).forEach(k=>{if(agora-(store[k].ts||0)>604800000)delete store[k]}); // 7 dias
+  // TETO DE ARMAZENAMENTO. Sem isto, um link hostil (ou um envio errado que a
+  // pessoa fica abrindo) enche a gaveta do navegador e, quando ela estoura, quem
+  // deixa de gravar é o APP — pasta, configuração, chave. Medido: 300 remessas de
+  // 20.000 caracteres passaram lisas e somaram 5,7 MB, acima da cota de vários
+  // navegadores. O material de verdade é minúsculo perto disto (uma pasta de 65
+  // cards dá ~100 KB), então o teto não atrapalha ninguém de bem.
+  const ocupado=JSON.stringify(store).length;
+  if(ocupado+slice.length>TXP_RX_MAX_CHARS&&!(store[fid]&&store[fid].rem[r])){
+    toast(t('⚠️ Muita coisa esperando na fila de recebimento. Adicione o que já chegou (ou recuse) antes de receber mais.'),true);
+    return store[fid]||{flags,nr,rem:{},ts:agora};
+  }
   const ent=store[fid]||{flags,nr,rem:{},ts:agora};
   ent.nr=nr;ent.flags=flags;ent.ts=agora;
   const rr=ent.rem[r]||{ns,parts:{}};
@@ -12018,6 +12042,18 @@ function _txpGuardar(flags,fid,r,nr,s,ns,slice){
     toast(t('⚠️ Sem espaço pra guardar esta remessa. Adicione o que já chegou antes de continuar.'),true);
   }
   return ent;
+}
+// Higiene do que CHEGA. O escape de HTML do app já segurou tudo o que testei —
+// nome de pasta, texto, etiqueta e nome de sessão saem escapados. Isto aqui é a
+// camada de baixo: campos NUMÉRICOS que ninguém olha e que entram direto no
+// armazenamento. Um link forjado mandava `cost: 999999` e ele ficava guardado no
+// card; hoje não aparece em lugar nenhum, mas o dia em que existir um totalizador
+// de gastos ele mentiria. Custo de quem recebe é sempre zero — ele não pagou.
+function _txpLimparItem(it){
+  const n=(v,max)=>{const x=parseInt(v);return Number.isFinite(x)&&x>=0&&x<=max?x:0};
+  const lim={...it,cost:0,ci:n(it.ci,999)};
+  if(it.tc!==undefined)lim.tc=n(it.tc,99);
+  return lim;
 }
 function _txpProntas(ent){
   return Object.keys(ent.rem).filter(r=>{
@@ -12074,7 +12110,7 @@ async function txpDestrancar(){
       if(!obj||obj.v!==2||!Array.isArray(obj.c))throw new Error('formato');
       nome=nome||String(obj.f||'');
       (obj.fs||[]).forEach(f=>{if(f&&f.id&&!recs.some(x=>x.id===f.id))recs.push({id:String(f.id),name:String(f.name||''),parentId:f.parentId?String(f.parentId):null})});
-      obj.c.forEach(it=>{if(it&&typeof it.text==='string')itens.push(it)});
+      obj.c.forEach(it=>{if(it&&typeof it.text==='string')itens.push(_txpLimparItem(it))});
     }catch(e){falhas++}
   }
   if(!itens.length){
@@ -12135,7 +12171,9 @@ async function txpArquivoDestrancar(){
     const proj=JSON.parse(new TextDecoder().decode(u8));
     if(!proj||!Array.isArray(proj.history))throw new Error('formato');
     const recs=Array.isArray(proj.folders)?proj.folders:[];
-    _txpRx.pronto={nome:(recs.find(f=>!f.parentId)||{}).name||t('Pasta'),recs,itens:proj.history,falhas:0,total:1,prontas:1};
+    const itens=proj.history.filter(i=>i&&typeof i.text==='string').map(_txpLimparItem);
+    if(!itens.length)throw new Error('vazio');
+    _txpRx.pronto={nome:(recs.find(f=>!f.parentId)||{}).name||t('Pasta'),recs,itens,falhas:0,total:1,prontas:1};
     const p=_txpRx.pronto;
     const ov=_txOverlay();
     ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
