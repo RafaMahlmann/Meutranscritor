@@ -917,7 +917,6 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-node-arrow-open{transform:rotate(90deg)}
 .fc-node-raiz{border-color:var(--accent);border-width:2px;font-weight:700}
 .fc-node-card{background:transparent;border-style:dashed;font-size:12px}
-.fc-node-mais{border-style:dashed;color:var(--text4);font-style:italic;justify-content:center;cursor:default}
 .fc-card-panel{display:none;position:absolute;top:0;right:0;bottom:0;width:min(360px,86vw);
   background:var(--bg-card);border-left:1px solid var(--border);box-shadow:-8px 0 24px rgba(0,0,0,0.12);
   flex-direction:column;z-index:2}
@@ -931,8 +930,29 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-btn-primary{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;
   padding:10px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer}
 .fc-btn-primary:hover{background:var(--accent2)}
+.fc-voltar-btn{background:none;border:none;color:var(--text3);cursor:pointer;padding:0 4px 0 0;
+  font-size:16px;line-height:1;flex-shrink:0}
+.fc-voltar-btn:hover{color:var(--text)}
+/* A lista de cards da pasta — é ela que segura o conteúdo que antes estourava
+   o desenho. Rola, e o texto fica no tamanho de sempre. */
+.fc-lista{padding:6px}
+.fc-lista-item{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;
+  background:none;border:none;border-radius:10px;padding:10px 10px;cursor:pointer;
+  font-family:var(--font);transition:background var(--transition)}
+.fc-lista-item:hover{background:var(--bg-input)}
+.fc-lista-nome{font-size:12.5px;font-weight:600;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fc-lista-previa{font-size:11.5px;color:var(--text4);line-height:1.45;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fc-lista-vazia{padding:18px 14px;font-size:12.5px;color:var(--text4);text-align:center}
 @media(max-width:640px){
-  .fc-card-panel{width:100%}
+  /* No celular o painel lateral cobriria o desenho inteiro e não daria pra
+     explorar. Vira gaveta de baixo, que é o padrão do aparelho e deixa
+     metade da árvore visível enquanto se lê. */
+  .fc-card-panel{width:100%;top:auto;height:58%;border-left:none;
+    border-top:1px solid var(--border);border-radius:16px 16px 0 0;
+    box-shadow:0 -8px 24px rgba(0,0,0,0.18)}
+  .fc-lista-item{padding:12px 10px}
 }
 .folder-cfg-panel{display:none;background:var(--bg-input);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px}
 .folder-cfg-panel.on{display:block}
@@ -3277,7 +3297,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.12.5';
+const VOX_VERSION='2026.08.12.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3338,6 +3358,7 @@ let I18N_EN={
 "Enquadrar":"Fit to screen",
 "Fechar":"Close",
 "…e mais {n}":"…and {n} more",
+"Nenhum card direto nesta pasta.":"No card directly in this folder.",
 "(card vazio)":"(empty card)",
 "(sem nome)":"(no name)",
 "Ver na lista":"View in list",
@@ -5225,69 +5246,67 @@ function selectFolder(id){
 // só, sem código de sincronia.
 const FC_COLUNA=230;   // distância horizontal entre um nível e o seguinte
 const FC_LINHA=54;     // distância vertical entre duas folhas vizinhas
-const FC_MAX_CARDS=30; // teto de cards desenhados por pasta — acima disso a
-                        // tela engasga; sobra o nó "…e mais N"
 const FC_NODE_W=190;   // tem que bater com o width do CSS .fc-node
+// Abaixo desta escala o rótulo do nó fica menor que 10px e para de ser
+// legível. O "Enquadrar" nunca desce daqui: medido com 259 cards, encolher
+// até tudo caber dava texto de 3,8px — cabia e não servia pra nada.
+const FC_ESCALA_LEGIVEL=0.8;
 
 let _fcX=0,_fcY=0,_fcS=1;          // pan (x,y) e zoom da tela
 let _fcUltimoLayout=null;          // {nos,largura,altura} do último desenho
 let _fcCardAbertoId=null;
+let _fcPastaAberta=null;   // {id,nome} da pasta que o painel está mostrando
 const _fcPointers=new Map();       // pointerId -> {x,y}, pra distinguir pan de pinça
 let _fcPanAtivo=false,_fcPanStartX=0,_fcPanStartY=0,_fcOrigX=0,_fcOrigY=0;
 let _fcPinchDist=null,_fcPinchStartS=1;
-
-function _fcRotuloCard(c){
-  const sn=(c.dataset.sessionName||'').trim();
-  if(sn)return sn.slice(0,42);
-  const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
-  return txt?txt.slice(0,42):t('(card vazio)');
-}
 
 // Layout clássico de árvore por contagem de folhas: cada folha ocupa uma
 // linha, cada pai centraliza entre o primeiro e o último filho. Uma
 // recursão só — não precisa de duas passadas.
 function _fcLayout(){
   const counts=getFolderCounts();
+  // getFolderCounts() ignora card solto (o `if(f)` dele descarta pasta vazia),
+  // então a raiz ficaria dizendo zero. Uma passada própria conta tudo, e a
+  // chave '' guarda justamente os que não estão em pasta nenhuma.
+  const diretos={};
+  document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+    const f=c.dataset.folder||'';diretos[f]=(diretos[f]||0)+1;
+  });
   const nos=[];
   let cursorY=0;
 
-  // Filhos VISÍVEIS de um nó: subpastas sempre; cards só se a pasta está aberta.
+  // O canvas desenha ESTRUTURA (pastas), nunca conteúdo (cards). Medido com
+  // 259 cards: com os cards virando folhas, o desenho ia a 6.804px de altura
+  // — 8,5 telas — e nenhum zoom resolvia, porque encolher pra caber apagava o
+  // texto. Só com as pastas, a mesma árvore dá 756px e cabe em qualquer tela
+  // com o texto no tamanho normal. Os cards estão no painel, que rola.
   function filhosDe(id,aberta){
-    const subs=getFolderChildren(id).map(f=>({kind:'pasta',f}));
-    if(!aberta)return subs;
-    const cards=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')]
-      .filter(c=>(c.dataset.folder||'')===(id||''));
-    const mostrados=cards.slice(0,FC_MAX_CARDS).map(c=>({kind:'card',c}));
-    if(cards.length>FC_MAX_CARDS)mostrados.push({kind:'mais',n:cards.length-FC_MAX_CARDS});
-    return [...subs,...mostrados];
+    if(!aberta)return [];
+    return getFolderChildren(id).map(f=>({kind:'pasta',f}));
   }
 
   function pos(id,rotulo,tipo,cor,count,nivel,paiId){
     const aberta=(tipo==='raiz')||folderExpanded.has(id);
     const filhos=aberta?filhosDe(id,aberta):[];
-    // Se a pasta está FECHADA, filhos fica vazio de propósito (não desenha o
-    // que não é visível) — mas isso não pode decidir se a seta aparece, senão
-    // toda pasta fechada mostra sem seta e a pessoa não sabe que dá pra abrir.
-    // A pergunta certa é "existe algo pra mostrar", calculada sem depender
-    // de estar aberta: tem subpasta OU tem card DIRETO nela (não agregado).
-    const contDireta=tipo==='raiz'?counts.all:(counts[id]||0);
-    const temFilhosPotenciais=tipo!=='card'&&(getFolderChildren(id).length>0||contDireta>0);
+    // A seta significa "tem subpasta pra abrir" e precisa ser calculada SEM
+    // depender de a pasta estar aberta — senão toda pasta fechada apareceria
+    // sem seta e ninguém saberia que dá pra abrir.
+    // Card não entra nessa conta: card não é mais desenhado no canvas, ele
+    // mora no painel. Quem anuncia card é o número ao lado do nome.
+    const temSubpastas=getFolderChildren(id).length>0;
+    // Quantos cards estão DIRETAMENTE aqui (o que o painel vai listar) —
+    // diferente do número do nó, que soma as subpastas.
+    const cardsDiretos=diretos[tipo==='raiz'?'':id]||0;
     let y;
     if(!filhos.length){
       y=cursorY;cursorY+=FC_LINHA;
     }else{
-      const ys=filhos.map(ch=>{
-        if(ch.kind==='pasta')
-          return pos(ch.f.id,ch.f.name,'pasta',safeColor(ch.f.color),getFolderCount(ch.f.id,counts),nivel+1,id);
-        if(ch.kind==='card')
-          return pos(ch.c.id,_fcRotuloCard(ch.c),'card',null,0,nivel+1,id);
-        const yy=cursorY;cursorY+=FC_LINHA;
-        nos.push({id:'mais_'+id,tipo:'mais',rotulo:t('…e mais {n}').replace('{n}',ch.n),x:(nivel+1)*FC_COLUNA,y:yy,paiId:id});
-        return yy;
-      });
+      const ys=filhos.map(ch=>
+        pos(ch.f.id,ch.f.name,'pasta',safeColor(ch.f.color),getFolderCount(ch.f.id,counts),nivel+1,id)
+      );
       y=(ys[0]+ys[ys.length-1])/2;
     }
-    nos.push({id,tipo,rotulo,cor,count,x:nivel*FC_COLUNA,y,paiId,aberta,temFilhos:temFilhosPotenciais});
+    nos.push({id,tipo,rotulo,cor,count,x:nivel*FC_COLUNA,y,paiId,aberta,temFilhos:temSubpastas,cardsDiretos});
     return y;
   }
 
@@ -5330,30 +5349,30 @@ function _fcRender(){
   let nodesHtml='';
   nos.forEach(n=>{
     const idAttr=n.id===null?'':escHtml(String(n.id));
-    if(n.tipo==='mais'){
-      nodesHtml+=`<div class="fc-node fc-node-mais" style="left:${n.x}px;top:${n.y}px">${escHtml(n.rotulo)}</div>`;
-      return;
-    }
     const setaHtml=n.temFilhos?`<span class="fc-node-arrow${n.aberta?' fc-node-arrow-open':''}">▶</span>`:'';
     const dotHtml=n.tipo==='pasta'?`<span class="fc-node-dot" style="background:${safeColor(n.cor)}"></span>`:'';
-    const countHtml=(n.tipo==='pasta'||n.tipo==='raiz')?`<span class="fc-node-count">${n.count}</span>`:'';
-    nodesHtml+=`<button type="button" class="fc-node fc-node-${n.tipo}" style="left:${n.x}px;top:${n.y}px" data-fc-id="${idAttr}" data-fc-tipo="${n.tipo}" title="${escHtml(n.rotulo)}">${setaHtml}${dotHtml}<span class="fc-node-label">${escHtml(n.rotulo)}</span>${countHtml}</button>`;
+    // Dois números diriam coisas diferentes e ninguém saberia qual é qual.
+    // O do nó é o total (com subpastas) — é o que a lateral também mostra.
+    const countHtml=`<span class="fc-node-count">${n.count}</span>`;
+    nodesHtml+=`<button type="button" class="fc-node fc-node-${n.tipo}" style="left:${n.x}px;top:${n.y}px" data-fc-id="${idAttr}" data-fc-tipo="${n.tipo}" data-fc-sub="${n.temFilhos?'1':'0'}" data-fc-rotulo="${escHtml(n.rotulo)}" title="${escHtml(n.rotulo)} · ${n.cardsDiretos} ${escHtml(t(n.cardsDiretos===1?'card':'cards'))}">${setaHtml}${dotHtml}<span class="fc-node-label">${escHtml(n.rotulo)}</span>${countHtml}</button>`;
   });
   nodesEl.innerHTML=nodesHtml;
 }
 
+// Modelo do Finder: tocar numa pasta abre as subpastas no desenho E mostra o
+// conteúdo dela ao lado. Um toque, as duas coisas — e nunca há dúvida sobre
+// qual pasta o painel está mostrando, porque é sempre a última tocada.
 function _fcNodeClick(e){
   const btn=e.target.closest('.fc-node');
-  if(!btn||btn.classList.contains('fc-node-mais'))return;
-  const tipo=btn.dataset.fcTipo;
+  if(!btn)return;
   const id=btn.dataset.fcId||null;
-  if(tipo==='raiz')return; // teto da árvore — nada a fazer ao tocar nela
-  if(tipo==='pasta'){
+  const temSub=btn.dataset.fcSub==='1';
+  const rotulo=btn.dataset.fcRotulo||'';
+  if(temSub){
     toggleFolderExpanded(id); // já salva e já redesenha a lateral sozinha
     _fcRender();
-  }else if(tipo==='card'){
-    _fcAbrirCard(id);
   }
+  _fcListarCards(id,rotulo);
 }
 
 // Pan de um dedo/mouse e pinça de dois dedos compartilham o mesmo Map de
@@ -5408,18 +5427,63 @@ function _fcWheel(e){
   _fcS=Math.min(2.5,Math.max(0.3,_fcS*fator));
   _fcAplicarTransform();
 }
+// Enquadrar tem um limite que não atravessa: legibilidade. Se dá pra mostrar
+// tudo com o texto ainda legível, mostra tudo. Se não dá, enquadra pela
+// LARGURA e deixa a rolagem vertical fazer o resto — que é como mapa mental
+// funciona. Encolher até tudo caber entregava texto de 3,8px: cabia na tela e
+// não servia pra ler. Botão que promete e não cumpre é pior que botão nenhum.
+// (O zoom manual da rodinha continua livre até 0,3 — ali a escolha é da pessoa.)
 function _fcEnquadrar(){
   const wrap=document.getElementById('fcCanvasWrap');
   if(!wrap||!_fcUltimoLayout)return;
   const {largura,altura}=_fcUltimoLayout;
   const pad=40;
-  const escala=Math.min((wrap.clientWidth-pad*2)/largura,(wrap.clientHeight-pad*2)/altura,1.2);
-  _fcS=Math.min(2.5,Math.max(0.3,escala));
+  const dispW=Math.max(1,wrap.clientWidth-pad*2);
+  const dispH=Math.max(1,wrap.clientHeight-pad*2);
+  const cabeTudo=Math.min(dispW/largura,dispH/altura);
+  _fcS=cabeTudo>=FC_ESCALA_LEGIVEL
+    ? Math.min(cabeTudo,1.2)                                    // cabe e lê: mostra tudo
+    : Math.max(Math.min(dispW/largura,1.2),FC_ESCALA_LEGIVEL);  // não cabe: largura + legível
   _fcX=pad;
-  _fcY=Math.max(pad,(wrap.clientHeight-altura*_fcS)/2);
+  // Coube na altura? centraliza. Não coube? começa do topo — centralizar
+  // esconderia justamente a raiz, que é por onde a pessoa se localiza.
+  _fcY=(altura*_fcS<=dispH)?(wrap.clientHeight-altura*_fcS)/2:pad;
   _fcAplicarTransform();
 }
 
+// Os cards de uma pasta, na ordem em que aparecem na lista principal.
+function _fcCardsDaPasta(id){
+  return [...document.querySelectorAll('#cardsList .card:not(.proc-card)')]
+    .filter(c=>(c.dataset.folder||'')===(id||''));
+}
+// Estado 1 do painel: a lista de cards da pasta tocada. É aqui que mora o
+// conteúdo que antes explodia o desenho — numa lista que rola, com o texto
+// no tamanho de sempre.
+function _fcListarCards(id,nomePasta){
+  const panel=document.getElementById('fcCardPanel');
+  if(!panel)return;
+  _fcPastaAberta={id,nome:nomePasta};
+  _fcCardAbertoId=null;
+  const cards=_fcCardsDaPasta(id);
+  const corpo=cards.length
+    ? cards.map(c=>{
+        const sn=(c.dataset.sessionName||'').trim();
+        const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
+        return `<button type="button" class="fc-lista-item" onclick="_fcAbrirCard('${escJs(c.id)}')">
+          <span class="fc-lista-nome">${escHtml(sn||t('(sem nome)'))}</span>
+          <span class="fc-lista-previa">${escHtml(txt.slice(0,90)||t('(card vazio)'))}</span>
+        </button>`;
+      }).join('')
+    : `<div class="fc-lista-vazia">${escHtml(t('Nenhum card direto nesta pasta.'))}</div>`;
+  panel.innerHTML=`<div class="fc-card-panel-hd">
+      <strong>${escHtml(nomePasta||t('Pasta'))}</strong>
+      <span class="fc-card-panel-dt">${cards.length} ${escHtml(t(cards.length===1?'card':'cards'))}</span>
+      <button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button>
+    </div>
+    <div class="fc-card-panel-body fc-lista">${corpo}</div>`;
+  panel.classList.add('on');
+}
+// Estado 2 do painel: o texto de um card, com volta pra lista de onde veio.
 function _fcAbrirCard(id){
   const card=document.getElementById(id);
   if(!card)return;
@@ -5430,13 +5494,15 @@ function _fcAbrirCard(id){
   const texto=card.querySelector('textarea')?.value||'';
   const panel=document.getElementById('fcCardPanel');
   if(!panel)return;
-  panel.innerHTML=`<div class="fc-card-panel-hd"><strong>${escHtml(sn||t('(sem nome)'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharCard()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
+  const p=_fcPastaAberta;
+  const voltar=p?`<button type="button" class="fc-voltar-btn" onclick="_fcListarCards(${p.id===null?'null':"'"+escJs(p.id)+"'"},'${escJs(p.nome||'')}')" title="${t('Voltar')}" aria-label="${t('Voltar')}">←</button>`:'';
+  panel.innerHTML=`<div class="fc-card-panel-hd">${voltar}<strong>${escHtml(sn||t('(sem nome)'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
   panel.classList.add('on');
 }
-function _fcFecharCard(){
+function _fcFecharPainel(){
   const panel=document.getElementById('fcCardPanel');
   if(panel){panel.classList.remove('on');panel.innerHTML='';}
-  _fcCardAbertoId=null;
+  _fcCardAbertoId=null;_fcPastaAberta=null;
 }
 function _fcVerNaLista(id){
   const card=document.getElementById(id);
@@ -5484,7 +5550,7 @@ function abrirFluxograma(){
 function fecharFluxograma(){
   const ov=document.getElementById('fcOverlay');
   if(ov)ov.classList.remove('on');
-  _fcFecharCard();
+  _fcFecharPainel();
   _fcPointers.clear();_fcPanAtivo=false;_fcPinchDist=null;
 }
 // ── ETIQUETAS DE COR ──
