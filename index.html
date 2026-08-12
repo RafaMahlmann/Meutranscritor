@@ -3217,7 +3217,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.12.1';
+const VOX_VERSION='2026.08.12.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4001,6 +4001,7 @@ let I18N_EN={
 "Pasta protegida":"Protected folder",
 "Digite a senha combinada:":"Type the agreed password:",
 "Não deu para abrir":"Couldn't open it",
+"Se a senha está certa, o link pode ter chegado cortado pelo aplicativo de mensagem. Peça pra reenviar escolhendo <strong>Telegram e afins</strong> na hora do envio — as viagens ficam menores — ou peça o arquivo.":"If the password is right, the link may have arrived truncated by the messaging app. Ask for it again choosing <strong>Telegram and similar</strong> when sending — the trips come out smaller — or ask for the file.",
 "Fechar":"Close",
 "Senha incorreta ou arquivo corrompido.":"Wrong password or corrupted file.",
 "Senha incorreta ou dado corrompido no caminho.":"Wrong password or data corrupted along the way.",
@@ -12002,15 +12003,23 @@ function fecharAjudaTransferir(){const ov=document.getElementById('txpHelpOv');i
 // "Adicionar à minha lista" adicionaria a pasta errada, calado. Foi encontrado
 // testando arquivo adulterado; é a mesma regra que já valeu no exame de colisão:
 // o estado de erro precisa ter cara própria.
-function _txpFalhou(msg){
+function _txpFalhou(msg,dica){
   if(_txpRx)_txpRx.pronto=null;
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
     <div class="tx-title">⚠️ ${t('Não deu para abrir')}</div>
     <div class="tx-sub">${escHtml(msg)}</div>
+    ${dica?`<div class="tx-warn">${dica}</div>`:''}
     <div class="tx-row"><button class="tx-btn primary" onclick="closeTxOverlay()">${t('Fechar')}</button></div></div>`;
   ov.classList.add('on');
   toast('❌ '+msg,true);
+}
+// A saída pra quando um link chega cortado. Alguns aplicativos de mensagem
+// picotam link comprido, e do lado de cá isso é indistinguível de senha errada:
+// nos dois casos o conteúdo simplesmente não abre. Como não dá pra saber qual
+// dos dois foi, a tela oferece os DOIS caminhos em vez de adivinhar um.
+function _txpDicaCortado(){
+  return t('Se a senha está certa, o link pode ter chegado cortado pelo aplicativo de mensagem. Peça pra reenviar escolhendo <strong>Telegram e afins</strong> na hora do envio — as viagens ficam menores — ou peça o arquivo.');
 }
 
 // ── Recebimento da pasta ───────────────────────────────────────────────────
@@ -12114,7 +12123,7 @@ async function txpDestrancar(){
     }catch(e){falhas++}
   }
   if(!itens.length){
-    _txpFalhou(falhas?t('Senha incorreta ou dado corrompido no caminho.'):t('Nada legível chegou ainda.'));
+    _txpFalhou(falhas?t('Senha incorreta ou dado corrompido no caminho.'):t('Nada legível chegou ainda.'),falhas?_txpDicaCortado():'');
     return;
   }
   _txpRx.pronto={nome,recs,itens,falhas,total:ent.nr,prontas:prontas.length};
@@ -12123,7 +12132,7 @@ async function txpDestrancar(){
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
     <div class="tx-title">📥 ${t('Pasta recebida')}</div>
     <div class="tx-sub"><strong>${escHtml(p.nome||t('Pasta'))}</strong> · ${t('{n} {cw} · {r} de {t} {rw}').replace('{n}',p.itens.length).replace('{cw}',t(p.itens.length===1?'card':'cards')).replace('{r}',p.prontas).replace('{t}',p.total).replace('{rw}',t(p.total===1?'viagem':'viagens'))}</div>
-    ${p.falhas?`<div class="tx-warn">⚠️ ${t('{n} {rw} não abriram (senha diferente ou dado corrompido) e ficaram de fora.').replace('{n}',p.falhas).replace('{rw}',t(p.falhas===1?'viagem':'viagens'))}</div>`:''}
+    ${p.falhas?`<div class="tx-warn">⚠️ ${t('{n} {rw} não abriram (senha diferente ou dado corrompido) e ficaram de fora.').replace('{n}',p.falhas).replace('{rw}',t(p.falhas===1?'viagem':'viagens'))}<br><br>${_txpDicaCortado()}</div>`:''}
     ${p.prontas<p.total?`<div class="tx-warn">${t('Ainda faltam viagens. Você pode adicionar estes cards agora e receber o resto depois — o Vox não vai duplicar o que já entrou.')}</div>`:''}
     <div class="tx-preview">${p.itens.slice(0,6).map(i=>'• '+escHtml((i.sessionName||i.text||'').slice(0,70))).join('\n')}${p.itens.length>6?'\n'+t('…e mais {n}').replace('{n}',p.itens.length-6):''}</div>
     <div class="tx-row"><button class="tx-btn primary" onclick="txpAceitar()">✓ ${t('Adicionar à minha lista')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Cancelar')}</button></div></div>`;
