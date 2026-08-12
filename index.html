@@ -4526,6 +4526,15 @@ function _obOpen(){
   document.getElementById('onboardOverlay').style.display='flex';
   _obRender();
 }
+function _precisaConfigurar(){
+  const temChave=cfg.apiKeyGroq||cfg.apiKey||cfg.apiKeyGrok||cfg.provider==='local';
+  if(!temChave){
+    toast(t('🔑 Precisa configurar uma inteligência artificial antes.'),true);
+    setTimeout(_obOpen,300);
+    return true;
+  }
+  return false;
+}
 function _obToggleLang(){
   localStorage.setItem('vox_reopen_onboarding','1');
   setLang(currentLang==='pt'?'en':'pt');
@@ -9529,6 +9538,7 @@ function makeRecorder(stream){
 }
 async function startRec(targetCardId=null,targetTA=null){
   if(isRec||isProc||stagedFile)return;
+  if(_precisaConfigurar())return;
   // Botão principal/atalho de espaço chegam aqui sem alvo explícito. Se existe um card
   // com o cursor piscando (activeTA/activeTACard — rastreados em Lista, Masonry e também
   // no editor OverType do Modo Documento, ver trackFocus() em _mountFocusEditor), grava
@@ -10560,6 +10570,7 @@ function applyDiarChatEdit(id,raw){
 
 // ── MODO CONVERSA UNIVERSAL (overlay tela cheia) ──
 function openConversaMode(id){
+  if(_precisaConfigurar())return;
   const card=document.getElementById(id);if(!card)return;
   // Origem visual da animação de abertura: o overlay "nasce" a partir do
   // botão Conversar do dock, não do centro da tela (ver transform-origin
@@ -12897,6 +12908,7 @@ function tradSwap(id){
   const tmp=de.value; de.value=para.value; para.value=tmp;
 }
 async function runLens(id,lensKey,focus=''){
+  if(_precisaConfigurar())return;
   if(lensKey==='traduzir'){
     const card=document.getElementById(id);
     _traduzirTexto=(card&&card.querySelector('textarea')?.value||'');
