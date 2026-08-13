@@ -943,7 +943,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   font-family:var(--font);transition:background var(--transition)}
 .fc-lista-item:hover{background:var(--bg-input)}
 .fc-lista-nome{font-size:12.5px;font-weight:600;color:var(--text);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;
+  border-radius:6px;padding:1px 4px;margin:-1px -4px;align-self:flex-start;max-width:100%}
+.fc-lista-nome:hover{background:var(--bg-hover,rgba(0,0,0,.06))}
+.fc-lista-nome-vazia{opacity:.55;font-weight:500;font-style:italic}
 .fc-lista-previa{font-size:11.5px;color:var(--text4);line-height:1.45;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .fc-lista-vazia{padding:18px 14px;font-size:12.5px;color:var(--text4);text-align:center}
@@ -3481,7 +3484,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.2';
+const VOX_VERSION='2026.08.13.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5644,10 +5647,16 @@ function _fcEnquadrar(){
   _fcAplicarTransform();
 }
 
-// Os cards de uma pasta, na ordem em que aparecem na lista principal.
+// Os cards de uma pasta — direto nela E nas subpastas, recursivamente.
+// A bolha da Órbita (_orbTotalCards) já soma assim; sem recursão aqui a
+// lista lateral "perdia" todo card que morava dentro de uma subpasta
+// (ex.: "Tudo" mostrava 383 na bolha e só 97 na lista).
 function _fcCardsDaPasta(id){
-  return [...document.querySelectorAll('#cardsList .card:not(.proc-card)')]
-    .filter(c=>(c.dataset.folder||'')===(id||''));
+  const alvo=id===null?'':(id||'');
+  let out=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')]
+    .filter(c=>(c.dataset.folder||'')===alvo);
+  getFolderChildren(id).forEach(f=>{out=out.concat(_fcCardsDaPasta(f.id))});
+  return out;
 }
 // Estado 1 do painel: a lista de cards da pasta tocada. É aqui que mora o
 // conteúdo que antes explodia o desenho — numa lista que rola, com o texto
@@ -5663,7 +5672,7 @@ function _fcListarCards(id,nomePasta){
         const sn=(c.dataset.sessionName||'').trim();
         const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
         return `<button type="button" class="fc-lista-item" onclick="_fcAbrirCard('${escJs(c.id)}')">
-          <span class="fc-lista-nome">${escHtml(sn||t('(sem nome)'))}</span>
+          <span class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();_fcRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
           <span class="fc-lista-previa">${escHtml(txt.slice(0,90)||t('(card vazio)'))}</span>
         </button>`;
       }).join('')
@@ -5689,13 +5698,20 @@ function _fcAbrirCard(id){
   if(!panel)return;
   const p=_fcPastaAberta;
   const voltar=p?`<button type="button" class="fc-voltar-btn" onclick="_fcListarCards(${p.id===null?'null':"'"+escJs(p.id)+"'"},'${escJs(p.nome||'')}')" title="${t('Voltar')}" aria-label="${t('Voltar')}">←</button>`:'';
-  panel.innerHTML=`<div class="fc-card-panel-hd">${voltar}<strong>${escHtml(sn||t('(sem nome)'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
+  panel.innerHTML=`<div class="fc-card-panel-hd">${voltar}<strong class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="_fcRenomear('${escJs(id)}')">${escHtml(sn||t('+ nome'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
   panel.classList.add('on');
 }
 function _fcFecharPainel(){
   const panel=document.getElementById('fcCardPanel');
   if(panel){panel.classList.remove('on');panel.innerHTML='';}
   _fcCardAbertoId=null;_fcPastaAberta=null;
+}
+// Renomear a partir do painel lateral (lista ou preview) e re-renderizar
+// o mesmo estado em que o painel estava, sem perder o lugar.
+function _fcRenomear(id){
+  renameSname(id);
+  if(_fcCardAbertoId===id)_fcAbrirCard(id);
+  else if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
 }
 function _fcVerNaLista(id){
   const card=document.getElementById(id);
