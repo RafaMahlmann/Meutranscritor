@@ -921,7 +921,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-node-card{background:transparent;border-style:dashed;font-size:12px}
 .fc-card-panel{display:none;position:absolute;top:0;right:0;bottom:0;width:min(360px,86vw);
   background:var(--bg-card);border-left:1px solid var(--border);box-shadow:-8px 0 24px rgba(0,0,0,0.12);
-  flex-direction:column;z-index:2}
+  flex-direction:column;z-index:2;pointer-events:auto}
 .fc-card-panel.on{display:flex}
 .fc-card-panel-hd{display:flex;align-items:flex-start;gap:8px;padding:14px 14px 10px;border-bottom:1px solid var(--border)}
 .fc-card-panel-hd strong{flex:1;font-size:13px;color:var(--text);word-break:break-word}
@@ -993,6 +993,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fl-rz-se{bottom:-5px;right:-5px;width:16px;height:16px;cursor:nwse-resize}
 .fl-rz-sw{bottom:-5px;left:-5px;width:16px;height:16px;cursor:nesw-resize}
 .fc-lista-item-aberta{background:var(--accent-glow)}
+/* Fase 6 — alvo de drop em destaque enquanto uma janela é arrastada por
+   cima de um nó do mapa de trás (pasta do Fluxograma ou bolha da Órbita). */
+.fc-node.fl-drop-alvo{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.orb-no.fl-drop-alvo{filter:brightness(1.35)}
+.orb-no.fl-drop-alvo .orb-anel{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 @media(max-width:640px){
   /* No celular o painel lateral cobriria o desenho inteiro e não daria pra
      explorar. Vira gaveta de baixo, que é o padrão do aparelho e deixa
@@ -3527,7 +3532,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.6';
+const VOX_VERSION='2026.08.13.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5968,9 +5973,24 @@ function _flFecharJanela(id){
   _flAbertas=_flAbertas.filter(j=>j.id!==id);
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
 }
-// Fase 4 — mover a janela pelo handle ⠿ (desviado de _startDrag quando o
-// card está dentro de .float-window). Delta convertido por _flS: a 50% de
-// zoom, mover o mouse 10px na tela precisa mover a janela 20px no mundo.
+// Acha o nó de pasta do MAPA DE TRÁS sob um ponto de tela — usado no drop
+// cross-layer (Fase 6). Não dá pra usar elementFromPoint: o mapa congelado
+// é pointer-events:none, e elementFromPoint ignora elementos (e filhos) com
+// pointer-events:none — a bolha nunca seria encontrada. Em vez disso, testa
+// retângulo por retângulo (getBoundingClientRect), que não liga pra CSS.
+function _flAlvoPastaEmPonto(x,y){
+  const nos=document.querySelectorAll('#fcNodes .fc-node, #orbMundo .orb-no');
+  for(const no of nos){
+    const r=no.getBoundingClientRect();
+    if(x<r.left||x>r.right||y<r.top||y>r.bottom)continue;
+    const folderId=no.dataset.fcId??no.dataset.orbId;
+    if(folderId!==undefined)return{el:no,folderId};
+  }
+  return null;
+}
+// Fase 4 (mover) + Fase 6 (soltar em cima de uma pasta reatribui o card).
+// Delta de posição convertido por _flS: a 50% de zoom, mover o mouse 10px
+// na tela precisa mover a janela 20px no mundo.
 function _flStartWindowDrag(el,e0,isTouch){
   const win=el.closest('.float-window');
   if(!win)return;
@@ -5978,7 +5998,7 @@ function _flStartWindowDrag(el,e0,isTouch){
   _flTrazerFrente(id);
   const ox=e0.clientX,oy=e0.clientY;
   const origLeft=parseFloat(win.style.left)||0,origTop=parseFloat(win.style.top)||0;
-  let ativo=false;
+  let ativo=false,alvoAtual=null;
   function coords(e){if(isTouch){const tt=e.touches[0]||e.changedTouches[0];return{x:tt.clientX,y:tt.clientY}}return{x:e.clientX,y:e.clientY}}
   function onMove(e){
     if(isTouch)e.preventDefault();
@@ -5987,11 +6007,20 @@ function _flStartWindowDrag(el,e0,isTouch){
     const nx=origLeft+(x-ox)/_flS,ny=origTop+(y-oy)/_flS;
     win.style.left=nx+'px';win.style.top=ny+'px';
     const j=_flAbertas.find(j=>j.id===id);if(j){j.x=nx;j.y=ny}
+    const achado=_flAlvoPastaEmPonto(x,y);
+    if(alvoAtual&&alvoAtual!==achado?.el)alvoAtual.classList.remove('fl-drop-alvo');
+    alvoAtual=achado?achado.el:null;
+    if(alvoAtual)alvoAtual.classList.add('fl-drop-alvo');
   }
-  function onUp(){
+  function onUp(e){
     document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
     document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
     win.classList.remove('float-window-arrastando');
+    alvoAtual?.classList.remove('fl-drop-alvo');
+    if(!ativo||!alvoAtual)return;
+    const{x,y}=coords(e);
+    const achado=_flAlvoPastaEmPonto(x,y);
+    if(achado){assignCardToFolder(id,achado.folderId);_flFecharJanela(id)}
   }
   document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
   document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
@@ -6258,6 +6287,9 @@ function _orbNo(id,dados,x,y,ehFoco,ordem,cards){
   const esc=ehFoco?1:ORB_ESC_SAT;
   const tr=`translate(${x}px,${y}px)`;
   el.dataset.x=x; el.dataset.y=y; el.dataset.esc=esc;
+  // Legível de fora (hit-test do drop cross-layer dos cards flutuantes,
+  // Fase 6) — .fc-node já tem data-fc-id equivalente; a Órbita não tinha.
+  el.dataset.orbId=id===null?'':id;
   el.style.setProperty('--orb-tr',tr);
   el.style.setProperty('--orb-esc',esc);
   el.classList.toggle('orb-no-foco',ehFoco);
