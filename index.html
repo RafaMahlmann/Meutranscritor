@@ -569,7 +569,9 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .badge.proc{background:rgba(255,149,0,0.12);color:var(--warning)}
 .badge.pin{background:rgba(245,158,11,0.15);color:#92400e}
 [data-theme="dark"] .badge.pin{color:#fcd34d}
-.sname-badge{font-size:11px;font-weight:600;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sname-badge{font-size:11px;font-weight:600;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-radius:6px;padding:1px 4px;margin:-1px -4px}
+.sname-badge:hover{background:var(--bg-hover,rgba(0,0,0,.06));color:var(--text1)}
+.sname-badge-empty{opacity:.55;font-weight:500;font-style:italic}
 .ts{font-size:11px;color:var(--text3);font-weight:500}
 .ca-wrap{display:flex;gap:2px;flex-wrap:wrap}
 /* FASE 3 (só mobile — ver @media(max-width:640px) mais abaixo): chevron que
@@ -3479,7 +3481,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.1';
+const VOX_VERSION='2026.08.13.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3547,6 +3549,11 @@ let I18N_EN={
 "Nenhum card direto nesta pasta.":"No card directly in this folder.",
 "(card vazio)":"(empty card)",
 "(sem nome)":"(no name)",
+"+ nome":"+ name",
+"Clique para nomear este card":"Click to name this card",
+"Nome do card:":"Card name:",
+"✏️ Nome atualizado":"✏️ Name updated",
+"Nome removido":"Name removed",
 "Ver na lista":"View in list",
 "O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
 "💬 Pergunta: ":"💬 Question: ",
@@ -11157,7 +11164,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar">${t('🔮 Diarizado')}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
-          ${sn?`<span class="sname-badge" title="${escHtml(sn)}">📌 ${escHtml(sn)}</span>`:''}
+          <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?'📌 '+escHtml(sn):t('+ nome')}</span>
           ${pinned?`<span class="badge pin">${t('📌 Fixado')}</span>`:''}
           <span class="ts">${timeStr} · ${dateStr}</span>
         </div>
@@ -12087,6 +12094,25 @@ function promptRename(id,speaker){
   const bbl=document.getElementById('bbl-'+id);
   if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,withTimes);
   saveHistory();toast(t('✏️ Renomeado para "{name}"').replace('{name}',novo));
+}
+
+// Renomeia o card (dataset.sessionName), usado como "título" em toda a UI
+function renameSname(id){
+  const card=document.getElementById(id);if(!card)return;
+  const current=card.dataset.sessionName||'';
+  const novo=window.prompt(t('Nome do card:'),current);
+  if(novo===null)return;
+  const trimmed=novo.trim();
+  if(trimmed===current)return;
+  card.dataset.sessionName=trimmed;
+  const badge=card.querySelector('.sname-badge');
+  if(badge){
+    badge.classList.toggle('sname-badge-empty',!trimmed);
+    badge.title=trimmed||t('Clique para nomear este card');
+    badge.textContent=trimmed?(card.dataset.diarized==='true'?'📌 ':'')+trimmed:t('+ nome');
+  }
+  saveHistory();
+  toast(trimmed?t('✏️ Nome atualizado'):t('Nome removido'));
 }
 
 // Exportação com controle: escolher tempos + quais locutores incluir
@@ -14057,7 +14083,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
-          ${sn?`<span class="sname-badge" title="${escHtml(sn)}">${escHtml(sn)}</span>`:''}
+          <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?escHtml(sn):t('+ nome')}</span>
           ${pinned?'<span class="badge pin">📌</span>':''}
           <span class="ts">${timeStr} · ${dateStr}</span>
         </div>
