@@ -945,10 +945,17 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 /* A lista de cards da pasta — é ela que segura o conteúdo que antes estourava
    o desenho. Rola, e o texto fica no tamanho de sempre. */
 .fc-lista{padding:6px}
-.fc-lista-item{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;
-  background:none;border:none;border-radius:10px;padding:10px 10px;cursor:pointer;
-  font-family:var(--font);transition:background var(--transition)}
+.fc-lista-item{display:flex;flex-direction:column;width:100%;border-radius:10px;padding:10px 10px;
+  transition:background var(--transition)}
 .fc-lista-item:hover{background:var(--bg-input)}
+.fc-lista-item-corpo{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;
+  background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:var(--font)}
+.fc-lista-float-btn{display:flex;align-items:center;gap:5px;align-self:flex-start;margin-top:8px;
+  background:var(--accent-glow);border:1px solid var(--accent);color:var(--accent);border-radius:8px;
+  padding:5px 10px;font-size:11.5px;font-weight:700;font-family:var(--font);cursor:pointer;
+  transition:all var(--transition)}
+.fc-lista-float-btn:hover{background:var(--accent);color:#fff}
+.fc-lista-float-btn svg{width:12px;height:12px}
 .fc-lista-nome{font-size:12.5px;font-weight:600;color:var(--text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;
   border-radius:6px;padding:1px 4px;margin:-1px -4px;align-self:flex-start;max-width:100%}
@@ -3539,7 +3546,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.11';
+const VOX_VERSION='2026.08.13.12';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3629,6 +3636,7 @@ let I18N_EN={
 "Áudio, vídeo, texto ou projeto salvo (.json)":"Audio, video, text or saved project (.json)",
 "O Vox reconhece o tipo assim que soltar.":"Vox figures out the type as soon as you drop it.",
 "⚠️ Solte um arquivo de áudio, vídeo, texto ou projeto salvo (.json).":"⚠️ Drop an audio, video, text, or saved project (.json) file.",
+"Abrir flutuante":"Open floating",
 "Ver na lista":"View in list",
 "O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
 "💬 Pergunta: ":"💬 Question: ",
@@ -5531,6 +5539,7 @@ let _fcX=0,_fcY=0,_fcS=1;          // pan (x,y) e zoom da tela
 let _fcUltimoLayout=null;          // {nos,largura,altura} do último desenho
 let _fcCardAbertoId=null;
 let _fcPastaAberta=null;   // {id,nome} da pasta que o painel está mostrando
+let _fcItemExpandidoId=null; // item da lista com prévia estendida (200 vs 90 car.)
 const _fcPointers=new Map();       // pointerId -> {x,y}, pra distinguir pan de pinça
 let _fcPanAtivo=false,_fcPanStartX=0,_fcPanStartY=0,_fcOrigX=0,_fcOrigY=0;
 let _fcPinchDist=null,_fcPinchStartS=1;
@@ -5739,21 +5748,32 @@ function _fcCardsDaPasta(id){
 // Estado 1 do painel: a lista de cards da pasta tocada. É aqui que mora o
 // conteúdo que antes explodia o desenho — numa lista que rola, com o texto
 // no tamanho de sempre.
-function _fcListarCards(id,nomePasta){
+function _fcListarCards(id,nomePasta,manterExpansao){
   const panel=document.getElementById('fcCardPanel');
   if(!panel)return;
   _fcPastaAberta={id,nome:nomePasta};
   _fcCardAbertoId=null;
+  if(!manterExpansao)_fcItemExpandidoId=null;
   const cards=_fcCardsDaPasta(id);
   const corpo=cards.length
     ? cards.map(c=>{
         const sn=(c.dataset.sessionName||'').trim();
         const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
         const jaAberta=_flAbertas.some(j=>j.id===c.id);
-        return `<button type="button" class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}" onclick="_flAbrirCard('${escJs(c.id)}',this)">
-          <span class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();_fcRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
-          <span class="fc-lista-previa">${escHtml(txt.slice(0,90)||t('(card vazio)'))}</span>
-        </button>`;
+        const expandido=_fcItemExpandidoId===c.id;
+        const limite=expandido?200:90;
+        const previaTxt=txt?escHtml(txt.slice(0,limite))+(txt.length>limite?'…':''):escHtml(t('(card vazio)'));
+        // Botão de "jogar pra flutuante" só nasce quando expandido — clicar no
+        // item, de saída, só mostra mais texto ali mesmo na coluna; abrir uma
+        // janela por cima é uma segunda decisão, com botão próprio.
+        const btnFloat=expandido?`<button type="button" class="fc-lista-float-btn" onclick="event.stopPropagation();_flAbrirCard('${escJs(c.id)}',this)">${ICO.expand} ${t('Abrir flutuante')}</button>`:'';
+        return `<div class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}">
+          <button type="button" class="fc-lista-item-corpo" onclick="_fcAlternarExpansao('${escJs(c.id)}')">
+            <span class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();_fcRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
+            <span class="fc-lista-previa">${previaTxt}</span>
+          </button>
+          ${btnFloat}
+        </div>`;
       }).join('')
     : `<div class="fc-lista-vazia">${escHtml(t('Nenhum card direto nesta pasta.'))}</div>`;
   panel.innerHTML=`<div class="fc-card-panel-hd">
@@ -5763,6 +5783,13 @@ function _fcListarCards(id,nomePasta){
     </div>
     <div class="fc-card-panel-body fc-lista">${corpo}</div>`;
   panel.classList.add('on');
+}
+// Clicar no corpo do item alterna a prévia entre 90 e 200 caracteres, ainda
+// dentro da coluna — um item por vez (acordeão), igual ao resto do painel.
+// Não abre nada flutuante sozinho: é só "ver um pouco mais".
+function _fcAlternarExpansao(id){
+  _fcItemExpandidoId=(_fcItemExpandidoId===id)?null:id;
+  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
 }
 // Estado 2 do painel: o texto de um card, com volta pra lista de onde veio.
 function _fcAbrirCard(id){
@@ -5790,7 +5817,7 @@ function _fcFecharPainel(){
 function _fcRenomear(id){
   renameSname(id);
   if(_fcCardAbertoId===id)_fcAbrirCard(id);
-  else if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
+  else if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
 }
 function _fcVerNaLista(id){
   const card=document.getElementById(id);
@@ -5994,7 +6021,7 @@ function _flAbrirCard(id,origemEl){
   const z=_flZTop++;
   win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';win.style.zIndex=z;
   _flAbertas.push({id,x,y,w,h,z,folder:folderKey});
-  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
+  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
 
   // FLIP: nasce na posição/tamanho do item da lista, anima até o destino.
   if(origemRect){
@@ -6036,7 +6063,7 @@ function _flFecharJanela(id){
   if(card)_flReinserirNaLista(card);
   win?.remove();
   _flAbertas=_flAbertas.filter(j=>j.id!==id);
-  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
+  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
 }
 // Acha o nó de pasta do MAPA DE TRÁS sob um ponto de tela — usado no drop
 // cross-layer (Fase 6). Não dá pra usar elementFromPoint: o mapa congelado
