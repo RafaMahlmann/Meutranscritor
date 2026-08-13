@@ -3568,7 +3568,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.14';
+const VOX_VERSION='2026.08.13.15';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5914,6 +5914,28 @@ function _flSalvarPosicao(id){
   try{localStorage.setItem('vox_float_cards',JSON.stringify(store))}catch(e){}
 }
 
+// Pedido do Rafa: o painel lateral (#fcCardPanel) precisa ficar SEMPRE
+// clicável e nenhuma janela flutuante pode passar por cima dele — o limite
+// da camada é a borda do painel, não a borda da tela. Calcula em coordenadas
+// de MUNDO (descontando pan/zoom da camada) até onde a borda direita/inferior
+// de uma janela pode ir. Lê o retângulo de verdade do painel em vez de usar
+// um número fixo, porque a largura dele muda (min(360px,86vw) no desktop,
+// vira gaveta embaixo — width:100% — no celular).
+function _flLimitePainel(){
+  const limite={maxRight:Infinity,maxBottom:Infinity};
+  const layer=document.getElementById('floatLayer');
+  const panel=document.getElementById('fcCardPanel');
+  if(!layer||!panel||!panel.classList.contains('on'))return limite;
+  const layerRect=layer.getBoundingClientRect();
+  const panelRect=panel.getBoundingClientRect();
+  if(panelRect.left>layerRect.left+4){
+    limite.maxRight=(panelRect.left-layerRect.left-_flX)/_flS;
+  }else if(panelRect.top>layerRect.top+4){
+    limite.maxBottom=(panelRect.top-layerRect.top-_flY)/_flS;
+  }
+  return limite;
+}
+
 function _flAcoplarCamada(wrapEl){
   let layer=document.getElementById('floatLayer');
   if(!layer){
@@ -6043,6 +6065,10 @@ function _flAbrirCard(id,origemEl){
     const off=(_flAbertas.length%6)*28;
     x=cx+off;y=cy+off;w=FL_LARG;h=FL_ALT;
   }
+  // Nem cascata nem posição salva podem nascer por cima do painel.
+  const limitePainel=_flLimitePainel();
+  x=Math.min(x,limitePainel.maxRight-w);
+  y=Math.min(y,limitePainel.maxBottom-h);
   const z=_flZTop++;
   win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';win.style.zIndex=z;
   _flAbertas.push({id,x,y,w,h,z,folder:folderKey});
@@ -6129,13 +6155,16 @@ function _flStartWindowDrag(el,e0,isTouch){
   _flTrazerFrente(id);
   const ox=e0.clientX,oy=e0.clientY;
   const origLeft=parseFloat(win.style.left)||0,origTop=parseFloat(win.style.top)||0;
+  const winW=parseFloat(win.style.width)||FL_LARG,winH=parseFloat(win.style.height)||FL_ALT;
   let ativo=false,alvoAtual=null;
   function coords(e){if(isTouch){const tt=e.touches[0]||e.changedTouches[0];return{x:tt.clientX,y:tt.clientY}}return{x:e.clientX,y:e.clientY}}
   function onMove(e){
     if(isTouch)e.preventDefault();
     const{x,y}=coords(e);
     if(!ativo){if(Math.hypot(x-ox,y-oy)<4)return;ativo=true;win.classList.add('float-window-arrastando')}
-    const nx=origLeft+(x-ox)/_flS,ny=origTop+(y-oy)/_flS;
+    const limite=_flLimitePainel();
+    const nx=Math.min(origLeft+(x-ox)/_flS,limite.maxRight-winW);
+    const ny=Math.min(origTop+(y-oy)/_flS,limite.maxBottom-winH);
     win.style.left=nx+'px';win.style.top=ny+'px';
     const j=_flAbertas.find(j=>j.id===id);if(j){j.x=nx;j.y=ny}
     const achado=_flAlvoPastaEmPonto(x,y);
@@ -6190,6 +6219,12 @@ function _flStartResize(win,dir,e0,isTouch){
     if(dir.includes('s'))h=Math.max(FL_MIN_H,origH+dy);
     if(dir.includes('w')){w=Math.max(FL_MIN_W,origW-dx);left=origLeft+(origW-w)}
     if(dir.includes('n')){h=Math.max(FL_MIN_H,origH-dy);top=origTop+(origH-h)}
+    // Crescer pra leste/sul não pode invadir o painel — o mínimo continua
+    // valendo (se o painel for tão estreito que não sobre nem FL_MIN_W, a
+    // janela para no mínimo mesmo, por cima do painel nunca).
+    const limite=_flLimitePainel();
+    if(dir.includes('e'))w=Math.max(FL_MIN_W,Math.min(w,limite.maxRight-left));
+    if(dir.includes('s'))h=Math.max(FL_MIN_H,Math.min(h,limite.maxBottom-top));
     win.style.left=left+'px';win.style.top=top+'px';win.style.width=w+'px';win.style.height=h+'px';
     const j=_flAbertas.find(j=>j.id===id);if(j){j.x=left;j.y=top;j.w=w;j.h=h}
     // "Bateu no fundo": um tremor de um frame só, não a cada pixel enquanto
