@@ -1008,6 +1008,38 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .float-window-pousou{animation:flPouso .2s cubic-bezier(.34,1.56,.64,1)}
 @keyframes flLimite{0%,100%{transform:translateX(0)}30%{transform:translateX(-2px)}70%{transform:translateX(2px)}}
 .float-window-limite{animation:flLimite .14s ease-in-out}
+/* Fase 2c — a janela flutuante nasce "resumida": só título + texto. O resto
+   (ações, conversar/transformar, tags) fica atrás do MESMO chevron que o
+   app já usa pra recolher cabeçalho de card no celular (toggleChCollapse/
+   .ch-open) — só que aqui funciona em qualquer largura de tela, e ao
+   contrário do celular o título (.sname-badge) continua visível recolhido:
+   é o que identifica qual card é aquele, flutuando sozinho na tela. */
+.float-window .card .ch-mode-badge{border:1px solid var(--ca,var(--accent));cursor:pointer}
+.float-window .card .ch-mode-badge-label{display:none}
+.float-window .card .ch-mode-badge-menu{display:inline}
+.float-window .card .ch-mode-chev{display:inline-flex;transition:transform .18s cubic-bezier(.4,0,.2,1)}
+.float-window .card.ch-open .ch-mode-chev{transform:rotate(180deg)}
+.float-window .card .ch-left{cursor:pointer}
+.float-window .card .ch-mode-badge:active,
+.float-window .card .ch-left:active{transform:scale(.97)}
+.float-window .card:not(.ch-open) .ca-wrap,
+.float-window .card:not(.ch-open) .spk-stats,
+.float-window .card:not(.ch-open) .spk-rename-row,
+.float-window .card:not(.ch-open) .conversa-bar,
+.float-window .card:not(.ch-open) .cpanel-wrap-tags,
+.float-window .card:not(.ch-open) .tag-suggestions,
+.float-window .card:not(.ch-open) .ext-panel,
+.float-window .card:not(.ch-open) .vt-panel{display:none}
+.float-window .card:not(.ch-open) .ch-left .badge.diar,
+.float-window .card:not(.ch-open) .ch-left .badge.pin,
+.float-window .card:not(.ch-open) .ch-left .rec-rank{display:none}
+/* Revelar com intenção, não piscar: cada bloco nasce de opacity 0 + um
+   pouco acima do lugar, com um cascatinha de 30ms entre eles — pouco
+   demais pra perceber como "atraso", o bastante pra não parecer um flash. */
+@keyframes flChReveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.float-window .card.ch-open .ca-wrap{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1)}
+.float-window .card.ch-open .conversa-bar{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .03s backwards}
+.float-window .card.ch-open .cpanel-wrap-tags{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .06s backwards}
 /* Fase 5 — 8 alças finas nas bordas/cantos, invisíveis até o hover. Cantos
    maiores (14px) porque são o alvo mais difícil de acertar com o dedo. */
 .fl-rz{position:absolute;z-index:4}
@@ -3568,7 +3600,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.15';
+const VOX_VERSION='2026.08.13.16';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5786,7 +5818,7 @@ function _fcListarCards(id,nomePasta,manterExpansao){
         const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
         const jaAberta=_flAbertas.some(j=>j.id===c.id);
         const expandido=_fcItemExpandidoId===c.id;
-        const limite=expandido?200:90;
+        const limite=expandido?700:90;
         const previaTxt=txt?escHtml(txt.slice(0,limite))+(txt.length>limite?'…':''):escHtml(t('(card vazio)'));
         // Botão de "jogar pra flutuante" só nasce quando expandido — clicar no
         // item, de saída, só mostra mais texto ali mesmo na coluna; abrir uma
@@ -10026,8 +10058,13 @@ function tagsBlock(id,tags){
 // então nem vale mexer no Set — evita, por exemplo, computar isto à toa em
 // cada clique acidental na fileira de badges do card no desktop.
 function toggleChCollapse(id){
-  if(!window.matchMedia('(max-width:640px)').matches)return;
   const card=document.getElementById(id);if(!card)return;
+  // Fora do celular, este recolhimento só existe dentro de uma janela
+  // flutuante (Fase 2c) — no resto do desktop, o guard original continua
+  // valendo (a classe .ch-open não tem efeito visual nenhum fora desses
+  // dois contextos, então nem vale mexer no Set à toa).
+  const emJanelaFlutuante=!!card.closest('.float-window');
+  if(!emJanelaFlutuante&&!window.matchMedia('(max-width:640px)').matches)return;
   // Modo Documento tem seu próprio recolhimento de cabeçalho (hdr-folded,
   // toggleDocHeaderFold) — nunca mistura os dois numa mesma visualização.
   if(card.classList.contains('focus-active'))return;
