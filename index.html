@@ -980,6 +980,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;
   box-shadow:0 2px 6px rgba(0,0,0,0.18)}
 .float-window-close:hover{background:var(--bg-input);color:var(--text)}
+.float-window-arrastando{opacity:.88;box-shadow:0 18px 48px rgba(0,0,0,0.32),0 4px 12px rgba(0,0,0,0.18)}
+/* Fase 5 — 8 alças finas nas bordas/cantos, invisíveis até o hover. Cantos
+   maiores (14px) porque são o alvo mais difícil de acertar com o dedo. */
+.fl-rz{position:absolute;z-index:4}
+.fl-rz-n{top:-4px;left:10px;right:10px;height:8px;cursor:ns-resize}
+.fl-rz-s{bottom:-4px;left:10px;right:10px;height:8px;cursor:ns-resize}
+.fl-rz-e{right:-4px;top:10px;bottom:10px;width:8px;cursor:ew-resize}
+.fl-rz-w{left:-4px;top:10px;bottom:10px;width:8px;cursor:ew-resize}
+.fl-rz-ne{top:-5px;right:-5px;width:16px;height:16px;cursor:nesw-resize}
+.fl-rz-nw{top:-5px;left:-5px;width:16px;height:16px;cursor:nwse-resize}
+.fl-rz-se{bottom:-5px;right:-5px;width:16px;height:16px;cursor:nwse-resize}
+.fl-rz-sw{bottom:-5px;left:-5px;width:16px;height:16px;cursor:nesw-resize}
 .fc-lista-item-aberta{background:var(--accent-glow)}
 @media(max-width:640px){
   /* No celular o painel lateral cobriria o desenho inteiro e não daria pra
@@ -3515,7 +3527,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.5';
+const VOX_VERSION='2026.08.13.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5898,7 +5910,7 @@ function _flAbrirCard(id,origemEl){
   const win=document.createElement('div');
   win.className='float-window';
   win.id='floatwin-'+id;
-  win.innerHTML=`<button type="button" class="float-window-close" title="${t('Fechar janela')}" aria-label="${t('Fechar janela')}" onclick="event.stopPropagation();_flFecharJanela('${escJs(id)}')">✕</button>`;
+  win.innerHTML=`<button type="button" class="float-window-close" title="${t('Fechar janela')}" aria-label="${t('Fechar janela')}" onclick="event.stopPropagation();_flFecharJanela('${escJs(id)}')">✕</button>${_flHandlesResizeHtml()}`;
   win.addEventListener('pointerdown',()=>_flTrazerFrente(id));
   win.appendChild(card);
   world.appendChild(win);
@@ -5955,6 +5967,69 @@ function _flFecharJanela(id){
   win?.remove();
   _flAbertas=_flAbertas.filter(j=>j.id!==id);
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
+}
+// Fase 4 — mover a janela pelo handle ⠿ (desviado de _startDrag quando o
+// card está dentro de .float-window). Delta convertido por _flS: a 50% de
+// zoom, mover o mouse 10px na tela precisa mover a janela 20px no mundo.
+function _flStartWindowDrag(el,e0,isTouch){
+  const win=el.closest('.float-window');
+  if(!win)return;
+  const id=win.id.replace('floatwin-','');
+  _flTrazerFrente(id);
+  const ox=e0.clientX,oy=e0.clientY;
+  const origLeft=parseFloat(win.style.left)||0,origTop=parseFloat(win.style.top)||0;
+  let ativo=false;
+  function coords(e){if(isTouch){const tt=e.touches[0]||e.changedTouches[0];return{x:tt.clientX,y:tt.clientY}}return{x:e.clientX,y:e.clientY}}
+  function onMove(e){
+    if(isTouch)e.preventDefault();
+    const{x,y}=coords(e);
+    if(!ativo){if(Math.hypot(x-ox,y-oy)<4)return;ativo=true;win.classList.add('float-window-arrastando')}
+    const nx=origLeft+(x-ox)/_flS,ny=origTop+(y-oy)/_flS;
+    win.style.left=nx+'px';win.style.top=ny+'px';
+    const j=_flAbertas.find(j=>j.id===id);if(j){j.x=nx;j.y=ny}
+  }
+  function onUp(){
+    document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
+    win.classList.remove('float-window-arrastando');
+  }
+  document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+  document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
+}
+// Fase 5 — redimensionar pelas 8 alças da borda. `dir` é uma combinação de
+// n/s/e/w; bordas norte/oeste também deslocam left/top pra crescer "pro
+// lado certo" em vez de só esticar a partir do canto oposto.
+const FL_MIN_W=260,FL_MIN_H=200;
+const FL_RESIZE_DIRS=['n','s','e','w','ne','nw','se','sw'];
+function _flStartResize(win,dir,e0,isTouch){
+  if(!win)return;
+  const id=win.id.replace('floatwin-','');
+  _flTrazerFrente(id);
+  const ox=e0.clientX,oy=e0.clientY;
+  const origLeft=parseFloat(win.style.left)||0,origTop=parseFloat(win.style.top)||0;
+  const origW=parseFloat(win.style.width)||FL_LARG,origH=parseFloat(win.style.height)||FL_ALT;
+  function coords(e){if(isTouch){const tt=e.touches[0]||e.changedTouches[0];return{x:tt.clientX,y:tt.clientY}}return{x:e.clientX,y:e.clientY}}
+  function onMove(e){
+    if(isTouch)e.preventDefault();
+    const{x,y}=coords(e);
+    const dx=(x-ox)/_flS,dy=(y-oy)/_flS;
+    let left=origLeft,top=origTop,w=origW,h=origH;
+    if(dir.includes('e'))w=Math.max(FL_MIN_W,origW+dx);
+    if(dir.includes('s'))h=Math.max(FL_MIN_H,origH+dy);
+    if(dir.includes('w')){w=Math.max(FL_MIN_W,origW-dx);left=origLeft+(origW-w)}
+    if(dir.includes('n')){h=Math.max(FL_MIN_H,origH-dy);top=origTop+(origH-h)}
+    win.style.left=left+'px';win.style.top=top+'px';win.style.width=w+'px';win.style.height=h+'px';
+    const j=_flAbertas.find(j=>j.id===id);if(j){j.x=left;j.y=top;j.w=w;j.h=h}
+  }
+  function onUp(){
+    document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
+  }
+  document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+  document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
+}
+function _flHandlesResizeHtml(){
+  return FL_RESIZE_DIRS.map(d=>`<div class="fl-rz fl-rz-${d}" onmousedown="event.preventDefault();event.stopPropagation();_flStartResize(this.closest('.float-window'),'${d}',{clientX:event.clientX,clientY:event.clientY},false)" ontouchstart="event.stopPropagation();_flStartResize(this.closest('.float-window'),'${d}',{clientX:event.touches[0].clientX,clientY:event.touches[0].clientY},true)"></div>`).join('');
 }
 const FC_FLOAT_TOGGLE_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
 
@@ -15267,6 +15342,10 @@ function _dragLoop(){
 }
 
 function _startDrag(el,e0,isTouch=false,isFolder=false){
+  // Card dentro de uma janela flutuante: o handle ⠿ não mescla (fluxo normal
+  // da lista principal), ele move a própria janela — mundos diferentes,
+  // arrasto diferente. Ver _flStartWindowDrag.
+  if(!isFolder&&el.closest('.float-window')){_flStartWindowDrag(el,e0,isTouch);return}
   _dragSrcId=isFolder?(el.dataset.fid||''):el.id;_dragEl=el;_dragActive=false;_dragScrollV=0;_dragSrcIsFolder=isFolder;_dragSelText=null;
   const ox=e0.clientX,oy=e0.clientY;
   function getCoords(e){if(isTouch){const t=e.touches[0]||e.changedTouches[0];return{x:t.clientX,y:t.clientY}}return{x:e.clientX,y:e.clientY}}
