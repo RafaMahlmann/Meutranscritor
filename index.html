@@ -873,6 +873,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-dl-btn:hover{background:var(--bg-input);color:var(--accent)}
 .folder-dl-btn.active{color:var(--accent);background:var(--accent-glow)}
 .folder-item.dl-sel{border-color:var(--accent)!important;background:var(--accent-glow)}
+.folder-dl-selall{font-weight:700;border-bottom:1px solid var(--border);margin-bottom:6px;padding-bottom:10px}
 .folder-dl-hint{background:var(--accent-glow);border:1px solid var(--border);border-radius:12px;
   padding:10px 12px;margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .folder-dl-hint p{margin:0;font-size:11.5px;line-height:1.5;color:var(--text2)}
@@ -3538,7 +3539,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.9';
+const VOX_VERSION='2026.08.13.10';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3616,6 +3617,7 @@ let I18N_EN={
 "Fechar janela":"Close window",
 "Isso aqui baixa só o texto, pra ler. Quer levar tudo — pastas, cards e etiquetas — pra continuar depois em outro lugar?":"This only downloads the text, to read. Want to take everything — folders, cards and tags — to continue later somewhere else?",
 "Salvar projeto inteiro":"Save the whole project",
+"Selecionar tudo":"Select all",
 "Ver na lista":"View in list",
 "O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
 "💬 Pergunta: ":"💬 Question: ",
@@ -5421,7 +5423,10 @@ function renderFolders(){
   const counts=getFolderCounts();
   if(folderDlMode){
     if(!folders.length){list.innerHTML=`<div style="font-size:12px;color:var(--text4);text-align:center;padding:12px 0">${t('Nenhuma pasta criada')}</div>`;return}
-    let html='';
+    const todasSel=folderDlSel.size===folders.length;
+    let html=`<div class="folder-item folder-dl-selall" onclick="toggleFolderDlSelAll()">
+      <span style="font-size:15px">${todasSel?'☑':'☐'}</span>
+      <span class="folder-name">${t('Selecionar tudo')}</span></div>`;
     folders.forEach(f=>{
       const sel=folderDlSel.has(f.id);
       html+=`<div class="folder-item${sel?' dl-sel':''}" onclick="toggleFolderDlSel('${escJs(f.id)}')">
@@ -6848,6 +6853,11 @@ function _syncFolderFmtBtns(){
 function toggleFolderDlSel(id){
   if(folderDlSel.has(id))folderDlSel.delete(id);
   else folderDlSel.add(id);
+  renderFolders();
+}
+function toggleFolderDlSelAll(){
+  if(folderDlSel.size===folders.length)folderDlSel.clear();
+  else folders.forEach(f=>folderDlSel.add(f.id));
   renderFolders();
 }
 function getCardsInFolderTree(folderId){
