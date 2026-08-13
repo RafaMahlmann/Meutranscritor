@@ -966,6 +966,21 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   justify-content:center;transition:background var(--transition),color var(--transition),border-color var(--transition);padding:0}
 .fc-float-toggle-btn:hover{background:var(--bg-input);color:var(--text)}
 .fc-float-toggle-btn.on{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
+/* Fase 2 — a janela flutuante é uma moldura fina em volta do MESMO .card
+   real da lista principal (movido pra dentro, não clonado — ver _flAbrirCard).
+   Por isso o visual já é idêntico ao card de sempre; só precisa esticar pra
+   preencher a moldura. */
+.float-window{position:absolute;display:flex;flex-direction:column;cursor:default;
+  border-radius:var(--radius-card);box-shadow:0 10px 40px rgba(0,0,0,0.28),0 2px 8px rgba(0,0,0,0.12)}
+.float-window .card{width:100%;height:100%;flex:1;margin:0;animation:none;display:flex;flex-direction:column}
+.float-window .cb{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.float-window .cb textarea{flex:1}
+.float-window-close{position:absolute;top:-10px;right:-10px;z-index:6;width:24px;height:24px;
+  border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text3);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;
+  box-shadow:0 2px 6px rgba(0,0,0,0.18)}
+.float-window-close:hover{background:var(--bg-input);color:var(--text)}
+.fc-lista-item-aberta{background:var(--accent-glow)}
 @media(max-width:640px){
   /* No celular o painel lateral cobriria o desenho inteiro e não daria pra
      explorar. Vira gaveta de baixo, que é o padrão do aparelho e deixa
@@ -3500,7 +3515,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.4';
+const VOX_VERSION='2026.08.13.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3575,6 +3590,7 @@ let I18N_EN={
 "Nome removido":"Name removed",
 "Ver cards flutuantes":"View floating cards",
 "Voltar pro mapa":"Back to the map",
+"Fechar janela":"Close window",
 "Ver na lista":"View in list",
 "O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
 "💬 Pergunta: ":"💬 Question: ",
@@ -5365,7 +5381,7 @@ function saveFolders(){
 }
 function getFolderCounts(){
   const counts={all:0};
-  document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+  _flTodosCards().forEach(c=>{
     counts.all++;const f=c.dataset.folder||'';if(f)counts[f]=(counts[f]||0)+1;
   });
   return counts;
@@ -5483,7 +5499,7 @@ function _fcLayout(){
   // então a raiz ficaria dizendo zero. Uma passada própria conta tudo, e a
   // chave '' guarda justamente os que não estão em pasta nenhuma.
   const diretos={};
-  document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+  _flTodosCards().forEach(c=>{
     const f=c.dataset.folder||'';diretos[f]=(diretos[f]||0)+1;
   });
   const nos=[];
@@ -5671,8 +5687,7 @@ function _fcEnquadrar(){
 // (ex.: "Tudo" mostrava 383 na bolha e só 97 na lista).
 function _fcCardsDaPasta(id){
   const alvo=id===null?'':(id||'');
-  let out=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')]
-    .filter(c=>(c.dataset.folder||'')===alvo);
+  let out=_flTodosCards().filter(c=>(c.dataset.folder||'')===alvo);
   getFolderChildren(id).forEach(f=>{out=out.concat(_fcCardsDaPasta(f.id))});
   return out;
 }
@@ -5689,7 +5704,8 @@ function _fcListarCards(id,nomePasta){
     ? cards.map(c=>{
         const sn=(c.dataset.sessionName||'').trim();
         const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
-        return `<button type="button" class="fc-lista-item" onclick="_fcAbrirCard('${escJs(c.id)}')">
+        const jaAberta=_flAbertas.some(j=>j.id===c.id);
+        return `<button type="button" class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}" onclick="_flAbrirCard('${escJs(c.id)}',this)">
           <span class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();_fcRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
           <span class="fc-lista-previa">${escHtml(txt.slice(0,90)||t('(card vazio)'))}</span>
         </button>`;
@@ -5754,7 +5770,7 @@ function _fcAcoplarPainel(wrapEl){
   if(wrapEl&&panel.parentElement!==wrapEl)wrapEl.appendChild(panel);
 }
 
-// ══ CAMADA DE CARDS FLUTUANTES — Fase 1 (camada + alternância) ══════════════
+// ══ CAMADA DE CARDS FLUTUANTES — Fase 1-2 (camada + abrir/fechar janela) ═══
 // Mesmo padrão do painel acima: um #floatLayer só, movido de dono entre
 // Fluxograma e Órbita. Pan/zoom próprios, independentes do mapa de trás —
 // clone do motor _fc*, mas sem nenhuma ligação com ele (mundos separados).
@@ -5763,6 +5779,18 @@ let _flAtiva=false;
 const _flPointers=new Map();
 let _flPanAtivo=false,_flPanStartX=0,_flPanStartY=0,_flOrigX=0,_flOrigY=0;
 let _flPinchDist=null,_flPinchStartS=1;
+let _flAbertas=[];       // [{id,x,y,w,h,z}] — janelas abertas nesta camada
+let _flZTop=1;
+const FL_LARG=340,FL_ALT=280;   // tamanho inicial de uma janela nova
+
+// Todo card "existente", esteja ele na lista principal ou flutuando na
+// camada da frente (retirado fisicamente de #cardsList enquanto flutua —
+// ver _flAbrirCard). Contagens por pasta, lista lateral e desenho do mapa
+// usam esta função em vez de olhar só #cardsList, senão um card some das
+// contas por estar temporariamente hospedado na janela flutuante.
+function _flTodosCards(){
+  return [...document.querySelectorAll('#cardsList .card:not(.proc-card), #floatWorld .card:not(.proc-card)')];
+}
 
 function _flAcoplarCamada(wrapEl){
   let layer=document.getElementById('floatLayer');
@@ -5844,6 +5872,90 @@ function _flWheel(e){
   _flS=Math.min(2.5,Math.max(0.3,_flS*fator));
   _flAplicarTransform();
 }
+
+// Abre uma janela flutuante pro card `id` — ou, se já tiver uma aberta,
+// só traz ela pra frente. `origemEl` (o item da lista clicado) é opcional:
+// quando existe, a janela nasce voando de lá até a posição final (FLIP).
+function _flAbrirCard(id,origemEl){
+  const card=document.getElementById(id);
+  if(!card)return;
+  const jaAberta=_flAbertas.find(j=>j.id===id);
+  if(jaAberta){
+    if(!_flAtiva)_flAlternarCamada();
+    _flTrazerFrente(id);
+    return;
+  }
+  const world=document.getElementById('floatWorld');
+  const layer=document.getElementById('floatLayer');
+  if(!world||!layer)return;
+  const origemRect=origemEl?origemEl.getBoundingClientRect():null;
+
+  if(!_flAtiva)_flAlternarCamada();
+
+  // Moldura da janela — o card em si é MOVIDO pra dentro (appendChild),
+  // nunca clonado: um clone duplicaria o id e quebraria getElementById em
+  // drag/export/menu por todo o resto do app.
+  const win=document.createElement('div');
+  win.className='float-window';
+  win.id='floatwin-'+id;
+  win.innerHTML=`<button type="button" class="float-window-close" title="${t('Fechar janela')}" aria-label="${t('Fechar janela')}" onclick="event.stopPropagation();_flFecharJanela('${escJs(id)}')">✕</button>`;
+  win.addEventListener('pointerdown',()=>_flTrazerFrente(id));
+  win.appendChild(card);
+  world.appendChild(win);
+
+  // Cascata a partir do centro do viewport ATUAL da camada (convertendo de
+  // tela pra coordenadas do mundo, descontando o pan/zoom próprios).
+  const layerRect=layer.getBoundingClientRect();
+  const cx=(layerRect.width/2-_flX)/_flS-FL_LARG/2;
+  const cy=(layerRect.height/2-_flY)/_flS-FL_ALT/2;
+  const off=(_flAbertas.length%6)*28;
+  const x=cx+off,y=cy+off,w=FL_LARG,h=FL_ALT,z=_flZTop++;
+  win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';win.style.zIndex=z;
+  _flAbertas.push({id,x,y,w,h,z});
+  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
+
+  // FLIP: nasce na posição/tamanho do item da lista, anima até o destino.
+  if(origemRect){
+    const destRect=win.getBoundingClientRect();
+    const dx=origemRect.left-destRect.left,dy=origemRect.top-destRect.top;
+    const sx=Math.max(0.15,origemRect.width/destRect.width),sy=Math.max(0.15,origemRect.height/destRect.height);
+    win.style.transition='none';
+    win.style.opacity='0';
+    win.style.transform=`translate(${dx}px,${dy}px) scale(${sx},${sy})`;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      win.style.transition='opacity .22s ease, transform .26s cubic-bezier(.2,.8,.3,1)';
+      win.style.opacity='1';
+      win.style.transform='translate(0,0) scale(1,1)';
+    }));
+  }
+}
+function _flTrazerFrente(id){
+  const win=document.getElementById('floatwin-'+id);
+  if(!win)return;
+  const z=_flZTop++;
+  win.style.zIndex=z;
+  const j=_flAbertas.find(j=>j.id===id);
+  if(j)j.z=z;
+}
+// Devolve o card pro lugar de sempre em #cardsList, respeitando a ordem
+// por data (prepend em addCard = mais novo primeiro).
+function _flReinserirNaLista(card){
+  const lista=document.getElementById('cardsList');
+  if(!lista)return;
+  const dt=card.dataset.dt||'';
+  const irmaos=[...lista.querySelectorAll(':scope > .card:not(.proc-card)')];
+  const alvo=irmaos.find(c=>(c.dataset.dt||'')<dt);
+  if(alvo)lista.insertBefore(card,alvo);
+  else lista.appendChild(card);
+}
+function _flFecharJanela(id){
+  const win=document.getElementById('floatwin-'+id);
+  const card=document.getElementById(id);
+  if(card)_flReinserirNaLista(card);
+  win?.remove();
+  _flAbertas=_flAbertas.filter(j=>j.id!==id);
+  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
+}
 const FC_FLOAT_TOGGLE_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
 
 function abrirFluxograma(){
@@ -5893,6 +6005,9 @@ function fecharFluxograma(){
   _fcPointers.clear();_fcPanAtivo=false;_fcPinchDist=null;
   if(_flAtiva)_flAlternarCamada();
   _flPointers.clear();_flPanAtivo=false;_flPinchDist=null;
+  // Fechar a tela devolve todo card flutuante pro lugar — senão ficaria
+  // escondido dentro de um #floatWorld sem dono visível, fora de #cardsList.
+  [..._flAbertas].forEach(j=>_flFecharJanela(j.id));
 }
 
 // ══ ÓRBITA DE PASTAS — Fase 1 (ver e mergulhar) ═════════════════════════════
@@ -5938,7 +6053,7 @@ function _orbComAlfa(hex,a){
 // numa passada própria: getFolderCounts() tem um `if(f)` que descarta card
 // solto (chave ''), e é exatamente o total da raiz que a órbita precisa mostrar.
 function _orbCardsTodos(){
-  return [...document.querySelectorAll('#cardsList .card:not(.proc-card)')];
+  return _flTodosCards();
 }
 function _orbTotalCards(id,cards){
   let n=cards.filter(c=>(c.dataset.folder||'')===(id===null?'':id)).length;
@@ -6326,6 +6441,7 @@ function fecharOrbital(){
   _orbPts.clear();_orbPan=false;_orbPinch=null;
   if(_flAtiva)_flAlternarCamada();
   _flPointers.clear();_flPanAtivo=false;_flPinchDist=null;
+  [..._flAbertas].forEach(j=>_flFecharJanela(j.id));
 }
 window.addEventListener('resize',()=>{
   const ov=document.getElementById('orbOverlay');
