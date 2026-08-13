@@ -985,7 +985,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    Por isso o visual já é idêntico ao card de sempre; só precisa esticar pra
    preencher a moldura. */
 .float-window{position:absolute;display:flex;flex-direction:column;cursor:default;
-  border-radius:var(--radius-card);box-shadow:0 10px 40px rgba(0,0,0,0.28),0 2px 8px rgba(0,0,0,0.12)}
+  border-radius:var(--radius-card);box-shadow:0 10px 40px rgba(0,0,0,0.28),0 2px 8px rgba(0,0,0,0.12);
+  transition:box-shadow .15s ease,opacity .15s ease}
 .float-window .card{width:100%;height:100%;flex:1;margin:0;animation:none;display:flex;flex-direction:column}
 .float-window .cb{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .float-window .cb textarea{flex:1}
@@ -994,7 +995,19 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;
   box-shadow:0 2px 6px rgba(0,0,0,0.18)}
 .float-window-close:hover{background:var(--bg-input);color:var(--text)}
+/* Presença em repouso: uma sombra um pouco maior no hover já avisa "isso se
+   pega e se move" antes de qualquer clique — sem precisar de rótulo. */
+.float-window:hover{box-shadow:0 14px 44px rgba(0,0,0,0.32),0 3px 10px rgba(0,0,0,0.14)}
 .float-window-arrastando{opacity:.88;box-shadow:0 18px 48px rgba(0,0,0,0.32),0 4px 12px rgba(0,0,0,0.18)}
+/* Fase 9 — game feel. Fechar encolhe em vez de cortar seco; soltar depois de
+   mover "assenta" com um leve overshoot (peso pousando, não parada morta);
+   bater no tamanho mínimo do resize treme uma vez só, não gruda sem aviso. */
+.float-window-fechando{pointer-events:none;opacity:0;transform:scale(.94);
+  transition:opacity .18s ease-out,transform .18s cubic-bezier(.4,0,.2,1)}
+@keyframes flPouso{0%{transform:scale(1)}45%{transform:scale(1.025)}100%{transform:scale(1)}}
+.float-window-pousou{animation:flPouso .2s cubic-bezier(.34,1.56,.64,1)}
+@keyframes flLimite{0%,100%{transform:translateX(0)}30%{transform:translateX(-2px)}70%{transform:translateX(2px)}}
+.float-window-limite{animation:flLimite .14s ease-in-out}
 /* Fase 5 — 8 alças finas nas bordas/cantos, invisíveis até o hover. Cantos
    maiores (14px) porque são o alvo mais difícil de acertar com o dedo. */
 .fl-rz{position:absolute;z-index:4}
@@ -1011,6 +1024,15 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    cima de um nó do mapa de trás (pasta do Fluxograma ou bolha da Órbita). */
 .fc-node.fl-drop-alvo{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
 .orb-no.fl-drop-alvo{filter:brightness(1.35)}
+/* Pulso curto no nó no instante em que o drop dá certo — a confirmação de
+   "caiu aqui", já que a janela em si vai sumir (fechar) logo em seguida.
+   .fc-node usa transform:translateY(-50%) pra se posicionar — a animação
+   PRECISA incluir isso, senão o nó pula de lugar durante o pulso. .orb-anel
+   não carrega posição (só decoração), por isso o keyframe dele é mais simples. */
+@keyframes flDropOkNode{0%{transform:translateY(-50%) scale(1)}40%{transform:translateY(-50%) scale(1.08)}100%{transform:translateY(-50%) scale(1)}}
+.fc-node.fl-drop-sucesso{animation:flDropOkNode .26s ease-out}
+@keyframes flDropOkAnel{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+.orb-no.fl-drop-sucesso .orb-anel{animation:flDropOkAnel .26s ease-out}
 .orb-no.fl-drop-alvo .orb-anel{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 @media(max-width:640px){
   /* No celular o painel lateral cobriria o desenho inteiro e não daria pra
@@ -3546,7 +3568,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.12';
+const VOX_VERSION='2026.08.13.13';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6060,10 +6082,17 @@ function _flReinserirNaLista(card){
 function _flFecharJanela(id){
   const win=document.getElementById('floatwin-'+id);
   const card=document.getElementById(id);
-  if(card)_flReinserirNaLista(card);
-  win?.remove();
   _flAbertas=_flAbertas.filter(j=>j.id!==id);
+  // Fechar também recolhe o item na lista, se estava expandido — senão
+  // clicar nele de novo alternaria pra "recolher" (já estava aberto) em vez
+  // de expandir, escondendo o botão "Abrir flutuante" sem nenhum aviso.
+  if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+  if(!win){if(card)_flReinserirNaLista(card);return}
+  // Some encolhendo, não corta seco — o card real só volta pra lista depois
+  // da transição acabar, senão o texto desapareceria da tela antes da moldura.
+  win.classList.add('float-window-fechando');
+  setTimeout(()=>{if(card)_flReinserirNaLista(card);win.remove()},180);
 }
 // Acha o nó de pasta do MAPA DE TRÁS sob um ponto de tela — usado no drop
 // cross-layer (Fase 6). Não dá pra usar elementFromPoint: o mapa congelado
@@ -6112,8 +6141,17 @@ function _flStartWindowDrag(el,e0,isTouch){
     if(!ativo)return;
     const{x,y}=coords(e);
     const achado=_flAlvoPastaEmPonto(x,y);
-    if(achado){assignCardToFolder(id,achado.folderId);_flFecharJanela(id);return}
+    if(achado){
+      achado.el.classList.add('fl-drop-sucesso');
+      setTimeout(()=>achado.el.classList.remove('fl-drop-sucesso'),260);
+      assignCardToFolder(id,achado.folderId);
+      _flFecharJanela(id);
+      return;
+    }
     _flSalvarPosicao(id);
+    // Pouso: um assentamento rápido, não uma parada seca — dá peso ao soltar.
+    win.classList.add('float-window-pousou');
+    setTimeout(()=>win.classList.remove('float-window-pousou'),200);
   }
   document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
   document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
@@ -6130,7 +6168,7 @@ function _flStartResize(win,dir,e0,isTouch){
   const ox=e0.clientX,oy=e0.clientY;
   const origLeft=parseFloat(win.style.left)||0,origTop=parseFloat(win.style.top)||0;
   const origW=parseFloat(win.style.width)||FL_LARG,origH=parseFloat(win.style.height)||FL_ALT;
-  let movido=false;
+  let movido=false,noLimite=false;
   function coords(e){if(isTouch){const tt=e.touches[0]||e.changedTouches[0];return{x:tt.clientX,y:tt.clientY}}return{x:e.clientX,y:e.clientY}}
   function onMove(e){
     if(isTouch)e.preventDefault();
@@ -6144,6 +6182,16 @@ function _flStartResize(win,dir,e0,isTouch){
     if(dir.includes('n')){h=Math.max(FL_MIN_H,origH-dy);top=origTop+(origH-h)}
     win.style.left=left+'px';win.style.top=top+'px';win.style.width=w+'px';win.style.height=h+'px';
     const j=_flAbertas.find(j=>j.id===id);if(j){j.x=left;j.y=top;j.w=w;j.h=h}
+    // "Bateu no fundo": um tremor de um frame só, não a cada pixel enquanto
+    // a pessoa continua empurrando contra o mínimo.
+    const bateu=w===FL_MIN_W||h===FL_MIN_H;
+    if(bateu&&!noLimite){
+      noLimite=true;
+      win.classList.add('float-window-limite');
+      setTimeout(()=>win.classList.remove('float-window-limite'),140);
+    }else if(!bateu){
+      noLimite=false;
+    }
   }
   function onUp(){
     document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
