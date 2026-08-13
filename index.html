@@ -950,6 +950,22 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-lista-previa{font-size:11.5px;color:var(--text4);line-height:1.45;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .fc-lista-vazia{padding:18px 14px;font-size:12.5px;color:var(--text4);text-align:center}
+/* ══ CAMADA DE CARDS FLUTUANTES — Fase 1 (camada + alternância, vazia) ══
+   Compartilhada entre Fluxograma e Órbita, igual ao .fc-card-panel: um único
+   #floatLayer criado uma vez e movido (appendChild) pra dentro do wrap ativo
+   (_flAcoplarCamada). Zoom/pan próprios (_flX/_flY/_flS), independentes do
+   mapa de trás. Quando ativa, o canvas de trás ganha .fl-congelado
+   (pointer-events:none) — ele continua desenhado, só para de reagir. */
+.float-layer{position:absolute;inset:0;display:none;pointer-events:none;overflow:hidden;touch-action:none;z-index:3}
+.float-layer.on{display:block;pointer-events:auto;cursor:grab}
+.float-layer.on:active{cursor:grabbing}
+.float-world{position:absolute;top:0;left:0;transform-origin:0 0}
+.fl-congelado{pointer-events:none}
+.fc-float-toggle-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
+  background:var(--bg-card);color:var(--text2);cursor:pointer;display:flex;align-items:center;
+  justify-content:center;transition:background var(--transition),color var(--transition),border-color var(--transition);padding:0}
+.fc-float-toggle-btn:hover{background:var(--bg-input);color:var(--text)}
+.fc-float-toggle-btn.on{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
 @media(max-width:640px){
   /* No celular o painel lateral cobriria o desenho inteiro e não daria pra
      explorar. Vira gaveta de baixo, que é o padrão do aparelho e deixa
@@ -3484,7 +3500,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.3';
+const VOX_VERSION='2026.08.13.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3557,6 +3573,8 @@ let I18N_EN={
 "Nome do card:":"Card name:",
 "✏️ Nome atualizado":"✏️ Name updated",
 "Nome removido":"Name removed",
+"Ver cards flutuantes":"View floating cards",
+"Voltar pro mapa":"Back to the map",
 "Ver na lista":"View in list",
 "O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
 "💬 Pergunta: ":"💬 Question: ",
@@ -5735,6 +5753,99 @@ function _fcAcoplarPainel(wrapEl){
   }
   if(wrapEl&&panel.parentElement!==wrapEl)wrapEl.appendChild(panel);
 }
+
+// ══ CAMADA DE CARDS FLUTUANTES — Fase 1 (camada + alternância) ══════════════
+// Mesmo padrão do painel acima: um #floatLayer só, movido de dono entre
+// Fluxograma e Órbita. Pan/zoom próprios, independentes do mapa de trás —
+// clone do motor _fc*, mas sem nenhuma ligação com ele (mundos separados).
+let _flX=0,_flY=0,_flS=1;
+let _flAtiva=false;
+const _flPointers=new Map();
+let _flPanAtivo=false,_flPanStartX=0,_flPanStartY=0,_flOrigX=0,_flOrigY=0;
+let _flPinchDist=null,_flPinchStartS=1;
+
+function _flAcoplarCamada(wrapEl){
+  let layer=document.getElementById('floatLayer');
+  if(!layer){
+    layer=document.createElement('div');
+    layer.className='float-layer';
+    layer.id='floatLayer';
+    layer.innerHTML='<div class="float-world" id="floatWorld"></div>';
+    layer.addEventListener('pointerdown',_flPointerDown);
+    layer.addEventListener('pointermove',_flPointerMove);
+    layer.addEventListener('pointerup',_flPointerUp);
+    layer.addEventListener('pointercancel',_flPointerUp);
+    layer.addEventListener('wheel',_flWheel,{passive:false});
+  }
+  if(wrapEl&&layer.parentElement!==wrapEl)wrapEl.appendChild(layer);
+}
+function _flAplicarTransform(){
+  const world=document.getElementById('floatWorld');
+  if(world)world.style.transform=`translate(${_flX}px,${_flY}px) scale(${_flS})`;
+}
+// Congela o canvas de trás (pointer-events:none — continua desenhado, só
+// para de reagir) e mostra/esconde a camada da frente. Os dois wraps
+// (Fluxograma e Órbita) recebem a classe sempre: só um está visível por vez,
+// então marcar os dois não tem efeito colateral.
+function _flAlternarCamada(){
+  _flAtiva=!_flAtiva;
+  const layer=document.getElementById('floatLayer');
+  if(layer)layer.classList.toggle('on',_flAtiva);
+  document.getElementById('fcCanvasWrap')?.classList.toggle('fl-congelado',_flAtiva);
+  document.getElementById('orbPalco')?.classList.toggle('fl-congelado',_flAtiva);
+  document.querySelectorAll('.fc-float-toggle-btn').forEach(b=>{
+    b.classList.toggle('on',_flAtiva);
+    b.title=_flAtiva?t('Voltar pro mapa'):t('Ver cards flutuantes');
+    b.setAttribute('aria-label',b.title);
+  });
+}
+function _flPointerDown(e){
+  if(e.target.closest('.float-window'))return; // deixa o clique/drag da janela acontecer normal
+  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(err){}
+  _flPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(_flPointers.size===1){
+    _flPanAtivo=true;_flPanStartX=e.clientX;_flPanStartY=e.clientY;_flOrigX=_flX;_flOrigY=_flY;
+  }else if(_flPointers.size===2){
+    _flPanAtivo=false;
+    const pts=[..._flPointers.values()];
+    _flPinchDist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+    _flPinchStartS=_flS;
+  }
+}
+function _flPointerMove(e){
+  if(!_flPointers.has(e.pointerId))return;
+  _flPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(_flPointers.size>=2&&_flPinchDist){
+    const pts=[..._flPointers.values()];
+    const dist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+    _flS=Math.min(2.5,Math.max(0.3,_flPinchStartS*(dist/_flPinchDist)));
+    _flAplicarTransform();
+    return;
+  }
+  if(_flPanAtivo){
+    _flX=_flOrigX+(e.clientX-_flPanStartX);
+    _flY=_flOrigY+(e.clientY-_flPanStartY);
+    _flAplicarTransform();
+  }
+}
+function _flPointerUp(e){
+  _flPointers.delete(e.pointerId);
+  if(_flPointers.size<2)_flPinchDist=null;
+  if(_flPointers.size===0){
+    _flPanAtivo=false;
+  }else if(_flPointers.size===1){
+    const [p]=[..._flPointers.values()];
+    _flPanAtivo=true;_flPanStartX=p.x;_flPanStartY=p.y;_flOrigX=_flX;_flOrigY=_flY;
+  }
+}
+function _flWheel(e){
+  e.preventDefault();
+  const fator=e.deltaY<0?1.1:0.9;
+  _flS=Math.min(2.5,Math.max(0.3,_flS*fator));
+  _flAplicarTransform();
+}
+const FC_FLOAT_TOGGLE_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
+
 function abrirFluxograma(){
   let ov=document.getElementById('fcOverlay');
   if(!ov){
@@ -5745,6 +5856,7 @@ function abrirFluxograma(){
       <div class="fc-topbar">
         <span class="fc-title">🗂️ ${t('Fluxograma de pastas')}</span>
         <div class="fc-topbar-actions">
+          <button type="button" class="fc-float-toggle-btn" onclick="_flAlternarCamada()" title="${t('Ver cards flutuantes')}" aria-label="${t('Ver cards flutuantes')}">${FC_FLOAT_TOGGLE_ICON}</button>
           <button type="button" class="fc-fit-btn" onclick="_fcEnquadrar()" title="${t('Enquadrar')}" aria-label="${t('Enquadrar')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
           <button type="button" class="fc-close-btn" onclick="fecharFluxograma()" title="${t('Fechar')}" aria-label="${t('Fechar')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
@@ -5765,8 +5877,9 @@ function abrirFluxograma(){
   }
   // O painel de cards é compartilhado com a Órbita — um conceito só, então
   // ele se MUDA de dono (appendChild move o nó existente) em vez de ganhar
-  // uma cópia em cada tela.
+  // uma cópia em cada tela. A camada de cards flutuantes segue o mesmo padrão.
   _fcAcoplarPainel(document.getElementById('fcCanvasWrap'));
+  _flAcoplarCamada(document.getElementById('fcCanvasWrap'));
   ov.classList.add('on');
   _fcRender();
   // clientWidth/Height do wrap só tem valor real depois que .on (display:flex)
@@ -5778,6 +5891,8 @@ function fecharFluxograma(){
   if(ov)ov.classList.remove('on');
   _fcFecharPainel();
   _fcPointers.clear();_fcPanAtivo=false;_fcPinchDist=null;
+  if(_flAtiva)_flAlternarCamada();
+  _flPointers.clear();_flPanAtivo=false;_flPinchDist=null;
 }
 
 // ══ ÓRBITA DE PASTAS — Fase 1 (ver e mergulhar) ═════════════════════════════
@@ -6156,6 +6271,7 @@ function abrirOrbital(){
       <div class="fc-topbar">
         <span class="fc-title">🪐 ${escHtml(t('Órbita de pastas'))}</span>
         <div class="fc-topbar-actions">
+          <button type="button" class="fc-float-toggle-btn" onclick="_flAlternarCamada()" title="${escHtml(t('Ver cards flutuantes'))}" aria-label="${escHtml(t('Ver cards flutuantes'))}">${FC_FLOAT_TOGGLE_ICON}</button>
           <button type="button" class="fc-fit-btn" onclick="_orbEnquadrar()" title="${escHtml(t('Enquadrar'))}" aria-label="${escHtml(t('Enquadrar'))}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
           <button type="button" class="fc-close-btn" onclick="fecharOrbital()" title="${escHtml(t('Fechar'))}" aria-label="${escHtml(t('Fechar'))}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
@@ -6192,8 +6308,10 @@ function abrirOrbital(){
     _orbPalco.addEventListener('wheel',_orbWheel,{passive:false});
     setTimeout(()=>{const d=document.getElementById('orbDica');if(d)d.style.opacity='0'},6000);
   }
-  // O painel de cards é compartilhado com o Fluxograma — só se move de dono.
+  // O painel de cards e a camada de cards flutuantes são compartilhados com
+  // o Fluxograma — só se movem de dono.
   _fcAcoplarPainel(_orbPalco);
+  _flAcoplarCamada(_orbPalco);
   ov.classList.add('on');
   _orbFoco=null;
   _orbCamX=0;_orbCamY=0;_orbCamS=1;
@@ -6206,6 +6324,8 @@ function fecharOrbital(){
   if(ov)ov.classList.remove('on');
   _fcFecharPainel();
   _orbPts.clear();_orbPan=false;_orbPinch=null;
+  if(_flAtiva)_flAlternarCamada();
+  _flPointers.clear();_flPanAtivo=false;_flPinchDist=null;
 }
 window.addEventListener('resize',()=>{
   const ov=document.getElementById('orbOverlay');
