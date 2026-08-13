@@ -3532,7 +3532,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.7';
+const VOX_VERSION='2026.08.13.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5809,6 +5809,31 @@ function _flTodosCards(){
   return [...document.querySelectorAll('#cardsList .card:not(.proc-card), #floatWorld .card:not(.proc-card)')];
 }
 
+// Fase 7 — persistência de posição/tamanho por pasta. Mesmo padrão de
+// vox_txrx_pasta: um dicionário só, try/catch em volta de JSON/localStorage.
+// {[folderKey]: {[cardId]: {x,y,w,h}}} — folderKey é _fcPastaAberta.id
+// (''  pra "Tudo"), não card.dataset.folder: é a pasta que a pessoa estava
+// vendo quando organizou os cards, não a pasta "dona" de cada um.
+function _flChaveDePasta(){
+  if(!_fcPastaAberta)return'';
+  return _fcPastaAberta.id===null?'':_fcPastaAberta.id;
+}
+function _flLerStore(){
+  try{return JSON.parse(localStorage.getItem('vox_float_cards')||'{}')}catch(e){return{}}
+}
+function _flPosicaoSalva(folderKey,id){
+  const store=_flLerStore();
+  return store[folderKey]?.[id]||null;
+}
+function _flSalvarPosicao(id){
+  const j=_flAbertas.find(j=>j.id===id);
+  if(!j)return;
+  const store=_flLerStore();
+  if(!store[j.folder])store[j.folder]={};
+  store[j.folder][id]={x:j.x,y:j.y,w:j.w,h:j.h};
+  try{localStorage.setItem('vox_float_cards',JSON.stringify(store))}catch(e){}
+}
+
 function _flAcoplarCamada(wrapEl){
   let layer=document.getElementById('floatLayer');
   if(!layer){
@@ -5920,15 +5945,27 @@ function _flAbrirCard(id,origemEl){
   win.appendChild(card);
   world.appendChild(win);
 
-  // Cascata a partir do centro do viewport ATUAL da camada (convertendo de
-  // tela pra coordenadas do mundo, descontando o pan/zoom próprios).
-  const layerRect=layer.getBoundingClientRect();
-  const cx=(layerRect.width/2-_flX)/_flS-FL_LARG/2;
-  const cy=(layerRect.height/2-_flY)/_flS-FL_ALT/2;
-  const off=(_flAbertas.length%6)*28;
-  const x=cx+off,y=cy+off,w=FL_LARG,h=FL_ALT,z=_flZTop++;
+  // Fase 7 — cada janela lembra a pasta em que foi aberta (não a de agora:
+  // a pessoa pode navegar a lista pra outra pasta com a janela ainda
+  // aberta). É essa chave que decide onde salvar/procurar posição salva.
+  const folderKey=_flChaveDePasta();
+  const salvo=_flPosicaoSalva(folderKey,id);
+
+  let x,y,w,h;
+  if(salvo){
+    ({x,y,w,h}=salvo);
+  }else{
+    // Cascata a partir do centro do viewport ATUAL da camada (convertendo
+    // de tela pra coordenadas do mundo, descontando o pan/zoom próprios).
+    const layerRect=layer.getBoundingClientRect();
+    const cx=(layerRect.width/2-_flX)/_flS-FL_LARG/2;
+    const cy=(layerRect.height/2-_flY)/_flS-FL_ALT/2;
+    const off=(_flAbertas.length%6)*28;
+    x=cx+off;y=cy+off;w=FL_LARG;h=FL_ALT;
+  }
+  const z=_flZTop++;
   win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';win.style.zIndex=z;
-  _flAbertas.push({id,x,y,w,h,z});
+  _flAbertas.push({id,x,y,w,h,z,folder:folderKey});
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
 
   // FLIP: nasce na posição/tamanho do item da lista, anima até o destino.
@@ -6017,10 +6054,11 @@ function _flStartWindowDrag(el,e0,isTouch){
     document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
     win.classList.remove('float-window-arrastando');
     alvoAtual?.classList.remove('fl-drop-alvo');
-    if(!ativo||!alvoAtual)return;
+    if(!ativo)return;
     const{x,y}=coords(e);
     const achado=_flAlvoPastaEmPonto(x,y);
-    if(achado){assignCardToFolder(id,achado.folderId);_flFecharJanela(id)}
+    if(achado){assignCardToFolder(id,achado.folderId);_flFecharJanela(id);return}
+    _flSalvarPosicao(id);
   }
   document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
   document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
@@ -6037,9 +6075,11 @@ function _flStartResize(win,dir,e0,isTouch){
   const ox=e0.clientX,oy=e0.clientY;
   const origLeft=parseFloat(win.style.left)||0,origTop=parseFloat(win.style.top)||0;
   const origW=parseFloat(win.style.width)||FL_LARG,origH=parseFloat(win.style.height)||FL_ALT;
+  let movido=false;
   function coords(e){if(isTouch){const tt=e.touches[0]||e.changedTouches[0];return{x:tt.clientX,y:tt.clientY}}return{x:e.clientX,y:e.clientY}}
   function onMove(e){
     if(isTouch)e.preventDefault();
+    movido=true;
     const{x,y}=coords(e);
     const dx=(x-ox)/_flS,dy=(y-oy)/_flS;
     let left=origLeft,top=origTop,w=origW,h=origH;
@@ -6053,6 +6093,7 @@ function _flStartResize(win,dir,e0,isTouch){
   function onUp(){
     document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
     document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
+    if(movido)_flSalvarPosicao(id);
   }
   document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
   document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
