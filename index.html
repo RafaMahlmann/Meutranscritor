@@ -3539,7 +3539,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.10';
+const VOX_VERSION='2026.08.13.11';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3618,6 +3618,17 @@ let I18N_EN={
 "Isso aqui baixa só o texto, pra ler. Quer levar tudo — pastas, cards e etiquetas — pra continuar depois em outro lugar?":"This only downloads the text, to read. Want to take everything — folders, cards and tags — to continue later somewhere else?",
 "Salvar projeto inteiro":"Save the whole project",
 "Selecionar tudo":"Select all",
+"Também aceita vídeo, texto (.txt/.md) ou um projeto salvo (.json).":"Also accepts video, text (.txt/.md) or a saved project (.json).",
+"Solte o projeto aqui":"Drop the project here",
+"Soma ao que você já tem — nada é apagado":"Adds to what you already have — nothing is erased",
+"Também aceita áudio, vídeo ou texto (.txt/.md).":"Also accepts audio, video or text (.txt/.md).",
+"Solte o texto aqui":"Drop the text here",
+"Vira um card novo":"Becomes a new card",
+"Também aceita áudio, vídeo ou um projeto salvo (.json).":"Also accepts audio, video or a saved project (.json).",
+"Solte o arquivo aqui":"Drop the file here",
+"Áudio, vídeo, texto ou projeto salvo (.json)":"Audio, video, text or saved project (.json)",
+"O Vox reconhece o tipo assim que soltar.":"Vox figures out the type as soon as you drop it.",
+"⚠️ Solte um arquivo de áudio, vídeo, texto ou projeto salvo (.json).":"⚠️ Drop an audio, video, text, or saved project (.json) file.",
 "Ver na lista":"View in list",
 "O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
 "💬 Pergunta: ":"💬 Question: ",
@@ -9755,6 +9766,12 @@ function triggerImportProject(){document.getElementById('projInput').click()}
 function importProjectFile(e){
   const file=e.target.files[0];if(!file)return;
   e.target.value='';
+  _importFile(file);
+}
+// Compartilhado entre o seletor de arquivo (importProjectFile) e o soltar
+// na área de anexo (initAudioDropzone) — um caminho só pra .json de
+// projeto/pasta e .txt/.md, não dois iguais e desalinhados.
+function _importFile(file){
   const reader=new FileReader();
   reader.onload=()=>{
     const content=reader.result;
@@ -10777,21 +10794,46 @@ function _hasFileDrag(e){
 function _isAudioLikeFile(f){
   return f&&(f.type.startsWith('audio/')||f.type.startsWith('video/')||/\.(mp3|mp4|mpeg|mpga|m4a|wav|webm|ogg|flac|amr|wma|3gp)$/i.test(f.name||''));
 }
-function _showAudioDrop(on){
+// .json (projeto ou pasta recebida), .txt/.md (vira card) — tudo que
+// importProjectFile já sabia abrir só pelo seletor de arquivo, também
+// reconhecido ao soltar. Sem isso, "solte aqui" prometia só áudio/vídeo e
+// um arquivo de backup caía fora da promessa sem aviso nenhum.
+function _isImportableFile(f){
+  return f&&(/\.(json|txt|md)$/i.test(f.name||'')||f.type==='application/json'||f.type==='text/plain'||f.type==='text/markdown');
+}
+// Nem sempre dá pra saber o tipo no dragenter (o navegador só entrega o
+// File de verdade no drop), mas o MIME do item costuma vir antes — usado só
+// pra deixar o balão honesto sobre o que vai acontecer, não pra decidir nada.
+function _tipoDrag(e){
+  const item=e.dataTransfer?.items?.[0];
+  const ty=item?.type||'';
+  if(ty.startsWith('audio/')||ty.startsWith('video/'))return'audio';
+  if(ty==='application/json')return'json';
+  if(ty==='text/plain'||ty==='text/markdown')return'texto';
+  return'generico';
+}
+function _showAudioDrop(on,tipo){
   const ibar=document.querySelector('.ibar');if(!ibar)return;
   ibar.classList.toggle('file-drag',!!on);
   if(on&&!stagedFile){
-    document.getElementById('fsIco').textContent='📎';
-    document.getElementById('fsName').textContent=t('Solte o áudio aqui');
-    document.getElementById('fsMeta').textContent=t('O Vox vai preparar a transcrição');
-    document.getElementById('fsHint').textContent=t('Também funciona com vídeo que tenha áudio.');
+    const textos={
+      audio:{ico:'📎',nome:t('Solte o áudio aqui'),meta:t('O Vox vai preparar a transcrição'),hint:t('Também aceita vídeo, texto (.txt/.md) ou um projeto salvo (.json).')},
+      json:{ico:'📂',nome:t('Solte o projeto aqui'),meta:t('Soma ao que você já tem — nada é apagado'),hint:t('Também aceita áudio, vídeo ou texto (.txt/.md).')},
+      texto:{ico:'📄',nome:t('Solte o texto aqui'),meta:t('Vira um card novo'),hint:t('Também aceita áudio, vídeo ou um projeto salvo (.json).')},
+      generico:{ico:'📎',nome:t('Solte o arquivo aqui'),meta:t('Áudio, vídeo, texto ou projeto salvo (.json)'),hint:t('O Vox reconhece o tipo assim que soltar.')}
+    };
+    const s=textos[tipo]||textos.generico;
+    document.getElementById('fsIco').textContent=s.ico;
+    document.getElementById('fsName').textContent=s.nome;
+    document.getElementById('fsMeta').textContent=s.meta;
+    document.getElementById('fsHint').textContent=s.hint;
     document.getElementById('btnGo').disabled=true;
   }
 }
 function initAudioDropzone(){
   document.addEventListener('dragenter',e=>{
     if(!_hasFileDrag(e)||isRec||isProc||stagedFile)return;
-    _ibarDragDepth++;_showAudioDrop(true);
+    _ibarDragDepth++;_showAudioDrop(true,_tipoDrag(e));
   });
   document.addEventListener('dragover',e=>{
     if(!_hasFileDrag(e)||isRec||isProc||stagedFile)return;
@@ -10808,9 +10850,13 @@ function initAudioDropzone(){
     if(isRec||isProc||stagedFile)return;
     const f=e.dataTransfer?.files?.[0];if(!f)return;
     e.preventDefault();
-    if(!_isAudioLikeFile(f)){toast(t('⚠️ Solte um arquivo de áudio ou vídeo.'),true);return}
-    recTargetTA=null;recTargetCard=null;
-    stageFile(f);
+    if(_isAudioLikeFile(f)){
+      recTargetTA=null;recTargetCard=null;
+      stageFile(f);
+      return;
+    }
+    if(_isImportableFile(f)){_importFile(f);return}
+    toast(t('⚠️ Solte um arquivo de áudio, vídeo, texto ou projeto salvo (.json).'),true);
   });
 }
 function stageFile(f){
