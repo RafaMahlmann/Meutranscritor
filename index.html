@@ -3568,7 +3568,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.13';
+const VOX_VERSION='2026.08.13.14';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5684,7 +5684,10 @@ function _fcNodeClick(e){
 // Pan de um dedo/mouse e pinça de dois dedos compartilham o mesmo Map de
 // ponteiros ativos. Só o gesto ativo no momento mexe em _fcX/_fcY/_fcS.
 function _fcPointerDown(e){
-  if(e.target.closest('.fc-node'))return; // deixa o clique do botão acontecer normal
+  // Mesmo motivo do guard em _orbPointerDown: painel lateral e camada de
+  // cards flutuantes cuidam do próprio clique, não podem perder o
+  // setPointerCapture pro canvas de trás.
+  if(e.target.closest('.fc-node, .fc-card-panel, .float-layer'))return; // deixa o clique do botão acontecer normal
   // setPointerCapture pode falhar (NotFoundError) em cenários fora do comum —
   // sem o try/catch, a exceção para a função ANTES de registrar o ponteiro no
   // Map, e o pan/pinça param de responder silenciosamente. A captura em si é
@@ -6088,11 +6091,18 @@ function _flFecharJanela(id){
   // de expandir, escondendo o botão "Abrir flutuante" sem nenhum aviso.
   if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
-  if(!win){if(card)_flReinserirNaLista(card);return}
+  // Fechou a ÚLTIMA janela: desativa a camada da frente sozinho, DEPOIS da
+  // transição de saída (senão #floatLayer some com display:none no meio do
+  // encolher, cortando a animação pela metade). Sem isso, a camada (cheio
+  // de tela, z-index acima do painel) continuava .on — invisível, mas ainda
+  // pointer-events:auto — e engolia todo clique seguinte na lista, mesmo
+  // sem nenhuma janela aberta pra explicar por quê.
+  const desligarCamada=()=>{if(!_flAbertas.length&&_flAtiva)_flAlternarCamada()};
+  if(!win){if(card)_flReinserirNaLista(card);desligarCamada();return}
   // Some encolhendo, não corta seco — o card real só volta pra lista depois
   // da transição acabar, senão o texto desapareceria da tela antes da moldura.
   win.classList.add('float-window-fechando');
-  setTimeout(()=>{if(card)_flReinserirNaLista(card);win.remove()},180);
+  setTimeout(()=>{if(card)_flReinserirNaLista(card);win.remove();desligarCamada()},180);
 }
 // Acha o nó de pasta do MAPA DE TRÁS sob um ponto de tela — usado no drop
 // cross-layer (Fase 6). Não dá pra usar elementFromPoint: o mapa congelado
@@ -6589,7 +6599,13 @@ function _orbIrPara(id){
 const _orbPts=new Map();
 let _orbPan=false,_orbPX=0,_orbPY=0,_orbOX=0,_orbOY=0,_orbPinch=null,_orbPinchS=1;
 function _orbPointerDown(e){
-  if(e.target.closest('.orb-no'))return;
+  // O painel lateral (#fcCardPanel) e a camada de cards flutuantes
+  // (#floatLayer) são filhos de _orbPalco, mas cuidam do próprio clique —
+  // sem este guard, um clique de mouse de verdade ali (não um .click() via
+  // JS) sobe por bubbling até aqui, ganha setPointerCapture no palco
+  // inteiro, e o botão de dentro nunca termina de disparar o onclick dele.
+  // Achado testando com clique real de mouse (Playwright), não com .click().
+  if(e.target.closest('.orb-no, .fc-card-panel, .float-layer'))return;
   // setPointerCapture pode lançar (NotFoundError) — sem o try/catch o gesto
   // morre em silêncio antes mesmo de registrar o ponteiro no Map.
   try{_orbPalco.setPointerCapture(e.pointerId)}catch(err){}
