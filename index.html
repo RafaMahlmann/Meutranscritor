@@ -431,6 +431,14 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
 .cards.masonry .card{width:100%}
 .cards.masonry .card.proc-card{grid-column:1/-1}
 .cards.masonry .card.pinned-card{grid-column:1/-1}
+/* 300px de coluna (padrão em :root) é bom no desktop mas largo demais pro
+   celular/tablet — testado ao vivo: um iPhone de 390px só cabe 1 coluna
+   de 300px, mas o print do Keep do Rafa mostra 2. As referências
+   pesquisadas (keep-bases-view) já apontavam isso: coluna por dispositivo,
+   150/200/240px — aqui a faixa de toque é quem lê pouco (miniatura, corta
+   texto), então uma coluna mais estreita não sacrifica leitura nenhuma. */
+@media(max-width:599px){:root{--card-masonry-col:160px}}
+@media(min-width:600px) and (max-width:1023px){:root{--card-masonry-col:220px}}
 /* Masonry em toque (celular/iPad — ver _voxToque()/applyView): o card vira
    miniatura de leitura, igual Keep/Anytype/Mini Notes — nenhuma referência
    pesquisada deixa a grade ser uma caixa de texto editável. Cortado em 8
@@ -3753,7 +3761,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.17.03';
+const VOX_VERSION='2026.08.17.04';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5436,7 +5444,10 @@ function applyView(){
   cl.classList.remove('masonry','focus-mode','masonry-preview');
   document.body.classList.toggle('doc-mode',viewMode==='doc');
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-focus',isFocusLike));
-  document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-masonry',viewMode==='masonry'));
+  // Lista e Masonry viram a mesma grade agora (ver ramo 'else' abaixo) —
+  // as duas precisam do wrap largo, senão a grade nasce espremida no
+  // max-width de 1100px pensado pra coluna única de texto.
+  document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-masonry',viewMode==='masonry'||viewMode==='list'));
   if(!isFocusLike)_unmountFocusEditor();
   document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
   if(!isFocusLike){
@@ -5449,7 +5460,14 @@ function applyView(){
   // nele, quando na verdade isso é o destino do clique. Confuso.
   const viewIcon=document.getElementById('viewIcon'),viewLbl=document.getElementById('viewLabel');
   if(viewMode==='masonry'){
-    cl.classList.add('masonry');if(cl.style.display!=='none')cl.style.display='block';
+    // Bug real, achado pelo Rafa testando no iPad/iPhone/Windows: esta linha
+    // vinha de quando o Masonry era CSS multi-coluna (que queria
+    // display:block) e nunca foi atualizada quando virou CSS Grid — um
+    // display:block em INLINE STYLE sempre vence display:grid do CSS
+    // (.cards.masonry), então a grade nunca rodava em lugar nenhum, em
+    // nenhum dispositivo. O próprio teste automatizado media isso
+    // ("display: block") e eu não prestei atenção no valor.
+    cl.classList.add('masonry');if(cl.style.display!=='none')cl.style.display='grid';
     // Miniatura de leitura só no toque (celular/iPad) — no mouse (Windows/
     // Mac) o Masonry continua editável direto, como sempre foi. "No Windows
     // está funcionando, não mexe" — pedido explícito do Rafa.
@@ -5462,7 +5480,16 @@ function applyView(){
     if(viewLbl)viewLbl.textContent=t('Documento');
     applyFocusCard();
   }else{
-    if(cl.style.display!=='none')cl.style.display='flex';
+    // Pedido do Rafa depois de comparar com o Keep de verdade (print de
+    // referência no iPad, no Windows e no celular): a Lista deixa de ser a
+    // pilha de cards em coluna única e passa a ser a mesma grade do
+    // Masonry — mais colunas quando a tela tem espaço, miniatura de leitura
+    // no toque. "Lista" e "Masonry" ficam visualmente iguais por ora; o
+    // botão de alternar ainda existe com os dois nomes (não removi),
+    // mas mostram a mesma coisa — vale simplificar pra um passo só depois.
+    cl.classList.add('masonry');
+    if(cl.style.display!=='none')cl.style.display='grid';
+    cl.classList.toggle('masonry-preview',_voxToque());
     if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>';
     if(viewLbl)viewLbl.textContent=t('Lista');
   }
@@ -10508,10 +10535,16 @@ function tagsBlock(id,tags){
 function _voxToque(){
   return window.matchMedia('(pointer:coarse)').matches;
 }
+// Lista e Masonry viram a mesma grade (ver applyView) — os dois nomes de
+// viewMode continuam existindo (localStorage, cycle do botão), mas quem
+// decide comportamento de grade (aqui e em applyView) precisa tratar os
+// dois iguais, senão um card criado com viewMode 'list' não nasce
+// recolhido como miniatura, mesmo com a tela mostrando uma grade.
+function _voxGradeAtiva(){return viewMode==='masonry'||viewMode==='list'}
 function _chPadraoAberto(){
-  // No Masonry em toque, o card é miniatura de leitura — nasce sempre
+  // Na grade em toque, o card é miniatura de leitura — nasce sempre
   // recolhido, editar abre na janela flutuante (ver applyView/_voxToque).
-  if(viewMode==='masonry'&&_voxToque())return false;
+  if(_voxGradeAtiva()&&_voxToque())return false;
   // Compacto (<600, Material 3) nasce recolhido — tela curta, cromo pesa
   // mais. Medium+ nasce aberto — tem espaço de sobra. Janela flutuante
   // força recolhido à parte, em _flAbrirCard (o card já existe quando entra
