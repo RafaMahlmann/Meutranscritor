@@ -435,10 +435,14 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
    alinham por linha. Se isso incomodar na prática, o próximo passo é um
    masonry de verdade em JS (como as referências fazem), não CSS. */
 .cards{display:flex;flex-direction:column;gap:14px}
-.cards.masonry{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(var(--card-masonry-col),100%),1fr));gap:14px;align-items:start}
-.cards.masonry .card{width:100%}
-.cards.masonry .card.proc-card{grid-column:1/-1}
-.cards.masonry .card.pinned-card{grid-column:1/-1}
+/* Masonry de verdade agora (JS, ver _masonryLayout) — CSS Grid alinhava os
+   cards em LINHA (mesma altura de topo numa fileira), o que o Rafa notou
+   na hora: "nem o Pinterest e o Keep fazem isso" — e ele tem razão, os
+   dois empacotam por COLUNA (cada card cai na coluna mais vazia no
+   momento, alturas soltas). O JS calcula left/top/width por card;
+   .cards.masonry só precisa virar o pai posicionado. */
+.cards.masonry{position:relative}
+.cards.masonry .card{position:absolute;transition:left .2s cubic-bezier(.22,1,.36,1),top .2s cubic-bezier(.22,1,.36,1)}
 /* 220px (padrão em :root) é bom no desktop/mouse mas largo demais pro
    toque — testado ao vivo com o Rafa pedindo pra bater exatamente com o
    Keep dele: iPad 3 colunas retrato / 4 paisagem, celular 2 retrato /
@@ -3773,7 +3777,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.17.07';
+const VOX_VERSION='2026.08.17.08';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5454,6 +5458,7 @@ function applyView(){
   const isFocusLike=viewMode==='doc';
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
   cl.classList.remove('masonry','focus-mode','masonry-preview');
+  if(viewMode!=='masonry')_masonryDesativar();
   document.body.classList.toggle('doc-mode',viewMode==='doc');
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-focus',isFocusLike));
   // Lista continua coluna única (não é mais a grade do Masonry — revertido
@@ -5473,20 +5478,14 @@ function applyView(){
   // nele, quando na verdade isso é o destino do clique. Confuso.
   const viewIcon=document.getElementById('viewIcon'),viewLbl=document.getElementById('viewLabel');
   if(viewMode==='masonry'){
-    // Bug real, achado pelo Rafa testando no iPad/iPhone/Windows: esta linha
-    // vinha de quando o Masonry era CSS multi-coluna (que queria
-    // display:block) e nunca foi atualizada quando virou CSS Grid — um
-    // display:block em INLINE STYLE sempre vence display:grid do CSS
-    // (.cards.masonry), então a grade nunca rodava em lugar nenhum, em
-    // nenhum dispositivo. O próprio teste automatizado media isso
-    // ("display: block") e eu não prestei atenção no valor.
-    cl.classList.add('masonry');if(cl.style.display!=='none')cl.style.display='grid';
+    cl.classList.add('masonry');if(cl.style.display!=='none')cl.style.display='block';
     // Miniatura de leitura só no toque (celular/iPad) — no mouse (Windows/
     // Mac) o Masonry continua editável direto, como sempre foi. "No Windows
     // está funcionando, não mexe" — pedido explícito do Rafa.
     cl.classList.toggle('masonry-preview',_voxToque());
     if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="8" height="11" rx="2"/><rect x="13" y="3" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><rect x="3" y="17" width="8" height="4" rx="2"/></svg>';
     if(viewLbl)viewLbl.textContent=t('Masonry');
+    requestAnimationFrame(_masonryAtivar);
   }else if(isFocusLike){
     cl.classList.add('focus-mode');if(cl.style.display!=='none')cl.style.display='block';
     if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M15 2v5h5"/></svg>';
@@ -5507,6 +5506,85 @@ function applyView(){
     if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>';
     if(viewLbl)viewLbl.textContent=t('Lista');
   }
+}
+// ── MASONRY DE VERDADE (empacotamento por coluna, não por linha) ──
+// CSS Grid alinhava tudo em fileiras (mesma altura de topo por linha) — o
+// Rafa notou na hora que nem Pinterest nem Keep fazem isso: os dois jogam
+// cada card na coluna MAIS VAZIA no momento, então as colunas correm soltas,
+// com alturas diferentes. Isso não dá pra fazer só com CSS (é por isso que
+// toda referência séria que olhamos — Mini Notes, keep-bases-view — também
+// não usa CSS puro pra isso). left/top/width por card, calculado aqui.
+let _masonryRO=null,_masonryMO=null,_masonryT=null;
+function _masonryAgendar(){
+  clearTimeout(_masonryT);
+  _masonryT=setTimeout(_masonryLayout,16);
+}
+function _masonryLayout(){
+  const cl=document.getElementById('cardsList');
+  if(!cl||!cl.classList.contains('masonry'))return;
+  const gap=14;
+  const containerW=cl.clientWidth;
+  if(!containerW)return;
+  const colWpx=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-masonry-col'))||220;
+  const cols=Math.max(1,Math.floor((containerW+gap)/(colWpx+gap)));
+  const trackW=cols>1?(containerW-(cols-1)*gap)/cols:containerW;
+  const cards=[...cl.querySelectorAll(':scope > .card')];
+  const colH=new Array(cols).fill(0);
+  let y=0;
+  cards.forEach(card=>{
+    const full=card.classList.contains('proc-card')||card.classList.contains('pinned-card');
+    if(full){
+      // Fixado/processando: linha própria, largura total — igual ao
+      // "quebra a coluna" que Mini Notes e keep-bases-view também fazem
+      // pros fixados, pelo mesmo motivo (card alto demais bagunçaria o
+      // resto do empacotamento se entrasse na disputa de coluna).
+      card.style.width=containerW+'px';
+      card.style.left='0px';card.style.top=y+'px';
+      const h=card.getBoundingClientRect().height||card.offsetHeight||0;
+      y+=h+gap;
+      colH.fill(y);
+    }else{
+      const idx=colH.indexOf(Math.min(...colH));
+      card.style.width=trackW+'px';
+      card.style.left=(idx*(trackW+gap))+'px';
+      card.style.top=colH[idx]+'px';
+      const h=card.getBoundingClientRect().height||card.offsetHeight||0;
+      colH[idx]=colH[idx]+h+gap;
+    }
+  });
+  cl.style.height=Math.max(y,...colH,0)+'px';
+}
+function _masonryAtivar(){
+  const cl=document.getElementById('cardsList');
+  if(!cl)return;
+  _masonryDesconectarObservers();
+  _masonryRO=new ResizeObserver(_masonryAgendar);
+  _masonryRO.observe(cl);
+  cl.querySelectorAll(':scope > .card').forEach(c=>_masonryRO.observe(c));
+  // Card entrando/saindo (novo card, exclusão, filtro de pasta/busca) muda
+  // quantos itens existem pra empacotar — reobserva e reflui.
+  _masonryMO=new MutationObserver(muts=>{
+    let mudou=false;
+    muts.forEach(m=>{
+      m.addedNodes.forEach(n=>{if(n.nodeType===1&&n.classList?.contains('card')){_masonryRO.observe(n);mudou=true}});
+      if(m.removedNodes.length)mudou=true;
+    });
+    if(mudou)_masonryAgendar();
+  });
+  _masonryMO.observe(cl,{childList:true});
+  _masonryLayout();
+}
+function _masonryDesconectarObservers(){
+  if(_masonryRO){_masonryRO.disconnect();_masonryRO=null}
+  if(_masonryMO){_masonryMO.disconnect();_masonryMO=null}
+  clearTimeout(_masonryT);
+}
+function _masonryDesativar(){
+  _masonryDesconectarObservers();
+  const cl=document.getElementById('cardsList');
+  if(!cl)return;
+  cl.style.height='';
+  cl.querySelectorAll(':scope > .card').forEach(c=>{c.style.left='';c.style.top='';c.style.width=''});
 }
 // Masonry em toque: a caixa de texto vira miniatura (pointer-events:none,
 // ver CSS .masonry-preview) — tocar nela abre a mesma janela flutuante que
