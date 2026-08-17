@@ -21,7 +21,7 @@
 :root{
   --bg:#f2f2f7;--bg2:#ffffff;--bg3:rgba(255,255,255,0.7);--bg-header:rgba(242,242,247,0.88);
   --bg-input:rgba(118,118,128,0.12);--bg-card:#ffffff;--border:rgba(0,0,0,0.07);
-  --border2:rgba(0,0,0,0.12);--shadow-card:0 1px 2px rgba(0,0,0,0.05),0 4px 20px rgba(0,0,0,0.07);
+  --border2:rgba(0,0,0,0.12);--shadow-card:0 1px 3px rgba(0,0,0,0.07),0 5px 18px rgba(0,0,0,0.07);
   --shadow-hover:0 2px 8px rgba(0,0,0,0.08),0 12px 32px rgba(0,0,0,0.1);
   --shadow-input:0 1px 2px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.06);
   --text:#1d1d1f;--text2:#48484a;--text3:#8e8e93;--text4:#aeaeb2;
@@ -33,7 +33,27 @@
   --radius-card:20px;--radius-btn:12px;--radius-input:18px;
   --font:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --transition:0.2s cubic-bezier(0.4,0,0.2,1);
+  /* ── PADRÃO DE CARD (Lista, Masonry, Órbita, Fluxograma, flutuante — e
+     qualquer visualização futura). Números com procedência, não gosto:
+     - medida de linha 40-60 caracteres: Material 3, Breakpoints
+     - 7,25-7,45px por caractere: medido no próprio Vox (DM Sans, pt-BR)
+     - teto de 600px pro modo Lista: mesmo valor usado por um clone do Keep
+       com 577 estrelas (Material-UI md+), não escolha no olho
+     - coluna de Masonry em 300px: dentro da banda de 144-294px que toda
+       referência pesquisada usa (Mini Notes, keep-bases-view, Anytype) —
+       nenhuma delas deixa a coluna esticar como o Vox fazia antes
+     Mexer aqui muda TODAS as vistas de card de uma vez. É de propósito. */
+  --card-measure-min:280px;--card-measure-max:600px;--card-masonry-col:300px;
+  --card-title-sz:calc(var(--cf-sz,15px) + 1px);
+  --card-meta-sz:11px;--card-lh-lista:1.75;--card-lh-janela:1.55;
+  --card-tap-min:44px;--card-chrome-ms:180ms;
+  --card-chrome-ease:cubic-bezier(.2,.8,.2,1);--card-stagger:20ms;
 }
+/* Breakpoints nomeados (Material 3: compact <600, medium 600-839, expanded
+   840+) — usados só pela geometria de card/painel introduzida aqui. Não
+   trocar o 640 de _isSheetViewport() por isso: aquela função já é chamada
+   em dez lugares (bottom sheet, haptics, long-press...) e unificar os dois
+   é frente própria, com teste de cada call site. */
 /* Escuro clareado (relatado pelo Rafa: ilegível no monitor dele). O que mudou e
    por quê:
    - o fundo era #000 puro. Preto absoluto contra texto claro causa "halation"
@@ -45,7 +65,7 @@
 [data-theme="dark"]{
   --bg:#131315;--bg2:#202023;--bg3:rgba(32,32,35,0.7);--bg-header:rgba(19,19,21,0.88);
   --bg-input:rgba(255,255,255,0.10);--bg-card:#212124;--border:rgba(255,255,255,0.11);
-  --border2:rgba(255,255,255,0.18);--shadow-card:0 1px 3px rgba(0,0,0,0.5),0 8px 32px rgba(0,0,0,0.6);
+  --border2:rgba(255,255,255,0.18);--shadow-card:0 1px 3px rgba(0,0,0,0.55),0 6px 22px rgba(0,0,0,0.55);
   --shadow-hover:0 2px 12px rgba(0,0,0,0.6),0 16px 48px rgba(0,0,0,0.7);
   --shadow-input:0 2px 8px rgba(0,0,0,0.5),0 8px 24px rgba(0,0,0,0.5);
   --text:#f5f5f7;--text2:#cfcfd4;--text3:#9d9da4;--text4:#8a8a93;
@@ -389,13 +409,41 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
 .empty-open-btn{margin-top:24px;background:var(--bg-card);border:1px solid var(--border2);color:var(--text2);border-radius:12px;padding:11px 18px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:8px}
 .empty-open-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 
-/* ── CARDS LAYOUT ── */
+/* ── CARDS LAYOUT ──
+   Lista sem teto de largura media 112-142 caracteres por linha num monitor
+   largo (ideal: 40-60, Material 3) — o pior lugar de ler do app inteiro,
+   pior que o card flutuante de 340px "fixo e burro". Agora tem teto.
+
+   Masonry usava column-width:340px (CSS multi-coluna), que ESTICA a coluna
+   pra preencher o espaço — medido: a mesma tela ia de 340 a 680px de
+   coluna dependendo só de a gaveta de pastas estar aberta, balançando a
+   medida de linha em 48%. Nenhuma referência pesquisada (Keep, Mini Notes,
+   keep-bases-view, Anytype) deixa a coluna esticar assim. Grid com coluna
+   fixa resolve os dois problemas de uma vez — e resolve de graça o bug da
+   gaveta, porque reage à largura real do container, não da janela.
+   Trade-off consciente: perde o empacotamento tipo Pinterest (altura
+   variável por coluna) que o multi-coluna tinha de graça — os cards agora
+   alinham por linha. Se isso incomodar na prática, o próximo passo é um
+   masonry de verdade em JS (como as referências fazem), não CSS. */
 .cards{display:flex;flex-direction:column;gap:14px}
-.cards.masonry{display:block;columns:340px;column-gap:14px}
-.cards.masonry .card{break-inside:avoid;margin-bottom:14px;display:inline-block;width:100%}
-.cards.masonry .card.proc-card{column-span:all}
-.cards.masonry .card.pinned-card{column-span:all}
-@media(max-width:600px){.cards.masonry{columns:1}}
+.cards:not(.masonry) .card{max-width:var(--card-measure-max);width:100%;margin-left:auto;margin-right:auto}
+.cards.masonry{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(var(--card-masonry-col),100%),1fr));gap:14px;align-items:start}
+.cards.masonry .card{width:100%}
+.cards.masonry .card.proc-card{grid-column:1/-1}
+.cards.masonry .card.pinned-card{grid-column:1/-1}
+/* Masonry em toque (celular/iPad — ver _voxToque()/applyView): o card vira
+   miniatura de leitura, igual Keep/Anytype/Mini Notes — nenhuma referência
+   pesquisada deixa a grade ser uma caixa de texto editável. Cortado em 8
+   linhas, com a mesma letra do resto do app (--cf-sz intocado: cortar
+   linhas, nunca diminuir a fonte). Tocar abre a janela flutuante pra
+   editar — no mouse (Windows/Mac) esta classe nunca é aplicada, o Masonry
+   continua exatamente como sempre foi. */
+.cards.masonry.masonry-preview .card .cb{position:relative;cursor:pointer;
+  max-height:calc(var(--cf-sz,15px) * var(--card-lh-lista) * 8);overflow:hidden}
+.cards.masonry.masonry-preview .card .cb textarea,
+.cards.masonry.masonry-preview .card .md-preview{pointer-events:none}
+.cards.masonry.masonry-preview .card .cb::after{content:'';position:absolute;
+  left:0;right:0;bottom:0;height:34px;background:linear-gradient(to bottom,transparent,var(--bg-card))}
 .cards.focus-mode .card{display:none!important}
 .cards.focus-mode .card.focus-active{display:flex!important;flex-direction:column;min-height:calc(100vh - 175px);min-height:calc(100dvh - 175px)}
 /* ">" (filho direto), não descendente qualquer — o seletor genérico pegava
@@ -549,7 +597,16 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .font-sz-btn.fz-on{background:var(--bg-card);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,0.15)}
 .icon-btn.on-danger{color:var(--danger)}
 .icon-btn.on-danger:hover{background:rgba(239,68,68,0.12);color:var(--danger)}
-.card{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--ca,var(--border2));border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden;animation:slideIn 0.28s cubic-bezier(0.4,0,0.2,1);transition:box-shadow var(--transition);position:relative}
+/* A tarja de 3px na cor de acento era o padrão em TODO card, com ou sem
+   etiqueta de cor — .card{--ca:accent!important} mais abaixo força isso
+   mesmo sem escolha nenhuma da pessoa. Achado pelo Rafa como "muito
+   transparente"/"confunde": um risco colorido correndo por baixo de cada
+   nota, sempre, é ruído. Card sem etiqueta agora diferencia do fundo só por
+   camada — igual Keep/tldraw: superfície (--bg-card já é mais clara que
+   --bg), borda neutra, sombra de repouso um pouco mais presente. A tarja
+   volta só quando existe etiqueta de cor de verdade (.card[data-tc]). */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden;animation:slideIn 0.28s cubic-bezier(0.4,0,0.2,1);transition:box-shadow var(--transition),background var(--transition);position:relative}
+.card[data-tc]{border-left:3px solid var(--ca)}
 .card:hover{box-shadow:var(--shadow-hover)}
 .rec-rank{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--ca,var(--accent));color:#fff;font-size:10px;font-weight:700;font-family:var(--font)}
 .rec-rank.rank-2{opacity:0.75}
@@ -997,6 +1054,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    mapa de trás. Quando ativa, o canvas de trás ganha .fl-congelado
    (pointer-events:none) — ele continua desenhado, só para de reagir. */
 .float-layer{position:absolute;inset:0;display:none;pointer-events:none;overflow:hidden;touch-action:none;z-index:3}
+.float-layer.float-layer-fixo{position:fixed;z-index:150}
 .float-layer.on{display:block;pointer-events:auto;cursor:grab}
 .float-layer.on:active{cursor:grabbing}
 .float-world{position:absolute;top:0;left:0;transform-origin:0 0}
@@ -1030,42 +1088,57 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    bater no tamanho mínimo do resize treme uma vez só, não gruda sem aviso. */
 .float-window-fechando{pointer-events:none;opacity:0;transform:scale(.94);
   transition:opacity .18s ease-out,transform .18s cubic-bezier(.4,0,.2,1)}
+/* Transições temporárias — nunca permanentes, porque left/top/height também
+   são escritos a cada frame durante arrasto/resize manual, e uma transição
+   ativa nesse momento faria a janela "atrasar" atrás do dedo/mouse. */
+.float-window-reclamp{transition:left .25s cubic-bezier(.22,1,.36,1),top .25s cubic-bezier(.22,1,.36,1)}
+.float-window-crescendo{transition:height .28s cubic-bezier(.22,1,.36,1),top .28s cubic-bezier(.22,1,.36,1)}
 @keyframes flPouso{0%{transform:scale(1)}45%{transform:scale(1.025)}100%{transform:scale(1)}}
 .float-window-pousou{animation:flPouso .2s cubic-bezier(.34,1.56,.64,1)}
 @keyframes flLimite{0%,100%{transform:translateX(0)}30%{transform:translateX(-2px)}70%{transform:translateX(2px)}}
 .float-window-limite{animation:flLimite .14s ease-in-out}
-/* Fase 2c — a janela flutuante nasce "resumida": só título + texto. O resto
-   (ações, conversar/transformar, tags) fica atrás do MESMO chevron que o
-   app já usa pra recolher cabeçalho de card no celular (toggleChCollapse/
-   .ch-open) — só que aqui funciona em qualquer largura de tela, e ao
-   contrário do celular o título (.sname-badge) continua visível recolhido:
-   é o que identifica qual card é aquele, flutuando sozinho na tela. */
-.float-window .card .ch-mode-badge{border:1px solid var(--ca,var(--accent));cursor:pointer}
-.float-window .card .ch-mode-badge-label{display:none}
-.float-window .card .ch-mode-badge-menu{display:inline}
-.float-window .card .ch-mode-chev{display:inline-flex;transition:transform .18s cubic-bezier(.4,0,.2,1)}
-.float-window .card.ch-open .ch-mode-chev{transform:rotate(180deg)}
-.float-window .card .ch-left{cursor:pointer}
-.float-window .card .ch-mode-badge:active,
-.float-window .card .ch-left:active{transform:scale(.97)}
-.float-window .card:not(.ch-open) .ca-wrap,
-.float-window .card:not(.ch-open) .spk-stats,
-.float-window .card:not(.ch-open) .spk-rename-row,
-.float-window .card:not(.ch-open) .conversa-bar,
-.float-window .card:not(.ch-open) .cpanel-wrap-tags,
-.float-window .card:not(.ch-open) .tag-suggestions,
-.float-window .card:not(.ch-open) .ext-panel,
-.float-window .card:not(.ch-open) .vt-panel{display:none}
-.float-window .card:not(.ch-open) .ch-left .badge.diar,
-.float-window .card:not(.ch-open) .ch-left .badge.pin,
-.float-window .card:not(.ch-open) .ch-left .rec-rank{display:none}
+/* ── Recolher cabeçalho + rodapé do card — UNIVERSAL agora: qualquer
+   largura, qualquer visualização (lista, masonry, flutuante, Órbita,
+   Fluxograma). Antes existiam duas cópias quase iguais desta regra — uma
+   só dentro de janela flutuante, outra só abaixo de 640px — e por isso o
+   card normal da lista em desktop/iPad nunca teve essa opção (a reclamação
+   do Rafa: funcionava no Windows antes de existir e parou de existir
+   quando ele testou). toggleChCollapse() não tem mais guard de contexto —
+   função e CSS valem em qualquer lugar; só o ESTADO INICIAL (nasce aberto
+   ou já recolhido) muda por contexto, decidido no JS que monta o card.
+   O título (.sname-badge) fica visível mesmo recolhido — é o que identifica
+   qual card é aquele numa lista de várias linhas finas. */
+.card:not(.focus-active) .ch-mode-badge{border:1px solid var(--ca,var(--accent));cursor:pointer;position:relative}
+.card:not(.focus-active) .ch-mode-badge-label{display:none}
+.card:not(.focus-active) .ch-mode-badge-menu{display:inline}
+.card:not(.focus-active) .ch-mode-chev{display:inline-flex;transition:transform .18s cubic-bezier(.4,0,.2,1)}
+.card.ch-open .ch-mode-chev{transform:rotate(180deg)}
+.card:not(.focus-active) .ch-left{cursor:pointer}
+.card:not(.focus-active) .ch-mode-badge:active,
+.card:not(.focus-active) .ch-left:active{transform:scale(.97)}
+/* Alvo de toque mínimo (Apple 44pt / Material 48dp) sem engordar o badge
+   visualmente — a área clicável estica além do que se vê, o badge continua
+   do tamanho de sempre. */
+.card:not(.focus-active) .ch-mode-badge::after{content:'';position:absolute;top:50%;left:50%;width:var(--card-tap-min);height:var(--card-tap-min);transform:translate(-50%,-50%)}
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .ca-wrap,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .spk-stats,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .spk-rename-row,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .conversa-bar,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .cpanel-wrap-tags,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .cf,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .tag-suggestions,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .ext-panel,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .vt-panel{display:none}
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.diar,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin,
+.card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{display:none}
 /* Revelar com intenção, não piscar: cada bloco nasce de opacity 0 + um
-   pouco acima do lugar, com um cascatinha de 30ms entre eles — pouco
+   pouco acima do lugar, com uma cascatinha de 30ms entre eles — pouco
    demais pra perceber como "atraso", o bastante pra não parecer um flash. */
 @keyframes flChReveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.float-window .card.ch-open .ca-wrap{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1)}
-.float-window .card.ch-open .conversa-bar{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .03s backwards}
-.float-window .card.ch-open .cpanel-wrap-tags{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .06s backwards}
+.card.ch-open .ca-wrap{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1)}
+.card.ch-open .conversa-bar{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .03s backwards}
+.card.ch-open .cpanel-wrap-tags{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .06s backwards}
 /* Fase 5 — 8 alças finas nas bordas/cantos, invisíveis até o hover. Cantos
    maiores (14px) porque são o alvo mais difícil de acertar com o dedo. */
 .fl-rz{position:absolute;z-index:4}
@@ -2095,42 +2168,19 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 /* ── FASE 3 — cabeçalho interno do card recolhido (só mobile) ──
    Cada card na Lista/Masonry nasce com o .ch numa linha fina (~40px): badge
    do provedor + badge do modo + hora + chevron. O resto (ações do
-   .ca-wrap, controles de locutor/diarização, fileira de tags) só aparece
-   com a classe .ch-open no card (tocar na linha ou no chevron liga/desliga
-   — ver toggleChCollapse() no script principal). O texto (.cb/.roteiro-view)
-   nunca é tocado por este bloco — continua logo abaixo da linha recolhida.
-   Mesma ideia do toggle de recolher cabeçalho que já existe no Modo
-   Documento (hdr-folded/#docHdrFoldBtn, ~linha 220), só que por card, sem
-   persistir em localStorage, e por isso :not(.focus-active) abaixo — nunca
-   mexe no card enquanto ele está aberto no Modo Documento (visualização
-   diferente, com seu próprio recolhimento). :not(.proc-card) porque o
-   card de "processando" já nasce numa linha só, sem .ca-wrap. */
-@media(max-width:640px){
-  /* :not(.focus-active) aqui também — sem isso o chevron aparecia flutuando
-     (inerte, sem função) até dentro do Modo Documento, que nunca deveria
-     saber que este recurso existe. */
-  .card:not(.focus-active) .ch-mode-badge{border:1px solid var(--ca,var(--accent));cursor:pointer}
-  .card:not(.focus-active) .ch-mode-badge-label{display:none}
-  .card:not(.focus-active) .ch-mode-badge-menu{display:inline}
-  .card:not(.focus-active) .ch-mode-chev{display:inline-flex}
-  .card.ch-open .ch-mode-chev{transform:rotate(180deg)}
-  .card:not(.focus-active) .ch-left{cursor:pointer}
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ca-wrap,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .spk-stats,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .spk-rename-row,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .conversa-bar,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ctags,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .tag-suggestions,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ext-panel,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .vt-panel{display:none}
-  /* Dentro do .ch-left recolhido, só provedor + modo + hora + chevron ficam
-     visíveis — os demais badges (diarizado/tipo/nome de sessão/fixado) e o
-     selo de "recente" somem até expandir. */
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.diar,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .sname-badge,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin,
-  .card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{display:none}
-}
+   .ca-wrap, controles de locutor/diarização, fileira de tags, rodapé de
+   contagem) só aparece com a classe .ch-open no card (tocar na linha ou no
+   chevron liga/desliga — ver toggleChCollapse() no script principal). O
+   texto (.cb/.roteiro-view) nunca é tocado por este bloco — continua logo
+   abaixo da linha recolhida. Mesma ideia do toggle de recolher cabeçalho
+   que já existe no Modo Documento (hdr-folded/#docHdrFoldBtn, ~linha 220),
+   só que por card, sem persistir em localStorage.
+   As regras de CSS (mostrar/esconder o chevron, animar a revelação) agora
+   moram um bloco só, sem media query — ver comentário "UNIVERSAL" logo
+   acima de .ch-mode-badge (perto de .float-window). Fica aqui só o que é
+   de fato específico de largura: nada, no momento — o antigo bloco
+   `@media(max-width:640px)` que vivia aqui foi removido por estar
+   duplicado com aquele bloco universal. */
 
 /* ── FASE 4 — "pulos do gato" (só mobile) ──
    4a (swipe no Modo Documento) e 4b (haptics) não têm CSS próprio — são só
@@ -3688,7 +3738,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.17.01';
+const VOX_VERSION='2026.08.17.02';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5368,7 +5418,7 @@ function applyView(){
   const cl=document.getElementById('cardsList');
   const isFocusLike=viewMode==='doc';
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
-  cl.classList.remove('masonry','focus-mode');
+  cl.classList.remove('masonry','focus-mode','masonry-preview');
   document.body.classList.toggle('doc-mode',viewMode==='doc');
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-focus',isFocusLike));
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-masonry',viewMode==='masonry'));
@@ -5385,6 +5435,10 @@ function applyView(){
   const viewIcon=document.getElementById('viewIcon'),viewLbl=document.getElementById('viewLabel');
   if(viewMode==='masonry'){
     cl.classList.add('masonry');if(cl.style.display!=='none')cl.style.display='block';
+    // Miniatura de leitura só no toque (celular/iPad) — no mouse (Windows/
+    // Mac) o Masonry continua editável direto, como sempre foi. "No Windows
+    // está funcionando, não mexe" — pedido explícito do Rafa.
+    cl.classList.toggle('masonry-preview',_voxToque());
     if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="8" height="11" rx="2"/><rect x="13" y="3" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><rect x="3" y="17" width="8" height="4" rx="2"/></svg>';
     if(viewLbl)viewLbl.textContent=t('Masonry');
   }else if(isFocusLike){
@@ -5398,6 +5452,25 @@ function applyView(){
     if(viewLbl)viewLbl.textContent=t('Lista');
   }
 }
+// Masonry em toque: a caixa de texto vira miniatura (pointer-events:none,
+// ver CSS .masonry-preview) — tocar nela abre a mesma janela flutuante que
+// já existe em qualquer outra visualização, em vez de editar ali na grade
+// apertada. Delegado em document (não em #cardsList) porque roda uma vez só
+// e não depende de quando os cards são criados.
+document.addEventListener('click',(e)=>{
+  const cl=document.getElementById('cardsList');
+  if(!cl||!cl.classList.contains('masonry-preview'))return;
+  const cb=e.target.closest('.cb');
+  if(!cb||!cl.contains(cb))return;
+  const card=cb.closest('.card');
+  if(!card||card.classList.contains('proc-card')||card.classList.contains('focus-active'))return;
+  // Fora da Órbita/Fluxograma a camada de flutuantes nunca foi "acoplada"
+  // em lugar nenhum — #floatWorld não existia pra janela nenhuma nascer
+  // dentro. Acopla ao body (position:fixed — ver _flAcoplarCamada) antes de
+  // abrir.
+  _flAcoplarCamada(document.body);
+  _flAbrirCard(card.id,card);
+});
 // Card atualmente aberto no Modo Foco/Documento — usado pelos botões da
 // toolbar do Modo Documento pra saber em qual card agir.
 function _docCardId(){return getFocusCards()[focusCardIdx]?.id}
@@ -5510,7 +5583,16 @@ function setFontSize(s){
   document.getElementById('cchat-fz'+s.toUpperCase())?.classList.add('fz-on');
 }
 function loadFontSize(){
-  const s=localStorage.getItem('vox_fontsize')||'m';
+  const salvo=localStorage.getItem('vox_fontsize');
+  // Sem escolha salva: o padrão muda por aparelho, não é sempre 'm'. Mesma
+  // direção que a Apple documenta (Human Interface Guidelines — Typography):
+  // o corpo de leitura padrão é MENOR em tela grande com mouse (macOS:
+  // 13pt) do que em toque (iOS/iPadOS: 17pt) — distância dos olhos e
+  // densidade de informação são diferentes. 's'/'m' do Vox (13px/15px)
+  // seguem a mesma direção sem redefinir os três tamanhos que já existem —
+  // só o ponto de partida. Os botões A·A·A continuam subindo/descendo a
+  // partir daqui, pra quem precisa de mais ou menos letra.
+  const s=salvo||(_voxToque()?'m':'s');
   setFontSize(s);
 }
 
@@ -6061,7 +6143,22 @@ let _flPanAtivo=false,_flPanStartX=0,_flPanStartY=0,_flOrigX=0,_flOrigY=0;
 let _flPinchDist=null,_flPinchStartS=1;
 let _flAbertas=[];       // [{id,x,y,w,h,z}] — janelas abertas nesta camada
 let _flZTop=1;
-const FL_LARG=340,FL_ALT=280;   // tamanho inicial de uma janela nova
+// Tamanho inicial de uma janela nova, por faixa de largura — antes era
+// 340×280 fixo em qualquer tela. Medido: 340px já dava uma medida de linha
+// decente (42 car./linha, dentro da faixa 40-60 do Material 3), mas a
+// proporção (1,21, quase quadrado) e a altura eram as mesmas num celular e
+// num monitor grande. Padrão do card flutuante — vale pra qualquer
+// visualização que usar janela flutuante (Masonry, Órbita, Fluxograma).
+function _flTamanhoPadrao(){
+  const w=window.innerWidth,h=window.innerHeight;
+  if(w<600)return{largura:Math.min(w-24,400),altura:Math.min(h*0.62,460)};
+  if(w<840)return{largura:400,altura:440};          // iPad retrato
+  if(w<1200)return{largura:440,altura:460};
+  return{largura:460,altura:480};                   // teto — não cresce mais
+}
+function FL_LARG_ATUAL(){return _flTamanhoPadrao().largura}
+function FL_ALT_ATUAL(){return _flTamanhoPadrao().altura}
+const FL_LARG=340,FL_ALT=280;   // fallback legado — só usado onde a chamada não tem acesso ao breakpoint
 
 // Todo card "existente", esteja ele na lista principal ou flutuando na
 // camada da frente (retirado fisicamente de #cardsList enquanto flutua —
@@ -6133,6 +6230,11 @@ function _flAcoplarCamada(wrapEl){
     layer.addEventListener('wheel',_flWheel,{passive:false});
   }
   if(wrapEl&&layer.parentElement!==wrapEl)wrapEl.appendChild(layer);
+  // Órbita/Fluxograma são modais de tamanho fixo — position:absolute dentro
+  // deles já cobre certinho. A lista principal ROLA (pode ter centenas de
+  // cards); absolute ali ficaria preso no topo do documento, e a janela
+  // "sumiria" pra quem tivesse descido a página. Fixed resolve.
+  if(wrapEl)layer.classList.toggle('float-layer-fixo',wrapEl===document.body);
 }
 function _flAplicarTransform(){
   const world=document.getElementById('floatWorld');
@@ -6148,6 +6250,7 @@ function _flAlternarCamada(){
   if(layer)layer.classList.toggle('on',_flAtiva);
   document.getElementById('fcCanvasWrap')?.classList.toggle('fl-congelado',_flAtiva);
   document.getElementById('orbPalco')?.classList.toggle('fl-congelado',_flAtiva);
+  document.getElementById('cardsList')?.classList.toggle('fl-congelado',_flAtiva);
   document.querySelectorAll('.fc-float-toggle-btn').forEach(b=>{
     b.classList.toggle('on',_flAtiva);
     b.title=_flAtiva?t('Voltar pro mapa'):t('Ver cards flutuantes');
@@ -6156,6 +6259,14 @@ function _flAlternarCamada(){
 }
 function _flPointerDown(e){
   if(e.target.closest('.float-window'))return; // deixa o clique/drag da janela acontecer normal
+  // Modo "ad hoc" (janela aberta a partir da lista/Masonry — .float-layer-fixo,
+  // ver _flAcoplarCamada): não é uma tela com várias janelas pra navegar por
+  // cima como a Órbita/Fluxograma, então tocar fora fecha, igual um modal —
+  // sem pan de canvas vazio nesse caso.
+  if(e.currentTarget.classList.contains('float-layer-fixo')){
+    [..._flAbertas].forEach(j=>_flFecharJanela(j.id));
+    return;
+  }
   try{e.currentTarget.setPointerCapture(e.pointerId)}catch(err){}
   _flPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(_flPointers.size===1){
@@ -6229,6 +6340,9 @@ function _flAbrirCard(id,origemEl){
   win.addEventListener('pointerdown',()=>_flTrazerFrente(id));
   win.appendChild(card);
   world.appendChild(win);
+  // Janela flutuante nasce sempre recolhida — título + texto, o resto atrás
+  // do chevron — não importa o estado que o card tinha na lista.
+  _chAplicarEstado(card,id,false);
 
   // Fase 7 — cada janela lembra a pasta em que foi aberta (não a de agora:
   // a pessoa pode navegar a lista pra outra pasta com a janela ainda
@@ -6243,10 +6357,11 @@ function _flAbrirCard(id,origemEl){
     // Cascata a partir do centro do viewport ATUAL da camada (convertendo
     // de tela pra coordenadas do mundo, descontando o pan/zoom próprios).
     const layerRect=layer.getBoundingClientRect();
-    const cx=(layerRect.width/2-_flX)/_flS-FL_LARG/2;
-    const cy=(layerRect.height/2-_flY)/_flS-FL_ALT/2;
+    const tam=_flTamanhoPadrao();
+    const cx=(layerRect.width/2-_flX)/_flS-tam.largura/2;
+    const cy=(layerRect.height/2-_flY)/_flS-tam.altura/2;
     const off=(_flAbertas.length%6)*28;
-    x=cx+off;y=cy+off;w=FL_LARG;h=FL_ALT;
+    x=cx+off;y=cy+off;w=tam.largura;h=tam.altura;
   }
   // Nem cascata nem posição salva podem nascer por cima do painel, nem fora
   // da área visível (posição salva de uma sessão com zoom/tela diferente
@@ -6403,7 +6518,10 @@ function _flStartWindowDrag(el,e0,isTouch){
 // Fase 5 — redimensionar pelas 8 alças da borda. `dir` é uma combinação de
 // n/s/e/w; bordas norte/oeste também deslocam left/top pra crescer "pro
 // lado certo" em vez de só esticar a partir do canto oposto.
-const FL_MIN_W=260,FL_MIN_H=200;
+// 260px dava 31 caracteres por linha — abaixo do piso de 40 do Material 3.
+// 300px fica em 37, ainda apertado mas aceitável como mínimo forçado pela
+// própria pessoa arrastando a borda (ela escolheu isso, não é o padrão).
+const FL_MIN_W=300,FL_MIN_H=220;
 const FL_RESIZE_DIRS=['n','s','e','w','ne','nw','se','sw'];
 function _flStartResize(win,dir,e0,isTouch){
   if(!win)return;
@@ -7031,7 +7149,34 @@ function fecharOrbital(){
 window.addEventListener('resize',()=>{
   const ov=document.getElementById('orbOverlay');
   if(ov&&ov.classList.contains('on'))_orbDesenhar();
+  _flReclampJanelas();
 });
+// Bug medido: janela flutuante aberta numa tela larga ficava INTEIRAMENTE
+// fora da área visível ao encolher a janela do navegador (ou rotacionar o
+// iPad) — nada reposicionava as janelas abertas no resize, só a Órbita.
+// Reclampa dentro do que a câmera enxerga agora, sem recriar a janela (só
+// muda left/top) — a classe temporária anima o reposicionamento sem
+// atrapalhar o arrasto manual, que também escreve left/top a cada frame e
+// não pode ter transição permanente (senão a janela "atrasa" atrás do dedo).
+let _flReclampT=null;
+function _flReclampJanelas(){
+  clearTimeout(_flReclampT);
+  _flReclampT=setTimeout(()=>{
+    if(!_flAbertas.length)return;
+    const limitePainel=_flLimitePainel();
+    _flAbertas.forEach(j=>{
+      const win=document.getElementById('floatwin-'+j.id);if(!win)return;
+      const visivel=_flLimiteVisivel(j.w,j.h);
+      const x=Math.max(visivel.minX,Math.min(j.x,Math.min(limitePainel.maxRight-j.w,visivel.maxX)));
+      const y=Math.max(visivel.minY,Math.min(j.y,Math.min(limitePainel.maxBottom-j.h,visivel.maxY)));
+      if(Math.round(x)===Math.round(j.x)&&Math.round(y)===Math.round(j.y))return;
+      j.x=x;j.y=y;
+      win.classList.add('float-window-reclamp');
+      win.style.left=x+'px';win.style.top=y+'px';
+      setTimeout(()=>win.classList.remove('float-window-reclamp'),260);
+    });
+  },120);
+}
 
 // ── ETIQUETAS DE COR ──
 // A pessoa marca o card com uma cor pra achar depois de bater o olho. É
@@ -10332,26 +10477,33 @@ function tagsBlock(id,tags){
     `<div class="ext-panel" id="reviewpanel-${id}"></div>`+
     `<div class="vt-panel" id="vtpanel-${id}"></div>`;
 }
-// FASE 3 (só mobile) — abre/fecha o cabeçalho recolhido de UM card (.ch-open
-// no elemento do card; ver CSS em @media(max-width:640px)). Chamado tanto
-// pelo tap na linha (.ch-left) quanto pelo badge do modo (.ch-mode-badge) — ele
-// faz event.stopPropagation() antes, senão os dois disparariam juntos e o
-// toggle cancelaria a si mesmo. Guard de matchMedia: fora do mobile a classe
-// .ch-open não tem nenhum efeito visual (CSS só existe dentro do @media),
-// então nem vale mexer no Set — evita, por exemplo, computar isto à toa em
-// cada clique acidental na fileira de badges do card no desktop.
-function toggleChCollapse(id){
-  const card=document.getElementById(id);if(!card)return;
-  // Fora do celular, este recolhimento só existe dentro de uma janela
-  // flutuante (Fase 2c) — no resto do desktop, o guard original continua
-  // valendo (a classe .ch-open não tem efeito visual nenhum fora desses
-  // dois contextos, então nem vale mexer no Set à toa).
-  const emJanelaFlutuante=!!card.closest('.float-window');
-  if(!emJanelaFlutuante&&!window.matchMedia('(max-width:640px)').matches)return;
-  // Modo Documento tem seu próprio recolhimento de cabeçalho (hdr-folded,
-  // toggleDocHeaderFold) — nunca mistura os dois numa mesma visualização.
-  if(card.classList.contains('focus-active'))return;
-  const open=!chOpenCards.has(id);
+// Abre/fecha o cabeçalho+rodapé recolhido de UM card (.ch-open no elemento
+// do card — CSS universal, ver comentário perto de .ch-mode-badge). Chamado
+// tanto pelo tap na linha (.ch-left) quanto pelo badge do modo
+// (.ch-mode-badge) — ele faz event.stopPropagation() antes, senão os dois
+// disparariam juntos e o toggle cancelaria a si mesmo.
+// Sem guard de contexto/largura: antes só funcionava dentro de janela
+// flutuante OU abaixo de 640px — por isso nunca existia no card normal da
+// lista em desktop/iPad (a reclamação do Rafa: "funcionava, testei no
+// Windows e não tinha a opção"). O que muda por contexto agora é só o
+// ESTADO INICIAL — ver _chPadraoAberto() e _chAplicarEstado().
+// Toque de verdade (celular/iPad), não só "tela estreita" — uma janela do
+// Windows redimensionada pequena continua sendo mouse. `pointer:coarse`
+// pergunta ao navegador qual é o apontador PRINCIPAL, não o tamanho da tela.
+function _voxToque(){
+  return window.matchMedia('(pointer:coarse)').matches;
+}
+function _chPadraoAberto(){
+  // No Masonry em toque, o card é miniatura de leitura — nasce sempre
+  // recolhido, editar abre na janela flutuante (ver applyView/_voxToque).
+  if(viewMode==='masonry'&&_voxToque())return false;
+  // Compacto (<600, Material 3) nasce recolhido — tela curta, cromo pesa
+  // mais. Medium+ nasce aberto — tem espaço de sobra. Janela flutuante
+  // força recolhido à parte, em _flAbrirCard (o card já existe quando entra
+  // lá, só muda de dono — não passa por aqui).
+  return window.matchMedia('(min-width:600px)').matches;
+}
+function _chAplicarEstado(card,id,open){
   if(open)chOpenCards.add(id);else chOpenCards.delete(id);
   card.classList.toggle('ch-open',open);
   const btn=card.querySelector('.ch-mode-badge');
@@ -10360,6 +10512,37 @@ function toggleChCollapse(id){
     const lbl=open?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card');
     btn.setAttribute('aria-label',lbl);btn.title=lbl;
   }
+  const win=card.closest('.float-window');
+  if(win)_flAjustarAlturaMenu(win,id,open);
+}
+// Bug medido: expandir o cromo dentro da janela flutuante não crescia a
+// janela — o textarea colapsava até o mínimo de 72px (108px de estouro
+// medido numa janela de 340×280). Agora a janela cresce até caber o
+// conteúdo (teto de 900px) e volta pra altura de antes ao recolher.
+function _flAjustarAlturaMenu(win,id,open){
+  const j=_flAbertas.find(x=>x.id===id);if(!j||!win)return;
+  const card=win.querySelector('.card');
+  win.classList.add('float-window-crescendo');
+  if(open){
+    j._hRecolhida=j.h;
+    requestAnimationFrame(()=>{
+      const necess=Math.min(900,(card?card.scrollHeight:j.h)+16);
+      const novaH=Math.max(j.h,necess);
+      win.style.height=novaH+'px';j.h=novaH;
+      setTimeout(()=>win.classList.remove('float-window-crescendo'),320);
+    });
+  }else{
+    const voltar=j._hRecolhida||j.h;
+    win.style.height=voltar+'px';j.h=voltar;
+    setTimeout(()=>win.classList.remove('float-window-crescendo'),320);
+  }
+}
+function toggleChCollapse(id){
+  const card=document.getElementById(id);if(!card)return;
+  // Modo Documento tem seu próprio recolhimento de cabeçalho (hdr-folded,
+  // toggleDocHeaderFold) — nunca mistura os dois numa mesma visualização.
+  if(card.classList.contains('focus-active'))return;
+  _chAplicarEstado(card,id,!chOpenCards.has(id));
 }
 // Recolhe/expande Tags ou Transformar dentro de UM card, no Modo Documento
 // mobile (mesmo padrão de toggleChCollapse/toggleSheet: guard de
@@ -12059,14 +12242,16 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
 
   const tagsHtml=tagsBlock(id,tags);
 
+  const chAberto=_chPadraoAberto();
   const el=document.createElement('div');
-  el.className=`card ${cc}${pinned?' pinned-card':''}`;el.id=id;
+  el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-open':''}`;el.id=id;
   el.dataset.type='gravacao';el.dataset.prov=provStr;el.dataset.cost=costUSD;
   el.dataset.ci=ci%PALETTE;el.dataset.dt=dt;el.dataset.tags=tags.join(',');
   el.dataset.diarized='true';el.dataset.utterances=JSON.stringify(utterances);
   el.dataset.speakers=JSON.stringify(speakers);el.dataset.view=view;
   el.dataset.sessionName=sn;el.dataset.mode=mode;el.dataset.pinned=pinned?'true':'false';el.dataset.folder=folder;
   el.dataset.chatHistory=chatHistory;
+  if(chAberto)chOpenCards.add(id);
 
   el.innerHTML=`
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir esta transcrição?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
@@ -12077,7 +12262,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar">${t('🔮 Diarizado')}</span>
-          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
+          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?'📌 '+escHtml(sn):t('+ nome')}</span>
           ${pinned?`<span class="badge pin">${t('📌 Fixado')}</span>`:''}
           <span class="ts">${timeStr} · ${dateStr}</span>
@@ -15024,10 +15209,12 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   const wc=text.length,ww=text.split(/\s+/).filter(w=>w).length;
   const tagsHtml=tagsBlock(id,tags);
 
+  const chAberto=_chPadraoAberto();
   const el=document.createElement('div');
-  el.className=`card ${cc}${pinned?' pinned-card':''}`;el.id=id;
+  el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-open':''}`;el.id=id;
   el.dataset.type=type;el.dataset.prov=provStr;el.dataset.cost=costUSD;el.dataset.ci=ci%PALETTE;el.dataset.dt=dt;
   el.dataset.tags=tags.join(',');el.dataset.sessionName=sn;el.dataset.mode=mode;el.dataset.pinned=pinned?'true':'false';el.dataset.speakers='{}';el.dataset.folder=folder;el.dataset.chatHistory=chatHistory;
+  if(chAberto)chOpenCards.add(id);
 
   el.innerHTML=`
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
@@ -15037,7 +15224,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
-          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="false" aria-label="${t('Expandir cabeçalho do card')}" title="${t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
+          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?escHtml(sn):t('+ nome')}</span>
           ${pinned?'<span class="badge pin">📌</span>':''}
           <span class="ts">${timeStr} · ${dateStr}</span>
