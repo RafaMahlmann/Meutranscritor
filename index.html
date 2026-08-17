@@ -439,14 +439,18 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
 .cards.masonry .card{width:100%}
 .cards.masonry .card.proc-card{grid-column:1/-1}
 .cards.masonry .card.pinned-card{grid-column:1/-1}
-/* 300px de coluna (padrão em :root) é bom no desktop mas largo demais pro
-   celular/tablet — testado ao vivo: um iPhone de 390px só cabe 1 coluna
-   de 300px, mas o print do Keep do Rafa mostra 2. As referências
-   pesquisadas (keep-bases-view) já apontavam isso: coluna por dispositivo,
-   150/200/240px — aqui a faixa de toque é quem lê pouco (miniatura, corta
-   texto), então uma coluna mais estreita não sacrifica leitura nenhuma. */
-@media(max-width:599px){:root{--card-masonry-col:160px}}
-@media(min-width:600px) and (max-width:1023px){:root{--card-masonry-col:220px}}
+/* 220px (padrão em :root) é bom no desktop/mouse mas largo demais pro
+   toque — testado ao vivo com o Rafa pedindo pra bater exatamente com o
+   Keep dele: iPad 3 colunas retrato / 4 paisagem, celular 2 retrato /
+   3 paisagem. 145px, só pra apontador grosso (pointer:coarse — nunca pega
+   uma janela pequena de mouse por engano) e até 1400px de largura, bate os
+   quatro números com o mesmo valor único — a diferença de coluna vem só da
+   largura disponível de cada aparelho/orientação, não precisa de regra por
+   orientação. Único caso que não fecha certinho: iPhone SE em paisagem
+   (aparelho pequeno/antigo) fica com 2 em vez de 3 — aceitável. Acima de
+   1400px mesmo em toque (tablet grande deitado, ~iPad Pro 12,9 paisagem
+   pra cima) volta a valer o 220px do desktop. */
+@media(pointer:coarse) and (max-width:1400px){:root{--card-masonry-col:145px}}
 /* Masonry em toque (celular/iPad — ver _voxToque()/applyView): o card vira
    miniatura de leitura, igual Keep/Anytype/Mini Notes — nenhuma referência
    pesquisada deixa a grade ser uma caixa de texto editável. Cortado em 8
@@ -3769,7 +3773,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.17.06';
+const VOX_VERSION='2026.08.17.07';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
