@@ -410,23 +410,29 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
 .empty-open-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 
 /* ── CARDS LAYOUT ──
-   Lista sem teto de largura media 112-142 caracteres por linha num monitor
-   largo (ideal: 40-60, Material 3) — o pior lugar de ler do app inteiro,
-   pior que o card flutuante de 340px "fixo e burro". Agora tem teto.
+   Lista é coluna única (sempre foi) — o que mudou é a LARGURA do
+   container. Cheguei a testar um teto de ~600px por card (pesquisa: 40-60
+   caracteres por linha lê melhor) e o Rafa comparou lado a lado com a
+   versão larga — preferiu a larga, de propósito, mesmo sabendo que a
+   linha fica mais comprida que o "ideal" de manual de tipografia: numa
+   tela grande, ficar preso numa coluna estreita com vazio enorme dos dois
+   lados incomoda mais do que a linha comprida. Por isso SEM teto de
+   largura por card aqui — só a largura do container (.wrap-masonry,
+   ligada também pra 'list' em applyView) decide.
 
-   Masonry usava column-width:340px (CSS multi-coluna), que ESTICA a coluna
-   pra preencher o espaço — medido: a mesma tela ia de 340 a 680px de
-   coluna dependendo só de a gaveta de pastas estar aberta, balançando a
-   medida de linha em 48%. Nenhuma referência pesquisada (Keep, Mini Notes,
-   keep-bases-view, Anytype) deixa a coluna esticar assim. Grid com coluna
-   fixa resolve os dois problemas de uma vez — e resolve de graça o bug da
-   gaveta, porque reage à largura real do container, não da janela.
+   Masonry (grade de verdade, colunas lado a lado) usava column-width:340px
+   (CSS multi-coluna), que ESTICA a coluna pra preencher o espaço — medido:
+   a mesma tela ia de 340 a 680px de coluna dependendo só de a gaveta de
+   pastas estar aberta, balançando a medida de linha em 48%. Nenhuma
+   referência pesquisada (Keep, Mini Notes, keep-bases-view, Anytype) deixa
+   a coluna esticar assim. Grid com coluna fixa resolve os dois problemas
+   de uma vez — e resolve de graça o bug da gaveta, porque reage à largura
+   real do container, não da janela.
    Trade-off consciente: perde o empacotamento tipo Pinterest (altura
    variável por coluna) que o multi-coluna tinha de graça — os cards agora
    alinham por linha. Se isso incomodar na prática, o próximo passo é um
    masonry de verdade em JS (como as referências fazem), não CSS. */
 .cards{display:flex;flex-direction:column;gap:14px}
-.cards:not(.masonry) .card{max-width:var(--card-measure-max);width:100%;margin-left:auto;margin-right:auto}
 .cards.masonry{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(var(--card-masonry-col),100%),1fr));gap:14px;align-items:start}
 .cards.masonry .card{width:100%}
 .cards.masonry .card.proc-card{grid-column:1/-1}
@@ -3761,7 +3767,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.17.04';
+const VOX_VERSION='2026.08.17.05';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5444,9 +5450,10 @@ function applyView(){
   cl.classList.remove('masonry','focus-mode','masonry-preview');
   document.body.classList.toggle('doc-mode',viewMode==='doc');
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-focus',isFocusLike));
-  // Lista e Masonry viram a mesma grade agora (ver ramo 'else' abaixo) —
-  // as duas precisam do wrap largo, senão a grade nasce espremida no
-  // max-width de 1100px pensado pra coluna única de texto.
+  // Lista continua coluna única (não é mais a grade do Masonry — revertido
+  // depois do Rafa comparar lado a lado), mas usa o mesmo wrap largo do
+  // Masonry: preferiu a Lista larga, cards ocupando a tela, a ficar presa
+  // no max-width de 1100px sobrando vazio enorme numa tela grande.
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-masonry',viewMode==='masonry'||viewMode==='list'));
   if(!isFocusLike)_unmountFocusEditor();
   document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
@@ -5480,16 +5487,17 @@ function applyView(){
     if(viewLbl)viewLbl.textContent=t('Documento');
     applyFocusCard();
   }else{
-    // Pedido do Rafa depois de comparar com o Keep de verdade (print de
-    // referência no iPad, no Windows e no celular): a Lista deixa de ser a
-    // pilha de cards em coluna única e passa a ser a mesma grade do
-    // Masonry — mais colunas quando a tela tem espaço, miniatura de leitura
-    // no toque. "Lista" e "Masonry" ficam visualmente iguais por ora; o
-    // botão de alternar ainda existe com os dois nomes (não removi),
-    // mas mostram a mesma coisa — vale simplificar pra um passo só depois.
-    cl.classList.add('masonry');
-    if(cl.style.display!=='none')cl.style.display='grid';
-    cl.classList.toggle('masonry-preview',_voxToque());
+    // Corrigido depois que o Rafa comparou lado a lado: Lista NÃO é a
+    // grade do Masonry (isso foi engano meu numa rodada anterior) — é
+    // coluna única, mas larga. O acidente que ele gostou foi o Masonry
+    // quebrado (bug do display:block) usando o container largo
+    // (.wrap-masonry, 1600px) numa coluna só, sem o teto de 600px que eu
+    // tinha posto — a Lista de antes ficava presa no wrap estreito de
+    // 1100px, sobrando vazio enorme numa tela grande. Fica então: coluna
+    // única (flex, como sempre foi) + container largo (wrap-masonry
+    // continua ligado pra 'list' também, ver toggle acima) + SEM teto de
+    // largura por card (--card-measure-max não se aplica mais aqui).
+    if(cl.style.display!=='none')cl.style.display='flex';
     if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>';
     if(viewLbl)viewLbl.textContent=t('Lista');
   }
@@ -10535,12 +10543,11 @@ function tagsBlock(id,tags){
 function _voxToque(){
   return window.matchMedia('(pointer:coarse)').matches;
 }
-// Lista e Masonry viram a mesma grade (ver applyView) — os dois nomes de
-// viewMode continuam existindo (localStorage, cycle do botão), mas quem
-// decide comportamento de grade (aqui e em applyView) precisa tratar os
-// dois iguais, senão um card criado com viewMode 'list' não nasce
-// recolhido como miniatura, mesmo com a tela mostrando uma grade.
-function _voxGradeAtiva(){return viewMode==='masonry'||viewMode==='list'}
+// Só o Masonry é grade de verdade — Lista voltou a ser coluna única
+// (larga, mas uma só), depois do Rafa comparar lado a lado e preferir a
+// Lista larga em vez de virar a mesma grade do Masonry (engano meu numa
+// rodada anterior, revertido).
+function _voxGradeAtiva(){return viewMode==='masonry'}
 function _chPadraoAberto(){
   // Na grade em toque, o card é miniatura de leitura — nasce sempre
   // recolhido, editar abre na janela flutuante (ver applyView/_voxToque).
