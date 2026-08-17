@@ -926,10 +926,26 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-node-arrow-open{transform:rotate(90deg)}
 .fc-node-raiz{border-color:var(--accent);border-width:2px;font-weight:700}
 .fc-node-card{background:transparent;border-style:dashed;font-size:12px}
-.fc-card-panel{display:none;position:absolute;top:0;right:0;bottom:0;width:min(360px,86vw);
+/* Antes era display:none↔flex — não anima. Agora fica sempre no layout,
+   escondido por opacidade/transform/pointer-events, então abrir e fechar
+   pode deslizar em vez de piscar (ver .fc-card-panel.on abaixo). 360px fixos
+   viravam quase metade da largura num iPad — 32vw acompanha a tela. */
+.fc-card-panel{display:flex;position:absolute;top:0;right:0;bottom:0;width:min(340px,32vw);
   background:var(--bg-card);border-left:1px solid var(--border);box-shadow:-8px 0 24px rgba(0,0,0,0.12);
-  flex-direction:column;z-index:2;pointer-events:auto}
-.fc-card-panel.on{display:flex}
+  flex-direction:column;z-index:2;pointer-events:none;opacity:0;visibility:hidden;
+  transform:translateX(18px);
+  transition:opacity .28s cubic-bezier(.22,1,.36,1),transform .28s cubic-bezier(.22,1,.36,1),visibility 0s .28s}
+.fc-card-panel.on{opacity:1;pointer-events:auto;visibility:visible;transform:translateX(0);
+  transition:opacity .28s cubic-bezier(.22,1,.36,1),transform .28s cubic-bezier(.22,1,.36,1)}
+/* Alça da gaveta — só aparece nos breakpoints de gaveta (celular/tablet
+   retrato, mais abaixo). Tocar alterna entre os dois degraus de altura
+   (--fc-gaveta-h), sem exigir gesto de arrastar — a HIG da Apple é
+   explícita: "they can also tap it to cycle through the detents". */
+.fc-panel-handle{display:none;width:100%;justify-content:center;align-items:center;
+  background:none;border:none;padding:9px 0 3px;cursor:pointer;flex-shrink:0}
+.fc-panel-handle-bar{width:36px;height:4px;border-radius:2px;background:rgba(127,132,148,.4);
+  transition:background .15s ease}
+.fc-panel-handle:hover .fc-panel-handle-bar{background:rgba(127,132,148,.65)}
 .fc-card-panel-hd{display:flex;align-items:flex-start;gap:8px;padding:14px 14px 10px;border-bottom:1px solid var(--border)}
 .fc-card-panel-hd strong{flex:1;font-size:13px;color:var(--text);word-break:break-word}
 .fc-card-panel-dt{font-size:11px;color:var(--text4);white-space:nowrap}
@@ -947,6 +963,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-lista{padding:6px}
 .fc-lista-item{display:flex;flex-direction:column;width:100%;border-radius:10px;padding:10px 10px;
   transition:background var(--transition)}
+/* Cascata de entrada — só nos primeiros itens (script limita a 8): reusa o
+   mesmo flChReveal dos cards flutuantes, mesmo raciocínio de "abriu" em vez
+   de "apareceu" sem virar demora perceptível num painel de dezenas de linhas. */
+.fc-lista-item-entra{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) backwards}
 .fc-lista-item:hover{background:var(--bg-input)}
 .fc-lista-item-corpo{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;
   background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:var(--font)}
@@ -1072,14 +1092,32 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 @keyframes flDropOkAnel{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
 .orb-no.fl-drop-sucesso .orb-anel{animation:flDropOkAnel .26s ease-out}
 .orb-no.fl-drop-alvo .orb-anel{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
-@media(max-width:640px){
+@media(max-width:599px){
   /* No celular o painel lateral cobriria o desenho inteiro e não daria pra
-     explorar. Vira gaveta de baixo, que é o padrão do aparelho e deixa
-     metade da árvore visível enquanto se lê. */
-  .fc-card-panel{width:100%;top:auto;height:58%;border-left:none;
+     explorar. Vira gaveta de baixo — 42% inicial (não 58%: acima disso a
+     órbita já não cabe no espaço livre, ver _orbTetoPiso) e 88% no degrau
+     alto, nunca 100%, pra uma fatia do mapa continuar visível mesmo cheia. */
+  .fc-card-panel{width:100%;top:auto;height:var(--fc-gaveta-h,42vh);border-left:none;
     border-top:1px solid var(--border);border-radius:16px 16px 0 0;
-    box-shadow:0 -8px 24px rgba(0,0,0,0.18)}
+    box-shadow:0 -8px 24px rgba(0,0,0,0.18);
+    transform:translateY(22px)}
+  .fc-card-panel.on{transform:translateY(0)}
   .fc-lista-item{padding:12px 10px}
+  .fc-panel-handle{display:flex}
+}
+/* iPad em retrato (e qualquer tela nessa faixa nessa orientação): a única
+   regra responsiva era a de celular acima — entre 600 e 1024px de largura o
+   painel herdava a coluna de desktop inteira (340px, quase metade de um
+   iPad em pé). Vira gaveta também aqui, mas centralizada e com teto de
+   largura, pra uma lista de títulos curtos não esticar numa linha só. */
+@media(min-width:600px) and (max-width:1023px) and (orientation:portrait){
+  .fc-card-panel{left:50%;right:auto;top:auto;width:min(520px,calc(100% - 32px));
+    height:var(--fc-gaveta-h,46vh);border-left:none;
+    border-top:1px solid var(--border);border-radius:16px 16px 0 0;
+    box-shadow:0 -8px 24px rgba(0,0,0,0.18);
+    transform:translate(-50%,22px)}
+  .fc-card-panel.on{transform:translate(-50%,0)}
+  .fc-panel-handle{display:flex}
 }
 /* ══ ÓRBITA DE PASTAS — Fase 1 ══
    Motor portado de _proto_orbital.html (maquete aprovada, não redesenhar).
@@ -1123,6 +1161,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .orb-trilha button:hover{color:var(--orb-texto);background:rgba(255,255,255,.06)}
 .orb-trilha button:last-child{color:var(--orb-texto);pointer-events:none}
 .orb-trilha .orb-sep{color:#474c5c;font-size:12px;flex-shrink:0;user-select:none}
+/* Com um item só (raiz), a trilha mostrava uma palavra sozinha em 49px de
+   altura — a mesma palavra que já está escrita dentro da bolha central.
+   Some até o primeiro mergulho, quando passa a ter função de verdade. */
+.orb-trilha-oculta{display:none}
 
 .orb-palco{
   position:relative;flex:1;overflow:hidden;touch-action:none;cursor:grab;
@@ -1130,6 +1172,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 }
 .orb-palco:active{cursor:grabbing}
 .orb-mundo{position:absolute;left:50%;top:50%;width:0;height:0;transform-origin:0 0}
+/* Classe temporária: só existe entre o painel abrir/fechar e o fim do
+   reenquadramento — sem ela o pan manual (arrastar) ficaria "borrachudo",
+   brigando com uma transição que nunca deveria estar ali durante o gesto. */
+.orb-mundo-reenquadrando{transition:transform 380ms var(--orb-curva)}
 .orb-aura{
   position:absolute;left:-230px;top:-230px;width:460px;height:460px;
   border-radius:50%;pointer-events:none;
@@ -1260,6 +1306,36 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .orb-vazio{top:calc(50% + 88px)}
   .orb-dica{white-space:normal;max-width:min(100%,300px)}
 }
+@media(max-width:599px){
+  /* Mesma faixa da gaveta do painel (acima): moldura escura encostando na
+     borda física da tela, sem os 16px de app claro vazando dos lados —
+     o .tx-overlay genérico tem padding:16px porque a maioria dos modais que
+     ele hospeda é um cartão pequeno centralizado; a órbita é mapa cheio. */
+  .orb-overlay{padding:0}
+}
+/* ══ Painel de cards com a identidade da órbita — sempre escuro, nunca o
+   branco do resto do app (que "vaza" quando o painel é emprestado do
+   Fluxograma). Escopo .orb-modal: não toca no painel quando ele é do
+   Fluxograma. Sombra ambiente sem direção fixa — funciona igual lateral
+   (desktop) ou por cima (gaveta), sem precisar duplicar regra por breakpoint. ══ */
+.orb-modal .fc-card-panel{
+  background:var(--orb-sat-alto);border-left-color:var(--orb-borda-sat);
+  box-shadow:0 0 40px -6px rgba(0,0,0,.65);
+}
+.orb-modal .fc-card-panel-hd{border-bottom-color:var(--orb-borda-sat)}
+.orb-modal .fc-card-panel-hd strong{color:var(--orb-texto)}
+.orb-modal .fc-card-panel-dt{color:var(--orb-texto4)}
+.orb-modal .fc-card-panel-close,.orb-modal .fc-voltar-btn{color:var(--orb-texto3)}
+.orb-modal .fc-card-panel-close:hover,.orb-modal .fc-voltar-btn:hover{color:var(--orb-texto)}
+.orb-modal .fc-card-panel-body{color:var(--orb-texto2)}
+.orb-modal .fc-card-panel-actions{border-top-color:var(--orb-borda-sat)}
+.orb-modal .fc-lista-item:hover{background:rgba(255,255,255,.05)}
+.orb-modal .fc-lista-nome{color:var(--orb-texto)}
+.orb-modal .fc-lista-nome:hover{background:rgba(255,255,255,.08)}
+.orb-modal .fc-lista-previa,.orb-modal .fc-lista-vazia{color:var(--orb-texto4)}
+.orb-modal .fc-lista-del-btn{border-color:var(--orb-borda-sat);color:var(--orb-texto3)}
+.orb-modal .fc-panel-handle-bar{background:rgba(255,255,255,.28)}
+.orb-modal .fc-panel-handle:hover .fc-panel-handle-bar{background:rgba(255,255,255,.5)}
 .folder-cfg-panel{display:none;background:var(--bg-input);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px}
 .folder-cfg-panel.on{display:block}
 .folder-cfg-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -3612,7 +3688,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.16.02';
+const VOX_VERSION='2026.08.17.01';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3673,7 +3749,8 @@ let I18N_EN={
 "Ver como órbita":"View as orbit",
 "Órbita de pastas":"Folder orbit",
 "nada aqui dentro ainda":"nothing in here yet",
-"toque numa bolinha pra entrar · toque no centro pra voltar":"tap a bubble to go in · tap the center to go back",
+"toque numa bolinha pra entrar · toque no centro pra ver o que tem dentro":"tap a bubble to go in · tap the center to see what's inside",
+"Redimensionar":"Resize",
 "Enquadrar":"Fit to screen",
 "Fechar":"Close",
 "…e mais {n}":"…and {n} more",
@@ -5615,6 +5692,7 @@ let _fcUltimoLayout=null;          // {nos,largura,altura} do último desenho
 let _fcCardAbertoId=null;
 let _fcPastaAberta=null;   // {id,nome} da pasta que o painel está mostrando
 let _fcItemExpandidoId=null; // item da lista com prévia estendida (200 vs 90 car.)
+let _fcGavetaExpandida=false; // degrau da gaveta no celular/tablet retrato (42-46% ↔ 88%)
 const _fcPointers=new Map();       // pointerId -> {x,y}, pra distinguir pan de pinça
 let _fcPanAtivo=false,_fcPanStartX=0,_fcPanStartY=0,_fcOrigX=0,_fcOrigY=0;
 let _fcPinchDist=null,_fcPinchStartS=1;
@@ -5834,7 +5912,7 @@ function _fcListarCards(id,nomePasta,manterExpansao){
   if(!manterExpansao)_fcItemExpandidoId=null;
   const cards=_fcCardsDaPasta(id);
   const corpo=cards.length
-    ? cards.map(c=>{
+    ? cards.map((c,i)=>{
         const sn=(c.dataset.sessionName||'').trim();
         const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
         const jaAberta=_flAbertas.some(j=>j.id===c.id);
@@ -5848,7 +5926,10 @@ function _fcListarCards(id,nomePasta,manterExpansao){
           <button type="button" class="fc-lista-float-btn" onclick="event.stopPropagation();_flAbrirCard('${escJs(c.id)}',this)">${ICO.expand} ${t('Abrir flutuante')}</button>
           <button type="button" class="fc-lista-del-btn" onclick="event.stopPropagation();_fcExcluirCard('${escJs(c.id)}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.trash}</button>
         </div>`:'';
-        return `<div class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}">
+        // Cascata de entrada só nos 8 primeiros — depois disso o atraso
+        // acumulado (20ms cada) já vira lentidão perceptível, não "abriu".
+        const entra=i<8?` fc-lista-item-entra" style="animation-delay:${i*20}ms`:'';
+        return `<div class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}${entra}">
           <button type="button" class="fc-lista-item-corpo" onclick="_fcAlternarExpansao('${escJs(c.id)}')">
             <span class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();_fcRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
             <span class="fc-lista-previa">${previaTxt}</span>
@@ -5857,13 +5938,26 @@ function _fcListarCards(id,nomePasta,manterExpansao){
         </div>`;
       }).join('')
     : `<div class="fc-lista-vazia">${escHtml(t('Nenhum card direto nesta pasta.'))}</div>`;
-  panel.innerHTML=`<div class="fc-card-panel-hd">
+  panel.innerHTML=`<button type="button" class="fc-panel-handle" onclick="_fcAlternarGaveta()" title="${t('Redimensionar')}" aria-label="${t('Redimensionar')}"><span class="fc-panel-handle-bar"></span></button>
+    <div class="fc-card-panel-hd">
       <strong>${escHtml(nomePasta||t('Pasta'))}</strong>
       <span class="fc-card-panel-dt">${cards.length} ${escHtml(t(cards.length===1?'card':'cards'))}</span>
       <button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button>
     </div>
     <div class="fc-card-panel-body fc-lista">${corpo}</div>`;
   panel.classList.add('on');
+  if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbReenquadrarCam(true);
+}
+// Tocar na alça alterna o degrau da gaveta (celular/tablet retrato) —
+// funciona por toque, sem exigir o gesto de arrastar (Apple HIG: "they can
+// also tap it to cycle through the detents"). --fc-gaveta-h só existe como
+// inline style enquanto expandida; removida, o CSS volta ao degrau baixo
+// (42vh ou 46vh, cada breakpoint com o seu).
+function _fcAlternarGaveta(){
+  const panel=document.getElementById('fcCardPanel');if(!panel)return;
+  _fcGavetaExpandida=!_fcGavetaExpandida;
+  if(_fcGavetaExpandida)panel.style.setProperty('--fc-gaveta-h','88vh');
+  else panel.style.removeProperty('--fc-gaveta-h');
 }
 // Clicar no corpo do item alterna a prévia entre 90 e 200 caracteres, ainda
 // dentro da coluna — um item por vez (acordeão), igual ao resto do painel.
@@ -5905,13 +5999,26 @@ function _fcAbrirCard(id){
   if(!panel)return;
   const p=_fcPastaAberta;
   const voltar=p?`<button type="button" class="fc-voltar-btn" onclick="_fcListarCards(${p.id===null?'null':"'"+escJs(p.id)+"'"},'${escJs(p.nome||'')}')" title="${t('Voltar')}" aria-label="${t('Voltar')}">←</button>`:'';
-  panel.innerHTML=`<div class="fc-card-panel-hd">${voltar}<strong class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="_fcRenomear('${escJs(id)}')">${escHtml(sn||t('+ nome'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
+  panel.innerHTML=`<button type="button" class="fc-panel-handle" onclick="_fcAlternarGaveta()" title="${t('Redimensionar')}" aria-label="${t('Redimensionar')}"><span class="fc-panel-handle-bar"></span></button>
+    <div class="fc-card-panel-hd">${voltar}<strong class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="_fcRenomear('${escJs(id)}')">${escHtml(sn||t('+ nome'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
   panel.classList.add('on');
+  if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbReenquadrarCam(true);
 }
 function _fcFecharPainel(){
   const panel=document.getElementById('fcCardPanel');
-  if(panel){panel.classList.remove('on');panel.innerHTML='';}
-  _fcCardAbertoId=null;_fcPastaAberta=null;
+  if(panel&&panel.classList.contains('on')){
+    panel.classList.remove('on');
+    // Espera a saída (opacity/transform, .28s no CSS) antes de esvaziar —
+    // limpar na hora deixava um retângulo em branco piscando durante a
+    // animação de saída. O setTimeout é salvaguarda: se por algum motivo o
+    // transitionend não disparar (painel já sem 'on', reduced-motion etc.),
+    // ainda assim limpa.
+    const limpar=()=>{panel.innerHTML=''};
+    panel.addEventListener('transitionend',limpar,{once:true});
+    setTimeout(limpar,320);
+  }
+  _fcCardAbertoId=null;_fcPastaAberta=null;_fcGavetaExpandida=false;
+  if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbReenquadrarCam(false);
 }
 // Renomear a partir do painel lateral (lista ou preview) e re-renderizar
 // o mesmo estado em que o painel estava, sem perder o lugar.
@@ -6411,6 +6518,8 @@ const ORB_ESC_SAT=0.72;          // satélite = 72% do foco
 
 let _orbFoco=null;               // id da pasta no centro (null = Tudo)
 let _orbCamX=0,_orbCamY=0,_orbCamS=1;
+let _orbCamSManual=false;        // true assim que a pessoa belisca/rola o zoom — trava o auto-ajuste
+let _orbReenqT=null;             // timer da classe de transição do reenquadramento
 let _orbSubindo=false;
 const _orbElems=new Map();       // id -> elemento vivo, pra reaproveitar e o CSS animar
 const _orbSaindo=new Map();      // id -> elemento em fuga, resgatável se voltar rápido
@@ -6468,12 +6577,22 @@ function _orbMedidas(){
     folga:peq?41:40,
   };
 }
+// Separado de _orbPosicoes porque _orbDesenhar também precisa de teto/piso
+// pra decidir se dá pra afastar a câmera em vez de deixar a órbita estourar
+// a borda do palco (achado medindo 360-375px de largura: mesmo com o painel
+// fechado, o motor escolhe o piso quando ele é maior que o teto, e as
+// bolhas laterais saem cortadas — bug independente do painel).
+function _orbTetoPiso(m){
+  const palcoR=_orbPalco.getBoundingClientRect();
+  return {
+    teto:Math.min(palcoR.width,palcoR.height)/2-m.rSat-14,
+    piso:m.rFoco+m.rSat+m.folga,
+  };
+}
 function _orbPosicoes(n){
   if(!n)return [];
   const m=_orbMedidas();
-  const palcoR=_orbPalco.getBoundingClientRect();
-  const teto=Math.min(palcoR.width,palcoR.height)/2-m.rSat-14;
-  const piso=m.rFoco+m.rSat+m.folga;
+  const {teto,piso}=_orbTetoPiso(m);
   const preciso=(m.porNo*n)/(2*Math.PI);
   const base=Math.max(piso,preciso);
   const raio=teto>base ? base+(teto-base)*0.38 : Math.max(piso,Math.min(base,teto));
@@ -6485,6 +6604,32 @@ function _orbPosicoes(n){
 function _orbAplicarCam(){
   _orbMundo.style.transform=`translate(${_orbCamX}px,${_orbCamY}px) scale(${_orbCamS})`;
 }
+// Câmera compensando o painel: desloca o mundo por metade da dimensão que o
+// painel ocupa, no eixo dele (largura na lateral, altura na gaveta) — sem
+// isso o mapa fica centrado no palco INTEIRO, ignorando que metade dele está
+// coberta, e o nó de foco nasce quase encostado na borda do painel.
+// Detecção lateral-vs-gaveta reaproveita um sinal que o CSS já dá: o painel
+// lateral tem top:0 fixo; nas gavetas (celular/tablet retrato) top vira auto.
+function _orbReenquadrarCam(aberto){
+  if(!_orbMundo||!_orbPalco)return;
+  const panel=document.getElementById('fcCardPanel');
+  let cx=0,cy=0;
+  if(aberto&&panel){
+    // getComputedStyle().top NUNCA volta a string 'auto' num elemento
+    // absolutamente posicionado — o navegador resolve pro valor usado em
+    // pixels mesmo quando o CSS diz `top:auto` (achado testando: as duas
+    // faixas de gaveta caíam sempre no ramo lateral). matchMedia contra os
+    // mesmos dois breakpoints da gaveta (CSS logo acima) é o sinal certo.
+    const gaveta=window.matchMedia('(max-width:599px),(min-width:600px) and (max-width:1023px) and (orientation:portrait)').matches;
+    const r=panel.getBoundingClientRect();
+    if(gaveta)cy=-r.height/2;else cx=-r.width/2;
+  }
+  _orbMundo.classList.add('orb-mundo-reenquadrando');
+  _orbCamX=cx;_orbCamY=cy;
+  _orbAplicarCam();
+  clearTimeout(_orbReenqT);
+  _orbReenqT=setTimeout(()=>_orbMundo&&_orbMundo.classList.remove('orb-mundo-reenquadrando'),400);
+}
 
 // ── desenho ── elementos que continuam existindo NÃO são recriados, só
 // ganham posição/escala novas — a transição do CSS faz o resto.
@@ -6494,6 +6639,16 @@ function _orbDesenhar(){
   const pos=_orbPosicoes(fs.length);
   const vistos=new Set();
   const cards=_orbCardsTodos();
+
+  // Zoom automático quando a órbita não cabe no espaço livre (teto < piso) —
+  // sem isso o motor estoura a borda do palco de propósito (era o comportamento
+  // antigo, ver _orbPosicoes). Só mexe enquanto a pessoa não beliscou/rolou o
+  // zoom manualmente (_orbCamSManual) — o dedo dela sempre vence o automático.
+  if(!_orbCamSManual){
+    const {teto,piso}=_orbTetoPiso(_orbMedidas());
+    const alvo=(piso>0&&teto<piso)?Math.max(0.55,teto/piso):1;
+    if(Math.abs(_orbCamS-alvo)>0.001){_orbCamS=alvo;_orbAplicarCam()}
+  }
 
   const jaEra=_orbElems.get(_orbChave(_orbFoco));
   const oX=jaEra?(+jaEra.dataset.x||0):0;
@@ -6690,6 +6845,10 @@ function _orbTrilha(){
     b.onclick=()=>_orbIrPara(b.dataset.id||null);
   });
   _orbTrilhaEl.scrollLeft=_orbTrilhaEl.scrollWidth;
+  // Com um item só (raiz) ela mostraria uma palavra sozinha — a mesma que já
+  // está escrita dentro da bolha central. Só ganha função a partir do
+  // primeiro mergulho.
+  _orbTrilhaEl.classList.toggle('orb-trilha-oculta',caminho.length<=1);
 }
 
 // Modelo do Finder, igual ao Fluxograma: tocar numa pasta mostra o conteúdo
@@ -6698,13 +6857,24 @@ function _orbTrilha(){
 function _orbAbrirPainelDoFoco(){
   const p=_orbAcha(_orbFoco);
   _fcListarCards(_orbFoco,(p&&p.name)||t('Tudo'));
+  _orbEsconderDica();
+}
+function _orbEsconderDica(){
+  const d=document.getElementById('orbDica');
+  if(d)d.style.opacity='0';
 }
 
 // ── interação ──
+// Satélite = entrar (mergulha). Centro = abrir/fechar o painel do foco
+// atual, sem navegar (subir agora é só pela trilha, que já faz exatamente
+// isso). Achado nos testes do Rafa: a órbita abria SEMPRE com o painel de
+// lista por cima do mapa — aqui e em _orbIrPara é onde isso se resolve, sem
+// tirar a leitura do conteúdo do lugar nenhum, só parando de forçá-la.
 function _orbTocar(id){
-  if(id===_orbFoco){                     // tocar no centro sobe um nível
-    const p=_orbAcha(_orbFoco);
-    if(p&&p.parentId!==undefined)_orbIrPara(p.parentId);
+  if(id===_orbFoco){
+    const panel=document.getElementById('fcCardPanel');
+    if(panel&&panel.classList.contains('on'))_fcFecharPainel();
+    else _orbAbrirPainelDoFoco();
     return;
   }
   _orbIrPara(id);
@@ -6712,12 +6882,18 @@ function _orbTocar(id){
 function _orbIrPara(id){
   if(id===_orbFoco)return;
   const atual=_orbAcha(_orbFoco);
+  const painelAberto=document.getElementById('fcCardPanel')?.classList.contains('on');
   _orbSubindo=!!(atual&&atual.parentId===id);
   _orbFoco=id;
   _orbCamX=0;_orbCamY=0;
   _orbAplicarCam();
   _orbDesenhar();
-  _orbAbrirPainelDoFoco();
+  // O painel só acompanha a navegação se já estava aberto — abrir de novo do
+  // zero a cada mergulho era o que fazia a órbita nunca mostrar só o mapa.
+  // Se estava aberto, refaz o conteúdo pro foco novo (não-modal: navegar no
+  // mapa atualiza a gaveta/painel em vez de fechar e reabrir).
+  if(painelAberto)_orbAbrirPainelDoFoco();
+  _orbEsconderDica();
   // Sincronia com o resto do app: a pasta visitada também abre no painel
   // lateral (e no Fluxograma), pelo mesmo Set de expansão — um conceito só.
   if(id!==null&&!folderExpanded.has(id)){
@@ -6739,6 +6915,10 @@ function _orbPointerDown(e){
   // inteiro, e o botão de dentro nunca termina de disparar o onclick dele.
   // Achado testando com clique real de mouse (Playwright), não com .click().
   if(e.target.closest('.orb-no, .fc-card-panel, .float-layer'))return;
+  // Um arrasto de verdade começando agora cancela na hora qualquer
+  // reenquadramento de câmera em andamento (Recomendação 3) — senão o pan
+  // "briga" com a transição e fica borrachudo.
+  if(_orbMundo)_orbMundo.classList.remove('orb-mundo-reenquadrando');
   // setPointerCapture pode lançar (NotFoundError) — sem o try/catch o gesto
   // morre em silêncio antes mesmo de registrar o ponteiro no Map.
   try{_orbPalco.setPointerCapture(e.pointerId)}catch(err){}
@@ -6757,6 +6937,7 @@ function _orbPointerMove(e){
     const a=[..._orbPts.values()];
     const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
     _orbCamS=Math.min(2.2,Math.max(0.45,_orbPinchS*(d/_orbPinch)));
+    _orbCamSManual=true;               // o dedo da pessoa sempre vence o auto-ajuste
     _orbAplicarCam();return;
   }
   if(_orbPan){_orbCamX=_orbOX+(e.clientX-_orbPX);_orbCamY=_orbOY+(e.clientY-_orbPY);_orbAplicarCam()}
@@ -6770,10 +6951,11 @@ function _orbPointerUp(e){
 function _orbWheel(e){
   e.preventDefault();
   _orbCamS=Math.min(2.2,Math.max(0.45,_orbCamS*(e.deltaY<0?1.1:0.9)));
+  _orbCamSManual=true;
   _orbAplicarCam();
 }
 function _orbEnquadrar(){
-  _orbCamX=0;_orbCamY=0;_orbCamS=1;_orbAplicarCam();
+  _orbCamX=0;_orbCamY=0;_orbCamS=1;_orbCamSManual=false;_orbAplicarCam();
 }
 
 function abrirOrbital(){
@@ -6805,7 +6987,7 @@ function abrirOrbital(){
           </svg>
         </div>
         <div class="orb-vazio" id="orbVazio">${escHtml(t('nada aqui dentro ainda'))}</div>
-        <div class="orb-dica-wrap"><span class="orb-dica" id="orbDica">${escHtml(t('toque numa bolinha pra entrar · toque no centro pra voltar'))}</span></div>
+        <div class="orb-dica-wrap"><span class="orb-dica" id="orbDica">${escHtml(t('toque numa bolinha pra entrar · toque no centro pra ver o que tem dentro'))}</span></div>
       </div>
     </div>`;
     document.body.appendChild(ov);
@@ -6821,18 +7003,21 @@ function abrirOrbital(){
     _orbPalco.addEventListener('pointerup',_orbPointerUp);
     _orbPalco.addEventListener('pointercancel',_orbPointerUp);
     _orbPalco.addEventListener('wheel',_orbWheel,{passive:false});
-    setTimeout(()=>{const d=document.getElementById('orbDica');if(d)d.style.opacity='0'},6000);
+    // Antes a dica sumia sozinha aos 6s, tivesse a pessoa tocado em algo ou
+    // não. Agora fica até o primeiro toque de verdade (_orbEsconderDica, em
+    // _orbIrPara/_orbTocar) — reaparece a cada abertura nova, ver abaixo.
   }
   // O painel de cards e a camada de cards flutuantes são compartilhados com
   // o Fluxograma — só se movem de dono.
   _fcAcoplarPainel(_orbPalco);
   _flAcoplarCamada(_orbPalco);
+  _fcFecharPainel();          // garante o mapa limpo na abertura — nunca a lista por cima
   ov.classList.add('on');
+  const dica=document.getElementById('orbDica');if(dica)dica.style.opacity='';
   _orbFoco=null;
-  _orbCamX=0;_orbCamY=0;_orbCamS=1;
+  _orbCamX=0;_orbCamY=0;_orbCamS=1;_orbCamSManual=false;
   _orbAplicarCam();
   _orbDesenhar();
-  _orbAbrirPainelDoFoco();
 }
 function fecharOrbital(){
   const ov=document.getElementById('orbOverlay');
