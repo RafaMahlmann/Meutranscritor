@@ -3612,7 +3612,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.16.01';
+const VOX_VERSION='2026.08.16.02';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4271,6 +4271,8 @@ let I18N_EN={
 "Entendi, abrir o site":"Got it, open the site",
 "Agora não":"Not now",
 "Já tenho a chave":"I already have the key",
+"Toque em \"Copiar link\" ou \"Compartilhar…\" aqui em cima primeiro — só depois de mandar de verdade pra pessoa é que faz sentido confirmar.":"Tap \"Copy link\" or \"Share…\" above first — it only makes sense to confirm after you've actually sent it to the person.",
+"Faltam {n} partes desta viagem — copie ou compartilhe cada uma (setas acima) antes de confirmar.":"{n} parts of this trip are still missing — copy or share each one (arrows above) before confirming.",
 "📱 <strong>Do outro lado:</strong> ela aponta a câmera pro QR (ou toca no link) e pronto — o material entra no Vox dela. Não precisa instalar nada nem criar conta antes.":"📱 <strong>On the other side:</strong> they point the camera at the QR (or tap the link) and that's it — the material lands in their Vox. No install, no account needed first.",
 "Do lado dela: é só apontar a câmera (se for QR) ou tocar no link — o Vox abre sozinho e o material cai lá dentro, pronto pra continuar. Não precisa ter conta, nem instalar nada antes.":"On their side: just point the camera (for a QR) or tap the link — Vox opens on its own and the material lands right in, ready to continue. No account, no install needed first.",
 "O que esse teste faz?":"What does this test do?",
@@ -13611,7 +13613,7 @@ function abrirSalaEnvio(folderId){
   const assin=_txpAssinatura(col);
   const retomando=salvo&&salvo.assin===assin&&(salvo.feitas||[]).length;
   const mudou=salvo&&salvo.assin!==assin;
-  _txpState={col,folderId,fase:'preparar',destino:salvo&&!mudou?(salvo.destino||'auto'):'auto',feitas:new Set(retomando?salvo.feitas:[]),mudou:!!mudou&&!!(salvo.feitas||[]).length};
+  _txpState={col,folderId,fase:'preparar',destino:salvo&&!mudou?(salvo.destino||'auto'):'auto',feitas:new Set(retomando?salvo.feitas:[]),copiadas:{},mudou:!!mudou&&!!(salvo.feitas||[]).length};
   _txpRenderPreparar();
 }
 function _txpRenderPreparar(){
@@ -13723,7 +13725,25 @@ function _txpRenderEnviar(){
         ${navigator.share?`<button class="tx-btn ghost" onclick="txpCompartilhar()">${t('Compartilhar…')}</button>`:''}
       </div>
     </div>
-    <div class="tx-row"><button class="tx-btn ${s.feitas.has(i+1)?'ghost':'primary'}" onclick="txpConfirmar()">${s.feitas.has(i+1)?t('✓ já enviada — ir pra próxima'):t('✓ Enviei esta — ir pra próxima')}</button></div>
+    ${(()=>{
+      // Achado pelo Rafa: ele tocava direto neste botão de baixo achando que
+      // JÁ mandava — sem nunca copiar ou compartilhar o link antes. O Vox
+      // marcava "enviada" mesmo sem nada ter saído do aparelho dele, e do
+      // outro lado nunca chegava nada. Agora o botão fica bloqueado até uma
+      // ação real (copiar/compartilhar) acontecer nesta viagem.
+      // Uma viagem pode vir picotada em várias fatias (QR pequeno demais pro
+      // texto inteiro) — só conta como "copiada" quando TODAS as fatias
+      // passaram por Copiar/Compartilhar, senão a pessoa manda a fatia 1 de 6
+      // e já marca a viagem inteira como enviada.
+      const marca=s.copiadas[i+1];
+      const pronta=marca===true||(marca instanceof Set&&marca.size>=urls.length);
+      const feita=s.feitas.has(i+1);
+      const label=feita?t('✓ já enviada — ir pra próxima'):t('✓ Enviei esta — ir pra próxima');
+      const faltamFatias=urls.length>1&&marca instanceof Set?urls.length-marca.size:0;
+      const dica=faltamFatias?t('Faltam {n} partes desta viagem — copie ou compartilhe cada uma (setas acima) antes de confirmar.').replace('{n}',faltamFatias):t('Toque em "Copiar link" ou "Compartilhar…" aqui em cima primeiro — só depois de mandar de verdade pra pessoa é que faz sentido confirmar.');
+      return `<div class="tx-row"><button class="tx-btn ${feita?'ghost':'primary'}" onclick="txpConfirmar()"${pronta||feita?'':' disabled'}>${label}</button></div>
+      ${!pronta&&!feita?`<div class="tx-sub" style="margin-top:-4px">${dica}</div>`:''}`;
+    })()}
     ${s.pass?`<div class="txp-lock-note">🔒 ${t('Protegida por senha')}</div>`:`<div class="txp-lock-note txp-open">${t('Sem senha: quem receber o link lê tudo — inclusive o app por onde ele passar')}</div>`}
     <div class="txp-alt">
       <div class="txp-alt-t">${t('Prefere de outro jeito?')}</div>
@@ -13736,17 +13756,26 @@ function _txpRenderEnviar(){
 function feitasPct(s,n){return n?(s.feitas.size/n)*100:0}
 function txpIr(k){const s=_txpState;if(!s)return;s.atual=k;s.fatia=0;_txpRenderEnviar()}
 function txpFatia(d){const s=_txpState;if(!s)return;s.fatia=Math.max(0,Math.min(s.urls.length-1,s.fatia+d));_txpRenderEnviar()}
+function _txpMarcarFatiaCopiada(s){
+  const idx=(s.atual||0)+1;
+  if(!(s.copiadas[idx] instanceof Set))s.copiadas[idx]=new Set();
+  s.copiadas[idx].add(s.fatia);
+}
 function txpCopiar(){
   const s=_txpState;if(!s||!s.urls)return;
-  navigator.clipboard.writeText(s.urls[s.fatia]).then(()=>toast(t('🔗 Link copiado!')));
+  navigator.clipboard.writeText(s.urls[s.fatia]).then(()=>{_txpMarcarFatiaCopiada(s);toast(t('🔗 Link copiado!'));_txpRenderEnviar()});
 }
 async function txpCompartilhar(){
   const s=_txpState;if(!s||!s.urls)return;
-  try{await navigator.share({url:s.urls[s.fatia]})}catch(e){}
+  try{await navigator.share({url:s.urls[s.fatia]});_txpMarcarFatiaCopiada(s);_txpRenderEnviar()}catch(e){}
 }
 function txpConfirmar(){
   const s=_txpState;if(!s)return;
-  s.feitas.add((s.atual||0)+1);
+  const idx=(s.atual||0)+1;
+  const marca=s.copiadas[idx];
+  const pronta=marca===true||(marca instanceof Set&&marca.size>=(s.urls||[]).length);
+  if(!pronta&&!s.feitas.has(idx))return; // clique direto ignorando o bloqueio visual
+  s.feitas.add(idx);
   _txpSalvar();
   const n=_txpViagens().length;
   if(s.feitas.size>=n){
@@ -13775,7 +13804,7 @@ async function txpDestino(d){
   // As viagens de um destino não são as do outro (o corte é por tamanho, e o
   // teto mudou). Manter as marcas de "já enviei" faria a tela mentir sobre o
   // que a outra pessoa recebeu — então zera, e avisa em vez de fazer calado.
-  s.feitas=new Set();s.atual=0;s.fatia=0;
+  s.feitas=new Set();s.copiadas={};s.atual=0;s.fatia=0;
   // Id novo: as viagens antigas e as novas não podem se misturar na fila de
   // quem recebe — mesmo id com contagem diferente daria pasta remendada.
   s.fid=Math.random().toString(36).slice(2,6);
@@ -13789,7 +13818,11 @@ function txpCopiarTodos(){
   const fid=s.fid||(s.fid=Math.random().toString(36).slice(2,6));
   const todas=_txpUrls(rem,fid,_txpTeto());
   const txt=todas.map((u,i)=>t('Viagem {i} de {n}:').replace('{i}',i+1).replace('{n}',rem.length)+'\n'+u.join('\n')).join('\n\n');
-  navigator.clipboard.writeText(txt).then(()=>toast(t('📋 {n} links copiados!').replace('{n}',todas.reduce((a,u)=>a+u.length,0))));
+  navigator.clipboard.writeText(txt).then(()=>{
+    for(let k=1;k<=rem.length;k++)s.copiadas[k]=true;
+    toast(t('📋 {n} links copiados!').replace('{n}',todas.reduce((a,u)=>a+u.length,0)));
+    _txpRenderEnviar();
+  });
 }
 // Rota do arquivo: mesmo formato do backup que o app já lê, com a mesma casca
 // cifrada do backup de chaves. Uma pasta de 65 cards dá ~73 KB — nada, e vai
@@ -13807,6 +13840,7 @@ async function txpArquivo(){
   }
   dl(JSON.stringify(out),`vox_pasta_${(s.col.nome||'pasta').replace(/[^\w\-]+/g,'_')}.json`);
   toast(s.pass?t('📁 Arquivo baixado (protegido pela mesma senha).'):t('📁 Arquivo baixado — sem senha, quem abrir lê tudo.'));
+  _txpViagens().forEach((_,k)=>s.copiadas[k+1]=true);
 }
 
 // ── O balãozinho do "?" ────────────────────────────────────────────────────
