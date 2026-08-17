@@ -3777,7 +3777,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.17.08';
+const VOX_VERSION='2026.08.17.09';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5522,15 +5522,29 @@ function _masonryAgendar(){
 function _masonryLayout(){
   const cl=document.getElementById('cardsList');
   if(!cl||!cl.classList.contains('masonry'))return;
-  const gap=14;
+  const gap=8; // Pinterest mediu 16, Keep é mais fechado — ficamos no meio-termo apertado que o Rafa pediu
   const containerW=cl.clientWidth;
   if(!containerW)return;
   const colWpx=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-masonry-col'))||220;
   const cols=Math.max(1,Math.floor((containerW+gap)/(colWpx+gap)));
   const trackW=cols>1?(containerW-(cols-1)*gap)/cols:containerW;
   const cards=[...cl.querySelectorAll(':scope > .card')];
+  const preview=cl.classList.contains('masonry-preview');
+  // Semente em terços áureos: em vez de todas as colunas nascerem em top:0
+  // (o que o Pinterest de verdade faz — testamos ao vivo, gap fixo, sem
+  // razão áurea nenhuma), a gente parte cada coluna de um atraso vertical
+  // que é sempre 0.618 do atraso da coluna anterior. Cria o desalinhamento
+  // "ordenado mas parece desordem" que o Rafa via no Pinterest, só que como
+  // identidade própria do Vox — replicável, não aleatório.
   const colH=new Array(cols).fill(0);
-  let y=0;
+  let unit=Math.min(46,trackW*0.14);
+  for(let i=0;i<cols;i++){colH[i]=Math.round(unit);unit*=0.618;}
+  let y=Math.max(0,...colH);
+  // Degraus de Fibonacci pra altura do card em miniatura (modo toque): em
+  // vez da altura seguir o texto pixel a pixel, ela arredonda pro próximo
+  // degrau de uma escala geométrica ×1.618 — poucas "classes" de tamanho,
+  // igual ao Keep, em vez de uma altura diferente pra cada nota.
+  const fiboSteps=[0.76,1.23,1.99,3.22,5.21].map(f=>Math.round(trackW*f));
   cards.forEach(card=>{
     const full=card.classList.contains('proc-card')||card.classList.contains('pinned-card');
     if(full){
@@ -5538,6 +5552,7 @@ function _masonryLayout(){
       // "quebra a coluna" que Mini Notes e keep-bases-view também fazem
       // pros fixados, pelo mesmo motivo (card alto demais bagunçaria o
       // resto do empacotamento se entrasse na disputa de coluna).
+      card.style.maxHeight='';card.style.overflow='';
       card.style.width=containerW+'px';
       card.style.left='0px';card.style.top=y+'px';
       const h=card.getBoundingClientRect().height||card.offsetHeight||0;
@@ -5548,7 +5563,16 @@ function _masonryLayout(){
       card.style.width=trackW+'px';
       card.style.left=(idx*(trackW+gap))+'px';
       card.style.top=colH[idx]+'px';
-      const h=card.getBoundingClientRect().height||card.offsetHeight||0;
+      card.style.maxHeight='';card.style.overflow='';
+      let h=card.getBoundingClientRect().height||card.offsetHeight||0;
+      if(preview){
+        // Só recorta em miniatura de toque — no mouse o card ainda é editável
+        // ali mesmo (Rafa pediu Windows/Mac intocados), recortar quebraria a edição.
+        const step=fiboSteps.find(s=>s>=h)||fiboSteps[fiboSteps.length-1];
+        card.style.maxHeight=step+'px';
+        card.style.overflow='hidden';
+        h=step;
+      }
       colH[idx]=colH[idx]+h+gap;
     }
   });
@@ -5584,7 +5608,7 @@ function _masonryDesativar(){
   const cl=document.getElementById('cardsList');
   if(!cl)return;
   cl.style.height='';
-  cl.querySelectorAll(':scope > .card').forEach(c=>{c.style.left='';c.style.top='';c.style.width=''});
+  cl.querySelectorAll(':scope > .card').forEach(c=>{c.style.left='';c.style.top='';c.style.width='';c.style.maxHeight='';c.style.overflow=''});
 }
 // Masonry em toque: a caixa de texto vira miniatura (pointer-events:none,
 // ver CSS .masonry-preview) — tocar nela abre a mesma janela flutuante que
