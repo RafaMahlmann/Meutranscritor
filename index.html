@@ -950,12 +950,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-lista-item:hover{background:var(--bg-input)}
 .fc-lista-item-corpo{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;
   background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:var(--font)}
-.fc-lista-float-btn{display:flex;align-items:center;gap:5px;align-self:flex-start;margin-top:8px;
+.fc-lista-acoes{display:flex;align-items:center;gap:6px;margin-top:8px}
+.fc-lista-float-btn{display:flex;align-items:center;gap:5px;
   background:var(--accent-glow);border:1px solid var(--accent);color:var(--accent);border-radius:8px;
   padding:5px 10px;font-size:11.5px;font-weight:700;font-family:var(--font);cursor:pointer;
   transition:all var(--transition)}
 .fc-lista-float-btn:hover{background:var(--accent);color:#fff}
 .fc-lista-float-btn svg{width:12px;height:12px}
+.fc-lista-del-btn{display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  width:26px;height:26px;background:none;border:1px solid var(--border2);color:var(--text3);
+  border-radius:8px;cursor:pointer;transition:all var(--transition)}
+.fc-lista-del-btn:hover{background:rgba(239,68,68,0.12);border-color:#ef4444;color:#ef4444}
+.fc-lista-del-btn svg{width:13px;height:13px}
 .fc-lista-nome{font-size:12.5px;font-weight:600;color:var(--text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;
   border-radius:6px;padding:1px 4px;margin:-1px -4px;align-self:flex-start;max-width:100%}
@@ -1301,6 +1307,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 @media(max-width:640px){
   .folders-bar.open{position:fixed;top:0;right:0;bottom:0;width:248px;border-radius:0;z-index:400;overflow-y:auto;padding:16px 12px;animation:slideInRight .25s ease}
   @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+}
+/* Sem esta faixa, o iPad (641–1024px) caía direto na .folders-bar base de
+   182px — mais estreita que os 248px que o celular ganha logo acima — e
+   mostrava MENOS do nome da pasta numa tela maior (achado pelo Rafa). */
+@media(min-width:641px) and (max-width:1024px){
+  .folders-bar{width:230px}
 }
 
 /* ── FOLDER TREE ── */
@@ -2870,7 +2882,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
              ela dentro do recolhido deixaria a pessoa sem ver onde colar. -->
         <div class="frow">
           <label><span data-i18n>Chave (se a API exigir)</span></label>
-          <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="txtKey" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('txtKey',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+          <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="txtKey" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="saveCfg(false)" onblur="_autoTestTxtKey()"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('txtKey',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
           <!-- Preenchido dinamicamente por applyTxtAIPreset — mesmo padrão "em
                poucos minutos" da Diarização, mas trocando de provedor conforme
                o cartão que a pessoa clicou lá embaixo. -->
@@ -3600,7 +3612,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.13.16';
+const VOX_VERSION='2026.08.16.01';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -3691,6 +3703,8 @@ let I18N_EN={
 "O Vox reconhece o tipo assim que soltar.":"Vox figures out the type as soon as you drop it.",
 "⚠️ Solte um arquivo de áudio, vídeo, texto ou projeto salvo (.json).":"⚠️ Drop an audio, video, text, or saved project (.json) file.",
 "Abrir flutuante":"Open floating",
+"Excluir \"{name}\"?":"Delete \"{name}\"?",
+"🗑️ Nota excluída":"🗑️ Note deleted",
 "Ver na lista":"View in list",
 "O que você quer perguntar sobre este texto?":"What do you want to ask about this text?",
 "💬 Pergunta: ":"💬 Question: ",
@@ -4256,6 +4270,9 @@ let I18N_EN={
 "Numa aba nova, sem sair daqui. Lá você cria uma chave de API e copia ela. Depois é só voltar e colar no campo que já vai estar esperando.":"In a new tab, without leaving here. There you create an API key and copy it. Then just come back and paste it into the field that will already be waiting.",
 "Entendi, abrir o site":"Got it, open the site",
 "Agora não":"Not now",
+"Já tenho a chave":"I already have the key",
+"📱 <strong>Do outro lado:</strong> ela aponta a câmera pro QR (ou toca no link) e pronto — o material entra no Vox dela. Não precisa instalar nada nem criar conta antes.":"📱 <strong>On the other side:</strong> they point the camera at the QR (or tap the link) and that's it — the material lands in their Vox. No install, no account needed first.",
+"Do lado dela: é só apontar a câmera (se for QR) ou tocar no link — o Vox abre sozinho e o material cai lá dentro, pronto pra continuar. Não precisa ter conta, nem instalar nada antes.":"On their side: just point the camera (for a QR) or tap the link — Vox opens on its own and the material lands right in, ready to continue. No account, no install needed first.",
 "O que esse teste faz?":"What does this test do?",
 "Ele manda uma pergunta bem curta e barata — \"responda apenas: ok\" — pro cérebro que você configurou aqui em cima, só pra confirmar que o endereço, o modelo e a chave estão certos. Tudo isso antes de você usar de verdade numa transformação, e sem gastar quase nada: a pergunta é minúscula, custa uma fração de centavo.<br><br>Ele testa <strong>um cérebro por vez</strong>, não todos juntos. Se por acaso esse não responder, o Vox tenta em silêncio outro que você já tenha configurado antes — por isso o resultado sempre mostra o nome de qual foi usado. Se aparecer um nome diferente do que você esperava, é porque o primeiro falhou.":"It sends a very short, cheap question — \"just answer: ok\" — to the brain you set up above, just to confirm the address, model and key are right. All before you actually use it in a real transformation, and at almost no cost: the question is tiny, a fraction of a cent.<br><br>It tests <strong>one brain at a time</strong>, not all of them together. If that one happens not to respond, Vox quietly tries another one you've already set up — that's why the result always shows the name of whichever one was used. If a different name shows up than you expected, it's because the first one failed.",
 "preço no site do serviço":"price on the service's website",
@@ -4419,6 +4436,8 @@ let I18N_EN={
 "{f} de {n} viagens chegaram":"{f} of {n} trips arrived",
 "Abra os outros links (ou escaneie os outros QRs) — em qualquer ordem. O Vox junta sozinho.":"Open the other links (or scan the other QRs) — in any order. Vox assembles it on its own.",
 "Chegou tudo. É só conferir e adicionar.":"Everything arrived. Just review and add.",
+"Nenhuma viagem chegou ainda aqui. Confira se está abrindo os links no mesmo navegador (ou app) onde você está vendo esta tela, um de cada vez.":"No trips have arrived here yet. Check that you're opening the links in the same browser (or app) where you're seeing this screen, one at a time.",
+"Cancelar recebimento":"Cancel receiving",
 "Ver o que já chegou":"See what arrived so far",
 "Conferir e adicionar":"Review and add",
 "Depois":"Later",
@@ -5823,13 +5842,16 @@ function _fcListarCards(id,nomePasta,manterExpansao){
         // Botão de "jogar pra flutuante" só nasce quando expandido — clicar no
         // item, de saída, só mostra mais texto ali mesmo na coluna; abrir uma
         // janela por cima é uma segunda decisão, com botão próprio.
-        const btnFloat=expandido?`<button type="button" class="fc-lista-float-btn" onclick="event.stopPropagation();_flAbrirCard('${escJs(c.id)}',this)">${ICO.expand} ${t('Abrir flutuante')}</button>`:'';
+        const acoes=expandido?`<div class="fc-lista-acoes">
+          <button type="button" class="fc-lista-float-btn" onclick="event.stopPropagation();_flAbrirCard('${escJs(c.id)}',this)">${ICO.expand} ${t('Abrir flutuante')}</button>
+          <button type="button" class="fc-lista-del-btn" onclick="event.stopPropagation();_fcExcluirCard('${escJs(c.id)}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.trash}</button>
+        </div>`:'';
         return `<div class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}">
           <button type="button" class="fc-lista-item-corpo" onclick="_fcAlternarExpansao('${escJs(c.id)}')">
             <span class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();_fcRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
             <span class="fc-lista-previa">${previaTxt}</span>
           </button>
-          ${btnFloat}
+          ${acoes}
         </div>`;
       }).join('')
     : `<div class="fc-lista-vazia">${escHtml(t('Nenhum card direto nesta pasta.'))}</div>`;
@@ -5847,6 +5869,26 @@ function _fcListarCards(id,nomePasta,manterExpansao){
 function _fcAlternarExpansao(id){
   _fcItemExpandidoId=(_fcItemExpandidoId===id)?null:id;
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+}
+// Excluir direto da lista lateral (Órbita/Fluxograma) — a lista lateral não
+// tem o .conf-overlay do card de verdade pra pedir confirmação inline (é um
+// elemento separado, leve, sem esse HTML todo duplicado), então usa confirm()
+// nativo, mesmo padrão já usado em deleteFolder(). Se o card estiver
+// flutuando no momento, limpa a janela ANTES de apagar — senão sobrava uma
+// moldura vazia (mesma classe de bug do #floatLayer travado).
+function _fcExcluirCard(id){
+  const card=document.getElementById(id);
+  const nome=(card?.dataset.sessionName||'').trim()||t('este card');
+  if(!confirm(t('Excluir "{name}"?').replace('{name}',nome)))return;
+  if(_flAbertas.some(j=>j.id===id)){
+    document.getElementById('floatwin-'+id)?.remove();
+    _flAbertas=_flAbertas.filter(j=>j.id!==id);
+    if(!_flAbertas.length&&_flAtiva)_flAlternarCamada();
+  }
+  doDelete(id);
+  if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
+  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+  toast(t('🗑️ Nota excluída'));
 }
 // Estado 2 do painel: o texto de um card, com volta pra lista de onde veio.
 function _fcAbrirCard(id){
@@ -6097,10 +6139,13 @@ function _flAbrirCard(id,origemEl){
     const off=(_flAbertas.length%6)*28;
     x=cx+off;y=cy+off;w=FL_LARG;h=FL_ALT;
   }
-  // Nem cascata nem posição salva podem nascer por cima do painel.
+  // Nem cascata nem posição salva podem nascer por cima do painel, nem fora
+  // da área visível (posição salva de uma sessão com zoom/tela diferente
+  // podia cair fora hoje).
   const limitePainel=_flLimitePainel();
-  x=Math.min(x,limitePainel.maxRight-w);
-  y=Math.min(y,limitePainel.maxBottom-h);
+  const visivelAbrir=_flLimiteVisivel(w,h);
+  x=Math.max(visivelAbrir.minX,Math.min(x,Math.min(limitePainel.maxRight-w,visivelAbrir.maxX)));
+  y=Math.max(visivelAbrir.minY,Math.min(y,Math.min(limitePainel.maxBottom-h,visivelAbrir.maxY)));
   const z=_flZTop++;
   win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';win.style.zIndex=z;
   _flAbertas.push({id,x,y,w,h,z,folder:folderKey});
@@ -6180,6 +6225,23 @@ function _flAlvoPastaEmPonto(x,y){
 // Fase 4 (mover) + Fase 6 (soltar em cima de uma pasta reatribui o card).
 // Delta de posição convertido por _flS: a 50% de zoom, mover o mouse 10px
 // na tela precisa mover a janela 20px no mundo.
+// Bug real relatado pelo Rafa: só havia limite pro lado do painel — arrastar
+// pra qualquer OUTRO canto (esquerda, cima, baixo fora do painel) deixava a
+// janela presa fora da área visível, sem handle nem ✕ pra trazer de volta.
+// Garante que pelo menos FL_MARGEM_VISIVEL px da janela continuam dentro do
+// que a câmera enxerga agora (mundo, descontando pan/zoom da camada).
+const FL_MARGEM_VISIVEL=72;
+function _flLimiteVisivel(winW,winH){
+  const layer=document.getElementById('floatLayer');
+  const r=layer?layer.getBoundingClientRect():{width:0,height:0};
+  const m=FL_MARGEM_VISIVEL;
+  return{
+    minX:(-_flX)/_flS+m-winW,
+    maxX:(r.width-_flX)/_flS-m,
+    minY:(-_flY)/_flS+m-winH,
+    maxY:(r.height-_flY)/_flS-m
+  };
+}
 function _flStartWindowDrag(el,e0,isTouch){
   const win=el.closest('.float-window');
   if(!win)return;
@@ -6195,8 +6257,10 @@ function _flStartWindowDrag(el,e0,isTouch){
     const{x,y}=coords(e);
     if(!ativo){if(Math.hypot(x-ox,y-oy)<4)return;ativo=true;win.classList.add('float-window-arrastando')}
     const limite=_flLimitePainel();
-    const nx=Math.min(origLeft+(x-ox)/_flS,limite.maxRight-winW);
-    const ny=Math.min(origTop+(y-oy)/_flS,limite.maxBottom-winH);
+    const visivel=_flLimiteVisivel(winW,winH);
+    let nx=origLeft+(x-ox)/_flS,ny=origTop+(y-oy)/_flS;
+    nx=Math.max(visivel.minX,Math.min(nx,Math.min(limite.maxRight-winW,visivel.maxX)));
+    ny=Math.max(visivel.minY,Math.min(ny,Math.min(limite.maxBottom-winH,visivel.maxY)));
     win.style.left=nx+'px';win.style.top=ny+'px';
     const j=_flAbertas.find(j=>j.id===id);if(j){j.x=nx;j.y=ny}
     const achado=_flAlvoPastaEmPonto(x,y);
@@ -8413,7 +8477,30 @@ function toggleExp(){
   if(!drop.classList.contains('on'))_renderExpCardSection();
   drop.classList.toggle('on');
 }
-function toggleHdMore(){document.getElementById('hdMoreDrop').classList.toggle('on')}
+// Antes o menu era posicionado por CSS relativo ao wrapper do botão — supondo
+// que o wrapper ficasse colado na borda direita da tela. No celular o cabeçalho
+// tem botões demais pra largura disponível e o wrapper acaba no meio da tela,
+// então o menu (284px) nascia com metade pra fora à esquerda. Calculando a
+// posição em px reais (fixed, relativo à janela) o menu sempre cabe, não
+// importa onde o botão termine sentado no layout.
+function toggleHdMore(){
+  const d=document.getElementById('hdMoreDrop');
+  const willOpen=!d.classList.contains('on');
+  d.classList.toggle('on',willOpen);
+  if(willOpen){
+    const btn=document.getElementById('btnHdMore');
+    const br=btn.getBoundingClientRect();
+    const w=Math.min(284,window.innerWidth-16);
+    const left=Math.max(8,Math.min(br.right-w,window.innerWidth-w-8));
+    d.style.position='fixed';
+    d.style.top=(br.bottom+8)+'px';
+    d.style.left=left+'px';
+    d.style.right='auto';
+    d.style.width=w+'px';
+    d.style.maxHeight=(window.innerHeight-br.bottom-24)+'px';
+    d.style.overflowY='auto';
+  }
+}
 function exportAll(fmt,onlyToday=false){
   document.getElementById('expDrop').classList.remove('on');
   const cards=[...document.querySelectorAll('.card:not(.proc-card)')].reverse();
@@ -9047,7 +9134,7 @@ function _confirmarAbrirSiteChave(nome,keyUrl){
     <div class="tx-sub" style="line-height:1.7">${t('Numa aba nova, sem sair daqui. Lá você cria uma chave de API e copia ela. Depois é só voltar e colar no campo que já vai estar esperando.')}</div>
     <div class="tx-row" style="flex-direction:column;gap:8px;margin-top:16px">
       <button class="tx-btn primary" onclick="closeTxOverlay();_abrirSiteChaveConfirmado()">${t('Entendi, abrir o site')}</button>
-      <button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Agora não')}</button>
+      <button class="tx-btn ghost" onclick="closeTxOverlay();_highlightKeyField('txtKey');document.getElementById('txtKey').focus()">${t('Já tenho a chave')}</button>
     </div></div>`;
   ov.classList.add('on');
 }
@@ -9101,6 +9188,15 @@ async function testTxtAI(){
   }catch(e){
     out.style.color='var(--danger)';out.textContent='❌ '+e.message;
   }
+}
+let _lastAutoTestedKey=null;
+// Cola a chave, sai do campo (Tab/clique fora) e o Vox já testa sozinho —
+// ninguém devia precisar lembrar de clicar em "Testar conexão" depois de colar.
+function _autoTestTxtKey(){
+  const v=document.getElementById('txtKey')?.value||'';
+  if(!v||v===_lastAutoTestedKey)return;
+  _lastAutoTestedKey=v;
+  testTxtAI();
 }
 function updateLocal100Badge(){
   const b=document.getElementById('local100Badge');if(!b)return;
@@ -13262,7 +13358,8 @@ function _txRenderResult(){
       <button class="tx-btn primary" onclick="txCopyLink()">🔗 ${t('Copiar link')}${!linkUrl&&n>1?` (${cur+1}/${n})`:''}</button>
       ${navigator.share?`<button class="tx-btn ghost" onclick="txShareLink()">${t('Compartilhar…')}</button>`:''}
     </div>
-    ${!linkUrl&&n>1?`<div class="tx-sub" style="margin-top:8px">${t('Texto grande até pro link único — envie os {n} links; na chegada o Vox remonta sozinho.').replace('{n}',n)}</div>`:''}`;
+    ${!linkUrl&&n>1?`<div class="tx-sub" style="margin-top:8px">${t('Texto grande até pro link único — envie os {n} links; na chegada o Vox remonta sozinho.').replace('{n}',n)}</div>`:''}
+    <div class="tx-tut" style="margin-top:10px">${t('📱 <strong>Do outro lado:</strong> ela aponta a câmera pro QR (ou toca no link) e pronto — o material entra no Vox dela. Não precisa instalar nada nem criar conta antes.')}</div>`;
 }
 function txNav(d){if(!_txState)return;_txState.part=Math.max(0,Math.min(_txState.urls.length-1,_txState.part+d));_txRenderResult()}
 function txCopyLink(){if(!_txState)return;const u=_txState.linkUrl||_txState.urls[_txState.part];navigator.clipboard.writeText(u).then(()=>toast(t('🔗 Link copiado!')))}
@@ -13614,6 +13711,7 @@ function _txpRenderEnviar(){
     <div class="txp-dest-t">${t('Por onde você vai mandar?')}</div>
     <div class="txp-dest">${Object.keys(TXP_DESTINOS).map(d=>`<button class="txp-dest-b${d===s.destino?' on':''}" onclick="txpDestino('${d}')">${TXP_DESTINOS[d].rot}${s.planos[d]?`<span>${t('{n} {rw}').replace('{n}',s.planos[d].length).replace('{rw}',t(s.planos[d].length===1?'viagem':'viagens'))}</span>`:'<span>—</span>'}</button>`).join('')}</div>
     <div class="txp-dica">${TXP_DESTINOS[s.destino].dica}</div>
+    <div class="tx-tut" style="margin-top:8px">${t('Do lado dela: é só apontar a câmera (se for QR) ou tocar no link — o Vox abre sozinho e o material cai lá dentro, pronto pra continuar. Não precisa ter conta, nem instalar nada antes.')}</div>
     <div class="txp-trilha">${trilha}</div>
     <div class="txp-conta">${t('{f} de {n} enviadas').replace('{f}',feitas).replace('{n}',n)}</div>
     <div class="txp-box">
@@ -13830,12 +13928,19 @@ function _txpTelaRecepcao(){
       ?`<div class="txp-barra"><div class="txp-barra-in" style="width:${Math.round(prontas.length/nr*100)}%"></div></div>`
       :Array.from({length:nr},(_,k)=>`<span class="txp-chip ${prontas.includes(k+1)?'done':'wait'}">${prontas.includes(k+1)?'✓':k+1}</span>`).join('')}</div>
     <div class="txp-conta">${t('{f} de {n} viagens chegaram').replace('{f}',prontas.length).replace('{n}',nr)}</div>
-    <div class="tx-sub">${faltam?t('Abra os outros links (ou escaneie os outros QRs) — em qualquer ordem. O Vox junta sozinho.'):t('Chegou tudo. É só conferir e adicionar.')}</div>
+    <div class="tx-sub">${prontas.length?(faltam?t('Abra os outros links (ou escaneie os outros QRs) — em qualquer ordem. O Vox junta sozinho.'):t('Chegou tudo. É só conferir e adicionar.')):t('Nenhuma viagem chegou ainda aqui. Confira se está abrindo os links no mesmo navegador (ou app) onde você está vendo esta tela, um de cada vez.')}</div>
     <div class="tx-row">
       <button class="tx-btn primary" onclick="txpAbrirRecebido()"${prontas.length?'':' disabled'}>${faltam?t('Ver o que já chegou'):t('Conferir e adicionar')}</button>
-      <button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Depois')}</button>
+      <button class="tx-btn ghost" onclick="${prontas.length?'closeTxOverlay()':'txpCancelarRecebimento(\''+fid+'\')'}">${prontas.length?t('Depois'):t('Cancelar recebimento')}</button>
     </div></div>`;
   ov.classList.add('on');
+}
+function txpCancelarRecebimento(fid){
+  let store={};
+  try{store=JSON.parse(localStorage.getItem('vox_txrx_pasta')||'{}')}catch(e){}
+  if(fid)delete store[fid];
+  try{localStorage.setItem('vox_txrx_pasta',JSON.stringify(store))}catch(e){}
+  closeTxOverlay();
 }
 function txpAbrirRecebido(){
   const {ent}=_txpRx||{};if(!ent)return;
