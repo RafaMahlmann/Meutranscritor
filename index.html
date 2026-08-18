@@ -114,9 +114,22 @@
    long-press nunca chega até o nosso código no iPhone. */
 .cdot-btn{width:15px;height:15px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid var(--border2);background:transparent;padding:0;transition:transform var(--transition),border-color var(--transition);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .cdot-btn:hover{transform:scale(1.25);border-color:var(--ca,var(--accent))}
+/* Área de toque invisível ao redor da bolinha em QUALQUER aparelho de toque,
+   não só abaixo de 640px como era: o iPad tem 810px de largura e é toque, e
+   ali a bolinha ficava com alvo real de 15x15px — agora que ela virou o
+   controle da ponta direita da linha, isso é acertar no escuro. O desenho
+   continua do mesmo tamanho; só o alvo cresce. */
+@media(pointer:coarse){
+  .cdot-btn{position:relative}
+  .cdot-btn::after{content:'';position:absolute;inset:-14px}
+}
 .card[data-tc] .cdot-btn{background:var(--ca);border-color:var(--ca)}
 .cdot-wrap{position:relative;display:inline-flex;align-items:center}
-.cdot-pop{display:none;position:absolute;top:calc(100% + 7px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:210;padding:10px;animation:fadeDown .15s ease;width:max-content}
+/* Ancorado pela DIREITA desde 18/08/2026: a bolinha passou a viver na ponta
+   direita da linha (pedido do Rafa), e com left:0 o seletor de cores crescia
+   pra fora da tela — medido vazando 103px num iPad de 810px. Cresce pra
+   dentro do card agora. */
+.cdot-pop{display:none;position:absolute;top:calc(100% + 7px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:210;padding:10px;animation:fadeDown .15s ease;width:max-content}
 .cdot-pop.on{display:block}
 .cdot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .cdot-sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;transition:transform var(--transition)}
@@ -878,6 +891,15 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 @keyframes conversaBarEnter{from{opacity:0;transform:scale(.95) translateY(4px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .conversa-bar.enter-once{animation:conversaBarEnter .35s cubic-bezier(.16,1,.3,1)}
 .conversa-btn{flex:1 1 auto;min-width:0;height:40px;border:1px solid var(--border2);background:var(--bg-input);color:var(--text2);border-radius:13px;padding:0 12px;font-size:12.5px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,color .15s,border-color .15s,transform .12s cubic-bezier(.22,1,.36,1)}
+/* BUG QUE EU CAUSEI (18/08/2026): troquei os emojis 💬/✨ por ícones do ICO
+   sem dar tamanho ao <svg>. SVG sem width/height não usa o viewBox — vira
+   elemento de 300x150 esticado pelo flex, e medimos 549x549px DENTRO de um
+   botão de 40px de altura. Dois estragos de uma vez: o rótulo era empurrado
+   pra borda (o que o Rafa viu no print) e o SVG transbordava de -17px a
+   532px, ficando POR CIMA da bandeja de ferramentas — clicar em "copiar"
+   acertava o SVG do Conversar e abria a conversa. Todo <svg> dentro de
+   botão precisa de tamanho explícito. */
+.conversa-btn svg{width:15px;height:15px;flex-shrink:0}
 .conversa-btn.primary{flex-grow:1.15}
 .conversa-btn:hover{border-color:var(--accent);color:var(--accent)}
 /* Rótulo longo só onde cabe; na grade fica o curto. */
@@ -3982,7 +4004,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.18.5';
+const VOX_VERSION='2026.08.18.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
