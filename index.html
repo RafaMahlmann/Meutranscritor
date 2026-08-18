@@ -1156,8 +1156,25 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.focus-active) .ch-mode-badge{border:1px solid var(--ca,var(--accent));cursor:pointer;position:relative}
 .card:not(.focus-active) .ch-mode-badge-label{display:none}
 .card:not(.focus-active) .ch-mode-badge-menu{display:inline}
-.card:not(.focus-active) .ch-mode-chev{display:inline-flex;transition:transform .18s cubic-bezier(.4,0,.2,1)}
-.card.ch-header-open .ch-mode-chev{transform:rotate(180deg)}
+/* O triângulo do cabeçalho é O MESMO do rodapé (item 4 do plano: "mesmo
+   estilo do triângulo verde que já existe nas tags", pros DOIS botões) —
+   mesma cor de categoria, mesmo tamanho, mesmo giro de -90° quando fechado.
+   `order:-1` põe ele ANTES do rótulo sem mexer no HTML, pra ler "▼ MENU"
+   igualzinho ao "▼ TAGS" de baixo. */
+.card:not(.focus-active) .ch-mode-chev{display:inline-flex;order:-1;font-size:10px;color:var(--ca,var(--accent));align-items:center;line-height:1;transition:transform .2s ease}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-chev{transform:rotate(-90deg)}
+/* Cabeçalho RECOLHIDO vira uma linha fina simétrica ao rodapé: só o
+   triângulo, o rótulo em maiúscula pequena e o nome do card (que continua
+   sendo o que identifica o card numa lista de várias linhas finas — decisão
+   antiga, mantida). Some o resto do cromo: alça de arrastar, bolinha de
+   cor, badge do provedor e hora/data. Antes o "recolhido" ainda era uma
+   barra cheia de badges, nada parecida com o "▶ TAGS" de baixo. */
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch{padding:6px 14px 2px;border-bottom:none}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch .drag-handle,
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .cdot-wrap,
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left>.badge:not(.ch-mode-badge),
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .ts{display:none}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-badge{background:none;border:none;padding:0;font-size:10.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3);gap:6px}
 .card:not(.focus-active) .ch-left{cursor:pointer}
 .card:not(.focus-active) .ch-mode-badge:active,
 .card:not(.focus-active) .ch-left:active{transform:scale(.97)}
@@ -3820,7 +3837,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.18.1';
+const VOX_VERSION='2026.08.18.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -12533,7 +12550,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar">${t('🔮 Diarizado')}</span>
-          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
+          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">▼</span></button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?'📌 '+escHtml(sn):t('+ nome')}</span>
           ${pinned?`<span class="badge pin">${t('📌 Fixado')}</span>`:''}
           <span class="ts">${timeStr} · ${dateStr}</span>
@@ -15495,7 +15512,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
-          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">˅</span></button>
+          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">▼</span></button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?escHtml(sn):t('+ nome')}</span>
           ${pinned?'<span class="badge pin">📌</span>':''}
           <span class="ts">${timeStr} · ${dateStr}</span>
