@@ -468,6 +468,18 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
 .cards.masonry.masonry-preview .card .md-preview{pointer-events:none}
 .cards.masonry.masonry-preview .card .cb::after{content:'';position:absolute;
   left:0;right:0;bottom:0;height:34px;background:linear-gradient(to bottom,transparent,var(--bg-card))}
+/* Miniatura sem chrome NENHUM (frente 17/08/2026, pedido do Rafa): antes de
+   tocar, nem o menu de cima nem o rodapé aparecem — só o conteúdo. Diferente
+   de "recolhido" (que ainda mostra a barra do badge/menu): aqui some tudo,
+   inclusive essa barra. Ao tocar o card sai daqui (vira janela flutuante,
+   ver _flAbrirCard), então essa regra nunca chega a esconder o card
+   promovido. Fixado/processando (.proc-card) fica de fora — já ganha linha
+   inteira no Masonry, sem recorte. */
+.cards.masonry.masonry-preview .card:not(.proc-card) .ch,
+.cards.masonry.masonry-preview .card:not(.proc-card) .conversa-bar,
+.cards.masonry.masonry-preview .card:not(.proc-card) .cf-toggle-row,
+.cards.masonry.masonry-preview .card:not(.proc-card) .cpanel-wrap-tags,
+.cards.masonry.masonry-preview .card:not(.proc-card) .cf{display:none}
 .cards.focus-mode .card{display:none!important}
 .cards.focus-mode .card.focus-active{display:flex!important;flex-direction:column;min-height:calc(100vh - 175px);min-height:calc(100dvh - 175px)}
 /* ">" (filho direto), não descendente qualquer — o seletor genérico pegava
@@ -1136,7 +1148,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.focus-active) .ch-mode-badge-label{display:none}
 .card:not(.focus-active) .ch-mode-badge-menu{display:inline}
 .card:not(.focus-active) .ch-mode-chev{display:inline-flex;transition:transform .18s cubic-bezier(.4,0,.2,1)}
-.card.ch-open .ch-mode-chev{transform:rotate(180deg)}
+.card.ch-header-open .ch-mode-chev{transform:rotate(180deg)}
 .card:not(.focus-active) .ch-left{cursor:pointer}
 .card:not(.focus-active) .ch-mode-badge:active,
 .card:not(.focus-active) .ch-left:active{transform:scale(.97)}
@@ -1144,25 +1156,36 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    visualmente — a área clicável estica além do que se vê, o badge continua
    do tamanho de sempre. */
 .card:not(.focus-active) .ch-mode-badge::after{content:'';position:absolute;top:50%;left:50%;width:var(--card-tap-min);height:var(--card-tap-min);transform:translate(-50%,-50%)}
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .ca-wrap,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .spk-stats,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .spk-rename-row,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .conversa-bar,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .cpanel-wrap-tags,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .cf,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .tag-suggestions,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .ext-panel,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .vt-panel{display:none}
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.diar,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin,
-.card:not(.ch-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{display:none}
+/* Recolher CABEÇALHO e RODAPÉ agora são dois estados independentes (frente
+   17/08/2026, pedido do Rafa) — cada um com seu próprio triângulo. Antes
+   era uma lista só sob .ch-open; separada em dois grupos pela posição real
+   no card. Conversar/Transformar (.conversa-bar) subiu para o grupo do
+   cabeçalho a pedido dele. */
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ca-wrap,
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .spk-stats,
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .spk-rename-row,
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .conversa-bar{display:none}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .badge.diar,
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin,
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{display:none}
+.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .cpanel-wrap-tags,
+.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .cf,
+.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .tag-suggestions,
+.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .ext-panel,
+.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .vt-panel{display:none}
 /* Revelar com intenção, não piscar: cada bloco nasce de opacity 0 + um
    pouco acima do lugar, com uma cascatinha de 30ms entre eles — pouco
    demais pra perceber como "atraso", o bastante pra não parecer um flash. */
 @keyframes flChReveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.card.ch-open .ca-wrap{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1)}
-.card.ch-open .conversa-bar{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .03s backwards}
-.card.ch-open .cpanel-wrap-tags{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .06s backwards}
+.card.ch-header-open .ca-wrap{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1)}
+.card.ch-header-open .conversa-bar{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .03s backwards}
+.card.ch-footer-open .cpanel-wrap-tags{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .06s backwards}
+/* Triângulo do rodapé — mesmo visual do chevron das tags (.ctags-header),
+   mas vive FORA de .cpanel-wrap-tags (que fica inteiro escondido quando
+   fechado) pra continuar clicável mesmo com o rodapé recolhido. */
+.card:not(.focus-active) .cf-toggle-row{display:flex;align-items:center;gap:6px;padding:6px 14px 2px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:opacity var(--transition)}
+.card:not(.focus-active) .cf-toggle-row:hover{opacity:0.75}
+.card.focus-active .cf-toggle-row{display:none}
 /* Tipografia da janela flutuante — números do plano de cards (Apple HIG +
    Material 3): título do MESMO tamanho que o corpo, diferindo só no peso
    (não menor, como estava, espremido na fileira de badges de 11px);
@@ -2206,14 +2229,15 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 
 /* ── FASE 3 — cabeçalho interno do card recolhido (só mobile) ──
    Cada card na Lista/Masonry nasce com o .ch numa linha fina (~40px): badge
-   do provedor + badge do modo + hora + chevron. O resto (ações do
-   .ca-wrap, controles de locutor/diarização, fileira de tags, rodapé de
-   contagem) só aparece com a classe .ch-open no card (tocar na linha ou no
-   chevron liga/desliga — ver toggleChCollapse() no script principal). O
-   texto (.cb/.roteiro-view) nunca é tocado por este bloco — continua logo
-   abaixo da linha recolhida. Mesma ideia do toggle de recolher cabeçalho
-   que já existe no Modo Documento (hdr-folded/#docHdrFoldBtn, ~linha 220),
-   só que por card, sem persistir em localStorage.
+   do provedor + badge do modo + hora + chevron. Desde 17/08/2026 cabeçalho
+   e rodapé recolhem SEPARADO, dois estados independentes: .ch-header-open
+   (ações do .ca-wrap, controles de locutor/diarização, Conversar/
+   Transformar — chevron em .ch-mode-badge, toggleChCollapse()) e
+   .ch-footer-open (bloco de tags + contagem — chevron em .cf-toggle-row,
+   toggleCfCollapse()). O texto (.cb/.roteiro-view) nunca é tocado por este
+   bloco — continua sempre visível entre os dois. Mesma ideia do toggle de
+   recolher cabeçalho que já existe no Modo Documento (hdr-folded/
+   #docHdrFoldBtn, ~linha 220), só que por card, sem persistir em localStorage.
    As regras de CSS (mostrar/esconder o chevron, animar a revelação) agora
    moram um bloco só, sem media query — ver comentário "UNIVERSAL" logo
    acima de .ch-mode-badge (perto de .float-window). Fica aqui só o que é
@@ -3777,7 +3801,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.17.10';
+const VOX_VERSION='2026.08.17.11';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4250,6 +4274,7 @@ let I18N_EN={
 "nota":"note",
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
+"Expandir tags do card":"Expand card tags","Recolher tags do card":"Collapse card tags",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
 "Resuma os pontos principais":"Summarize the main points","Quais decisões foram tomadas?":"What decisions were made?","Liste as próximas ações":"List next actions","Corrija a pontuação":"Fix punctuation",
 "Pergunte sobre esta conversa…":"Ask about this conversation…","Pergunte sobre este texto…":"Ask about this text…","Enviar":"Send",
@@ -4658,10 +4683,14 @@ let activeFolderId=null;
 let folderDlMode=false;
 const folderDlSel=new Set();
 const folderExpanded=new Set();
-// FASE 3 (só mobile): ids dos cards com o cabeçalho recolhido ABERTO. Só em
-// memória — de propósito, não persiste (não é como vox_doc_hdr_folded do
+// FASE 3 (só mobile): ids dos cards com cabeçalho/rodapé recolhido ABERTO. Só
+// em memória — de propósito, não persiste (não é como vox_doc_hdr_folded do
 // Modo Documento); cada card nasce ausente daqui, ou seja, recolhido.
-const chOpenCards=new Set();
+// Dois conjuntos separados desde a frente de 17/08/2026: cabeçalho (menu de
+// cima + Conversar/Transformar) e rodapé (tags) recolhem cada um com seu
+// próprio triângulo, não mais um estado só controlando os dois.
+const chHeaderOpenCards=new Set();
+const chFooterOpenCards=new Set();
 const FOLDER_COLORS=['#10b981','#3b82f6','#a78bfa','#f97316','#ec4899','#06b6d4','#eab308','#f43f5e'];
 
 let stats={count:0,sec:0,words:0};
@@ -5483,6 +5512,18 @@ function applyView(){
     // Mac) o Masonry continua editável direto, como sempre foi. "No Windows
     // está funcionando, não mexe" — pedido explícito do Rafa.
     cl.classList.toggle('masonry-preview',_voxToque());
+    // Bug real achado na investigação de 17/08: um card que nasceu ABERTO
+    // (ex.: criado na Lista do iPad, onde o padrão é aberto) não recolhia
+    // sozinho ao trocar pra Masonry — o CSS de miniatura já esconde tudo
+    // visualmente, mas o estado ficava "aberto" por baixo, e reaparecia
+    // errado se a pessoa tocasse pra editar antes do _flAbrirCard recolher.
+    // Força os dois estados fechados ao entrar na miniatura de toque.
+    if(cl.classList.contains('masonry-preview')){
+      cl.querySelectorAll(':scope > .card:not(.proc-card)').forEach(c=>{
+        if(c.classList.contains('ch-header-open'))_chAplicarEstado(c,c.id,false,'header');
+        if(c.classList.contains('ch-footer-open'))_chAplicarEstado(c,c.id,false,'footer');
+      });
+    }
     if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="8" height="11" rx="2"/><rect x="13" y="3" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><rect x="3" y="17" width="8" height="4" rx="2"/></svg>';
     if(viewLbl)viewLbl.textContent=t('Masonry');
     requestAnimationFrame(_masonryAtivar);
@@ -6506,10 +6547,18 @@ function _flAbrirCard(id,origemEl){
   win.innerHTML=`<button type="button" class="float-window-close" title="${t('Fechar janela')}" aria-label="${t('Fechar janela')}" onclick="event.stopPropagation();_flFecharJanela('${escJs(id)}')">✕</button>${_flHandlesResizeHtml()}`;
   win.addEventListener('pointerdown',()=>_flTrazerFrente(id));
   win.appendChild(card);
+  // Bug real: o card chega aqui com left/top/width/maxHeight/overflow presos
+  // do layout do Masonry (miniatura recortada) — sem limpar, a janela
+  // flutuante nascia do tamanho certo mas o card dentro continuava do
+  // tamanho da miniatura (metade da largura, texto cortado). Mesma limpeza
+  // que _masonryDesativar faz por card ao sair do Masonry.
+  card.style.left='';card.style.top='';card.style.width='';card.style.maxHeight='';card.style.overflow='';
   world.appendChild(win);
-  // Janela flutuante nasce sempre recolhida — título + texto, o resto atrás
-  // do chevron — não importa o estado que o card tinha na lista.
-  _chAplicarEstado(card,id,false);
+  // Janela flutuante nasce sempre recolhida (cabeçalho E rodapé) — título +
+  // texto, o resto atrás dos dois triângulos — não importa o estado que o
+  // card tinha na lista.
+  _chAplicarEstado(card,id,false,'header');
+  _chAplicarEstado(card,id,false,'footer');
 
   // Fase 7 — cada janela lembra a pasta em que foi aberta (não a de agora:
   // a pessoa pode navegar a lista pra outra pasta com a janela ainda
@@ -10656,8 +10705,9 @@ function tagsBlock(id,tags){
     `<div class="ext-panel" id="reviewpanel-${id}"></div>`+
     `<div class="vt-panel" id="vtpanel-${id}"></div>`;
 }
-// Abre/fecha o cabeçalho+rodapé recolhido de UM card (.ch-open no elemento
-// do card — CSS universal, ver comentário perto de .ch-mode-badge). Chamado
+// Abre/fecha o cabeçalho OU o rodapé recolhido de UM card (.ch-header-open /
+// .ch-footer-open no elemento do card — dois estados independentes desde
+// 17/08/2026, CSS universal, ver comentário perto de .ch-mode-badge). Chamado
 // tanto pelo tap na linha (.ch-left) quanto pelo badge do modo
 // (.ch-mode-badge) — ele faz event.stopPropagation() antes, senão os dois
 // disparariam juntos e o toggle cancelaria a si mesmo.
@@ -10687,14 +10737,23 @@ function _chPadraoAberto(){
   // lá, só muda de dono — não passa por aqui).
   return window.matchMedia('(min-width:600px)').matches;
 }
-function _chAplicarEstado(card,id,open){
-  if(open)chOpenCards.add(id);else chOpenCards.delete(id);
-  card.classList.toggle('ch-open',open);
-  const btn=card.querySelector('.ch-mode-badge');
+// which='header' (menu de cima + Conversar/Transformar) ou 'footer' (tags).
+// Os dois são independentes agora — abrir um não mexe no outro.
+function _chAplicarEstado(card,id,open,which){
+  which=which==='footer'?'footer':'header';
+  const set=which==='footer'?chFooterOpenCards:chHeaderOpenCards;
+  const cls=which==='footer'?'ch-footer-open':'ch-header-open';
+  if(open)set.add(id);else set.delete(id);
+  card.classList.toggle(cls,open);
+  const btn=card.querySelector(which==='footer'?'.cf-toggle-row':'.ch-mode-badge');
   if(btn){
     btn.setAttribute('aria-expanded',open?'true':'false');
-    const lbl=open?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card');
+    const lbl=which==='footer'
+      ?(open?t('Recolher tags do card'):t('Expandir tags do card'))
+      :(open?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card'));
     btn.setAttribute('aria-label',lbl);btn.title=lbl;
+    const chev=btn.querySelector(which==='footer'?'.ctags-header-chev':'.ch-mode-chev');
+    if(chev&&which==='footer'){chev.classList.toggle('collapsed',!open);chev.textContent=open?'▼':'▶'}
   }
   const win=card.closest('.float-window');
   if(win)_flAjustarAlturaMenu(win,id,open);
@@ -10726,7 +10785,13 @@ function toggleChCollapse(id){
   // Modo Documento tem seu próprio recolhimento de cabeçalho (hdr-folded,
   // toggleDocHeaderFold) — nunca mistura os dois numa mesma visualização.
   if(card.classList.contains('focus-active'))return;
-  _chAplicarEstado(card,id,!chOpenCards.has(id));
+  _chAplicarEstado(card,id,!chHeaderOpenCards.has(id),'header');
+}
+// Triângulo do rodapé (tags) — irmão independente do de cima, mesmo padrão.
+function toggleCfCollapse(id){
+  const card=document.getElementById(id);if(!card)return;
+  if(card.classList.contains('focus-active'))return;
+  _chAplicarEstado(card,id,!chFooterOpenCards.has(id),'footer');
 }
 // Recolhe/expande Tags ou Transformar dentro de UM card, no Modo Documento
 // mobile (mesmo padrão de toggleChCollapse/toggleSheet: guard de
@@ -10756,8 +10821,8 @@ function toggleTagsPanel(id){
   const card=document.getElementById(id);
   // Mobile Lista/Masonry: se o card ainda está recolhido, a setinha primeiro
   // expande o card e abre o painel de tags, em vez de "girar no vazio".
-  if(_isSheetViewport() && card && !card.classList.contains('focus-active') && !card.classList.contains('ch-open')){
-    toggleChCollapse(id);
+  if(_isSheetViewport() && card && !card.classList.contains('focus-active') && !card.classList.contains('ch-footer-open')){
+    toggleCfCollapse(id);
     collapse.classList.remove('collapsed');
     if(suggestions)suggestions.classList.remove('collapsed');
     if(chev)chev.classList.remove('collapsed');
@@ -12428,14 +12493,14 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
 
   const chAberto=_chPadraoAberto();
   const el=document.createElement('div');
-  el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-open':''}`;el.id=id;
+  el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-header-open ch-footer-open':''}`;el.id=id;
   el.dataset.type='gravacao';el.dataset.prov=provStr;el.dataset.cost=costUSD;
   el.dataset.ci=ci%PALETTE;el.dataset.dt=dt;el.dataset.tags=tags.join(',');
   el.dataset.diarized='true';el.dataset.utterances=JSON.stringify(utterances);
   el.dataset.speakers=JSON.stringify(speakers);el.dataset.view=view;
   el.dataset.sessionName=sn;el.dataset.mode=mode;el.dataset.pinned=pinned?'true':'false';el.dataset.folder=folder;
   el.dataset.chatHistory=chatHistory;
-  if(chAberto)chOpenCards.add(id);
+  if(chAberto){chHeaderOpenCards.add(id);chFooterOpenCards.add(id);}
 
   el.innerHTML=`
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir esta transcrição?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
@@ -12465,6 +12530,12 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
           <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
         </div>
+        <div class="spk-stats">${statsHtml}</div>
+        <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}">⏱️</button></div>
+        <div class="conversa-bar" id="convbar-${id}">
+          <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
+          <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
+        </div>
       </div>
       <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
         <button type="button" class="cpanel-handle cpanel-handle-transform" onclick="toggleCardPanel('${id}','transform')" aria-expanded="true" aria-label="${t('Recolher Transformar')}" title="${t('Recolher Transformar')}"><span class="cpanel-handle-bar"></span></button>
@@ -12472,17 +12543,15 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       </div>
       <div class="lens-panel" id="exp-menu-${id}"></div>
       <div class="adv-panel" id="adv-${id}"></div>
-      <div class="spk-stats">${statsHtml}</div>
-      <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}">⏱️</button></div>
-      <div class="conversa-bar" id="convbar-${id}">
-        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
-        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
-      </div>
       <div class="cb roteiro-view" id="roteiro-${id}" style="${view==='bolhas'?'display:none':''}">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)">${escHtml(roteiroText)}</textarea>
       </div>
       <div class="bbl-wrap" id="bbl-${id}" style="${view!=='bolhas'?'display:none':''}">
         ${renderBubbles(utterances,speakers)}
+      </div>
+      <div class="cf-toggle-row" onclick="toggleCfCollapse('${id}')" role="button" tabindex="0" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher tags do card'):t('Expandir tags do card')}" title="${chAberto?t('Recolher tags do card'):t('Expandir tags do card')}" onkeydown="if(event.key==='Enter'||event.key===' ')event.preventDefault();toggleCfCollapse('${id}')">
+        <span class="ctags-header-chev${chAberto?'':' collapsed'}" aria-hidden="true">${chAberto?'▼':'▶'}</span>
+        <span class="ctags-header-label">${t('Tags')}</span>
       </div>
       ${tagsHtml}
       <div class="cf">
@@ -15395,10 +15464,10 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
 
   const chAberto=_chPadraoAberto();
   const el=document.createElement('div');
-  el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-open':''}`;el.id=id;
+  el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-header-open ch-footer-open':''}`;el.id=id;
   el.dataset.type=type;el.dataset.prov=provStr;el.dataset.cost=costUSD;el.dataset.ci=ci%PALETTE;el.dataset.dt=dt;
   el.dataset.tags=tags.join(',');el.dataset.sessionName=sn;el.dataset.mode=mode;el.dataset.pinned=pinned?'true':'false';el.dataset.speakers='{}';el.dataset.folder=folder;el.dataset.chatHistory=chatHistory;
-  if(chAberto)chOpenCards.add(id);
+  if(chAberto){chHeaderOpenCards.add(id);chFooterOpenCards.add(id);}
 
   el.innerHTML=`
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
@@ -15444,6 +15513,10 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <button class="adv-ft-btn adv-ft-undo" onclick="advUndoClick(this)" title="${t('Desfazer (Ctrl+Z)')}" disabled>↩</button>
           <button class="adv-ft-btn adv-ft-redo" onclick="advRedoClick(this)" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>↪</button>
         </div>
+        <div class="conversa-bar" id="convbar-${id}">
+          <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
+          <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
+        </div>
       </div>
       <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
         <button type="button" class="cpanel-handle cpanel-handle-transform" onclick="toggleCardPanel('${id}','transform')" aria-expanded="true" aria-label="${t('Recolher Transformar')}" title="${t('Recolher Transformar')}"><span class="cpanel-handle-bar"></span></button>
@@ -15452,13 +15525,13 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       <div class="lens-panel" id="exp-menu-${id}"></div>
       <div class="adv-panel" id="adv-${id}"></div>
       ${audioHtml}
-      <div class="conversa-bar" id="convbar-${id}">
-        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
-        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
-      </div>
       <div class="cb">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
         <div class="md-preview" id="mdp-${id}" style="display:none"></div>
+      </div>
+      <div class="cf-toggle-row" onclick="toggleCfCollapse('${id}')" role="button" tabindex="0" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher tags do card'):t('Expandir tags do card')}" title="${chAberto?t('Recolher tags do card'):t('Expandir tags do card')}" onkeydown="if(event.key==='Enter'||event.key===' ')event.preventDefault();toggleCfCollapse('${id}')">
+        <span class="ctags-header-chev${chAberto?'':' collapsed'}" aria-hidden="true">${chAberto?'▼':'▶'}</span>
+        <span class="ctags-header-label">${t('Tags')}</span>
       </div>
       ${tagsHtml}
       <div class="cf">
