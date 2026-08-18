@@ -672,8 +672,47 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .card.focused{box-shadow:var(--shadow-hover),0 0 0 3px var(--cag,var(--accent-glow))}
 .card.pinned-card{border-left-color:#f59e0b;box-shadow:var(--shadow-card),0 0 0 1px rgba(245,158,11,0.2)}
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.ch{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 9px;background:var(--cat,transparent);border-bottom:1px solid var(--border)}
-.ch-left{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+/* ── CABEÇALHO EM TRÊS FAIXAS (proposta aprovada em 18/08/2026) ──
+   O cabeçalho era UMA barra horizontal com dois blocos que embrulhavam
+   sozinhos: numa coluna de 255px o conteúdo media exatamente os 225px
+   disponíveis (folga zero), então os 11 ícones viravam SEIS fileiras e o
+   bloco da esquerda outras seis, cada um centralizado por conta própria e
+   13px fora de fase do outro. Não havia grade nenhuma.
+   Agora são faixas de altura previsível, e nada quebra linha:
+     1. identidade — alça+número, triângulo, nome (+meta), pin, bolinha
+     2. bandeja de ferramentas — fila ÚNICA, com "⋯" pro que não cabe
+     3. Conversar/Transformar — fora do .ch, uma linha só
+   A faixa 1 é a mesma do estado recolhido: recolher não recria nada ali,
+   por isso a transição desliza em vez de piscar. O empilhamento é por
+   flex-wrap + flex-basis:100% na bandeja — nenhum elemento mudou de lugar
+   no HTML (mover .conversa-bar pra dentro do .ch já quebrou o menu uma vez
+   nesta mesma frente; o CSS resolve sozinho). */
+.ch{display:flex;align-items:flex-start;flex-wrap:wrap;padding:0 8px 0 4px;background:var(--cat,transparent);border-bottom:1px solid var(--border);row-gap:0}
+/* A alça é irmã do .ch-left, e o .ch-left tem duas linhas quando aberto
+   (nome + meta). Sem isto ela se centraliza entre as duas e parece ter
+   caído pra linha de baixo. */
+.ch>.drag-handle{align-self:flex-start;height:44px;display:flex;align-items:center}
+.ch-left{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0;min-height:44px;padding:2px 0}
+/* Linha de meta (procedência · modo · hora) — segunda linha da faixa 1, só
+   com o cabeçalho aberto. Era pílula colorida competindo com o botão verde
+   primário; procedência é informação terciária, vira texto. */
+.card.ch-header-open .ch-left .rec-rank{order:0}
+.card.ch-header-open .ch-left .ch-mode-badge{order:1}
+.card.ch-header-open .ch-left .sname-badge{order:2;flex:1;min-width:0;max-width:none;font-size:13px;font-weight:600;color:var(--text)}
+.card.ch-header-open .ch-left .badge.pin{order:3}
+.card.ch-header-open .ch-left .cdot-wrap{order:4;margin-left:auto}
+/* O ::after de um flex container também é flex item: com flex-basis:100% e
+   altura zero ele empurra tudo que vier depois pra linha seguinte. É o que
+   separa "nome" de "meta" sem precisar de uma div nova no HTML — e sem ele
+   a procedência cabia na primeira linha e empurrava a bolinha pro meio. */
+.card.ch-header-open .ch-left::after{content:'';flex-basis:100%;height:0;order:8}
+.card:not(.ch-header-open) .ch-left::after{display:none}
+.card.ch-header-open .ch-left .ts{order:9;font-size:10.5px;color:var(--text3)}
+.card.ch-header-open .ch-left>.badge:not(.ch-mode-badge){order:9;background:none;padding:0;font-size:10.5px;letter-spacing:.2px;text-transform:none;font-weight:700}
+.card.ch-header-open .ch-left>.badge.groq{color:var(--groq)}
+.card.ch-header-open .ch-left>.badge.grok{color:var(--grok)}
+.card.ch-header-open .ch-left>.badge.diar{color:var(--diar)}
+.card.ch-header-open .ch-left>.badge.pin{order:3;background:rgba(245,158,11,0.15);padding:2px 8px;font-size:10px;text-transform:uppercase}
 .cdot{width:9px;height:9px;border-radius:50%;background:var(--ca,var(--text4));box-shadow:0 0 8px var(--cag,transparent);flex-shrink:0}
 .badge{font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:var(--cag,var(--accent-glow));color:var(--ca,var(--accent))}
 .badge.grok{background:var(--grok-glow);color:var(--grok)}
@@ -686,7 +725,57 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .sname-badge:hover{background:var(--bg-hover,rgba(0,0,0,.06));color:var(--text1)}
 .sname-badge-empty{opacity:.55;font-weight:500;font-style:italic}
 .ts{font-size:11px;color:var(--text3);font-weight:500}
-.ca-wrap{display:flex;gap:2px;flex-wrap:wrap}
+/* FAIXA 2 · bandeja de ferramentas. flex-basis:100% joga ela pra própria
+   linha; nowrap garante que ela nunca embrulhe — se um dia faltar espaço,
+   rola, como fazem Bear e Things. Fundo levemente mais claro que o card é
+   o que cria camada no tema escuro (sombra sozinha não aparece lá). */
+.ca-wrap{display:flex;align-items:center;gap:2px;flex-wrap:nowrap;flex-basis:100%;height:48px;margin:0 -8px 0 -4px;padding:0 6px;overflow-x:auto;scrollbar-width:none;background:var(--tray-bg);border-top:1px solid var(--tray-line)}
+.ca-wrap::-webkit-scrollbar{display:none}
+:root{--tray-bg:rgba(0,0,0,.030);--tray-line:rgba(0,0,0,.05)}
+[data-theme="dark"]{--tray-bg:rgba(255,255,255,.045);--tray-line:rgba(255,255,255,.06)}
+/* Desfazer e refazer são um par: viram uma cápsula só, não dois botões
+   soltos que podem ser separados por uma quebra. */
+.ca-pair{display:inline-flex;flex-shrink:0;border:1px solid var(--border);border-radius:13px;overflow:hidden;background:var(--bg-card);height:34px;align-items:center}
+.ca-pair .icon-btn{width:30px;height:34px;border-radius:0}
+.ca-pair .icon-btn+.icon-btn{border-left:1px solid var(--border)}
+.ca-gap{flex:1;min-width:4px}
+/* Fiozinho antes do "⋯": diz "daqui pra frente é overflow" e faz o vão
+   parecer proposital em vez de sobra. Some junto com o "⋯". */
+.ca-sep{width:1px;height:20px;background:var(--border2);opacity:.7;flex-shrink:0;margin:0 5px 0 1px}
+/* O "⋯" gruda na borda direita: numa coluna de 220px a fila não cabe
+   inteira e rola (é o que Bear e Things fazem — rolar, nunca embrulhar),
+   mas o botão que dá acesso ao resto não pode rolar pra fora junto. O véu
+   à esquerda dele é a pista de que ainda há fila por baixo. */
+.ca-more{position:sticky;right:0;flex-shrink:0;background:var(--tray-bg-solid);border-radius:12px}
+.ca-more::before{content:'';position:absolute;top:0;bottom:0;right:100%;width:22px;pointer-events:none;background:linear-gradient(to right,transparent,var(--tray-bg-solid))}
+.cards:not(.masonry) .card .ca-more::before{display:none}
+:root{--tray-bg-solid:#f4f5f6}
+[data-theme="dark"]{--tray-bg-solid:#22262b}
+/* Menu do "⋯" — os 7 ícones que ele guarda ganham NOME escrito. No celular
+   não existe hover, então os title="" de hoje nunca aparecem: eram sete
+   ícones mudos numa coluna estreita. */
+/* position:fixed, não absolute: a bandeja tem overflow-x pra poder rolar, e
+   qualquer filho absoluto dela nasce recortado (o menu abria e não aparecia
+   na tela). As coordenadas vêm do JS, a partir do botão. */
+.ca-menu{position:fixed;min-width:200px;z-index:300;background:var(--bg-card);border:1px solid var(--border);border-radius:15px;box-shadow:0 8px 40px rgba(0,0,0,.18);padding:5px;transform-origin:top right;transform:scale(.95);opacity:0;pointer-events:none;transition:transform .18s cubic-bezier(.22,1,.36,1),opacity .13s linear}
+.ca-menu.on{transform:scale(1);opacity:1;pointer-events:auto}
+.ca-mi{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text2);padding:0 10px;height:38px;border-radius:11px;cursor:pointer;text-align:left;transition:background .12s linear,color .12s linear}
+.ca-mi svg{width:15px;height:15px;flex-shrink:0}
+.ca-mi:hover{background:var(--bg-input);color:var(--text)}
+.ca-mi.danger{color:var(--danger)}
+.ca-mi.danger:hover{background:rgba(255,59,48,.12)}
+.ca-msep{height:1px;background:var(--border);margin:5px 8px}
+.ca-menu.on .ca-mi{animation:flChReveal .2s cubic-bezier(.22,1,.36,1) backwards}
+/* MODELO POR VISUALIZAÇÃO (escolha do Rafa, 18/08/2026): Masonry usa o
+   conjunto do meio — fixar, desfazer/refazer, gravar, copiar, anexar e o
+   "⋯"; Lista (e Documento, e a janela flutuante larga) usa o conjunto
+   completo, com as 11 numa fila só e sem "⋯". A decisão é pela
+   VISUALIZAÇÃO, não pela largura do card. */
+.icon-btn.ov1{display:none}
+.cards:not(.masonry) .card .icon-btn.ov1{display:flex}
+.cards:not(.masonry) .card .ca-mi.ov1{display:none}
+.cards:not(.masonry) .card .ca-more,
+.cards:not(.masonry) .card .ca-sep{display:none}
 /* FASE 3 (só mobile — ver @media(max-width:640px) mais abaixo): chevron que
    abre/fecha o cabeçalho recolhido do card. Escondido por padrão aqui fora
    do @media — desktop nunca chega a ver este botão nem o cabeçalho
@@ -705,10 +794,20 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
    do modo continua sendo a informação mais útil ali). */
 .ch-mode-badge-menu{display:none}
 .ch-mode-chev{display:none;font-size:9px;line-height:1;transition:transform var(--transition)}
-.icon-btn{width:30px;height:30px;border:none;background:none;color:var(--text3);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
-.icon-btn:hover{background:var(--bg-input);color:var(--text2)}
-.icon-btn:disabled{opacity:0.28;cursor:default;pointer-events:none}
-.icon-btn svg{width:13px;height:13px}
+/* 44×44 é o mínimo de toque que o próprio Vox declara em --card-tap-min;
+   estava em 30×30, 68% disso. `transition:all` era bug real: animava também
+   `color`, então TROCAR DE TEMA repintava animadamente os 11 ícones de cada
+   card na tela (220 elementos com 20 cards) — e ainda falseava qualquer
+   medição de contraste feita durante a animação. Lista explícita agora. */
+.icon-btn{width:44px;height:44px;border:none;background:none;color:var(--ink-icon,var(--text3));border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s linear,color .13s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+.icon-btn:hover{background:var(--bg-input);color:var(--text)}
+.icon-btn:active{transform:scale(.9)}
+.icon-btn:disabled{opacity:0.3;cursor:default;pointer-events:none}
+.icon-btn svg{width:16px;height:16px}
+/* Contraste do ícone contra o fundo do card: no claro estava em 3,26:1,
+   raspando o mínimo de 3:1 pra controle sem texto. */
+:root{--ink-icon:#5b6470}
+[data-theme="dark"]{--ink-icon:#9aa3ad}
 .icon-btn-copy{color:#eab308}
 .icon-btn-copy:hover{background:rgba(234,179,8,0.12);color:#ca8a04}
 .icon-btn.rec-here{color:var(--ca,var(--accent));background:var(--cag,var(--accent-glow))}
@@ -767,14 +866,25 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .spk-del:hover{color:var(--danger);border-color:transparent}
 .spk-times.on{border-style:solid;border-color:var(--accent);color:var(--accent)}
 .bbl-ts{font-size:10px;color:var(--text4);font-weight:500;margin-left:6px}
-.conversa-bar{display:flex;gap:8px;padding:2px 14px 10px;background:var(--cat,transparent)}
+/* FAIXA 3 · ações de IA. Era um bloco de 97px (23% do card!) porque o
+   rótulo "Conversar sobre este texto" quebrava em 3-4 linhas numa coluna
+   estreita, deixando os dois botões quase quadrados. Agora é uma linha de
+   40px: o rótulo longo fica onde cabe (Lista, Documento) e vira o curto na
+   grade — mesmo padrão de rótulo alternado que o badge do modo já usa. */
+.conversa-bar{display:flex;gap:6px;padding:8px 10px;background:var(--cat,transparent)}
 /* Entrada única do dock ao nascer um card de verdade (não em cards
    restaurados do histórico — ver o "if(save)" que aplica esta classe).
    Só transform+opacity (nunca layout), nasce de scale(.95), nunca de 0. */
 @keyframes conversaBarEnter{from{opacity:0;transform:scale(.95) translateY(4px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .conversa-bar.enter-once{animation:conversaBarEnter .35s cubic-bezier(.16,1,.3,1)}
-.conversa-btn{flex:1;border:1px solid var(--border2);background:var(--bg-input);color:var(--text2);border-radius:11px;padding:9px 12px;font-size:12.5px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition)}
+.conversa-btn{flex:1 1 auto;min-width:0;height:40px;border:1px solid var(--border2);background:var(--bg-input);color:var(--text2);border-radius:13px;padding:0 12px;font-size:12.5px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,color .15s,border-color .15s,transform .12s cubic-bezier(.22,1,.36,1)}
+.conversa-btn.primary{flex-grow:1.15}
 .conversa-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* Rótulo longo só onde cabe; na grade fica o curto. */
+.conversa-lbl-curto{display:inline}
+.conversa-lbl-longo{display:none}
+.cards:not(.masonry) .card .conversa-lbl-curto{display:none}
+.cards:not(.masonry) .card .conversa-lbl-longo{display:inline}
 .conversa-btn:active{transform:scale(.97)}
 .conversa-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 .conversa-btn.primary:hover{background:var(--accent2);color:#fff}
@@ -1195,9 +1305,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch{padding:6px 14px 2px;border-bottom:none;gap:6px}
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left>.badge:not(.ch-mode-badge),
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .ts{display:none}
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-badge-label,
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-badge-menu{display:none}
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-badge{background:none;border:none;padding:0;gap:0;min-width:14px}
+/* A palavra "MENU" sai nos DOIS estados (Rafa, 18/08/2026: "pode sumir, vai
+   ficar só a flechinha") — o modo do card já aparece na linha de meta. */
+.card:not(.focus-active):not(.proc-card) .ch-mode-badge-label,
+.card:not(.focus-active):not(.proc-card) .ch-mode-badge-menu{display:none}
+.card:not(.focus-active):not(.proc-card) .ch-mode-badge{background:none;border:none;padding:0;gap:0;min-width:14px;width:26px;height:26px;justify-content:center}
 /* A linha ocupa a largura toda pra bolinha poder ir pro fim dela. */
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left{flex:1;min-width:0;flex-wrap:nowrap;gap:6px}
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{order:0}
@@ -3870,7 +3982,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.18.4';
+const VOX_VERSION='2026.08.18.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4345,6 +4457,9 @@ let I18N_EN={
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
 "Expandir tags do card":"Expand card tags","Recolher tags do card":"Collapse card tags",
 "Adicionar tag":"Add tag",
+"Mais ações":"More actions","Ver em Markdown":"View as Markdown","Revisar texto":"Review text",
+"Exportar…":"Export…","Ver como documento":"View as document","Excluir card":"Delete card",
+"Conversar":"Chat",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
 "Resuma os pontos principais":"Summarize the main points","Quais decisões foram tomadas?":"What decisions were made?","Liste as próximas ações":"List next actions","Corrija a pontuação":"Fix punctuation",
 "Pergunte sobre esta conversa…":"Ask about this conversation…","Pergunte sobre este texto…":"Ask about this text…","Enviar":"Send",
@@ -10876,6 +10991,39 @@ function toggleChCollapse(id){
   if(card.classList.contains('focus-active'))return;
   _chAplicarEstado(card,id,!chHeaderOpenCards.has(id),'header');
 }
+// Menu "⋯" da bandeja de ferramentas. Guarda as ações que não cabem na fila
+// única do Masonry — e ali elas ganham NOME escrito, que os ícones nunca
+// tiveram no celular (title="" depende de hover, que no toque não existe).
+// Na Lista as ferramentas aparecem todas e este botão some (ver CSS .ov1).
+function toggleCardMore(id){
+  const menu=document.getElementById('camenu-'+id);if(!menu)return;
+  const abrir=!menu.classList.contains('on');
+  _caFecharTodos();
+  if(!abrir)return;
+  const btn=menu.parentElement?.querySelector('.icon-btn');
+  menu.classList.add('on');
+  btn?.setAttribute('aria-expanded','true');
+  if(!btn)return;
+  // Alinha pela direita do botão e vira pra cima se não couber embaixo —
+  // card no rodapé da tela abriria o menu fora da área visível.
+  const r=btn.getBoundingClientRect();
+  const alt=menu.offsetHeight||220,larg=menu.offsetWidth||200;
+  const cabeAbaixo=r.bottom+4+alt<=window.innerHeight-8;
+  menu.style.top=(cabeAbaixo?r.bottom+4:Math.max(8,r.top-4-alt))+'px';
+  menu.style.left=Math.max(8,Math.min(r.right-larg,window.innerWidth-larg-8))+'px';
+  menu.style.transformOrigin=cabeAbaixo?'top right':'bottom right';
+}
+function _caFecharTodos(){
+  document.querySelectorAll('.ca-menu.on').forEach(m=>{
+    m.classList.remove('on');
+    m.parentElement?.querySelector('.icon-btn')?.setAttribute('aria-expanded','false');
+  });
+}
+function _caMenuAgir(id,fn){_caFecharTodos();fn()}
+document.addEventListener('click',e=>{if(!e.target.closest('.ca-more'))_caFecharTodos()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')_caFecharTodos()});
+// Menu é fixed: se a página rolar com ele aberto, ele descola do botão.
+window.addEventListener('scroll',()=>{if(document.querySelector('.ca-menu.on'))_caFecharTodos()},true);
 // Botão do contador de tags. Ele precisa fazer algo DIFERENTE do triângulo
 // (que já expande/recolhe a linha inteira), senão seriam dois controles pro
 // mesmo efeito lado a lado: aqui ele garante o rodapé aberto e leva o cursor
@@ -12616,17 +12764,32 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         </div>
         <div class="ca-wrap">
           <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar no topo')}">${pinned?ICO.pinFilled:ICO.pinOutline}</button>
-          <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
-          <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
-          <button class="icon-btn" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">${ICO.diarView}</button>
-          <button class="icon-btn" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
-          <button class="icon-btn" onclick="diarToStandardCard('${id}')" title="${t('Virar card padrão')}">💾</button>
+          <span class="ca-pair">
+            <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
+            <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
+          </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
-          <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
-          <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
-          <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
+          <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
+          <button class="icon-btn ov1" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">${ICO.diarView}</button>
+          <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
+          <button class="icon-btn ov1" onclick="diarToStandardCard('${id}')" title="${t('Virar card padrão')}">💾</button>
+          <button class="icon-btn ov1" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
+          <button class="icon-btn ov1" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
+          <button class="icon-btn on-danger ov1" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
+          <span class="ca-gap"></span><span class="ca-sep"></span>
+          <span class="ca-more">
+            <button class="icon-btn" onclick="event.stopPropagation();toggleCardMore('${id}')" aria-haspopup="true" aria-expanded="false" aria-label="${t('Mais ações')}" title="${t('Mais ações')}">${ICO.more}</button>
+            <div class="ca-menu" id="camenu-${id}">
+              <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleDiarView('${id}'))">${ICO.diarView}${t('Alternar roteiro / bolhas')}</button>
+              <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>openReviewPanel('${id}'))">${ICO.checkSquare}${t('Revisar texto')}</button>
+              <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>diarToStandardCard('${id}'))">${ICO.file}${t('Virar card padrão')}</button>
+              <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleExportMenu('${id}'))">${ICO.export}${t('Exportar…')}</button>
+              <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleFocusCard('${id}'))">${ICO.expand}${t('Ver como documento')}</button>
+              <div class="ca-msep"></div>
+              <button class="ca-mi danger" onclick="_caMenuAgir('${id}',()=>askDel('${id}'))">${ICO.trash}${t('Excluir card')}</button>
+            </div>
+          </span>
         </div>
       </div>
       <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
@@ -12638,8 +12801,8 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       <div class="spk-stats">${statsHtml}</div>
       <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}">⏱️</button></div>
       <div class="conversa-bar" id="convbar-${id}">
-        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
-        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
+        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">${ICO.messageCircle}<span class="conversa-lbl-curto">${t('Conversar')}</span><span class="conversa-lbl-longo">${t('Conversar sobre este texto')}</span></button>
+        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">${ICO.magicWand}${t('Transformar')}</button>
       </div>
       <div class="cb roteiro-view" id="roteiro-${id}" style="${view==='bolhas'?'display:none':''}">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)">${escHtml(roteiroText)}</textarea>
@@ -13640,6 +13803,7 @@ async function polishCard(id){
 
 // ── ÍCONES (SVG de linha reaproveitados em toda a UI — mesma função, mesmo símbolo) ──
 const ICO={
+  more:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
   qr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3"/><path d="M14 20h3"/><path d="M20 20h1"/></svg>',
   copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
   textOnly:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
@@ -15578,16 +15742,30 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         </div>
         <div class="ca-wrap">
           <button class="icon-btn pin-btn${pinned?' pinned':''}" onclick="togglePin('${id}')" title="${pinned?t('Desafixar'):t('Fixar')}">${pinned?ICO.pinFilled:ICO.pinOutline}</button>
-          <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
-          <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
+          <span class="ca-pair">
+            <button class="icon-btn" id="cu-${id}" onclick="cardUndoBtn('${id}')" title="${t('Desfazer (Ctrl+Z)')}" disabled>${ICO.undo}</button>
+            <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
+          </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
-          <button class="icon-btn" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
-          <button class="icon-btn" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
           <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
-          <button class="icon-btn" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
-          <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
-          <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
+          <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
+          <button class="icon-btn ov1" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
+          <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
+          <button class="icon-btn ov1" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
+          <button class="icon-btn ov1" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
+          <button class="icon-btn on-danger ov1" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
+          <span class="ca-gap"></span><span class="ca-sep"></span>
+          <span class="ca-more">
+            <button class="icon-btn" onclick="event.stopPropagation();toggleCardMore('${id}')" aria-haspopup="true" aria-expanded="false" aria-label="${t('Mais ações')}" title="${t('Mais ações')}">${ICO.more}</button>
+            <div class="ca-menu" id="camenu-${id}">
+              <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleCardPreview('${id}'))">${ICO.eye}${t('Ver em Markdown')}</button>
+              <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>openReviewPanel('${id}'))">${ICO.checkSquare}${t('Revisar texto')}</button>
+              <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleExportMenu('${id}'))">${ICO.export}${t('Exportar…')}</button>
+              <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleFocusCard('${id}'))">${ICO.expand}${t('Ver como documento')}</button>
+              <div class="ca-msep"></div>
+              <button class="ca-mi danger" onclick="_caMenuAgir('${id}',()=>askDel('${id}'))">${ICO.trash}${t('Excluir card')}</button>
+            </div>
+          </span>
         </div>
         <div class="adv-float-toolbar" onmousedown="event.preventDefault()">
           <button class="adv-ft-btn" onclick="advFormat(this,'bold')" title="${t('Negrito')}"><b>B</b></button>
@@ -15616,8 +15794,8 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       <div class="adv-panel" id="adv-${id}"></div>
       ${audioHtml}
       <div class="conversa-bar" id="convbar-${id}">
-        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
-        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
+        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">${ICO.messageCircle}<span class="conversa-lbl-curto">${t('Conversar')}</span><span class="conversa-lbl-longo">${t('Conversar sobre este texto')}</span></button>
+        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">${ICO.magicWand}${t('Transformar')}</button>
       </div>
       <div class="cb">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
