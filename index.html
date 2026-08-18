@@ -663,10 +663,12 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .card[data-tc]{border-left:3px solid var(--ca)}
 .card:hover{box-shadow:var(--shadow-hover)}
 .rec-rank{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--ca,var(--accent));color:#fff;font-size:10px;font-weight:700;font-family:var(--font)}
-.rec-rank.rank-2{opacity:0.75}
-.rec-rank.rank-3{opacity:0.58}
-.rec-rank.rank-4{opacity:0.42}
-.rec-rank.rank-5{opacity:0.28}
+/* 1º, 2º e 3º mantêm a cor cheia decrescente (recência); do 4º em diante é
+   um carimbo discreto porém legível — todo card é numerado agora, e a escala
+   antiga terminava em 0,28 de opacidade, invisível. */
+.rec-rank.rank-2{opacity:0.8}
+.rec-rank.rank-3{opacity:0.62}
+.rec-rank.rank-4{background:var(--cag,var(--accent-glow));color:var(--ca,var(--accent));opacity:1;font-weight:600}
 .card.focused{box-shadow:var(--shadow-hover),0 0 0 3px var(--cag,var(--accent-glow))}
 .card.pinned-card{border-left-color:#f59e0b;box-shadow:var(--shadow-card),0 0 0 1px rgba(245,158,11,0.2)}
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -850,7 +852,18 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .ctags-header-chev{font-size:10px;color:var(--ca,var(--accent));transition:transform .2s ease;display:inline-flex;align-items:center;line-height:1}
 .ctags-header-chev.collapsed{transform:rotate(-90deg)}
 .ctags-header-label{font-size:10.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3)}
-.ctags-header-count{font-size:10px;font-weight:600;color:var(--text4);margin-left:auto;opacity:0.6}
+/* O contador de tags era um número solto que "parecia botão e não era"
+   (Rafa, 18/08/2026) — agora é botão de verdade: abre o rodapé se estiver
+   recolhido e põe o cursor no campo de tag. No hover/foco o número dá lugar
+   ao "+", que é o que ele faz. Alvo de toque cheio via ::after, sem engordar
+   o desenho — mesmo truque do badge do cabeçalho. */
+.ctags-header-count{position:relative;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;border:1px solid transparent;background:none;font-family:var(--font);font-size:10px;font-weight:600;color:var(--text4);cursor:pointer;transition:background var(--transition),color var(--transition),border-color var(--transition)}
+.ctags-header-count::after{content:'';position:absolute;top:50%;left:50%;width:var(--card-tap-min);height:var(--card-tap-min);transform:translate(-50%,-50%)}
+.ctags-header-count:hover,.ctags-header-count:focus-visible{background:var(--cag,var(--accent-glow));color:var(--ca,var(--accent));border-color:var(--ca,var(--accent));outline:none}
+.ctags-header-count:active{transform:scale(.92)}
+.ctags-count-plus{display:none;font-size:12px;line-height:1}
+.ctags-header-count:hover .ctags-count-n,.ctags-header-count:focus-visible .ctags-count-n{display:none}
+.ctags-header-count:hover .ctags-count-plus,.ctags-header-count:focus-visible .ctags-count-plus{display:inline}
 /* Wrapper para animação de recolhimento — fora do Modo Documento */
 .ctags-collapse-wrap{overflow:hidden;transition:max-height .2s ease,opacity .15s ease,padding .2s ease;max-height:400px;opacity:1}
 .ctags-collapse-wrap.collapsed{max-height:0;opacity:0;padding-top:0;padding-bottom:0}
@@ -1172,18 +1185,30 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    igualzinho ao "▼ TAGS" de baixo. */
 .card:not(.focus-active) .ch-mode-chev{display:inline-flex;order:-1;font-size:10px;color:var(--ca,var(--accent));align-items:center;line-height:1;transition:transform .2s ease}
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-chev{transform:rotate(-90deg)}
-/* Cabeçalho RECOLHIDO vira uma linha fina simétrica ao rodapé: só o
-   triângulo, o rótulo em maiúscula pequena e o nome do card (que continua
-   sendo o que identifica o card numa lista de várias linhas finas — decisão
-   antiga, mantida). Some o resto do cromo: alça de arrastar, bolinha de
-   cor, badge do provedor e hora/data. Antes o "recolhido" ainda era uma
-   barra cheia de badges, nada parecida com o "▶ TAGS" de baixo. */
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch{padding:6px 14px 2px;border-bottom:none}
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch .drag-handle,
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .cdot-wrap,
+/* Cabeçalho RECOLHIDO é uma linha fina de trabalho (Rafa, 18/08/2026):
+   alça de arrastar, número de ordem, triângulo, nome do card — e a bolinha
+   de cor jogada pro lado contralateral, virando o botão de trocar a cor sem
+   precisar expandir nada. Some só o que é leitura pura: badge do provedor e
+   hora/data. A palavra "MENU" também sai: o triângulo sozinho já diz o que
+   faz, e o espaço economizado é o que abre lugar pra alça e pro número.
+   Vale em qualquer visualização e qualquer aparelho. */
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch{padding:6px 14px 2px;border-bottom:none;gap:6px}
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left>.badge:not(.ch-mode-badge),
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .ts{display:none}
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-badge{background:none;border:none;padding:0;font-size:10.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3);gap:6px}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-badge-label,
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-badge-menu{display:none}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-badge{background:none;border:none;padding:0;gap:0;min-width:14px}
+/* A linha ocupa a largura toda pra bolinha poder ir pro fim dela. */
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left{flex:1;min-width:0;flex-wrap:nowrap;gap:6px}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{order:0}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .ch-mode-badge{order:1}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .sname-badge{order:2;min-width:0}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .cdot-wrap{order:9;margin-left:auto}
+/* Alça de arrastar fica: dá pra reordenar o card sem ter que expandir. Um
+   pouco mais discreta que na versão expandida, pra não competir com o
+   triângulo, que é o controle principal da linha. */
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch .drag-handle{padding:2px 2px;font-size:13px;opacity:.5}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch .drag-handle:hover{opacity:1}
 .card:not(.focus-active) .ch-left{cursor:pointer}
 .card:not(.focus-active) .ch-mode-badge:active,
 .card:not(.focus-active) .ch-left:active{transform:scale(.97)}
@@ -1201,8 +1226,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .spk-rename-row,
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .conversa-bar{display:none}
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .badge.diar,
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin,
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{display:none}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin{display:none}
 /* Rodapé recolhido esconde o CONTEÚDO do bloco de tags, mas NÃO o
    .ctags-header — é ele o triângulo verde que abre de volta (se sumisse
    junto não haveria como expandir). Por isso .cpanel-wrap-tags fica de fora
@@ -3846,7 +3870,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.18.3';
+const VOX_VERSION='2026.08.18.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4320,6 +4344,7 @@ let I18N_EN={
 "Pular":"Skip","Abertura":"Intro",
 "Expandir cabeçalho do card":"Expand card header","Recolher cabeçalho do card":"Collapse card header",
 "Expandir tags do card":"Expand card tags","Recolher tags do card":"Collapse card tags",
+"Adicionar tag":"Add tag",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
 "Resuma os pontos principais":"Summarize the main points","Quais decisões foram tomadas?":"What decisions were made?","Liste as próximas ações":"List next actions","Corrija a pontuação":"Fix punctuation",
 "Pergunte sobre esta conversa…":"Ask about this conversation…","Pergunte sobre este texto…":"Ask about this text…","Enviar":"Send",
@@ -10572,14 +10597,20 @@ async function loadHistory(){
     updateRecencyBadges();
   }
 }
+// Carimbo de ordem no topo de CADA card — não só dos 5 mais recentes, como
+// era (Rafa, 18/08/2026: "número em todos, pra pessoa não se perder"). Os
+// três primeiros seguem destacados pela cor cheia (é a informação de
+// recência que o carimbo já dava); do quarto em diante todos ficam no mesmo
+// estilo discreto, porque a escala de opacidade antiga chegava a 0,28 e
+// numerar cem cards assim seria numerar noventa e sete cards ilegíveis.
 function updateRecencyBadges(){
   document.querySelectorAll('#cardsList .card .rec-rank').forEach(b=>b.remove());
   const cards=[...document.querySelectorAll('#cardsList .card:not(.proc-card):not(.hidden):not(.folder-hidden)')];
   cards.sort((a,b)=>new Date(b.dataset.dt||0)-new Date(a.dataset.dt||0));
-  cards.slice(0,5).forEach((c,i)=>{
+  cards.forEach((c,i)=>{
     const left=c.querySelector('.ch-left');if(!left)return;
     const b=document.createElement('span');
-    b.className=`rec-rank rank-${i+1}`;
+    b.className=`rec-rank rank-${Math.min(i+1,4)}`;
     b.textContent=i+1;
     b.title=i===0?t('Gravação/nota mais recente'):t('{n}ª mais recente').replace('{n}',i+1);
     left.prepend(b);
@@ -10747,7 +10778,7 @@ function tagsBlock(id,tags){
     `<div class="ctags-header" onclick="toggleTagsPanel('${id}')" role="button" tabindex="0" aria-expanded="${isCollapsed?'false':'true'}" aria-label="${isCollapsed?t('Expandir tags'):t('Recolher tags')}" onkeydown="if(event.key==='Enter'||event.key===' ')event.preventDefault();toggleTagsPanel('${id}')">`+
       `<span class="ctags-header-chev${isCollapsed?' collapsed':''}" aria-hidden="true">▼</span>`+
       `<span class="ctags-header-label">${t('Tags')}</span>`+
-      `<span class="ctags-header-count">${tags.length}</span>`+
+      `<button type="button" class="ctags-header-count" onclick="event.stopPropagation();addTagAqui('${id}')" aria-label="${t('Adicionar tag')}" title="${t('Adicionar tag')}"><span class="ctags-count-n">${tags.length}</span><span class="ctags-count-plus" aria-hidden="true">+</span></button>`+
     `</div>`+
     `<div class="ctags-collapse-wrap${isCollapsed?' collapsed':''}">`+
     `<div class="ctags" id="ctags-${id}">`+
@@ -10844,6 +10875,19 @@ function toggleChCollapse(id){
   // toggleDocHeaderFold) — nunca mistura os dois numa mesma visualização.
   if(card.classList.contains('focus-active'))return;
   _chAplicarEstado(card,id,!chHeaderOpenCards.has(id),'header');
+}
+// Botão do contador de tags. Ele precisa fazer algo DIFERENTE do triângulo
+// (que já expande/recolhe a linha inteira), senão seriam dois controles pro
+// mesmo efeito lado a lado: aqui ele garante o rodapé aberto e leva o cursor
+// direto pro campo de tag — clicar no número é "quero mexer nas tags".
+function addTagAqui(id){
+  const card=document.getElementById(id);if(!card)return;
+  if(!card.classList.contains('focus-active')&&!card.classList.contains('ch-footer-open'))toggleCfCollapse(id);
+  const wrap=document.getElementById('cpanelTags-'+id);
+  const colapsado=wrap&&wrap.querySelector('.ctags-collapse-wrap.collapsed');
+  if(colapsado&&card.classList.contains('focus-active'))toggleTagsPanel(id);
+  const inp=wrap&&wrap.querySelector('.ctag-input');
+  if(inp)requestAnimationFrame(()=>{inp.focus();inp.scrollIntoView({block:'nearest'})});
 }
 // Triângulo do rodapé (tags) — irmão independente do de cima, mesmo padrão.
 function toggleCfCollapse(id){
