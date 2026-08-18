@@ -3777,7 +3777,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.17.09';
+const VOX_VERSION='2026.08.17.10';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6486,6 +6486,15 @@ function _flAbrirCard(id,origemEl){
   if(!world||!layer)return;
   const origemRect=origemEl?origemEl.getBoundingClientRect():null;
 
+  // No toque (celular/iPad), abrir a partir da lista/Masonry é sempre um
+  // fluxo modal — uma miniatura por vez. Sem isso, tocar em card após card
+  // empilhava janela sobre janela, cada uma em cascata a partir da anterior,
+  // e a de baixo acabava nascendo fora da tela. No Windows/Mac continua
+  // cascata livre (Rafa pediu explicitamente pra não mexer no desktop).
+  if(_voxToque()&&layer.classList.contains('float-layer-fixo')){
+    [..._flAbertas].forEach(j=>j.id!==id&&_flFecharJanela(j.id));
+  }
+
   if(!_flAtiva)_flAlternarCamada();
 
   // Moldura da janela — o card em si é MOVIDO pra dentro (appendChild),
@@ -6509,13 +6518,21 @@ function _flAbrirCard(id,origemEl){
   const salvo=_flPosicaoSalva(folderKey,id);
 
   let x,y,w,h;
+  const tam=_flTamanhoPadrao();
   if(salvo){
     ({x,y,w,h}=salvo);
+    // Bug real do Rafa: posição salva de uma sessão/tela antiga (ex.: aberta
+    // grande no desktop) nunca era reconferida contra a tela atual — só x/y
+    // eram limitados, w/h entravam do jeito que foram salvos. Numa tela
+    // pequena isso estourava a janela pra muito além da borda de baixo, sem
+    // jeito de perceber que só faltava reduzir. Teto é o mesmo tamanho padrão
+    // do dispositivo atual — nunca menor que FL_MIN, nunca maior que o padrão.
+    w=Math.max(FL_MIN_W,Math.min(w,tam.largura));
+    h=Math.max(FL_MIN_H,Math.min(h,tam.altura));
   }else{
     // Cascata a partir do centro do viewport ATUAL da camada (convertendo
     // de tela pra coordenadas do mundo, descontando o pan/zoom próprios).
     const layerRect=layer.getBoundingClientRect();
-    const tam=_flTamanhoPadrao();
     const cx=(layerRect.width/2-_flX)/_flS-tam.largura/2;
     const cy=(layerRect.height/2-_flY)/_flS-tam.altura/2;
     const off=(_flAbertas.length%6)*28;
@@ -6523,11 +6540,15 @@ function _flAbrirCard(id,origemEl){
   }
   // Nem cascata nem posição salva podem nascer por cima do painel, nem fora
   // da área visível (posição salva de uma sessão com zoom/tela diferente
-  // podia cair fora hoje).
+  // podia cair fora hoje). Ao ABRIR queremos a janela INTEIRA visível — não
+  // reusa o limite de arrasto (_flLimiteVisivel, que deixa só 72px visíveis
+  // de propósito, pra poder arrastar quase toda pra fora); aqui é 0 margem.
+  const layerRectAbrir=layer.getBoundingClientRect();
   const limitePainel=_flLimitePainel();
-  const visivelAbrir=_flLimiteVisivel(w,h);
-  x=Math.max(visivelAbrir.minX,Math.min(x,Math.min(limitePainel.maxRight-w,visivelAbrir.maxX)));
-  y=Math.max(visivelAbrir.minY,Math.min(y,Math.min(limitePainel.maxBottom-h,visivelAbrir.maxY)));
+  const minXAbrir=(-_flX)/_flS,maxXAbrir=(layerRectAbrir.width-_flX)/_flS-w;
+  const minYAbrir=(-_flY)/_flS,maxYAbrir=(layerRectAbrir.height-_flY)/_flS-h;
+  x=Math.max(minXAbrir,Math.min(x,Math.min(limitePainel.maxRight-w,maxXAbrir)));
+  y=Math.max(minYAbrir,Math.min(y,Math.min(limitePainel.maxBottom-h,maxYAbrir)));
   const z=_flZTop++;
   win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';win.style.zIndex=z;
   _flAbertas.push({id,x,y,w,h,z,folder:folderKey});
