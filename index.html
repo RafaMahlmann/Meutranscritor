@@ -462,10 +462,20 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
    linhas, nunca diminuir a fonte). Tocar abre a janela flutuante pra
    editar — no mouse (Windows/Mac) esta classe nunca é aplicada, o Masonry
    continua exatamente como sempre foi. */
+/* box-sizing é border-box, então o padding do .cb (12px topo + 10px base)
+   comia da conta das 8 linhas: sobravam 7,16 e a oitava aparecia partida ao
+   meio embaixo do fade. Somando o padding, as 8 linhas ficam inteiras. */
 .cards.masonry.masonry-preview .card .cb{position:relative;cursor:pointer;
-  max-height:calc(var(--cf-sz,15px) * var(--card-lh-lista) * 8);overflow:hidden}
+  max-height:calc(var(--cf-sz,15px) * var(--card-lh-lista) * 8 + 22px);overflow:hidden}
 .cards.masonry.masonry-preview .card .cb textarea,
 .cards.masonry.masonry-preview .card .md-preview{pointer-events:none}
+/* A miniatura é só leitura (pointer-events:none acima), então os controles
+   de edição do textarea não têm o que fazer ali — mas apareciam mesmo assim:
+   barra de rolagem cinza encostada na direita do texto e a alça diagonal de
+   redimensionar no canto. Passavam despercebidos enquanto o cromo enchia o
+   card; com a miniatura limpa viraram a única sujeira da caixinha. */
+.cards.masonry.masonry-preview .card .cb textarea{resize:none;overflow:hidden;scrollbar-width:none}
+.cards.masonry.masonry-preview .card .cb textarea::-webkit-scrollbar{display:none}
 .cards.masonry.masonry-preview .card .cb::after{content:'';position:absolute;
   left:0;right:0;bottom:0;height:34px;background:linear-gradient(to bottom,transparent,var(--bg-card))}
 /* Miniatura sem chrome NENHUM (frente 17/08/2026, pedido do Rafa): antes de
@@ -477,7 +487,6 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
    inteira no Masonry, sem recorte. */
 .cards.masonry.masonry-preview .card:not(.proc-card) .ch,
 .cards.masonry.masonry-preview .card:not(.proc-card) .conversa-bar,
-.cards.masonry.masonry-preview .card:not(.proc-card) .cf-toggle-row,
 .cards.masonry.masonry-preview .card:not(.proc-card) .cpanel-wrap-tags,
 .cards.masonry.masonry-preview .card:not(.proc-card) .cf{display:none}
 .cards.focus-mode .card{display:none!important}
@@ -1168,11 +1177,27 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .badge.diar,
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin,
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .rec-rank{display:none}
-.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .cpanel-wrap-tags,
+/* Rodapé recolhido esconde o CONTEÚDO do bloco de tags, mas NÃO o
+   .ctags-header — é ele o triângulo verde que abre de volta (se sumisse
+   junto não haveria como expandir). Por isso .cpanel-wrap-tags fica de fora
+   desta lista: o wrap continua no lugar, só esvaziado. */
+.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .ctags-collapse-wrap,
 .card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .cf,
 .card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .tag-suggestions,
 .card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .ext-panel,
 .card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .vt-panel{display:none}
+/* Fora do Modo Documento o giro do triângulo segue o estado do RODAPÉ, não
+   o vox_tags_collapsed do Modo Documento — senão o card nasceria com a
+   setinha apontando pro lado errado do que o card realmente mostra. */
+.card:not(.focus-active):not(.proc-card) .ctags-header-chev{transform:none}
+.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .ctags-header-chev{transform:rotate(-90deg)}
+/* …e pelo mesmo motivo o .collapsed herdado do vox_tags_collapsed não pode
+   sobreviver aqui: quem recolhesse as tags UMA vez no Modo Documento fazia
+   todo card novo nascer com o painel em max-height:0, e aí abrir o rodapé
+   girava a setinha sem revelar nada. Fora do Modo Documento manda o
+   .ch-footer-open, ponto. */
+.card:not(.focus-active):not(.proc-card).ch-footer-open .ctags-collapse-wrap{max-height:400px;opacity:1}
+.card:not(.focus-active):not(.proc-card).ch-footer-open .tag-suggestions{max-height:400px;opacity:1}
 /* Revelar com intenção, não piscar: cada bloco nasce de opacity 0 + um
    pouco acima do lugar, com uma cascatinha de 30ms entre eles — pouco
    demais pra perceber como "atraso", o bastante pra não parecer um flash. */
@@ -1180,12 +1205,6 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card.ch-header-open .ca-wrap{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1)}
 .card.ch-header-open .conversa-bar{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .03s backwards}
 .card.ch-footer-open .cpanel-wrap-tags{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) .06s backwards}
-/* Triângulo do rodapé — mesmo visual do chevron das tags (.ctags-header),
-   mas vive FORA de .cpanel-wrap-tags (que fica inteiro escondido quando
-   fechado) pra continuar clicável mesmo com o rodapé recolhido. */
-.card:not(.focus-active) .cf-toggle-row{display:flex;align-items:center;gap:6px;padding:6px 14px 2px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:opacity var(--transition)}
-.card:not(.focus-active) .cf-toggle-row:hover{opacity:0.75}
-.card.focus-active .cf-toggle-row{display:none}
 /* Tipografia da janela flutuante — números do plano de cards (Apple HIG +
    Material 3): título do MESMO tamanho que o corpo, diferindo só no peso
    (não menor, como estava, espremido na fileira de badges de 11px);
@@ -2233,8 +2252,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    e rodapé recolhem SEPARADO, dois estados independentes: .ch-header-open
    (ações do .ca-wrap, controles de locutor/diarização, Conversar/
    Transformar — chevron em .ch-mode-badge, toggleChCollapse()) e
-   .ch-footer-open (bloco de tags + contagem — chevron em .cf-toggle-row,
-   toggleCfCollapse()). O texto (.cb/.roteiro-view) nunca é tocado por este
+   .ch-footer-open (bloco de tags + contagem — o próprio triângulo verde do
+   .ctags-header, toggleCfCollapse()). O texto (.cb) nunca é tocado por este
    bloco — continua sempre visível entre os dois. Mesma ideia do toggle de
    recolher cabeçalho que já existe no Modo Documento (hdr-folded/
    #docHdrFoldBtn, ~linha 220), só que por card, sem persistir em localStorage.
@@ -3801,7 +3820,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.17.11';
+const VOX_VERSION='2026.08.18.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5612,7 +5631,13 @@ function _masonryLayout(){
         const step=fiboSteps.find(s=>s>=h)||fiboSteps[fiboSteps.length-1];
         card.style.maxHeight=step+'px';
         card.style.overflow='hidden';
-        h=step;
+        // O degrau é TETO DE CORTE, não altura forçada: max-height limita um
+        // card longo mas não estica um curto. Reservar o degrau no
+        // empacotamento (h=step, como estava) abria um buraco do tamanho da
+        // diferença — medido em 31px e 34px depois que a miniatura perdeu o
+        // cromo e todo card ficou bem abaixo do próprio degrau. Quem manda no
+        // empacotamento é a altura real DEPOIS do corte.
+        h=Math.min(h,step);
       }
       colH[idx]=colH[idx]+h+gap;
     }
@@ -10688,7 +10713,7 @@ function tagsBlock(id,tags){
   const isCollapsed=localStorage.getItem('vox_tags_collapsed')==='1';
   return `<div class="cpanel-wrap cpanel-wrap-tags" id="cpanelTags-${id}">`+
     `<div class="ctags-header" onclick="toggleTagsPanel('${id}')" role="button" tabindex="0" aria-expanded="${isCollapsed?'false':'true'}" aria-label="${isCollapsed?t('Expandir tags'):t('Recolher tags')}" onkeydown="if(event.key==='Enter'||event.key===' ')event.preventDefault();toggleTagsPanel('${id}')">`+
-      `<span class="ctags-header-chev${isCollapsed?' collapsed':''}">${isCollapsed?'▶':'▼'}</span>`+
+      `<span class="ctags-header-chev${isCollapsed?' collapsed':''}" aria-hidden="true">▼</span>`+
       `<span class="ctags-header-label">${t('Tags')}</span>`+
       `<span class="ctags-header-count">${tags.length}</span>`+
     `</div>`+
@@ -10745,15 +10770,16 @@ function _chAplicarEstado(card,id,open,which){
   const cls=which==='footer'?'ch-footer-open':'ch-header-open';
   if(open)set.add(id);else set.delete(id);
   card.classList.toggle(cls,open);
-  const btn=card.querySelector(which==='footer'?'.cf-toggle-row':'.ch-mode-badge');
+  // O botão do rodapé é o MESMO .ctags-header que já existia (triângulo
+  // verde das tags) — o giro dele vem do CSS a partir de .ch-footer-open,
+  // aqui só o rótulo acessível é sincronizado.
+  const btn=card.querySelector(which==='footer'?'.ctags-header':'.ch-mode-badge');
   if(btn){
     btn.setAttribute('aria-expanded',open?'true':'false');
     const lbl=which==='footer'
       ?(open?t('Recolher tags do card'):t('Expandir tags do card'))
       :(open?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card'));
     btn.setAttribute('aria-label',lbl);btn.title=lbl;
-    const chev=btn.querySelector(which==='footer'?'.ctags-header-chev':'.ch-mode-chev');
-    if(chev&&which==='footer'){chev.classList.toggle('collapsed',!open);chev.textContent=open?'▼':'▶'}
   }
   const win=card.closest('.float-window');
   if(win)_flAjustarAlturaMenu(win,id,open);
@@ -10819,19 +10845,15 @@ function toggleTagsPanel(id){
   const suggestions=wrap.querySelector('.tag-suggestions');
   if(!collapse)return;
   const card=document.getElementById(id);
-  // Mobile Lista/Masonry: se o card ainda está recolhido, a setinha primeiro
-  // expande o card e abre o painel de tags, em vez de "girar no vazio".
-  if(_isSheetViewport() && card && !card.classList.contains('focus-active') && !card.classList.contains('ch-footer-open')){
+  // Fora do Modo Documento, ESTA setinha É o botão do rodapé (o triângulo
+  // verde que o Rafa pediu pra reusar, 17/08/2026) — não existe uma segunda
+  // linha "TAGS" com uma segunda setinha, como cheguei a criar e ele viu
+  // duplicada no Windows. Um recolhimento só por lugar: aqui manda o estado
+  // .ch-footer-open. O recolhimento antigo (só o painel, persistido em
+  // vox_tags_collapsed) continua valendo no Modo Documento, onde o card
+  // ocupa a tela inteira e .ch-footer-open não se aplica.
+  if(card && !card.classList.contains('focus-active')){
     toggleCfCollapse(id);
-    collapse.classList.remove('collapsed');
-    if(suggestions)suggestions.classList.remove('collapsed');
-    if(chev)chev.classList.remove('collapsed');
-    if(header){
-      header.setAttribute('aria-expanded','true');
-      const lbl=t('Recolher tags');
-      header.setAttribute('aria-label',lbl);header.title=lbl;
-    }
-    localStorage.setItem('vox_tags_collapsed','0');
     return;
   }
   const nowCollapsed=collapse.classList.toggle('collapsed');
@@ -12530,12 +12552,6 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <button class="icon-btn" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
           <button class="icon-btn on-danger" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
         </div>
-        <div class="spk-stats">${statsHtml}</div>
-        <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}">⏱️</button></div>
-        <div class="conversa-bar" id="convbar-${id}">
-          <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
-          <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
-        </div>
       </div>
       <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
         <button type="button" class="cpanel-handle cpanel-handle-transform" onclick="toggleCardPanel('${id}','transform')" aria-expanded="true" aria-label="${t('Recolher Transformar')}" title="${t('Recolher Transformar')}"><span class="cpanel-handle-bar"></span></button>
@@ -12543,15 +12559,17 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       </div>
       <div class="lens-panel" id="exp-menu-${id}"></div>
       <div class="adv-panel" id="adv-${id}"></div>
+      <div class="spk-stats">${statsHtml}</div>
+      <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}">⏱️</button></div>
+      <div class="conversa-bar" id="convbar-${id}">
+        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
+        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
+      </div>
       <div class="cb roteiro-view" id="roteiro-${id}" style="${view==='bolhas'?'display:none':''}">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)">${escHtml(roteiroText)}</textarea>
       </div>
       <div class="bbl-wrap" id="bbl-${id}" style="${view!=='bolhas'?'display:none':''}">
         ${renderBubbles(utterances,speakers)}
-      </div>
-      <div class="cf-toggle-row" onclick="toggleCfCollapse('${id}')" role="button" tabindex="0" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher tags do card'):t('Expandir tags do card')}" title="${chAberto?t('Recolher tags do card'):t('Expandir tags do card')}" onkeydown="if(event.key==='Enter'||event.key===' ')event.preventDefault();toggleCfCollapse('${id}')">
-        <span class="ctags-header-chev${chAberto?'':' collapsed'}" aria-hidden="true">${chAberto?'▼':'▶'}</span>
-        <span class="ctags-header-label">${t('Tags')}</span>
       </div>
       ${tagsHtml}
       <div class="cf">
@@ -15513,10 +15531,6 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <button class="adv-ft-btn adv-ft-undo" onclick="advUndoClick(this)" title="${t('Desfazer (Ctrl+Z)')}" disabled>↩</button>
           <button class="adv-ft-btn adv-ft-redo" onclick="advRedoClick(this)" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>↪</button>
         </div>
-        <div class="conversa-bar" id="convbar-${id}">
-          <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
-          <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
-        </div>
       </div>
       <div class="cpanel-wrap cpanel-wrap-transform" id="cpanelTransform-${id}">
         <button type="button" class="cpanel-handle cpanel-handle-transform" onclick="toggleCardPanel('${id}','transform')" aria-expanded="true" aria-label="${t('Recolher Transformar')}" title="${t('Recolher Transformar')}"><span class="cpanel-handle-bar"></span></button>
@@ -15525,13 +15539,13 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       <div class="lens-panel" id="exp-menu-${id}"></div>
       <div class="adv-panel" id="adv-${id}"></div>
       ${audioHtml}
+      <div class="conversa-bar" id="convbar-${id}">
+        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">💬 ${t('Conversar sobre este texto')}</button>
+        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">✨ ${t('Transformar')}</button>
+      </div>
       <div class="cb">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
         <div class="md-preview" id="mdp-${id}" style="display:none"></div>
-      </div>
-      <div class="cf-toggle-row" onclick="toggleCfCollapse('${id}')" role="button" tabindex="0" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher tags do card'):t('Expandir tags do card')}" title="${chAberto?t('Recolher tags do card'):t('Expandir tags do card')}" onkeydown="if(event.key==='Enter'||event.key===' ')event.preventDefault();toggleCfCollapse('${id}')">
-        <span class="ctags-header-chev${chAberto?'':' collapsed'}" aria-hidden="true">${chAberto?'▼':'▶'}</span>
-        <span class="ctags-header-label">${t('Tags')}</span>
       </div>
       ${tagsHtml}
       <div class="cf">
