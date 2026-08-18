@@ -596,9 +596,18 @@ body.doc-mode .card.focus-active .ch{padding:16px 44px 12px;background:transpare
 body.doc-mode .card.focus-active .ca-wrap,body.doc-mode .card.focus-active .drag-handle{display:none!important}
 /* Recolher cabeçalho: etiquetas (provedor/tipo/modo/sessão/horário) + fileira
    "Transformar" somem pra ganhar espaço de escrita — tudo ali já tem equivalente
-   na toolbar do Modo Documento, então é conteúdo redundante quando recolhido. */
+   na toolbar do Modo Documento, então é conteúdo redundante quando recolhido.
+   O botão da toolbar sempre prometeu "recolher cabeçalho (etiquetas +
+   Transformar)", mas só escondia as etiquetas e o painel de lentes: a barra
+   Conversar/Transformar e o bloco de tags continuavam na tela. Agora somem
+   de verdade, junto com o contador — que é o mesmo "sempre recolhido" dos
+   outros modos (Rafa, 18/08/2026). A alça pra trazer de volta é o próprio
+   botão ▾ da toolbar, que não some. */
 body.doc-mode .card.focus-active.hdr-folded .ch-left,
-body.doc-mode .card.focus-active.hdr-folded .lens-panel{display:none!important}
+body.doc-mode .card.focus-active.hdr-folded .lens-panel,
+body.doc-mode .card.focus-active.hdr-folded .conversa-bar,
+body.doc-mode .card.focus-active.hdr-folded .cpanel-wrap-tags,
+body.doc-mode .card.focus-active.hdr-folded .cf{display:none!important}
 body.doc-mode .card.focus-active.hdr-folded .ch{padding-bottom:4px}
 body.doc-mode .card.focus-active .cb{padding:8px 44px 20px}
 body.doc-mode .card.focus-active .ctags{padding-left:44px;padding-right:44px}
@@ -3837,7 +3846,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.18.2';
+const VOX_VERSION='2026.08.18.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5779,8 +5788,14 @@ function applyFocusCard(){
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
   const fc=cards[focusCardIdx];
   fc.classList.add('focus-active');
-  fc.classList.toggle('hdr-folded',localStorage.getItem('vox_doc_hdr_folded')==='1');
-  document.getElementById('docHdrFoldBtn')?.classList.toggle('active',localStorage.getItem('vox_doc_hdr_folded')==='1');
+  // Modo Documento é modo de visualização também, então segue a mesma regra
+  // ("sempre recolhido", Rafa 18/08/2026): nasce dobrado a menos que a
+  // pessoa tenha desdobrado de propósito alguma vez. Aqui a escolha PERSISTE
+  // (vox_doc_hdr_folded), diferente do recolher da Lista/Masonry — por isso
+  // o teste é !=='0' e não ==='1': sem escolha salva, dobrado.
+  const docDobrado=localStorage.getItem('vox_doc_hdr_folded')!=='0';
+  fc.classList.toggle('hdr-folded',docDobrado);
+  document.getElementById('docHdrFoldBtn')?.classList.toggle('active',docDobrado);
   const fta=fc.querySelector('.cb textarea');
   if(fta)fta.style.height='';
   const docLbl=document.getElementById('docNavLbl');if(docLbl)docLbl.textContent=`${focusCardIdx+1} / ${cards.length}`;
@@ -10770,14 +10785,14 @@ function _voxToque(){
 // rodada anterior, revertido).
 function _voxGradeAtiva(){return viewMode==='masonry'}
 function _chPadraoAberto(){
-  // Na grade em toque, o card é miniatura de leitura — nasce sempre
-  // recolhido, editar abre na janela flutuante (ver applyView/_voxToque).
-  if(_voxGradeAtiva()&&_voxToque())return false;
-  // Compacto (<600, Material 3) nasce recolhido — tela curta, cromo pesa
-  // mais. Medium+ nasce aberto — tem espaço de sobra. Janela flutuante
-  // força recolhido à parte, em _flAbrirCard (o card já existe quando entra
-  // lá, só muda de dono — não passa por aqui).
-  return window.matchMedia('(min-width:600px)').matches;
+  // SEMPRE recolhido, em qualquer visualização e qualquer tamanho de tela
+  // (Rafa, 18/08/2026: "os menus começam sempre recolhidos, o cara expande
+  // se quiser"). Antes isto dependia do contexto — tela >=600px nascia
+  // aberta, e só celular e a grade em toque nasciam recolhidos —, o que
+  // fazia o mesmo card aparecer de um jeito no iPad e de outro no celular, e
+  // enchia de cromo um card que a pessoa só queria ler. O estado continua
+  // não persistindo: expandir vale para aquele card naquela sessão.
+  return false;
 }
 // which='header' (menu de cima + Conversar/Transformar) ou 'footer' (tags).
 // Os dois são independentes agora — abrir um não mexe no outro.
