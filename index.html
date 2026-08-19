@@ -93,20 +93,76 @@
    enfeite. Por isso mora num atributo próprio (data-tc) e não no ci.
    O seletor tem especificidade maior que ".card" e também usa !important —
    é o que faz a escolha da pessoa vencer a neutralização acima. */
-.card[data-tc="0"]{--ca:#10b981!important;--cag:rgba(16,185,129,0.12)!important}
-.card[data-tc="1"]{--ca:#3b82f6!important;--cag:rgba(59,130,246,0.12)!important}
-.card[data-tc="2"]{--ca:#a78bfa!important;--cag:rgba(167,139,250,0.12)!important}
-.card[data-tc="3"]{--ca:#f97316!important;--cag:rgba(249,115,22,0.12)!important}
-.card[data-tc="4"]{--ca:#ec4899!important;--cag:rgba(236,72,153,0.12)!important}
-.card[data-tc="5"]{--ca:#06b6d4!important;--cag:rgba(6,182,212,0.12)!important}
-.card[data-tc="6"]{--ca:#eab308!important;--cag:rgba(234,179,8,0.12)!important}
-.card[data-tc="7"]{--ca:#f43f5e!important;--cag:rgba(244,63,94,0.12)!important}
-/* Fundo colorido de verdade, mas suave. color-mix mistura a cor da etiqueta com
-   o fundo normal do card — então funciona sozinho no tema claro E no escuro,
-   sem precisar de duas paletas. 7% é o ponto em que a cor se lê à distância e
-   o texto por cima continua com contraste de leitura confortável. */
-.card[data-tc]{background:color-mix(in srgb,var(--ca) 7%,var(--bg-card))}
-[data-theme="dark"] .card[data-tc]{background:color-mix(in srgb,var(--ca) 13%,var(--bg-card))}
+/* PALETA REFEITA EM 19/08/2026 — a antiga era uma cor de acento diluída a 7%
+   sobre o fundo: croma medido de 0,013 no claro (branco com sotaque) e
+   contraste de 1,46 contra o preto no escuro. O Rafa: "olha no preto, cara,
+   é quase imperceptível". Ele estava certo, e o número confirmou.
+   Esta é gerada em OKLCH com LUMINOSIDADE IGUAL entre as oito — por isso o
+   amarelo não salta mais que o roxo numa grade cheia. Croma 5,6x maior no
+   claro e 3,0x no escuro. Cada cor tem quatro papéis:
+     --ca       a cor viva (bolinha, triângulo, selo)
+     --luz-a/b  as duas pontas do degradê da superfície
+     --tc-txt   o texto por cima dela, já calibrado pra contraste
+   Duas paletas de verdade (clara e escura), não uma mistura automática:
+   no escuro a cor precisa ser mais CLARA que o fundo, não mais escura. */
+.card[data-tc="0"]{--ca:#259f56!important;--tc-txt:#1e3725;--luz-a:#dbf9e2;--luz-b:#b1e9bf;--cag:rgba(37,159,86,0.14)!important}
+.card[data-tc="1"]{--ca:#4885df!important;--tc-txt:#223147;--luz-a:#e8f1ff;--luz-b:#c3dbff;--cag:rgba(72,133,223,0.14)!important}
+.card[data-tc="2"]{--ca:#956ed2!important;--tc-txt:#342b44;--luz-a:#f2edff;--luz-b:#dfd0ff;--cag:rgba(149,110,210,0.14)!important}
+.card[data-tc="3"]{--ca:#c9690c!important;--tc-txt:#422a19;--luz-a:#feece1;--luz-b:#feceae;--cag:rgba(201,105,12,0.14)!important}
+.card[data-tc="4"]{--ca:#c35c9b!important;--tc-txt:#412735;--luz-a:#fee9f4;--luz-b:#ffc6e5;--cag:rgba(195,92,155,0.14)!important}
+.card[data-tc="5"]{--ca:#0d98a4!important;--tc-txt:#0d373b;--luz-a:#cefaff;--luz-b:#96e9f3;--cag:rgba(13,152,164,0.14)!important}
+.card[data-tc="6"]{--ca:#a18304!important;--tc-txt:#383014;--luz-a:#fbf0cf;--luz-b:#ecd89b;--cag:rgba(161,131,4,0.14)!important}
+.card[data-tc="7"]{--ca:#d15c56!important;--tc-txt:#452725;--luz-a:#feebe9;--luz-b:#ffcbc5;--cag:rgba(209,92,86,0.14)!important}
+[data-theme="dark"] .card[data-tc="0"]{--ca:#63ca84!important;--tc-txt:#f4f4f8;--luz-a:#2e854d;--luz-b:#0c4824}
+[data-theme="dark"] .card[data-tc="1"]{--ca:#7fb3ff!important;--tc-txt:#f4f4f8;--luz-a:#4371b7;--luz-b:#1d3b67}
+[data-theme="dark"] .card[data-tc="2"]{--ca:#bf9bfc!important;--tc-txt:#f4f4f8;--luz-a:#7d5fad;--luz-b:#433061}
+[data-theme="dark"] .card[data-tc="3"]{--ca:#f49752!important;--tc-txt:#f4f4f8;--luz-a:#a65c20;--luz-b:#5d2d03}
+[data-theme="dark"] .card[data-tc="4"]{--ca:#ef8bc5!important;--tc-txt:#f4f4f8;--luz-a:#a25281;--luz-b:#5a2746}
+[data-theme="dark"] .card[data-tc="5"]{--ca:#11c8d8!important;--tc-txt:#f4f4f8;--luz-a:#0a818b;--luz-b:#04444a}
+[data-theme="dark"] .card[data-tc="6"]{--ca:#d1ad32!important;--tc-txt:#f4f4f8;--luz-a:#896f02;--luz-b:#493a02}
+[data-theme="dark"] .card[data-tc="7"]{--ca:#fe8b83!important;--tc-txt:#f4f4f8;--luz-a:#ad524d;--luz-b:#612724}
+/* ── SUPERFÍCIE "LUZ" (proposta 5, escolhida pelo Rafa em 19/08/2026) ──
+   A cor não é tinta chapada: é iluminação. Entra pela quina de cima,
+   atravessa o card e assenta embaixo; a sombra devolve a mesma cor no chão,
+   então o card parece levitar sobre um pedaço de luz. No escuro o degradê
+   fica mais forte e ganha um halo — brilho só existe no escuro, e ali ele
+   trabalha. O card SEM etiqueta continua exatamente como sempre foi: é isso
+   que faz a cor valer alguma coisa quando aparece. */
+.card[data-tc]{background:linear-gradient(157deg,var(--luz-a) 0%,var(--luz-b) 58%);border-color:color-mix(in srgb,var(--ca) 26%,transparent);box-shadow:0 2px 4px rgba(0,0,0,.05),0 14px 30px -12px color-mix(in srgb,var(--ca) 70%,transparent)}
+[data-theme="dark"] .card[data-tc]{border-color:color-mix(in srgb,var(--ca) 42%,transparent);box-shadow:0 0 26px -8px color-mix(in srgb,var(--ca) 45%,transparent),0 8px 24px rgba(0,0,0,.5)}
+/* A tinta que sai da bolinha ao trocar a cor (ver _corSaiDaBolinha). Fica
+   ABAIXO do conteúdo do card — a cor passa por baixo do texto, o texto não
+   se mexe. Só transform e opacity, que o navegador anima sem repintar
+   layout. 420ms com curva de saída forte: aos 70ms já cruzou dois terços. */
+.cor-tinta{position:absolute;border-radius:50%;z-index:0;pointer-events:none;opacity:.85;background:var(--luz-b,var(--ca,var(--accent)));transform:scale(1);transition:transform .42s cubic-bezier(.22,1,.36,1),opacity .42s linear}
+.card>.diar-main-col,.card>.conf-overlay{position:relative;z-index:1}
+/* Fio de luz na borda de cima — a "quina por onde a luz entra". */
+.card[data-tc]::after{content:'';position:absolute;inset:0 0 auto 0;height:1px;z-index:2;pointer-events:none;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ca) 65%,transparent),transparent)}
+/* Texto e fiozinhos do card colorido herdam a cor calibrada. Sem isto o
+   cinza padrão some sobre o degradê. */
+.card[data-tc] .cb textarea,.card[data-tc] .md-preview,.card[data-tc] .sname-badge,.card[data-tc] .bbl-txt{color:var(--tc-txt)}
+.card[data-tc] .ts,.card[data-tc] .cf,.card[data-tc] .ctags-header-label,.card[data-tc] .ctags-header-count{color:color-mix(in srgb,var(--tc-txt) 58%,transparent)}
+.card[data-tc] .icon-btn{color:color-mix(in srgb,var(--tc-txt) 72%,transparent)}
+.card[data-tc] .ca-wrap{background:color-mix(in srgb,var(--tc-txt) 5%,transparent);border-top-color:color-mix(in srgb,var(--tc-txt) 13%,transparent)}
+[data-theme="dark"] .card[data-tc] .ca-wrap{background:rgba(255,255,255,.06);border-top-color:rgba(255,255,255,.13)}
+.card[data-tc] .ch{border-bottom-color:color-mix(in srgb,var(--tc-txt) 13%,transparent)}
+/* A cápsula desfazer/refazer tem fundo próprio (branco/grafite) e virava um
+   retângulo opaco no meio da superfície colorida. Sobre cor ela fica
+   translúcida e pega a borda da própria etiqueta. */
+.card[data-tc] .ca-pair{background:color-mix(in srgb,var(--tc-txt) 6%,transparent);border-color:color-mix(in srgb,var(--tc-txt) 22%,transparent)}
+.card[data-tc] .ca-pair .icon-btn+.icon-btn{border-left-color:color-mix(in srgb,var(--tc-txt) 22%,transparent)}
+[data-theme="dark"] .card[data-tc] .ca-pair{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2)}
+[data-theme="dark"] .card[data-tc] .ca-pair .icon-btn+.icon-btn{border-left-color:rgba(255,255,255,.2)}
+/* Tags e contador sobre superfície colorida */
+.card[data-tc] .ctag{background:color-mix(in srgb,var(--tc-txt) 10%,transparent);color:var(--tc-txt)}
+.card[data-tc] .ctag-suggest-btn,.card[data-tc] .ctag-gear-btn,.card[data-tc] .ctag-voice-btn,.card[data-tc] .ctag-input{border-color:color-mix(in srgb,var(--tc-txt) 22%,transparent);color:color-mix(in srgb,var(--tc-txt) 70%,transparent);background:transparent}
+/* O botão primário sobre superfície colorida: no claro vira a tinta cheia
+   com o texto na cor clara do degradê; no escuro inverte pra máxima leitura.
+   (No mockup isso apareceu como texto invisível — o botão herdava uma
+   variável que a superfície tinha zerado. Aqui já nasce resolvido.) */
+.card[data-tc] .conversa-btn.primary{background:var(--ca);border-color:var(--ca);color:var(--luz-a)}
+[data-theme="dark"] .card[data-tc] .conversa-btn.primary{background:var(--tc-txt);border-color:var(--tc-txt);color:#16161a}
+.card[data-tc] .conversa-btn:not(.primary){background:color-mix(in srgb,var(--tc-txt) 7%,transparent);border-color:color-mix(in srgb,var(--tc-txt) 20%,transparent);color:var(--tc-txt)}
 /* A bolinha do cabeçalho vira o gatilho: sem etiqueta ela é um contorno vazio
    (convida a clicar); com etiqueta, fica cheia da cor escolhida. */
 /* touch-action:none e user-select:none impedem o navegador de sequestrar o
@@ -673,17 +729,27 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
    --bg), borda neutra, sombra de repouso um pouco mais presente. A tarja
    volta só quando existe etiqueta de cor de verdade (.card[data-tc]). */
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden;animation:slideIn 0.28s cubic-bezier(0.4,0,0.2,1);transition:box-shadow var(--transition),background var(--transition);position:relative}
-.card[data-tc]{border-left:3px solid var(--ca)}
+/* A tarja lateral de 3px foi APAGADA em 19/08/2026 ("essa lateral destacada
+   esquerda, ela é muito feia" — Rafa). Quem marca a etiqueta agora é a
+   superfície inteira. Ver a nota em .card.pinned-card logo abaixo: duas
+   coisas pegavam carona nessa tarja e precisaram de sinal próprio. */
 .card:hover{box-shadow:var(--shadow-hover)}
-.rec-rank{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--ca,var(--accent));color:#fff;font-size:10px;font-weight:700;font-family:var(--font)}
-/* 1º, 2º e 3º mantêm a cor cheia decrescente (recência); do 4º em diante é
-   um carimbo discreto porém legível — todo card é numerado agora, e a escala
-   antiga terminava em 0,28 de opacidade, invisível. */
-.rec-rank.rank-2{opacity:0.8}
-.rec-rank.rank-3{opacity:0.62}
-.rec-rank.rank-4{background:var(--cag,var(--accent-glow));color:var(--ca,var(--accent));opacity:1;font-weight:600}
+/* NUMERAL, não medalha (opção A, escolhida pelo Rafa em 19/08/2026): sem
+   disco, algarismo de largura fixa alinhado à direita, formando uma coluna
+   reta descendo a lista. A pílula anterior era um segundo ponto colorido
+   brigando com a bolinha de cor na mesma linha fina, e a escada de opacidade
+   fazia o quarto card em diante virar fantasma. Referência: Linear e
+   Teenage Engineering, onde número é tipografia, não enfeite. */
+.rec-rank{display:inline-flex;align-items:center;justify-content:flex-end;flex-shrink:0;min-width:17px;font-size:12.5px;font-weight:600;line-height:1;letter-spacing:.2px;color:var(--text3);font-family:var(--font);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;transition:color .22s cubic-bezier(.22,1,.36,1)}
+.rec-rank.rank-1{color:var(--text);font-weight:700}
+.card[data-tc] .rec-rank{color:color-mix(in srgb,var(--tc-txt) 55%,transparent)}
+.card[data-tc] .rec-rank.rank-1{color:var(--tc-txt)}
 .card.focused{box-shadow:var(--shadow-hover),0 0 0 3px var(--cag,var(--accent-glow))}
-.card.pinned-card{border-left-color:#f59e0b;box-shadow:var(--shadow-card),0 0 0 1px rgba(245,158,11,0.2)}
+/* Fixado e "processando" marcavam-se pela COR da tarja lateral que acabou de
+   ser apagada — sem isto os dois ficariam sem sinal nenhum. Agora usam um
+   anel, que não depende de borda lateral e convive com a superfície colorida. */
+.card.pinned-card{box-shadow:var(--shadow-card),0 0 0 2px rgba(245,158,11,0.55)}
+.card[data-tc].pinned-card{box-shadow:0 2px 4px rgba(0,0,0,.05),0 14px 30px -12px color-mix(in srgb,var(--ca) 70%,transparent),0 0 0 2px rgba(245,158,11,0.65)}
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 /* ── CABEÇALHO EM TRÊS FAIXAS (proposta aprovada em 18/08/2026) ──
    O cabeçalho era UMA barra horizontal com dois blocos que embrulhavam
@@ -981,7 +1047,16 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 /* Cabeçalho do painel de tags com chevron para expandir/recolher */
 .ctags-header{display:flex;align-items:center;gap:6px;padding:6px 14px 2px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:opacity var(--transition)}
 .ctags-header:hover{opacity:0.75}
-.ctags-header-chev{font-size:10px;color:var(--ca,var(--accent));transition:transform .2s ease;display:inline-flex;align-items:center;line-height:1}
+/* TRÊS PONTINHOS no lugar do triângulo (Rafa, 18/08/2026: "as pessoas já
+   compreendem essa função"). Mesmo desenho em cima e embaixo, feito de três
+   <i> — nada de fonte ou ícone externo. RECOLHIDO eles ficam na vertical
+   (⋮ = "tem mais coisa aqui embaixo"); ABERTO giram 90° e viram ⋯ na
+   horizontal, na cor da etiqueta. O giro é o próprio feedback: um controle
+   só, dois estados legíveis.
+   Diferença proposital para o "⋯" da bandeja de ferramentas, que é outro
+   botão: este é COLORIDO (cor da etiqueta/acento), o da bandeja é cinza. */
+.ctags-header-chev,.ch-mode-chev{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2.5px;width:14px;height:16px;color:var(--ca,var(--accent));transition:transform .22s cubic-bezier(.22,1,.36,1)}
+.ctags-header-chev>i,.ch-mode-chev>i{display:block;width:3px;height:3px;border-radius:50%;background:currentColor}
 .ctags-header-chev.collapsed{transform:rotate(-90deg)}
 .ctags-header-label{font-size:10.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3)}
 /* O contador de tags era um número solto que "parecia botão e não era"
@@ -1076,7 +1151,10 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1px}
 
 /* ── PROC CARD ── */
-.card.proc-card{border-left-color:var(--warning)}
+/* Mesmo caso do fixado: marcava-se pela cor da tarja lateral, que saiu em
+   19/08/2026. Anel na cor de aviso — o card em processamento continua se
+   anunciando sem depender de borda lateral. */
+.card.proc-card{box-shadow:var(--shadow-card),0 0 0 2px color-mix(in srgb,var(--warning) 55%,transparent)}
 .proc-body{padding:16px 14px;display:flex;align-items:center;gap:14px}
 .proc-ico{font-size:26px;animation:procPulse 1.5s ease-in-out infinite}
 @keyframes procPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(0.94)}}
@@ -1310,13 +1388,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.focus-active) .ch-mode-badge{border:1px solid var(--ca,var(--accent));cursor:pointer;position:relative}
 .card:not(.focus-active) .ch-mode-badge-label{display:none}
 .card:not(.focus-active) .ch-mode-badge-menu{display:inline}
-/* O triângulo do cabeçalho é O MESMO do rodapé (item 4 do plano: "mesmo
-   estilo do triângulo verde que já existe nas tags", pros DOIS botões) —
-   mesma cor de categoria, mesmo tamanho, mesmo giro de -90° quando fechado.
-   `order:-1` põe ele ANTES do rótulo sem mexer no HTML, pra ler "▼ MENU"
-   igualzinho ao "▼ TAGS" de baixo. */
-.card:not(.focus-active) .ch-mode-chev{display:inline-flex;order:-1;font-size:10px;color:var(--ca,var(--accent));align-items:center;line-height:1;transition:transform .2s ease}
-.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-chev{transform:rotate(-90deg)}
+/* Os pontinhos do cabeçalho são OS MESMOS do rodapé — mesmo desenho, mesma
+   cor, mesmo giro. `order:-1` põe eles ANTES do rótulo sem mexer no HTML.
+   ABERTO = deitados (⋯), RECOLHIDO = em pé (⋮), igual embaixo. */
+.card:not(.focus-active) .ch-mode-chev{order:-1;transform:rotate(90deg)}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-mode-chev{transform:none}
 /* Cabeçalho RECOLHIDO é uma linha fina de trabalho (Rafa, 18/08/2026):
    alça de arrastar, número de ordem, triângulo, nome do card — e a bolinha
    de cor jogada pro lado contralateral, virando o botão de trocar a cor sem
@@ -1370,11 +1446,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .tag-suggestions,
 .card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .ext-panel,
 .card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .vt-panel{display:none}
-/* Fora do Modo Documento o giro do triângulo segue o estado do RODAPÉ, não
-   o vox_tags_collapsed do Modo Documento — senão o card nasceria com a
-   setinha apontando pro lado errado do que o card realmente mostra. */
-.card:not(.focus-active):not(.proc-card) .ctags-header-chev{transform:none}
-.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .ctags-header-chev{transform:rotate(-90deg)}
+/* Fora do Modo Documento o giro dos pontinhos segue o estado do RODAPÉ, não
+   o vox_tags_collapsed do Modo Documento — senão o card nasceria com eles
+   apontando pro lado errado do que o card realmente mostra.
+   ABERTO = deitados (⋯), RECOLHIDO = em pé (⋮). */
+.card:not(.focus-active):not(.proc-card) .ctags-header-chev{transform:rotate(90deg)}
+.card:not(.ch-footer-open):not(.focus-active):not(.proc-card) .ctags-header-chev{transform:none}
 /* …e pelo mesmo motivo o .collapsed herdado do vox_tags_collapsed não pode
    sobreviver aqui: quem recolhesse as tags UMA vez no Modo Documento fazia
    todo card novo nascer com o painel em max-height:0, e aí abrir o rodapé
@@ -4004,7 +4081,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.18.6';
+const VOX_VERSION='2026.08.19.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7702,12 +7779,42 @@ function toggleCdotPop(id){
 function setCardCor(id,i){
   const c=document.getElementById(id);
   if(!c)return;
+  _corSaiDaBolinha(c,i);
   if(i===null)delete c.dataset.tc;
   else c.dataset.tc=String(i);
   document.querySelectorAll('.cdot-pop.on').forEach(p=>p.classList.remove('on'));
   saveHistory();
   renderFiltroCores();
   applyFolderFilter(); // se um filtro de cor estiver ligado, o card some/aparece na hora
+}
+// A cor nova NASCE NA BOLINHA e se espalha por baixo do texto até tomar o
+// card — não é o card que pisca de uma cor pra outra. O disco começa do
+// tamanho e da posição exatos da bolinha, então a origem do movimento é o
+// lugar onde a pessoa tocou. z-index 0 e o conteúdo do card acima: o texto
+// não se mexe um pixel enquanto a tinta passa por baixo.
+// Respeita "reduzir movimento" do sistema — quem pediu menos animação recebe
+// a troca seca.
+function _corSaiDaBolinha(card,i){
+  if(i===null)return;
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const dot=card.querySelector('.cdot-btn');if(!dot)return;
+  const cr=card.getBoundingClientRect(),dr=dot.getBoundingClientRect();
+  if(!cr.width)return;
+  const tinta=document.createElement('span');
+  tinta.className='cor-tinta';
+  const d=dr.width||15;
+  tinta.style.width=tinta.style.height=d+'px';
+  tinta.style.left=(dr.left-cr.left)+'px';
+  tinta.style.top=(dr.top-cr.top)+'px';
+  // raio necessário pra cobrir o card a partir do ponto onde a bolinha está
+  const cx=dr.left-cr.left+d/2,cy=dr.top-cr.top+d/2;
+  const alcance=Math.hypot(Math.max(cx,cr.width-cx),Math.max(cy,cr.height-cy));
+  card.appendChild(tinta);
+  requestAnimationFrame(()=>{
+    tinta.style.transform='scale('+((alcance*2)/d+.2)+')';
+    tinta.style.opacity='1';
+  });
+  setTimeout(()=>tinta.remove(),520);
 }
 // Fecha o popover ao clicar fora — mesmo comportamento dos outros menus do app.
 document.addEventListener('click',e=>{
@@ -10913,7 +11020,7 @@ function tagsBlock(id,tags){
   const isCollapsed=localStorage.getItem('vox_tags_collapsed')==='1';
   return `<div class="cpanel-wrap cpanel-wrap-tags" id="cpanelTags-${id}">`+
     `<div class="ctags-header" onclick="toggleTagsPanel('${id}')" role="button" tabindex="0" aria-expanded="${isCollapsed?'false':'true'}" aria-label="${isCollapsed?t('Expandir tags'):t('Recolher tags')}" onkeydown="if(event.key==='Enter'||event.key===' ')event.preventDefault();toggleTagsPanel('${id}')">`+
-      `<span class="ctags-header-chev${isCollapsed?' collapsed':''}" aria-hidden="true">▼</span>`+
+      `<span class="ctags-header-chev${isCollapsed?' collapsed':''}" aria-hidden="true"><i></i><i></i><i></i></span>`+
       `<span class="ctags-header-label">${t('Tags')}</span>`+
       `<button type="button" class="ctags-header-count" onclick="event.stopPropagation();addTagAqui('${id}')" aria-label="${t('Adicionar tag')}" title="${t('Adicionar tag')}"><span class="ctags-count-n">${tags.length}</span><span class="ctags-count-plus" aria-hidden="true">+</span></button>`+
     `</div>`+
@@ -12779,7 +12886,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar">${t('🔮 Diarizado')}</span>
-          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">▼</span></button>
+          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?'📌 '+escHtml(sn):t('+ nome')}</span>
           ${pinned?`<span class="badge pin">${t('📌 Fixado')}</span>`:''}
           <span class="ts">${timeStr} · ${dateStr}</span>
@@ -15757,7 +15864,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <span class="badge${badgeCls}">${provLabel}</span>
-          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true">▼</span></button>
+          <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?escHtml(sn):t('+ nome')}</span>
           ${pinned?'<span class="badge pin">📌</span>':''}
           <span class="ts">${timeStr} · ${dateStr}</span>
