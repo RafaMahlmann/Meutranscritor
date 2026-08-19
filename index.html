@@ -1905,6 +1905,20 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-arrow:hover{color:var(--text)}
 .folder-arrow.expanded{transform:rotate(90deg)}
 .folder-arrow-placeholder{width:14px;flex-shrink:0}
+/* Selo no card arquivado quando ele aparece numa busca — sem isto a pessoa
+   acha o card e não entende por que ele não estava na lista. */
+.card.achado-arquivado{position:relative}
+.card.achado-arquivado::before{content:'📦';position:absolute;top:8px;right:10px;font-size:12px;z-index:3;opacity:.75;pointer-events:none}
+/* Rodapé fixo do painel: Arquivados e Lixeira. Visões, não pastas. */
+.folder-fixas{margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.folder-vista .folder-name{color:var(--text2)}
+.folder-vista-sub{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text4);padding:10px 10px 4px}
+.folder-item-arq{cursor:default;padding-right:10px}
+.folder-item-arq:hover{background:none}
+.folder-desarq{border:1px solid var(--border);background:none;color:var(--accent);font-family:var(--font);font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;cursor:pointer;flex-shrink:0;transition:background .12s linear}
+.folder-desarq:hover{background:var(--accent-glow)}
+.folder-esvaziar{width:100%;margin-top:6px;border:1px solid var(--border);background:none;color:var(--danger);font-family:var(--font);font-size:12px;font-weight:700;padding:8px;border-radius:11px;cursor:pointer;transition:background .12s linear}
+.folder-esvaziar:hover{background:rgba(239,68,68,.1)}
 /* BUG ANTIGO (achado em 19/08/2026): esta transição de max-height nunca fez
    nada — max-height não é definido em lugar nenhum do código, então não há
    valor entre o que animar. Trocada por uma entrada que funciona de fato,
@@ -2493,6 +2507,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .toast-wrap.on{display:block;animation:toastIn 0.3s ease}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .toast{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:9px 16px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;font-family:var(--font);box-shadow:0 8px 32px rgba(0,0,0,0.2);white-space:nowrap}
+/* Botão de desfazer dentro do toast — a rede de segurança de arquivar e da
+   lixeira. Fica visualmente separado da mensagem por um fio, senão parece
+   parte do texto e ninguém clica. */
+.toast-undo{margin-left:4px;padding:5px 11px;border:none;border-left:1px solid var(--border);background:none;color:var(--accent);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;border-radius:0 8px 8px 0;transition:color .12s linear,background .12s linear}
+.toast-undo:hover{background:var(--accent-glow)}
+.toast-undo:active{transform:scale(.96)}
 .toast.err{border-color:rgba(255,59,48,0.3)}
 .toast.ok{border-color:rgba(16,185,129,0.3)}
 .model-pick-btn{width:100%;background:none;border:none;text-align:left;padding:9px 14px;cursor:pointer;transition:background var(--transition);font-family:var(--font);color:var(--text)}
@@ -4148,6 +4168,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 <div class="toast-wrap" id="toastWrap">
   <div class="toast" id="toastEl">
     <span id="toastIco">✅</span><span id="toastMsg">Pronto!</span>
+    <button type="button" class="toast-undo" id="toastUndo" hidden>Desfazer</button>
   </div>
 </div>
 
@@ -4185,7 +4206,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.19.3';
+const VOX_VERSION='2026.08.19.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4662,6 +4683,18 @@ let I18N_EN={
 "Adicionar tag":"Add tag",
 "Mais ações":"More actions","Ver em Markdown":"View as Markdown","Revisar texto":"Review text",
 "Copiar":"Copy","Anexar áudio ou texto":"Attach audio or text",
+"Desfazer":"Undo","Arquivar":"Archive","Desarquivar":"Unarchive","Arquivados":"Archived",
+"Lixeira":"Trash","Restaurar":"Restore","Esvaziar lixeira":"Empty trash",
+"Arquivar pasta":"Archive folder","Desarquivar pasta":"Unarchive folder",
+"Pastas arquivadas":"Archived folders",
+"📦 Card arquivado":"📦 Card archived","↩ Card desarquivado":"↩ Card unarchived",
+"🗑️ Card na lixeira · some em 30 dias":"🗑️ Card in trash · gone in 30 days",
+"↩ Card restaurado":"↩ Card restored","🗑️ Lixeira esvaziada":"🗑️ Trash emptied",
+"ℹ️ A lixeira já está vazia":"ℹ️ Trash is already empty",
+"📦 Pasta arquivada":"📦 Folder archived","↩ Pasta desarquivada":"↩ Folder unarchived",
+"Apagar de vez {n} card(s)? Isso não tem volta.":"Permanently delete {n} card(s)? This cannot be undone.",
+"Cards e pastas que você tirou da frente — sem prazo":"Cards and folders you set aside — no deadline",
+"Some sozinho depois de 30 dias":"Goes away on its own after 30 days",
 "Exportar…":"Export…","Ver como documento":"View as document","Excluir card":"Delete card",
 "Conversar":"Chat",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
@@ -5804,7 +5837,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(!_keysHasAny()){
     restoreKeysFromCredentialVault(true).then(ok=>{if(ok){loadCfg();toast(t('🔒 Chaves restauradas do cofre do navegador!'))}});
   }
-  loadLearningData();await loadHistory();updateStats();checkSend();applyView();loadFontSize();
+  loadLearningData();await loadHistory();_faxinaLixeira();updateStats();checkSend();applyView();loadFontSize();
   loadFolders();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();initFloatSelHandle();
   initAudioDropzone();
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
@@ -6197,6 +6230,12 @@ function loadFontSize(){
 }
 
 // ── FOLDER TREE HELPERS ──
+// Pasta arquivada sai da árvore normal — ela só existe dentro da visão
+// Arquivados, que é de onde ela volta inteira. Sem isto ela continuava
+// listada e clicável, mostrando uma pasta vazia.
+function getFolderChildrenVisiveis(parentId){
+  return getFolderChildren(parentId).filter(f=>!f.arch);
+}
 function getFolderChildren(parentId){
   return folders.filter(f=>f.parentId===parentId);
 }
@@ -6260,8 +6299,12 @@ function saveFolders(){
   localStorage.setItem('vox_folders_expanded',JSON.stringify([...folderExpanded]));
 }
 function getFolderCounts(){
-  const counts={all:0};
+  const counts={all:0,arq:0,lix:0};
   _flTodosCards().forEach(c=>{
+    // Arquivado e excluído NÃO entram na conta de "Tudo" nem das pastas —
+    // senão o número nunca desce e arquivar não alivia nada, que é o ponto.
+    if(_cardNaLixeira(c)){counts.lix++;return}
+    if(_cardArquivado(c)){counts.arq++;return}
     counts.all++;const f=c.dataset.folder||'';if(f)counts[f]=(counts[f]||0)+1;
   });
   return counts;
@@ -6311,15 +6354,39 @@ function renderFolders(){
   html+=`<div class="folder-item${activeFolderId===null?' active':''}" data-fid="" onclick="selectFolder(null)">
     <span class="folder-ico">📥</span><span class="folder-name">${t('Tudo')}</span><span class="folder-count">${counts.all}</span></div>`;
   html+=renderFolderTree(null,0,counts);
+  // ── RODAPÉ FIXO: Arquivados e Lixeira ──
+  // Não são pastas: não aceitam arrastar card pra dentro, não renomeiam, não
+  // entram na árvore. São visões, como o "Tudo" lá em cima. O fio separa
+  // "onde eu guardo" de "o que eu tirei da frente".
+  const pastasArq=folders.filter(f=>f.arch&&!_pastaArquivada(f.parentId||''));
+  html+=`<div class="folder-fixas">`;
+  html+=`<div class="folder-item folder-vista${activeFolderId===VISTA_ARQ?' active':''}" onclick="selectFolder('${VISTA_ARQ}')" title="${t('Cards e pastas que você tirou da frente — sem prazo')}">
+    <span class="folder-ico">📦</span><span class="folder-name">${t('Arquivados')}</span>${(counts.arq+pastasArq.length)?`<span class="folder-count">${counts.arq+pastasArq.length}</span>`:''}</div>`;
+  html+=`<div class="folder-item folder-vista${activeFolderId===VISTA_LIX?' active':''}" onclick="selectFolder('${VISTA_LIX}')" title="${t('Some sozinho depois de 30 dias')}">
+    <span class="folder-ico">🗑️</span><span class="folder-name">${t('Lixeira')}</span>${counts.lix?`<span class="folder-count">${counts.lix}</span>`:''}</div>`;
+  // Pasta arquivada aparece DENTRO da visão Arquivados, pra poder voltar
+  // inteira — é o único lugar onde ela ainda existe.
+  if(activeFolderId===VISTA_ARQ&&pastasArq.length){
+    html+=`<div class="folder-vista-sub">${t('Pastas arquivadas')}</div>`;
+    pastasArq.forEach(f=>{
+      html+=`<div class="folder-item folder-item-arq"${f.color?` data-cor="1" style="--lvl:0;--fcor:${safeColor(f.color)}"`:' style="--lvl:0"'}>
+        <span class="folder-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span>
+        <button type="button" class="folder-desarq" onclick="event.stopPropagation();desarquivarPasta('${escJs(f.id)}')" title="${t('Desarquivar pasta')}">${t('Restaurar')}</button></div>`;
+    });
+  }
+  if(activeFolderId===VISTA_LIX&&counts.lix){
+    html+=`<button type="button" class="folder-esvaziar" onclick="esvaziarLixeira()">${t('Esvaziar lixeira')}</button>`;
+  }
+  html+=`</div>`;
   list.innerHTML=html;
 }
 function renderFolderTree(parentId,lvl,counts){
-  const children=getFolderChildren(parentId);
+  const children=getFolderChildrenVisiveis(parentId);
   if(!children.length)return '';
   let html='<div class="folder-tree-children">';
   children.forEach(f=>{
     const isExpanded=folderExpanded.has(f.id);
-    const hasChildren=getFolderChildren(f.id).length>0;
+    const hasChildren=getFolderChildrenVisiveis(f.id).length>0;
     const isActive=activeFolderId===f.id;
     const count=getFolderCount(f.id,counts);
     // BUG ANTIGO (achado em 19/08/2026): isto era style="padding-left:Npx",
@@ -7822,9 +7889,16 @@ const TAG_CORES=['#10b981','#3b82f6','#a78bfa','#f97316','#ec4899','#06b6d4','#e
 // Fica fora do addCard de propósito: aquela função já tem 14 parâmetros, e um
 // 15º só pra isso deixaria toda chamada existente mais difícil de ler.
 function _restaurarEtiqueta(id,it){
-  if(!id||it==null||it.tc===undefined||it.tc===null)return;
-  const n=parseInt(it.tc);
-  if(!isNaN(n)&&n>=0&&n<TAG_CORES.length)document.getElementById(id)?.setAttribute('data-tc',String(n));
+  if(!id||it==null)return;
+  const el=document.getElementById(id);
+  if(it.tc!==undefined&&it.tc!==null){
+    const n=parseInt(it.tc);
+    if(!isNaN(n)&&n>=0&&n<TAG_CORES.length)el?.setAttribute('data-tc',String(n));
+  }
+  // Arquivado e lixeira voltam junto — sem isto, recarregar a página
+  // ressuscitava tudo que a pessoa tinha tirado da frente.
+  if(el&&it.arch){el.dataset.arch='1';if(it.archAt)el.dataset.archAt=it.archAt}
+  if(el&&it.del){el.dataset.del='1';if(it.delAt)el.dataset.delAt=it.delAt}
 }
 // Os nomes das etiquetas são do dono do aparelho, não nossos. O padrão é a cor
 // ("Verde"), mas quem usa quase sempre quer o SIGNIFICADO ("Urgente", "Cliente").
@@ -7974,9 +8048,33 @@ function renderFiltroCores(){
       </span>`
     ).join('')}</div>`;
 }
+// ── ARQUIVAR E LIXEIRA (19/08/2026) ──
+// Duas visões que não são pastas de verdade — a lista de pastas ganha duas
+// linhas fixas no pé, do mesmo jeito que "Tudo" já é uma visão e não uma
+// pasta. Os ids são impossíveis de colidir com id de pasta real ('f_...').
+const VISTA_ARQ='__arq__',VISTA_LIX='__lix__';
+const LIXEIRA_DIAS=30;
+// Um card está arquivado se ele mesmo foi arquivado OU se está numa pasta
+// arquivada — porque "arquivar pasta some com a pasta inteira e ela volta
+// inteira" (decisão do Rafa, 19/08). Marcar card a card na hora de arquivar
+// a pasta daria no mesmo até alguém mover um card pra dentro dela depois.
+function _pastaArquivada(fid){
+  let f=folders.find(x=>x.id===fid),guarda=0;
+  while(f&&guarda++<20){ if(f.arch)return true; f=folders.find(x=>x.id===f.parentId); }
+  return false;
+}
+function _cardArquivado(c){return c.dataset.arch==='1'||_pastaArquivada(c.dataset.folder||'')}
+function _cardNaLixeira(c){return c.dataset.del==='1'}
 function applyFolderFilter(){
+  const naArq=activeFolderId===VISTA_ARQ,naLix=activeFolderId===VISTA_LIX;
   document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
-    const inFolder=activeFolderId===null||(c.dataset.folder||'')===activeFolderId;
+    const arq=_cardArquivado(c),lix=_cardNaLixeira(c);
+    let inFolder;
+    if(naLix)inFolder=lix;
+    else if(naArq)inFolder=arq&&!lix;
+    // Lixeira e arquivo saem de TODA visão normal, inclusive de "Tudo" — é
+    // isso que faz arquivar aliviar de verdade em vez de só mudar de rótulo.
+    else inFolder=!arq&&!lix&&(activeFolderId===null||(c.dataset.folder||'')===activeFolderId);
     // Os dois filtros se somam (pasta E cor) — é o que a pessoa espera ao
     // deixar os dois ligados, e é o que torna a cor útil DENTRO de uma pasta.
     const naCor=corFiltroAtivo===null||(c.dataset.tc!==undefined&&+c.dataset.tc===corFiltroAtivo);
@@ -8007,6 +8105,7 @@ function folderMenu(id,ev){
     <button onclick="abrirSalaEnvio('${escJs(id)}')">${ICO.qr}${t('Transferir (QR / link)')}</button>
     <button onclick="exportFolder('${escJs(id)}')">${t('📄 Exportar pasta')}</button>
     <button onclick="clearFolder('${escJs(id)}')">${ICO.eraser}${t('Limpar pasta')}</button>
+    <button onclick="arquivarPasta('${escJs(id)}')">📦 ${t('Arquivar pasta')}</button>
     <button class="danger" onclick="deleteFolder('${escJs(id)}')">${t('🗑️ Excluir pasta')}</button>`;
   document.body.appendChild(menu);
   const r=ev.target.getBoundingClientRect();
@@ -8680,9 +8779,21 @@ function doSearch(q){
     card.style.order=q?String(Math.round((3-score)*10)):'';
     if(score>0)shown++;
   });
-  // busca é sempre global: ao buscar, ignora o filtro de pasta; ao limpar, reaplica
-  if(q)document.querySelectorAll('.card.folder-hidden').forEach(c=>c.classList.remove('folder-hidden'));
-  else applyFolderFilter();
+  // busca é sempre global: ao buscar, ignora o filtro de pasta; ao limpar, reaplica.
+  // Arquivado APARECE na busca (é o que dá coragem de arquivar — Keep faz
+  // igual), com um selo pra pessoa entender por que aquele card não estava na
+  // lista. Lixeira NÃO aparece: quem procura um card não quer achar o que
+  // jogou fora; pra isso existe a visão da lixeira.
+  if(q){
+    document.querySelectorAll('.card.folder-hidden').forEach(c=>c.classList.remove('folder-hidden'));
+    document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+      if(_cardNaLixeira(c))c.classList.add('hidden');
+      c.classList.toggle('achado-arquivado',_cardArquivado(c)&&!_cardNaLixeira(c));
+    });
+  }else{
+    document.querySelectorAll('.achado-arquivado').forEach(c=>c.classList.remove('achado-arquivado'));
+    applyFolderFilter();
+  }
   cnt.textContent=q?(shown+' '+t(shown!==1?'resultados':'resultado')):'';
   updateRecencyBadges();
   // Busca por sentido entra como SEGUNDA onda, nunca no lugar da primeira: a
@@ -10984,7 +11095,11 @@ function saveHistory(){
       ...(c.dataset.tc!==undefined&&c.dataset.tc!==''?{tc:parseInt(c.dataset.tc)}:{}),
       dt:c.dataset.dt||'',tags:(c.dataset.tags||'').split(',').filter(t=>t),
       sessionName:c.dataset.sessionName||'',mode:c.dataset.mode||'livre',
-      pinned:c.dataset.pinned==='true',folder:c.dataset.folder||''
+      pinned:c.dataset.pinned==='true',folder:c.dataset.folder||'',
+      // Arquivado e lixeira só entram quando existem — card normal continua
+      // salvando exatamente o mesmo que salvava antes.
+      ...(c.dataset.arch==='1'?{arch:1,archAt:c.dataset.archAt||''}:{}),
+      ...(c.dataset.del==='1'?{del:1,delAt:c.dataset.delAt||''}:{})
     };
     if(c.dataset.diarized==='true'){
       items.push({...base,diarized:true,utterances:c.dataset.utterances||'[]',speakers:c.dataset.speakers||'{}',view:c.dataset.view||'roteiro',chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
@@ -11241,6 +11356,10 @@ function toggleCardMore(id){
   _caFecharTodos();
   if(!abrir)return;
   const btn=menu.parentElement?.querySelector('.icon-btn');
+  // O rótulo de arquivar depende do estado do card AGORA, não de quando o
+  // card foi criado — por isso é decidido na abertura do menu.
+  const card=document.getElementById(id),arqLbl=menu.querySelector('.ca-mi-arq span');
+  if(card&&arqLbl)arqLbl.textContent=_cardArquivado(card)?t('Desarquivar'):t('Arquivar');
   menu.classList.add('on');
   btn?.setAttribute('aria-expanded','true');
   if(!btn)return;
@@ -13028,6 +13147,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>diarToStandardCard('${id}'))">${ICO.file}${t('Virar card padrão')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleExportMenu('${id}'))">${ICO.export}${t('Exportar…')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleFocusCard('${id}'))">${ICO.expand}${t('Ver como documento')}</button>
+              <button class="ca-mi ca-mi-arq" onclick="_caMenuAgir('${id}',()=>toggleArquivarCard('${id}'))">📦 <span>${t('Arquivar')}</span></button>
               <div class="ca-msep"></div>
               <button class="ca-mi danger" onclick="_caMenuAgir('${id}',()=>askDel('${id}'))">${ICO.trash}${t('Excluir card')}</button>
             </div>
@@ -16006,6 +16126,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>openReviewPanel('${id}'))">${ICO.checkSquare}${t('Revisar texto')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleExportMenu('${id}'))">${ICO.export}${t('Exportar…')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleFocusCard('${id}'))">${ICO.expand}${t('Ver como documento')}</button>
+              <button class="ca-mi ca-mi-arq" onclick="_caMenuAgir('${id}',()=>toggleArquivarCard('${id}'))">📦 <span>${t('Arquivar')}</span></button>
               <div class="ca-msep"></div>
               <button class="ca-mi danger" onclick="_caMenuAgir('${id}',()=>askDel('${id}'))">${ICO.trash}${t('Excluir card')}</button>
             </div>
@@ -16097,7 +16218,13 @@ function updateFooter(id){
   }
   saveHistory();
 }
-function askDel(id){document.getElementById('conf-'+id)?.classList.add('on')}
+// Dentro da lixeira o botão de excluir apaga DE VEZ, e aí a confirmação faz
+// sentido — é a única ação do app sem volta. Fora dela, excluir só move.
+function askDel(id){
+  const c=document.getElementById(id);
+  if(c&&_cardNaLixeira(c)){document.getElementById('conf-'+id)?.classList.add('on');return}
+  paraLixeira(id);
+}
 function cancelDel(id){document.getElementById('conf-'+id)?.classList.remove('on')}
 function doDelete(id){
   revokeBlob(id);document.getElementById(id)?.remove();
@@ -16107,6 +16234,136 @@ function doDelete(id){
     document.getElementById('cardsList').style.display='none';
     document.getElementById('emptyState').style.display='flex';
   }
+}
+// ── ARQUIVAR ──
+// Sem confirmação, com desfazer: é ação frequente. Arquivado não tem prazo
+// (o prazo é da lixeira) — o combinado é "um dia eu acho", e prazo quebraria
+// essa promessa. Continua achável na busca.
+function arquivarCard(id,silencioso){
+  const c=document.getElementById(id);if(!c)return;
+  c.dataset.arch='1';c.dataset.archAt=new Date().toISOString();
+  saveHistory();renderFolders();applyFolderFilter();
+  if(!silencioso)toastDesfazer(t('📦 Card arquivado'),()=>desarquivarCard(id,true));
+}
+function desarquivarCard(id,silencioso){
+  const c=document.getElementById(id);if(!c)return;
+  delete c.dataset.arch;delete c.dataset.archAt;
+  // Se ele estava numa pasta que também está arquivada, tirar só a marca do
+  // card não bastaria: ele voltaria e sumiria de novo no próximo filtro.
+  if(_pastaArquivada(c.dataset.folder||''))c.dataset.folder='';
+  saveHistory();renderFolders();applyFolderFilter();
+  if(!silencioso)toast(t('↩ Card desarquivado'));
+}
+function toggleArquivarCard(id){
+  const c=document.getElementById(id);if(!c)return;
+  _cardArquivado(c)?desarquivarCard(id):arquivarCard(id);
+}
+// ── LIXEIRA ──
+// Excluir deixa de ser definitivo: vai pra lixeira e volta em 30 dias. Era o
+// único caminho sem volta do app inteiro.
+function paraLixeira(id,silencioso){
+  const c=document.getElementById(id);if(!c)return;
+  c.dataset.del='1';c.dataset.delAt=new Date().toISOString();
+  document.getElementById('conf-'+id)?.classList.remove('on');
+  saveHistory();renderFolders();applyFolderFilter();
+  if(!silencioso)toastDesfazer(t('🗑️ Card na lixeira · some em 30 dias'),()=>restaurarDaLixeira(id,true));
+}
+function restaurarDaLixeira(id,silencioso){
+  const c=document.getElementById(id);if(!c)return;
+  delete c.dataset.del;delete c.dataset.delAt;
+  saveHistory();renderFolders();applyFolderFilter();
+  if(!silencioso)toast(t('↩ Card restaurado'));
+}
+function esvaziarLixeira(){
+  const ids=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')].filter(_cardNaLixeira).map(c=>c.id);
+  if(!ids.length){toast(t('ℹ️ A lixeira já está vazia'));return}
+  if(!confirm(t('Apagar de vez {n} card(s)? Isso não tem volta.').replace('{n}',ids.length)))return;
+  ids.forEach(doDelete);
+  toast(t('🗑️ Lixeira esvaziada'));
+}
+// Faxina dos 30 dias, uma vez por sessão. Roda no carregamento, depois que o
+// histórico já foi restaurado.
+function _faxinaLixeira(){
+  const limite=Date.now()-LIXEIRA_DIAS*24*60*60*1000;
+  let n=0;
+  [...document.querySelectorAll('#cardsList .card:not(.proc-card)')].forEach(c=>{
+    if(!_cardNaLixeira(c))return;
+    const q=Date.parse(c.dataset.delAt||'');
+    if(q&&q<limite){doDelete(c.id);n++}
+  });
+  if(n)console.info('[Vox] lixeira: '+n+' card(s) passaram de '+LIXEIRA_DIAS+' dias e foram apagados');
+}
+// ── DESLIZAR PARA ARQUIVAR (só toque) ──
+// Padrão do Gmail e do antigo Mailbox: desliza, arquiva, e o toast oferece
+// desfazer. A checagem que evita disparo acidental é a de DIREÇÃO DOMINANTE
+// (abs(dx) > abs(dy)) — sem ela, rolar a lista com o dedo meio torto arquiva
+// card sem querer, que é a reclamação clássica desse gesto.
+// Delegado no document, como os outros gestos do app: roda uma vez só e não
+// depende de quando o card nasce.
+(function(){
+  let alvo=null,x0=0,y0=0,dx=0,decidiu=false,horizontal=false;
+  const LIMIAR=64;   // o quanto precisa arrastar pra valer como arquivar
+  const DECIDE=10;   // a partir daqui o gesto já é ou vertical ou horizontal
+  function limpar(){
+    if(alvo){alvo.style.transition='';alvo.style.transform='';alvo.style.opacity=''}
+    alvo=null;dx=0;decidiu=false;horizontal=false;
+  }
+  document.addEventListener('touchstart',e=>{
+    if(!_voxToque()||e.touches.length!==1)return;
+    const card=e.target.closest?.('#cardsList .card:not(.proc-card)');
+    if(!card||card.classList.contains('focus-active'))return;
+    // Não sequestra gesto de quem está mexendo em controle ou escrevendo.
+    if(e.target.closest('button,textarea,input,.ca-wrap,.cdot-wrap,.drag-handle,.ctags'))return;
+    alvo=card;x0=e.touches[0].clientX;y0=e.touches[0].clientY;dx=0;decidiu=false;horizontal=false;
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!alvo||e.touches.length!==1)return;
+    const ex=e.touches[0].clientX-x0,ey=e.touches[0].clientY-y0;
+    if(!decidiu){
+      if(Math.abs(ex)<DECIDE&&Math.abs(ey)<DECIDE)return;
+      decidiu=true;horizontal=Math.abs(ex)>Math.abs(ey);
+      if(!horizontal){alvo=null;return}   // é rolagem: devolve o gesto à página
+      alvo.style.transition='none';
+    }
+    if(!horizontal)return;
+    e.preventDefault();                    // agora sim o gesto é nosso
+    dx=ex;
+    alvo.style.transform='translateX('+dx+'px)';
+    alvo.style.opacity=String(Math.max(.35,1-Math.abs(dx)/320));
+  },{passive:false});
+  document.addEventListener('touchend',()=>{
+    if(!alvo||!horizontal){limpar();return}
+    const card=alvo,passou=Math.abs(dx)>=LIMIAR;
+    card.style.transition='transform .22s cubic-bezier(.22,1,.36,1),opacity .22s linear';
+    if(passou){
+      card.style.transform='translateX('+(dx>0?1:-1)*window.innerWidth+'px)';
+      card.style.opacity='0';
+      const id=card.id;
+      setTimeout(()=>{card.style.transition='';card.style.transform='';card.style.opacity='';arquivarCard(id)},200);
+    }else{
+      card.style.transform='';card.style.opacity='';
+    }
+    alvo=null;dx=0;decidiu=false;horizontal=false;
+  },{passive:true});
+  document.addEventListener('touchcancel',limpar,{passive:true});
+})();
+// ── ARQUIVAR PASTA ──
+// Decisão do Rafa (19/08): some com a pasta INTEIRA e ela volta inteira. Por
+// isso a marca vive na pasta, não card a card — inclusive porque um card
+// movido pra dentro dela depois tem que sumir junto.
+function arquivarPasta(id){
+  closeFolderMenu();
+  const f=folders.find(x=>x.id===id);if(!f)return;
+  f.arch=true;f.archAt=new Date().toISOString();
+  if(activeFolderId===id)activeFolderId=null;
+  saveFolders();renderFolders();applyFolderFilter();
+  toastDesfazer(t('📦 Pasta arquivada'),()=>desarquivarPasta(id,true));
+}
+function desarquivarPasta(id,silencioso){
+  const f=folders.find(x=>x.id===id);if(!f)return;
+  delete f.arch;delete f.archAt;
+  saveFolders();renderFolders();applyFolderFilter();
+  if(!silencioso)toast(t('↩ Pasta desarquivada'));
 }
 function _cardTags(id){return (document.getElementById(id)?.dataset.tags||'').split(',').filter(t=>t)}
 function _hashTags(id){const t=_cardTags(id);return t.length?'\n\n'+t.map(x=>'#'+x.trim().replace(/\s+/g,'-')).join(' '):''}
@@ -17125,11 +17382,35 @@ function autoR(el){
   el.style.height=(inCchat?el.scrollHeight:Math.min(el.scrollHeight,380))+'px';
 }
 function checkSend(){const btn=document.getElementById('btnSend');const has=document.getElementById('itxt').value.trim().length>0;btn.classList.toggle('active',has&&!isRec&&!isProc&&!stagedFile)}
+let _toastT=null;
 function toast(msg,err=false){
   const w=document.getElementById('toastWrap');
   document.getElementById('toastMsg').textContent=msg;document.getElementById('toastIco').textContent=err?'❌':'✅';
   document.getElementById('toastEl').className='toast '+(err?'err':'ok');
-  w.classList.add('on');setTimeout(()=>w.classList.remove('on'),3200);
+  const u=document.getElementById('toastUndo');if(u){u.hidden=true;u.onclick=null}
+  clearTimeout(_toastT);
+  w.classList.add('on');_toastT=setTimeout(()=>w.classList.remove('on'),3200);
+}
+// Toast com botão de desfazer. É o par obrigatório de toda ação frequente que
+// mexe em card (arquivar, mandar pra lixeira): a regra de ações reversíveis
+// diz que quanto mais frequente a ação, mais leve tem que ser a recuperação —
+// desfazer, não caixa de confirmação. Confirmação em ação de todo dia treina
+// o clique automático e estraga a confirmação do excluir, que é a que importa.
+// Dura mais que o toast normal, porque aqui a pessoa precisa de tempo pra ler
+// e decidir.
+function toastDesfazer(msg,aoDesfazer){
+  const w=document.getElementById('toastWrap'),u=document.getElementById('toastUndo');
+  document.getElementById('toastMsg').textContent=msg;
+  document.getElementById('toastIco').textContent='✅';
+  document.getElementById('toastEl').className='toast ok';
+  clearTimeout(_toastT);
+  if(u){
+    u.hidden=false;
+    u.textContent=t('Desfazer');
+    u.onclick=()=>{clearTimeout(_toastT);w.classList.remove('on');u.hidden=true;u.onclick=null;aoDesfazer()};
+  }
+  w.classList.add('on');
+  _toastT=setTimeout(()=>{w.classList.remove('on');if(u){u.hidden=true;u.onclick=null}},6000);
 }
 function lockUI(on){
   document.getElementById('btnRec').disabled=on;document.getElementById('btnAttach').disabled=on;
