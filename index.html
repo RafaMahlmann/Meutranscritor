@@ -197,6 +197,18 @@
 }
 .card[data-tc] .cdot-btn{background:var(--ca);border-color:var(--ca)}
 .cdot-wrap{position:relative;display:inline-flex;align-items:center}
+/* Excluir vira um "✕" ao lado da bolinha de cor, sempre visível na faixa de
+   identidade — não é mais preciso expandir o cabeçalho pra apagar um card.
+   "Essa função tem que ser sempre fácil, acessível" (Rafa, 19/08/2026).
+   Saiu da bandeja de ferramentas e do menu "⋯" (eram três lugares pra
+   apagar; agora é um só). O visual fica DISCRETO em repouso — vermelho
+   antes da hora seria destrutivo demais numa linha que aparece o tempo
+   todo — e só esquenta no hover/toque. Excluir aqui nunca é definitivo: cai
+   direto na lixeira (30 dias), então um toque errado tem volta fácil. */
+.ch-del-btn{position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:none;background:none;border-radius:7px;font-size:12px;line-height:1;color:var(--text4);cursor:pointer;transition:background .13s linear,color .13s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+.ch-del-btn::after{content:'';position:absolute;top:50%;left:50%;width:var(--card-tap-min);height:var(--card-tap-min);transform:translate(-50%,-50%)}
+.ch-del-btn:hover{background:rgba(239,68,68,.12);color:var(--danger)}
+.ch-del-btn:active{transform:scale(.88)}
 /* Ancorado pela DIREITA desde 18/08/2026: a bolinha passou a viver na ponta
    direita da linha (pedido do Rafa), e com left:0 o seletor de cores crescia
    pra fora da tela — medido vazando 103px num iPad de 810px. Cresce pra
@@ -803,6 +815,7 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .card.ch-header-open .ch-left .sname-badge{order:2;flex:1;min-width:0;max-width:none;font-size:13px;font-weight:600;color:var(--text)}
 .card.ch-header-open .ch-left .badge.pin{order:3}
 .card.ch-header-open .ch-left .cdot-wrap{order:4;margin-left:auto}
+.card.ch-header-open .ch-left .ch-del-btn{order:5}
 /* O ::after de um flex container também é flex item: com flex-basis:100% e
    altura zero ele empurra tudo que vier depois pra linha seguinte. É o que
    separa "nome" de "meta" sem precisar de uma div nova no HTML — e sem ele
@@ -832,6 +845,21 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
    rola, como fazem Bear e Things. Fundo levemente mais claro que o card é
    o que cria camada no tema escuro (sombra sozinha não aparece lá). */
 .ca-wrap{display:flex;align-items:center;gap:2px;flex-wrap:nowrap;flex-basis:100%;height:48px;margin:0 -8px 0 -4px;padding:0 6px;overflow-x:auto;scrollbar-width:none;background:var(--tray-bg);border-top:1px solid var(--tray-line)}
+/* Copiar sempre visível na bandeja (Rafa, 19/08/2026: "ele ainda tem que
+   estar visível ali... não fique nesse menu recolhível"), com a cor
+   amarela que já tinha. Mas isso reabre uma conta que já tinha fechado:
+   no Masonry com MOUSE a coluna tem só 206px úteis, e pin+capsule+gravar+
+   copiar+"⋯" a 44px cada somam ~246px — 40px a mais do que cabe, o que
+   forçaria rolagem de volta (o problema que a frente anterior resolveu
+   tirando copiar/anexar dali abaixo de 320px). A saída não é esconder
+   copiar de novo: é encolher os ícones SÓ no Masonry com mouse — onde
+   44px é conforto, não a regra de acessibilidade de toque que é embaixo
+   de pointer:coarse. Toque continua 44px em qualquer lugar. */
+.cards.masonry:not(.masonry-preview) .ca-wrap{gap:1px}
+.cards.masonry:not(.masonry-preview) .ca-wrap .icon-btn{width:34px;height:34px;border-radius:10px}
+.cards.masonry:not(.masonry-preview) .ca-wrap .icon-btn svg{width:13px;height:13px}
+.cards.masonry:not(.masonry-preview) .ca-wrap .ca-pair{height:28px}
+.cards.masonry:not(.masonry-preview) .ca-wrap .ca-pair .icon-btn{width:24px;height:28px}
 .ca-wrap::-webkit-scrollbar{display:none}
 :root{--tray-bg:rgba(0,0,0,.030);--tray-line:rgba(0,0,0,.05)}
 [data-theme="dark"]{--tray-bg:rgba(255,255,255,.045);--tray-line:rgba(255,255,255,.06)}
@@ -1245,7 +1273,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 /* ── FOLDERS SIDEBAR ── */
 .main-layout{display:flex;gap:14px;align-items:flex-start}
 .content-area{flex:1;min-width:0}
-.folders-bar{display:none;width:182px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:9px;position:sticky;top:70px;box-shadow:var(--shadow-card)}
+/* Sem max-height/overflow, o painel crescia com o número de pastas SEM
+   TETO — com uma árvore grande (o Rafa tem 138 cards só numa subpasta),
+   a parte de baixo ficava fora da área visível, "brigando com a barra do
+   Windows" (achado 19/08/2026: sticky não recorta, só ancora o topo — a
+   altura continuava livre pra crescer pra fora da tela). Agora o painel
+   nunca é maior que a tela e rola por conta própria — mesmo scrollbar
+   fino de sempre (regra global ::-webkit-scrollbar, linha ~2587). */
+.folders-bar{display:none;width:182px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:9px;position:sticky;top:70px;max-height:calc(100vh - 150px);overflow-y:auto;scrollbar-width:thin;box-shadow:var(--shadow-card)}
 .folders-bar.open{display:block}
 .folder-head{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 9px}
 .folder-head-title{font-size:12px;font-weight:700;letter-spacing:0.3px;color:var(--text3);text-transform:uppercase}
@@ -1462,6 +1497,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .ch-mode-badge{order:1}
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .sname-badge{order:2;min-width:0}
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .cdot-wrap{order:9;margin-left:auto}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .ch-del-btn{order:10}
 /* Alça de arrastar fica: dá pra reordenar o card sem ter que expandir. Um
    pouco mais discreta que na versão expandida, pra não competir com o
    triângulo, que é o controle principal da linha. */
@@ -4221,7 +4257,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.19.5';
+const VOX_VERSION='2026.08.19.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6025,7 +6061,14 @@ function _masonryLayout(){
   // identidade própria do Vox — replicável, não aleatório.
   const colH=new Array(cols).fill(0);
   let unit=Math.min(46,trackW*0.14);
-  for(let i=0;i<cols;i++){colH[i]=Math.round(unit);unit*=0.618;}
+  // BUG achado pelo Rafa (19/08/2026): a semente ia da coluna 0 (maior
+  // atraso) até a última (menor) — então a coluna MAIS À DIREITA sempre
+  // nascia com a menor altura, e o card mais novo (nº 1, primeiro do DOM)
+  // ia sempre pra lá via Math.min(...colH) logo abaixo. "O número 1 tem que
+  // estar alinhado no canto superior esquerdo" — a sequência inverteu:
+  // agora é a coluna 0 que nasce menor, sem mudar nem os valores nem a
+  // proporção áurea entre eles, só o lado onde cada um cai.
+  for(let i=cols-1;i>=0;i--){colH[i]=Math.round(unit);unit*=0.618;}
   let y=Math.max(0,...colH);
   // Degraus de Fibonacci pra altura do card em miniatura (modo toque): em
   // vez da altura seguir o texto pixel a pixel, ela arredonda pro próximo
@@ -13178,6 +13221,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
+          <button type="button" class="ch-del-btn" onclick="event.stopPropagation();askDel('${id}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">✕</button>
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar">${t('🔮 Diarizado')}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
@@ -13192,19 +13236,17 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
             <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn icon-btn-copy ov2" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
+          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <button class="icon-btn ov2" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn ov1" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">${ICO.diarView}</button>
           <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
           <button class="icon-btn ov1" onclick="diarToStandardCard('${id}')" title="${t('Virar card padrão')}">💾</button>
           <button class="icon-btn ov1" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
           <button class="icon-btn ov1" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
-          <button class="icon-btn on-danger ov1" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
           <span class="ca-gap"></span><span class="ca-sep"></span>
           <span class="ca-more">
             <button class="icon-btn" onclick="event.stopPropagation();toggleCardMore('${id}')" aria-haspopup="true" aria-expanded="false" aria-label="${t('Mais ações')}" title="${t('Mais ações')}">${ICO.more}</button>
             <div class="ca-menu" id="camenu-${id}">
-              <button class="ca-mi ov2" onclick="_caMenuAgir('${id}',()=>copyCard('${id}'))">${ICO.copy}${t('Copiar')}</button>
               <button class="ca-mi ov2" onclick="_caMenuAgir('${id}',()=>attachHere('${id}'))">${ICO.attach}${t('Anexar áudio ou texto')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleDiarView('${id}'))">${ICO.diarView}${t('Alternar roteiro / bolhas')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>openReviewPanel('${id}'))">${ICO.checkSquare}${t('Revisar texto')}</button>
@@ -13212,8 +13254,6 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleExportMenu('${id}'))">${ICO.export}${t('Exportar…')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleFocusCard('${id}'))">${ICO.expand}${t('Ver como documento')}</button>
               <button class="ca-mi ca-mi-arq" onclick="_caMenuAgir('${id}',()=>toggleArquivarCard('${id}'))">📦 <span>${t('Arquivar')}</span></button>
-              <div class="ca-msep"></div>
-              <button class="ca-mi danger" onclick="_caMenuAgir('${id}',()=>askDel('${id}'))">${ICO.trash}${t('Excluir card')}</button>
             </div>
           </span>
         </div>
@@ -16160,6 +16200,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}">⠿</div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
+          <button type="button" class="ch-del-btn" onclick="event.stopPropagation();askDel('${id}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">✕</button>
           <span class="badge${badgeCls}">${provLabel}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?escHtml(sn):t('+ nome')}</span>
@@ -16173,26 +16214,22 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
             <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn icon-btn-copy ov2" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
+          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <button class="icon-btn ov2" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn ov1" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
           <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
           <button class="icon-btn ov1" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
           <button class="icon-btn ov1" onclick="toggleFocusCard('${id}')" title="${t('Ver como documento / Colapsar')}">${ICO.expand}${ICO.collapse}</button>
-          <button class="icon-btn on-danger ov1" onclick="askDel('${id}')" title="${t('Excluir')}">${ICO.trash}</button>
           <span class="ca-gap"></span><span class="ca-sep"></span>
           <span class="ca-more">
             <button class="icon-btn" onclick="event.stopPropagation();toggleCardMore('${id}')" aria-haspopup="true" aria-expanded="false" aria-label="${t('Mais ações')}" title="${t('Mais ações')}">${ICO.more}</button>
             <div class="ca-menu" id="camenu-${id}">
-              <button class="ca-mi ov2" onclick="_caMenuAgir('${id}',()=>copyCard('${id}'))">${ICO.copy}${t('Copiar')}</button>
               <button class="ca-mi ov2" onclick="_caMenuAgir('${id}',()=>attachHere('${id}'))">${ICO.attach}${t('Anexar áudio ou texto')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleCardPreview('${id}'))">${ICO.eye}${t('Ver em Markdown')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>openReviewPanel('${id}'))">${ICO.checkSquare}${t('Revisar texto')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleExportMenu('${id}'))">${ICO.export}${t('Exportar…')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleFocusCard('${id}'))">${ICO.expand}${t('Ver como documento')}</button>
               <button class="ca-mi ca-mi-arq" onclick="_caMenuAgir('${id}',()=>toggleArquivarCard('${id}'))">📦 <span>${t('Arquivar')}</span></button>
-              <div class="ca-msep"></div>
-              <button class="ca-mi danger" onclick="_caMenuAgir('${id}',()=>askDel('${id}'))">${ICO.trash}${t('Excluir card')}</button>
             </div>
           </span>
         </div>
