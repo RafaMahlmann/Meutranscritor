@@ -143,6 +143,22 @@
 .card[data-tc] .cb textarea,.card[data-tc] .md-preview,.card[data-tc] .sname-badge,.card[data-tc] .bbl-txt{color:var(--tc-txt)}
 .card[data-tc] .ts,.card[data-tc] .cf,.card[data-tc] .ctags-header-label,.card[data-tc] .ctags-header-count{color:color-mix(in srgb,var(--tc-txt) 58%,transparent)}
 .card[data-tc] .icon-btn{color:color-mix(in srgb,var(--tc-txt) 72%,transparent)}
+/* …MAS os ícones que têm cor própria mantêm a cor própria. Esta regra acima
+   é genérica e, sozinha, apagava o amarelo do copiar em todo card colorido —
+   "copiar, por exemplo, que era amarelinho, que era bem legal" (Rafa, 19/08).
+   Regressão de horas: a especificidade de `.card[data-tc] .icon-btn` (0,2,0)
+   passa por cima de `.icon-btn-copy` (0,1,0). A identidade do ícone é
+   informação, não decoração — ela vem primeiro. */
+.card[data-tc] .icon-btn-copy{color:#c99a06}
+[data-theme="dark"] .card[data-tc] .icon-btn-copy{color:#f0c33c}
+.card[data-tc] .icon-btn.on-danger{color:var(--danger)}
+.card[data-tc] .icon-btn.rec-here{color:var(--tc-txt);background:color-mix(in srgb,var(--tc-txt) 12%,transparent)}
+.card[data-tc] .pin-btn.pinned{color:#b8860b}
+[data-theme="dark"] .card[data-tc] .pin-btn.pinned{color:#fcd34d}
+/* Os mesmos ícones dentro do menu "⋯" também guardam a cor — no menu eles
+   nasceram todos cinza e perdiam a identidade que ele reconhece de longe. */
+.ca-mi .icon-copy,.ca-mi svg{color:var(--ink-icon,var(--text3))}
+.ca-mi.danger svg{color:var(--danger)}
 .card[data-tc] .ca-wrap{background:color-mix(in srgb,var(--tc-txt) 5%,transparent);border-top-color:color-mix(in srgb,var(--tc-txt) 13%,transparent)}
 [data-theme="dark"] .card[data-tc] .ca-wrap{background:rgba(255,255,255,.06);border-top-color:rgba(255,255,255,.13)}
 .card[data-tc] .ch{border-bottom-color:color-mix(in srgb,var(--tc-txt) 13%,transparent)}
@@ -845,16 +861,41 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .ca-mi.danger:hover{background:rgba(255,59,48,.12)}
 .ca-msep{height:1px;background:var(--border);margin:5px 8px}
 .ca-menu.on .ca-mi{animation:flChReveal .2s cubic-bezier(.22,1,.36,1) backwards}
-/* MODELO POR VISUALIZAÇÃO (escolha do Rafa, 18/08/2026): Masonry usa o
-   conjunto do meio — fixar, desfazer/refazer, gravar, copiar, anexar e o
-   "⋯"; Lista (e Documento, e a janela flutuante larga) usa o conjunto
-   completo, com as 11 numa fila só e sem "⋯". A decisão é pela
-   VISUALIZAÇÃO, não pela largura do card. */
+/* MODELO POR VISUALIZAÇÃO **E** POR LARGURA REAL.
+   A escolha do Rafa (18/08) foi: Masonry usa o conjunto do meio — fixar,
+   desfazer/refazer, gravar, copiar, anexar e o "⋯" — e a Lista usa o
+   conjunto completo, as 11 numa fila só, sem "⋯".
+   BUG GRAVE QUE ISSO CAUSOU (achado em 19/08, com ele): eu escrevi a regra
+   só por visualização, assumindo que "Lista = card largo". Na Lista do
+   CELULAR o card tem 348px úteis e as 11 pedem 494px — faltavam 146px, e
+   como o "⋯" também estava escondido ali, três funções ficavam INALCANÇÁVEIS:
+   exportar, ver como documento e EXCLUIR. Ele descreveu exatamente assim:
+   "o botão sumiu do card em vez de ir para os ... dentro do card".
+   A correção mantém a decisão dele e acrescenta a condição que faltava: o
+   conjunto completo só entra quando o card REALMENTE tem largura pra ele, e
+   o "⋯" só some quando não sobrou nada pra guardar. Os 500px não são gosto:
+   9 botões de 44 + a cápsula de 62 + os vãos + respiro = 492px. */
+.card{container-type:inline-size}
+/* Dois degraus de overflow, os dois pela largura REAL do card:
+   ov1 = as cinco que já saíam (markdown, revisar, exportar, documento,
+         excluir) — voltam pra bandeja a partir de 500px;
+   ov2 = copiar e anexar — saem da bandeja abaixo de 320px, onde nem elas
+         cabem. Numa coluna de 242px o "anexar" ficava cortado pela borda,
+         e cortado é o mesmo que sumido.
+   Cada uma tem gêmea no menu "⋯": some de um lado, aparece do outro. Nunca
+   nos dois, nunca em lugar nenhum. */
 .icon-btn.ov1{display:none}
-.cards:not(.masonry) .card .icon-btn.ov1{display:flex}
-.cards:not(.masonry) .card .ca-mi.ov1{display:none}
-.cards:not(.masonry) .card .ca-more,
-.cards:not(.masonry) .card .ca-sep{display:none}
+.ca-mi.ov2{display:none}
+@container (max-width:319px){
+  .icon-btn.ov2{display:none}
+  .ca-mi.ov2{display:flex}
+}
+@container (min-width:500px){
+  .cards:not(.masonry) .card .icon-btn.ov1{display:flex}
+  .cards:not(.masonry) .card .ca-mi.ov1{display:none}
+  .cards:not(.masonry) .card .ca-more,
+  .cards:not(.masonry) .card .ca-sep{display:none}
+}
 /* FASE 3 (só mobile — ver @media(max-width:640px) mais abaixo): chevron que
    abre/fecha o cabeçalho recolhido do card. Escondido por padrão aqui fora
    do @media — desktop nunca chega a ver este botão nem o cabeçalho
@@ -4081,7 +4122,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.19.1';
+const VOX_VERSION='2026.08.19.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4557,6 +4598,7 @@ let I18N_EN={
 "Expandir tags do card":"Expand card tags","Recolher tags do card":"Collapse card tags",
 "Adicionar tag":"Add tag",
 "Mais ações":"More actions","Ver em Markdown":"View as Markdown","Revisar texto":"Review text",
+"Copiar":"Copy","Anexar áudio ou texto":"Attach audio or text",
 "Exportar…":"Export…","Ver como documento":"View as document","Excluir card":"Delete card",
 "Conversar":"Chat",
 "Assistente":"Assistant","Fechar chat":"Close chat","Texto":"Text","Chat":"Chat",
@@ -12898,8 +12940,8 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
             <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
-          <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
+          <button class="icon-btn icon-btn-copy ov2" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
+          <button class="icon-btn ov2" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn ov1" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">${ICO.diarView}</button>
           <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
           <button class="icon-btn ov1" onclick="diarToStandardCard('${id}')" title="${t('Virar card padrão')}">💾</button>
@@ -12910,6 +12952,8 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <span class="ca-more">
             <button class="icon-btn" onclick="event.stopPropagation();toggleCardMore('${id}')" aria-haspopup="true" aria-expanded="false" aria-label="${t('Mais ações')}" title="${t('Mais ações')}">${ICO.more}</button>
             <div class="ca-menu" id="camenu-${id}">
+              <button class="ca-mi ov2" onclick="_caMenuAgir('${id}',()=>copyCard('${id}'))">${ICO.copy}${t('Copiar')}</button>
+              <button class="ca-mi ov2" onclick="_caMenuAgir('${id}',()=>attachHere('${id}'))">${ICO.attach}${t('Anexar áudio ou texto')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleDiarView('${id}'))">${ICO.diarView}${t('Alternar roteiro / bolhas')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>openReviewPanel('${id}'))">${ICO.checkSquare}${t('Revisar texto')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>diarToStandardCard('${id}'))">${ICO.file}${t('Virar card padrão')}</button>
@@ -15876,8 +15920,8 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
             <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
-          <button class="icon-btn" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
+          <button class="icon-btn icon-btn-copy ov2" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
+          <button class="icon-btn ov2" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn ov1" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
           <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
           <button class="icon-btn ov1" onclick="toggleExportMenu('${id}')" title="${t('Exportar (copiar / baixar / Markdown)')}">${ICO.export}</button>
@@ -15887,6 +15931,8 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <span class="ca-more">
             <button class="icon-btn" onclick="event.stopPropagation();toggleCardMore('${id}')" aria-haspopup="true" aria-expanded="false" aria-label="${t('Mais ações')}" title="${t('Mais ações')}">${ICO.more}</button>
             <div class="ca-menu" id="camenu-${id}">
+              <button class="ca-mi ov2" onclick="_caMenuAgir('${id}',()=>copyCard('${id}'))">${ICO.copy}${t('Copiar')}</button>
+              <button class="ca-mi ov2" onclick="_caMenuAgir('${id}',()=>attachHere('${id}'))">${ICO.attach}${t('Anexar áudio ou texto')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleCardPreview('${id}'))">${ICO.eye}${t('Ver em Markdown')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>openReviewPanel('${id}'))">${ICO.checkSquare}${t('Revisar texto')}</button>
               <button class="ca-mi ov1" onclick="_caMenuAgir('${id}',()=>toggleExportMenu('${id}'))">${ICO.export}${t('Exportar…')}</button>
