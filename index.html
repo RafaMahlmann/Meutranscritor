@@ -495,6 +495,13 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
 .empty p{font-size:13px;color:var(--text3);line-height:1.7;max-width:360px}
 .empty-open-btn{margin-top:24px;background:var(--bg-card);border:1px solid var(--border2);color:var(--text2);border-radius:12px;padding:11px 18px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:8px}
 .empty-open-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+/* Aviso de "filtro deixou a tela vazia" — mais discreto que #emptyState
+   (padding menor, sem ícone grande) porque a situação é menos rara e não é
+   um convite a começar do zero, é só "tira um filtro". */
+.filter-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;gap:14px;animation:fadeDown .18s ease}
+.filter-empty p{font-size:13.5px;color:var(--text2);line-height:1.7;max-width:340px}
+.filter-empty-btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:background var(--transition)}
+.filter-empty-btn:hover{background:var(--accent2)}
 
 /* ── CARDS LAYOUT ──
    Lista é coluna única (sempre foi) — o que mudou é a LARGURA do
@@ -3059,6 +3066,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
           <span data-i18n>Continuar projeto salvo</span>
         </button>
       </div>
+      <!-- Tela vazia por FILTRO (pasta e/ou cor deixaram 0 na tela) — diferente
+           de #emptyState (que é "você nunca gravou nada"). Existe porque um
+           card sumir sem explicação assusta: o Rafa achou que tinha perdido 7
+           gravações quando era só o filtro de cor somado ao de pasta. -->
+      <div class="filter-empty" id="filterEmptyState" hidden>
+        <p id="filterEmptyMsg"></p>
+        <button type="button" class="filter-empty-btn" id="filterEmptyBtn"></button>
+      </div>
       <!-- MODO DOCUMENTO: barra de ferramentas estilo Word/Docs. Reaproveita as MESMAS
            funções do resto do app (nada de lógica nova) — só reorganiza onde os botões
            moram. Fica escondida fora do viewMode 'doc' (ver .doc-bar no CSS). -->
@@ -4206,7 +4221,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.19.4';
+const VOX_VERSION='2026.08.19.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4694,6 +4709,15 @@ let I18N_EN={
 "📦 Pasta arquivada":"📦 Folder archived","↩ Pasta desarquivada":"↩ Folder unarchived",
 "Apagar de vez {n} card(s)? Isso não tem volta.":"Permanently delete {n} card(s)? This cannot be undone.",
 "Cards e pastas que você tirou da frente — sem prazo":"Cards and folders you set aside — no deadline",
+"Nenhum card arquivado tem a etiqueta \"{cor}\" — por isso a tela ficou em branco.":"No archived card has the \"{cor}\" tag — that's why the screen is blank.",
+"Nenhum card na lixeira tem a etiqueta \"{cor}\" — por isso a tela ficou em branco.":"No card in the trash has the \"{cor}\" tag — that's why the screen is blank.",
+"Nenhum card tem a etiqueta \"{cor}\" — por isso a tela ficou em branco.":"No card has the \"{cor}\" tag — that's why the screen is blank.",
+"Nenhum card desta pasta tem a etiqueta \"{cor}\" — por isso a tela ficou em branco.":"No card in this folder has the \"{cor}\" tag — that's why the screen is blank.",
+"Tirar o filtro de cor":"Clear the color filter",
+"Nada arquivado por aqui ainda.":"Nothing archived here yet.",
+"A lixeira está vazia.":"The trash is empty.",
+"Esta pasta ainda não tem nenhum card — arraste um pra cá, ou crie um novo já dentro dela.":"This folder has no cards yet — drag one here, or create a new one already inside it.",
+"Ver todos os cards":"See all cards",
 "Some sozinho depois de 30 dias":"Goes away on its own after 30 days",
 "Exportar…":"Export…","Ver como documento":"View as document","Excluir card":"Delete card",
 "Conversar":"Chat",
@@ -8067,7 +8091,12 @@ function _cardArquivado(c){return c.dataset.arch==='1'||_pastaArquivada(c.datase
 function _cardNaLixeira(c){return c.dataset.del==='1'}
 function applyFolderFilter(){
   const naArq=activeFolderId===VISTA_ARQ,naLix=activeFolderId===VISTA_LIX;
+  // Conta pra decidir se some tudo sem explicação nenhuma — o susto que o
+  // Rafa teve (achou que tinha perdido 7 gravações; era só o filtro de cor
+  // somado ao de pasta, sem nenhum aviso na tela).
+  let semCor=0,comCor=0,totalCards=0;
   document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+    totalCards++;
     const arq=_cardArquivado(c),lix=_cardNaLixeira(c);
     let inFolder;
     if(naLix)inFolder=lix;
@@ -8078,10 +8107,45 @@ function applyFolderFilter(){
     // Os dois filtros se somam (pasta E cor) — é o que a pessoa espera ao
     // deixar os dois ligados, e é o que torna a cor útil DENTRO de uma pasta.
     const naCor=corFiltroAtivo===null||(c.dataset.tc!==undefined&&+c.dataset.tc===corFiltroAtivo);
+    if(inFolder){semCor++;if(naCor)comCor++}
     c.classList.toggle('folder-hidden',!(inFolder&&naCor));
   });
+  _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix);
   if(viewMode==='doc')applyFocusCard();
   updateRecencyBadges();
+}
+// A explicação mora exatamente onde a dúvida nasce: a tela vazia. Nunca
+// "algo deu errado" — a pessoa não fez nada errado, só esqueceu um filtro
+// ligado. Um clique já resolve, e o botão diz o que ele faz.
+function _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix){
+  const box=document.getElementById('filterEmptyState');
+  const msg=document.getElementById('filterEmptyMsg');
+  const btn=document.getElementById('filterEmptyBtn');
+  if(!box||!msg||!btn)return;
+  // Sem cards nenhum no app: quem fala é o #emptyState (primeira gravação).
+  // Modo Documento tem o próprio jeito de reagir a lista vazia — não mexe.
+  if(totalCards===0||comCor>0||viewMode==='doc'){box.hidden=true;return}
+  if(semCor>0&&corFiltroAtivo!==null){
+    // A pasta tem cards — é o filtro de cor que zerou a conta.
+    const nome=(TAG_NOMES()[corFiltroAtivo]||'').toLowerCase();
+    msg.textContent=(naArq?t('Nenhum card arquivado tem a etiqueta "{cor}" — por isso a tela ficou em branco.'):
+      naLix?t('Nenhum card na lixeira tem a etiqueta "{cor}" — por isso a tela ficou em branco.'):
+      activeFolderId===null?t('Nenhum card tem a etiqueta "{cor}" — por isso a tela ficou em branco.'):
+      t('Nenhum card desta pasta tem a etiqueta "{cor}" — por isso a tela ficou em branco.')).replace('{cor}',nome);
+    btn.textContent=t('Tirar o filtro de cor');
+    btn.onclick=()=>{corFiltroAtivo=null;renderFiltroCores();applyFolderFilter()};
+    box.hidden=false;
+  }else if(semCor===0){
+    // Sem filtro de cor culpado: a pasta (ou visão) mesmo está vazia.
+    msg.textContent=naArq?t('Nada arquivado por aqui ainda.'):
+      naLix?t('A lixeira está vazia.'):
+      t('Esta pasta ainda não tem nenhum card — arraste um pra cá, ou crie um novo já dentro dela.');
+    btn.textContent=t('Ver todos os cards');
+    btn.onclick=()=>selectFolder(null);
+    box.hidden=(activeFolderId===null); // "Tudo" vazio de verdade já é o #emptyState
+  }else{
+    box.hidden=true;
+  }
 }
 function createFolder(parentId=null){
   const name=prompt(t('Nome da nova pasta:'));
