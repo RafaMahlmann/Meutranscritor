@@ -1922,7 +1922,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .stat-folders-btn.folders-on{background:var(--accent-glow);color:var(--accent)}
 #btnNewCard svg{color:#4f9dff}
 @media(max-width:640px){
-  .folders-bar.open{position:fixed;top:0;right:0;bottom:0;width:min(272px,80vw);border-radius:0;z-index:400;overflow-y:auto;padding:16px 12px;animation:slideInRight .25s ease}
+  /* max-height:none PISA na regra de cima (calc(100vh - 150px)) — sem isto
+     a gaveta do celular, que já é top:0;bottom:0 (topo a fundo, moldura
+     própria), ficava presa nos 150px do sidebar do desktop, sobrando um
+     vão de tela vazia embaixo com o app aparecendo atrás. Achado pelo
+     agente de design em 20/08 medindo no WebKit: 531px de gaveta numa
+     tela de 681px. */
+  .folders-bar.open{position:fixed;top:0;right:0;bottom:0;width:min(272px,80vw);border-radius:0;z-index:400;max-height:none;overflow-y:auto;padding:16px 12px;animation:slideInRight .25s ease}
   @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
 }
 /* Sem esta faixa, o iPad (641–1024px) caía direto na .folders-bar base de
@@ -4257,7 +4263,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.19.6';
+const VOX_VERSION='2026.08.20.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5909,6 +5915,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(window.innerWidth>640&&localStorage.getItem('vox_folders_open')!=='0'){
     document.getElementById('foldersBar').classList.add('open');
     document.getElementById('btnFolders').classList.add('folders-on');
+    _ajustarAlturaPastas();
   }
   updateSpeedBadge();syncLocalModel();checkMicPermission();checkBrowser();
   _requestPersistentStorage();_updatePwaTip();
@@ -6069,7 +6076,6 @@ function _masonryLayout(){
   // agora é a coluna 0 que nasce menor, sem mudar nem os valores nem a
   // proporção áurea entre eles, só o lado onde cada um cai.
   for(let i=cols-1;i>=0;i--){colH[i]=Math.round(unit);unit*=0.618;}
-  let y=Math.max(0,...colH);
   // Degraus de Fibonacci pra altura do card em miniatura (modo toque): em
   // vez da altura seguir o texto pixel a pixel, ela arredonda pro próximo
   // degrau de uma escala geométrica ×1.618 — poucas "classes" de tamanho,
@@ -6078,6 +6084,22 @@ function _masonryLayout(){
   cards.forEach(card=>{
     const full=card.classList.contains('proc-card')||card.classList.contains('pinned-card');
     if(full){
+      // BUG REAL achado pelo Rafa (20/08/2026 — "o alinhamento dos cards
+      // tá esquisito, ele tá pirado"): existia uma variável `y` separada
+      // de `colH`, calculada UMA VEZ no início (a partir só da semente) e
+      // nunca mais atualizada pelos cards normais. Card fixado/processando
+      // no MEIO de uma lista grande (ele tem centenas de cards, com
+      // fixados misturados) usava esse `y` congelado — quase sempre bem
+      // menor que a altura real já ocupada — como topo, e depois fazia
+      // `colH.fill(y)`, resetando TODAS as colunas pro mesmo valor
+      // pequeno. Os cards seguintes empilhavam por cima dos que já
+      // existiam lá embaixo (perto do topo), e os que tinham ficado antes
+      // do reset viravam uma ilha isolada bem mais abaixo — o buraco
+      // enorme que ele viu. Corrigido: usar sempre o maior valor de
+      // `colH` NAQUELE MOMENTO do laço, nunca um valor congelado — assim
+      // o card fixado/processando começa sempre abaixo de TUDO que já foi
+      // colocado até ali, não importa em que posição do DOM ele esteja.
+      const y=Math.max(0,...colH);
       // Fixado/processando: linha própria, largura total — igual ao
       // "quebra a coluna" que Mini Notes e keep-bases-view também fazem
       // pros fixados, pelo mesmo motivo (card alto demais bagunçaria o
@@ -6086,8 +6108,7 @@ function _masonryLayout(){
       card.style.width=containerW+'px';
       card.style.left='0px';card.style.top=y+'px';
       const h=card.getBoundingClientRect().height||card.offsetHeight||0;
-      y+=h+gap;
-      colH.fill(y);
+      colH.fill(y+h+gap);
     }else{
       const idx=colH.indexOf(Math.min(...colH));
       card.style.width=trackW+'px';
@@ -6112,7 +6133,7 @@ function _masonryLayout(){
       colH[idx]=colH[idx]+h+gap;
     }
   });
-  cl.style.height=Math.max(y,...colH,0)+'px';
+  cl.style.height=Math.max(...colH,0)+'px';
 }
 function _masonryAtivar(){
   const cl=document.getElementById('cardsList');
@@ -8383,7 +8404,27 @@ function toggleFolders(){
   document.getElementById('foldersBackdrop').classList.toggle('on',open&&window.innerWidth<=640);
   document.getElementById('btnFolders').classList.toggle('folders-on',open);
   localStorage.setItem('vox_folders_open',open?'1':'0');
+  if(open)_ajustarAlturaPastas();
 }
+// O max-height fixo de ontem (calc(100vh-150px)) resolvia a colisão com a
+// barra do Windows mas abria outra: numa janela mais baixa, o painel podia
+// terminar POR BAIXO da barra de gravar (fixa, flutuante), escondendo até
+// 69px do fim da lista (achado pelo agente de design, 20/08/2026). Aqui a
+// altura é medida de verdade contra os dois limites — o rodapé da tela E o
+// topo da barra de gravar — em vez de uma constante chutada.
+// `+window.scrollY` converte pro topo de REPOUSO (antes de colar no
+// scroll): é o pior caso, o que mais aperta a conta; uma vez colado
+// (top:70, mais raso) sempre sobra mais espaço, nunca menos.
+function _ajustarAlturaPastas(){
+  const bar=document.getElementById('foldersBar');
+  if(!bar||window.innerWidth<=640)return; // celular usa a gaveta (max-height:none)
+  const topoDeRepouso=bar.getBoundingClientRect().top+window.scrollY;
+  const ibar=document.querySelector('.ibar');
+  const tetoBarraGravar=ibar?ibar.getBoundingClientRect().top:window.innerHeight;
+  const disponivel=Math.min(window.innerHeight,tetoBarraGravar)-topoDeRepouso-14;
+  bar.style.maxHeight=Math.max(200,disponivel)+'px';
+}
+window.addEventListener('resize',_ajustarAlturaPastas);
 function closeFoldersDrawer(){
   document.getElementById('foldersBar').classList.remove('open');
   document.getElementById('foldersBackdrop').classList.remove('on');
@@ -17279,7 +17320,22 @@ function _updateDragFolderTip(folderEl){
 function _removeDragFolderTip(){_dragFolderTip?.remove();_dragFolderTip=null}
 function _dragLoop(){
   if(!_dragActive){_dragRAF=null;return}
-  if(_dragScrollV!==0){window.scrollBy(0,_dragScrollV);_dragHighlight()}
+  // BUG achado pelo agente de design (20/08/2026): desde que o painel de
+  // pastas ganhou rolagem própria (max-height+overflow-y, 19/08), rolar a
+  // JANELA perto da borda não move mais a LISTA DE PASTAS — ela é outro
+  // scroll agora. Arrastar uma pasta pra reordenar dentro de uma árvore
+  // grande esbarrava num trecho inalcançável (434px medidos numa lista de
+  // 1182px). Arrasto de pasta rola o painel; arrasto de card continua
+  // rolando a página, como sempre foi.
+  if(_dragScrollV!==0){
+    if(_dragSrcIsFolder){
+      const bar=document.getElementById('foldersBar');
+      if(bar)bar.scrollTop+=_dragScrollV;
+    }else{
+      window.scrollBy(0,_dragScrollV);
+    }
+    _dragHighlight();
+  }
   _dragRAF=requestAnimationFrame(_dragLoop);
 }
 
@@ -17328,11 +17384,22 @@ function _startDrag(el,e0,isTouch=false,isFolder=false){
         document.getElementById('btnFolders')?.classList.add('folders-on');
       }
     }
-    // Auto-scroll perto do topo / rodapé (rodapé maior por causa da barra de gravação fixa)
-    const TOP=100,BOT=185;
-    if(y<TOP)_dragScrollV=-Math.min(20,Math.ceil((TOP-y)/6)+3);
-    else if(y>vh-BOT)_dragScrollV=Math.min(20,Math.ceil((y-(vh-BOT))/6)+3);
-    else _dragScrollV=0;
+    // Auto-scroll perto do topo / rodapé (rodapé maior por causa da barra de
+    // gravação fixa). Arrastando uma PASTA, a zona-gatilho é a borda do
+    // PRÓPRIO painel (que agora rola por dentro) — não a janela inteira.
+    if(_dragSrcIsFolder){
+      const bar=document.getElementById('foldersBar');
+      const r=bar?bar.getBoundingClientRect():{top:0,bottom:vh};
+      const M=28;
+      if(y<r.top+M)_dragScrollV=-Math.min(18,Math.ceil((r.top+M-y)/6)+3);
+      else if(y>r.bottom-M)_dragScrollV=Math.min(18,Math.ceil((y-(r.bottom-M))/6)+3);
+      else _dragScrollV=0;
+    }else{
+      const TOP=100,BOT=185;
+      if(y<TOP)_dragScrollV=-Math.min(20,Math.ceil((TOP-y)/6)+3);
+      else if(y>vh-BOT)_dragScrollV=Math.min(20,Math.ceil((y-(vh-BOT))/6)+3);
+      else _dragScrollV=0;
+    }
     _dragHighlight();
   }
 
