@@ -4263,7 +4263,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.20.1';
+const VOX_VERSION='2026.08.20.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6058,7 +6058,19 @@ function _masonryLayout(){
   const colWpx=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-masonry-col'))||220;
   const cols=Math.max(1,Math.floor((containerW+gap)/(colWpx+gap)));
   const trackW=cols>1?(containerW-(cols-1)*gap)/cols:containerW;
-  const cards=[...cl.querySelectorAll(':scope > .card')];
+  // BUG REAL (achado 20/08/2026, dados do Rafa: centenas de cards, filtra
+  // pra uma pasta com poucos): o laço incluía TODO card, inclusive os
+  // escondidos pelo filtro de pasta/cor (.folder-hidden) ou de busca
+  // (.hidden). Um card escondido tem altura 0 (display:none), então não
+  // distorcia o empacotamento por altura — mas ainda "gastava a vez" no
+  // rodízio de coluna (colH.indexOf(Math.min(...colH))) e ainda somava
+  // `gap` (8px) à coluna que calhava de pegar. Com 550+ cards escondidos
+  // intercalados entre os 5 visíveis de uma pasta pequena, isso empurrava
+  // os poucos cards reais pra colunas e alturas diferentes só por causa de
+  // vizinhos invisíveis — os "buracos" que ele viu, numa escala menor que o
+  // bug do card fixado mas real e mensurável. Cards escondidos não têm
+  // por que disputar posição nenhuma: ficam de fora do laço.
+  const cards=[...cl.querySelectorAll(':scope > .card:not(.folder-hidden):not(.hidden)')];
   const preview=cl.classList.contains('masonry-preview');
   // Semente em terços áureos: em vez de todas as colunas nascerem em top:0
   // (o que o Pinterest de verdade faz — testamos ao vivo, gap fixo, sem
