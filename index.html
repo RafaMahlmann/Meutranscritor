@@ -2948,6 +2948,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
               <span class="hdm-txt"><span class="hdm-t" data-i18n>Resgatar nota antiga</span><span class="hdm-sub" data-i18n>Traz de volta o que você esqueceu · funciona sem chave</span></span>
             </button>
           </div>
+          <div class="hdm-item">
+            <button class="gbtn" id="btnTxReceber" onclick="toggleHdMore();abrirReceberTransferencia()" title="Cole um link ou leia um QR de outro aparelho" data-i18n-title>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>
+              <span class="hdm-txt"><span class="hdm-t" data-i18n>Receber transferência</span><span class="hdm-sub" data-i18n>Cole o link ou leia o QR de outro aparelho · funciona sem instalar nada</span></span>
+            </button>
+          </div>
           <button class="gbtn gbtn-ico" id="btnCfg" onclick="toggleHdMore();openModal()" title="Configurações" data-i18n-title>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span data-i18n>Configurações</span>
@@ -4263,7 +4269,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.20.2';
+const VOX_VERSION='2026.08.21.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4432,6 +4438,15 @@ let I18N_EN={
 "Destrancar":"Unlock","❌ Senha incorreta ou link corrompido":"❌ Wrong password or corrupted link",
 "Confere? Ele vira um novo card seu — uma cópia independente.":"Looks right? It becomes a new card of yours — an independent copy.",
 "Adicionar como card":"Add as card","recebido":"received","Transferido":"Transferred","📥 Card recebido e adicionado!":"📥 Card received and added!",
+"Quem recebe já está com o Vox aberto? Ela mesma cola o link ali, sem precisar escanear de novo.":"Is the receiver already looking at Vox on their end? They can paste the link right there — no need to scan again.",
+"Receber transferência":"Receive transfer","Cole um link ou leia um QR de outro aparelho":"Paste a link or scan a QR from another device",
+"Cole o link ou leia o QR de outro aparelho · funciona sem instalar nada":"Paste the link or scan the QR from another device · works without installing anything",
+"Já gerou o QR ou o link em outro aparelho? Cole aqui, ou aponte a câmera.":"Already generated the QR or link on another device? Paste it here, or point the camera.",
+"Cole o link da transferência":"Paste the transfer link","Receber":"Receive","Ler QR pela câmera":"Scan QR with camera",
+"ℹ️ Cole o link antes de continuar":"ℹ️ Paste the link before continuing","❌ Este link não é de uma transferência do Vox":"❌ This link isn't from a Vox transfer",
+"O Vox precisa da câmera pra ler o QR code. Aponte pro quadradinho e ele reconhece sozinho — a imagem não sai do seu aparelho.":"Vox needs the camera to read the QR code. Point it at the little square and it recognizes it on its own — the image never leaves your device.",
+"Ativar câmera":"Turn on camera",
+"ℹ️ Sem a câmera não dá pra ler o QR — mas colar o link funciona igual. Pode tentar de novo a qualquer hora.":"ℹ️ Without the camera the QR can't be read — but pasting the link works just as well. You can try again anytime.",
 "Transcrição":"Transcription","IA de texto":"Text AI","Diarização":"Diarization","Geral":"General","100% local":"100% local",
 "✨ IA de texto — quem pensa nas lentes e receitas":"✨ Text AI — the brain behind lenses and recipes",
 "Transcrever é ouvir. Já as lentes e receitas (resumo, e-mail, flashcards…) precisam de uma IA que pensa. Escolha quem faz esse trabalho:":"Transcribing is listening. Lenses and recipes (summary, email, flashcards…) need an AI that thinks. Choose who does that job:",
@@ -10979,16 +10994,20 @@ async function txkGenerate(){
     _txRenderResult();
   }catch(e){toast('❌ '+e.message,true);if(res)res.innerHTML=''}
 }
-function handleKeysTransferHash(){
-  const h=location.hash||'';
-  if(!h.startsWith('#'+TXK_PREFIX))return;
+// hashStr: mesmo padrão de handleTransferHash — presente quando vem de
+// colar/ler QR dentro do app; devolve true/false pro chamador saber se o
+// prefixo era deste handler.
+function handleKeysTransferHash(hashStr){
+  const veioColado=hashStr!==undefined;
+  const h=veioColado?hashStr:(location.hash||'');
+  if(!h.startsWith('#'+TXK_PREFIX))return false;
   const raw=h.slice(1+TXK_PREFIX.length);
-  history.replaceState(null,'',location.pathname+location.search);
+  if(!veioColado)history.replaceState(null,'',location.pathname+location.search);
   const m=raw.match(/^1\.([cr][eo])\.([a-z0-9]+)\.(\d+)\.(\d+)\.([A-Za-z0-9_-]+)$/);
-  if(!m){toast(t('❌ Link de transferência de chaves inválido'),true);return}
+  if(!m){toast(t('❌ Link de transferência de chaves inválido'),true);return true}
   const flags=m[1],sid=m[2],i=+m[3],n=+m[4],slice=m[5];
-  if(flags[1]!=='e'){toast(t('❌ Este link de chaves não está protegido por senha'),true);return}
-  if(n===1){_txkReceive(slice,flags);return}
+  if(flags[1]!=='e'){toast(t('❌ Este link de chaves não está protegido por senha'),true);return true}
+  if(n===1){_txkReceive(slice,flags);return true}
   let store={};try{store=JSON.parse(localStorage.getItem('vox_txk_rx')||'{}')}catch(e){}
   const now=Date.now();
   Object.keys(store).forEach(k=>{if(now-(store[k].ts||0)>86400000)delete store[k]});
@@ -11004,11 +11023,12 @@ function handleKeysTransferHash(){
       <div class="tx-sub">${t('Continue escaneando os próximos QRs (ou abrindo os links) — em qualquer ordem, o Vox monta tudo sozinho.')}</div>
       <div class="tx-row"><button class="tx-btn primary" onclick="closeTxOverlay()">OK</button></div></div>`;
     ov.classList.add('on');
-    return;
+    return true;
   }
   delete store[sid];localStorage.setItem('vox_txk_rx',JSON.stringify(store));
   let b64='';for(let k=1;k<=n;k++)b64+=ent.parts[k]||'';
   _txkReceive(b64,ent.flags||flags);
+  return true;
 }
 function _txkReceive(b64,flags){
   _txkRx={b64,flags};
@@ -11046,6 +11066,117 @@ function txkApply(){
   _applyKeysPayload(_txkRx.payload);
   closeTxOverlay();_txkRx=null;
   toast(t('✅ Chaves aplicadas neste aparelho!'));
+}
+
+// ── Receber transferência de dentro do próprio app (colar ou câmera) ──
+// Terceira tentativa de resolver "preciso abrir outra aba pra receber": em vez
+// de depender do sistema operacional rotear o link (funciona só parcialmente —
+// Android sim, iOS Safari nunca tem essa API), o próprio Vox vira a porta de
+// entrada. Reaproveita handleTransferHash()/handleKeysTransferHash() — os dois
+// já aceitam um hashStr colado além de location.hash, e devolvem true/false pra
+// saber de quem é o link. Ver PLANO_TRANSFERENCIA_SEM_NOVA_ABA_2026-08-20.md §6.
+let _txpRxCamStream=null,_txpRxCamLoop=null,_txpRxDetector=null;
+function abrirReceberTransferencia(){
+  _txpRxCameraStop();
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
+    <div class="tx-title">📥 ${t('Receber transferência')}</div>
+    <div class="tx-sub">${t('Já gerou o QR ou o link em outro aparelho? Cole aqui, ou aponte a câmera.')}</div>
+    <label class="tx-lock-row" style="margin:0 0 6px;cursor:default" for="txpRxColar">${t('Cole o link da transferência')}</label>
+    <input type="text" class="tx-pass-input" id="txpRxColar" autocomplete="off" placeholder="https://…#vox=…" onkeydown="if(event.key==='Enter')txpReceberColado()">
+    <div class="tx-row">
+      <button class="tx-btn primary" onclick="txpReceberColado()">${t('Receber')}</button>
+      <button class="tx-btn ghost" onclick="_txpRxCameraPrompt()">📷 ${t('Ler QR pela câmera')}</button>
+    </div></div>`;
+  ov.classList.add('on');
+  setTimeout(()=>document.getElementById('txpRxColar')?.focus(),100);
+}
+function _txpRxExtrairHash(texto){
+  const s=(texto||'').trim();if(!s)return '';
+  const i=s.indexOf('#');
+  const frag=i>=0?s.slice(i):('#'+s);
+  if(frag.startsWith('#'+TX_PREFIX)||frag.startsWith('#'+TXK_PREFIX))return frag;
+  return '';
+}
+function txpReceberColado(){
+  const inp=document.getElementById('txpRxColar');
+  const val=(inp?.value||'').trim();
+  if(!val){toast(t('ℹ️ Cole o link antes de continuar'),true);return}
+  const frag=_txpRxExtrairHash(val);
+  if(frag&&(handleTransferHash(frag)||handleKeysTransferHash(frag)))return;
+  toast(t('❌ Este link não é de uma transferência do Vox'),true);
+}
+function _txpRxCameraPrompt(){
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
+    <div class="tx-title">📷 ${t('Ler QR pela câmera')}</div>
+    <div class="tx-sub">${t('O Vox precisa da câmera pra ler o QR code. Aponte pro quadradinho e ele reconhece sozinho — a imagem não sai do seu aparelho.')}</div>
+    <div class="tx-row"><button class="tx-btn primary" onclick="_txpRxCameraStart()">${t('Ativar câmera')}</button><button class="tx-btn ghost" onclick="abrirReceberTransferencia()">${t('Cancelar')}</button></div></div>`;
+  ov.classList.add('on');
+}
+async function _txpRxCameraStart(){
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
+    <div class="tx-title">📷 ${t('Ler QR pela câmera')}</div>
+    <div class="tx-qr-wrap"><video id="txpRxVideo" playsinline muted style="width:100%;max-width:280px;border-radius:12px;background:#000"></video></div>
+    <div class="tx-row"><button class="tx-btn ghost" onclick="abrirReceberTransferencia()">${t('Cancelar')}</button></div></div>`;
+  ov.classList.add('on');
+  try{
+    _txpRxCamStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  }catch(e){
+    abrirReceberTransferencia();
+    toast(t('ℹ️ Sem a câmera não dá pra ler o QR — mas colar o link funciona igual. Pode tentar de novo a qualquer hora.'),true);
+    return;
+  }
+  const video=document.getElementById('txpRxVideo');
+  if(!video){_txpRxCameraStop();return}
+  video.srcObject=_txpRxCamStream;
+  await video.play().catch(()=>{});
+  _txpRxIniciarLeitura(video);
+}
+function _txpRxCameraStop(){
+  if(_txpRxCamLoop){cancelAnimationFrame(_txpRxCamLoop);_txpRxCamLoop=null}
+  if(_txpRxCamStream){_txpRxCamStream.getTracks().forEach(tr=>tr.stop());_txpRxCamStream=null}
+}
+async function _txpRxIniciarLeitura(video){
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  let usaNativo=false;
+  if('BarcodeDetector' in window){
+    try{
+      const fmts=await BarcodeDetector.getSupportedFormats();
+      if(fmts.includes('qr_code')){_txpRxDetector=new BarcodeDetector({formats:['qr_code']});usaNativo=true}
+    }catch(e){}
+  }
+  if(!usaNativo){try{await _loadScriptOnce('jsqr/jsQR.js')}catch(e){}}
+  const passo=async()=>{
+    if(!_txpRxCamStream)return;
+    if(video.readyState>=2&&video.videoWidth>0){
+      let texto=null;
+      try{
+        if(usaNativo){
+          const codes=await _txpRxDetector.detect(video);
+          if(codes.length)texto=codes[0].rawValue;
+        }else if(window.jsQR){
+          canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+          ctx.drawImage(video,0,0,canvas.width,canvas.height);
+          const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+          const r=window.jsQR(img.data,img.width,img.height);
+          if(r)texto=r.data;
+        }
+      }catch(e){}
+      if(texto){
+        const frag=_txpRxExtrairHash(texto);
+        if(frag){
+          _txpRxCameraStop();
+          if(!handleTransferHash(frag))handleKeysTransferHash(frag);
+          return;
+        }
+      }
+    }
+    _txpRxCamLoop=requestAnimationFrame(passo);
+  };
+  _txpRxCamLoop=requestAnimationFrame(passo);
 }
 
 // ── RAM + RESET ──
@@ -14705,6 +14836,7 @@ function _txOverlay(){let ov=document.getElementById('txOverlay');if(!ov){ov=doc
 // viva depois que a tela some. Reabrir pede a senha de novo, que é o certo.
 function closeTxOverlay(){
   const ov=document.getElementById('txOverlay');if(ov){ov.classList.remove('on');ov.innerHTML=''}
+  if(typeof _txpRxCameraStop==='function')_txpRxCameraStop();
   if(typeof _txpState!=='undefined'&&_txpState)_txpState.pass='';
   if(typeof _txpRx!=='undefined')_txpRx=null;
   if(typeof _txRx!=='undefined')_txRx=null;
@@ -14724,7 +14856,7 @@ function openTransferPanel(id){
   if(!text){toast(t('ℹ️ Card vazio — nada para transferir'),true);return}
   if(!window.isSecureContext){toast(t('❌ Só dá pra transferir num endereço https — o do cadeado'),true);return}
   _txState=null;
-  const tut=!localStorage.getItem('vox_tx_tut')?`<div class="tx-tut" id="txTut">${t('<strong>Como funciona:</strong> o Vox transforma este texto em um QR code (e um link). A outra pessoa aponta a câmera — ou toca no link — e o texto entra no Vox dela como um novo card, pronto pra continuar o trabalho. <strong>Nada passa por servidores:</strong> o texto viaja dentro do próprio link. Quem recebe fica com uma cópia independente — editar lá não muda o seu texto aqui.')}<button class="tx-tut-hide" onclick="localStorage.setItem('vox_tx_tut','1');document.getElementById('txTut').remove()">${t('✓ Entendi — não mostrar de novo')}</button></div>`:'';
+  const tut=!localStorage.getItem('vox_tx_tut')?`<div class="tx-tut" id="txTut">${t('<strong>Como funciona:</strong> o Vox transforma este texto em um QR code (e um link). A outra pessoa aponta a câmera — ou toca no link — e o texto entra no Vox dela como um novo card, pronto pra continuar o trabalho. <strong>Nada passa por servidores:</strong> o texto viaja dentro do próprio link. Quem recebe fica com uma cópia independente — editar lá não muda o seu texto aqui.')}<br><br>${t('Quem recebe já está com o Vox aberto? Ela mesma cola o link ali, sem precisar escanear de novo.')}<button class="tx-tut-hide" onclick="localStorage.setItem('vox_tx_tut','1');document.getElementById('txTut').remove()">${t('✓ Entendi — não mostrar de novo')}</button></div>`:'';
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
     <div class="tx-title"><span class="lens-ico">${ICO.qr}</span>${t('Transferir este card')}</div>
@@ -14767,11 +14899,19 @@ function txNav(d){if(!_txState)return;_txState.part=Math.max(0,Math.min(_txState
 function txCopyLink(){if(!_txState)return;const u=_txState.linkUrl||_txState.urls[_txState.part];navigator.clipboard.writeText(u).then(()=>toast(t('🔗 Link copiado!')))}
 async function txShareLink(){if(!_txState)return;const u=_txState.linkUrl||_txState.urls[_txState.part];try{await navigator.share({url:u})}catch(e){}}
 // ── Recebimento: lê o #vox= da URL, acumula partes e remonta sozinho ──
-function handleTransferHash(){
-  const h=location.hash||'';
-  if(!h.startsWith('#'+TX_PREFIX))return;
+// `hashStr`: passado quando vem de colar um link/ler um QR dentro do
+// próprio app (ver abrirReceberTransferencia) — nesse caso não mexe na URL
+// da página, que não tem nada a ver com o link colado. Sem argumento,
+// continua lendo location.hash como sempre (link clicado de fora).
+// Devolve true/false: "true" = o prefixo bateu, este handler é o dono do
+// link (mesmo que o formato interno esteja quebrado — aí quem avisa é o
+// toast de dentro). "false" = nem é desta função, quem chamou tenta outra.
+function handleTransferHash(hashStr){
+  const veioColado=hashStr!==undefined;
+  const h=veioColado?hashStr:(location.hash||'');
+  if(!h.startsWith('#'+TX_PREFIX))return false;
   const raw=h.slice(1+TX_PREFIX.length);
-  history.replaceState(null,'',location.pathname+location.search);
+  if(!veioColado)history.replaceState(null,'',location.pathname+location.search);
   // Versão 2 = pasta em viagens. Vem antes porque o primeiro número do hash é
   // quem decide o formato; a versão 1 (card único) continua logo abaixo, intacta.
   const p=raw.match(/^2\.([cr][eo])\.([a-z0-9]+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)\.([A-Za-z0-9_-]+)$/);
@@ -14779,14 +14919,14 @@ function handleTransferHash(){
     const nr=+p[4],ns=+p[6],r=+p[3],s=+p[5];
     // Confere a coerência ANTES de guardar: número fora de faixa aqui viraria
     // uma tela de progresso mentindo ("3 de 900") ou laço de memória.
-    if(r<1||r>nr||s<1||s>ns||nr>TXP_MAX_VIAGENS||ns>TXP_MAX_VIAGENS){toast(t('❌ Link de transferência inválido'),true);return}
+    if(r<1||r>nr||s<1||s>ns||nr>TXP_MAX_VIAGENS||ns>TXP_MAX_VIAGENS){toast(t('❌ Link de transferência inválido'),true);return true}
     _txpReceberFatia(p[1],p[2],r,nr,s,ns,p[7]);
-    return;
+    return true;
   }
   const m=raw.match(/^1\.([cr][eo])\.([a-z0-9]+)\.(\d+)\.(\d+)\.([A-Za-z0-9_-]+)$/);
-  if(!m){toast(t('❌ Link de transferência inválido'),true);return}
+  if(!m){toast(t('❌ Link de transferência inválido'),true);return true}
   const flags=m[1],sid=m[2],i=+m[3],n=+m[4],slice=m[5];
-  if(n===1){_txReceive(slice,flags);return}
+  if(n===1){_txReceive(slice,flags);return true}
   let store={};try{store=JSON.parse(localStorage.getItem('vox_txrx')||'{}')}catch(e){}
   const now=Date.now();
   Object.keys(store).forEach(k=>{if(now-(store[k].ts||0)>86400000)delete store[k]});
@@ -14796,11 +14936,12 @@ function handleTransferHash(){
   if(have<n){
     localStorage.setItem('vox_txrx',JSON.stringify(store));
     _txShowProgress(have,n);
-    return;
+    return true;
   }
   delete store[sid];localStorage.setItem('vox_txrx',JSON.stringify(store));
   let b64='';for(let k=1;k<=n;k++)b64+=ent.parts[k]||'';
   _txReceive(b64,ent.flags||flags);
+  return true;
 }
 function _txShowProgress(have,n){
   const ov=_txOverlay();
