@@ -2306,6 +2306,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .tx-sub{font-size:12px;color:var(--text3);line-height:1.55;margin-bottom:14px}
 .tx-tut{background:var(--bg-input);border-radius:14px;padding:14px;font-size:12.5px;color:var(--text2);line-height:1.65;margin-bottom:14px}
 .tx-tut strong{color:var(--text)}
+.txp-steps{margin:6px 0 0;padding-left:20px}
+.txp-steps li{margin-bottom:2px}
 .tx-tut-hide{display:block;margin-top:10px;background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);padding:0}
 .tx-qr-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:12px 0}
 .tx-qr-wrap img{width:230px;height:230px;image-rendering:pixelated;border-radius:12px;background:#fff;padding:6px}
@@ -4269,7 +4271,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.21.2';
+const VOX_VERSION='2026.08.21.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4447,6 +4449,12 @@ let I18N_EN={
 "O Vox precisa da câmera pra ler o QR code. Aponte pro quadradinho e ele reconhece sozinho — a imagem não sai do seu aparelho.":"Vox needs the camera to read the QR code. Point it at the little square and it recognizes it on its own — the image never leaves your device.",
 "Ativar câmera":"Turn on camera",
 "ℹ️ Sem a câmera não dá pra ler o QR — mas colar o link funciona igual. Pode tentar de novo a qualquer hora.":"ℹ️ Without the camera the QR can't be read — but pasting the link works just as well. You can try again anytime.",
+"Do outro lado já tem o Vox aberto? Vale mais colar o link do que escanear o QR.":"Is the other side already looking at Vox? It's faster to paste the link than to scan the QR.",
+"Do outro lado já tem o Vox aberto? É mais rápido assim:":"Is the other side already looking at Vox? It's faster this way:",
+"Toque em Mais (⋯)":"Tap More (⋯)","Toque em Receber transferência":"Tap Receive transfer","Cole este link ali":"Paste this link there",
+"Ainda não tem? Só tocar no link, ou apontar a câmera pro QR.":"Don't have it yet? Just tap the link, or point the camera at the QR.",
+"Ou cole aqui a próxima parte:":"Or paste the next part here:","Colar":"Paste",
+"Do outro lado já tem o Vox aberto? Vale mais colar o link (ou ler o QR) ali dentro — Mais (⋯) → Receber transferência — do que tocar no link, que abriria mais uma aba à toa.":"Is the other side already looking at Vox? It's better to paste the link (or scan the QR) right there — More (⋯) → Receive transfer — than to tap the link, which would just open another tab.",
 "Transcrição":"Transcription","IA de texto":"Text AI","Diarização":"Diarization","Geral":"General","100% local":"100% local",
 "✨ IA de texto — quem pensa nas lentes e receitas":"✨ Text AI — the brain behind lenses and recipes",
 "Transcrever é ouvir. Já as lentes e receitas (resumo, e-mail, flashcards…) precisam de uma IA que pensa. Escolha quem faz esse trabalho:":"Transcribing is listening. Lenses and recipes (summary, email, flashcards…) need an AI that thinks. Choose who does that job:",
@@ -11021,7 +11029,8 @@ function handleKeysTransferHash(hashStr){
       <div class="tx-title">📥 ${t('Recebendo chaves…')}</div>
       <div class="tx-progress">${t('Parte {i} de {n} recebida — faltam {k}.').replace('{i}',have).replace('{n}',n).replace('{k}',n-have)}</div>
       <div class="tx-sub">${t('Continue escaneando os próximos QRs (ou abrindo os links) — em qualquer ordem, o Vox monta tudo sozinho.')}</div>
-      <div class="tx-row"><button class="tx-btn primary" onclick="closeTxOverlay()">OK</button></div></div>`;
+      ${_txpColarHtml()}
+      <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">OK</button></div></div>`;
     ov.classList.add('on');
     return true;
   }
@@ -11103,6 +11112,24 @@ function _txpRxExtrairHash(texto){
 }
 function txpReceberColado(){
   const inp=document.getElementById('txpRxColar');
+  const val=(inp?.value||'').trim();
+  if(!val){toast(t('ℹ️ Cole o link antes de continuar'),true);return}
+  const frag=_txpRxExtrairHash(val);
+  if(frag&&(handleTransferHash(frag)||handleKeysTransferHash(frag)))return;
+  toast(t('❌ Este link não é de uma transferência do Vox'),true);
+}
+// Campo de colar reaproveitado nas telas de "faltam partes" (card, pasta e
+// chaves) — sem ele, colar a 2a viagem obrigava sair da tela, voltar no
+// menu Mais e abrir "Receber transferência" de novo pra cada parte. Achado
+// pelo Rafa testando na prática: "isso é exatamente o Ctrl-C Ctrl-V que eu
+// não queria".
+function _txpColarHtml(){
+  return `<div class="tx-sub" style="margin-top:10px;margin-bottom:0">${t('Ou cole aqui a próxima parte:')}</div>
+    <input type="text" class="tx-pass-input" id="txpColarParte" autocomplete="off" placeholder="https://…#vox=…" onkeydown="if(event.key==='Enter')txpColarParte()">
+    <div class="tx-row"><button class="tx-btn ghost" onclick="txpColarParte()">${t('Colar')}</button></div>`;
+}
+function txpColarParte(){
+  const inp=document.getElementById('txpColarParte');
   const val=(inp?.value||'').trim();
   if(!val){toast(t('ℹ️ Cole o link antes de continuar'),true);return}
   const frag=_txpRxExtrairHash(val);
@@ -14898,7 +14925,15 @@ function _txRenderResult(){
       ${navigator.share?`<button class="tx-btn ghost" onclick="txShareLink()">${t('Compartilhar…')}</button>`:''}
     </div>
     ${!linkUrl&&n>1?`<div class="tx-sub" style="margin-top:8px">${t('Texto grande até pro link único — envie os {n} links; na chegada o Vox remonta sozinho.').replace('{n}',n)}</div>`:''}
-    <div class="tx-tut" style="margin-top:10px">${t('📱 <strong>Do outro lado:</strong> ela aponta a câmera pro QR (ou toca no link) e pronto — o material entra no Vox dela. Não precisa instalar nada nem criar conta antes.')}</div>`;
+    <div class="tx-tut" style="margin-top:10px">
+      <strong>${t('Do outro lado já tem o Vox aberto? É mais rápido assim:')}</strong>
+      <ol class="txp-steps">
+        <li>${t('Toque em Mais (⋯)')}</li>
+        <li>${t('Toque em Receber transferência')}</li>
+        <li>${t('Cole este link ali')}</li>
+      </ol>
+      <div style="margin-top:8px">${t('Ainda não tem? Só tocar no link, ou apontar a câmera pro QR.')}</div>
+    </div>`;
 }
 function txNav(d){if(!_txState)return;_txState.part=Math.max(0,Math.min(_txState.urls.length-1,_txState.part+d));_txRenderResult()}
 function txCopyLink(){if(!_txState)return;const u=_txState.linkUrl||_txState.urls[_txState.part];navigator.clipboard.writeText(u).then(()=>toast(t('🔗 Link copiado!')))}
@@ -14954,7 +14989,8 @@ function _txShowProgress(have,n){
     <div class="tx-title">📥 ${t('Recebendo transferência…')}</div>
     <div class="tx-progress">${t('Parte {i} de {n} recebida — faltam {k}.').replace('{i}',have).replace('{n}',n).replace('{k}',n-have)}</div>
     <div class="tx-sub">${t('Continue escaneando os próximos QRs (ou abrindo os links) — em qualquer ordem, o Vox monta tudo sozinho.')}</div>
-    <div class="tx-row"><button class="tx-btn primary" onclick="closeTxOverlay()">OK</button></div></div>`;
+    ${_txpColarHtml()}
+    <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">OK</button></div></div>`;
   ov.classList.add('on');
 }
 async function _txDecode(b64,flags,pass){
@@ -15170,8 +15206,9 @@ function _txpRenderPreparar(){
     (s.feitas.size?`<div class="txp-retoma">${t('Você já tinha enviado {n} {rw} desta pasta. Continuamos de onde parou.').replace('{n}',s.feitas.size).replace('{rw}',t(s.feitas.size===1?'viagem':'viagens'))}</div>`:'');
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
-    <div class="tx-title"><span class="lens-ico">${ICO.qr}</span>${t('Enviar a pasta')} “${escHtml(col.nome)}”</div>
-    <div class="tx-sub">${col.itens.length} ${t(col.itens.length===1?'card':'cards')}${sub} · ${t('só o texto (o áudio não caberia num link)')}</div>
+    <div class=”tx-title”><span class=”lens-ico”>${ICO.qr}</span>${t('Enviar a pasta')} “${escHtml(col.nome)}”</div>
+    <div class=”tx-sub”>${col.itens.length} ${t(col.itens.length===1?'card':'cards')}${sub} · ${t('só o texto (o áudio não caberia num link)')}</div>
+    <div class=”tx-tut” style=”margin-top:8px”>${t('Do outro lado já tem o Vox aberto? Vale mais colar o link do que escanear o QR.')}</div>
     ${aviso}
     <label class="tx-lock-row"><input type="checkbox" id="txpLock" checked onchange="document.getElementById('txpPassWrap').style.display=this.checked?'block':'none'">🔒 ${t('Proteger com senha (só abre com a senha combinada)')}</label>
     <div id="txpPassWrap"><div class="tx-pass-wrap"><input type="password" class="tx-pass-input" id="txpPass" placeholder="${t('Senha combinada entre vocês')}" autocomplete="off"><button type="button" class="tx-eye-btn" title="${t('Mostrar senha')}" onclick="toggleTxEye('txpPass',this)">${ICO.eye}</button></div></div>
@@ -15259,7 +15296,15 @@ function _txpRenderEnviar(){
     <div class="txp-dest-t">${t('Por onde você vai mandar?')}</div>
     <div class="txp-dest">${Object.keys(TXP_DESTINOS).map(d=>`<button class="txp-dest-b${d===s.destino?' on':''}" onclick="txpDestino('${d}')">${TXP_DESTINOS[d].rot}${s.planos[d]?`<span>${t('{n} {rw}').replace('{n}',s.planos[d].length).replace('{rw}',t(s.planos[d].length===1?'viagem':'viagens'))}</span>`:'<span>—</span>'}</button>`).join('')}</div>
     <div class="txp-dica">${TXP_DESTINOS[s.destino].dica}</div>
-    <div class="tx-tut" style="margin-top:8px">${t('Do lado dela: é só apontar a câmera (se for QR) ou tocar no link — o Vox abre sozinho e o material cai lá dentro, pronto pra continuar. Não precisa ter conta, nem instalar nada antes.')}</div>
+    <div class="tx-tut" style="margin-top:8px">
+      <strong>${t('Do outro lado já tem o Vox aberto? É mais rápido assim:')}</strong>
+      <ol class="txp-steps">
+        <li>${t('Toque em Mais (⋯)')}</li>
+        <li>${t('Toque em Receber transferência')}</li>
+        <li>${t('Cole este link ali')}</li>
+      </ol>
+      <div style="margin-top:8px">${t('Ainda não tem? Só tocar no link, ou apontar a câmera pro QR.')}</div>
+    </div>
     <div class="txp-trilha">${trilha}</div>
     <div class="txp-conta">${t('{f} de {n} enviadas').replace('{f}',feitas).replace('{n}',n)}</div>
     <div class="txp-box">
@@ -15403,6 +15448,7 @@ function abrirAjudaTransferir(origem){
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="fecharAjudaTransferir()">✕</button>
     <div class="tx-title"><span class="lens-ico">${ICO.qr}</span>${t('Passar o bastão sem passar por ninguém')}</div>
     <p class="txp-help-p">${t('Seu texto vira um QR code — ou um link. A outra pessoa aponta a câmera, ou toca no link, e o material entra no Vox dela como cópia própria, pronta pra continuar.')}</p>
+    <p class="txp-help-p">${t('Do outro lado já tem o Vox aberto? Vale mais colar o link (ou ler o QR) ali dentro — Mais (⋯) → Receber transferência — do que tocar no link, que abriria mais uma aba à toa.')}</p>
     <p class="txp-help-p">${t('O texto viaja <strong>dentro do link</strong>, não num servidor: ninguém no meio do caminho vê o conteúdo, nem nós. E com o cadeado ligado, só abre quem souber a senha combinada.')}</p>
     <div class="section-title" style="margin-top:22px;margin-bottom:12px">${t('Três coisas que isso destrava')}</div>
     <div class="bhelp-item"><span class="bhelp-dot"></span><div>
@@ -15509,6 +15555,7 @@ function _txpTelaRecepcao(){
       :Array.from({length:nr},(_,k)=>`<span class="txp-chip ${prontas.includes(k+1)?'done':'wait'}">${prontas.includes(k+1)?'✓':k+1}</span>`).join('')}</div>
     <div class="txp-conta">${t('{f} de {n} viagens chegaram').replace('{f}',prontas.length).replace('{n}',nr)}</div>
     <div class="tx-sub">${prontas.length?(faltam?t('Abra os outros links (ou escaneie os outros QRs) — em qualquer ordem. O Vox junta sozinho.'):t('Chegou tudo. É só conferir e adicionar.')):t('Nenhuma viagem chegou ainda aqui. Confira se está abrindo os links no mesmo navegador (ou app) onde você está vendo esta tela, um de cada vez.')}</div>
+    ${faltam?_txpColarHtml():''}
     <div class="tx-row">
       <button class="tx-btn primary" onclick="txpAbrirRecebido()"${prontas.length?'':' disabled'}>${faltam?t('Ver o que já chegou'):t('Conferir e adicionar')}</button>
       <button class="tx-btn ghost" onclick="${prontas.length?'closeTxOverlay()':'txpCancelarRecebimento(\''+fid+'\')'}">${prontas.length?t('Depois'):t('Cancelar recebimento')}</button>
