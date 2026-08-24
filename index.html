@@ -4269,7 +4269,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.21.1';
+const VOX_VERSION='2026.08.21.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4441,8 +4441,8 @@ let I18N_EN={
 "Quem recebe já está com o Vox aberto? Ela mesma cola o link ali, sem precisar escanear de novo.":"Is the receiver already looking at Vox on their end? They can paste the link right there — no need to scan again.",
 "Receber transferência":"Receive transfer","Cole um link ou leia um QR de outro aparelho":"Paste a link or scan a QR from another device",
 "Cole o link ou leia o QR de outro aparelho · funciona sem instalar nada":"Paste the link or scan the QR from another device · works without installing anything",
-"Já gerou o QR ou o link em outro aparelho? Cole aqui, ou aponte a câmera.":"Already generated the QR or link on another device? Paste it here, or point the camera.",
-"Cole o link da transferência":"Paste the transfer link","Receber":"Receive","Ler QR pela câmera":"Scan QR with camera",
+"Já gerou o QR, o link ou o arquivo em outro aparelho? Cole aqui, aponte a câmera, ou abra o arquivo.":"Already generated the QR, the link, or the file on another device? Paste it here, point the camera, or open the file.",
+"Cole o link da transferência":"Paste the transfer link","Receber":"Receive","Ler QR pela câmera":"Scan QR with camera","Abrir arquivo":"Open file",
 "ℹ️ Cole o link antes de continuar":"ℹ️ Paste the link before continuing","❌ Este link não é de uma transferência do Vox":"❌ This link isn't from a Vox transfer",
 "O Vox precisa da câmera pra ler o QR code. Aponte pro quadradinho e ele reconhece sozinho — a imagem não sai do seu aparelho.":"Vox needs the camera to read the QR code. Point it at the little square and it recognizes it on its own — the image never leaves your device.",
 "Ativar câmera":"Turn on camera",
@@ -11081,12 +11081,15 @@ function abrirReceberTransferencia(){
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()">✕</button>
     <div class="tx-title">📥 ${t('Receber transferência')}</div>
-    <div class="tx-sub">${t('Já gerou o QR ou o link em outro aparelho? Cole aqui, ou aponte a câmera.')}</div>
+    <div class="tx-sub">${t('Já gerou o QR, o link ou o arquivo em outro aparelho? Cole aqui, aponte a câmera, ou abra o arquivo.')}</div>
     <label class="tx-lock-row" style="margin:0 0 6px;cursor:default" for="txpRxColar">${t('Cole o link da transferência')}</label>
     <input type="text" class="tx-pass-input" id="txpRxColar" autocomplete="off" placeholder="https://…#vox=…" onkeydown="if(event.key==='Enter')txpReceberColado()">
     <div class="tx-row">
       <button class="tx-btn primary" onclick="txpReceberColado()">${t('Receber')}</button>
+    </div>
+    <div class="tx-row">
       <button class="tx-btn ghost" onclick="_txpRxCameraPrompt()">📷 ${t('Ler QR pela câmera')}</button>
+      <button class="tx-btn ghost" onclick="triggerImportProject()">📁 ${t('Abrir arquivo')}</button>
     </div></div>`;
   ov.classList.add('on');
   setTimeout(()=>document.getElementById('txpRxColar')?.focus(),100);
@@ -11452,6 +11455,7 @@ function _importFile(file){
       addCard(text,null,0,'texto',cfg.provider,true,null,null,[],file.name.replace(/\.(txt|md)$/i,''),'livre',false,'');
       toast(t('📂 Texto importado como novo card!'));
       document.getElementById('expDrop')?.classList.remove('on');
+      if(typeof closeTxOverlay==='function')closeTxOverlay();
     }
   };
   reader.readAsText(file);
@@ -11488,6 +11492,7 @@ function _restoreProject(data){
   if(typeof loadFolders==='function')loadFolders();
   applyFolderFilter&&applyFolderFilter();
   document.getElementById('expDrop')?.classList.remove('on');
+  if(typeof closeTxOverlay==='function')closeTxOverlay();
   if(added)toast(`📂 `+t('Projeto carregado! {n} {itemword}{skipmsg}').replace('{n}',added).replace('{itemword}',t(added===1?'item adicionado':'itens adicionados')).replace('{skipmsg}',skipped?t(' ({n} já existiam)').replace('{n}',skipped):''));
   else toast(t('ℹ️ Tudo desse backup já estava aqui — nada novo a adicionar'));
 }
