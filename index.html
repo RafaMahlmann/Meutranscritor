@@ -1860,16 +1860,33 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    (Things 3 faz isso; contador zero é ruído puro e valia 22px).
    O alvo de toque sobe de 36px para os 44px que o app promete em
    --card-tap-min. */
-.folder-item{position:relative;display:flex;align-items:center;gap:6px;width:100%;min-height:var(--card-tap-min);padding:6px 26px 6px calc(12px + var(--lvl,0) * 12px);border-radius:11px;background:none;border:1.5px solid transparent;cursor:pointer;font-family:var(--font);color:var(--text);transition:background var(--transition),border-color var(--transition),transform .11s cubic-bezier(.22,1,.36,1);margin-bottom:2px}
+.folder-item{position:relative;display:flex;align-items:center;gap:6px;width:100%;min-height:36px;padding:4px 26px 4px calc(30px + var(--lvl,0) * 12px);border-radius:9px;background:none;border:1.5px solid transparent;cursor:pointer;font-family:var(--font);color:var(--text);transition:background var(--transition),border-color var(--transition),transform .11s cubic-bezier(.22,1,.36,1);margin-bottom:2px}
 .folder-item:hover{background:var(--bg-input)}
 .folder-item:active{transform:scale(.985)}
 .folder-item.active{background:var(--accent-glow)}
 .folder-item.drag-over{border-color:var(--accent);border-style:dashed;background:var(--accent-glow)}
 .folder-item.dragging{opacity:0.35}
-/* A cor da pasta vira um fio na lateral: mesma informação, zero pixel
-   tirado do nome. A bolinha custava 18px + o vão. */
-.folder-dot{display:none}
-.folder-item[data-cor]::before{content:'';position:absolute;left:calc(4px + var(--lvl,0) * 12px);top:9px;bottom:9px;width:3px;border-radius:2px;background:var(--fcor);opacity:.9}
+/* Bolinha de cor de volta (P2+P3, 25/08) — o fio de 3px que ela substituiu
+   era 100% inclicável: a alça de arrastar, em opacity:0 mas sem
+   pointer-events:none, ficava por cima e comia o clique (achado medindo
+   com elementFromPoint). A bolinha agora É um botão de verdade, com seu
+   próprio alvo de toque, e a alça se mudou pra direita — ver mais abaixo.
+   Nome de classe próprio (.folder-cor-dot, não .folder-dot): o modo de
+   baixar pastas já usa .folder-dot noutra estrutura (span solto, sem o
+   .folder-dot-pt como âncora) — reaproveitar o nome quebraria aquela tela. */
+.folder-dot-btn{position:absolute;left:calc(4px + var(--lvl,0) * 12px);top:0;bottom:0;width:26px;
+  border:none;background:none;padding:0;cursor:pointer;z-index:3;
+  -webkit-tap-highlight-color:transparent}
+.folder-dot-pt{position:absolute;left:11px;top:50%;width:9px;height:9px;margin-top:-4.5px;pointer-events:none}
+.folder-cor-dot{display:block;position:absolute;inset:0;border-radius:50%;background:var(--fcor);
+  box-shadow:0 0 0 1px rgba(0,0,0,.07) inset;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+[data-theme="dark"] .folder-cor-dot{box-shadow:none}
+.folder-dot-btn:hover .folder-cor-dot{transform:scale(1.3)}
+.folder-dot-anel{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--fcor);opacity:0;pointer-events:none}
+@keyframes folderDotSoco{0%{transform:scale(1)}38%{transform:scale(1.5)}100%{transform:scale(1)}}
+@keyframes folderAnelAbre{from{transform:scale(1);opacity:.62}to{transform:scale(3.4);opacity:0}}
+.folder-cor-dot.soco{animation:folderDotSoco .26s cubic-bezier(.22,1,.36,1)}
+.folder-dot-anel.abre{animation:folderAnelAbre .34s cubic-bezier(.22,1,.36,1)}
 .folder-ico{font-size:14px;flex-shrink:0;line-height:1}
 /* Duas linhas quando precisa — nenhuma das referências faz isso, mas todas
    elas trabalham com nome curto em inglês ("Inbox", "Today"). Em português
@@ -1887,7 +1904,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-menu-btn{position:absolute;right:3px;top:50%;transform:translateY(-50%);opacity:0;font-size:15px;color:var(--text4);cursor:pointer;padding:2px 4px;line-height:1;transition:opacity .12s linear}
 .folder-item:hover .folder-menu-btn{opacity:0.6}
 .folder-menu-btn:hover{opacity:1 !important;color:var(--text2)}
-.folder-item .folder-drag-handle{position:absolute;left:1px;top:50%;transform:translateY(-50%);font-size:13px;padding:5px 1px;opacity:0;margin:0;transition:opacity .12s linear}
+/* A alça se mudou pra direita (25/08) — na esquerda ela cobria exatamente
+   o alvo da bolinha nova (opacity:0 não é pointer-events:none: mesmo
+   invisível, ela comia o clique). À direita, antes do "⋯", sobra espaço
+   real dentro do padding-right de 26px que a linha já paga. */
+.folder-item .folder-drag-handle{position:absolute;right:19px;top:50%;transform:translateY(-50%);font-size:13px;padding:5px 1px;opacity:0;margin:0;transition:opacity .12s linear}
 .folder-item:hover .folder-drag-handle{opacity:0.5}
 .folder-item .folder-drag-handle:hover{opacity:1!important}
 /* No toque não há hover: sem isto o "⋯" e a alça ficariam inalcançáveis
@@ -1896,6 +1917,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    por cima do outro) — no toque cada um ganha a sua, e a linha paga 26px
    por isso. É o preço de ter as duas coisas alcançáveis sem hover. */
 @media(pointer:coarse){
+  .folder-item{min-height:40px}
   .folder-item{padding-right:52px}
   .folder-menu-btn{opacity:.5}
   .folder-item .folder-drag-handle{opacity:.4}
@@ -1945,7 +1967,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    o que faltava. O custo: a área dos cards no desktop vai de 864 para
    794px, e o teto de leitura (.wrap, 1100px) continua folgado. */
 @media(min-width:1025px){
-  .folders-bar{width:252px}
+  .folders-bar{width:288px}
 }
 
 /* ── FOLDER TREE ── */
@@ -4271,7 +4293,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.21.4';
+const VOX_VERSION='2026.08.25.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6493,6 +6515,7 @@ function renderFolders(){
     html+=`<div class="folder-vista-sub">${t('Pastas arquivadas')}</div>`;
     pastasArq.forEach(f=>{
       html+=`<div class="folder-item folder-item-arq"${f.color?` data-cor="1" style="--lvl:0;--fcor:${safeColor(f.color)}"`:' style="--lvl:0"'}>
+        ${f.color?`<span class="folder-dot-pt"><span class="folder-cor-dot"></span></span>`:''}
         <span class="folder-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span>
         <button type="button" class="folder-desarq" onclick="event.stopPropagation();desarquivarPasta('${escJs(f.id)}')" title="${t('Desarquivar pasta')}">${t('Restaurar')}</button></div>`;
     });
@@ -6520,6 +6543,7 @@ function renderFolderTree(parentId,lvl,counts){
     // vez de 14 (Notion usa 12), o que devolve espaço nas subpastas.
     html+=`<div class="folder-node">`;
     html+=`<div class="folder-item${isActive?' active':''}" data-fid="${escHtml(f.id)}"${f.color?` data-cor="1"`:''} style="--lvl:${Math.min(lvl,4)}${f.color?`;--fcor:${safeColor(f.color)}`:''}" onclick="selectFolder('${escJs(f.id)}')">`;
+    html+=`<button type="button" class="folder-dot-btn" aria-label="${t('Cor da pasta')}" onpointerdown="event.stopPropagation();_folderDotPress('${escJs(f.id)}',this)" onpointerup="event.stopPropagation();_folderDotRelease('${escJs(f.id)}',this)" onpointerleave="_folderDotCancel()" onclick="event.stopPropagation()"><span class="folder-dot-pt"><span class="folder-cor-dot"></span><span class="folder-dot-anel"></span></span></button>`;
     html+=`<span class="drag-handle folder-drag-handle" title="${t('Arrastar para mover ou aninhar a pasta')}" onclick="event.stopPropagation()">⠿</span>`;
     if(hasChildren){
       html+=`<span class="folder-arrow${isExpanded?' expanded':''}" onclick="event.stopPropagation();toggleFolderExpanded('${escJs(f.id)}')">▶</span>`;
@@ -8244,6 +8268,63 @@ function _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix){
     box.hidden=(activeFolderId===null); // "Tudo" vazio de verdade já é o #emptyState
   }else{
     box.hidden=true;
+  }
+}
+// ── Bolinha de cor da pasta (P2+P3, 25/08) ──
+// Mesmo desenho da bolinha do card: toque curto cicla, segurar abre a
+// paleta. Antes disso não existia NENHUM jeito de trocar a cor de uma
+// pasta — ela nascia sorteada por ordem de criação e ficava assim pra
+// sempre. Achado pelo agente de design ao propor esta mesma bolinha.
+let _folderDotSeguro=null,_folderPaletaAberta=null;
+function _folderCorIndex(f){
+  const i=FOLDER_COLORS.findIndex(c=>c.toLowerCase()===String(f?.color||'').toLowerCase());
+  return i>=0?i:0;
+}
+function _folderDotPress(id,btn){
+  clearTimeout(_folderDotSeguro);
+  _folderDotSeguro=setTimeout(()=>{_folderDotSeguro=null;_folderAbrePaleta(id,btn)},420);
+}
+function _folderDotCancel(){clearTimeout(_folderDotSeguro);_folderDotSeguro=null}
+function _folderDotRelease(id,btn){
+  if(_folderDotSeguro===null)return; // já virou paleta (segurou) — o clique da paleta cuida do resto
+  clearTimeout(_folderDotSeguro);_folderDotSeguro=null;
+  const f=folders.find(x=>x.id===id);if(!f)return;
+  trocarCorPasta(id,(_folderCorIndex(f)+1)%FOLDER_COLORS.length);
+}
+function _folderAbrePaleta(id,btn){
+  _folderFechaPaleta();
+  const f=folders.find(x=>x.id===id);if(!f)return;
+  const atual=_folderCorIndex(f);
+  const p=document.createElement('div');
+  p.className='cdot-pop on folder-paleta';
+  p.innerHTML=`<div class="cdot-grid">${FOLDER_COLORS.map((cor,i)=>
+    `<button type="button" class="cdot-sw${i===atual?' on':''}" style="background:${cor}" onclick="event.stopPropagation();trocarCorPasta('${escJs(id)}',${i});_folderFechaPaleta()"></button>`
+  ).join('')}</div>`;
+  document.body.appendChild(p);
+  const r=btn.getBoundingClientRect();
+  p.style.position='fixed';p.style.left=(r.left)+'px';p.style.top=(r.bottom+6)+'px';
+  _folderPaletaAberta=p;
+}
+function _folderFechaPaleta(){
+  if(!_folderPaletaAberta)return;
+  _folderPaletaAberta.remove();_folderPaletaAberta=null;
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest?.('.folder-paleta')&&!e.target.closest?.('.folder-dot-btn'))_folderFechaPaleta();
+});
+function trocarCorPasta(id,i){
+  const f=folders.find(x=>x.id===id);if(!f)return;
+  f.color=FOLDER_COLORS[i];
+  saveFolders();
+  const el=document.querySelector(`.folder-item[data-fid="${CSS.escape(id)}"]`);
+  if(el){
+    el.style.setProperty('--fcor',safeColor(f.color));
+    const dot=el.querySelector('.folder-cor-dot'),anel=el.querySelector('.folder-dot-anel');
+    if(dot&&!window.matchMedia('(prefers-reduced-motion:reduce)').matches){
+      dot.classList.remove('soco');anel?.classList.remove('abre');
+      void dot.offsetWidth;
+      dot.classList.add('soco');anel?.classList.add('abre');
+    }
   }
 }
 function createFolder(parentId=null){
