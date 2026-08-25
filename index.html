@@ -1280,7 +1280,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    altura continuava livre pra crescer pra fora da tela). Agora o painel
    nunca é maior que a tela e rola por conta própria — mesmo scrollbar
    fino de sempre (regra global ::-webkit-scrollbar, linha ~2587). */
-.folders-bar{display:none;width:182px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:9px;position:sticky;top:70px;max-height:calc(100vh - 150px);overflow-y:auto;scrollbar-width:thin;box-shadow:var(--shadow-card)}
+.folders-bar{display:none;width:182px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:9px;position:sticky;top:70px;max-height:calc(100vh - 150px);overflow-y:auto;overflow-anchor:none;scrollbar-width:thin;box-shadow:var(--shadow-card)}
 .folders-bar.open{display:block}
 .folder-head{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 9px}
 .folder-head-title{font-size:12px;font-weight:700;letter-spacing:0.3px;color:var(--text3);text-transform:uppercase}
@@ -1863,7 +1863,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-item{position:relative;display:flex;align-items:center;gap:6px;width:100%;min-height:36px;padding:4px 26px 4px calc(30px + var(--lvl,0) * 12px);border-radius:9px;background:none;border:1.5px solid transparent;cursor:pointer;font-family:var(--font);color:var(--text);transition:background var(--transition),border-color var(--transition),transform .11s cubic-bezier(.22,1,.36,1);margin-bottom:2px}
 .folder-item:hover{background:var(--bg-input)}
 .folder-item:active{transform:scale(.985)}
-.folder-item.active{background:var(--accent-glow)}
+/* O destaque da pasta ativa não pinta mais o próprio .folder-item — quem
+   pinta agora é a #folderPlaqueta, atrás dela (ver mais abaixo). Sem isto
+   as duas camadas brigariam: o fundo chapado por cima do degradê. */
+.folder-item.active{background:none}
+.folder-item.active .folder-name{font-weight:700}
 .folder-item.drag-over{border-color:var(--accent);border-style:dashed;background:var(--accent-glow)}
 .folder-item.dragging{opacity:0.35}
 /* Bolinha de cor de volta (P2+P3, 25/08) — o fio de 3px que ela substituiu
@@ -1887,6 +1891,28 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 @keyframes folderAnelAbre{from{transform:scale(1);opacity:.62}to{transform:scale(3.4);opacity:0}}
 .folder-cor-dot.soco{animation:folderDotSoco .26s cubic-bezier(.22,1,.36,1)}
 .folder-dot-anel.abre{animation:folderAnelAbre .34s cubic-bezier(.22,1,.36,1)}
+
+/* ── A PLAQUETA — um nó só, fora do innerHTML de renderFolders(), que
+   desliza até a pasta ativa em vez de piscar (M1 da proposta de juice).
+   Duas camadas empilhadas pra poder trocar de cor só com opacity — um
+   degradê não interpola sozinho de uma cor pra outra. */
+#folderList{position:relative;overflow-anchor:none}
+.folder-plaqueta{position:absolute;left:0;right:0;top:0;height:36px;border-radius:9px;
+  z-index:0;pointer-events:none;opacity:0;overflow:hidden;
+  transition:transform .19s cubic-bezier(.22,1,.36,1),height .19s cubic-bezier(.22,1,.36,1),opacity .15s linear}
+.folder-plaqueta.on{opacity:1}
+.folder-pl-cam{position:absolute;inset:0}
+.folder-pl-b{opacity:0;transition:opacity .19s linear}
+.folder-plaqueta::after{content:'';position:absolute;inset:0 0 auto 0;height:1px;z-index:1;
+  background:linear-gradient(90deg,transparent,var(--fpl-quina),transparent)}
+.folder-plaqueta{box-shadow:0 3px 9px -6px var(--fpl-sombra)}
+[data-theme="dark"] .folder-plaqueta{box-shadow:0 0 14px -6px var(--fpl-sombra),inset 0 0 0 1px rgba(255,255,255,.07)}
+/* A varredura da tinta ao trocar a cor da pasta ABERTA (M3) — nasce na
+   bolinha, corre a linha. Proporcional: só acontece quando a superfície
+   inteira mudou de cor; pasta fechada usa só o soco da bolinha. */
+.folder-pl-varre{position:absolute;inset:0;z-index:1;transform:scaleX(0)}
+.folder-pl-pluma{position:absolute;top:0;bottom:0;width:24px;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,var(--fpl-pluma),transparent)}
 .folder-ico{font-size:14px;flex-shrink:0;line-height:1}
 /* Duas linhas quando precisa — nenhuma das referências faz isso, mas todas
    elas trabalham com nome curto em inglês ("Inbox", "Today"). Em português
@@ -3221,7 +3247,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
         <span data-i18n>Nova pasta</span>
       </button>
-      <div id="folderList"></div>
+      <div id="folderList">
+        <div class="folder-plaqueta" id="folderPlaqueta"><span class="folder-pl-cam folder-pl-a"></span><span class="folder-pl-cam folder-pl-b"></span></div>
+        <div id="folderListInner"></div>
+      </div>
       <!-- Filtro por etiqueta de cor. Nasce vazio e só aparece quando existe
            pelo menos um card etiquetado — fileira de bolinhas vazias seria
            promessa de organização que a pessoa ainda não fez. -->
@@ -4293,7 +4322,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.25.1';
+const VOX_VERSION='2026.08.25.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6459,7 +6488,10 @@ function renderFolders(){
   // (card criado, apagado, importado) — desenhar junto evita ficar espalhando
   // chamada de atualização por todo lado.
   renderFiltroCores();
-  const list=document.getElementById('folderList');
+  // O destaque da pasta ativa (a "plaqueta") mora FORA deste innerHTML de
+  // propósito, em #folderPlaqueta — sem isso ela seria destruída e recriada
+  // a cada clique, junto com todas as linhas, e nunca poderia deslizar.
+  const list=document.getElementById('folderListInner');
   if(!list)return;
   const counts=getFolderCounts();
   if(folderDlMode){
@@ -6525,6 +6557,7 @@ function renderFolders(){
   }
   html+=`</div>`;
   list.innerHTML=html;
+  _folderAtualizaPlaqueta();
 }
 function renderFolderTree(parentId,lvl,counts){
   const children=getFolderChildrenVisiveis(parentId);
@@ -8280,6 +8313,126 @@ function _folderCorIndex(f){
   const i=FOLDER_COLORS.findIndex(c=>c.toLowerCase()===String(f?.color||'').toLowerCase());
   return i>=0?i:0;
 }
+// A pasta ativa fala a MESMA língua de "luz" que o card colorido já usa —
+// não é metáfora nova. Valores copiados de `.card[data-tc="N"]` (linhas
+// ~108-123): FOLDER_COLORS e TAG_CORES são o mesmo array na mesma ordem,
+// então o índice de cor da pasta bate certinho com o do card.
+const FOLDER_LUZ={
+ claro:[
+  {ca:'#259f56',txt:'#1e3725',a:'#dbf9e2',b:'#b1e9bf'},
+  {ca:'#4885df',txt:'#223147',a:'#e8f1ff',b:'#c3dbff'},
+  {ca:'#956ed2',txt:'#342b44',a:'#f2edff',b:'#dfd0ff'},
+  {ca:'#c9690c',txt:'#422a19',a:'#feece1',b:'#feceae'},
+  {ca:'#c35c9b',txt:'#412735',a:'#fee9f4',b:'#ffc6e5'},
+  {ca:'#0d98a4',txt:'#0d373b',a:'#cefaff',b:'#96e9f3'},
+  {ca:'#a18304',txt:'#383014',a:'#fbf0cf',b:'#ecd89b'},
+  {ca:'#d15c56',txt:'#452725',a:'#feebe9',b:'#ffcbc5'}],
+ escuro:[
+  {ca:'#63ca84',txt:'#f4f4f8',a:'#2e854d',b:'#0c4824'},
+  {ca:'#7fb3ff',txt:'#f4f4f8',a:'#4371b7',b:'#1d3b67'},
+  {ca:'#bf9bfc',txt:'#f4f4f8',a:'#7d5fad',b:'#433061'},
+  {ca:'#f49752',txt:'#f4f4f8',a:'#a65c20',b:'#5d2d03'},
+  {ca:'#ef8bc5',txt:'#f4f4f8',a:'#a25281',b:'#5a2746'},
+  {ca:'#11c8d8',txt:'#f4f4f8',a:'#0a818b',b:'#04444a'},
+  {ca:'#d1ad32',txt:'#f4f4f8',a:'#896f02',b:'#493a02'},
+  {ca:'#fe8b83',txt:'#f4f4f8',a:'#ad524d',b:'#612724'}]
+};
+function _folderEhEscuro(){return document.documentElement.getAttribute('data-theme')==='dark'}
+function _folderLuz(i){return FOLDER_LUZ[_folderEhEscuro()?'escuro':'claro'][((i%8)+8)%8]}
+function _folderRgba(hex,al){const h=hex.replace('#','');
+  return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${al})`}
+// Ângulo do degradê ajustado ao formato: no card (quase quadrado) 157deg
+// funciona; numa linha de 36×270 a diagonal está a 7,6°, e 157deg viraria
+// uma faixa horizontal chapada. 100deg mantém a mesma leitura (luz entra
+// pela quina de cima-esquerda, assenta embaixo à direita) no formato
+// achatado. Medido, não estimado — mesma conta da proposta do agente.
+function _folderCorpo(i){
+  const L=_folderLuz(i);
+  if(_folderEhEscuro())return L.a;
+  // mistura L.b com L.ca 28%, pra não lavar a faixa curta demais
+  const b=L.b.replace('#',''),ca=L.ca.replace('#','');
+  let out='#';
+  for(let k=0;k<3;k++){
+    const x=parseInt(b.substr(k*2,2),16),y=parseInt(ca.substr(k*2,2),16);
+    const v=Math.round(x+(y-x)*0.28).toString(16);
+    out+=(v.length<2?'0':'')+v;
+  }
+  return out;
+}
+function _folderDegrade(i){
+  const L=_folderLuz(i);
+  return _folderEhEscuro()
+    ?`linear-gradient(100deg,${L.a} 0%,${L.b} 84%)`
+    :`linear-gradient(100deg,${L.a} 0%,${_folderCorpo(i)} 30%)`;
+}
+// Reposiciona/repinta a plaqueta pra baixo da pasta ativa. Chamado no fim
+// de renderFolders() e depois de trocar a cor da pasta ativa. O CSS já
+// tem transition em transform/height/opacity — só mudar os valores já
+// desliza sozinho, sem precisar de FLIP manual (a plaqueta nunca é
+// destruída, então não há "antes" e "depois" de posição no DOM, só de
+// estilo).
+function _folderAtualizaPlaqueta(instant){
+  const pl=document.getElementById('folderPlaqueta');
+  const wrap=document.getElementById('folderList');
+  if(!pl||!wrap)return;
+  const ativa=wrap.querySelector('#folderListInner .folder-item.active');
+  if(!ativa){pl.classList.remove('on');return}
+  const i=ativa.hasAttribute('data-cor')?_folderCorIndex(folders.find(f=>f.id===ativa.dataset.fid)):null;
+  const wr=wrap.getBoundingClientRect(),ar=ativa.getBoundingClientRect();
+  const y=Math.round(ar.top-wr.top),h=Math.round(ar.height);
+  const novoFundo=i===null?'var(--accent-glow)':_folderDegrade(i);
+  const a=pl.querySelector('.folder-pl-a'),b=pl.querySelector('.folder-pl-b');
+  if(i!==null){
+    const L=_folderLuz(i);
+    pl.style.setProperty('--fpl-quina',_folderRgba(L.ca,.65));
+    pl.style.setProperty('--fpl-sombra',_folderRgba(L.ca,_folderEhEscuro()?.5:.75));
+  }else{
+    pl.style.removeProperty('--fpl-quina');pl.style.removeProperty('--fpl-sombra');
+  }
+  // Correção de deriva: por algum motivo que não vale a pena perseguir mais
+  // (testado: não é fonte carregando, não é scroll anchoring, o painel em
+  // si não se move) a linha "assenta" ~5px depois do primeiro layout, ao
+  // longo de uns 190ms — provavelmente algum reflow tardio de um irmão
+  // acima dela. Em vez de brigar com a causa, a plaqueta se corrige
+  // sozinha pouco depois: reaplica a MESMA posição (sem mexer em cor),
+  // instantânea, então não se vê — é só garantir que ela pousa no lugar
+  // certo mesmo que a régua tenha se mexido por baixo dela.
+  clearTimeout(pl._folderCorrige);
+  pl._folderCorrige=setTimeout(()=>{
+    const ativa2=wrap.querySelector('#folderListInner .folder-item.active');
+    if(ativa2!==ativa)return; // a pasta ativa já mudou de novo — deixa a chamada nova cuidar
+    const wr2=wrap.getBoundingClientRect(),ar2=ativa.getBoundingClientRect();
+    const y2=Math.round(ar2.top-wr2.top),h2=Math.round(ar2.height);
+    pl.style.transition='none';
+    pl.style.transform=`translateY(${y2}px)`;pl.style.height=h2+'px';
+    void pl.offsetWidth;
+    pl.style.transition='';
+  },260);
+  const jaLigada=pl.classList.contains('on');
+  if(!jaLigada||instant){
+    // Primeira vez, ou pedido explícito de "sem animação": acende no lugar.
+    a.style.background=novoFundo;b.style.opacity='0';
+    pl.style.transition='none';
+    pl.style.transform=`translateY(${y}px)`;pl.style.height=h+'px';
+    void pl.offsetWidth;
+    pl.style.transition='';
+    pl.classList.add('on');
+    return;
+  }
+  // Desliza: a plaqueta viaja com a cor de ANTES, e a cor nova entra por
+  // opacity numa 2ª camada empilhada — sem isso a troca de cor no meio do
+  // trajeto seria um corte seco (degradê não interpola sozinho).
+  b.style.background=novoFundo;
+  b.style.opacity='1';
+  pl.style.transform=`translateY(${y}px)`;
+  pl.style.height=h+'px';
+  clearTimeout(pl._folderT);
+  pl._folderT=setTimeout(()=>{
+    a.style.background=novoFundo;
+    b.style.transition='none';b.style.opacity='0';
+    void b.offsetWidth;b.style.transition='';
+  },200);
+}
 function _folderDotPress(id,btn){
   clearTimeout(_folderDotSeguro);
   _folderDotSeguro=setTimeout(()=>{_folderDotSeguro=null;_folderAbrePaleta(id,btn)},420);
@@ -8312,6 +8465,36 @@ function _folderFechaPaleta(){
 document.addEventListener('click',e=>{
   if(!e.target.closest?.('.folder-paleta')&&!e.target.closest?.('.folder-dot-btn'))_folderFechaPaleta();
 });
+// O efeito tem o tamanho da mudança (M3 da proposta de juice): pasta que
+// NÃO é a aberta, só 9px de bolinha mudaram — soco e anel bastam. Pasta
+// que É a aberta, a superfície inteira mudou de verdade — a tinta corre a
+// linha inteira, nascendo no mesmo ponto que o dedo tocou.
+function _folderVarreDaBolinha(el,i){
+  const pl=document.getElementById('folderPlaqueta');if(!pl)return;
+  const pr=pl.getBoundingClientRect();
+  const pt=el.querySelector('.folder-dot-pt');if(!pt)return;
+  const x=pt.getBoundingClientRect().left-pr.left+4.5;
+  const v=document.createElement('span');v.className='folder-pl-varre';
+  v.style.background=_folderDegrade(i);
+  v.style.transformOrigin=x+'px 50%';
+  const pluma=document.createElement('span');pluma.className='folder-pl-pluma';
+  pluma.style.setProperty('--fpl-pluma',_folderCorpo(i));
+  pluma.style.left=(x-24)+'px';
+  pluma.style.transform='translateX(0)';
+  pl.appendChild(v);pl.appendChild(pluma);
+  requestAnimationFrame(()=>{
+    v.style.transition='transform .3s cubic-bezier(.22,1,.36,1)';
+    v.style.transform='scaleX(1)';
+    pluma.style.transition='transform .3s cubic-bezier(.22,1,.36,1)';
+    pluma.style.transform=`translateX(${pr.width-x+24}px)`;
+  });
+  setTimeout(()=>{
+    const a=pl.querySelector('.folder-pl-a'),b=pl.querySelector('.folder-pl-b');
+    a.style.background=_folderDegrade(i);b.style.transition='none';b.style.opacity='0';
+    void b.offsetWidth;b.style.transition='';
+    v.remove();pluma.remove();
+  },320);
+}
 function trocarCorPasta(id,i){
   const f=folders.find(x=>x.id===id);if(!f)return;
   f.color=FOLDER_COLORS[i];
@@ -8320,10 +8503,15 @@ function trocarCorPasta(id,i){
   if(el){
     el.style.setProperty('--fcor',safeColor(f.color));
     const dot=el.querySelector('.folder-cor-dot'),anel=el.querySelector('.folder-dot-anel');
-    if(dot&&!window.matchMedia('(prefers-reduced-motion:reduce)').matches){
+    const reduzMov=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    if(dot&&!reduzMov){
       dot.classList.remove('soco');anel?.classList.remove('abre');
       void dot.offsetWidth;
       dot.classList.add('soco');anel?.classList.add('abre');
+    }
+    if(el.classList.contains('active')){
+      if(!reduzMov)_folderVarreDaBolinha(el,i);
+      else _folderAtualizaPlaqueta(true);
     }
   }
 }
