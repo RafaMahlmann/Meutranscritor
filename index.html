@@ -4322,7 +4322,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.25.2';
+const VOX_VERSION='2026.08.25.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6594,10 +6594,46 @@ function renderFolderTree(parentId,lvl,counts){
   html+='</div>';
   return html;
 }
+// FLIP: mede a posição de cada linha ANTES da mudança, deixa mudar (o
+// innerHTML de renderFolders() recria tudo, então não tem outro jeito),
+// mede DEPOIS e joga cada linha de volta pro lugar antigo com transform —
+// aí solta, e ela desliza até o lugar novo. Sem isto, abrir/fechar
+// subpastas fazia toda pasta ABAIXO saltar pra cima de uma vez (achado
+// medindo, não sentindo — a rodada anterior da reforma tinha deixado
+// passar exatamente isso).
+function _folderComFlip(mutar){
+  const inner=document.getElementById('folderListInner');
+  if(!inner||window.matchMedia('(prefers-reduced-motion:reduce)').matches){mutar();return}
+  const antes=new Map();
+  inner.querySelectorAll('.folder-item[data-fid]').forEach(el=>{
+    if(el.dataset.fid)antes.set(el.dataset.fid,el.getBoundingClientRect().top);
+  });
+  mutar();
+  const mexem=[];
+  inner.querySelectorAll('.folder-item[data-fid]').forEach(el=>{
+    const fid=el.dataset.fid;
+    if(!fid||!antes.has(fid))return;
+    const d=antes.get(fid)-el.getBoundingClientRect().top;
+    if(Math.abs(d)<0.5)return;
+    el.style.transition='none';
+    el.style.transform=`translateY(${d}px)`;
+    mexem.push(el);
+  });
+  if(!mexem.length)return;
+  requestAnimationFrame(()=>{
+    mexem.forEach(el=>{
+      el.style.transition='transform .23s cubic-bezier(.22,1,.36,1)';
+      el.style.transform='';
+    });
+    setTimeout(()=>{mexem.forEach(el=>{el.style.transition='';el.style.transform=''})},260);
+  });
+}
 function toggleFolderExpanded(id){
-  if(folderExpanded.has(id))folderExpanded.delete(id);
-  else folderExpanded.add(id);
-  saveFolders();renderFolders();
+  _folderComFlip(()=>{
+    if(folderExpanded.has(id))folderExpanded.delete(id);
+    else folderExpanded.add(id);
+    saveFolders();renderFolders();
+  });
 }
 function selectFolder(id){
   activeFolderId=id;
