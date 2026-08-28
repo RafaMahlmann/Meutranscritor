@@ -235,6 +235,16 @@
    normal do flex (nunca position:absolute) — assim reserva o próprio espaço e
    não fica coberto pela bolinha seguinte quando o gap é pequeno. */
 .cf-wrap{position:relative;display:inline-flex;align-items:center}
+/* Indicador discreto e permanente (pedido do Rafa, 25/08, junto com o
+   toast do momento): enquanto um filtro de cor estiver ligado e escondendo
+   algo NESTA pasta, fica sempre visível aqui — não só no instante em que
+   a cor muda. Mesma explicação, dois lugares: um pega quem está olhando
+   quando acontece, o outro pega quem chega depois e só encontra o filtro
+   já ligado. */
+.cf-aviso-escondidos{margin-top:8px;padding:6px 10px;background:var(--bg-input);border-radius:9px;
+  font-size:11.5px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:6px;
+  transition:background .15s linear,color .15s linear}
+.cf-aviso-escondidos:hover{background:var(--accent-glow);color:var(--text2)}
 .cf-menu{width:16px;height:26px;padding:0;margin-left:1px;flex-shrink:0;
   border:none;background:transparent;cursor:pointer;
   color:var(--text4);font-size:13px;line-height:1;opacity:0;
@@ -4330,7 +4340,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.25.5';
+const VOX_VERSION='2026.08.25.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4840,6 +4850,8 @@ let I18N_EN={
 "Tirar o filtro de cor":"Clear the color filter",
 "🎨 Card mudou de cor — saiu da vista porque o filtro \"{cor}\" está ligado.":"🎨 Card changed color — it left view because the \"{cor}\" filter is on.",
 "Tirar o filtro":"Clear filter",
+"{n} {esc} por este filtro — tirar":"{n} {esc} by this filter — clear",
+"escondido":"hidden","escondidos":"hidden",
 "Nada arquivado por aqui ainda.":"Nothing archived here yet.",
 "A lixeira está vazia.":"The trash is empty.",
 "Esta pasta ainda não tem nenhum card — arraste um pra cá, ou crie um novo já dentro dela.":"This folder has no cards yet — drag one here, or create a new one already inside it.",
@@ -8273,6 +8285,10 @@ function renomearEtiqueta(i){
   salvos[i]=novo.trim().slice(0,24);   // teto curto: nome comprido estoura o balãozinho
   localStorage.setItem('vox_tag_nomes',JSON.stringify(salvos));
   renderFiltroCores();
+  // renderFiltroCores() recria o aviso de "N escondidos" já escondido por
+  // padrão — sem isto, renomear QUALQUER etiqueta apagava o aviso de um
+  // filtro que continuava ligado e continuava escondendo card.
+  applyFolderFilter();
   toast(novo.trim()?t('✏️ Etiqueta renomeada'):t('✏️ Nome devolvido ao padrão'));
 }
 // Só desenha as cores que EXISTEM em algum card — uma fileira de 8 bolinhas
@@ -8295,7 +8311,19 @@ function renderFiltroCores(){
         <button type="button" class="cf-dot${corFiltroAtivo===i?' on':''}" style="background:${TAG_CORES[i]}" onclick="selecionarFiltroCor(${i})" title="${escHtml(nomes[i])} (${usadas.get(i)})" aria-label="${escHtml(nomes[i])}"><span class="cf-n">${usadas.get(i)}</span></button>
         <button type="button" class="cf-menu" onclick="event.stopPropagation();renomearEtiqueta(${i})" title="${escHtml(t('Renomear etiqueta'))}" aria-label="${escHtml(t('Renomear etiqueta'))}">⋮</button>
       </span>`
-    ).join('')}</div>`;
+    ).join('')}</div>
+    <div class="cf-aviso-escondidos" id="cfAvisoEscondidos" onclick="corFiltroAtivo=null;renderFiltroCores();applyFolderFilter()" hidden></div>`;
+}
+// Chamado por applyFolderFilter() sempre que ela já sabe quantos cards
+// desta pasta o filtro de cor tirou de vista — não recalcula nada, só
+// mostra/esconde e escreve o número. Fica de fora de renderFiltroCores()
+// porque quem tem a conta certa (por pasta, não geral) é applyFolderFilter().
+function _atualizaAvisoCorEscondidos(n){
+  const el=document.getElementById('cfAvisoEscondidos');
+  if(!el)return;
+  if(!n){el.hidden=true;return}
+  el.hidden=false;
+  el.textContent='🎨 '+t('{n} {esc} por este filtro — tirar').replace('{n}',n).replace('{esc}',t(n===1?'escondido':'escondidos'));
 }
 // ── ARQUIVAR E LIXEIRA (19/08/2026) ──
 // Duas visões que não são pastas de verdade — a lista de pastas ganha duas
@@ -8336,6 +8364,7 @@ function applyFolderFilter(){
     c.classList.toggle('folder-hidden',!(inFolder&&naCor));
   });
   _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix);
+  _atualizaAvisoCorEscondidos(corFiltroAtivo!==null?semCor-comCor:0);
   if(viewMode==='doc')applyFocusCard();
   updateRecencyBadges();
 }
