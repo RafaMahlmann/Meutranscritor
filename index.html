@@ -4330,7 +4330,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.25.4';
+const VOX_VERSION='2026.08.25.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4838,6 +4838,8 @@ let I18N_EN={
 "Nenhum card tem a etiqueta \"{cor}\" — por isso a tela ficou em branco.":"No card has the \"{cor}\" tag — that's why the screen is blank.",
 "Nenhum card desta pasta tem a etiqueta \"{cor}\" — por isso a tela ficou em branco.":"No card in this folder has the \"{cor}\" tag — that's why the screen is blank.",
 "Tirar o filtro de cor":"Clear the color filter",
+"🎨 Card mudou de cor — saiu da vista porque o filtro \"{cor}\" está ligado.":"🎨 Card changed color — it left view because the \"{cor}\" filter is on.",
+"Tirar o filtro":"Clear filter",
 "Nada arquivado por aqui ainda.":"Nothing archived here yet.",
 "A lixeira está vazia.":"The trash is empty.",
 "Esta pasta ainda não tem nenhum card — arraste um pra cá, ou crie um novo já dentro dela.":"This folder has no cards yet — drag one here, or create a new one already inside it.",
@@ -8204,6 +8206,20 @@ function setCardCor(id,i){
   saveHistory();
   renderFiltroCores();
   applyFolderFilter(); // se um filtro de cor estiver ligado, o card some/aparece na hora
+  // O card não foi pra lixeira nem pro arquivo — só saiu de baixo do filtro
+  // de cor que já estava ligado. Sem aviso aqui, isso lê como "o card
+  // sumiu" (achado pelo Rafa): o filtro continua fazendo efeito, só que
+  // agora em UM card entre vários, então a tela não fica vazia e o aviso
+  // de "filtro vazio" (_avisoFiltroVazio) nunca dispara — este é o caso
+  // que ele não cobre.
+  if(corFiltroAtivo!==null&&c.classList.contains('folder-hidden')){
+    const nomeCor=(TAG_NOMES()[corFiltroAtivo]||'').toLowerCase();
+    toastDesfazer(
+      t('🎨 Card mudou de cor — saiu da vista porque o filtro "{cor}" está ligado.').replace('{cor}',nomeCor),
+      ()=>{corFiltroAtivo=null;renderFiltroCores();applyFolderFilter()},
+      t('Tirar o filtro')
+    );
+  }
 }
 // A cor nova NASCE NA BOLINHA e se espalha por baixo do texto até tomar o
 // card — não é o card que pisca de uma cor pra outra. O disco começa do
@@ -18153,7 +18169,7 @@ function toast(msg,err=false){
 // o clique automático e estraga a confirmação do excluir, que é a que importa.
 // Dura mais que o toast normal, porque aqui a pessoa precisa de tempo pra ler
 // e decidir.
-function toastDesfazer(msg,aoDesfazer){
+function toastDesfazer(msg,aoDesfazer,label){
   const w=document.getElementById('toastWrap'),u=document.getElementById('toastUndo');
   document.getElementById('toastMsg').textContent=msg;
   document.getElementById('toastIco').textContent='✅';
@@ -18161,7 +18177,7 @@ function toastDesfazer(msg,aoDesfazer){
   clearTimeout(_toastT);
   if(u){
     u.hidden=false;
-    u.textContent=t('Desfazer');
+    u.textContent=label||t('Desfazer');
     u.onclick=()=>{clearTimeout(_toastT);w.classList.remove('on');u.hidden=true;u.onclick=null;aoDesfazer()};
   }
   w.classList.add('on');
