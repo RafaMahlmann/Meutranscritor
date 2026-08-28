@@ -1879,7 +1879,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    (Things 3 faz isso; contador zero é ruído puro e valia 22px).
    O alvo de toque sobe de 36px para os 44px que o app promete em
    --card-tap-min. */
-.folder-item{position:relative;display:flex;align-items:center;gap:6px;width:100%;min-height:36px;padding:4px 26px 4px calc(30px + var(--lvl,0) * 12px);border-radius:9px;background:none;border:1.5px solid transparent;cursor:pointer;font-family:var(--font);color:var(--text);transition:background var(--transition),border-color var(--transition),transform .11s cubic-bezier(.22,1,.36,1);margin-bottom:2px}
+.folder-item{position:relative;display:flex;align-items:center;gap:6px;width:100%;min-height:36px;padding:4px 26px 4px calc(48px + var(--lvl,0) * 12px);border-radius:9px;background:none;border:1.5px solid transparent;cursor:pointer;font-family:var(--font);color:var(--text);transition:background var(--transition),border-color var(--transition),transform .11s cubic-bezier(.22,1,.36,1);margin-bottom:2px}
 .folder-item:hover{background:var(--bg-input)}
 .folder-item:active{transform:scale(.985)}
 /* O destaque da pasta ativa não pinta mais o próprio .folder-item — quem
@@ -1889,18 +1889,25 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-item.active .folder-name{font-weight:700}
 .folder-item.drag-over{border-color:var(--accent);border-style:dashed;background:var(--accent-glow)}
 .folder-item.dragging{opacity:0.35}
-/* Bolinha de cor de volta (P2+P3, 25/08) — o fio de 3px que ela substituiu
-   era 100% inclicável: a alça de arrastar, em opacity:0 mas sem
-   pointer-events:none, ficava por cima e comia o clique (achado medindo
-   com elementFromPoint). A bolinha agora É um botão de verdade, com seu
-   próprio alvo de toque, e a alça se mudou pra direita — ver mais abaixo.
-   Nome de classe próprio (.folder-cor-dot, não .folder-dot): o modo de
-   baixar pastas já usa .folder-dot noutra estrutura (span solto, sem o
-   .folder-dot-pt como âncora) — reaproveitar o nome quebraria aquela tela. */
-.folder-dot-btn{position:absolute;left:calc(4px + var(--lvl,0) * 12px);top:0;bottom:0;width:26px;
+/* Bolinha de cor (P2+P3, 25/08 — alça devolvida pro lado esquerdo em
+   25/08 depois). Nome de classe próprio (.folder-cor-dot, não .folder-dot):
+   o modo de baixar pastas já usa .folder-dot noutra estrutura (span solto,
+   sem o .folder-dot-pt como âncora) — reaproveitar o nome quebraria
+   aquela tela.
+   Layout do lado esquerdo, da borda pra dentro: alça de arrastar (2px),
+   depois a bolinha (18px) — cada uma com sua faixa própria, sem disputar
+   clique uma com a outra (é o mesmo defeito que a alça já causou uma vez,
+   só que do lado oposto se as duas ficassem juntas de novo). */
+.folder-dot-btn{position:absolute;left:calc(18px + var(--lvl,0) * 12px);top:0;bottom:0;width:26px;
+  display:flex;align-items:center;justify-content:center;
   border:none;background:none;padding:0;cursor:pointer;z-index:3;
   -webkit-tap-highlight-color:transparent}
-.folder-dot-pt{position:absolute;left:11px;top:50%;width:9px;height:9px;margin-top:-4.5px;pointer-events:none}
+/* A bolinha da pasta de primeiro nível é maior que a das subpastas — a
+   cor já é a mesma entre as duas (ver createFolder/trocarCorPasta), então
+   o tamanho é o que sobra pra diferenciar "isto é a raiz" de "isto é
+   filha" sem depender só do recuo. Pedido do Rafa, 25/08. */
+.folder-dot-pt{position:relative;width:11px;height:11px;pointer-events:none}
+.folder-item[data-lvl]:not([data-lvl="0"]) .folder-dot-pt{width:7px;height:7px}
 .folder-cor-dot{display:block;position:absolute;inset:0;border-radius:50%;background:var(--fcor);
   box-shadow:0 0 0 1px rgba(0,0,0,.07) inset;transition:transform .18s cubic-bezier(.22,1,.36,1)}
 [data-theme="dark"] .folder-cor-dot{box-shadow:none}
@@ -1949,11 +1956,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-menu-btn{position:absolute;right:3px;top:50%;transform:translateY(-50%);opacity:0;font-size:15px;color:var(--text4);cursor:pointer;padding:2px 4px;line-height:1;transition:opacity .12s linear}
 .folder-item:hover .folder-menu-btn{opacity:0.6}
 .folder-menu-btn:hover{opacity:1 !important;color:var(--text2)}
-/* A alça se mudou pra direita (25/08) — na esquerda ela cobria exatamente
-   o alvo da bolinha nova (opacity:0 não é pointer-events:none: mesmo
-   invisível, ela comia o clique). À direita, antes do "⋯", sobra espaço
-   real dentro do padding-right de 26px que a linha já paga. */
-.folder-item .folder-drag-handle{position:absolute;right:19px;top:50%;transform:translateY(-50%);font-size:13px;padding:5px 1px;opacity:0;margin:0;transition:opacity .12s linear}
+/* A alça voltou pro lado esquerdo (pedido do Rafa, 25/08 — achou estranho
+   ela ficar junto do "⋯"). Continua sem repetir o defeito antigo: ela
+   ocupa a FAIXA PRÓPRIA de calc(2px + lvl*12px) até a bolinha começar em
+   calc(18px + lvl*12px) — nunca por cima do alvo da bolinha, mesmo em
+   opacity:0 (que não é pointer-events:none — invisível ainda come clique). */
+.folder-item .folder-drag-handle{position:absolute;left:calc(2px + var(--lvl,0) * 12px);top:50%;transform:translateY(-50%);font-size:13px;padding:5px 1px;opacity:0;margin:0;z-index:2;transition:opacity .12s linear}
 .folder-item:hover .folder-drag-handle{opacity:0.5}
 .folder-item .folder-drag-handle:hover{opacity:1!important}
 /* No toque não há hover: sem isto o "⋯" e a alça ficariam inalcançáveis
@@ -4340,7 +4348,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.25.6';
+const VOX_VERSION='2026.08.25.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6606,7 +6614,7 @@ function renderFolderTree(parentId,lvl,counts){
     // somando ao recheio, em vez de trocá-lo. De quebra, 12px por nível em
     // vez de 14 (Notion usa 12), o que devolve espaço nas subpastas.
     html+=`<div class="folder-node">`;
-    html+=`<div class="folder-item${isActive?' active':''}" data-fid="${escHtml(f.id)}"${f.color?` data-cor="1"`:''} style="--lvl:${Math.min(lvl,4)}${f.color?`;--fcor:${safeColor(f.color)}`:''}" onclick="selectFolder('${escJs(f.id)}')">`;
+    html+=`<div class="folder-item${isActive?' active':''}" data-fid="${escHtml(f.id)}" data-lvl="${Math.min(lvl,4)}"${f.color?` data-cor="1"`:''} style="--lvl:${Math.min(lvl,4)}${f.color?`;--fcor:${safeColor(f.color)}`:''}" onclick="selectFolder('${escJs(f.id)}')">`;
     html+=`<button type="button" class="folder-dot-btn" aria-label="${t('Cor da pasta')}" onpointerdown="event.stopPropagation();_folderDotPress('${escJs(f.id)}',this)" onpointerup="event.stopPropagation();_folderDotRelease('${escJs(f.id)}',this)" onpointerleave="_folderDotCancel()" onclick="event.stopPropagation()"><span class="folder-dot-pt"><span class="folder-cor-dot"></span><span class="folder-dot-anel"></span></span></button>`;
     html+=`<span class="drag-handle folder-drag-handle" title="${t('Arrastar para mover ou aninhar a pasta')}" onclick="event.stopPropagation()">⠿</span>`;
     if(hasChildren){
@@ -8593,15 +8601,25 @@ function _folderVarreDaBolinha(el,i){
     v.remove();pluma.remove();
   },320);
 }
+// Trocar a cor de QUALQUER membro da família (a raiz ou uma subpasta)
+// recolore a família inteira — é o mesmo pedido de "mesma cor" aplicado
+// depois da criação, não só no nascimento. Só a pasta tocada ganha o
+// soco/anel/varredura; as outras só atualizam a cor, sem festa.
 function trocarCorPasta(id,i){
   const f=folders.find(x=>x.id===id);if(!f)return;
-  f.color=FOLDER_COLORS[i];
+  const raiz=_folderRaizDe(id)||f;
+  const familia=[raiz,..._folderDescendentes(raiz.id)];
+  const novaCor=FOLDER_COLORS[i];
+  familia.forEach(m=>{m.color=novaCor});
   saveFolders();
+  familia.forEach(m=>{
+    const elm=document.querySelector(`.folder-item[data-fid="${CSS.escape(m.id)}"]`);
+    if(elm)elm.style.setProperty('--fcor',safeColor(novaCor));
+  });
+  const reduzMov=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   const el=document.querySelector(`.folder-item[data-fid="${CSS.escape(id)}"]`);
   if(el){
-    el.style.setProperty('--fcor',safeColor(f.color));
     const dot=el.querySelector('.folder-cor-dot'),anel=el.querySelector('.folder-dot-anel');
-    const reduzMov=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
     if(dot&&!reduzMov){
       dot.classList.remove('soco');anel?.classList.remove('abre');
       void dot.offsetWidth;
@@ -8610,8 +8628,13 @@ function trocarCorPasta(id,i){
     if(el.classList.contains('active')){
       if(!reduzMov)_folderVarreDaBolinha(el,i);
       else _folderAtualizaPlaqueta(true);
+      return;
     }
   }
+  // A pasta ativa pode ser OUTRO membro da mesma família (a cor mudou pra
+  // ela também, mesmo sem ter sido a tocada) — atualiza sem a varredura,
+  // que só faz sentido saindo do ponto exato onde o dedo tocou.
+  if(activeFolderId&&familia.some(m=>m.id===activeFolderId))_folderAtualizaPlaqueta(true);
 }
 // A linha fantasma VIRA a pasta (M4 da proposta de juice) em vez de abrir
 // o prompt() do sistema — que rouba o foco, não anima nada, e faz o
@@ -8673,11 +8696,39 @@ function _folderIrCriarNova(){
   if(bar)bar.scrollTo({top:bar.scrollHeight,behavior:semMov?'auto':'smooth'});
   setTimeout(()=>_folderNascePasta(fant),semMov?0:220);
 }
+// Sobe a árvore até achar o ancestral sem pai — é dessa pasta que a
+// família inteira herda a cor (pedido do Rafa, 25/08: "a pasta e as
+// subpastas têm que ter as mesmas cores").
+function _folderRaizDe(id){
+  let atual=folders.find(f=>f.id===id);
+  const vistos=new Set();
+  while(atual&&atual.parentId&&!vistos.has(atual.id)){
+    vistos.add(atual.id);
+    const pai=folders.find(f=>f.id===atual.parentId);
+    if(!pai)break;
+    atual=pai;
+  }
+  return atual;
+}
+// Todos os descendentes (subpasta, sub-subpasta, em qualquer profundidade).
+function _folderDescendentes(id){
+  const out=[];
+  const fila=[id];
+  while(fila.length){
+    const atual=fila.shift();
+    folders.filter(f=>f.parentId===atual).forEach(f=>{out.push(f);fila.push(f.id)});
+  }
+  return out;
+}
 function createFolder(parentId=null){
   const name=prompt(t('Nome da nova pasta:'));
   if(!name||!name.trim())return;
   const id='f_'+Date.now().toString(36);
-  const color=FOLDER_COLORS[folders.length%FOLDER_COLORS.length];
+  // Subpasta nasce com a MESMA cor da raiz da família — só a pasta de
+  // primeiro nível sorteia cor nova. Sem raiz achável (não devia acontecer),
+  // cai no sorteio de sempre.
+  const raiz=parentId?_folderRaizDe(parentId):null;
+  const color=raiz?raiz.color:FOLDER_COLORS[folders.length%FOLDER_COLORS.length];
   folders.push({id,name:name.trim(),color,parentId:parentId||null});
   // expande o pai para mostrar a nova subpasta
   if(parentId)folderExpanded.add(parentId);
