@@ -4356,7 +4356,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.29.1';
+const VOX_VERSION='2026.08.29.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7290,6 +7290,15 @@ function _flAbrirCard(id,origemEl){
   // tamanho da miniatura (metade da largura, texto cortado). Mesma limpeza
   // que _masonryDesativar faz por card ao sair do Masonry.
   card.style.left='';card.style.top='';card.style.width='';card.style.maxHeight='';card.style.overflow='';
+  // Outro bug real (achado pelo Rafa: janela abria preta, sem letra
+  // nenhuma): o card chega com .folder-hidden ou .hidden grudados — são
+  // display:none!important de filtro de pasta/cor ou de busca da LISTA
+  // principal, que continuam valendo mesmo quando o card foi aberto por
+  // um caminho que ignora esse filtro (Órbita/Fluxograma listam a pasta
+  // inteira, não o que está filtrado na lista de trás). A janela flutuante
+  // é uma visão à parte — nunca deveria nascer invisível por causa de um
+  // filtro de outra tela.
+  card.classList.remove('folder-hidden','hidden');
   world.appendChild(win);
   // Janela flutuante nasce sempre recolhida (cabeçalho E rodapé) — título +
   // texto, o resto atrás dos dois triângulos — não importa o estado que o
@@ -7374,6 +7383,14 @@ function _flReinserirNaLista(card){
   if(alvo)lista.insertBefore(card,alvo);
   else lista.appendChild(card);
 }
+// Ao voltar pra lista, o card precisa readquirir o .folder-hidden/.hidden
+// que _flAbrirCard tirou dele de propósito (ver lá) — senão um card de
+// outra pasta, ou fora da busca atual, ficava visível pra sempre na lista
+// principal só por ter passado pela janela flutuante.
+function _flRestaurarFiltro(){
+  const q=document.getElementById('searchInput')?.value||'';
+  if(q)doSearch(q);else applyFolderFilter();
+}
 function _flFecharJanela(id){
   const win=document.getElementById('floatwin-'+id);
   const card=document.getElementById(id);
@@ -7390,11 +7407,11 @@ function _flFecharJanela(id){
   // pointer-events:auto — e engolia todo clique seguinte na lista, mesmo
   // sem nenhuma janela aberta pra explicar por quê.
   const desligarCamada=()=>{if(!_flAbertas.length&&_flAtiva)_flAlternarCamada()};
-  if(!win){if(card)_flReinserirNaLista(card);desligarCamada();return}
+  if(!win){if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}desligarCamada();return}
   // Some encolhendo, não corta seco — o card real só volta pra lista depois
   // da transição acabar, senão o texto desapareceria da tela antes da moldura.
   win.classList.add('float-window-fechando');
-  setTimeout(()=>{if(card)_flReinserirNaLista(card);win.remove();desligarCamada()},180);
+  setTimeout(()=>{if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}win.remove();desligarCamada()},180);
 }
 // Acha o nó de pasta do MAPA DE TRÁS sob um ponto de tela — usado no drop
 // cross-layer (Fase 6). Não dá pra usar elementFromPoint: o mapa congelado
