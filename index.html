@@ -1913,6 +1913,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 [data-theme="dark"] .folder-cor-dot{box-shadow:none}
 .folder-dot-btn:hover .folder-cor-dot{transform:scale(1.3)}
 .folder-dot-anel{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--fcor);opacity:0;pointer-events:none}
+/* Passo "sem cor" do ciclo (28/08, pedido do Rafa: "não tem a etapa de
+   voltar ao vazio... sem contorno nenhum, como é originalmente"). Sem
+   data-cor a pasta não tem --fcor nenhum: a bolinha já fica transparente
+   sozinha (var() inválido cai no valor inicial), só falta apagar o anel
+   cinza fixo de baixo pra sobrar mesmo nada. Um contorno bem fraco só
+   aparece no hover, pra não virar um alvo de toque invisível de vez. */
+.folder-item:not([data-cor]) .folder-cor-dot{box-shadow:none}
+.folder-item:not([data-cor]) .folder-dot-btn:hover .folder-cor-dot{box-shadow:0 0 0 1.5px var(--border2)}
 @keyframes folderDotSoco{0%{transform:scale(1)}38%{transform:scale(1.5)}100%{transform:scale(1)}}
 @keyframes folderAnelAbre{from{transform:scale(1);opacity:.62}to{transform:scale(3.4);opacity:0}}
 .folder-cor-dot.soco{animation:folderDotSoco .26s cubic-bezier(.22,1,.36,1)}
@@ -4348,7 +4356,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.28.1';
+const VOX_VERSION='2026.08.29.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -8417,7 +8425,9 @@ function _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix){
 let _folderDotSeguro=null,_folderPaletaAberta=null;
 function _folderCorIndex(f){
   const i=FOLDER_COLORS.findIndex(c=>c.toLowerCase()===String(f?.color||'').toLowerCase());
-  return i>=0?i:0;
+  // Sem cor não é "índice 0" (verde) — é o passo vazio do ciclo, um a mais
+  // que as 8 cores reais (ver trocarCorPasta/_folderDotRelease).
+  return i>=0?i:FOLDER_COLORS.length;
 }
 // A pasta ativa fala a MESMA língua de "luz" que o card colorido já usa —
 // não é metáfora nova. Valores copiados de `.card[data-tc="N"]` (linhas
@@ -8471,6 +8481,17 @@ function _folderDegrade(i){
     ?`linear-gradient(100deg,${L.a} 0%,${L.b} 84%)`
     :`linear-gradient(100deg,${L.a} 0%,${_folderCorpo(i)} 30%)`;
 }
+// Duas trocas de cor mais rápidas que os 320ms da varredura (achado
+// testando o ciclo de 9 passos até o vazio bem rápido) deixavam um
+// setTimeout velho vencer por último e pintar a camada `a` de volta pra
+// cor de ANTES da mais recente — a plaqueta ficava presa numa cor errada
+// pra sempre. `pl._folderT` é o mesmo timer usado tanto aqui quanto na
+// varredura: só o último agendado sobrevive, e o resto de uma varredura
+// interrompida não fica boiando dentro da plaqueta.
+function _folderLimpaVarredura(pl){
+  clearTimeout(pl._folderT);
+  pl.querySelectorAll('.folder-pl-varre,.folder-pl-pluma').forEach(el=>el.remove());
+}
 // Reposiciona/repinta a plaqueta pra baixo da pasta ativa. Chamado no fim
 // de renderFolders() e depois de trocar a cor da pasta ativa. O CSS já
 // tem transition em transform/height/opacity — só mudar os valores já
@@ -8483,6 +8504,7 @@ function _folderAtualizaPlaqueta(instant){
   if(!pl||!wrap)return;
   const ativa=wrap.querySelector('#folderListInner .folder-item.active');
   if(!ativa){pl.classList.remove('on');return}
+  _folderLimpaVarredura(pl);
   const i=ativa.hasAttribute('data-cor')?_folderCorIndex(folders.find(f=>f.id===ativa.dataset.fid)):null;
   const wr=wrap.getBoundingClientRect(),ar=ativa.getBoundingClientRect();
   const y=Math.round(ar.top-wr.top),h=Math.round(ar.height);
@@ -8548,7 +8570,7 @@ function _folderDotRelease(id,btn){
   if(_folderDotSeguro===null)return; // já virou paleta (segurou) — o clique da paleta cuida do resto
   clearTimeout(_folderDotSeguro);_folderDotSeguro=null;
   const f=folders.find(x=>x.id===id);if(!f)return;
-  trocarCorPasta(id,(_folderCorIndex(f)+1)%FOLDER_COLORS.length);
+  trocarCorPasta(id,(_folderCorIndex(f)+1)%(FOLDER_COLORS.length+1));
 }
 function _folderAbrePaleta(id,btn){
   _folderFechaPaleta();
@@ -8577,6 +8599,7 @@ document.addEventListener('click',e=>{
 // linha inteira, nascendo no mesmo ponto que o dedo tocou.
 function _folderVarreDaBolinha(el,i){
   const pl=document.getElementById('folderPlaqueta');if(!pl)return;
+  _folderLimpaVarredura(pl);
   const pr=pl.getBoundingClientRect();
   const pt=el.querySelector('.folder-dot-pt');if(!pt)return;
   const x=pt.getBoundingClientRect().left-pr.left+4.5;
@@ -8594,7 +8617,7 @@ function _folderVarreDaBolinha(el,i){
     pluma.style.transition='transform .3s cubic-bezier(.22,1,.36,1)';
     pluma.style.transform=`translateX(${pr.width-x+24}px)`;
   });
-  setTimeout(()=>{
+  pl._folderT=setTimeout(()=>{
     const a=pl.querySelector('.folder-pl-a'),b=pl.querySelector('.folder-pl-b');
     a.style.background=_folderDegrade(i);b.style.transition='none';b.style.opacity='0';
     void b.offsetWidth;b.style.transition='';
@@ -8605,16 +8628,22 @@ function _folderVarreDaBolinha(el,i){
 // recolore a família inteira — é o mesmo pedido de "mesma cor" aplicado
 // depois da criação, não só no nascimento. Só a pasta tocada ganha o
 // soco/anel/varredura; as outras só atualizam a cor, sem festa.
+// i vai de 0 a FOLDER_COLORS.length (inclusive): o último passo é "sem
+// cor" — mesma lógica do ciclarCorCard do card ("sem etiqueta" fecha o
+// ciclo). Pedido do Rafa em 28/08: a bolinha da pasta cicla cor mas nunca
+// tinha um jeito de voltar ao vazio original.
 function trocarCorPasta(id,i){
   const f=folders.find(x=>x.id===id);if(!f)return;
   const raiz=_folderRaizDe(id)||f;
   const familia=[raiz,..._folderDescendentes(raiz.id)];
-  const novaCor=FOLDER_COLORS[i];
+  const novaCor=i<FOLDER_COLORS.length?FOLDER_COLORS[i]:null;
   familia.forEach(m=>{m.color=novaCor});
   saveFolders();
   familia.forEach(m=>{
     const elm=document.querySelector(`.folder-item[data-fid="${CSS.escape(m.id)}"]`);
-    if(elm)elm.style.setProperty('--fcor',safeColor(novaCor));
+    if(!elm)return;
+    if(novaCor){elm.setAttribute('data-cor','1');elm.style.setProperty('--fcor',safeColor(novaCor))}
+    else{elm.removeAttribute('data-cor');elm.style.removeProperty('--fcor')}
   });
   const reduzMov=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   const el=document.querySelector(`.folder-item[data-fid="${CSS.escape(id)}"]`);
@@ -8626,8 +8655,11 @@ function trocarCorPasta(id,i){
       dot.classList.add('soco');anel?.classList.add('abre');
     }
     if(el.classList.contains('active')){
-      if(!reduzMov)_folderVarreDaBolinha(el,i);
-      else _folderAtualizaPlaqueta(true);
+      // A varredura de tinta é a cor CHEGANDO — não faz sentido "varrer"
+      // pro vazio. Indo pro vazio, a plaqueta só esmaece pro tom neutro
+      // pelo próprio crossfade que ela já sabe fazer sozinha.
+      if(novaCor&&!reduzMov)_folderVarreDaBolinha(el,i);
+      else _folderAtualizaPlaqueta(reduzMov);
       return;
     }
   }
