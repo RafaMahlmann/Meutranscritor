@@ -4348,7 +4348,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.25.7';
+const VOX_VERSION='2026.08.28.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -8646,7 +8646,7 @@ function trocarCorPasta(id,i){
 function _folderNascePasta(el){
   if(!el||el.classList.contains('virando'))return;
   el.classList.add('virando');
-  const color=FOLDER_COLORS[folders.length%FOLDER_COLORS.length];
+  const color=_folderNovaCorRaiz();
   el.outerHTML=`<div class="folder-item" data-cor="1" style="--lvl:0;--fcor:${safeColor(color)}">
     <span class="folder-dot-pt"><span class="folder-cor-dot"></span><span class="folder-dot-anel"></span></span>
     <input type="text" class="folder-nome-input" id="folderNovoNomeInput" maxlength="60" placeholder="${escHtml(t('Nome da pasta'))}">
@@ -8696,6 +8696,19 @@ function _folderIrCriarNova(){
   if(bar)bar.scrollTo({top:bar.scrollHeight,behavior:semMov?'auto':'smooth'});
   setTimeout(()=>_folderNascePasta(fant),semMov?0:220);
 }
+// Cor nova pra uma pasta de PRIMEIRO NÍVEL. Bug real achado pelo agente
+// de design (28/08): com a cor virando identidade de família, contar
+// TODA pasta (raiz + subpasta) no rodízio `folders.length % 8` fazia
+// duas famílias diferentes nascerem com a mesma cor a partir da 9ª pasta
+// — subpasta nunca gastava cor própria, mas continuava contando. Agora
+// conta só raiz, e prefere uma cor que nenhuma família já está usando;
+// só repete quando as 8 já estão todas ocupadas.
+function _folderNovaCorRaiz(){
+  const raizes=folders.filter(f=>!f.parentId);
+  const usadas=new Set(raizes.map(f=>f.color));
+  const livre=FOLDER_COLORS.find(c=>!usadas.has(c));
+  return livre||FOLDER_COLORS[raizes.length%FOLDER_COLORS.length];
+}
 // Sobe a árvore até achar o ancestral sem pai — é dessa pasta que a
 // família inteira herda a cor (pedido do Rafa, 25/08: "a pasta e as
 // subpastas têm que ter as mesmas cores").
@@ -8728,7 +8741,7 @@ function createFolder(parentId=null){
   // primeiro nível sorteia cor nova. Sem raiz achável (não devia acontecer),
   // cai no sorteio de sempre.
   const raiz=parentId?_folderRaizDe(parentId):null;
-  const color=raiz?raiz.color:FOLDER_COLORS[folders.length%FOLDER_COLORS.length];
+  const color=raiz?raiz.color:_folderNovaCorRaiz();
   folders.push({id,name:name.trim(),color,parentId:parentId||null});
   // expande o pai para mostrar a nova subpasta
   if(parentId)folderExpanded.add(parentId);
