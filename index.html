@@ -1822,6 +1822,163 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      ele hospeda é um cartão pequeno centralizado; a órbita é mapa cheio. */
   .orb-overlay{padding:0}
 }
+
+/* ══ MURAL DA ÓRBITA (proposta 3-B, 29/08) ═══════════════════════════════
+   Substitui o painel lateral SÓ na Órbita (o Fluxograma continua com o
+   .fc-card-panel de sempre). Três coisas que o painel não fazia:
+   1. o anel da bolha em foco vira FATIADO — uma fatia por nota que mora
+      ali, com legenda "N notas aqui". Isso existe na tela PARADA: antes,
+      nada dizia que a bolha central guardava alguma coisa;
+   2. o cartão nasce do ponto da bolha e se ancora no maior vão livre entre
+      os satélites, então não cobre subpasta nenhuma;
+   3. ele CRESCE com o conteúdo (1 coluna até 4 notas, 2 a partir de 5) e
+      abrir uma nota expande ela no lugar, com as vizinhas deslizando —
+      as outras continuam legíveis. Era esse o pedido do Rafa: bater o olho
+      e ver várias, não uma de cada vez. */
+.orb-segsvg{
+  position:absolute;inset:-7px;pointer-events:none;overflow:visible;opacity:0;
+  transition:opacity 300ms var(--orb-curva);
+}
+.orb-no-foco .orb-segsvg{opacity:1}
+.orb-segsvg circle{
+  fill:none;stroke:var(--orb-cor,var(--orb-texto4));stroke-width:2.6;stroke-linecap:round;
+  transform:rotate(-90deg);transform-origin:50% 50%;
+  filter:drop-shadow(0 0 5px var(--orb-brilho,transparent));
+  transition:stroke-dashoffset 620ms var(--orb-curva),stroke-dasharray 300ms var(--orb-curva);
+}
+/* O anel inteiro cede a vez pro fatiado quando há nota: dois anéis cheios,
+   um por cima do outro, viram uma borda grossa sem significado. */
+.orb-no-foco.orb-tem-notas .orb-anel{opacity:.16}
+.orb-seg-legenda{
+  position:absolute;left:50%;bottom:-25px;transform:translateX(-50%);
+  font-size:10px;font-weight:700;letter-spacing:.02em;color:var(--orb-texto4);
+  white-space:nowrap;pointer-events:none;opacity:0;
+  transition:opacity 300ms var(--orb-curva) 260ms;
+}
+.orb-no-foco .orb-seg-legenda{opacity:1}
+/* A bolha em foco já mostra as fatias e a legenda; os pontinhos de subpasta
+   embaixo dela colidiriam com a legenda no mesmo lugar. */
+.orb-no-foco .orb-pontos{display:none}
+
+.orb-mural-fio{position:absolute;inset:0;pointer-events:none;z-index:6;opacity:0;
+  transition:opacity 240ms var(--orb-curva)}
+.orb-mural-fio line{stroke:rgba(255,255,255,.26);stroke-width:1.4;stroke-linecap:round}
+
+.orb-mural{
+  position:absolute;left:0;top:0;z-index:14;display:none;flex-direction:column;
+  overflow:hidden;font-family:var(--font);
+  background:linear-gradient(168deg,#2b303c,#20242d);
+  border:1px solid rgba(255,255,255,.13);border-radius:15px;
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.9),0 4px 12px -4px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,.07);
+  opacity:0;transform:scale(.9);transform-origin:var(--orb-mural-org,50% 50%);
+  transition:opacity 220ms var(--orb-curva),transform 340ms var(--orb-curva);
+}
+.orb-mural.viva{display:flex}
+.orb-mural.on{opacity:1;transform:none}
+.orb-mural-hd{
+  display:flex;align-items:center;gap:8px;padding:11px 13px 9px;flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.orb-mural-hd strong{
+  flex:1;font-size:12.5px;font-weight:700;color:var(--orb-texto);min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.orb-mural-hd .orb-mural-n{font-size:10.5px;color:var(--orb-texto4);font-weight:650;white-space:nowrap}
+.orb-mural-x{
+  appearance:none;border:0;background:none;color:var(--orb-texto3);cursor:pointer;
+  font-size:14px;padding:0 2px;line-height:1;font-family:var(--font);
+}
+.orb-mural-x:hover{color:var(--orb-texto)}
+/* O grid é quem dá altura ao cartão — por isso max-height aqui, não no
+   .orb-mural: o cabeçalho e o rodapé precisam ficar fora da parte que rola. */
+.orb-mural-body{
+  position:relative; /* âncora do offsetTop das fichas — ver _orbMuralAlterna */
+  display:grid;grid-template-columns:repeat(var(--orb-mural-cols,1),minmax(0,1fr));
+  gap:4px;align-content:start;padding:5px;overflow-y:auto;
+  max-height:var(--orb-mural-maxa,186px);
+}
+.orb-mural-it{
+  position:relative;border-radius:9px;align-self:start;
+  transition:background-color 150ms var(--orb-curva);
+}
+.orb-mural-it.entra{animation:orbMuralItEntra 250ms var(--orb-curva) backwards}
+@keyframes orbMuralItEntra{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.orb-mural-it.desliza{transition:transform 380ms var(--orb-curva)}
+.orb-mural-corpo{
+  display:block;width:100%;text-align:left;appearance:none;border:0;background:none;
+  font-family:var(--font);color:inherit;padding:8px 9px;border-radius:9px;cursor:pointer;
+  transition:background-color 150ms var(--orb-curva),transform 120ms var(--orb-curva);
+}
+.orb-mural-corpo:hover{background:rgba(255,255,255,.055)}
+.orb-mural-corpo:active{transform:scale(.98)}
+.orb-mural-nm{
+  font-size:12.5px;font-weight:650;color:var(--orb-texto);display:block;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.orb-mural-nm.vazia{opacity:.5;font-weight:500;font-style:italic}
+.orb-mural-pv{
+  font-size:11px;line-height:1.4;color:var(--orb-texto4);display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:1px;
+}
+/* A ficha aberta toma a linha inteira e mostra o texto todo, no lugar onde
+   já estava — as vizinhas só descem (FLIP em _orbMuralAlterna). */
+.orb-mural-it.aberta{
+  grid-column:1/-1;background:rgba(255,255,255,.07);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09);
+}
+.orb-mural-it.aberta .orb-mural-pv{
+  -webkit-line-clamp:unset;display:block;color:var(--orb-texto2);
+  font-size:12px;line-height:1.55;margin-top:4px;
+  animation:orbMuralTxAbre 220ms var(--orb-curva) 60ms both;
+}
+@keyframes orbMuralTxAbre{from{opacity:0}to{opacity:1}}
+.orb-mural-it.aberta .orb-mural-nm{white-space:normal;overflow:visible}
+.orb-mural-acoes{display:flex;gap:6px;padding:0 9px 9px;animation:orbMuralTxAbre 200ms var(--orb-curva) 90ms both}
+.orb-mural-acoes button{
+  appearance:none;border:1px solid rgba(255,255,255,.13);border-radius:8px;
+  background:rgba(255,255,255,.06);color:var(--orb-texto2);cursor:pointer;
+  font-family:var(--font);font-size:11px;font-weight:600;padding:5px 9px;
+  display:inline-flex;align-items:center;gap:5px;
+  transition:background-color 150ms var(--orb-curva),color 150ms var(--orb-curva);
+}
+.orb-mural-acoes button:hover{background:rgba(255,255,255,.12);color:var(--orb-texto)}
+.orb-mural-acoes button svg{width:13px;height:13px;flex-shrink:0}
+.orb-mural-acoes .orb-mural-del{padding:5px 7px}
+.orb-mural-acoes .orb-mural-del:hover{color:#ff8b83;border-color:rgba(255,139,131,.4)}
+/* Marca a nota que já está aberta numa janela flutuante — mesma informação
+   que a lista lateral dá com .fc-lista-item-aberta. */
+.orb-mural-it.flutuando .orb-mural-nm::after{
+  content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:var(--accent);margin-left:6px;vertical-align:middle;
+}
+.orb-mural-vazio{
+  grid-column:1/-1;padding:16px 12px;font-size:12px;color:var(--orb-texto4);text-align:center;
+}
+.orb-mural-rodape{
+  padding:8px 13px 10px;border-top:1px solid rgba(255,255,255,.07);
+  font-size:10.5px;color:var(--orb-texto4);flex-shrink:0;
+}
+/* Celular/tablet retrato: o cartão vira gaveta embaixo, largura toda, e a
+   lista usa a altura que sobrou (sem isso ela ficava presa nos 186px do
+   desktop e sobrava gaveta vazia). Mesmas duas faixas da gaveta do painel. */
+@media(max-width:599px),(min-width:600px) and (max-width:1023px) and (orientation:portrait){
+  .orb-mural{
+    left:12px;right:12px;top:auto;bottom:12px;width:auto !important;
+    /* 62%, não 52%: medido num iPhone 375×720, a 52% cabiam 6 das 10 notas e
+       sobrava gaveta sem uso. A bolha de foco continua descoberta porque o
+       mundo sobe metade da altura da gaveta ao abrir (_orbAbrirMural). */
+    max-height:62%;transform:scale(.94) translateY(12px);
+  }
+  .orb-mural.on{transform:none}
+  .orb-mural-body{max-height:none;flex:1;min-height:0}
+  .orb-mural-fio{opacity:0 !important}
+}
+@media(prefers-reduced-motion:reduce){
+  .orb-mural,.orb-mural-it.desliza{transition-duration:1ms}
+  .orb-mural-it.entra,.orb-mural-it.aberta .orb-mural-pv,.orb-mural-acoes{animation:none}
+  .orb-segsvg circle{transition-duration:1ms}
+}
 /* ══ Painel de cards com a identidade da órbita — sempre escuro, nunca o
    branco do resto do app (que "vaza" quando o painel é emprestado do
    Fluxograma). Escopo .orb-modal: não toca no painel quando ele é do
@@ -4356,7 +4513,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.29.4';
+const VOX_VERSION='2026.08.29.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4433,6 +4590,11 @@ let I18N_EN={
 "Ver cards flutuantes":"View floating cards",
 "Voltar pro mapa":"Back to the map",
 "Fechar janela":"Close window",
+"nota aqui":"note here",
+"notas aqui":"notes here",
+"Nada solto aqui — tudo mora nas subpastas.":"Nothing loose here — everything lives in the subfolders.",
+"subpasta continua na órbita, atrás deste cartão":"subfolder is still in orbit, behind this card",
+"subpastas continuam na órbita, atrás deste cartão":"subfolders are still in orbit, behind this card",
 "Isso aqui baixa só o texto, pra ler. Quer levar tudo — pastas, cards e etiquetas — pra continuar depois em outro lugar?":"This only downloads the text, to read. Want to take everything — folders, cards and tags — to continue later somewhere else?",
 "Salvar projeto inteiro":"Save the whole project",
 "Selecionar tudo":"Select all",
@@ -7348,6 +7510,7 @@ function _flAbrirCard(id,origemEl){
   win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';win.style.zIndex=z;
   _flAbertas.push({id,x,y,w,h,z,folder:folderKey});
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+  _orbMuralAtualizar();
 
   // FLIP: nasce na posição/tamanho do item da lista, anima até o destino.
   if(origemRect){
@@ -7400,6 +7563,7 @@ function _flFecharJanela(id){
   // de expandir, escondendo o botão "Abrir flutuante" sem nenhum aviso.
   if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+  _orbMuralAtualizar();
   // Fechou a ÚLTIMA janela: desativa a camada da frente sozinho, DEPOIS da
   // transição de saída (senão #floatLayer some com display:none no meio do
   // encolher, cortando a animação pela metade). Sem isso, a camada (cheio
@@ -7703,6 +7867,10 @@ function _orbPosicoes(n){
 }
 function _orbAplicarCam(){
   _orbMundo.style.transform=`translate(${_orbCamX}px,${_orbCamY}px) scale(${_orbCamS})`;
+  // O mural vive em coordenadas de TELA (não dentro do mundo) pra o texto não
+  // encolher junto com o zoom automático — em compensação, ele precisa ser
+  // reposicionado sempre que a câmera anda, senão o fio aponta pro vazio.
+  if(_orbMuralAberto)_orbMuralPosicionar();
 }
 // Câmera compensando o painel: desloca o mundo por metade da dimensão que o
 // painel ocupa, no eixo dele (largura na lateral, altura na gaveta) — sem
@@ -7772,6 +7940,10 @@ function _orbDesenhar(){
   _orbTrilha();
   _orbVazioEl.classList.toggle('on',fs.length===0);
   _orbSubindo=false;
+  // O mural se ancora no maior vão ENTRE os satélites — precisa saber onde
+  // eles ficaram nesta rodada de desenho.
+  _orbMuralPos=pos;
+  if(_orbMuralAberto)_orbMuralPosicionar();
 }
 
 function _orbDespachar(el,k,oX,oY){
@@ -7856,6 +8028,11 @@ function _orbNo(id,dados,x,y,ehFoco,ordem,cards){
   const nf=getFolderChildren(id).length;
   el.querySelector('.orb-pontos').innerHTML=(!ehFoco&&nf)
     ? '<i></i>'.repeat(Math.min(nf,5)) : '';
+
+  // Anel fatiado: só a bolha em foco mostra, uma fatia por nota que mora
+  // ali DENTRO (não conta as das subpastas — elas têm a própria bolha).
+  if(ehFoco)_orbAnelFatiado(el,id,cards);
+  else{delete el.dataset.segN;el.classList.remove('orb-tem-notas')}
 
   if(nasceu){
     let nx,ny,ne;
@@ -7951,13 +8128,294 @@ function _orbTrilha(){
   _orbTrilhaEl.classList.toggle('orb-trilha-oculta',caminho.length<=1);
 }
 
-// Modelo do Finder, igual ao Fluxograma: tocar numa pasta mostra o conteúdo
-// dela no painel, ao lado — nunca há dúvida sobre qual pasta está sendo
-// exibida, porque é sempre a última tocada (= o foco atual).
-function _orbAbrirPainelDoFoco(){
-  const p=_orbAcha(_orbFoco);
-  _fcListarCards(_orbFoco,(p&&p.name)||t('Tudo'));
+// ══ MURAL — proposta 3-B ══════════════════════════════════════════════
+// Cards que moram DIRETO nesta pasta. O painel lateral (_fcCardsDaPasta,
+// usado pelo Fluxograma) soma os das subpastas de forma recursiva, e é por
+// isso que ele diz "7 cards" numa pasta que tem 3: as outras 4 moram nas
+// subpastas, que já aparecem como bolhas próprias na órbita. Aqui a conta é
+// a que o número promete.
+function _orbCardsDiretos(id){
+  const alvo=id===null?'':(id||'');
+  return _flTodosCards().filter(c=>(c.dataset.folder||'')===alvo);
+}
+const ORB_SEG_R=48; // raio dentro do viewBox 0 0 100 100 do .orb-segsvg
+function _orbAnelFatiado(el,id,cards){
+  let svg=el.querySelector('.orb-segsvg');
+  let lg=el.querySelector('.orb-seg-legenda');
+  if(!svg){
+    svg=document.createElementNS(ORB_NS,'svg');
+    svg.setAttribute('class','orb-segsvg');
+    svg.setAttribute('viewBox','0 0 100 100');
+    const c=document.createElementNS(ORB_NS,'circle');
+    c.setAttribute('cx','50');c.setAttribute('cy','50');c.setAttribute('r',String(ORB_SEG_R));
+    svg.appendChild(c);
+    el.appendChild(svg);
+    lg=document.createElement('span');lg.className='orb-seg-legenda';el.appendChild(lg);
+  }
+  const alvo=id===null?'':(id||'');
+  const d=cards.filter(c=>(c.dataset.folder||'')===alvo).length;
+  const c=svg.querySelector('circle');
+  const C=2*Math.PI*ORB_SEG_R;
+  el.classList.toggle('orb-tem-notas',d>0);
+  if(!d){c.style.strokeDasharray='0 '+C.toFixed(2);lg.textContent='';delete el.dataset.segN;return}
+  const gap=d>1?Math.min(7,C*0.055):0;
+  c.style.strokeDasharray=(C/d-gap).toFixed(2)+' '+gap.toFixed(2);
+  // A animação de "encher" só roda quando o número muda de verdade —
+  // _orbNo é chamada em todo redesenho, e reanimar sempre viraria pisca-pisca.
+  if(el.dataset.segN!==String(d)&&!_voxReduzMov()){
+    c.style.transition='none';c.style.strokeDashoffset=C.toFixed(2);
+    requestAnimationFrame(()=>{c.style.transition='';c.style.strokeDashoffset='0'});
+  }else c.style.strokeDashoffset='0';
+  el.dataset.segN=String(d);
+  lg.textContent=d+' '+t(d===1?'nota aqui':'notas aqui');
+}
+
+let _orbMuralPos=[];         // posições dos satélites do desenho atual
+let _orbMuralAberto=false;
+let _orbMuralNotaId=null;    // ficha expandida dentro do mural
+let _orbMuralRect=null;      // rect do palco, medido só quando muda de verdade
+const ORB_MURAL_TILE=66,ORB_MURAL_CHROME=92,ORB_MURAL_COL=190;
+function _voxReduzMov(){return window.matchMedia('(prefers-reduced-motion:reduce)').matches}
+// Mesmas duas faixas do CSS logo acima (e da gaveta do painel): abaixo disso
+// o mural não é cartão ancorado, é gaveta encostada embaixo.
+function _orbMuralEhGaveta(){
+  return window.matchMedia('(max-width:599px),(min-width:600px) and (max-width:1023px) and (orientation:portrait)').matches;
+}
+// O tamanho vem do conteúdo, não de uma constante — é esta a diferença entre
+// a 3-B e a proposta 3 original, que abria sempre do mesmo tamanho e por isso
+// só cabiam 3 notas por vez. Pasta de 3 notas continua com a mesma pegada
+// pequena; pasta cheia abre em duas colunas e cresce até o teto do palco.
+function _orbMuralForma(qtd){
+  if(_orbMuralEhGaveta())return{cols:2,w:0,maxa:0,gaveta:true};
+  const r=_orbMuralRect||_orbPalco.getBoundingClientRect();
+  // Duas colunas só quando há nota bastante pra justificar E o palco comporta:
+  // sem este teto, num palco estreito o cartão de 396px vazava pra fora e
+  // sobrava nota cortada na direita.
+  const cabe2=r.width-24>=ORB_MURAL_COL*2+16;
+  const cols=(qtd>=5&&cabe2)?2:1;
+  const w=Math.min(cols===1?272:(cols*ORB_MURAL_COL+(cols-1)*4+12),Math.max(200,r.width-24));
+  const linhas=Math.ceil(Math.max(qtd,1)/cols);
+  const teto=Math.max(140,Math.min(r.height-70,r.height*0.86)-ORB_MURAL_CHROME);
+  return{cols,w,maxa:Math.min(linhas*ORB_MURAL_TILE+6,teto),gaveta:false};
+}
+// O maior vão angular entre dois satélites vizinhos — é ali que o cartão
+// cabe sem cobrir bolha nenhuma. Sem satélite, sai pela direita.
+function _orbMuralAngulo(){
+  if(!_orbMuralPos.length)return 0;
+  const s=_orbMuralPos.map(p=>Math.atan2(p.y,p.x)).sort((a,b)=>a-b);
+  let melhor=0,tam=-1;
+  for(let i=0;i<s.length;i++){
+    const a=s[i],b=(i+1<s.length)?s[i+1]:s[0]+2*Math.PI;
+    if(b-a>tam){tam=b-a;melhor=(a+b)/2}
+  }
+  return melhor;
+}
+function _orbMuralFichas(cards){
+  if(!cards.length)return `<div class="orb-mural-vazio">${escHtml(t('Nada solto aqui — tudo mora nas subpastas.'))}</div>`;
+  return cards.map((c,i)=>{
+    const sn=(c.dataset.sessionName||'').trim();
+    const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
+    const aberta=_orbMuralNotaId===c.id;
+    const flutuando=_flAbertas.some(j=>j.id===c.id);
+    const limite=aberta?700:120;
+    const previa=txt?escHtml(txt.slice(0,limite))+(txt.length>limite?'…':''):escHtml(t('(card vazio)'));
+    // Botão dentro de botão é HTML inválido: a ficha é uma div, o corpo é o
+    // botão, e as ações ficam do lado de fora dele — mesmo desenho que a
+    // .fc-lista-item do painel já usa.
+    const acoes=aberta?`<div class="orb-mural-acoes">
+      <button type="button" onclick="event.stopPropagation();_flAbrirCard('${escJs(c.id)}',this)">${ICO.expand}${escHtml(t('Abrir flutuante'))}</button>
+      <button type="button" class="orb-mural-del" onclick="event.stopPropagation();_orbMuralExcluir('${escJs(c.id)}')" title="${escHtml(t('Excluir'))}" aria-label="${escHtml(t('Excluir'))}">${ICO.trash}</button>
+    </div>`:'';
+    const entra=(i<10&&!_voxReduzMov())?` entra" style="animation-delay:${i*22}ms`:'';
+    return `<div class="orb-mural-it${aberta?' aberta':''}${flutuando?' flutuando':''}${entra}" data-nid="${escHtml(c.id)}">
+      <button type="button" class="orb-mural-corpo" onclick="_orbMuralAlterna('${escJs(c.id)}')">
+        <span class="orb-mural-nm${sn?'':' vazia'}" title="${sn?escHtml(sn):escHtml(t('Clique para nomear este card'))}" onclick="event.stopPropagation();_orbMuralRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
+        <span class="orb-mural-pv">${previa}</span>
+      </button>${acoes}
+    </div>`;
+  }).join('');
+}
+function _orbAbrirMural(id){
+  const wrap=document.getElementById('orbMural');
+  if(!wrap)return;
+  const pasta=_orbAcha(id);
+  const cards=_orbCardsDiretos(id);
+  const nSub=getFolderChildren(id).length;
+  _orbMuralRect=_orbPalco.getBoundingClientRect();
+  const f=_orbMuralForma(cards.length);
+  wrap._forma=f;
+  wrap.style.setProperty('--orb-mural-cols',f.gaveta?2:f.cols);
+  if(f.gaveta)wrap.style.removeProperty('--orb-mural-maxa');
+  else wrap.style.setProperty('--orb-mural-maxa',f.maxa+'px');
+  wrap.innerHTML=`<div class="orb-mural-hd">
+      <strong>${escHtml((pasta&&pasta.name)||t('Tudo'))}</strong>
+      <span class="orb-mural-n">${cards.length} ${escHtml(t(cards.length===1?'nota aqui':'notas aqui'))}</span>
+      <button type="button" class="orb-mural-x" onclick="_orbFecharMural()" title="${escHtml(t('Fechar'))}" aria-label="${escHtml(t('Fechar'))}">✕</button>
+    </div>
+    <div class="orb-mural-body" id="orbMuralBody">${_orbMuralFichas(cards)}</div>
+    ${nSub?`<div class="orb-mural-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na órbita, atrás deste cartão':'subpastas continuam na órbita, atrás deste cartão'))}</div>`:''}`;
+  wrap.classList.add('viva');
+  _orbMuralAberto=true;
+  _orbMuralPosicionar();
+  requestAnimationFrame(()=>{
+    wrap.classList.add('on');
+    // Na gaveta o cartão cobre a parte de baixo do palco, onde mora a bolha.
+    // Em vez de encolher a gaveta, o mundo sobe — a bolha é o MESMO nó, então
+    // ela desliza pra cima em vez de sumir por baixo.
+    if(wrap._forma&&wrap._forma.gaveta){
+      const r=wrap.getBoundingClientRect();
+      _orbMundo.classList.add('orb-mundo-reenquadrando');
+      _orbCamX=0;_orbCamY=-r.height/2;_orbAplicarCam();
+      clearTimeout(_orbReenqT);
+      _orbReenqT=setTimeout(()=>_orbMundo&&_orbMundo.classList.remove('orb-mundo-reenquadrando'),400);
+    }
+  });
   _orbEsconderDica();
+}
+// Só posição — não recria o conteúdo. Chamada em todo redesenho e em todo
+// movimento de câmera (pan/zoom), então precisa ser barata: o rect do palco
+// fica em cache e só é remedido quando a janela muda de tamanho.
+function _orbMuralPosicionar(){
+  const wrap=document.getElementById('orbMural');
+  if(!wrap||!_orbMuralAberto)return;
+  const f=wrap._forma;if(!f)return;
+  const fio=document.getElementById('orbMuralFio');
+  if(f.gaveta){
+    wrap.style.left='';wrap.style.top='';wrap.style.width='';
+    wrap.style.setProperty('--orb-mural-org','50% 100%');
+    if(fio)fio.style.opacity='0';
+    return;
+  }
+  const r=_orbMuralRect||(_orbMuralRect=_orbPalco.getBoundingClientRect());
+  const m=_orbMedidas();
+  const cx=r.width/2+_orbCamX, cy=r.height/2+_orbCamY;
+  const a=_orbMuralAngulo();
+  const alt=wrap.offsetHeight||(f.maxa+ORB_MURAL_CHROME);
+  // Empurra na proporção da largura do cartão, senão o mural de 2 colunas
+  // encosta na bolha central.
+  const dist=m.rFoco*_orbCamS+34+f.w/2;
+  const lim=(v,meia,total)=>Math.max(meia+10,Math.min(total-meia-10,v));
+  const x=lim(cx+Math.cos(a)*dist,f.w/2,r.width);
+  const y=lim(cy+Math.sin(a)*dist,alt/2,r.height);
+  wrap.style.width=f.w+'px';
+  wrap.style.left=(x-f.w/2)+'px';
+  wrap.style.top=(y-alt/2)+'px';
+  // Nasce do lado que aponta pra bolha — o cartão "sai" dela, não do nada.
+  wrap.style.setProperty('--orb-mural-org',(50-Math.cos(a)*50)+'% '+(50-Math.sin(a)*50)+'%');
+  _orbMuralDesenhaFio(cx,cy,x,y,m.rFoco*_orbCamS+9,Math.min(f.w,alt)/2);
+}
+// O mesmo traço que já liga a bolha aos satélites, agora ligando ela ao
+// cartão — é o que faz o mural ler como parte da órbita, e não como um
+// pop-up que apareceu por cima.
+function _orbMuralDesenhaFio(cx,cy,mx,my,de,recuo){
+  const svg=document.getElementById('orbMuralFio');
+  if(!svg)return;
+  const dx=mx-cx,dy=my-cy,d=Math.hypot(dx,dy);
+  const ate=d-recuo;
+  if(!d||ate-de<14){svg.style.opacity='0';return}
+  const ux=dx/d,uy=dy/d;
+  let l=svg.querySelector('line');
+  if(!l){l=document.createElementNS(ORB_NS,'line');svg.appendChild(l)}
+  l.setAttribute('x1',(cx+ux*de).toFixed(1));
+  l.setAttribute('y1',(cy+uy*de).toFixed(1));
+  l.setAttribute('x2',(cx+ux*ate).toFixed(1));
+  l.setAttribute('y2',(cy+uy*ate).toFixed(1));
+  svg.style.opacity='1';
+}
+function _orbFecharMural(){
+  const wrap=document.getElementById('orbMural');
+  _orbMuralAberto=false;_orbMuralNotaId=null;
+  const fio=document.getElementById('orbMuralFio');
+  if(fio)fio.style.opacity='0';
+  if(!wrap)return;
+  wrap.classList.remove('on');
+  // Esvazia só depois da saída — limpar na hora deixa um retângulo em branco
+  // piscando no meio da animação (mesma lição do _fcFecharPainel).
+  const limpar=()=>{if(!_orbMuralAberto){wrap.classList.remove('viva');wrap.innerHTML=''}};
+  wrap.addEventListener('transitionend',limpar,{once:true});
+  setTimeout(limpar,360);
+  if(_orbMundo){
+    _orbMundo.classList.add('orb-mundo-reenquadrando');
+    _orbCamX=0;_orbCamY=0;_orbAplicarCam();
+    clearTimeout(_orbReenqT);
+    _orbReenqT=setTimeout(()=>_orbMundo&&_orbMundo.classList.remove('orb-mundo-reenquadrando'),400);
+  }
+}
+// AJUSTE que separa a 3-B da proposta 3: abrir uma nota NÃO faz as outras
+// sumirem. A ficha cresce onde está e as vizinhas são os MESMOS nós do DOM,
+// só mudando de lugar — FLIP em transform. Recriar a lista faria piscar e
+// perderia justamente a leitura de conjunto que o Rafa pediu.
+function _orbMuralAlterna(id){
+  const body=document.getElementById('orbMuralBody');
+  if(!body)return;
+  const its=[...body.querySelectorAll('.orb-mural-it')];
+  const antes=new Map();its.forEach(e=>antes.set(e,e.getBoundingClientRect()));
+  _orbMuralNotaId=(_orbMuralNotaId===id)?null:id;
+  const cards=_orbCardsDiretos(_orbFoco);
+  body.innerHTML=_orbMuralFichas(cards);
+  const depois=[...body.querySelectorAll('.orb-mural-it')];
+  if(_voxReduzMov())return;
+  depois.forEach(e=>{
+    // casa pelo id do card: a lista foi reconstruída, mas cada ficha
+    // corresponde a uma de antes — o FLIP compara as duas posições.
+    const velho=its.find(v=>v.dataset.nid===e.dataset.nid);
+    if(!velho)return;
+    const a=antes.get(velho),b=e.getBoundingClientRect();
+    const dx=a.left-b.left,dy=a.top-b.top;
+    if(!dx&&!dy)return;
+    e.classList.remove('entra');
+    e.style.transition='none';
+    e.style.transform=`translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`;
+    requestAnimationFrame(()=>{
+      e.classList.add('desliza');e.style.transition='';e.style.transform='';
+    });
+  });
+  const alvo=depois.find(e=>e.dataset.nid===_orbMuralNotaId);
+  if(alvo){
+    // offsetTop/offsetHeight, NÃO getBoundingClientRect: o FLIP acabou de
+    // escrever um transform com a posição ANTIGA em cada ficha, então o rect
+    // ainda mostra onde ela estava, não onde vai parar. Achado no print: a
+    // ficha aberta ficava cortada embaixo porque o scroll era calculado sobre
+    // a posição velha. offset* ignora transform e já dá o destino final.
+    const fim=alvo.offsetTop+alvo.offsetHeight;
+    if(fim>body.scrollTop+body.clientHeight)body.scrollTop=fim-body.clientHeight+6;
+  }
+}
+// Redesenha o conteúdo mantendo posição e ficha aberta — usado quando algo
+// fora do mural muda o estado de um card (abrir/fechar janela flutuante).
+function _orbMuralAtualizar(){
+  if(!_orbMuralAberto)return;
+  const body=document.getElementById('orbMuralBody');
+  if(!body)return;
+  const topo=body.scrollTop;
+  body.innerHTML=_orbMuralFichas(_orbCardsDiretos(_orbFoco));
+  body.scrollTop=topo;
+}
+function _orbMuralRenomear(id){
+  renameSname(id);
+  _orbMuralAtualizar();
+}
+function _orbMuralExcluir(id){
+  const card=document.getElementById(id);
+  const nome=(card?.dataset.sessionName||'').trim()||t('este card');
+  if(!confirm(t('Excluir "{name}"?').replace('{name}',nome)))return;
+  if(_flAbertas.some(j=>j.id===id)){
+    document.getElementById('floatwin-'+id)?.remove();
+    _flAbertas=_flAbertas.filter(j=>j.id!==id);
+    if(!_flAbertas.length&&_flAtiva)_flAlternarCamada();
+  }
+  doDelete(id);
+  if(_orbMuralNotaId===id)_orbMuralNotaId=null;
+  // A pasta tem uma nota a menos: o anel fatiado e a legenda mudam junto.
+  _orbDesenhar();
+  _orbAbrirMural(_orbFoco);
+  toast(t('🗑️ Nota excluída'));
+}
+// Modelo do Finder, igual ao Fluxograma: tocar numa pasta mostra o conteúdo
+// dela — nunca há dúvida sobre qual pasta está sendo exibida, porque é
+// sempre a última tocada (= o foco atual).
+function _orbAbrirPainelDoFoco(){
+  _orbAbrirMural(_orbFoco);
 }
 function _orbEsconderDica(){
   const d=document.getElementById('orbDica');
@@ -7972,8 +8430,7 @@ function _orbEsconderDica(){
 // tirar a leitura do conteúdo do lugar nenhum, só parando de forçá-la.
 function _orbTocar(id){
   if(id===_orbFoco){
-    const panel=document.getElementById('fcCardPanel');
-    if(panel&&panel.classList.contains('on'))_fcFecharPainel();
+    if(_orbMuralAberto)_orbFecharMural();
     else _orbAbrirPainelDoFoco();
     return;
   }
@@ -7982,9 +8439,10 @@ function _orbTocar(id){
 function _orbIrPara(id){
   if(id===_orbFoco)return;
   const atual=_orbAcha(_orbFoco);
-  const painelAberto=document.getElementById('fcCardPanel')?.classList.contains('on');
+  const painelAberto=_orbMuralAberto;
   _orbSubindo=!!(atual&&atual.parentId===id);
   _orbFoco=id;
+  _orbMuralNotaId=null; // pasta nova, ficha aberta da anterior não faz sentido
   _orbCamX=0;_orbCamY=0;
   _orbAplicarCam();
   _orbDesenhar();
@@ -8008,13 +8466,15 @@ function _orbIrPara(id){
 const _orbPts=new Map();
 let _orbPan=false,_orbPX=0,_orbPY=0,_orbOX=0,_orbOY=0,_orbPinch=null,_orbPinchS=1;
 function _orbPointerDown(e){
-  // O painel lateral (#fcCardPanel) e a camada de cards flutuantes
-  // (#floatLayer) são filhos de _orbPalco, mas cuidam do próprio clique —
-  // sem este guard, um clique de mouse de verdade ali (não um .click() via
-  // JS) sobe por bubbling até aqui, ganha setPointerCapture no palco
-  // inteiro, e o botão de dentro nunca termina de disparar o onclick dele.
-  // Achado testando com clique real de mouse (Playwright), não com .click().
-  if(e.target.closest('.orb-no, .fc-card-panel, .float-layer'))return;
+  // O painel lateral (#fcCardPanel), o mural (.orb-mural) e a camada de cards
+  // flutuantes (#floatLayer) são filhos de _orbPalco, mas cuidam do próprio
+  // clique — sem este guard, um clique de mouse de verdade ali (não um
+  // .click() via JS) sobe por bubbling até aqui, ganha setPointerCapture no
+  // palco inteiro, e o botão de dentro nunca termina de disparar o onclick
+  // dele. Achado testando com clique real de mouse (Playwright), não com
+  // .click() — e o mural caiu na MESMA armadilha em 29/08, por ter nascido
+  // depois desta lista.
+  if(e.target.closest('.orb-no, .fc-card-panel, .float-layer, .orb-mural'))return;
   // Um arrasto de verdade começando agora cancela na hora qualquer
   // reenquadramento de câmera em andamento (Recomendação 3) — senão o pan
   // "briga" com a transição e fica borrachudo.
@@ -8087,6 +8547,8 @@ function abrirOrbital(){
           </svg>
         </div>
         <div class="orb-vazio" id="orbVazio">${escHtml(t('nada aqui dentro ainda'))}</div>
+        <svg class="orb-mural-fio" id="orbMuralFio"></svg>
+        <div class="orb-mural" id="orbMural"></div>
         <div class="orb-dica-wrap"><span class="orb-dica" id="orbDica">${escHtml(t('toque numa bolinha pra entrar · toque no centro pra ver o que tem dentro'))}</span></div>
       </div>
     </div>`;
@@ -8115,6 +8577,8 @@ function abrirOrbital(){
   ov.classList.add('on');
   const dica=document.getElementById('orbDica');if(dica)dica.style.opacity='';
   _orbFoco=null;
+  _orbMuralAberto=false;_orbMuralNotaId=null;_orbMuralRect=null;
+  document.getElementById('orbMural')?.classList.remove('on','viva');
   _orbCamX=0;_orbCamY=0;_orbCamS=1;_orbCamSManual=false;
   _orbAplicarCam();
   _orbDesenhar();
@@ -8123,6 +8587,7 @@ function fecharOrbital(){
   const ov=document.getElementById('orbOverlay');
   if(ov)ov.classList.remove('on');
   _fcFecharPainel();
+  _orbFecharMural();
   _orbPts.clear();_orbPan=false;_orbPinch=null;
   if(_flAtiva)_flAlternarCamada();
   _flPointers.clear();_flPanAtivo=false;_flPinchDist=null;
@@ -8130,7 +8595,14 @@ function fecharOrbital(){
 }
 window.addEventListener('resize',()=>{
   const ov=document.getElementById('orbOverlay');
-  if(ov&&ov.classList.contains('on'))_orbDesenhar();
+  if(ov&&ov.classList.contains('on')){
+    // O rect em cache é justamente o que acabou de mudar; e a forma do mural
+    // (1 ou 2 colunas, cartão ou gaveta) depende do tamanho do palco, então
+    // ele é refeito, não só reposicionado.
+    _orbMuralRect=null;
+    _orbDesenhar();
+    if(_orbMuralAberto)_orbAbrirMural(_orbFoco);
+  }
   _flReclampJanelas();
 });
 // Bug medido: janela flutuante aberta numa tela larga ficava INTEIRAMENTE
