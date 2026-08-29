@@ -1927,6 +1927,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   grid-column:1/-1;background:rgba(255,255,255,.07);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.09);
 }
+/* Número ímpar de notas em duas colunas deixava a última sozinha, com um vão
+   vazio do lado — o cartão terminava num "dente" em vez de num retângulo.
+   A última esticada fecha a borda de baixo. Só quando NÃO há ficha aberta:
+   com uma aberta a contagem de linhas muda e o estica erra o alvo. */
+.orb-mural-body:not(:has(.orb-mural-it.aberta)) .orb-mural-it.orfa{grid-column:1/-1}
 .orb-mural-it.aberta .orb-mural-pv{
   -webkit-line-clamp:unset;display:block;color:var(--orb-texto2);
   font-size:12px;line-height:1.55;margin-top:4px;
@@ -4513,7 +4518,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.29.5';
+const VOX_VERSION='2026.08.29.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -8198,20 +8203,61 @@ function _orbMuralForma(qtd){
   const teto=Math.max(140,Math.min(r.height-70,r.height*0.86)-ORB_MURAL_CHROME);
   return{cols,w,maxa:Math.min(linhas*ORB_MURAL_TILE+6,teto),gaveta:false};
 }
-// O maior vão angular entre dois satélites vizinhos — é ali que o cartão
-// cabe sem cobrir bolha nenhuma. Sem satélite, sai pela direita.
-function _orbMuralAngulo(){
-  if(!_orbMuralPos.length)return 0;
-  const s=_orbMuralPos.map(p=>Math.atan2(p.y,p.x)).sort((a,b)=>a-b);
-  let melhor=0,tam=-1;
-  for(let i=0;i<s.length;i++){
-    const a=s[i],b=(i+1<s.length)?s[i+1]:s[0]+2*Math.PI;
-    if(b-a>tam){tam=b-a;melhor=(a+b)/2}
-  }
-  return melhor;
+// Onde o cartão pousa: ângulo E distância, decididos juntos.
+// Testa o meio de cada vão entre satélites vizinhos e fica com o que
+// consegue acomodar o cartão INTEIRO fora do anel, sem sair do palco.
+// Só o maior vão angular não basta — num palco largo e baixo o maior vão
+// pode apontar pra cima, onde não há altura, enquanto as laterais têm
+// espaço de sobra. Medido com 7 subpastas: o maior vão apontava a -116° e
+// o cartão estourava 191px acima da borda, então ele era puxado de volta
+// pra cima de duas bolhas.
+function _orbMuralPouso(f,alt,r,cx,cy,m){
+  const raioOrb=_orbMuralPos.length?_orbMuralPos[0].raio*_orbCamS:0;
+  const distDentro=m.rFoco*_orbCamS+34+f.w/2;
+  const distFora=raioOrb+m.rSat*_orbCamS+22+f.w/2;
+  const cabe=(a,d)=>{
+    const px=cx+Math.cos(a)*d,py=cy+Math.sin(a)*d;
+    return px-f.w/2>=10&&px+f.w/2<=r.width-10&&py-alt/2>=10&&py+alt/2<=r.height-10;
+  };
+  const angs=_orbMuralPos.map(p=>Math.atan2(p.y,p.x)).sort((x,y)=>x-y);
+  const cands=[];
+  if(angs.length){
+    for(let i=0;i<angs.length;i++){
+      const a1=angs[i],a2=(i+1<angs.length)?angs[i+1]:angs[0]+2*Math.PI;
+      cands.push({a:(a1+a2)/2,vao:a2-a1});
+    }
+  }else cands.push({a:0,vao:Math.PI*2});
+  const porVao=(x,y)=>y.vao-x.vao;
+  // 1ª escolha: cabe inteiro FORA do anel — não cobre bolha nenhuma.
+  const fora=distFora>distDentro?cands.filter(c=>cabe(c.a,distFora)).sort(porVao)[0]:null;
+  if(fora)return{a:fora.a,dist:distFora};
+  // 2ª: não cabe fora em direção nenhuma (palco apertado pro tamanho da
+  // órbita). Então vale afastar o quanto der: quanto mais longe do centro,
+  // menos o cartão invade o anel. Distância máxima por direção, resolvida
+  // pela borda que chega primeiro — sem isso o cartão parava sempre na
+  // distância mínima e cobria mais bolha do que precisava.
+  const folgaX=r.width/2-f.w/2-10, folgaY=r.height/2-alt/2-10;
+  const distMax=(a)=>{
+    const ca=Math.abs(Math.cos(a)),sa=Math.abs(Math.sin(a));
+    return Math.max(0,Math.min(ca>0.001?folgaX/ca:Infinity,sa>0.001?folgaY/sa:Infinity));
+  };
+  const melhor=cands.map(c=>({...c,d:Math.min(distFora,distMax(c.a))}))
+    .sort((x,y)=>(y.d-x.d)||(y.vao-x.vao))[0];
+  return{a:melhor.a,dist:Math.max(distDentro,melhor.d)};
 }
-function _orbMuralFichas(cards){
+// Quantas colunas o mural está usando AGORA — lido do próprio elemento, que
+// é onde _orbAbrirMural escreveu a decisão. Redesenhar o miolo (abrir uma
+// nota, atualizar depois de uma janela flutuante) não recalcula a forma, só
+// precisa saber qual ela é pra marcar a ficha órfã certa.
+function _orbMuralColsAtuais(){
+  const w=document.getElementById('orbMural');
+  return w?(+w.style.getPropertyValue('--orb-mural-cols')||1):1;
+}
+function _orbMuralFichas(cards,cols){
   if(!cards.length)return `<div class="orb-mural-vazio">${escHtml(t('Nada solto aqui — tudo mora nas subpastas.'))}</div>`;
+  // Em duas colunas com quantidade ímpar, a última ficha fica sozinha na
+  // linha de baixo — o CSS a estica pra fechar o retângulo (ver .orfa).
+  const orfa=(cols===2&&cards.length%2===1)?cards.length-1:-1;
   return cards.map((c,i)=>{
     const sn=(c.dataset.sessionName||'').trim();
     const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
@@ -8227,7 +8273,7 @@ function _orbMuralFichas(cards){
       <button type="button" class="orb-mural-del" onclick="event.stopPropagation();_orbMuralExcluir('${escJs(c.id)}')" title="${escHtml(t('Excluir'))}" aria-label="${escHtml(t('Excluir'))}">${ICO.trash}</button>
     </div>`:'';
     const entra=(i<10&&!_voxReduzMov())?` entra" style="animation-delay:${i*22}ms`:'';
-    return `<div class="orb-mural-it${aberta?' aberta':''}${flutuando?' flutuando':''}${entra}" data-nid="${escHtml(c.id)}">
+    return `<div class="orb-mural-it${aberta?' aberta':''}${flutuando?' flutuando':''}${i===orfa?' orfa':''}${entra}" data-nid="${escHtml(c.id)}">
       <button type="button" class="orb-mural-corpo" onclick="_orbMuralAlterna('${escJs(c.id)}')">
         <span class="orb-mural-nm${sn?'':' vazia'}" title="${sn?escHtml(sn):escHtml(t('Clique para nomear este card'))}" onclick="event.stopPropagation();_orbMuralRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
         <span class="orb-mural-pv">${previa}</span>
@@ -8252,7 +8298,7 @@ function _orbAbrirMural(id){
       <span class="orb-mural-n">${cards.length} ${escHtml(t(cards.length===1?'nota aqui':'notas aqui'))}</span>
       <button type="button" class="orb-mural-x" onclick="_orbFecharMural()" title="${escHtml(t('Fechar'))}" aria-label="${escHtml(t('Fechar'))}">✕</button>
     </div>
-    <div class="orb-mural-body" id="orbMuralBody">${_orbMuralFichas(cards)}</div>
+    <div class="orb-mural-body" id="orbMuralBody">${_orbMuralFichas(cards,f.gaveta?2:f.cols)}</div>
     ${nSub?`<div class="orb-mural-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na órbita, atrás deste cartão':'subpastas continuam na órbita, atrás deste cartão'))}</div>`:''}`;
   wrap.classList.add('viva');
   _orbMuralAberto=true;
@@ -8289,11 +8335,8 @@ function _orbMuralPosicionar(){
   const r=_orbMuralRect||(_orbMuralRect=_orbPalco.getBoundingClientRect());
   const m=_orbMedidas();
   const cx=r.width/2+_orbCamX, cy=r.height/2+_orbCamY;
-  const a=_orbMuralAngulo();
   const alt=wrap.offsetHeight||(f.maxa+ORB_MURAL_CHROME);
-  // Empurra na proporção da largura do cartão, senão o mural de 2 colunas
-  // encosta na bolha central.
-  const dist=m.rFoco*_orbCamS+34+f.w/2;
+  const {a,dist}=_orbMuralPouso(f,alt,r,cx,cy,m);
   const lim=(v,meia,total)=>Math.max(meia+10,Math.min(total-meia-10,v));
   const x=lim(cx+Math.cos(a)*dist,f.w/2,r.width);
   const y=lim(cy+Math.sin(a)*dist,alt/2,r.height);
@@ -8352,7 +8395,7 @@ function _orbMuralAlterna(id){
   const antes=new Map();its.forEach(e=>antes.set(e,e.getBoundingClientRect()));
   _orbMuralNotaId=(_orbMuralNotaId===id)?null:id;
   const cards=_orbCardsDiretos(_orbFoco);
-  body.innerHTML=_orbMuralFichas(cards);
+  body.innerHTML=_orbMuralFichas(cards,_orbMuralColsAtuais());
   const depois=[...body.querySelectorAll('.orb-mural-it')];
   if(_voxReduzMov())return;
   depois.forEach(e=>{
@@ -8388,7 +8431,7 @@ function _orbMuralAtualizar(){
   const body=document.getElementById('orbMuralBody');
   if(!body)return;
   const topo=body.scrollTop;
-  body.innerHTML=_orbMuralFichas(_orbCardsDiretos(_orbFoco));
+  body.innerHTML=_orbMuralFichas(_orbCardsDiretos(_orbFoco),_orbMuralColsAtuais());
   body.scrollTop=topo;
 }
 function _orbMuralRenomear(id){
