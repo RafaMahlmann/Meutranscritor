@@ -1425,10 +1425,25 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    (pointer-events:none) — ele continua desenhado, só para de reagir. */
 .float-layer{position:absolute;inset:0;display:none;pointer-events:none;overflow:hidden;touch-action:none;z-index:3}
 .float-layer.float-layer-fixo{position:fixed;z-index:150}
-.float-layer.on{display:block;pointer-events:auto;cursor:grab}
-.float-layer.on:active{cursor:grabbing}
+/* A camada continua existindo (é ela que segura e recorta as janelas), mas
+   deixou de ser um VIDRO por cima da tela: pointer-events fica em none nela e
+   auto só na janela. Antes, com uma nota aberta, 75,6% da Órbita virava zona
+   morta — e pior, o mural continuava DESENHADO por cima (z-index 14 contra 3)
+   mas inerte, então a pessoa via o botão, clicava, e o clique atravessava até
+   o textarea da janela lá atrás. Não era só travado: enganava.
+   No modo "ad hoc" (janela aberta da lista principal, .float-layer-fixo) o
+   vidro continua — ali ele é o fundo de um modal, e tocar fora fecha. */
+.float-layer.on{display:block}
+.float-layer.float-layer-fixo.on{pointer-events:auto;cursor:grab}
+.float-layer.float-layer-fixo.on:active{cursor:grabbing}
 .float-world{position:absolute;top:0;left:0;transform-origin:0 0}
 .fl-congelado{pointer-events:none}
+/* O fio que prende a nota à bolha da pasta de onde ela saiu (proposta 3):
+   sem ele a janela parece ter caído ali por acaso. Mora no mesmo SVG das
+   linhas da órbita, então anda e escala junto com o mapa de graça. */
+.orb-fio-nota{stroke:var(--orb-cor,rgba(255,255,255,.3));stroke-width:1.4;
+  stroke-linecap:round;fill:none;opacity:.42;
+  transition:opacity 240ms var(--orb-curva)}
 .fc-float-toggle-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
   background:var(--bg-card);color:var(--text2);cursor:pointer;display:flex;align-items:center;
   justify-content:center;transition:background var(--transition),color var(--transition),border-color var(--transition);padding:0}
@@ -1438,7 +1453,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    real da lista principal (movido pra dentro, não clonado — ver _flAbrirCard).
    Por isso o visual já é idêntico ao card de sempre; só precisa esticar pra
    preencher a moldura. */
+/* pointer-events:auto é a outra metade da regra da camada (ver .float-layer):
+   a camada não recebe mais nada, então a janela precisa dizer que ela SIM
+   recebe — sem isto ela herda o none da camada e fica bonita e inerte, com o
+   handle de arrastar sem responder. */
 .float-window{position:absolute;display:flex;flex-direction:column;cursor:default;
+  pointer-events:auto;
   border-radius:var(--radius-card);box-shadow:0 10px 40px rgba(0,0,0,0.28),0 2px 8px rgba(0,0,0,0.12);
   transition:box-shadow .15s ease,opacity .15s ease}
 .float-window .card{width:100%;height:100%;flex:1;margin:0;animation:none;display:flex;flex-direction:column}
@@ -4518,7 +4538,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.29.6';
+const VOX_VERSION='2026.08.29.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6944,6 +6964,14 @@ function _fcAplicarTransform(){
   const nodesEl=document.getElementById('fcNodes');
   if(lines)lines.style.transform=tr;
   if(nodesEl)nodesEl.style.transform=tr;
+  // Mesma câmera pras notas abertas (proposta 3, ver _flSeguirCameraDaOrbita).
+  // Sem isto o mapa andava e as janelas ficavam paradas — o desencontro que a
+  // camada própria escondia enquanto ela travava tudo.
+  const layer=document.getElementById('floatLayer');
+  if(layer&&layer.parentElement===document.getElementById('fcCanvasWrap')){
+    _flX=_fcX;_flY=_fcY;_flS=_fcS;
+    _flAplicarTransform();
+  }
 }
 
 function _fcRender(){
@@ -7343,6 +7371,58 @@ function _flAplicarTransform(){
   const world=document.getElementById('floatWorld');
   if(world)world.style.transform=`translate(${_flX}px,${_flY}px) scale(${_flS})`;
 }
+// ── UMA CÂMERA SÓ (proposta 3) ────────────────────────────────────────────
+// Dentro da Órbita a nota deixa de morar num espaço próprio e passa a morar
+// NO MAPA: puxar o fundo leva bolinha, fio e nota juntos, e a rodinha dá zoom
+// em tudo. Em vez de mudar de pai (o que obrigaria a reescrever toda a conta
+// de posição e limite das janelas), o mundo das janelas passa a copiar a
+// câmera do mapa — o resultado na tela é o mesmo e a matemática de sempre
+// continua valendo.
+function _flSeguirCameraDaOrbita(){
+  if(!_orbNaOrbita())return;
+  _flX=_orbCamX;_flY=_orbCamY;_flS=_orbCamS;
+  _flAplicarTransform();
+  _orbFiosDasNotas();
+}
+function _orbNaOrbita(){
+  const ov=document.getElementById('orbOverlay');
+  const layer=document.getElementById('floatLayer');
+  return !!(ov&&ov.classList.contains('on')&&layer&&layer.parentElement===_orbPalco);
+}
+// Converte a posição de uma janela (coordenadas do mundo das janelas, origem
+// no canto do palco) pro mundo da órbita (origem no centro). Com as duas
+// câmeras iguais, a diferença é só esse meio-palco.
+function _orbPontoDaJanela(j){
+  const r=_orbPalco.getBoundingClientRect();
+  return{x:j.x+j.w/2-r.width/(2*_orbCamS),y:j.y+j.h/2-r.height/(2*_orbCamS)};
+}
+// O fio que prende cada nota aberta à bolha da pasta de onde ela saiu. Mora
+// no SVG do mundo, junto das linhas da órbita, então acompanha pan e zoom
+// sem ninguém precisar redesenhar a cada frame.
+function _orbFiosDasNotas(){
+  if(!_orbSvg)return;
+  _orbSvg.querySelectorAll('.orb-fio-nota').forEach(l=>l.remove());
+  if(!_orbNaOrbita()||!_flAbertas.length)return;
+  // onde está a bolha de cada pasta desenhada agora: o foco no centro, os
+  // satélites nas posições da última rodada de desenho
+  const centros={};
+  centros[_orbChave(_orbFoco)]={x:0,y:0};
+  getFolderChildren(_orbFoco).forEach((f,i)=>{
+    if(_orbMuralPos[i])centros[_orbChave(f.id)]={x:_orbMuralPos[i].x,y:_orbMuralPos[i].y};
+  });
+  _flAbertas.forEach(j=>{
+    const card=document.getElementById(j.id);
+    if(!card)return;
+    const alvo=centros[_orbChave(card.dataset.folder||null)];
+    if(!alvo)return;               // a nota é de outra pasta: sem fio, sem invenção
+    const p=_orbPontoDaJanela(j);
+    const l=document.createElementNS(ORB_NS,'line');
+    l.setAttribute('class','orb-fio-nota');
+    l.setAttribute('x1',alvo.x.toFixed(1));l.setAttribute('y1',alvo.y.toFixed(1));
+    l.setAttribute('x2',p.x.toFixed(1));l.setAttribute('y2',p.y.toFixed(1));
+    _orbSvg.insertBefore(l,_orbSvg.firstChild);
+  });
+}
 // Congela o canvas de trás (pointer-events:none — continua desenhado, só
 // para de reagir) e mostra/esconde a camada da frente. Os dois wraps
 // (Fluxograma e Órbita) recebem a classe sempre: só um está visível por vez,
@@ -7351,9 +7431,16 @@ function _flAlternarCamada(){
   _flAtiva=!_flAtiva;
   const layer=document.getElementById('floatLayer');
   if(layer)layer.classList.toggle('on',_flAtiva);
-  document.getElementById('fcCanvasWrap')?.classList.toggle('fl-congelado',_flAtiva);
-  document.getElementById('orbPalco')?.classList.toggle('fl-congelado',_flAtiva);
-  document.getElementById('cardsList')?.classList.toggle('fl-congelado',_flAtiva);
+  // O congelamento SÓ vale no modo ad hoc (janela vinda da lista principal,
+  // onde a camada é o fundo de um modal). Na Órbita e no Fluxograma nada mais
+  // congela: mapa, mural e trilha continuam respondendo com a nota aberta —
+  // é esse o pedido do Rafa ("abri a flutuante, joguei pro lado, agora quero
+  // clicar em outro card e não funciona"). Ver .float-layer no CSS.
+  const adHoc=!!layer?.classList.contains('float-layer-fixo');
+  const congelar=_flAtiva&&adHoc;
+  document.getElementById('fcCanvasWrap')?.classList.toggle('fl-congelado',congelar);
+  document.getElementById('orbPalco')?.classList.toggle('fl-congelado',congelar);
+  document.getElementById('cardsList')?.classList.toggle('fl-congelado',congelar);
   document.querySelectorAll('.fc-float-toggle-btn').forEach(b=>{
     b.classList.toggle('on',_flAtiva);
     b.title=_flAtiva?t('Voltar pro mapa'):t('Ver cards flutuantes');
@@ -7499,6 +7586,11 @@ function _flAbrirCard(id,origemEl){
     const cy=(layerRect.height/2-_flY)/_flS-tam.altura/2;
     const off=(_flAbertas.length%6)*28;
     x=cx+off;y=cy+off;w=tam.largura;h=tam.altura;
+    // Na Órbita a cascata cega era o que fazia a nota nascer bem em cima do
+    // mural (de onde ela acabou de ser aberta) ou da bolha central. Procura
+    // um lugar livre de verdade antes de aceitar o ponto da cascata.
+    const vaga=_flVagaNaOrbita(w,h,layerRect);
+    if(vaga){x=vaga.x;y=vaga.y}
   }
   // Nem cascata nem posição salva podem nascer por cima do painel, nem fora
   // da área visível (posição salva de uma sessão com zoom/tela diferente
@@ -7516,6 +7608,7 @@ function _flAbrirCard(id,origemEl){
   _flAbertas.push({id,x,y,w,h,z,folder:folderKey});
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
   _orbMuralAtualizar();
+  _orbFiosDasNotas();
 
   // FLIP: nasce na posição/tamanho do item da lista, anima até o destino.
   if(origemRect){
@@ -7531,6 +7624,52 @@ function _flAbrirCard(id,origemEl){
       win.style.transform='translate(0,0) scale(1,1)';
     }));
   }
+}
+// Procura um lugar na Órbita onde a nota caiba sem tapar nada que importa:
+// nem as outras notas abertas, nem o mural (de onde ela acabou de sair), nem
+// a bolha em foco. Varre a partir do lado OPOSTO ao mural, que é o lado
+// naturalmente vazio. Devolve null fora da Órbita ou se não achar vaga — aí
+// a cascata de sempre decide.
+function _flVagaNaOrbita(w,h,layerRect){
+  if(!_orbNaOrbita())return null;
+  const paraMundo=(r)=>({
+    x:(r.left-layerRect.left-_flX)/_flS,y:(r.top-layerRect.top-_flY)/_flS,
+    w:r.width/_flS,h:r.height/_flS,
+  });
+  const ocupadas=_flAbertas.map(j=>({x:j.x,y:j.y,w:j.w,h:j.h}));
+  const mural=document.getElementById('orbMural');
+  if(_orbMuralAberto&&mural?.offsetWidth)ocupadas.push(paraMundo(mural.getBoundingClientRect()));
+  const foco=_orbPalco.querySelector('.orb-no-foco');
+  if(foco)ocupadas.push(paraMundo(foco.getBoundingClientRect()));
+  const bate=(x,y)=>ocupadas.some(o=>x<o.x+o.w+8&&x+w+8>o.x&&y<o.y+o.h+8&&y+h+8>o.y);
+  // limites em coordenadas do mundo, com a janela inteira visível
+  const minX=(-_flX)/_flS,maxX=(layerRect.width-_flX)/_flS-w;
+  const minY=(-_flY)/_flS,maxY=(layerRect.height-_flY)/_flS-h;
+  if(maxX<minX||maxY<minY)return null;
+  const dentro=(x,y)=>({x:Math.max(minX,Math.min(maxX,x)),y:Math.max(minY,Math.min(maxY,y))});
+  const cx=(layerRect.width/2-_flX)/_flS,cy=(layerRect.height/2-_flY)/_flS;
+  // Lado OPOSTO ao mural — é pra lá que a nota sai. O ângulo vem de onde o
+  // mural está de fato agora, não de recalcular o pouso dele: ele já pode ter
+  // sido reposicionado por um pan desde que abriu.
+  let ang=Math.PI;
+  if(_orbMuralAberto&&mural?.offsetWidth){
+    const mr=mural.getBoundingClientRect();
+    ang=Math.atan2(
+      (mr.top+mr.height/2-layerRect.top)-layerRect.height/2,
+      (mr.left+mr.width/2-layerRect.left)-layerRect.width/2
+    )+Math.PI;
+  }
+  const raio=((_orbMuralPos.length?_orbMuralPos[0].raio:120)+w/2+30);
+  const base=dentro(cx+Math.cos(ang)*raio-w/2,cy+Math.sin(ang)*raio-h/2);
+  for(let lin=0;lin<4;lin++){
+    for(let col=0;col<4;col++){
+      for(const s of [1,-1]){
+        const p=dentro(base.x+s*col*(w+14),base.y+lin*(h+14));
+        if(!bate(p.x,p.y))return p;
+      }
+    }
+  }
+  return null;
 }
 function _flTrazerFrente(id){
   const win=document.getElementById('floatwin-'+id);
@@ -7569,6 +7708,7 @@ function _flFecharJanela(id){
   if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
   _orbMuralAtualizar();
+  _orbFiosDasNotas();
   // Fechou a ÚLTIMA janela: desativa a camada da frente sozinho, DEPOIS da
   // transição de saída (senão #floatLayer some com display:none no meio do
   // encolher, cortando a animação pela metade). Sem isso, a camada (cheio
@@ -7638,6 +7778,7 @@ function _flStartWindowDrag(el,e0,isTouch){
     ny=Math.max(visivel.minY,Math.min(ny,Math.min(limite.maxBottom-winH,visivel.maxY)));
     win.style.left=nx+'px';win.style.top=ny+'px';
     const j=_flAbertas.find(j=>j.id===id);if(j){j.x=nx;j.y=ny}
+    _orbFiosDasNotas(); // o fio acompanha a nota enquanto ela é arrastada
     const achado=_flAlvoPastaEmPonto(x,y);
     if(alvoAtual&&alvoAtual!==achado?.el)alvoAtual.classList.remove('fl-drop-alvo');
     alvoAtual=achado?achado.el:null;
@@ -7701,6 +7842,7 @@ function _flStartResize(win,dir,e0,isTouch){
     if(dir.includes('s'))h=Math.max(FL_MIN_H,Math.min(h,limite.maxBottom-top));
     win.style.left=left+'px';win.style.top=top+'px';win.style.width=w+'px';win.style.height=h+'px';
     const j=_flAbertas.find(j=>j.id===id);if(j){j.x=left;j.y=top;j.w=w;j.h=h}
+    _orbFiosDasNotas(); // redimensionar move o centro da nota — o fio segue
     // "Bateu no fundo": um tremor de um frame só, não a cada pixel enquanto
     // a pessoa continua empurrando contra o mínimo.
     const bateu=w===FL_MIN_W||h===FL_MIN_H;
@@ -7876,6 +8018,8 @@ function _orbAplicarCam(){
   // encolher junto com o zoom automático — em compensação, ele precisa ser
   // reposicionado sempre que a câmera anda, senão o fio aponta pro vazio.
   if(_orbMuralAberto)_orbMuralPosicionar();
+  // As notas abertas andam com o mapa: mesma câmera, mesmo movimento.
+  _flSeguirCameraDaOrbita();
 }
 // Câmera compensando o painel: desloca o mundo por metade da dimensão que o
 // painel ocupa, no eixo dele (largura na lateral, altura na gaveta) — sem
@@ -7949,6 +8093,9 @@ function _orbDesenhar(){
   // eles ficaram nesta rodada de desenho.
   _orbMuralPos=pos;
   if(_orbMuralAberto)_orbMuralPosicionar();
+  // As bolhas mudaram de lugar: os fios que chegam nelas precisam ser
+  // redesenhados, senão apontam pra onde a pasta estava antes.
+  _orbFiosDasNotas();
 }
 
 function _orbDespachar(el,k,oX,oY){
@@ -8623,6 +8770,9 @@ function abrirOrbital(){
   _orbMuralAberto=false;_orbMuralNotaId=null;_orbMuralRect=null;
   document.getElementById('orbMural')?.classList.remove('on','viva');
   _orbCamX=0;_orbCamY=0;_orbCamS=1;_orbCamSManual=false;
+  // A câmera das notas começa igual à do mapa — daqui pra frente elas andam
+  // sempre juntas (_flSeguirCameraDaOrbita, chamada por _orbAplicarCam).
+  _flX=0;_flY=0;_flS=1;_flAplicarTransform();
   _orbAplicarCam();
   _orbDesenhar();
 }
