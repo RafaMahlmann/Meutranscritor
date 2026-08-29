@@ -4356,7 +4356,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.29.2';
+const VOX_VERSION='2026.08.29.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6622,7 +6622,7 @@ function renderFolderTree(parentId,lvl,counts){
     // somando ao recheio, em vez de trocá-lo. De quebra, 12px por nível em
     // vez de 14 (Notion usa 12), o que devolve espaço nas subpastas.
     html+=`<div class="folder-node">`;
-    html+=`<div class="folder-item${isActive?' active':''}" data-fid="${escHtml(f.id)}" data-lvl="${Math.min(lvl,4)}"${f.color?` data-cor="1"`:''} style="--lvl:${Math.min(lvl,4)}${f.color?`;--fcor:${safeColor(f.color)}`:''}" onclick="selectFolder('${escJs(f.id)}')">`;
+    html+=`<div class="folder-item${isActive?' active':''}" data-fid="${escHtml(f.id)}" data-lvl="${Math.min(lvl,4)}"${f.color?` data-cor="1"`:''}${f.contorno?` data-contorno="1"`:''} style="--lvl:${Math.min(lvl,4)}${f.color?`;--fcor:${safeColor(f.color)}`:''}${f.contorno&&!isActive?`;background:${_folderDegrade(FOLDER_COLORS.indexOf(f.color))}`:''}" onclick="selectFolder('${escJs(f.id)}')">`;
     html+=`<button type="button" class="folder-dot-btn" aria-label="${t('Cor da pasta')}" onpointerdown="event.stopPropagation();_folderDotPress('${escJs(f.id)}',this)" onpointerup="event.stopPropagation();_folderDotRelease('${escJs(f.id)}',this)" onpointerleave="_folderDotCancel()" onclick="event.stopPropagation()"><span class="folder-dot-pt"><span class="folder-cor-dot"></span><span class="folder-dot-anel"></span></span></button>`;
     html+=`<span class="drag-handle folder-drag-handle" title="${t('Arrastar para mover ou aninhar a pasta')}" onclick="event.stopPropagation()">⠿</span>`;
     if(hasChildren){
@@ -8446,6 +8446,22 @@ function _folderCorIndex(f){
   // que as 8 cores reais (ver trocarCorPasta/_folderDotRelease).
   return i>=0?i:FOLDER_COLORS.length;
 }
+// Passo combinado do ciclo da bolinha (pedido do Rafa, 29/08): cor simples
+// e a MESMA cor com contorno permanente se alternam — 0=verde, 1=verde+
+// contorno, 2=azul, 3=azul+contorno... — e o último passo (N*2) é "sem
+// cor". "Contorno" aqui é a mesma luz que hoje só a pasta ATIVA ganha
+// (_folderAtualizaPlaqueta); com f.contorno=true ela aparece na pasta
+// mesmo sem estar selecionada. Função separada de _folderCorIndex porque
+// aquela serve pra achar a COR (usada pelos degradês), e esta pro PRÓXIMO
+// PASSO do clique — misturar as duas deixaria os degradês tendo que saber
+// sobre contorno sem necessidade.
+function _folderPasso(f){
+  const N=FOLDER_COLORS.length;
+  if(!f?.color)return N*2;
+  const k=FOLDER_COLORS.findIndex(c=>c.toLowerCase()===String(f.color).toLowerCase());
+  if(k<0)return N*2;
+  return k*2+(f.contorno?1:0);
+}
 // A pasta ativa fala a MESMA língua de "luz" que o card colorido já usa —
 // não é metáfora nova. Valores copiados de `.card[data-tc="N"]` (linhas
 // ~108-123): FOLDER_COLORS e TAG_CORES são o mesmo array na mesma ordem,
@@ -8587,7 +8603,10 @@ function _folderDotRelease(id,btn){
   if(_folderDotSeguro===null)return; // já virou paleta (segurou) — o clique da paleta cuida do resto
   clearTimeout(_folderDotSeguro);_folderDotSeguro=null;
   const f=folders.find(x=>x.id===id);if(!f)return;
-  trocarCorPasta(id,(_folderCorIndex(f)+1)%(FOLDER_COLORS.length+1));
+  const N=FOLDER_COLORS.length;
+  const prox=(_folderPasso(f)+1)%(N*2+1);
+  if(prox===N*2)trocarCorPasta(id,null,false);
+  else trocarCorPasta(id,Math.floor(prox/2),prox%2===1);
 }
 function _folderAbrePaleta(id,btn){
   _folderFechaPaleta();
@@ -8596,7 +8615,7 @@ function _folderAbrePaleta(id,btn){
   const p=document.createElement('div');
   p.className='cdot-pop on folder-paleta';
   p.innerHTML=`<div class="cdot-grid">${FOLDER_COLORS.map((cor,i)=>
-    `<button type="button" class="cdot-sw${i===atual?' on':''}" style="background:${cor}" onclick="event.stopPropagation();trocarCorPasta('${escJs(id)}',${i});_folderFechaPaleta()"></button>`
+    `<button type="button" class="cdot-sw${i===atual?' on':''}" style="background:${cor}" onclick="event.stopPropagation();trocarCorPasta('${escJs(id)}',${i},false);_folderFechaPaleta()"></button>`
   ).join('')}</div>`;
   document.body.appendChild(p);
   const r=btn.getBoundingClientRect();
@@ -8641,26 +8660,35 @@ function _folderVarreDaBolinha(el,i){
     v.remove();pluma.remove();
   },320);
 }
-// Trocar a cor de QUALQUER membro da família (a raiz ou uma subpasta)
-// recolore a família inteira — é o mesmo pedido de "mesma cor" aplicado
-// depois da criação, não só no nascimento. Só a pasta tocada ganha o
-// soco/anel/varredura; as outras só atualizam a cor, sem festa.
-// i vai de 0 a FOLDER_COLORS.length (inclusive): o último passo é "sem
-// cor" — mesma lógica do ciclarCorCard do card ("sem etiqueta" fecha o
-// ciclo). Pedido do Rafa em 28/08: a bolinha da pasta cicla cor mas nunca
-// tinha um jeito de voltar ao vazio original.
-function trocarCorPasta(id,i){
+// Trocar a cor (e o contorno permanente) de QUALQUER membro da família (a
+// raiz ou uma subpasta) recolore a família inteira — é o mesmo pedido de
+// "mesma cor" aplicado depois da criação, não só no nascimento. Só a
+// pasta tocada ganha o soco/anel/varredura; as outras só atualizam, sem
+// festa.
+// corIdx=null é "sem cor" (força contorno=false junto — não existe
+// contorno sem cor). Chamado pelo ciclo da bolinha (_folderDotRelease,
+// que decide corIdx+contorno a partir de _folderPasso) e pela paleta de
+// segurar (_folderAbrePaleta, sempre com contorno=false — a paleta é o
+// "escolher direto", o contorno é extra só do ciclo de toque).
+function trocarCorPasta(id,corIdx,contorno){
   const f=folders.find(x=>x.id===id);if(!f)return;
+  const corIdxAntes=_folderCorIndex(f); // precisa ser ANTES da mutação abaixo
   const raiz=_folderRaizDe(id)||f;
   const familia=[raiz,..._folderDescendentes(raiz.id)];
-  const novaCor=i<FOLDER_COLORS.length?FOLDER_COLORS[i]:null;
-  familia.forEach(m=>{m.color=novaCor});
+  const novaCor=corIdx===null||corIdx===undefined?null:FOLDER_COLORS[corIdx];
+  const novoContorno=novaCor?!!contorno:false;
+  familia.forEach(m=>{m.color=novaCor;if(novoContorno)m.contorno=true;else delete m.contorno});
   saveFolders();
   familia.forEach(m=>{
     const elm=document.querySelector(`.folder-item[data-fid="${CSS.escape(m.id)}"]`);
     if(!elm)return;
     if(novaCor){elm.setAttribute('data-cor','1');elm.style.setProperty('--fcor',safeColor(novaCor))}
     else{elm.removeAttribute('data-cor');elm.style.removeProperty('--fcor')}
+    if(novoContorno)elm.setAttribute('data-contorno','1');else elm.removeAttribute('data-contorno');
+    // Ativa quem já mostra a luz pela plaqueta (animada, por cima) — pintar
+    // o fundo estático da própria linha JUNTO tamparia a plaqueta, que
+    // nasce ANTES dela no DOM e por isso pinta por baixo (ver #folderList).
+    elm.style.background=(novoContorno&&!elm.classList.contains('active'))?_folderDegrade(corIdx):'';
   });
   const reduzMov=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   const el=document.querySelector(`.folder-item[data-fid="${CSS.escape(id)}"]`);
@@ -8674,8 +8702,10 @@ function trocarCorPasta(id,i){
     if(el.classList.contains('active')){
       // A varredura de tinta é a cor CHEGANDO — não faz sentido "varrer"
       // pro vazio. Indo pro vazio, a plaqueta só esmaece pro tom neutro
-      // pelo próprio crossfade que ela já sabe fazer sozinha.
-      if(novaCor&&!reduzMov)_folderVarreDaBolinha(el,i);
+      // pelo próprio crossfade que ela já sabe fazer sozinha. Ligar/desligar
+      // só o contorno (cor igual) também não tem o que "varrer" — a pasta
+      // ativa já mostra essa luz o tempo todo pela plaqueta.
+      if(novaCor&&!reduzMov&&corIdx!==corIdxAntes)_folderVarreDaBolinha(el,corIdx);
       else _folderAtualizaPlaqueta(reduzMov);
       return;
     }
@@ -8791,7 +8821,9 @@ function createFolder(parentId=null){
   // cai no sorteio de sempre.
   const raiz=parentId?_folderRaizDe(parentId):null;
   const color=raiz?raiz.color:_folderNovaCorRaiz();
-  folders.push({id,name:name.trim(),color,parentId:parentId||null});
+  const nova={id,name:name.trim(),color,parentId:parentId||null};
+  if(raiz?.contorno)nova.contorno=true;
+  folders.push(nova);
   // expande o pai para mostrar a nova subpasta
   if(parentId)folderExpanded.add(parentId);
   saveFolders();renderFolders();selectFolder(id);
