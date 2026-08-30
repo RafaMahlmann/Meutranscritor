@@ -4568,7 +4568,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.29.8';
+const VOX_VERSION='2026.08.30.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4983,6 +4983,7 @@ let I18N_EN={
 "Etiqueta de cor":"Color label",
 "Toque para trocar a cor · segure para escolher":"Tap to change color · hold to pick",
 "Sem etiqueta":"No label",
+"Sem efeito":"No effect","Cor da pasta":"Folder color",
 "Etiquetas":"Labels",
 "Verde":"Green","Azul":"Blue","Roxo":"Purple","Laranja":"Orange",
 "Rosa":"Pink","Ciano":"Cyan","Amarelo":"Yellow","Vermelho":"Red",
@@ -6844,7 +6845,7 @@ function renderFolderTree(parentId,lvl,counts){
     // vez de 14 (Notion usa 12), o que devolve espaço nas subpastas.
     html+=`<div class="folder-node">`;
     html+=`<div class="folder-item${isActive?' active':''}" data-fid="${escHtml(f.id)}" data-lvl="${Math.min(lvl,4)}"${f.color?` data-cor="1"`:''}${f.contorno?` data-contorno="1"`:''} style="--lvl:${Math.min(lvl,4)}${f.color?`;--fcor:${safeColor(f.color)}`:''}${f.contorno&&!isActive?`;background:${_folderDegrade(FOLDER_COLORS.indexOf(f.color))}`:''}" onclick="selectFolder('${escJs(f.id)}')">`;
-    html+=`<button type="button" class="folder-dot-btn" aria-label="${t('Cor da pasta')}" onpointerdown="event.stopPropagation();_folderDotPress('${escJs(f.id)}',this)" onpointerup="event.stopPropagation();_folderDotRelease('${escJs(f.id)}',this)" onpointerleave="_folderDotCancel()" onclick="event.stopPropagation()"><span class="folder-dot-pt"><span class="folder-cor-dot"></span><span class="folder-dot-anel"></span></span></button>`;
+    html+=`<button type="button" class="folder-dot-btn" aria-label="${t('Cor da pasta')}" onpointerdown="event.stopPropagation();_folderDotPress('${escJs(f.id)}',this,event)" onpointerup="event.stopPropagation();_folderDotRelease('${escJs(f.id)}',this,event)" onpointerleave="_folderDotCancel()" oncontextmenu="_folderDotContext('${escJs(f.id)}',this,event)" onclick="event.stopPropagation()"><span class="folder-dot-pt"><span class="folder-cor-dot"></span><span class="folder-dot-anel"></span></span></button>`;
     html+=`<span class="drag-handle folder-drag-handle" title="${t('Arrastar para mover ou aninhar a pasta')}" onclick="event.stopPropagation()">⠿</span>`;
     if(hasChildren){
       html+=`<span class="folder-arrow${isExpanded?' expanded':''}" onclick="event.stopPropagation();toggleFolderExpanded('${escJs(f.id)}')">▶</span>`;
@@ -9190,8 +9191,15 @@ function _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix){
 // pra mudar uma vez... é um duplo clique lento, esquisito") e confirmado
 // medindo: a partir de 420ms o toque já falhava. Com 17 passos no ciclo
 // (cor + contorno) cada clique perdido dói mais que doía nos 9 de antes.
-const FOLDER_DOT_SEGURAR=600;
-let _folderDotSeguro=null,_folderPaletaAberta=null;
+// 30/08 (pedido do Rafa): segurar deixou de abrir a paleta e virou atalho
+// pro passo "sem efeito" — 1s segurando e a pasta volta ao normal, sem
+// precisar clicar o ciclo inteiro (17 passos) até o vazio. Se a pasta JÁ
+// está sem efeito, segurar abre a paleta — o gesto nunca cai no vazio. A
+// paleta continua alcançável por clique direito na bolinha e pelo item
+// "Cor da pasta" do menu ⋯. 1s (não os 600ms de antes) pra nenhum clique
+// deliberado virar "segurar" sem querer — mesmo motivo da subida 420→600.
+const FOLDER_DOT_SEGURAR=1000;
+let _folderDotSeguro=null,_folderPaletaAberta=null,_folderDotToque=false;
 function _folderCorIndex(f){
   const i=FOLDER_COLORS.findIndex(c=>c.toLowerCase()===String(f?.color||'').toLowerCase());
   // Sem cor não é "índice 0" (verde) — é o passo vazio do ciclo, um a mais
@@ -9346,13 +9354,37 @@ function _folderAtualizaPlaqueta(instant){
     void b.offsetWidth;b.style.transition='';
   },200);
 }
-function _folderDotPress(id,btn){
+function _folderDotPress(id,btn,ev){
+  // Botão direito do mouse não arma o "segurar" — quem resolve é o
+  // contextmenu (abre a paleta direto, sem esperar 1s).
+  if(ev&&ev.pointerType==='mouse'&&ev.button!==0)return;
+  _folderDotToque=ev?.pointerType==='touch';
   clearTimeout(_folderDotSeguro);
-  _folderDotSeguro=setTimeout(()=>{_folderDotSeguro=null;_folderAbrePaleta(id,btn)},FOLDER_DOT_SEGURAR);
+  _folderDotSeguro=setTimeout(()=>{
+    _folderDotSeguro=null;
+    _folderFechaPaleta();
+    const f=folders.find(x=>x.id===id);
+    // Segurar 1s = voltar pro "sem efeito" num gesto só (pedido do Rafa,
+    // 30/08). Pasta já sem efeito? O segurar abre a paleta em vez de não
+    // fazer nada — o gesto nunca cai no vazio.
+    if(f&&f.color)trocarCorPasta(id,null,false);
+    else _folderAbrePaleta(id,btn);
+  },FOLDER_DOT_SEGURAR);
 }
-function _folderDotCancel(){clearTimeout(_folderDotSeguro);_folderDotSeguro=null}
-function _folderDotRelease(id,btn){
-  if(_folderDotSeguro===null)return; // já virou paleta (segurou) — o clique da paleta cuida do resto
+function _folderDotCancel(){clearTimeout(_folderDotSeguro);_folderDotSeguro=null;_folderDotToque=false}
+function _folderDotContext(id,btn,ev){
+  ev.preventDefault();ev.stopPropagation();
+  // No toque o navegador dispara contextmenu no MEIO do segurar (~500ms) —
+  // ignorar, senão a paleta roubava o gesto e o atalho de 1s nunca chegava
+  // no fim. No mouse é clique direito de verdade: abre a paleta na hora.
+  if(_folderDotToque)return;
+  _folderDotCancel();
+  _folderAbrePaleta(id,btn);
+}
+function _folderDotRelease(id,btn,ev){
+  if(ev&&ev.pointerType==='mouse'&&ev.button!==0)return;
+  _folderDotToque=false;
+  if(_folderDotSeguro===null)return; // já virou "segurar" (sem efeito/paleta) — não cicla
   clearTimeout(_folderDotSeguro);_folderDotSeguro=null;
   const f=folders.find(x=>x.id===id);if(!f)return;
   const N=FOLDER_COLORS.length;
@@ -9360,7 +9392,9 @@ function _folderDotRelease(id,btn){
   if(prox===N*2)trocarCorPasta(id,null,false);
   else trocarCorPasta(id,Math.floor(prox/2),prox%2===1);
 }
-function _folderAbrePaleta(id,btn){
+// Âncora pode ser o botão da bolinha (btn) ou um retângulo pronto (rect) —
+// o menu ⋯ some antes da paleta abrir, então passa só as coordenadas.
+function _folderAbrePaleta(id,btn,rect){
   _folderFechaPaleta();
   const f=folders.find(x=>x.id===id);if(!f)return;
   const atual=_folderCorIndex(f);
@@ -9368,9 +9402,10 @@ function _folderAbrePaleta(id,btn){
   p.className='cdot-pop on folder-paleta';
   p.innerHTML=`<div class="cdot-grid">${FOLDER_COLORS.map((cor,i)=>
     `<button type="button" class="cdot-sw${i===atual?' on':''}" style="background:${cor}" onclick="event.stopPropagation();trocarCorPasta('${escJs(id)}',${i},false);_folderFechaPaleta()"></button>`
-  ).join('')}</div>`;
+  ).join('')}</div>
+  <button type="button" class="cdot-none" onclick="event.stopPropagation();trocarCorPasta('${escJs(id)}',null,false);_folderFechaPaleta()">${escHtml(t('Sem efeito'))}</button>`;
   document.body.appendChild(p);
-  const r=btn.getBoundingClientRect();
+  const r=rect||btn.getBoundingClientRect();
   p.style.position='fixed';p.style.left=(r.left)+'px';p.style.top=(r.bottom+6)+'px';
   _folderPaletaAberta=p;
 }
@@ -9419,8 +9454,9 @@ function _folderVarreDaBolinha(el,i){
 // festa.
 // corIdx=null é "sem cor" (força contorno=false junto — não existe
 // contorno sem cor). Chamado pelo ciclo da bolinha (_folderDotRelease,
-// que decide corIdx+contorno a partir de _folderPasso) e pela paleta de
-// segurar (_folderAbrePaleta, sempre com contorno=false — a paleta é o
+// que decide corIdx+contorno a partir de _folderPasso), pelo "segurar 1s"
+// (sempre corIdx=null — é o atalho pro sem efeito) e pela paleta
+// (_folderAbrePaleta, sempre com contorno=false — a paleta é o
 // "escolher direto", o contorno é extra só do ciclo de toque).
 function trocarCorPasta(id,corIdx,contorno){
   const f=folders.find(x=>x.id===id);if(!f)return;
@@ -9589,6 +9625,7 @@ function folderMenu(id,ev){
   menu.innerHTML=`
     <button onclick="createFolder('${escJs(id)}')">${t('📁 Nova subpasta')}</button>
     <button onclick="renameFolder('${escJs(id)}')">${t('✏️ Renomear')}</button>
+    <button onclick="event.stopPropagation();folderMenuCor('${escJs(id)}',this)">🎨 ${t('Cor da pasta')}</button>
     <button onclick="abrirSalaEnvio('${escJs(id)}')">${ICO.qr}${t('Transferir (QR / link)')}</button>
     <button onclick="exportFolder('${escJs(id)}')">${t('📄 Exportar pasta')}</button>
     <button onclick="clearFolder('${escJs(id)}')">${ICO.eraser}${t('Limpar pasta')}</button>
@@ -9599,6 +9636,14 @@ function folderMenu(id,ev){
   let left=r.right-160;if(left<8)left=8;
   menu.style.left=left+'px';menu.style.top=(r.bottom+6)+'px';
   setTimeout(()=>document.addEventListener('click',closeFolderMenu,{once:true}),0);
+}
+// A paleta de cor também mora no menu ⋯ — é o caminho pra quem não conhece
+// os gestos da bolinha (toque cicla, segurar desativa, clique direito abre).
+function folderMenuCor(id,btn){
+  const r=btn.getBoundingClientRect();
+  const ancora={left:r.left,bottom:r.bottom};
+  closeFolderMenu();
+  _folderAbrePaleta(id,null,ancora);
 }
 function closeFolderMenu(){document.getElementById('folderMenu')?.remove()}
 function renameFolder(id){
