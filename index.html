@@ -1340,19 +1340,47 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   background:var(--bg);cursor:grab}
 .fc-canvas-wrap:active{cursor:grabbing}
 .fc-lines{position:absolute;top:0;left:0;transform-origin:0 0;pointer-events:none;overflow:visible}
-.fc-link{fill:none;stroke:var(--border2);stroke-width:1.6}
+/* A cor vem da FAMÍLIA do filho, não de um cinza plano — antes toda linha
+   dizia a mesma coisa (var(--border2) fixo) não importa o que ligava.
+   var(--fc-cor) é escrita por nó em _fcRender; sem filho colorido (a raiz
+   não tem cor própria) cai no cinza de sempre. */
+.fc-link{fill:none;stroke:var(--fc-cor,var(--border2));stroke-width:1.6;stroke-opacity:.55;
+  transition:stroke-opacity var(--transition)}
 .fc-nodes{position:absolute;top:0;left:0;transform-origin:0 0}
+/* Achado testando ao lado da Órbita: o nó tinha contraste de 1,05 contra o
+   fundo (praticamente invisível) e a linha, 1,31. Sombra e borda mais firme
+   dão o peso que faltava — mesmo espírito da bolha, num retângulo. */
 .fc-node{position:absolute;transform:translateY(-50%);width:190px;min-height:40px;
-  display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;
+  display:flex;flex-direction:column;justify-content:center;gap:0;padding:7px 10px;border-radius:10px;
   border:1.5px solid var(--border);background:var(--bg-card);color:var(--text);
-  cursor:pointer;text-align:left;font-family:var(--font)}
+  box-shadow:0 1px 2px rgba(0,0,0,.05),0 4px 12px -6px rgba(0,0,0,.12);
+  cursor:pointer;text-align:left;font-family:var(--font);overflow:hidden;
+  transition:box-shadow var(--transition),border-color var(--transition)}
+.fc-node:hover{box-shadow:0 2px 4px rgba(0,0,0,.07),0 8px 20px -8px rgba(0,0,0,.2)}
+/* A faixa de cor da família: era um pontinho de 10px fácil de não notar,
+   agora é uma borda lateral cheia — a mesma informação, impossível de perder
+   de vista mesmo de relance. */
+.fc-node[data-fc-cor]::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--fc-cor)}
+.fc-node-topo{display:flex;align-items:center;gap:6px;min-width:0}
 .fc-node-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
-.fc-node-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .fc-node-count{font-size:10px;font-weight:700;color:var(--text4);flex-shrink:0}
 .fc-node-arrow{font-size:9px;color:var(--text4);flex-shrink:0;transition:transform var(--transition);display:inline-block}
 .fc-node-arrow-open{transform:rotate(90deg)}
 .fc-node-raiz{border-color:var(--accent);border-width:2px;font-weight:700}
 .fc-node-card{background:transparent;border-style:dashed;font-size:12px}
+/* Régua de tracinhos (proposta 5): um traço por nota que mora DIRETO aqui —
+   o mesmo papel do anel fatiado da Órbita, traduzido pra um retângulo, que
+   não tem anel. Presença na tela PARADA: sem passar o mouse em nada, dá pra
+   ver de relance onde tem conteúdo e onde está vazio. O comprimento de cada
+   traço vem do tamanho do texto daquela nota — uma nota longa deixa rastro
+   maior que uma linha solta. Ausente quando a pasta não tem nota nenhuma
+   direto nela (nada pra desenhar, nada de régua vazia enfeitando à toa). */
+.fc-regua{display:flex;align-items:flex-end;gap:2px;height:8px;margin:4px 0 0 15px;flex-shrink:0}
+.fc-regua i{display:block;width:3px;min-width:3px;border-radius:1px;background:var(--fc-cor,var(--text4));
+  opacity:.6}
+.fc-regua-mais{font-size:8px;font-weight:800;color:var(--text4);opacity:.75;line-height:1;
+  align-self:flex-end;margin-left:1px}
 /* Antes era display:none↔flex — não anima. Agora fica sempre no layout,
    escondido por opacidade/transform/pointer-events, então abrir e fechar
    pode deslizar em vez de piscar (ver .fc-card-panel.on abaixo). 360px fixos
@@ -1417,6 +1445,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-lista-previa{font-size:11.5px;color:var(--text4);line-height:1.45;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .fc-lista-vazia{padding:18px 14px;font-size:12.5px;color:var(--text4);text-align:center}
+.fc-lista-rodape{padding:8px 14px 10px;border-top:1px solid var(--border);
+  font-size:10.5px;color:var(--text4);flex-shrink:0}
 /* ══ CAMADA DE CARDS FLUTUANTES — Fase 1 (camada + alternância, vazia) ══
    Compartilhada entre Fluxograma e Órbita, igual ao .fc-card-panel: um único
    #floatLayer criado uma vez e movido (appendChild) pra dentro do wrap ativo
@@ -4538,7 +4568,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.29.7';
+const VOX_VERSION='2026.08.29.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4620,6 +4650,10 @@ let I18N_EN={
 "Nada solto aqui — tudo mora nas subpastas.":"Nothing loose here — everything lives in the subfolders.",
 "subpasta continua na órbita, atrás deste cartão":"subfolder is still in orbit, behind this card",
 "subpastas continuam na órbita, atrás deste cartão":"subfolders are still in orbit, behind this card",
+"aqui":"here",
+"no total":"in total",
+"subpasta continua na árvore, atrás deste painel":"subfolder is still in the tree, behind this panel",
+"subpastas continuam na árvore, atrás deste painel":"subfolders are still in the tree, behind this panel",
 "Isso aqui baixa só o texto, pra ler. Quer levar tudo — pastas, cards e etiquetas — pra continuar depois em outro lugar?":"This only downloads the text, to read. Want to take everything — folders, cards and tags — to continue later somewhere else?",
 "Salvar projeto inteiro":"Save the whole project",
 "Selecionar tudo":"Select all",
@@ -6910,9 +6944,15 @@ function _fcLayout(){
   // getFolderCounts() ignora card solto (o `if(f)` dele descarta pasta vazia),
   // então a raiz ficaria dizendo zero. Uma passada própria conta tudo, e a
   // chave '' guarda justamente os que não estão em pasta nenhuma.
+  // Guarda o tamanho do texto de cada card, não só a contagem — é o que
+  // alimenta a régua de tracinhos (proposta 5): um traço por nota, comprido
+  // ou curto conforme o texto, a mesma leitura que o anel fatiado da Órbita
+  // dá pra bolha, só que traduzida pra um retângulo.
   const diretos={};
   _flTodosCards().forEach(c=>{
-    const f=c.dataset.folder||'';diretos[f]=(diretos[f]||0)+1;
+    const f=c.dataset.folder||'';
+    const len=(c.querySelector('textarea')?.value||'').trim().length;
+    (diretos[f]=diretos[f]||[]).push(len);
   });
   const nos=[];
   let cursorY=0;
@@ -6936,9 +6976,9 @@ function _fcLayout(){
     // Card não entra nessa conta: card não é mais desenhado no canvas, ele
     // mora no painel. Quem anuncia card é o número ao lado do nome.
     const temSubpastas=getFolderChildren(id).length>0;
-    // Quantos cards estão DIRETAMENTE aqui (o que o painel vai listar) —
-    // diferente do número do nó, que soma as subpastas.
-    const cardsDiretos=diretos[tipo==='raiz'?'':id]||0;
+    // Quantos cards estão DIRETAMENTE aqui (o que o painel vai listar e a
+    // régua desenha) — diferente do número do nó, que soma as subpastas.
+    const notasDiretas=diretos[tipo==='raiz'?'':id]||[];
     let y;
     if(!filhos.length){
       y=cursorY;cursorY+=FC_LINHA;
@@ -6948,7 +6988,7 @@ function _fcLayout(){
       );
       y=(ys[0]+ys[ys.length-1])/2;
     }
-    nos.push({id,tipo,rotulo,cor,count,x:nivel*FC_COLUNA,y,paiId,aberta,temFilhos:temSubpastas,cardsDiretos});
+    nos.push({id,tipo,rotulo,cor,count,x:nivel*FC_COLUNA,y,paiId,aberta,temFilhos:temSubpastas,cardsDiretos:notasDiretas.length,notasDiretas});
     return y;
   }
 
@@ -6992,7 +7032,9 @@ function _fcRender(){
     const pai=porId.get(n.paiId);
     if(!pai)return;
     const x1=pai.x+FC_NODE_W,y1=pai.y,x2=n.x,y2=n.y;
-    pathsHtml+=`<path class="fc-link" d="M${x1} ${y1} C ${x1+60} ${y1}, ${x2-60} ${y2}, ${x2} ${y2}"/>`;
+    // A linha herda a cor de quem ela liga (o filho) — antes era um cinza
+    // plano pra árvore inteira, e não dizia nada sobre qual família era qual.
+    pathsHtml+=`<path class="fc-link" style="--fc-cor:${safeColor(n.cor)}" d="M${x1} ${y1} C ${x1+60} ${y1}, ${x2-60} ${y2}, ${x2} ${y2}"/>`;
   });
   svg.innerHTML=pathsHtml;
 
@@ -7000,13 +7042,39 @@ function _fcRender(){
   nos.forEach(n=>{
     const idAttr=n.id===null?'':escHtml(String(n.id));
     const setaHtml=n.temFilhos?`<span class="fc-node-arrow${n.aberta?' fc-node-arrow-open':''}">▶</span>`:'';
-    const dotHtml=n.tipo==='pasta'?`<span class="fc-node-dot" style="background:${safeColor(n.cor)}"></span>`:'';
+    // A faixa de cor (::before, ver CSS) só existe se o nó tiver --fc-cor —
+    // a raiz não tem cor própria, então nem attr nem variável nascem nela.
+    const corStyle=n.tipo==='pasta'?`;--fc-cor:${safeColor(n.cor)}`:'';
+    const corAttr=n.tipo==='pasta'?' data-fc-cor="1"':'';
     // Dois números diriam coisas diferentes e ninguém saberia qual é qual.
     // O do nó é o total (com subpastas) — é o que a lateral também mostra.
     const countHtml=`<span class="fc-node-count">${n.count}</span>`;
-    nodesHtml+=`<button type="button" class="fc-node fc-node-${n.tipo}" style="left:${n.x}px;top:${n.y}px" data-fc-id="${idAttr}" data-fc-tipo="${n.tipo}" data-fc-sub="${n.temFilhos?'1':'0'}" data-fc-rotulo="${escHtml(n.rotulo)}" title="${escHtml(n.rotulo)} · ${n.cardsDiretos} ${escHtml(t(n.cardsDiretos===1?'card':'cards'))}">${setaHtml}${dotHtml}<span class="fc-node-label">${escHtml(n.rotulo)}</span>${countHtml}</button>`;
+    // Achado testando: o nó dizia "7" e o balãozinho dizia "3 cards" — dois
+    // números pro mesmo lugar, cada um contando uma coisa diferente, sem
+    // avisar qual era qual. Quando os dois batem, um basta; quando não,
+    // o balãozinho conta a diferença por extenso.
+    const tituloNum=(n.cardsDiretos===n.count)
+      ?`${n.cardsDiretos} ${t(n.cardsDiretos===1?'card':'cards')}`
+      :`${n.cardsDiretos} ${t('aqui')} · ${n.count} ${t('no total')}`;
+    nodesHtml+=`<button type="button" class="fc-node fc-node-${n.tipo}" style="left:${n.x}px;top:${n.y}px${corStyle}"${corAttr} data-fc-id="${idAttr}" data-fc-tipo="${n.tipo}" data-fc-sub="${n.temFilhos?'1':'0'}" data-fc-rotulo="${escHtml(n.rotulo)}" title="${escHtml(n.rotulo)} · ${escHtml(tituloNum)}"><span class="fc-node-topo">${setaHtml}<span class="fc-node-label">${escHtml(n.rotulo)}</span>${countHtml}</span>${_fcReguaHtml(n)}</button>`;
   });
   nodesEl.innerHTML=nodesHtml;
+}
+// Régua de tracinhos: um traço por nota DIRETA nesta pasta, comprimento
+// conforme o tamanho do texto (mais nota, mais rastro). Sem nota nenhuma
+// direto ali, não desenha nada — pasta vazia fica lisa, sem régua fantasma.
+const FC_REGUA_MAX=7;
+function _fcReguaHtml(n){
+  if(!n.notasDiretas||!n.notasDiretas.length)return'';
+  const MINH=3,MAXH=8,TETO=400; // 400+ caracteres já conta como nota "longa"
+  const vis=n.notasDiretas.slice(0,FC_REGUA_MAX);
+  const resto=n.notasDiretas.length-vis.length;
+  const tracos=vis.map(len=>{
+    const h=MINH+Math.min(1,len/TETO)*(MAXH-MINH);
+    return `<i style="height:${h.toFixed(1)}px"></i>`;
+  }).join('');
+  const mais=resto>0?`<span class="fc-regua-mais">+${resto}</span>`:'';
+  return `<span class="fc-regua">${tracos}${mais}</span>`;
 }
 
 // Modelo do Finder: tocar numa pasta abre as subpastas no desenho E mostra o
@@ -7108,11 +7176,16 @@ function _fcEnquadrar(){
 // A bolha da Órbita (_orbTotalCards) já soma assim; sem recursão aqui a
 // lista lateral "perdia" todo card que morava dentro de uma subpasta
 // (ex.: "Tudo" mostrava 383 na bolha e só 97 na lista).
+// Cards que moram DIRETO nesta pasta — não soma as subpastas. Era recursivo
+// até 29/08: numa pasta com 3 notas diretas e 4 nas subpastas, a lista dizia
+// "7 cards", o texto de vazio prometia "nenhum card direto" mesmo com a
+// lista cheia, e o nó ao lado dizia um terceiro número (o direto de verdade).
+// Três números pro mesmo lugar, cada um contando coisa diferente, sem
+// avisar. Mesma correção já feita na Órbita (_orbCardsDiretos) — quem quer a
+// soma da família usa o número do nó (n.count), que já mostra isso.
 function _fcCardsDaPasta(id){
   const alvo=id===null?'':(id||'');
-  let out=_flTodosCards().filter(c=>(c.dataset.folder||'')===alvo);
-  getFolderChildren(id).forEach(f=>{out=out.concat(_fcCardsDaPasta(f.id))});
-  return out;
+  return _flTodosCards().filter(c=>(c.dataset.folder||'')===alvo);
 }
 // Estado 1 do painel: a lista de cards da pasta tocada. É aqui que mora o
 // conteúdo que antes explodia o desenho — numa lista que rola, com o texto
@@ -7151,13 +7224,19 @@ function _fcListarCards(id,nomePasta,manterExpansao){
         </div>`;
       }).join('')
     : `<div class="fc-lista-vazia">${escHtml(t('Nenhum card direto nesta pasta.'))}</div>`;
+  // Mesmo aviso que o mural da Órbita já dá: a soma da família não sumiu,
+  // só passou a ser o número do nó — aqui é só o rodapé que lembra que ela
+  // existe, pra quem via "7" antes não achar que 4 notas desapareceram.
+  const nSub=getFolderChildren(id).length;
+  const rodapeSub=nSub?`<div class="fc-lista-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na árvore, atrás deste painel':'subpastas continuam na árvore, atrás deste painel'))}</div>`:'';
   panel.innerHTML=`<button type="button" class="fc-panel-handle" onclick="_fcAlternarGaveta()" title="${t('Redimensionar')}" aria-label="${t('Redimensionar')}"><span class="fc-panel-handle-bar"></span></button>
     <div class="fc-card-panel-hd">
       <strong>${escHtml(nomePasta||t('Pasta'))}</strong>
       <span class="fc-card-panel-dt">${cards.length} ${escHtml(t(cards.length===1?'card':'cards'))}</span>
       <button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">✕</button>
     </div>
-    <div class="fc-card-panel-body fc-lista">${corpo}</div>`;
+    <div class="fc-card-panel-body fc-lista">${corpo}</div>
+    ${rodapeSub}`;
   panel.classList.add('on');
   if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbReenquadrarCam(true);
 }
