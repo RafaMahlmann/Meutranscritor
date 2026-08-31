@@ -2157,11 +2157,19 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   background:linear-gradient(90deg,transparent,var(--fpl-quina),transparent)}
 .folder-plaqueta{box-shadow:0 3px 9px -6px var(--fpl-sombra)}
 [data-theme="dark"] .folder-plaqueta{box-shadow:0 0 14px -6px var(--fpl-sombra),inset 0 0 0 1px rgba(255,255,255,.07)}
-/* A varredura da tinta ao trocar a cor da pasta ABERTA (M3) — nasce na
-   bolinha, corre a linha. Proporcional: só acontece quando a superfície
-   inteira mudou de cor; pasta fechada usa só o soco da bolinha. */
+/* A varredura da tinta ao trocar a cor de uma pasta — nasce na bolinha,
+   corre a linha. Proporcional: só acontece quando o passo do ciclo mudou
+   de verdade. Duas versões: esta (.folder-pl-*) é a da pasta ABERTA, corre
+   por cima da plaqueta; a de baixo (.folder-fx-*) é igual mas embutida em
+   CADA linha da lista — achado com o painel de diagnóstico (31/08): a
+   maioria dos cliques de cor do Rafa não é na pasta aberta, e só o soco da
+   bolinha sozinho não lê como "a cor chegou". */
 .folder-pl-varre{position:absolute;inset:0;z-index:1;transform:scaleX(0)}
 .folder-pl-pluma{position:absolute;top:0;bottom:0;width:24px;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,var(--fpl-pluma),transparent)}
+.folder-fx-cam{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
+.folder-fx-varre{position:absolute;inset:0;transform:scaleX(0)}
+.folder-fx-pluma{position:absolute;top:0;bottom:0;width:24px;pointer-events:none;
   background:linear-gradient(90deg,var(--fpl-pluma),transparent)}
 .folder-ico{font-size:14px;flex-shrink:0;line-height:1}
 /* Duas linhas quando precisa — nenhuma das referências faz isso, mas todas
@@ -4572,7 +4580,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.31.3';
+const VOX_VERSION='2026.08.31.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -9403,6 +9411,12 @@ function _folderVarreDaBolinha(el,i){
   pluma.style.left=(x-24)+'px';
   pluma.style.transform='translateX(0)';
   pl.appendChild(v);pl.appendChild(pluma);
+  // Bug real (achado 31/08, testando quadro a quadro): sem esta leitura,
+  // o navegador nunca "vê" o scaleX(0) inicial antes da transição ligar —
+  // funde os dois estados num só e a barra nasce já no fim, sem varrer.
+  // requestAnimationFrame sozinho NÃO bastava porque v acabou de nascer
+  // no mesmo tick; só o offsetWidth força o layout a comprometer o "antes".
+  void v.offsetWidth;
   requestAnimationFrame(()=>{
     v.style.transition='transform .52s cubic-bezier(.22,1,.36,1)';
     v.style.transform='scaleX(1)';
@@ -9437,6 +9451,57 @@ function _debugMovLog(msg){
   window._debugMovPainel.appendChild(linha);
   while(window._debugMovPainel.children.length>14)window._debugMovPainel.removeChild(window._debugMovPainel.firstChild);
 }
+// Mesma varredura de tinta da pasta ABERTA (_folderVarreDaBolinha), só que
+// embutida em CADA linha da lista de pastas — a maioria dos cliques de cor
+// não acontece na pasta que está aberta, e nesse caso o app antes só dava
+// soco+anel na bolinha (sutil demais pra ler como "a cor chegou").
+// ficaPermanente = true quando o resultado final é "cor com contorno" (o
+// fundo da linha deve continuar depois); false = a linha volta a ficar sem
+// fundo (só a bolinha fica colorida), e a varredura precisa esmaecer em
+// vez de sumir seca.
+function _folderLimpaVarreduraLinha(elm){
+  clearTimeout(elm._folderFxT);
+  elm.querySelectorAll('.folder-fx-cam').forEach(e=>e.remove());
+}
+function _folderVarreLinha(elm,i,ficaPermanente){
+  _folderLimpaVarreduraLinha(elm);
+  const pt=elm.querySelector('.folder-dot-pt');if(!pt)return;
+  const r=elm.getBoundingClientRect(),pr=pt.getBoundingClientRect();
+  const x=pr.left-r.left+4.5;
+  const cam=document.createElement('span');cam.className='folder-fx-cam';
+  const v=document.createElement('span');v.className='folder-fx-varre';
+  v.style.background=_folderDegrade(i);
+  v.style.transformOrigin=x+'px 50%';
+  const pluma=document.createElement('span');pluma.className='folder-fx-pluma';
+  pluma.style.setProperty('--fpl-pluma',_folderCorpo(i));
+  pluma.style.left=(x-24)+'px';
+  pluma.style.transform='translateX(0)';
+  cam.appendChild(v);cam.appendChild(pluma);
+  elm.insertBefore(cam,elm.firstChild);
+  void v.offsetWidth; // ver o mesmo achado em _folderVarreDaBolinha, linha acima
+  requestAnimationFrame(()=>{
+    v.style.transition='transform .52s cubic-bezier(.22,1,.36,1)';
+    v.style.transform='scaleX(1)';
+    pluma.style.transition='transform .52s cubic-bezier(.22,1,.36,1)';
+    pluma.style.transform=`translateX(${r.width-x+24}px)`;
+  });
+  elm._folderFxT=setTimeout(()=>{
+    if(ficaPermanente){
+      elm.style.background=_folderDegrade(i);
+      cam.remove();
+    }else{
+      // O fundo da linha nunca foi tocado durante a varredura (só a bolinha
+      // colore o dot; o resto vinha do fundo ANTIGO por baixo do cam
+      // transparente). Sem isto, quando o cam esmaece ele revela essa cor
+      // velha por baixo em vez de ficar em branco — a linha "voltava" pra
+      // cor de antes sozinha, sem clique nenhum.
+      elm.style.background='';
+      cam.style.transition='opacity .28s linear';
+      cam.style.opacity='0';
+      elm._folderFxT=setTimeout(()=>cam.remove(),280);
+    }
+  },520);
+}
 if(new URLSearchParams(location.search).has('debugmov')){
   const _iniciaDebugMov=()=>{
     const p=document.createElement('div');
@@ -9457,6 +9522,15 @@ function trocarCorPasta(id,corIdx,contorno){
   const familia=[raiz,..._folderDescendentes(raiz.id)];
   const novaCor=corIdx===null||corIdx===undefined?null:FOLDER_COLORS[corIdx];
   const novoContorno=novaCor?!!contorno:false;
+  // Medido (achado pelo Rafa, 31/08): antes do ciclo ter contorno, TODO
+  // clique numa pasta trocava de cor de verdade — 100% acendia a varredura.
+  // Criar o passo "cor+contorno" no meio do ciclo (29/08) fez metade dos
+  // cliques virarem "cor igual, só liga/desliga o contorno" — e como o
+  // gatilho olhava só pra corIdx, esses cliques ficavam mudos. O gatilho
+  // certo é "mudou o PASSO do ciclo", não "mudou a cor" — inclui a
+  // mudança de contorno também.
+  const passoMudou=corIdx!==corIdxAntes||novoContorno!==contornoAntes;
+  const reduzMov=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   familia.forEach(m=>{m.color=novaCor;if(novoContorno)m.contorno=true;else delete m.contorno});
   saveFolders();
   familia.forEach(m=>{
@@ -9465,12 +9539,15 @@ function trocarCorPasta(id,corIdx,contorno){
     if(novaCor){elm.setAttribute('data-cor','1');elm.style.setProperty('--fcor',safeColor(novaCor))}
     else{elm.removeAttribute('data-cor');elm.style.removeProperty('--fcor')}
     if(novoContorno)elm.setAttribute('data-contorno','1');else elm.removeAttribute('data-contorno');
+    // A linha tocada, se vai varrer (ver mais abaixo), só ganha o fundo
+    // final quando a varredura terminar — pintar agora tamparia a própria
+    // animação que devia estar "trazendo" essa cor.
+    if(m.id===id&&novaCor&&!reduzMov&&passoMudou&&!elm.classList.contains('active'))return;
     // Ativa quem já mostra a luz pela plaqueta (animada, por cima) — pintar
     // o fundo estático da própria linha JUNTO tamparia a plaqueta, que
     // nasce ANTES dela no DOM e por isso pinta por baixo (ver #folderList).
     elm.style.background=(novoContorno&&!elm.classList.contains('active'))?_folderDegrade(corIdx):'';
   });
-  const reduzMov=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   _debugMovLog(`clique: reduzMov=${reduzMov} novaCor=${novaCor||'null'} contorno=${novoContorno}`);
   const el=document.querySelector(`.folder-item[data-fid="${CSS.escape(id)}"]`);
   if(el){
@@ -9491,25 +9568,23 @@ function trocarCorPasta(id,corIdx,contorno){
       }
       dot.classList.add('soco');anel?.classList.add('abre');
     }
+    const vaiVarrer=novaCor&&!reduzMov&&passoMudou;
     if(el.classList.contains('active')){
       // A varredura de tinta é a cor CHEGANDO — não faz sentido "varrer"
       // pro vazio. Indo pro vazio, a plaqueta só esmaece pro tom neutro
       // pelo próprio crossfade que ela já sabe fazer sozinha.
-      // Medido (achado pelo Rafa, 31/08): antes do ciclo ter contorno, TODO
-      // clique numa pasta ativa trocava de cor de verdade — 100% acendia a
-      // varredura. Criar o passo "cor+contorno" no meio do ciclo (29/08)
-      // fez metade dos cliques virarem "cor igual, só liga/desliga o
-      // contorno" — e como o gatilho olhava só pra corIdx, esses cliques
-      // ficavam mudos: caiu pra 47%. O gatilho certo é "mudou o PASSO do
-      // ciclo", não "mudou a cor" — inclui a mudança de contorno também.
-      const passoMudou=corIdx!==corIdxAntes||novoContorno!==contornoAntes;
-      const vaiVarrer=novaCor&&!reduzMov&&passoMudou;
       _debugMovLog(`pasta ATIVA: passoMudou=${passoMudou} -> ${vaiVarrer?'VARREDURA':'so plaqueta (crossfade)'}`);
       if(vaiVarrer)_folderVarreDaBolinha(el,corIdx);
       else _folderAtualizaPlaqueta(reduzMov);
       return;
     }
-    _debugMovLog('pasta NAO é a ativa: só soco/anel na bolinha, sem tarja');
+    // Achado com o painel de diagnóstico (31/08): a maioria dos cliques de
+    // cor do Rafa não é na pasta aberta — e até aqui, nesse caso, só o
+    // soco+anel da bolinha tocava (sutil demais pra ler como "a cor
+    // chegou"). Cada linha ganha a MESMA varredura da pasta aberta, só que
+    // embutida nela (ver _folderVarreLinha).
+    _debugMovLog(`pasta NAO é a ativa: ${vaiVarrer?'VARREDURA na linha':'só soco/anel na bolinha, sem tarja'}`);
+    if(vaiVarrer)_folderVarreLinha(el,corIdx,novoContorno);
   }
   // A pasta ativa pode ser OUTRO membro da mesma família (a cor mudou pra
   // ela também, mesmo sem ter sido a tocada) — atualiza sem a varredura,
