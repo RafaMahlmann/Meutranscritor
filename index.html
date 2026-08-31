@@ -4572,7 +4572,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.31.2';
+const VOX_VERSION='2026.08.31.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -9426,6 +9426,29 @@ function _folderVarreDaBolinha(el,i){
 // que decide corIdx+contorno a partir de _folderPasso) e pela paleta de
 // segurar (_folderAbrePaleta, sempre com contorno=false — a paleta é o
 // "escolher direto", o contorno é extra só do ciclo de toque).
+// Painel de diagnóstico temporário (só liga com ?debugmov=1 na URL) — pra
+// investigar clique real do Rafa sem precisar de console/devtools: mostra
+// se o SO pediu "reduzir movimento" e qual caminho o código tomou a cada
+// clique na bolinha de cor. Sem custo quando a flag não está na URL.
+function _debugMovLog(msg){
+  if(!window._debugMovPainel)return;
+  const linha=document.createElement('div');
+  linha.textContent=msg;
+  window._debugMovPainel.appendChild(linha);
+  while(window._debugMovPainel.children.length>14)window._debugMovPainel.removeChild(window._debugMovPainel.firstChild);
+}
+if(new URLSearchParams(location.search).has('debugmov')){
+  const _iniciaDebugMov=()=>{
+    const p=document.createElement('div');
+    p.style.cssText='position:fixed;bottom:8px;left:8px;z-index:999999;background:#000;color:#0f0;font:11px/1.4 monospace;padding:8px 10px;border-radius:6px;max-width:340px;max-height:280px;overflow:auto;white-space:pre-wrap;opacity:.95';
+    document.body.appendChild(p);
+    window._debugMovPainel=p;
+    _debugMovLog('reduzMov(SO)='+window.matchMedia('(prefers-reduced-motion:reduce)').matches);
+    _debugMovLog('UA='+navigator.userAgent);
+    _debugMovLog('aguardando clique na bolinha de cor...');
+  };
+  if(document.body)_iniciaDebugMov();else document.addEventListener('DOMContentLoaded',_iniciaDebugMov);
+}
 function trocarCorPasta(id,corIdx,contorno){
   const f=folders.find(x=>x.id===id);if(!f)return;
   const corIdxAntes=_folderCorIndex(f); // precisam ser ANTES da mutação abaixo
@@ -9448,6 +9471,7 @@ function trocarCorPasta(id,corIdx,contorno){
     elm.style.background=(novoContorno&&!elm.classList.contains('active'))?_folderDegrade(corIdx):'';
   });
   const reduzMov=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  _debugMovLog(`clique: reduzMov=${reduzMov} novaCor=${novaCor||'null'} contorno=${novoContorno}`);
   const el=document.querySelector(`.folder-item[data-fid="${CSS.escape(id)}"]`);
   if(el){
     const dot=el.querySelector('.folder-cor-dot'),anel=el.querySelector('.folder-dot-anel');
@@ -9479,10 +9503,13 @@ function trocarCorPasta(id,corIdx,contorno){
       // ficavam mudos: caiu pra 47%. O gatilho certo é "mudou o PASSO do
       // ciclo", não "mudou a cor" — inclui a mudança de contorno também.
       const passoMudou=corIdx!==corIdxAntes||novoContorno!==contornoAntes;
-      if(novaCor&&!reduzMov&&passoMudou)_folderVarreDaBolinha(el,corIdx);
+      const vaiVarrer=novaCor&&!reduzMov&&passoMudou;
+      _debugMovLog(`pasta ATIVA: passoMudou=${passoMudou} -> ${vaiVarrer?'VARREDURA':'so plaqueta (crossfade)'}`);
+      if(vaiVarrer)_folderVarreDaBolinha(el,corIdx);
       else _folderAtualizaPlaqueta(reduzMov);
       return;
     }
+    _debugMovLog('pasta NAO é a ativa: só soco/anel na bolinha, sem tarja');
   }
   // A pasta ativa pode ser OUTRO membro da mesma família (a cor mudou pra
   // ela também, mesmo sem ter sido a tocada) — atualiza sem a varredura,
