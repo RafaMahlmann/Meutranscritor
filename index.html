@@ -4568,7 +4568,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.29.8';
+const VOX_VERSION='2026.08.31.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -9424,7 +9424,8 @@ function _folderVarreDaBolinha(el,i){
 // "escolher direto", o contorno é extra só do ciclo de toque).
 function trocarCorPasta(id,corIdx,contorno){
   const f=folders.find(x=>x.id===id);if(!f)return;
-  const corIdxAntes=_folderCorIndex(f); // precisa ser ANTES da mutação abaixo
+  const corIdxAntes=_folderCorIndex(f); // precisam ser ANTES da mutação abaixo
+  const contornoAntes=!!f.contorno;
   const raiz=_folderRaizDe(id)||f;
   const familia=[raiz,..._folderDescendentes(raiz.id)];
   const novaCor=corIdx===null||corIdx===undefined?null:FOLDER_COLORS[corIdx];
@@ -9449,15 +9450,32 @@ function trocarCorPasta(id,corIdx,contorno){
     if(dot&&!reduzMov){
       dot.classList.remove('soco');anel?.classList.remove('abre');
       void dot.offsetWidth;
+      // Bug real (achado pelo Rafa, 31/08): indo pro vazio, a linha logo
+      // acima já apagou --fcor ANTES de chegar aqui — sem cor pra desenhar,
+      // border-style vira "none" e o anel gira e desaparece tecnicamente,
+      // mas pinta nada (medido: transform escalando, opacity caindo, zero
+      // pixel na tela). O anel ganha a cor de ANTES só pra si (sobrepõe o
+      // --fcor herdado da linha, que já está vazio) — assim ele recolhe
+      // com a cor que estava saindo, em vez de girar fantasma.
+      if(anel){
+        if(!novaCor&&corIdxAntes<FOLDER_COLORS.length)anel.style.setProperty('--fcor',safeColor(FOLDER_COLORS[corIdxAntes]));
+        else anel.style.removeProperty('--fcor');
+      }
       dot.classList.add('soco');anel?.classList.add('abre');
     }
     if(el.classList.contains('active')){
       // A varredura de tinta é a cor CHEGANDO — não faz sentido "varrer"
       // pro vazio. Indo pro vazio, a plaqueta só esmaece pro tom neutro
-      // pelo próprio crossfade que ela já sabe fazer sozinha. Ligar/desligar
-      // só o contorno (cor igual) também não tem o que "varrer" — a pasta
-      // ativa já mostra essa luz o tempo todo pela plaqueta.
-      if(novaCor&&!reduzMov&&corIdx!==corIdxAntes)_folderVarreDaBolinha(el,corIdx);
+      // pelo próprio crossfade que ela já sabe fazer sozinha.
+      // Medido (achado pelo Rafa, 31/08): antes do ciclo ter contorno, TODO
+      // clique numa pasta ativa trocava de cor de verdade — 100% acendia a
+      // varredura. Criar o passo "cor+contorno" no meio do ciclo (29/08)
+      // fez metade dos cliques virarem "cor igual, só liga/desliga o
+      // contorno" — e como o gatilho olhava só pra corIdx, esses cliques
+      // ficavam mudos: caiu pra 47%. O gatilho certo é "mudou o PASSO do
+      // ciclo", não "mudou a cor" — inclui a mudança de contorno também.
+      const passoMudou=corIdx!==corIdxAntes||novoContorno!==contornoAntes;
+      if(novaCor&&!reduzMov&&passoMudou)_folderVarreDaBolinha(el,corIdx);
       else _folderAtualizaPlaqueta(reduzMov);
       return;
     }
