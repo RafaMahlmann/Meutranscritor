@@ -2099,6 +2099,17 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    as duas camadas brigariam: o fundo chapado por cima do degradê. */
 .folder-item.active{background:none}
 .folder-item.active .folder-name{font-weight:700}
+/* A "relação com a cor do card" que o Rafa sentiu faltar não era só o
+   degradê: um card colorido tem TRÊS coisas — o degradê, uma borda de 26%
+   da cor de acento e um fio de 65% no topo (ver `.card[data-tc]`, ~linha
+   131). A linha de pasta só tinha o degradê, e por isso precisava ser mais
+   escura que o card pra se sustentar sozinha contra o branco do painel.
+   Devolvendo a borda (a mesma porcentagem do card), o preenchimento pode
+   voltar a ser o MESMO do card sem sumir. Medido: luminância média da
+   linha era 0,60 contra 0,74 do card; agora bate em 0,75. --fca vem do
+   render, é a mesma L.ca que o card usa naquele tema. */
+.folder-item[data-contorno]:not(.active){border-color:color-mix(in srgb,var(--fca,transparent) 30%,transparent)}
+[data-theme="dark"] .folder-item[data-contorno]:not(.active){border-color:color-mix(in srgb,var(--fca,transparent) 44%,transparent)}
 .folder-item.drag-over{border-color:var(--accent);border-style:dashed;background:var(--accent-glow)}
 .folder-item.dragging{opacity:0.35}
 /* Bolinha de cor (P2+P3, 25/08 — alça devolvida pro lado esquerdo em
@@ -2164,13 +2175,37 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    CADA linha da lista — achado com o painel de diagnóstico (31/08): a
    maioria dos cliques de cor do Rafa não é na pasta aberta, e só o soco da
    bolinha sozinho não lê como "a cor chegou". */
-.folder-pl-varre{position:absolute;inset:0;z-index:1;transform:scaleX(0)}
-.folder-pl-pluma{position:absolute;top:0;bottom:0;width:24px;z-index:1;pointer-events:none;
-  background:linear-gradient(90deg,var(--fpl-pluma),transparent)}
-.folder-fx-cam{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
-.folder-fx-varre{position:absolute;inset:0;transform:scaleX(0)}
-.folder-fx-pluma{position:absolute;top:0;bottom:0;width:24px;pointer-events:none;
-  background:linear-gradient(90deg,var(--fpl-pluma),transparent)}
+/* Como a tinta é revelada (31/08, refação): antes era UMA barra com o
+   degradê pintado nela e `transform:scaleX()`. O degradê escalava junto —
+   no primeiro quadro as 272px de rampa cabiam em 16px, então a tinta não
+   era depositada, era ESTICADA, feito borracha. Agora são dois nós com
+   translações opostas: a JANELA (overflow:hidden) desliza da esquerda pra
+   direita e a TINTA dentro dela translada o mesmo tanto pro outro lado —
+   na tela a tinta fica parada e a janela a descobre. É um wipe de verdade,
+   e continua sendo só `transform` (composto na GPU, sem recalcular layout).
+   A PLUMA mora colada na borda direita da janela: acompanha a frente de
+   onda de graça, sem transform próprio, e nunca vaza pra frente dela. */
+.folder-pl-jan,.folder-fx-jan{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.folder-pl-tinta,.folder-fx-tinta{position:absolute;inset:0}
+/* A pluma é o brilho da crista — a tinta molhada pegando luz. Antes ela era
+   pintada EXATAMENTE com a cor do corpo da barra em que corre: um degradê
+   de "cor X → transparente" por cima de "cor X" é literalmente invisível.
+   Agora é luz (branco no claro, a cor de acento no escuro, onde brilho lê),
+   medida pra somar ~0,15 de luminância à crista nos dois temas. */
+.folder-pl-pluma,.folder-fx-pluma{position:absolute;top:0;bottom:0;right:0;width:40px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--fpl-pluma))}
+/* z-index:0 (e não `auto`) de propósito: é o que faz o cam virar um
+   contexto de empilhamento próprio, prendendo a janela/tinta/pluma dentro
+   dele em vez de deixá-las competir com o resto do painel. */
+.folder-fx-cam{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;z-index:0}
+/* BUG REAL (achado 31/08, no primeiro screenshot da varredura na linha): a
+   camada da tinta é `position:absolute`, e o nome da pasta é um <span>
+   comum. Na ordem de pintura do CSS, descendente posicionado pinta DEPOIS
+   do conteúdo inline — ou seja, a barra opaca cobria o nome inteiro por
+   ~800ms. A linha ficava lisa, sem texto, e depois o nome "voltava". Era
+   isso que lia como "apagou a pasta". z-index negativo não serve (jogaria
+   a tinta pra trás do próprio fundo da linha): quem sobe é o conteúdo. */
+.folder-name,.folder-arrow,.folder-arrow-placeholder{position:relative;z-index:2}
 .folder-ico{font-size:14px;flex-shrink:0;line-height:1}
 /* Duas linhas quando precisa — nenhuma das referências faz isso, mas todas
    elas trabalham com nome curto em inglês ("Inbox", "Today"). Em português
@@ -4580,7 +4615,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.31.4';
+const VOX_VERSION='2026.08.31.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6855,7 +6890,7 @@ function renderFolderTree(parentId,lvl,counts){
     // somando ao recheio, em vez de trocá-lo. De quebra, 12px por nível em
     // vez de 14 (Notion usa 12), o que devolve espaço nas subpastas.
     html+=`<div class="folder-node">`;
-    html+=`<div class="folder-item${isActive?' active':''}" data-fid="${escHtml(f.id)}" data-lvl="${Math.min(lvl,4)}"${f.color?` data-cor="1"`:''}${f.contorno?` data-contorno="1"`:''} style="--lvl:${Math.min(lvl,4)}${f.color?`;--fcor:${safeColor(f.color)}`:''}${f.contorno&&!isActive?`;background:${_folderDegrade(FOLDER_COLORS.indexOf(f.color))}`:''}" onclick="selectFolder('${escJs(f.id)}')">`;
+    html+=`<div class="folder-item${isActive?' active':''}" data-fid="${escHtml(f.id)}" data-lvl="${Math.min(lvl,4)}"${f.color?` data-cor="1"`:''}${f.contorno?` data-contorno="1"`:''} style="--lvl:${Math.min(lvl,4)}${f.color?`;--fcor:${safeColor(f.color)};--fca:${safeColor(_folderLuz(FOLDER_COLORS.indexOf(f.color)).ca)}`:''}${f.contorno&&!isActive?`;background:${_folderDegrade(FOLDER_COLORS.indexOf(f.color))}`:''}" onclick="selectFolder('${escJs(f.id)}')">`;
     html+=`<button type="button" class="folder-dot-btn" aria-label="${t('Cor da pasta')}" onpointerdown="event.stopPropagation();_folderDotPress('${escJs(f.id)}',this)" onpointerup="event.stopPropagation();_folderDotRelease('${escJs(f.id)}',this)" onpointerleave="_folderDotCancel()" onclick="event.stopPropagation()"><span class="folder-dot-pt"><span class="folder-cor-dot"></span><span class="folder-dot-anel"></span></span></button>`;
     html+=`<span class="drag-handle folder-drag-handle" title="${t('Arrastar para mover ou aninhar a pasta')}" onclick="event.stopPropagation()">⠿</span>`;
     if(hasChildren){
@@ -9259,25 +9294,63 @@ function _folderRgba(hex,al){const h=hex.replace('#','');
 // uma faixa horizontal chapada. 100deg mantém a mesma leitura (luz entra
 // pela quina de cima-esquerda, assenta embaixo à direita) no formato
 // achatado. Medido, não estimado — mesma conta da proposta do agente.
-function _folderCorpo(i){
-  const L=_folderLuz(i);
-  if(_folderEhEscuro())return L.a;
-  // mistura L.b com L.ca 28%, pra não lavar a faixa curta demais
-  const b=L.b.replace('#',''),ca=L.ca.replace('#','');
+function _folderMistura(h1,h2,t){
+  const A=h1.replace('#',''),B=h2.replace('#','');
   let out='#';
   for(let k=0;k<3;k++){
-    const x=parseInt(b.substr(k*2,2),16),y=parseInt(ca.substr(k*2,2),16);
-    const v=Math.round(x+(y-x)*0.28).toString(16);
+    const x=parseInt(A.substr(k*2,2),16),y=parseInt(B.substr(k*2,2),16);
+    const v=Math.round(x+(y-x)*t).toString(16);
     out+=(v.length<2?'0':'')+v;
   }
   return out;
 }
+// A cor de CORPO da tira agora é a mesma cor de corpo do card (L.b), nos
+// dois temas — direto, sem função própria. Antes era uma mistura de L.b
+// com 28% de L.ca no claro, e isso é o que tinha quebrado a "relação com a
+// cor do card" que o Rafa cobrou: a linha terminava em luminância 0,55
+// contra 0,71 do card — 23% mais escura, e com o dobro da amplitude
+// interna (0,33 contra 0,17 do card) numa tira de 36px. Lia como fita
+// adesiva colorida, não como um pedaço de card. A definição que a mistura
+// dava agora vem da borda de acento (ver `.folder-item[data-contorno]`),
+// que é de onde o card tira a dele.
 function _folderDegrade(i){
   const L=_folderLuz(i);
+  // Claro: a rampa não parte mais do L.a puro. Num card, o canto quase
+  // branco é um CANTO; numa tira de 36px ele vira uma faixa de altura
+  // inteira, bem embaixo da bolinha — 81px de quase-branco (luminância
+  // 0,88) dentro de uma linha colorida. 22% já tingido no começo e a rampa
+  // terminando em 66% (perto dos 58% do card) devolvem uma superfície só,
+  // em vez de duas faixas. Escuro fica como estava: medido, lá a linha já
+  // batia com o card (média 0,09 contra 0,08 — mais clara que o fundo, que
+  // é o certo pra superfície elevada no escuro).
   return _folderEhEscuro()
     ?`linear-gradient(100deg,${L.a} 0%,${L.b} 84%)`
-    :`linear-gradient(100deg,${L.a} 0%,${_folderCorpo(i)} 30%)`;
+    :`linear-gradient(100deg,${_folderMistura(L.a,L.b,.22)} 0%,${L.b} 66%)`;
 }
+// A crista da varredura — a frente de onda da tinta. Nos dois temas é a
+// MESMA cor de acento da pasta (a mesma que desenha a borda), só com peso
+// diferente, porque o que "lê" muda com o fundo:
+//  · escuro: a crista ACENDE (brilho só existe contra fundo escuro).
+//    Medido: +0,15 de luminância sobre o corpo da tira.
+//  · claro: a crista ADENSA, feito tinta empurrada que se acumula na ponta
+//    do pincel. Branco não serviria: o painel já é branco, então clarear a
+//    crista some no fundo em vez de destacar. Medido: -0,19 de luminância
+//    — mesma força, sinal contrário.
+function _folderPlumaCor(i){
+  return _folderRgba(_folderLuz(i).ca,_folderEhEscuro()?.5:.34);
+}
+// Compasso da varredura, num lugar só, pra pasta aberta e linha da lista
+// nunca desandarem uma da outra.
+// A duração caiu de 520ms pra 440ms e MESMO ASSIM o movimento ficou mais
+// lento — medido quadro a quadro: com a curva antiga (.22,1,.36,1) a barra
+// chegava a 90% do percurso em 192ms e gastava os 328ms restantes andando
+// os últimos 10%, invisíveis. Ou seja: o pedido de "câmara lenta" tinha
+// virado tempo parado, não movimento devagar. A curva nova é uma saída
+// quadrática pura (sem `ease-in` em lugar nenhum): 44% do caminho no
+// primeiro quarto do tempo, 75% na metade, 94% em três quartos. O trecho
+// que o olho consegue seguir passou de ~156ms para ~273ms.
+const FOLDER_VARRE_MS=440;
+const FOLDER_VARRE_EASE='cubic-bezier(.5,1,.89,1)';
 // Duas trocas de cor mais rápidas que os 320ms da varredura (achado
 // testando o ciclo de 9 passos até o vazio bem rápido) deixavam um
 // setTimeout velho vencer por último e pintar a camada `a` de volta pra
@@ -9287,7 +9360,7 @@ function _folderDegrade(i){
 // interrompida não fica boiando dentro da plaqueta.
 function _folderLimpaVarredura(pl){
   clearTimeout(pl._folderT);
-  pl.querySelectorAll('.folder-pl-varre,.folder-pl-pluma').forEach(el=>el.remove());
+  pl.querySelectorAll('.folder-pl-jan').forEach(el=>el.remove());
 }
 // Reposiciona/repinta a plaqueta pra baixo da pasta ativa. Chamado no fim
 // de renderFolders() e depois de trocar a cor da pasta ativa. O CSS já
@@ -9397,38 +9470,57 @@ document.addEventListener('click',e=>{
 // NÃO é a aberta, só 9px de bolinha mudaram — soco e anel bastam. Pasta
 // que É a aberta, a superfície inteira mudou de verdade — a tinta corre a
 // linha inteira, nascendo no mesmo ponto que o dedo tocou.
+// Monta o par janela+tinta+pluma dentro de `dono` e devolve a função que
+// dispara o wipe. Uma função só pra pasta aberta e linha da lista: o
+// "palco" muda (largura da plaqueta vs. largura da linha), a sensação não.
+// `x` é o centro da bolinha em coordenadas do dono — é dali que a tinta
+// nasce, não da borda nem do meio.
+function _folderMontaVarredura(dono,i,x,W,classe){
+  const jan=document.createElement('span');jan.className=classe+'-jan';
+  const tinta=document.createElement('span');tinta.className=classe+'-tinta';
+  tinta.style.background=_folderDegrade(i);
+  const pluma=document.createElement('span');pluma.className=classe+'-pluma';
+  pluma.style.setProperty('--fpl-pluma',_folderPlumaCor(i));
+  jan.appendChild(tinta);jan.appendChild(pluma);
+  // D é o quanto a janela precisa andar. Começando deslocada -D, a borda
+  // direita dela cai exatamente em x: a tinta nasce atrás da bolinha (os
+  // primeiros px já pintados) e a frente sai de lá. A tinta leva +D pra
+  // cancelar isso e ficar PARADA na tela enquanto a janela a descobre.
+  const D=Math.max(0,W-x);
+  jan.style.transform=`translateX(${-D}px)`;
+  tinta.style.transform=`translateX(${D}px)`;
+  dono.appendChild(jan);
+  // Bug real (achado 31/08, testando quadro a quadro): sem esta leitura,
+  // o navegador nunca "vê" o estado inicial antes da transição ligar —
+  // funde os dois num só e a barra nasce já no fim, sem varrer.
+  // requestAnimationFrame sozinho NÃO bastava porque os nós acabaram de
+  // nascer no mesmo tick; só o offsetWidth força o layout a comprometer o
+  // "antes". Continua valendo com translateX igualzinho valia com scaleX.
+  void jan.offsetWidth;
+  requestAnimationFrame(()=>{
+    const tr=`transform ${FOLDER_VARRE_MS}ms ${FOLDER_VARRE_EASE}`;
+    jan.style.transition=tr;jan.style.transform='translateX(0)';
+    tinta.style.transition=tr;tinta.style.transform='translateX(0)';
+    // A crista apaga na última porção do trajeto — a tinta "assenta" em
+    // vez de deixar um brilho parado na borda direita no quadro final.
+    pluma.style.transition=`opacity ${Math.round(FOLDER_VARRE_MS*.34)}ms linear ${Math.round(FOLDER_VARRE_MS*.6)}ms`;
+    pluma.style.opacity='0';
+  });
+  return jan;
+}
 function _folderVarreDaBolinha(el,i){
   const pl=document.getElementById('folderPlaqueta');if(!pl)return;
   _folderLimpaVarredura(pl);
   const pr=pl.getBoundingClientRect();
   const pt=el.querySelector('.folder-dot-pt');if(!pt)return;
   const x=pt.getBoundingClientRect().left-pr.left+4.5;
-  const v=document.createElement('span');v.className='folder-pl-varre';
-  v.style.background=_folderDegrade(i);
-  v.style.transformOrigin=x+'px 50%';
-  const pluma=document.createElement('span');pluma.className='folder-pl-pluma';
-  pluma.style.setProperty('--fpl-pluma',_folderCorpo(i));
-  pluma.style.left=(x-24)+'px';
-  pluma.style.transform='translateX(0)';
-  pl.appendChild(v);pl.appendChild(pluma);
-  // Bug real (achado 31/08, testando quadro a quadro): sem esta leitura,
-  // o navegador nunca "vê" o scaleX(0) inicial antes da transição ligar —
-  // funde os dois estados num só e a barra nasce já no fim, sem varrer.
-  // requestAnimationFrame sozinho NÃO bastava porque v acabou de nascer
-  // no mesmo tick; só o offsetWidth força o layout a comprometer o "antes".
-  void v.offsetWidth;
-  requestAnimationFrame(()=>{
-    v.style.transition='transform .52s cubic-bezier(.22,1,.36,1)';
-    v.style.transform='scaleX(1)';
-    pluma.style.transition='transform .52s cubic-bezier(.22,1,.36,1)';
-    pluma.style.transform=`translateX(${pr.width-x+24}px)`;
-  });
+  const jan=_folderMontaVarredura(pl,i,x,pr.width,'folder-pl');
   pl._folderT=setTimeout(()=>{
     const a=pl.querySelector('.folder-pl-a'),b=pl.querySelector('.folder-pl-b');
     a.style.background=_folderDegrade(i);b.style.transition='none';b.style.opacity='0';
     void b.offsetWidth;b.style.transition='';
-    v.remove();pluma.remove();
-  },520); // câmara lenta: acompanha o .52s da varredura logo acima
+    jan.remove();
+  },FOLDER_VARRE_MS);
 }
 // Trocar a cor (e o contorno permanente) de QUALQUER membro da família (a
 // raiz ou uma subpasta) recolore a família inteira — é o mesmo pedido de
@@ -9469,22 +9561,8 @@ function _folderVarreLinha(elm,i,ficaPermanente){
   const r=elm.getBoundingClientRect(),pr=pt.getBoundingClientRect();
   const x=pr.left-r.left+4.5;
   const cam=document.createElement('span');cam.className='folder-fx-cam';
-  const v=document.createElement('span');v.className='folder-fx-varre';
-  v.style.background=_folderDegrade(i);
-  v.style.transformOrigin=x+'px 50%';
-  const pluma=document.createElement('span');pluma.className='folder-fx-pluma';
-  pluma.style.setProperty('--fpl-pluma',_folderCorpo(i));
-  pluma.style.left=(x-24)+'px';
-  pluma.style.transform='translateX(0)';
-  cam.appendChild(v);cam.appendChild(pluma);
   elm.insertBefore(cam,elm.firstChild);
-  void v.offsetWidth; // ver o mesmo achado em _folderVarreDaBolinha, linha acima
-  requestAnimationFrame(()=>{
-    v.style.transition='transform .52s cubic-bezier(.22,1,.36,1)';
-    v.style.transform='scaleX(1)';
-    pluma.style.transition='transform .52s cubic-bezier(.22,1,.36,1)';
-    pluma.style.transform=`translateX(${r.width-x+24}px)`;
-  });
+  _folderMontaVarredura(cam,i,x,r.width,'folder-fx');
   elm._folderFxT=setTimeout(()=>{
     if(ficaPermanente){
       elm.style.background=_folderDegrade(i);
@@ -9496,11 +9574,11 @@ function _folderVarreLinha(elm,i,ficaPermanente){
       // velha por baixo em vez de ficar em branco — a linha "voltava" pra
       // cor de antes sozinha, sem clique nenhum.
       elm.style.background='';
-      cam.style.transition='opacity .28s linear';
+      cam.style.transition='opacity .26s linear';
       cam.style.opacity='0';
-      elm._folderFxT=setTimeout(()=>cam.remove(),280);
+      elm._folderFxT=setTimeout(()=>cam.remove(),260);
     }
-  },520);
+  },FOLDER_VARRE_MS);
 }
 if(new URLSearchParams(location.search).has('debugmov')){
   const _iniciaDebugMov=()=>{
@@ -9536,8 +9614,13 @@ function trocarCorPasta(id,corIdx,contorno){
   familia.forEach(m=>{
     const elm=document.querySelector(`.folder-item[data-fid="${CSS.escape(m.id)}"]`);
     if(!elm)return;
-    if(novaCor){elm.setAttribute('data-cor','1');elm.style.setProperty('--fcor',safeColor(novaCor))}
-    else{elm.removeAttribute('data-cor');elm.style.removeProperty('--fcor')}
+    // --fca é a cor de acento daquele tema (a mesma do card): alimenta a
+    // borda da linha colorida. Tem que ser reescrita AQUI também, não só no
+    // render — trocarCorPasta não re-renderiza a lista, e sem isto a borda
+    // ficaria com o acento da cor anterior enquanto o corpo já é o novo.
+    if(novaCor){elm.setAttribute('data-cor','1');elm.style.setProperty('--fcor',safeColor(novaCor));
+      elm.style.setProperty('--fca',safeColor(_folderLuz(corIdx).ca))}
+    else{elm.removeAttribute('data-cor');elm.style.removeProperty('--fcor');elm.style.removeProperty('--fca')}
     if(novoContorno)elm.setAttribute('data-contorno','1');else elm.removeAttribute('data-contorno');
     // A linha tocada, se vai varrer (ver mais abaixo), só ganha o fundo
     // final quando a varredura terminar — pintar agora tamparia a própria
@@ -9917,7 +10000,15 @@ function closeFoldersDrawer(){
 
 // ── THEME ──
 function toggleTheme(){const t=document.documentElement.getAttribute('data-theme');setTheme(t==='dark'?'light':'dark')}
-function setTheme(t,save=true){document.documentElement.setAttribute('data-theme',t);if(save)localStorage.setItem('vox_theme',t);_updateThemeColor();_syncSkinUI()}
+// BUG REAL (achado 31/08): o degradê da pasta colorida é escrito INLINE no
+// render (`style="background:..."`), com os valores do tema daquele
+// momento. Trocar o tema não re-renderizava a lista, então as pastas
+// coloridas ficavam com o degradê pastel do tema claro dentro do escuro —
+// com o texto já branco por cima. Medido: branco #f0f0f4 sobre #b1e9bf dá
+// 1,2:1 de contraste (o mínimo legível é 4,5:1). Ficava assim até algo
+// re-renderizar a lista por outro motivo.
+function setTheme(t,save=true){document.documentElement.setAttribute('data-theme',t);if(save)localStorage.setItem('vox_theme',t);_updateThemeColor();_syncSkinUI();
+  if(document.getElementById('folderListInner')&&typeof renderFolders==='function'){renderFolders();_folderAtualizaPlaqueta(true)}}
 function toggleSkinPop(){
   const p=document.getElementById('skinPop');const open=!p.classList.contains('on');
   if(open){_syncSkinUI();p.classList.add('on');setTimeout(()=>document.addEventListener('click',_skinAway),0)}
