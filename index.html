@@ -2135,8 +2135,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-item:not([data-cor]) .folder-dot-btn:hover .folder-cor-dot{box-shadow:0 0 0 1.5px var(--border2)}
 @keyframes folderDotSoco{0%{transform:scale(1)}38%{transform:scale(1.5)}100%{transform:scale(1)}}
 @keyframes folderAnelAbre{from{transform:scale(1);opacity:.62}to{transform:scale(3.4);opacity:0}}
-.folder-cor-dot.soco{animation:folderDotSoco .26s cubic-bezier(.22,1,.36,1)}
-.folder-dot-anel.abre{animation:folderAnelAbre .34s cubic-bezier(.22,1,.36,1)}
+/* Câmara lenta (pedido do Rafa, 31/08): tudo entre 1.7x e 1.8x mais devagar
+   que antes, pra dar tempo do olho pegar o movimento em vez de só notar
+   que "algo mudou" — as durações abaixo (soco/anel/varredura/plaqueta)
+   sobem juntas, na mesma proporção, pra continuarem no mesmo compasso. */
+.folder-cor-dot.soco{animation:folderDotSoco .46s cubic-bezier(.22,1,.36,1)}
+.folder-dot-anel.abre{animation:folderAnelAbre .6s cubic-bezier(.22,1,.36,1)}
 
 /* ── A PLAQUETA — um nó só, fora do innerHTML de renderFolders(), que
    desliza até a pasta ativa em vez de piscar (M1 da proposta de juice).
@@ -2145,10 +2149,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 #folderList{position:relative;overflow-anchor:none}
 .folder-plaqueta{position:absolute;left:0;right:0;top:0;height:36px;border-radius:9px;
   z-index:0;pointer-events:none;opacity:0;overflow:hidden;
-  transition:transform .19s cubic-bezier(.22,1,.36,1),height .19s cubic-bezier(.22,1,.36,1),opacity .15s linear}
+  transition:transform .34s cubic-bezier(.22,1,.36,1),height .34s cubic-bezier(.22,1,.36,1),opacity .26s linear}
 .folder-plaqueta.on{opacity:1}
 .folder-pl-cam{position:absolute;inset:0}
-.folder-pl-b{opacity:0;transition:opacity .19s linear}
+.folder-pl-b{opacity:0;transition:opacity .34s linear}
 .folder-plaqueta::after{content:'';position:absolute;inset:0 0 auto 0;height:1px;z-index:1;
   background:linear-gradient(90deg,transparent,var(--fpl-quina),transparent)}
 .folder-plaqueta{box-shadow:0 3px 9px -6px var(--fpl-sombra)}
@@ -4568,7 +4572,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.31.1';
+const VOX_VERSION='2026.08.31.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -9344,7 +9348,7 @@ function _folderAtualizaPlaqueta(instant){
     a.style.background=novoFundo;
     b.style.transition='none';b.style.opacity='0';
     void b.offsetWidth;b.style.transition='';
-  },200);
+  },340); // câmara lenta: acompanha o .34s do CSS logo acima
 }
 function _folderDotPress(id,btn){
   clearTimeout(_folderDotSeguro);
@@ -9400,9 +9404,9 @@ function _folderVarreDaBolinha(el,i){
   pluma.style.transform='translateX(0)';
   pl.appendChild(v);pl.appendChild(pluma);
   requestAnimationFrame(()=>{
-    v.style.transition='transform .3s cubic-bezier(.22,1,.36,1)';
+    v.style.transition='transform .52s cubic-bezier(.22,1,.36,1)';
     v.style.transform='scaleX(1)';
-    pluma.style.transition='transform .3s cubic-bezier(.22,1,.36,1)';
+    pluma.style.transition='transform .52s cubic-bezier(.22,1,.36,1)';
     pluma.style.transform=`translateX(${pr.width-x+24}px)`;
   });
   pl._folderT=setTimeout(()=>{
@@ -9410,7 +9414,7 @@ function _folderVarreDaBolinha(el,i){
     a.style.background=_folderDegrade(i);b.style.transition='none';b.style.opacity='0';
     void b.offsetWidth;b.style.transition='';
     v.remove();pluma.remove();
-  },320);
+  },520); // câmara lenta: acompanha o .52s da varredura logo acima
 }
 // Trocar a cor (e o contorno permanente) de QUALQUER membro da família (a
 // raiz ou uma subpasta) recolore a família inteira — é o mesmo pedido de
