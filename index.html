@@ -26,6 +26,13 @@
   --shadow-input:0 1px 2px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.06);
   --text:#1d1d1f;--text2:#48484a;--text3:#8e8e93;--text4:#aeaeb2;
   --accent:#10b981;--accent2:#059669;--accent-glow:rgba(16,185,129,0.18);
+  /* Azul do "+" que cria card — o mesmo papel do #btnNewCard da barra de
+     status, mas aqui o ícone é o ÚNICO sinal (não tem rótulo "Novo card"
+     do lado), então ele precisa passar sozinho no contraste mínimo de
+     elemento não-textual (3:1, WCAG 1.4.11). Medido: o #4f9dff da barra de
+     status dá só 2,76:1 sobre o branco de --bg-card — reprova. Este tom
+     dá 4,0:1 no claro; no escuro o #4f9dff dá 5,8:1 sobre #212124 e fica. */
+  --fc-novo:#2f7fe0;
   --danger:#ff3b30;--danger2:#e02a20;--warning:#ff9500;
   --grok:#f97316;--grok-glow:rgba(249,115,22,0.18);
   --groq:#22c55e;--groq-glow:rgba(34,197,94,0.18);
@@ -71,6 +78,7 @@
   --shadow-hover:0 2px 12px rgba(0,0,0,0.6),0 16px 48px rgba(0,0,0,0.7);
   --shadow-input:0 2px 8px rgba(0,0,0,0.5),0 8px 24px rgba(0,0,0,0.5);
   --text:#f5f5f7;--text2:#cfcfd4;--text3:#9d9da4;--text4:#8a8a93;
+  --fc-novo:#4f9dff;
 }
 /* ── SKINS (cor de acento, funciona em claro e escuro) ── */
 [data-skin="amber"]{--accent:#d99a2b;--accent2:#b87f1c;--accent-glow:rgba(217,154,43,0.20)}
@@ -1334,6 +1342,22 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   background:var(--bg-card);color:var(--text2);cursor:pointer;display:flex;align-items:center;
   justify-content:center;transition:background var(--transition),color var(--transition);padding:0}
 .fc-fit-btn:hover,.fc-close-btn:hover{background:var(--bg-input);color:var(--text)}
+/* O quarto botão da barra (Fluxograma e Órbita) é o único que CRIA alguma
+   coisa — os outros três só olham, ajustam ou saem. Mesma moldura, mesmo
+   tamanho, mesmo raio: a diferença é só o glifo colorido, que é o que faz
+   ele se ler como ação principal PARADO, sem depender de hover (que no
+   celular não existe).
+   O margin-right extra separa "criar" de "olhar/sair" por proximidade, sem
+   precisar de um risquinho divisor — um elemento a menos na barra.
+   :active afunda porque é o único botão daqui que produz um objeto novo: o
+   afundar é o recibo do toque no meio-tempo até a janela aparecer. */
+.fc-new-card-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
+  background:var(--bg-card);color:var(--fc-novo);cursor:pointer;display:flex;align-items:center;
+  justify-content:center;padding:0;margin-right:4px;
+  transition:background var(--transition),border-color var(--transition),transform .13s cubic-bezier(0.22,1,0.36,1)}
+.fc-new-card-btn:hover{background:var(--bg-input);border-color:var(--fc-novo)}
+.fc-new-card-btn:active{transform:scale(0.94);transition-duration:.09s}
+@media(prefers-reduced-motion:reduce){.fc-new-card-btn:active{transform:none}}
 /* touch-action:none é o que impede o navegador de roubar o gesto de pinça
    pra rolar a página — sem isso o zoom de dois dedos nunca chega no JS. */
 .fc-canvas-wrap{position:relative;flex:1;overflow:hidden;touch-action:none;
@@ -4615,7 +4639,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.31.5';
+const VOX_VERSION='2026.08.31.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -4690,6 +4714,8 @@ let I18N_EN={
 "✏️ Nome atualizado":"✏️ Name updated",
 "Nome removido":"Name removed",
 "Ver cards flutuantes":"View floating cards",
+"Criar card aqui":"Create a card here",
+"Card novo — arraste pelo ⠿ até uma pasta":"New card — drag it by the ⠿ onto a folder",
 "Voltar pro mapa":"Back to the map",
 "Fechar janela":"Close window",
 "nota aqui":"note here",
@@ -7751,6 +7777,36 @@ function _flAbrirCard(id,origemEl){
     }));
   }
 }
+// Botão "+" da barra do Fluxograma/Órbita: cria um card em branco e já abre a
+// janela flutuante dele aqui mesmo. É só cola entre três peças que já existem
+// — de propósito não há lógica nova nenhuma aqui:
+//   · newEmptyCard() é o MESMO card novo do botão da barra de status, e o
+//     addCard() dentro dele já faz `if(!folder&&activeFolderId)folder=
+//     activeFolderId` — ou seja, o card nasce linkado na pasta que está aberta
+//     na lista de trás, ou na geral se não houver nenhuma. Decidir pasta aqui
+//     seria uma segunda regra pra mesma coisa, fadada a divergir da primeira.
+//   · _flAbrirCard(id,btn) faz o FLIP: a janela nasce no lugar do botão que
+//     foi clicado e voa até a vaga. Passar `btn` é o que dá esse voo.
+//   · a alcinha ⠿ que já vem no card sabe soltar em cima de um nó de pasta
+//     (_flStartWindowDrag → _flAlvoPastaEmPonto → assignCardToFolder), então
+//     "jogar pra dentro de qualquer pasta" não custa uma linha aqui.
+function _flNovoCardAqui(btn){
+  const cid=newEmptyCard(true);
+  if(!cid)return;
+  _flAbrirCard(cid,btn);
+  const win=document.getElementById('floatwin-'+cid);
+  // Sem janela (camada flutuante não montou) o card existe do mesmo jeito —
+  // avisa como a lista avisaria, em vez de ensinar um gesto que não tem onde
+  // acontecer.
+  if(!win){toast(t('✏️ Card novo criado — escreva, grave ou anexe!'));return}
+  // O aviso ensina o ⠿ porque esse gesto não é descobrível: na lista a mesma
+  // alcinha serve pra mesclar cards, aqui ela serve pra mudar de pasta.
+  toast(t('Card novo — arraste pelo ⠿ até uma pasta'));
+  // O cursor entra no texto só depois do voo (.26s no FLIP): focar antes faz
+  // o navegador rolar a camada com a janela ainda em movimento.
+  const ta=win.querySelector('.cb textarea');
+  if(ta)setTimeout(()=>{try{ta.focus({preventScroll:true})}catch(e){ta.focus()}},300);
+}
 // Procura um lugar na Órbita onde a nota caiba sem tapar nada que importa:
 // nem as outras notas abertas, nem o mural (de onde ela acabou de sair), nem
 // a bolha em foco. Varre a partir do lado OPOSTO ao mural, que é o lado
@@ -7920,9 +7976,23 @@ function _flStartWindowDrag(el,e0,isTouch){
     const achado=_flAlvoPastaEmPonto(x,y);
     if(achado){
       achado.el.classList.add('fl-drop-sucesso');
-      setTimeout(()=>achado.el.classList.remove('fl-drop-sucesso'),260);
       assignCardToFolder(id,achado.folderId);
       _flFecharJanela(id);
+      // Bug real, medido em 31/08/2026: o card mudava mesmo de pasta e o toast
+      // confirmava ("Movido para Pasta 2"), mas o NÚMERO no nó continuava o
+      // antigo — a tela contradizia o aviso que ela mesma acabou de dar. Nem
+      // assignCardToFolder nem _flFecharJanela redesenham o mapa; os dois só
+      // cuidam da lista de trás. Medido: nó da Pasta 2 marcando 0 com o card
+      // já dentro, e virando 1 assim que _fcRender rodou.
+      // Redesenha DEPOIS do flash de acerto, nunca durante: _fcRender troca o
+      // innerHTML de #fcNodes inteiro, ou seja RECRIA o nó — recriar no meio do
+      // flash apagaria justamente a confirmação que a pessoa está olhando.
+      // (_orbDesenhar não tem esse problema, ele reaproveita as bolhas.)
+      setTimeout(()=>{
+        achado.el.classList.remove('fl-drop-sucesso');
+        if(document.getElementById('fcOverlay')?.classList.contains('on'))_fcRender();
+        else if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbDesenhar();
+      },260);
       return;
     }
     _flSalvarPosicao(id);
@@ -7991,6 +8061,11 @@ function _flStartResize(win,dir,e0,isTouch){
 function _flHandlesResizeHtml(){
   return FL_RESIZE_DIRS.map(d=>`<div class="fl-rz fl-rz-${d}" onmousedown="event.preventDefault();event.stopPropagation();_flStartResize(this.closest('.float-window'),'${d}',{clientX:event.clientX,clientY:event.clientY},false)" ontouchstart="event.stopPropagation();_flStartResize(this.closest('.float-window'),'${d}',{clientX:event.touches[0].clientX,clientY:event.touches[0].clientY},true)"></div>`).join('');
 }
+// A MESMA cruz do "+ Novo card" da barra de status (mesmo viewBox, mesmas
+// coordenadas): uma ação, um glifo. Só o traço é mais grosso que os 2 dos
+// vizinhos — a cruz tem duas linhas contra os 4-8 traços do "enquadrar" e do
+// ícone de camadas, então no mesmo stroke-width ela pesaria menos que eles.
+const FC_NEW_CARD_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
 const FC_FLOAT_TOGGLE_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
 
 function abrirFluxograma(){
@@ -8003,6 +8078,7 @@ function abrirFluxograma(){
       <div class="fc-topbar">
         <span class="fc-title">🗂️ ${t('Fluxograma de pastas')}</span>
         <div class="fc-topbar-actions">
+          <button type="button" class="fc-new-card-btn" onclick="_flNovoCardAqui(this)" title="${t('Criar card aqui')}" aria-label="${t('Criar card aqui')}">${FC_NEW_CARD_ICON}</button>
           <button type="button" class="fc-float-toggle-btn" onclick="_flAlternarCamada()" title="${t('Ver cards flutuantes')}" aria-label="${t('Ver cards flutuantes')}">${FC_FLOAT_TOGGLE_ICON}</button>
           <button type="button" class="fc-fit-btn" onclick="_fcEnquadrar()" title="${t('Enquadrar')}" aria-label="${t('Enquadrar')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
           <button type="button" class="fc-close-btn" onclick="fecharFluxograma()" title="${t('Fechar')}" aria-label="${t('Fechar')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -8844,6 +8920,7 @@ function abrirOrbital(){
       <div class="fc-topbar">
         <span class="fc-title">🪐 ${escHtml(t('Órbita de pastas'))}</span>
         <div class="fc-topbar-actions">
+          <button type="button" class="fc-new-card-btn" onclick="_flNovoCardAqui(this)" title="${escHtml(t('Criar card aqui'))}" aria-label="${escHtml(t('Criar card aqui'))}">${FC_NEW_CARD_ICON}</button>
           <button type="button" class="fc-float-toggle-btn" onclick="_flAlternarCamada()" title="${escHtml(t('Ver cards flutuantes'))}" aria-label="${escHtml(t('Ver cards flutuantes'))}">${FC_FLOAT_TOGGLE_ICON}</button>
           <button type="button" class="fc-fit-btn" onclick="_orbEnquadrar()" title="${escHtml(t('Enquadrar'))}" aria-label="${escHtml(t('Enquadrar'))}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
           <button type="button" class="fc-close-btn" onclick="fecharOrbital()" title="${escHtml(t('Fechar'))}" aria-label="${escHtml(t('Fechar'))}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -14260,9 +14337,18 @@ function confirmTranscribe(){
   processAudio(f,Math.round(f.size/(1024*1024)*30),false);
 }
 // ── Card novo em branco (botão + da barra de status) ──
-function newEmptyCard(){
+// Devolve o id do card criado.
+// `paraJanela`: o card vai virar janela flutuante do Fluxograma/Órbita (ver
+// _flNovoCardAqui). Aí levar a lista de trás até ele é trabalho jogado fora —
+// _flAbrirCard MOVE o nó pra dentro da janela um instante depois (não clona),
+// então o scrollIntoView roleria a lista até um card que já saiu dela, e o
+// applyFocusCard() do Modo Documento trocaria o card em foco na tela de trás
+// sem ninguém ter pedido. Quem avisa e quem põe o cursor no texto, nesse
+// caminho, é o próprio _flNovoCardAqui.
+function newEmptyCard(paraJanela){
   const cid=addCard('',null,0,'texto',cfg.provider,true,null,null,[],document.getElementById('snameInput').value.trim(),sessionMode,false);
   stats.count++;updateStats();
+  if(paraJanela)return cid;
   if(viewMode==='doc'){
     // Só um card fica visível por vez no Modo Documento — sem isso, o card
     // novo era criado mas a tela continuava mostrando o card anterior.
@@ -14273,6 +14359,7 @@ function newEmptyCard(){
     if(el){el.scrollIntoView({behavior:'smooth',block:'center'});const ta=el.querySelector('textarea');if(ta)setTimeout(()=>ta.focus(),300)}
   }
   toast(t('✏️ Card novo criado — escreva, grave ou anexe!'));
+  return cid;
 }
 // ── Anexar aqui: arquivo externo (áudio→transcreve, texto→insere) NO card ──
 function attachHere(cid){
