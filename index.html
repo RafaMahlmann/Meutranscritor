@@ -1384,6 +1384,35 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-new-card-btn:hover{background:var(--bg-input);border-color:var(--fc-novo)}
 .fc-new-card-btn:active{transform:scale(0.94);transition-duration:.09s}
 @media(prefers-reduced-motion:reduce){.fc-new-card-btn:active{transform:none}}
+/* Voltar um nível — SÓ na Órbita. O Fluxograma mostra a árvore inteira de uma
+   vez, não tem "foco"; lá não existe nível pra subir e o botão seria mentira.
+   Ele NÃO some na raiz. Se sumisse, os outros quatro escorregariam 40px pra
+   direita toda vez que a pessoa chegasse em "Tudo" — o alvo de Fechar mudaria
+   de lugar sozinho, e é justamente o botão que se aperta sem olhar. Fica
+   desabilitado: mesma caixa, tinta fraca. Medido com opacity .34, compondo
+   glifo e caixa contra o fundo real do .orb-modal (13,14,18): o contraste
+   glifo/caixa cai de 10.35:1 pra 2.28:1 no escuro (4.5x) e de 9.12:1 pra
+   2.53:1 no claro (3.6x). Some como convite, continua legível como "existe,
+   e agora não serve".
+   margin-right igual ao do + separa navegação de criação por proximidade —
+   três grupos (voltar | criar | ver/enquadrar/sair) sem nenhuma divisória.
+   border-color NÃO entra na transição de propósito: os quatro irmãos não a
+   animam, e com ela a barra trocava de tema em duas velocidades — quatro
+   bordas viravam na hora e a deste botão deslizava sozinha por 200ms (medido
+   no meio da troca: irmãos já em rgba(0,0,0,.07), este ainda em
+   rgba(253,253,253,.11)). Ele também não muda de borda no hover, então não
+   havia nada a ganhar. */
+.orb-voltar-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
+  background:var(--bg-card);color:var(--text2);cursor:pointer;display:flex;align-items:center;
+  justify-content:center;padding:0;margin-right:4px;
+  transition:background var(--transition),color var(--transition),
+    opacity .22s cubic-bezier(0.22,1,0.36,1),transform .13s cubic-bezier(0.22,1,0.36,1)}
+.orb-voltar-btn:hover:not(:disabled){background:var(--bg-input);color:var(--text)}
+/* O deslocamento pra esquerda é o único juice próprio dele: no meio-tempo até
+   o anel se refazer, ele já diz a DIREÇÃO da coisa. 2px chega. */
+.orb-voltar-btn:active:not(:disabled){transform:translateX(-2px) scale(0.95);transition-duration:.11s}
+.orb-voltar-btn:disabled{opacity:.34;cursor:default}
+@media(prefers-reduced-motion:reduce){.orb-voltar-btn:active:not(:disabled){transform:none}}
 /* touch-action:none é o que impede o navegador de roubar o gesto de pinça
    pra rolar a página — sem isso o zoom de dois dedos nunca chega no JS. */
 .fc-canvas-wrap{position:relative;flex:1;overflow:hidden;touch-action:none;
@@ -1521,7 +1550,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 /* ══ MENU DE CONTEXTO DOS MAPAS ═══════════════════════════════════════════
    Mora no <body> (position:fixed) porque .fc-canvas-wrap e .orb-palco são
    overflow:hidden — um menu dentro deles seria cortado perto da borda. */
+/* O menu passou de 2 pra 4 itens + 2 legendas (246px medidos) quando ganhou
+   arquivar/apagar. O clamp de posição em JS só empurra pra cima até o topo —
+   numa tela baixa (celular deitado) o resto vazaria pra fora sem jeito de
+   alcançar. max-height + rolagem é a rede de segurança de uma linha. */
 .mapa-menu{position:fixed;min-width:196px;max-width:260px;padding:5px;border-radius:12px;z-index:990;
+  max-height:calc(100vh - 12px);overflow-y:auto;overscroll-behavior:contain;
   background:var(--bg-card);border:1px solid var(--border);color:var(--text);
   box-shadow:0 4px 12px rgba(0,0,0,.14),0 20px 44px -18px rgba(0,0,0,.5);
   transform-origin:var(--mm-ox,0) var(--mm-oy,0);
@@ -1535,6 +1569,39 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .mapa-menu-cab{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
   color:var(--text4);padding:7px 10px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mapa-menu-escuro .mapa-menu-cab{color:#8d92a2}
+/* Segundo grupo do menu: o fio + a legenda dizem QUAL pasta vai ser arquivada
+   ou apagada. Sem eles, "Apagar pasta" logo abaixo de "Pasta aqui dentro"
+   herda o cabeçalho "dentro de X" e vira ambíguo (apagar X, ou apagar algo
+   dentro de X?). Nome longo corta com reticências — o .mapa-menu-cab já é
+   nowrap+ellipsis, então cabeçalho nunca empurra a largura do menu. */
+/* Não usa var(--border) aqui: no tema claro ela é rgba(0,0,0,.07), que sobre o
+   #fff do menu compõe rgb(237,237,237) — 1,17:1, invisível de verdade (medido,
+   não achado). .2 dá ~1,65:1, que é a faixa em que menu de sistema desenha
+   separador: dá pra ver, não vira barra. */
+.mapa-menu-cab-sep{border-top:1px solid rgba(0,0,0,.2);margin-top:5px;padding-top:9px}
+/* .13 de branco sobre o #22252e do menu escuro compõe rgb(63,65,73): 1,52:1 de
+   contraste com o fundo — medido, e praticamente invisível no screenshot. .22
+   compõe rgb(83,85,92) e sobe pra ~2,1:1: um fio que se vê sem virar barra. */
+.mapa-menu-escuro .mapa-menu-cab-sep{border-top-color:rgba(255,255,255,.22)}
+[data-theme="dark"] .mapa-menu .mapa-menu-cab-sep{border-top-color:rgba(255,255,255,.2)}
+/* Ação sem volta fácil não pode ter o mesmo peso visual de "criar pasta".
+   Sobre fundo escuro o vermelho vai DESSATURADO (#ff7a72 no lugar do --danger
+   cheio) — e isso não é gosto, é contraste medido: #ff3b30 sobre o #212124 do
+   menu dá 4,53:1 (passa raspando no AA de texto normal), enquanto o #ff7a72
+   sobre o #22252e da Órbita dá 6,03:1. O mesmo vermelho que serve no claro
+   fica escuro DEMAIS num fundo escuro; clarear é o que devolve a leitura.
+   Os dois mapas usam a mesma cor por serem o mesmo menu — a .mapa-menu-escuro
+   da Órbita existe porque o palco dela é escuro mesmo com o app no claro. */
+/* No claro o --danger (#ff3b30) sobre o #fff do menu dá 3,55:1 — reprova o AA
+   de texto normal (4,5:1) em 13px. O #d70015 (mesmo vermelho, escurecido pro
+   fundo claro) dá 5,38:1. Fica local ao menu do mapa de propósito: mexer no
+   --danger mudaria a cor de perigo do app inteiro, que ninguém pediu. */
+.mapa-menu button.perigo{color:#d70015}
+.mapa-menu button.perigo:hover{background:rgba(215,0,21,.09)}
+.mapa-menu-escuro button.perigo,
+[data-theme="dark"] .mapa-menu button.perigo{color:#ff7a72}
+.mapa-menu-escuro button.perigo:hover,
+[data-theme="dark"] .mapa-menu button.perigo:hover{background:rgba(255,122,114,.15)}
 /* min-height = --card-tap-min: item de menu é alvo de dedo como qualquer
    outro. A entrada escalonada usa `translate` (propriedade própria) pra
    deixar `transform` livre pro afundar do clique — com os dois na mesma
@@ -2529,6 +2596,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-vista-sub{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text4);padding:10px 10px 4px}
 .folder-item-arq{cursor:default;padding-right:10px}
 .folder-item-arq:hover{background:none}
+/* Este número só existe na última semana (PRAZO_AVISO_DIAS), então ele já
+   chega como aviso — não precisa de vermelho pra isso, e não pode usá-lo:
+   medido, o --danger dá 3,03:1 sobre o branco do tema claro, reprovando no AA
+   pra 10px. Quem avisa aqui é a presença do número, não a cor. */
+.folder-prazo{font-size:10px;font-weight:700;color:var(--text2);flex-shrink:0;
+  font-variant-numeric:tabular-nums}
 .folder-desarq{border:1px solid var(--border);background:none;color:var(--accent);font-family:var(--font);font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;cursor:pointer;flex-shrink:0;transition:background .12s linear}
 .folder-desarq:hover{background:var(--accent-glow)}
 .folder-esvaziar{width:100%;margin-top:6px;border:1px solid var(--border);background:none;color:var(--danger);font-family:var(--font);font-size:12px;font-weight:700;padding:8px;border-radius:11px;cursor:pointer;transition:background .12s linear}
@@ -4977,7 +5050,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.01.2';
+const VOX_VERSION='2026.09.01.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5051,6 +5124,7 @@ let I18N_EN={
 "toque numa bolinha pra entrar · toque no centro pra ver o que tem dentro":"tap a bubble to go in · tap the center to see what's inside",
 "Redimensionar":"Resize",
 "Enquadrar":"Fit to screen",
+"Voltar pra pasta de fora":"Back out one folder",
 "Fechar":"Close",
 "…e mais {n}":"…and {n} more",
 "Nenhum card direto nesta pasta.":"No card directly in this folder.",
@@ -5500,7 +5574,13 @@ let I18N_EN={
 "Claro":"Light","Escuro":"Dark","Testar conexão":"Test connection","Atualizar lista":"Refresh list",
 "Liberar + Resetar":"Release + Reset","Baixar backup antes":"Download backup first","Aplicar sugestão":"Apply suggestion",
 "extrair":"extract","falar":"speak","Revisão":"Review","Perguntar à IA sobre as repetições":"Ask AI about the repetitions",
-"Pastas arquivadas":"Archived folders",
+"Pastas arquivadas":"Archived folders","Pastas na lixeira":"Folders in the trash",
+"Apagar pasta":"Delete folder","a pasta":"the folder",
+"Tirar da lixeira, com tudo que estava dentro":"Take out of the trash, with everything that was inside",
+"some hoje":"gone today","{n}d":"{n}d",
+"🗑️ Pasta na lixeira, com tudo dentro · some em 30 dias":"🗑️ Folder in the trash, with everything inside · gone in 30 days",
+"↩ Pasta restaurada":"↩ Folder restored",
+"Apagar de vez {n} card(s) e {p} pasta(s), com tudo que estava dentro? Isso não tem volta.":"Permanently delete {n} card(s) and {p} folder(s), with everything that was inside? This cannot be undone.",
 "📦 Card arquivado":"📦 Card archived","↩ Card desarquivado":"↩ Card unarchived",
 "🗑️ Card na lixeira · some em 30 dias":"🗑️ Card in trash · gone in 30 days",
 "↩ Card restaurado":"↩ Card restored","🗑️ Lixeira esvaziada":"🗑️ Trash emptied",
@@ -6666,8 +6746,11 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(!_keysHasAny()){
     restoreKeysFromCredentialVault(true).then(ok=>{if(ok){loadCfg();toast(t('🔒 Chaves restauradas do cofre do navegador!'))}});
   }
-  loadLearningData();await loadHistory();_faxinaLixeira();updateStats();checkSend();applyView();loadFontSize();
-  loadFolders();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();initFloatSelHandle();
+  loadLearningData();await loadHistory();updateStats();checkSend();applyView();loadFontSize();
+  // A faxina desceu pra DEPOIS do loadFolders() (01/09/2026): desde que pasta
+  // também tem prazo de 30 dias, ela precisa de folders[] na mão — rodando
+  // antes, _pastaNaLixeira respondia "não" pra todo mundo e nada era varrido.
+  loadFolders();_faxinaLixeira();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();initFloatSelHandle();
   initAudioDropzone();
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
   if(!localStorage.getItem('vox_welcomed')&&!document.querySelector('#cardsList .card:not(.proc-card)')){
@@ -7093,11 +7176,14 @@ function loadFontSize(){
 }
 
 // ── FOLDER TREE HELPERS ──
-// Pasta arquivada sai da árvore normal — ela só existe dentro da visão
-// Arquivados, que é de onde ela volta inteira. Sem isto ela continuava
-// listada e clicável, mostrando uma pasta vazia.
+// Pasta arquivada ou na lixeira sai da árvore normal — ela só existe dentro
+// da visão Arquivados / Lixeira, que é de onde ela volta inteira. Sem isto
+// ela continuava listada e clicável, mostrando uma pasta vazia.
+// Não precisa olhar os ancestrais aqui: se o pai sumiu da árvore, ninguém
+// chega a pedir os filhos dele. Quem precisa da resposta "esta pasta está
+// escondida por causa de alguém acima?" usa _pastaArquivada/_pastaNaLixeira.
 function getFolderChildrenVisiveis(parentId){
-  return getFolderChildren(parentId).filter(f=>!f.arch);
+  return getFolderChildren(parentId).filter(f=>!f.arch&&!f.del);
 }
 function getFolderChildren(parentId){
   return folders.filter(f=>f.parentId===parentId);
@@ -7131,7 +7217,7 @@ function getFolderPath(id){
 }
 function getFolderCount(id, counts){
   let total=counts[id]||0;
-  getFolderChildren(id).forEach(c=>{total+=getFolderCount(c.id,counts);});
+  getFolderChildrenVisiveis(id).forEach(c=>{total+=getFolderCount(c.id,counts);});
   return total;
 }
 
@@ -7233,12 +7319,16 @@ function renderFolders(){
   // Não são pastas: não aceitam arrastar card pra dentro, não renomeiam, não
   // entram na árvore. São visões, como o "Tudo" lá em cima. O fio separa
   // "onde eu guardo" de "o que eu tirei da frente".
+  // Só as CABEÇAS de cada família entram na lista: a subpasta de uma pasta
+  // arquivada já está representada pela mãe, e ela volta junto. Listar as duas
+  // daria dois botões "Restaurar" pra mesma coisa, um deles sem efeito visível.
   const pastasArq=folders.filter(f=>f.arch&&!_pastaArquivada(f.parentId||''));
+  const pastasLix=folders.filter(f=>f.del&&!_pastaNaLixeira(f.parentId||''));
   html+=`<div class="folder-fixas">`;
   html+=`<div class="folder-item folder-vista${activeFolderId===VISTA_ARQ?' active':''}" onclick="selectFolder('${VISTA_ARQ}')" title="${t('Cards e pastas que você tirou da frente — sem prazo')}">
     <span class="folder-ico svgi">${ICO.archive}</span><span class="folder-name">${t('Arquivados')}</span>${(counts.arq+pastasArq.length)?`<span class="folder-count">${counts.arq+pastasArq.length}</span>`:''}</div>`;
   html+=`<div class="folder-item folder-vista${activeFolderId===VISTA_LIX?' active':''}" onclick="selectFolder('${VISTA_LIX}')" title="${t('Some sozinho depois de 30 dias')}">
-    <span class="folder-ico svgi">${ICO.trash}</span><span class="folder-name">${t('Lixeira')}</span>${counts.lix?`<span class="folder-count">${counts.lix}</span>`:''}</div>`;
+    <span class="folder-ico svgi">${ICO.trash}</span><span class="folder-name">${t('Lixeira')}</span>${(counts.lix+pastasLix.length)?`<span class="folder-count">${counts.lix+pastasLix.length}</span>`:''}</div>`;
   // Pasta arquivada aparece DENTRO da visão Arquivados, pra poder voltar
   // inteira — é o único lugar onde ela ainda existe.
   if(activeFolderId===VISTA_ARQ&&pastasArq.length){
@@ -7250,7 +7340,23 @@ function renderFolders(){
         <button type="button" class="folder-desarq" onclick="event.stopPropagation();desarquivarPasta('${escJs(f.id)}')" title="${t('Desarquivar pasta')}">${t('Restaurar')}</button></div>`;
     });
   }
-  if(activeFolderId===VISTA_LIX&&counts.lix){
+  // Mesma peça na Lixeira. O prazo só aparece na última semana, e não sempre:
+  // medido em 360px, o "30d" comia 20 dos ~94px que sobravam pro nome (de duas
+  // palavras por linha pra uma e meia) pra dizer uma coisa que não muda decisão
+  // nenhuma. "3d" muda. Aviso permanente por evento raro é ruído; aviso que
+  // aparece quando aperta é informação.
+  if(activeFolderId===VISTA_LIX&&pastasLix.length){
+    html+=`<div class="folder-vista-sub">${t('Pastas na lixeira')}</div>`;
+    pastasLix.forEach(f=>{
+      const dias=_pastaDiasNaLixeira(f);
+      html+=`<div class="folder-item folder-item-arq"${f.color?` data-cor="1" style="--lvl:0;--fcor:${safeColor(f.color)}"`:' style="--lvl:0"'}>
+        ${f.color?`<span class="folder-dot-pt"><span class="folder-cor-dot"></span></span>`:''}
+        <span class="folder-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span>
+        ${dias<=PRAZO_AVISO_DIAS?`<span class="folder-prazo">${dias<=1?t('some hoje'):t('{n}d').replace('{n}',dias)}</span>`:''}
+        <button type="button" class="folder-desarq" onclick="event.stopPropagation();restaurarPastaDaLixeira('${escJs(f.id)}')" title="${t('Tirar da lixeira, com tudo que estava dentro')}">${t('Restaurar')}</button></div>`;
+    });
+  }
+  if(activeFolderId===VISTA_LIX&&(counts.lix||pastasLix.length)){
     html+=`<button type="button" class="folder-esvaziar" onclick="esvaziarLixeira()">${t('Esvaziar lixeira')}</button>`;
   }
   html+=`</div>`;
@@ -7385,9 +7491,17 @@ function _mapaAbrirMenu(px,py,titulo,itens,escuro,aoFechar){
   m.setAttribute('role','menu');
   let html=titulo?`<div class="mapa-menu-cab">${escHtml(titulo)}</div>`:'';
   itens.forEach((it,i)=>{
+    // Item de grupo não é botão: é a legenda que separa "o que eu crio aqui"
+    // de "o que eu faço COM esta pasta". Ele ocupa um índice do array de
+    // propósito — o data-i continua sendo o índice real, e o pulo de 26ms no
+    // escalonamento vira uma pausa que reforça a separação.
+    if(it.grupo!==undefined){
+      html+=`<div class="mapa-menu-cab mapa-menu-cab-sep">${escHtml(it.grupo)}</div>`;
+      return;
+    }
     // 26ms entre um item e o outro: é o que faz ler como "abriu" em vez de
     // "apareceu". Mesmo escalonamento que os satélites da Órbita já usam.
-    html+=`<button type="button" role="menuitem" data-i="${i}" style="animation-delay:${60+i*26}ms">`+
+    html+=`<button type="button" role="menuitem" data-i="${i}"${it.perigo?' class="perigo"':''} style="animation-delay:${60+i*26}ms">`+
       `<span class="mm-ic">${it.ic||''}</span>${escHtml(it.rot)}</button>`;
   });
   m.innerHTML=html;
@@ -7416,6 +7530,21 @@ function _mapaAbrirMenu(px,py,titulo,itens,escuro,aoFechar){
   const primeiro=m.querySelector('button');
   if(primeiro)setTimeout(()=>{try{primeiro.focus({preventScroll:true})}catch(err){}},180);
   return m;
+}
+// Os dois itens que agem SOBRE a pasta clicada — iguais no Fluxograma e na
+// Órbita, porque são a mesma pasta e o mesmo compromisso ("volta inteira").
+// Vêm precedidos de um grupo com o nome dela: sem isso, "Apagar pasta" logo
+// abaixo de "Pasta aqui dentro" herdava o cabeçalho "dentro de X" e ficava
+// impossível saber se apaga X ou algo dentro de X.
+// `antes` é a limpeza da vaga tracejada (cada mapa tem a sua) — a prévia da
+// pasta nova não pode continuar piscando enquanto a pasta some.
+function _mapaItensDaPasta(id,nome,antes){
+  const limpa=typeof antes==='function'?antes:()=>{};
+  return [
+    {grupo:t('a pasta')+' '+(nome||t('Pasta'))},
+    {ic:ICO.archive,rot:t('Arquivar pasta'),fn:()=>{limpa();arquivarPasta(id)}},
+    {ic:ICO.trash,rot:t('Apagar pasta'),perigo:true,fn:()=>{limpa();pastaParaLixeira(id)}}
+  ];
 }
 function _mapaMenuFora(e){
   if(_mapaMenuEl&&e.target.closest('.mapa-menu'))return;
@@ -7488,7 +7617,7 @@ function _fcLayout(){
   // ou curto conforme o texto, a mesma leitura que o anel fatiado da Órbita
   // dá pra bolha, só que traduzida pra um retângulo.
   const diretos={};
-  _flTodosCards().forEach(c=>{
+  _flCardsVivos().forEach(c=>{
     const f=c.dataset.folder||'';
     const len=(c.querySelector('textarea')?.value||'').trim().length;
     (diretos[f]=diretos[f]||[]).push(len);
@@ -7508,7 +7637,7 @@ function _fcLayout(){
   // irmãos só se mexem quando o dedo solta.
   function filhosDe(id,aberta){
     if(!aberta)return [];
-    const fs=getFolderChildren(id).map(f=>({kind:'pasta',f}));
+    const fs=getFolderChildrenVisiveis(id).map(f=>({kind:'pasta',f}));
     if(_fcVaga&&!_fcVaga.livre&&(_fcVaga.paiId||null)===id){
       fs.push({kind:'vaga',f:{id:FC_VAGA_ID,name:'',color:_fcVaga.cor,parentId:id}});
     }
@@ -7523,7 +7652,7 @@ function _fcLayout(){
     // sem seta e ninguém saberia que dá pra abrir.
     // Card não entra nessa conta: card não é mais desenhado no canvas, ele
     // mora no painel. Quem anuncia card é o número ao lado do nome.
-    const temSubpastas=getFolderChildren(id).length>0;
+    const temSubpastas=getFolderChildrenVisiveis(id).length>0;
     // Quantos cards estão DIRETAMENTE aqui (o que o painel vai listar e a
     // régua desenha) — diferente do número do nó, que soma as subpastas.
     const notasDiretas=diretos[tipo==='raiz'?'':id]||[];
@@ -7944,12 +8073,16 @@ function _fcMenuContexto(ev){
   // cair (e de que cor de família ela vai ser) antes de confirmar.
   _fcCriarVaga(paiId,{previa:true});
   const titulo=paiId?(t('dentro de')+' '+rotulo):t('no mapa');
-  _mapaAbrirMenu(ev.clientX,ev.clientY,titulo,[
+  const itens=[
     {ic:MAPA_ICO.pasta,rot:paiId?t('Pasta aqui dentro'):t('Nova pasta no primeiro nível'),
      fn:()=>_fcVagaEditar()},
     {ic:MAPA_ICO.enquadrar,rot:t('Enquadrar o mapa'),
      fn:()=>{_fcSumirVaga();_fcEnquadrar()}}
-  ],false,(escolheu)=>{
+  ];
+  // Clicar no vazio (ou na raiz) não tem pasta alvo — "Tudo" não é pasta e não
+  // se apaga. Aí o segundo grupo simplesmente não existe.
+  if(paiId)itens.push(..._mapaItensDaPasta(paiId,rotulo,()=>_fcSumirVaga()));
+  _mapaAbrirMenu(ev.clientX,ev.clientY,titulo,itens,false,(escolheu)=>{
     if(noEl)noEl.classList.remove('fc-node-alvo');
     if(!escolheu)_fcSumirVaga();
   });
@@ -8047,7 +8180,7 @@ function _fcEnquadrar(){
 // soma da família usa o número do nó (n.count), que já mostra isso.
 function _fcCardsDaPasta(id){
   const alvo=id===null?'':(id||'');
-  return _flTodosCards().filter(c=>(c.dataset.folder||'')===alvo);
+  return _flCardsVivos().filter(c=>(c.dataset.folder||'')===alvo);
 }
 // Estado 1 do painel: a lista de cards da pasta tocada. É aqui que mora o
 // conteúdo que antes explodia o desenho — numa lista que rola, com o texto
@@ -8089,7 +8222,7 @@ function _fcListarCards(id,nomePasta,manterExpansao){
   // Mesmo aviso que o mural da Órbita já dá: a soma da família não sumiu,
   // só passou a ser o número do nó — aqui é só o rodapé que lembra que ela
   // existe, pra quem via "7" antes não achar que 4 notas desapareceram.
-  const nSub=getFolderChildren(id).length;
+  const nSub=getFolderChildrenVisiveis(id).length;
   const rodapeSub=nSub?`<div class="fc-lista-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na árvore, atrás deste painel':'subpastas continuam na árvore, atrás deste painel'))}</div>`:'';
   panel.innerHTML=`<button type="button" class="fc-panel-handle" onclick="_fcAlternarGaveta()" title="${t('Redimensionar')}" aria-label="${t('Redimensionar')}"><span class="fc-panel-handle-bar"></span></button>
     <div class="fc-card-panel-hd">
@@ -8240,6 +8373,14 @@ const FL_LARG=340,FL_ALT=280;   // fallback legado — só usado onde a chamada 
 function _flTodosCards(){
   return [...document.querySelectorAll('#cardsList .card:not(.proc-card), #floatWorld .card:not(.proc-card)')];
 }
+// O que os DOIS mapas desenham: só card vivo. Arquivado e lixeira saem de toda
+// visão normal (é a regra que faz arquivar aliviar de verdade) e o mapa é uma
+// visão normal como a lista. Bug real que isto corrige, medido em 01/09/2026:
+// um card mandado pra lixeira continuava no painel do Fluxograma e no mural da
+// Órbita, com o mesmo número no nó — a lista dizia 2, o mapa dizia 3.
+function _flCardsVivos(){
+  return _flTodosCards().filter(c=>!_cardNaLixeira(c)&&!_cardArquivado(c));
+}
 
 // Fase 7 — persistência de posição/tamanho por pasta. Mesmo padrão de
 // vox_txrx_pasta: um dicionário só, try/catch em volta de JSON/localStorage.
@@ -8348,7 +8489,7 @@ function _orbFiosDasNotas(){
   // satélites nas posições da última rodada de desenho
   const centros={};
   centros[_orbChave(_orbFoco)]={x:0,y:0};
-  getFolderChildren(_orbFoco).forEach((f,i)=>{
+  getFolderChildrenVisiveis(_orbFoco).forEach((f,i)=>{
     if(_orbMuralPos[i])centros[_orbChave(f.id)]={x:_orbMuralPos[i].x,y:_orbMuralPos[i].y};
   });
   _flAbertas.forEach(j=>{
@@ -8988,7 +9129,7 @@ let _orbReenqT=null;             // timer da classe de transição do reenquadra
 let _orbSubindo=false;
 const _orbElems=new Map();       // id -> elemento vivo, pra reaproveitar e o CSS animar
 const _orbSaindo=new Map();      // id -> elemento em fuga, resgatável se voltar rápido
-let _orbPalco=null,_orbModal=null,_orbMundo=null,_orbSvg=null,_orbGradRaio=null,_orbTrilhaEl=null,_orbVazioEl=null;
+let _orbPalco=null,_orbModal=null,_orbMundo=null,_orbSvg=null,_orbGradRaio=null,_orbTrilhaEl=null,_orbVazioEl=null,_orbVoltarEl=null;
 let _orbGrupoRaios=null;
 // ── criar pasta dentro da Órbita (vaga + gota) ──
 const ORB_VAGA_ID='__orb_vaga__';
@@ -9023,11 +9164,11 @@ function _orbComAlfa(hex,a){
 // numa passada própria: getFolderCounts() tem um `if(f)` que descarta card
 // solto (chave ''), e é exatamente o total da raiz que a órbita precisa mostrar.
 function _orbCardsTodos(){
-  return _flTodosCards();
+  return _flCardsVivos();
 }
 function _orbTotalCards(id,cards){
   let n=cards.filter(c=>(c.dataset.folder||'')===(id===null?'':id)).length;
-  getFolderChildren(id).forEach(f=>{n+=_orbTotalCards(f.id,cards);});
+  getFolderChildrenVisiveis(id).forEach(f=>{n+=_orbTotalCards(f.id,cards);});
   return n;
 }
 
@@ -9111,7 +9252,7 @@ function _orbReenquadrarCam(aberto){
 // ganham posição/escala novas — a transição do CSS faz o resto.
 function _orbDesenhar(){
   const p=_orbAcha(_orbFoco);
-  const fs=getFolderChildren(_orbFoco).map(f=>({id:f.id,dados:f}));
+  const fs=getFolderChildrenVisiveis(_orbFoco).map(f=>({id:f.id,dados:f}));
   // A VAGA entra no anel como se já fosse uma bolha — o anel se reorganiza e
   // abre espaço pra ela ANTES de a pasta existir. Ela nunca toca folders[].
   // Enquanto está `livre` (a gota, sendo arrastada) ela sai da conta: os
@@ -9279,7 +9420,7 @@ function _orbNo(id,dados,x,y,ehFoco,ordem,cards,ehVaga){
   el.querySelector('.orb-no-cont').textContent=n?n+' '+t(n===1?'card':'cards'):'';
   el.querySelector('.orb-subir').textContent=(ehFoco&&dados&&dados.parentId!==undefined)?'↑':'';
 
-  const nf=ehVaga?0:getFolderChildren(id).length;
+  const nf=ehVaga?0:getFolderChildrenVisiveis(id).length;
   el.querySelector('.orb-pontos').innerHTML=(!ehFoco&&nf)
     ? '<i></i>'.repeat(Math.min(nf,5)) : '';
 
@@ -9399,6 +9540,31 @@ function _orbTrilha(){
   // está escrita dentro da bolha central. Só ganha função a partir do
   // primeiro mergulho.
   _orbTrilhaEl.classList.toggle('orb-trilha-oculta',caminho.length<=1);
+  // O botão "voltar" mora aqui, junto da trilha, porque as duas coisas
+  // respondem à mesma pergunta ("onde eu estou?") e não podem discordar. Sai
+  // de graça pros três caminhos que mudam o foco — mergulhar num satélite,
+  // apertar o próprio voltar, e clicar num pedaço da trilha —, porque todos
+  // passam por _orbIrPara -> _orbDesenhar -> _orbTrilha. A abertura da Órbita
+  // também passa (ela zera o foco e redesenha), então ele nasce certo.
+  // De propósito ele NÃO usa o caminho.length da trilha, e sim _orbFoco: se a
+  // pasta em foco for apagada por fora, o caminho vem vazio e a trilha some,
+  // mas aí é justamente quando mais se precisa de uma saída. Com _orbFoco o
+  // botão fica aceso e leva pra "Tudo", que é o único lugar garantido.
+  const semSaida=_orbFoco===null;
+  if(_orbVoltarEl){
+    // Bug medido: quem sobe de nível pelo TECLADO era cuspido pra fora do mapa
+    // no último Enter. Desabilitar um botão que está com o foco devolve o foco
+    // ao <body>, e aí o Tab seguinte recomeça do topo da página inteira — a
+    // pessoa perdia a Órbita de vista. Passa o foco pro vizinho da direita
+    // ANTES de desabilitar: é o próximo da mesma fileira, então o Tab continua
+    // exatamente de onde parava. No clique de mouse isso não aparece, porque o
+    // anel de foco do navegador só se pinta em :focus-visible.
+    if(semSaida&&document.activeElement===_orbVoltarEl){
+      const vizinho=_orbVoltarEl.nextElementSibling;
+      if(vizinho&&typeof vizinho.focus==='function')vizinho.focus();
+    }
+    _orbVoltarEl.disabled=semSaida;
+  }
 }
 
 // ══ MURAL — proposta 3-B ══════════════════════════════════════════════
@@ -9409,7 +9575,7 @@ function _orbTrilha(){
 // a que o número promete.
 function _orbCardsDiretos(id){
   const alvo=id===null?'':(id||'');
-  return _flTodosCards().filter(c=>(c.dataset.folder||'')===alvo);
+  return _flCardsVivos().filter(c=>(c.dataset.folder||'')===alvo);
 }
 const ORB_SEG_R=48; // raio dentro do viewBox 0 0 100 100 do .orb-segsvg
 function _orbAnelFatiado(el,id,cards){
@@ -9554,7 +9720,7 @@ function _orbAbrirMural(id){
   if(!wrap)return;
   const pasta=_orbAcha(id);
   const cards=_orbCardsDiretos(id);
-  const nSub=getFolderChildren(id).length;
+  const nSub=getFolderChildrenVisiveis(id).length;
   _orbMuralRect=_orbPalco.getBoundingClientRect();
   const f=_orbMuralForma(cards.length);
   wrap._forma=f;
@@ -9746,6 +9912,18 @@ function _orbTocar(id){
     return;
   }
   _orbIrPara(id);
+}
+// Sair da pasta em que se está e ir pra de fora — o atalho de um toque pro que
+// a trilha já fazia mirando. Não precisa de pilha de histórico: a navegação da
+// Órbita é sempre pelas bordas da árvore (satélite = filho), então "de onde eu
+// vim" e "quem é meu pai" são sempre a mesma coisa. Pilha aqui seria estado
+// duplicado com chance de divergir do desenho.
+function _orbVoltar(){
+  if(_orbFoco===null)return;             // "Tudo" é o de fora de todo mundo
+  const f=_orbAcha(_orbFoco);
+  // Pasta apagada com a Órbita aberta cai em f===null: sobe pra raiz, que é o
+  // único lugar garantido a existir.
+  _orbIrPara(f?(f.parentId??null):null);
 }
 function _orbIrPara(id){
   if(id===_orbFoco)return;
@@ -9953,7 +10131,7 @@ function _orbGotaPointerDown(e){
     setTimeout(()=>{_orbGotaAtiva=false},0);
     _orbApagarGotaFio();
     if(!_orbVaga)return;
-    const irmaos=getFolderChildren(_orbFoco).length;
+    const irmaos=getFolderChildrenVisiveis(_orbFoco).length;
     _orbVaga.indice=_orbIndicePorAngulo(_orbVaga.x,_orbVaga.y,irmaos);
     _orbVaga.livre=false;
     const gel=_orbElems.get(_orbChave(ORB_VAGA_ID));
@@ -10000,10 +10178,15 @@ function _orbMenuContexto(ev){
     _orbCriarVaga({previa:true});
     acao=()=>_orbVagaEditar();
   }
-  _mapaAbrirMenu(ev.clientX,ev.clientY,titulo,[
+  const itens=[
     {ic:MAPA_ICO.pasta,rot:rotulo,fn:acao},
     {ic:MAPA_ICO.enquadrar,rot:t('Enquadrar o mapa'),fn:()=>{_orbSumirVaga();_orbEnquadrar()}}
-  ],true,(escolheu)=>{
+  ];
+  // Botão direito num satélite age sobre ELE; no vazio/no centro, age sobre a
+  // pasta em foco. "Tudo" (foco null) não é pasta e não entra.
+  const alvoId=ehSat?satId:_orbFoco;
+  if(alvoId)itens.push(..._mapaItensDaPasta(alvoId,ehSat?nomeSat:nomeFoco,()=>_orbSumirVaga()));
+  _mapaAbrirMenu(ev.clientX,ev.clientY,titulo,itens,true,(escolheu)=>{
     if(noEl)noEl.classList.remove('orb-no-alvo');
     if(!escolheu)_orbSumirVaga();
   });
@@ -10075,6 +10258,7 @@ function abrirOrbital(){
       <div class="fc-topbar">
         <span class="fc-title">🪐 ${escHtml(t('Órbita de pastas'))}</span>
         <div class="fc-topbar-actions">
+          <button type="button" class="orb-voltar-btn" id="orbVoltar" onclick="_orbVoltar()" title="${escHtml(t('Voltar pra pasta de fora'))}" aria-label="${escHtml(t('Voltar pra pasta de fora'))}" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
           <button type="button" class="fc-new-card-btn" onclick="_flNovoCardAqui(this)" title="${escHtml(t('Criar card aqui'))}" aria-label="${escHtml(t('Criar card aqui'))}">${FC_NEW_CARD_ICON}</button>
           <button type="button" class="fc-float-toggle-btn" onclick="_flAlternarCamada()" title="${escHtml(t('Ver cards flutuantes'))}" aria-label="${escHtml(t('Ver cards flutuantes'))}">${FC_FLOAT_TOGGLE_ICON}</button>
           <button type="button" class="fc-fit-btn" onclick="_orbEnquadrar()" title="${escHtml(t('Enquadrar'))}" aria-label="${escHtml(t('Enquadrar'))}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
@@ -10108,6 +10292,7 @@ function abrirOrbital(){
     _orbGradRaio=document.getElementById('orbGRaio');
     _orbTrilhaEl=document.getElementById('orbTrilha');
     _orbVazioEl=document.getElementById('orbVazio');
+    _orbVoltarEl=document.getElementById('orbVoltar');
     _orbPalco.addEventListener('pointerdown',_orbPointerDown);
     _orbPalco.addEventListener('pointermove',_orbPointerMove);
     _orbPalco.addEventListener('pointerup',_orbPointerUp);
@@ -10397,6 +10582,9 @@ function _atualizaAvisoCorEscondidos(n){
 // pasta. Os ids são impossíveis de colidir com id de pasta real ('f_...').
 const VISTA_ARQ='__arq__',VISTA_LIX='__lix__';
 const LIXEIRA_DIAS=30;
+// A partir daqui a pasta na lixeira passa a mostrar quantos dias faltam. Uma
+// semana é o intervalo em que ainda dá pra reagir sem correria.
+const PRAZO_AVISO_DIAS=7;
 // Um card está arquivado se ele mesmo foi arquivado OU se está numa pasta
 // arquivada — porque "arquivar pasta some com a pasta inteira e ela volta
 // inteira" (decisão do Rafa, 19/08). Marcar card a card na hora de arquivar
@@ -10406,8 +10594,18 @@ function _pastaArquivada(fid){
   while(f&&guarda++<20){ if(f.arch)return true; f=folders.find(x=>x.id===f.parentId); }
   return false;
 }
+// Mesma ideia pra lixeira (01/09/2026): a marca `del` mora só na pasta que a
+// pessoa apagou, e a árvore inteira abaixo dela some por CONSEQUÊNCIA, não por
+// marcação em massa. Duas coisas boas saem disso de graça: desfazer é tirar UMA
+// marca (a família inteira volta junta, sem risco de voltar meia), e um card que
+// alguém mover pra dentro depois já nasce na lixeira junto com a pasta.
+function _pastaNaLixeira(fid){
+  let f=folders.find(x=>x.id===fid),guarda=0;
+  while(f&&guarda++<20){ if(f.del)return true; f=folders.find(x=>x.id===f.parentId); }
+  return false;
+}
 function _cardArquivado(c){return c.dataset.arch==='1'||_pastaArquivada(c.dataset.folder||'')}
-function _cardNaLixeira(c){return c.dataset.del==='1'}
+function _cardNaLixeira(c){return c.dataset.del==='1'||_pastaNaLixeira(c.dataset.folder||'')}
 function applyFolderFilter(){
   const naArq=activeFolderId===VISTA_ARQ,naLix=activeFolderId===VISTA_LIX;
   // Conta pra decidir se some tudo sem explicação nenhuma — o susto que o
@@ -11113,7 +11311,7 @@ function folderMenu(id,ev){
     <button onclick="exportFolder('${escJs(id)}')"><span class="svgi">${ICO.export}</span> ${t('Exportar pasta')}</button>
     <button onclick="clearFolder('${escJs(id)}')">${ICO.eraser}${t('Limpar pasta')}</button>
     <button onclick="arquivarPasta('${escJs(id)}')"><span class="svgi">${ICO.archive}</span> ${t('Arquivar pasta')}</button>
-    <button class="danger" onclick="deleteFolder('${escJs(id)}')"><span class="svgi">${ICO.trash}</span> ${t('Excluir pasta')}</button>`;
+    <button class="danger" onclick="deleteFolder('${escJs(id)}')"><span class="svgi">${ICO.trash}</span> ${t('Apagar pasta')}</button>`;
   document.body.appendChild(menu);
   const r=ev.target.getBoundingClientRect();
   let left=r.right-160;if(left<8)left=8;
@@ -11143,25 +11341,14 @@ function clearFolder(id){
   saveHistory();renderFolders();applyFolderFilter();
   toast(t('🧹 Pasta "')+f.name+t('" limpa'));
 }
-function deleteFolder(id){
-  closeFolderMenu();
-  const f=folders.find(x=>x.id===id);if(!f)return;
-  const descendants=getFolderDescendants(id);
-  const idsToDelete=new Set([id,...descendants]);
-  const counts=getFolderCounts();
-  let totalCards=(counts[id]||0);
-  descendants.forEach(did=>{totalCards+=(counts[did]||0);});
-  const folderDeleteMsg=totalCards>0?t('As {n} transcrições voltam para "Tudo" (não são apagadas).').replace('{n}',totalCards):t('A pasta está vazia.');
-  if(!confirm(t('Excluir a pasta "')+f.name+t('"?')+'\n\n'+folderDeleteMsg))return;
-  // move cards da pasta e subpastas de volta pra Tudo
-  document.querySelectorAll('#cardsList .card').forEach(c=>{if(idsToDelete.has(c.dataset.folder||''))c.dataset.folder=''});
-  // remove pasta e descendentes
-  folders=folders.filter(x=>!idsToDelete.has(x.id));
-  idsToDelete.forEach(did=>folderExpanded.delete(did));
-  if(activeFolderId&&idsToDelete.has(activeFolderId))activeFolderId=null;
-  saveFolders();renderFolders();saveHistory();applyFolderFilter();
-  toast(t('🗑️ Pasta "')+f.name+t('" excluída'));
-}
+// Um jeito só de apagar pasta no app inteiro (01/09/2026). Este botão do menu
+// ⋯ era o dono do único caminho sem volta que restava: confirm() do navegador,
+// pasta e subpastas riscadas do array pra sempre, cards despejados em "Tudo".
+// Agora ele chama exatamente a mesma cascata do botão direito nos mapas —
+// lixeira, 30 dias, desfazer, e o que estava dentro indo junto. Quem quer o
+// comportamento antigo ("esvazia mas mantém a pasta") tem o "Limpar pasta",
+// que continua logo acima no mesmo menu e continua devolvendo os cards a Tudo.
+function deleteFolder(id){pastaParaLixeira(id)}
 function toggleFolderDlMode(){
   folderDlMode=!folderDlMode;
   folderDlSel.clear();
@@ -19576,27 +19763,58 @@ function paraLixeira(id,silencioso){
 function restaurarDaLixeira(id,silencioso){
   const c=document.getElementById(id);if(!c)return;
   delete c.dataset.del;delete c.dataset.delAt;
+  // Mesmo cuidado do desarquivarCard: se ele estava numa pasta que também está
+  // na lixeira, tirar só a marca do card não bastaria — ele voltaria e sumiria
+  // de novo no próximo filtro. Restaurar um card sozinho o solta em "Tudo";
+  // quem quer a pasta inteira de volta usa o Restaurar da pasta, logo ali.
+  if(_pastaNaLixeira(c.dataset.folder||''))c.dataset.folder='';
   saveHistory();renderFolders();applyFolderFilter();
   if(!silencioso)toast(t('↩ Card restaurado'));
 }
+// Quantos dias faltam pra esta pasta sumir de vez. Sem delAt (pasta vinda de
+// uma versão anterior) o prazo conta como cheio — a dúvida sempre joga a favor
+// de manter o que é do usuário.
+function _pastaDiasNaLixeira(f){
+  const q=Date.parse(f.delAt||'');
+  if(!q)return LIXEIRA_DIAS;
+  const passou=(Date.now()-q)/(24*60*60*1000);
+  return Math.max(0,Math.ceil(LIXEIRA_DIAS-passou));
+}
 function esvaziarLixeira(){
   const ids=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')].filter(_cardNaLixeira).map(c=>c.id);
-  if(!ids.length){toast(t('ℹ️ A lixeira já está vazia'));return}
-  if(!confirm(t('Apagar de vez {n} card(s)? Isso não tem volta.').replace('{n}',ids.length)))return;
-  ids.forEach(doDelete);
+  const pastas=folders.filter(f=>f.del&&!_pastaNaLixeira(f.parentId||'')).map(f=>f.id);
+  if(!ids.length&&!pastas.length){toast(t('ℹ️ A lixeira já está vazia'));return}
+  // Aqui a confirmação FAZ sentido: é a única porta do app que não tem volta.
+  const aviso=pastas.length
+    ? t('Apagar de vez {n} card(s) e {p} pasta(s), com tudo que estava dentro? Isso não tem volta.')
+        .replace('{n}',ids.length).replace('{p}',pastas.length)
+    : t('Apagar de vez {n} card(s)? Isso não tem volta.').replace('{n}',ids.length);
+  if(!confirm(aviso))return;
+  // Pastas primeiro: apagar a família já leva os cards dela, e aí a segunda
+  // volta só encontra os cards que estavam soltos na lixeira.
+  pastas.forEach(_apagarPastaDeVez);
+  ids.forEach(id=>{if(document.getElementById(id))doDelete(id)});
+  saveFolders();renderFolders();applyFolderFilter();_mapaFolderMudou();
   toast(t('🗑️ Lixeira esvaziada'));
 }
 // Faxina dos 30 dias, uma vez por sessão. Roda no carregamento, depois que o
-// histórico já foi restaurado.
+// histórico E as pastas já foram restaurados — a ordem importa desde que a
+// pasta também tem prazo: sem folders[] carregado, _pastaNaLixeira responde
+// "não" pra todo mundo e a faxina passa batido pelos cards da família.
 function _faxinaLixeira(){
   const limite=Date.now()-LIXEIRA_DIAS*24*60*60*1000;
-  let n=0;
+  let n=0,np=0;
+  folders.filter(f=>f.del&&!_pastaNaLixeira(f.parentId||'')).forEach(f=>{
+    const q=Date.parse(f.delAt||'');
+    if(q&&q<limite)np+=_apagarPastaDeVez(f.id);
+  });
+  if(np)saveFolders();
   [...document.querySelectorAll('#cardsList .card:not(.proc-card)')].forEach(c=>{
-    if(!_cardNaLixeira(c))return;
+    if(c.dataset.del!=='1')return;   // card de pasta vencida já foi com ela
     const q=Date.parse(c.dataset.delAt||'');
     if(q&&q<limite){doDelete(c.id);n++}
   });
-  if(n)console.info('[Vox] lixeira: '+n+' card(s) passaram de '+LIXEIRA_DIAS+' dias e foram apagados');
+  if(n||np)console.info('[Vox] lixeira: '+n+' card(s) e '+np+' pasta(s) passaram de '+LIXEIRA_DIAS+' dias e foram apagados');
 }
 // ── DESLIZAR PARA ARQUIVAR (só toque) ──
 // Padrão do Gmail e do antigo Mailbox: desliza, arquiva, e o toast oferece
@@ -19652,23 +19870,112 @@ function _faxinaLixeira(){
   },{passive:true});
   document.addEventListener('touchcancel',limpar,{passive:true});
 })();
-// ── ARQUIVAR PASTA ──
+// ── ARQUIVAR / APAGAR PASTA (a família inteira) ────────────────────────────
 // Decisão do Rafa (19/08): some com a pasta INTEIRA e ela volta inteira. Por
 // isso a marca vive na pasta, não card a card — inclusive porque um card
 // movido pra dentro dela depois tem que sumir junto.
+// 01/09/2026 — apagar pasta passou a seguir a MESMA regra (pedido do Rafa:
+// "vai ter o comportamento que a gente já estabeleceu no app"). Antes, o
+// "Excluir pasta" do menu ⋯ era o único caminho sem volta que ainda restava:
+// confirm() do navegador, pasta e subpastas sumindo pra sempre do array, e os
+// cards ficando órfãos em "Tudo". Agora é uma marca `del` + 30 dias, igual
+// card, e o que estava dentro vai junto.
+//
+// Quem some da tela é decidido pelos predicados que sobem a árvore
+// (_pastaArquivada / _pastaNaLixeira / _cardArquivado / _cardNaLixeira) — por
+// isso não existe laço marcando descendente por descendente aqui. Marcar em
+// massa daria dois jeitos de a árvore ficar meio dentro e meio fora quando o
+// desfazer rodasse pela metade.
+
+// Depois de uma pasta sumir/voltar, quem está com um mapa aberto na tela
+// precisa acompanhar — e o foco da Órbita pode ter ficado apontando pra uma
+// pasta que não existe mais na árvore normal. Nesse caso ele sobe até o
+// primeiro ancestral ainda vivo (na pior hipótese "Tudo", que é o único lugar
+// garantido). Sem isto a Órbita ficava com anel vazio, trilha órfã e um
+// "voltar" que não voltava pra lugar nenhum.
+function _mapaFolderMudou(){
+  const fcOn=document.getElementById('fcOverlay')?.classList.contains('on');
+  const orbOn=document.getElementById('orbOverlay')?.classList.contains('on');
+  if(!fcOn&&!orbOn)return;
+  if(_fcPastaAberta&&_fcPastaAberta.id!==null&&_mapaPastaSumida(_fcPastaAberta.id))_fcFecharPainel();
+  if(orbOn){
+    if(_orbFoco!==null&&_mapaPastaSumida(_orbFoco)){
+      // Sobe de pai em pai até achar alguém que ainda esteja na árvore normal.
+      // Se ninguém sobrou (apaguei a pasta de primeiro nível estando dentro
+      // dela), o destino é "Tudo" — null.
+      const f=_orbAcha(_orbFoco);
+      let cur=f?(f.parentId??null):null,destino=null,guarda=0;
+      while(cur!==null&&guarda++<20){
+        if(!_mapaPastaSumida(cur)){destino=cur;break}
+        const p=_orbAcha(cur);
+        cur=p?(p.parentId??null):null;
+      }
+      if(_orbMuralAberto)_orbFecharMural();
+      _orbIrPara(destino);          // destino nunca é o foco atual: ele sumiu
+      return;                       // _orbIrPara já redesenha
+    }
+    _orbDesenhar();
+  }
+  if(fcOn)_fcRender();
+}
+function _mapaPastaSumida(id){
+  const f=folders.find(x=>x.id===id);
+  return !f||_pastaArquivada(id)||_pastaNaLixeira(id);
+}
+// Tirar a pasta da frente sem perder de vista quem está com ela aberto: o
+// filtro lateral, o mapa e o painel do mapa mudam juntos, numa chamada só.
+function _pastaSaiuDeCena(){
+  saveFolders();renderFolders();applyFolderFilter();_mapaFolderMudou();
+}
 function arquivarPasta(id){
   closeFolderMenu();
   const f=folders.find(x=>x.id===id);if(!f)return;
   f.arch=true;f.archAt=new Date().toISOString();
-  if(activeFolderId===id)activeFolderId=null;
-  saveFolders();renderFolders();applyFolderFilter();
+  delete f.del;delete f.delAt;      // uma pasta está num lugar só de cada vez
+  if(activeFolderId===id||(activeFolderId&&isDescendantOf(activeFolderId,id)))activeFolderId=null;
+  _pastaSaiuDeCena();
   toastDesfazer(t('📦 Pasta arquivada'),()=>desarquivarPasta(id,true));
 }
 function desarquivarPasta(id,silencioso){
   const f=folders.find(x=>x.id===id);if(!f)return;
   delete f.arch;delete f.archAt;
-  saveFolders();renderFolders();applyFolderFilter();
+  _pastaSaiuDeCena();
   if(!silencioso)toast(t('↩ Pasta desarquivada'));
+}
+// Apagar = mandar a família pra lixeira. Sem confirm(): a ação é reversível
+// por 30 dias e o toast já entrega o desfazer imediato, que é o que a pessoa
+// quer nos 3 segundos em que ela percebe o erro.
+function pastaParaLixeira(id){
+  closeFolderMenu();
+  const f=folders.find(x=>x.id===id);if(!f)return;
+  f.del=true;f.delAt=new Date().toISOString();
+  delete f.arch;delete f.archAt;
+  if(activeFolderId===id||(activeFolderId&&isDescendantOf(activeFolderId,id)))activeFolderId=null;
+  _pastaSaiuDeCena();
+  saveHistory();                    // os cards da família mudaram de estado
+  toastDesfazer(t('🗑️ Pasta na lixeira, com tudo dentro · some em 30 dias'),
+    ()=>restaurarPastaDaLixeira(id,true));
+}
+function restaurarPastaDaLixeira(id,silencioso){
+  const f=folders.find(x=>x.id===id);if(!f)return;
+  delete f.del;delete f.delAt;
+  // Se ela estava dentro de outra pasta que também sumiu, voltar só esta
+  // deixaria ela invisível de novo — mesmo cuidado que desarquivarCard já
+  // toma. Ela volta pro primeiro nível, que é onde dá pra encontrá-la.
+  if(f.parentId&&_mapaPastaSumida(f.parentId))f.parentId=null;
+  _pastaSaiuDeCena();
+  saveHistory();
+  if(!silencioso)toast(t('↩ Pasta restaurada'));
+}
+// Apagar de vez: sai do array e leva os cards da família junto. Só a faxina
+// dos 30 dias e o "Esvaziar lixeira" chegam aqui — nenhum botão do dia a dia.
+function _apagarPastaDeVez(id){
+  const familia=new Set([id,...getFolderDescendants(id)]);
+  _flTodosCards().forEach(c=>{if(familia.has(c.dataset.folder||''))doDelete(c.id)});
+  folders=folders.filter(x=>!familia.has(x.id));
+  familia.forEach(fid=>folderExpanded.delete(fid));
+  if(activeFolderId&&familia.has(activeFolderId))activeFolderId=null;
+  return familia.size;
 }
 function _cardTags(id){return (document.getElementById(id)?.dataset.tags||'').split(',').filter(t=>t)}
 function _hashTags(id){const t=_cardTags(id);return t.length?'\n\n'+t.map(x=>'#'+x.trim().replace(/\s+/g,'-')).join(' '):''}
