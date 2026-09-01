@@ -2391,6 +2391,29 @@ body.ibar-sobre-mapa .ibar{z-index:930}
    antiga existe por outro motivo (ditar dentro do chat, 9999) e não pode ser
    perdida por um efeito colateral de seletor. */
 body.ibar-sobre-mapa .ibar.rec-on{z-index:10000}
+/* Bug real (achado pelo Rafa, 01/09): subir a .ibar inteira por cima do mapa
+   trouxe a barra LARGA junto — menu de modo (Consulta/Reunião/...) + campo de
+   texto, ~1060px de largura por 78px de altura, medido. Essa faixa nasce
+   exatamente em cima da parte de baixo do Fluxograma/Órbita e passa a
+   engolir o arrasto de pan: a pessoa tentava mover o mapa numa área que
+   PARECIA vazia e na real já era a barra (que não é totalmente opaca visualmente,
+   mas capta o clique inteira). Por isso "às vezes funciona, às vezes não" —
+   dependia de o gesto começar alguns pixels acima ou abaixo dessa faixa.
+   Precisa só do essencial pra gravar (a própria queixa do Rafa era só sobre
+   ISSO); o resto (modo de sessão, dica, campo de texto) fica escondido igual
+   já acontecia quando a gravação começava (.ibar.rec-on já escondia
+   .smode-bar) — aqui só adianta esse esconder pra ANTES de gravar, quando o
+   mapa está aberto. Sobra só .ibtns (anexar/config/gravar), que é bem mais
+   estreito. */
+body.ibar-sobre-mapa .ibar:not(.rec-on) .smode-bar,
+body.ibar-sobre-mapa .ibar:not(.rec-on) .tips,
+body.ibar-sobre-mapa .ibar:not(.rec-on) #itxt{display:none}
+/* Esconder os filhos não bastou: a PRÓPRIA .ibar-inner continua esticada
+   full-width (herda o left/right da .ibar) mesmo vazia por dentro — um
+   div sem nada dentro, mas com pointer-events:auto e do tamanho antigo,
+   ainda captura o clique/arrasto. Encolhe pra caber só o que sobrou
+   (.ibtns) e cola na direita, onde o botão de gravar sempre esteve. */
+body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-left:auto}
 .ibar-inner{position:relative;min-height:64px;padding:10px 12px;pointer-events:auto;display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid var(--border);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,0.16)}
 .ibar #diarBanner{position:absolute!important;left:0;bottom:calc(100% + 8px);width:min(620px,100%);margin-bottom:0!important}
 .fstage{display:none;position:absolute;left:0;bottom:calc(100% + 8px);width:min(540px,100%);background:var(--bg-card);border:1px solid rgba(16,185,129,0.35);border-radius:16px;padding:10px 12px;margin:0;box-shadow:0 14px 42px rgba(0,0,0,0.18);animation:slideIn 0.25s ease}
@@ -4773,7 +4796,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.31.7';
+const VOX_VERSION='2026.09.01.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
