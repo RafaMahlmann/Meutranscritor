@@ -1516,6 +1516,24 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   border-radius:var(--radius-card);box-shadow:0 10px 40px rgba(0,0,0,0.28),0 2px 8px rgba(0,0,0,0.12);
   transition:box-shadow .15s ease,opacity .15s ease}
 .float-window .card{width:100%;height:100%;flex:1;margin:0;animation:none;display:flex;flex-direction:column}
+/* Janela sendo preenchida AO VIVO (gravação longa aberta aqui dentro).
+   Achado testando de verdade: o selo "🔴 gravando ao vivo" que o
+   setSegCardLive põe no card fica no CABEÇALHO — e a janela flutuante nasce
+   com o cabeçalho recolhido de propósito, então o único aviso de que aquele
+   card está sendo escrito neste instante não aparecia. A moldura respira no
+   mesmo compasso do ponto REC da barra (2,6s): é o mesmo sinal, na escala do
+   objeto. Só opacity — o quadro fica parado, o brilho é que vai e volta. */
+/* Amplitude medida, não chutada: a primeira versão oscilava a opacidade de
+   .9 a .28 sobre uma borda de alpha .55 — no vale dava 0,15 de alpha, ou
+   seja, a moldura SUMIA metade do tempo (visível no screenshot, não no
+   código). Agora a borda é mais firme (.72) e o respiro é mais curto
+   (1 → .58): no ponto mais fraco ainda sobra ~0,42 de alpha. */
+.float-window.fl-ao-vivo::after{content:'';position:absolute;inset:-3px;pointer-events:none;
+  border:2px solid rgba(255,59,48,.72);border-radius:calc(var(--radius-card) + 3px);
+  box-shadow:0 0 18px -5px rgba(255,59,48,.6);
+  animation:recRespiraJanela 2.6s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes recRespiraJanela{0%,100%{opacity:1}50%{opacity:.58}}
+@media(prefers-reduced-motion:reduce){.float-window.fl-ao-vivo::after{animation:none;opacity:.75}}
 .float-window .cb{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .float-window .cb textarea{flex:1}
 .float-window-close{position:absolute;top:-10px;right:-10px;z-index:6;width:24px;height:24px;
@@ -2354,6 +2372,25 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 /* ── IBAR ── */
 .ibar{position:fixed;left:max(18px,calc((100vw - 1100px)/2 + 20px));right:max(18px,calc((100vw - 1100px)/2 + 20px));bottom:18px;background:transparent;z-index:100;pointer-events:none}
 .ibar.rec-on{z-index:10000} /* fica por cima do #cchat-overlay (9999) pra bolha de gravação aparecer ao ditar no chat */
+/* Fluxograma e Órbita (#fcOverlay/#orbOverlay, z-index 920) são telas cheias
+   que cobriam a barra parada (100) — só a barra JÁ GRAVANDO (10000) aparecia
+   lá, então dava pra iniciar pelo atalho de Espaço mas era impossível CLICAR
+   no botão vermelho. Decisão do Rafa (31/08): nada de um botão novo lá em
+   cima; é a barra padrão de sempre que passa a valer também ali.
+   O salto é condicionado por uma classe no <body> (ligada/desligada em
+   abrirFluxograma/abrirOrbital e seus fechar, via _sincIbarSobreMapa) em vez
+   de subir o z-index base da .ibar: qualquer outro modal do app (.tx-overlay
+   genérico, 900; .overlay, 300) continua enxergando a barra exatamente onde
+   ela sempre esteve. 930 fica acima dos dois mapas e abaixo do .txp-help-ov
+   (940), do chat (9999) e do toast (10001) — que precisam continuar por cima
+   de tudo. */
+body.ibar-sobre-mapa .ibar{z-index:930}
+/* Medido no teste: `body.ibar-sobre-mapa .ibar` (0,2,1) tem mais
+   especificidade que `.ibar.rec-on` (0,2,0) e roubava o 10000 de quem já
+   estava GRAVANDO com o mapa aberto. Em cima do mapa 930 basta, mas a regra
+   antiga existe por outro motivo (ditar dentro do chat, 9999) e não pode ser
+   perdida por um efeito colateral de seletor. */
+body.ibar-sobre-mapa .ibar.rec-on{z-index:10000}
 .ibar-inner{position:relative;min-height:64px;padding:10px 12px;pointer-events:auto;display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid var(--border);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,0.16)}
 .ibar #diarBanner{position:absolute!important;left:0;bottom:calc(100% + 8px);width:min(620px,100%);margin-bottom:0!important}
 .fstage{display:none;position:absolute;left:0;bottom:calc(100% + 8px);width:min(540px,100%);background:var(--bg-card);border:1px solid rgba(16,185,129,0.35);border-radius:16px;padding:10px 12px;margin:0;box-shadow:0 14px 42px rgba(0,0,0,0.18);animation:slideIn 0.25s ease}
@@ -2448,12 +2485,33 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .itxt::placeholder{color:var(--text4)}
 .itxt:disabled{opacity:0.5;cursor:not-allowed}
 .ibtns{display:flex;align-items:center;gap:5px;padding:0}
-.circle{width:42px;height:42px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition);color:white;flex-shrink:0}
+/* transition:all trocado por lista explícita: `all` animava também width/
+   height/border-radius (nada disso muda aqui) e, pior, punha o transform na
+   curva padrão do app — que tem ease-in no começo, o pior easing possível
+   pra um botão que precisa responder na hora do toque. O transform agora sai
+   forte (mesma curva .22,1,.36,1 das bolinhas de pasta) e é o único que
+   custa GPU. */
+.circle{width:42px;height:42px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;flex-shrink:0;
+  transition:background var(--transition),color var(--transition),box-shadow var(--transition),opacity var(--transition),filter var(--transition),transform .16s cubic-bezier(.22,1,.36,1)}
 .c-attach{background:var(--bg-input);color:var(--text3)}
 .c-attach:hover{background:var(--accent-glow);color:var(--accent)}
 .c-attach:disabled{opacity:0.3;cursor:not-allowed}
-.c-rec{background:var(--danger);position:relative} /* position:relative não muda o layout (sem offsets) — só cria o contexto pro .lp-dot (FASE 4d) se ancorar */
-.c-rec:hover{background:var(--danger2);transform:scale(1.06)}
+/* position:relative não muda o layout (sem offsets) — só cria o contexto pro
+   .lp-dot (FASE 4d) se ancorar.
+   O gradiente + as três sombras são a PRESENÇA EM REPOUSO (medido antes:
+   box-shadow computado = "none", cor chapada #ff3b30 — o botão principal do
+   app parecia um adesivo colado na pílula). A luz vem de cima (o realce
+   branco interno no topo, a sombra própria embaixo) e o halo vermelho diz
+   "isto é o botão quente daqui" mesmo parado, sem depender de hover — que no
+   celular não existe. */
+.c-rec{position:relative;background:radial-gradient(120% 120% at 50% 16%,#ff6b60 0%,#ff3b30 54%,#e02a20 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 2px 5px rgba(255,59,48,.30),0 7px 16px -6px rgba(255,59,48,.55)}
+[data-theme="dark"] .c-rec{box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 6px rgba(0,0,0,.45),0 0 16px -3px rgba(255,59,48,.55)}
+/* filter:brightness no lugar de trocar `background` pela cor chapada: o hover
+   antigo apagava o gradiente inteiro (o botão ficava PLANO justo na hora em
+   que o dedo/mouse está nele). */
+.c-rec:hover{transform:scale(1.06);filter:brightness(1.07)}
+.c-rec:active,.c-attach:active:not(:disabled),.c-cancel:active,.c-stop:active,.aud-gear:active{transform:scale(.94);transition-duration:.09s}
 .aud-wrap{position:relative;display:flex;align-items:center}
 .aud-gear{width:32px;height:32px;border-radius:50%;border:none;background:var(--bg-input);color:var(--text4);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition);flex-shrink:0}
 .aud-gear:hover{color:var(--text2);background:var(--bg-input)}
@@ -2485,6 +2543,82 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .c-send{display:none!important;background:var(--accent);opacity:0.35;cursor:not-allowed}
 .c-send.active{opacity:1;cursor:pointer;box-shadow:0 2px 10px var(--accent-glow)}
 .c-send.active:hover{background:var(--accent2);transform:scale(1.06)}
+
+/* ══ JUICE DA BARRA DE GRAVAÇÃO ═══════════════════════════════════════════
+   Esta barra é a MESMA em todo o app (lista, Modo Documento, chat, e agora
+   por cima do Fluxograma/Órbita) — o que muda aqui muda em todo lugar, de
+   propósito (pedido do Rafa, 31/08).
+   Orçamento de movimento gasto por frequência de uso, não por igual:
+   · gravar é a ação principal, feita muitas vezes ao dia → o recibo é curto
+     e forte (afunda no toque + UMA onda saindo do próprio botão);
+   · o estado "gravando" pode durar MINUTOS → respiração lenta e de amplitude
+     baixa, nunca um pisca-pisca;
+   · o timer marca segundo a segundo → não anima NADA por segundo (seria
+     ruído 60x por minuto).
+   Nada aqui é sistema de progresso: sem contador de gravações, sem medalha,
+   sem partícula. Só peso, profundidade e resposta ao toque. */
+
+/* ── M2: a onda que sai do botão quando a gravação começa de verdade ──
+   Nó próprio, position:fixed, criado em JS no centro do #btnRec (ver
+   _recOnda). Não é ::after do botão de propósito: um instante depois de a
+   gravação começar o botão vira display:none, e a onda morreria junto —
+   o anel precisa sobreviver ao elemento que o gerou. z-index acima do
+   overlay do Fluxograma/Órbita (920) porque agora a barra grava lá também. */
+.rec-onda{position:fixed;border-radius:50%;border:2px solid var(--danger);pointer-events:none;z-index:10000;
+  animation:recOnda .62s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes recOnda{from{transform:scale(1);opacity:.55}to{transform:scale(2.6);opacity:0}}
+/* O soco é o mesmo gesto da bolinha de cor da pasta (folderDotSoco), com
+   amplitude menor porque aqui o objeto é 4x maior. */
+.c-rec.rec-soco{animation:recSoco .36s cubic-bezier(.22,1,.36,1)}
+@keyframes recSoco{0%{transform:scale(1)}24%{transform:scale(.93)}58%{transform:scale(1.07)}100%{transform:scale(1)}}
+
+/* ── M4: os 3 botões voltando depois da gravação ──
+   startRec/resetUI trocam o display destes três (none↔flex); voltar de
+   display:none reinicia a animação sozinho, sem uma linha de JS. 30ms entre
+   eles é o que faz ler como "a barra se recompôs" em vez de "apareceu".
+   Roda também no primeiro carregamento da página — uma vez só, de graça. */
+#btnAttach,#btnAudioCfg,#btnRec{animation:ibtnEntra .28s cubic-bezier(.22,1,.36,1) backwards}
+#btnAttach{animation-delay:0s}
+#btnAudioCfg{animation-delay:.03s}
+#btnRec{animation-delay:.06s}
+@keyframes ibtnEntra{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+
+/* ── M2/M3: a bolha de gravação ──
+   Entrada: nasce de 0.95 + opacidade (nunca de scale(0)), e o par ✕/timer
+   entra 60ms depois — a mesma escada dos itens da árvore de pastas. */
+.ibar.rec-on .vu-wrap{animation:vuEntra .34s cubic-bezier(.22,1,.36,1)}
+.ibar.rec-on .vu-meta{animation:vuEntra .3s cubic-bezier(.22,1,.36,1) .06s backwards}
+@keyframes vuEntra{from{opacity:0;transform:scale(.95) translateY(5px)}to{opacity:1;transform:none}}
+/* Medido no escuro: a borda era rgba(255,59,48,0.22) sobre #212124 — some.
+   Aqui ela sobe pra 0.42 e ganha um anel de 3px quase transparente por fora,
+   que no escuro vira o glow (brilho só funciona em fundo escuro). */
+.ibar.rec-on .vu-wrap{border-color:rgba(255,59,48,.42);box-shadow:0 8px 24px rgba(0,0,0,.1),0 0 0 3px rgba(255,59,48,.10)}
+[data-theme="dark"] .ibar.rec-on .vu-wrap{box-shadow:0 8px 24px rgba(0,0,0,.4),0 0 20px -5px rgba(255,59,48,.5),0 0 0 3px rgba(255,59,48,.10)}
+/* A respiração: o halo do ponto REC, em transform/opacity (o pulse-red
+   antigo animava box-shadow — pinta a cada quadro e não sobe pra GPU).
+   2,6s, amplitude baixa: durante uma gravação de 40 minutos isso tem que
+   poder ficar no canto do olho sem incomodar. */
+.vu-lbl{position:relative;animation:none;box-shadow:none}
+.vu-lbl::after{content:'';position:absolute;inset:-5px;border-radius:50%;background:rgba(255,59,48,.16);
+  animation:recRespira 2.6s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes recRespira{0%,100%{transform:scale(.7);opacity:.6}50%{transform:scale(1.15);opacity:.12}}
+/* +1px no timer e um pouco mais de folga: é a única informação numérica da
+   tela enquanto se grava, e ela vive num canto de 12px. */
+.vu-timer{font-size:13px;min-width:46px;letter-spacing:.2px}
+/* O ✕ some visualmente contra a bolha em repouso (opacity .5 em cinza); a
+   área de toque já era grande (::after), faltava o alvo ficar VISÍVEL sem
+   hover — no celular não há hover pra descobrir que ali dá pra cancelar. */
+.vu-cancel{opacity:.72;color:var(--text2)}
+.vu-cancel:active{transform:scale(.88);transition-duration:.09s}
+
+@media(prefers-reduced-motion:reduce){
+  .rec-onda{display:none}
+  .c-rec.rec-soco{animation:none}
+  #btnAttach,#btnAudioCfg,#btnRec{animation:none}
+  .ibar.rec-on .vu-wrap,.ibar.rec-on .vu-meta{animation:none}
+  .vu-lbl::after{animation:none;transform:scale(1);opacity:.35}
+  .c-rec:active,.c-attach:active:not(:disabled),.c-cancel:active,.c-stop:active,.aud-gear:active,.vu-cancel:active{transform:none}
+}
 @media(max-width:640px){
   /* FASE 1 — bottom sheet: o rodapé nasce recolhido numa fileira única
      (alcinha + chip do modo + ibox), ~64px de altura. Tocar/arrastar a
@@ -4639,7 +4773,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.08.31.6';
+const VOX_VERSION='2026.08.31.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7706,6 +7840,10 @@ function _flAbrirCard(id,origemEl){
   // filtro de outra tela.
   card.classList.remove('folder-hidden','hidden');
   world.appendChild(win);
+  // O card pode chegar aqui JÁ ao vivo: na gravação longa ele nasce e é
+  // aberto no mesmo quadro, antes de setSegCardLive marcar a janela (que
+  // ainda não existia). O selo no card é a fonte da verdade dos dois lados.
+  if(document.getElementById('seglive-'+id))win.classList.add('fl-ao-vivo');
   // Janela flutuante nasce sempre recolhida (cabeçalho E rodapé) — título +
   // texto, o resto atrás dos dois triângulos — não importa o estado que o
   // card tinha na lista.
@@ -7806,6 +7944,54 @@ function _flNovoCardAqui(btn){
   // o navegador rolar a camada com a janela ainda em movimento.
   const ta=win.querySelector('.cb textarea');
   if(ta)setTimeout(()=>{try{ta.focus({preventScroll:true})}catch(e){ta.focus()}},300);
+}
+// ══ GRAVAR COM O MAPA ABERTO (Fluxograma/Órbita) ═══════════════════════════
+// Duas peças pequenas que fazem a barra de gravação de sempre funcionar por
+// cima dos dois mapas (decisão do Rafa, 31/08 — nada de um botão novo lá em
+// cima; é o mesmo botão de sempre, o de baixo):
+//   · _sincIbarSobreMapa liga/desliga a classe do <body> que sobe o z-index
+//     da .ibar pra 930 (ver CSS). Uma função só, chamada nas quatro portas
+//     (abrir/fechar de cada mapa), pra nunca ficar ligada com os dois
+//     fechados nem desligada com um aberto — o caso que dá errado é abrir o
+//     Fluxograma, abrir a Órbita e fechar só ela.
+//   · _flAbrirNoProximoCard é a ponte entre "gravei aqui" e "o card nasce
+//     aqui". Os DOIS caminhos de gravação (curta, card só no fim; longa,
+//     card vazio a cada 10min sendo preenchido ao vivo) desembocam no mesmo
+//     addCard() — armar uma bandeirinha ali cobre os dois sem duplicar regra.
+function _mapaAberto(){
+  return !!(document.getElementById('fcOverlay')?.classList.contains('on')||
+            document.getElementById('orbOverlay')?.classList.contains('on'));
+}
+function _sincIbarSobreMapa(){
+  document.body.classList.toggle('ibar-sobre-mapa',_mapaAberto());
+}
+let _flAbrirNoProximoCard=false;
+// De onde a janela flutuante "voa" (FLIP). Enquanto grava, o #btnRec está
+// display:none — o rect dele é 0×0 e a janela nasceria da quina da tela, com
+// a escala mínima de 0.15. Nesse estado quem representa a gravação na tela é
+// a bolha do VU, e é dela que o card sai. É por isso que a origem é decidida
+// na HORA de abrir, não guardada no clique.
+function _recOrigemVisual(){
+  const b=document.getElementById('btnRec');
+  if(b&&b.getBoundingClientRect().width>0)return b;
+  const v=document.getElementById('vuWrap');
+  if(v&&v.getBoundingClientRect().width>0)return v;
+  return null;
+}
+// A onda que sai do botão no instante em que a gravação começa. Nó próprio em
+// position:fixed (ver .rec-onda no CSS): o botão vira display:none logo em
+// seguida e levaria um ::after junto. Nasce no ponto exato do botão — não no
+// centro da tela.
+function _recOnda(el){
+  if(!el||_voxReduzMov())return;
+  const r=el.getBoundingClientRect();
+  if(!r.width)return;
+  const o=document.createElement('span');
+  o.className='rec-onda';
+  o.style.left=r.left+'px';o.style.top=r.top+'px';
+  o.style.width=r.width+'px';o.style.height=r.height+'px';
+  document.body.appendChild(o);
+  setTimeout(()=>o.remove(),700);
 }
 // Procura um lugar na Órbita onde a nota caiba sem tapar nada que importa:
 // nem as outras notas abertas, nem o mural (de onde ela acabou de sair), nem
@@ -8104,6 +8290,7 @@ function abrirFluxograma(){
   _fcAcoplarPainel(document.getElementById('fcCanvasWrap'));
   _flAcoplarCamada(document.getElementById('fcCanvasWrap'));
   ov.classList.add('on');
+  _sincIbarSobreMapa(); // a barra de gravação de sempre passa a valer por cima do mapa
   _fcRender();
   // clientWidth/Height do wrap só tem valor real depois que .on (display:flex)
   // aplicar e o navegador rodar o reflow — daí o requestAnimationFrame.
@@ -8112,6 +8299,7 @@ function abrirFluxograma(){
 function fecharFluxograma(){
   const ov=document.getElementById('fcOverlay');
   if(ov)ov.classList.remove('on');
+  _sincIbarSobreMapa();
   _fcFecharPainel();
   _fcPointers.clear();_fcPanAtivo=false;_fcPinchDist=null;
   if(_flAtiva)_flAlternarCamada();
@@ -8968,6 +9156,7 @@ function abrirOrbital(){
   _flAcoplarCamada(_orbPalco);
   _fcFecharPainel();          // garante o mapa limpo na abertura — nunca a lista por cima
   ov.classList.add('on');
+  _sincIbarSobreMapa(); // a barra de gravação de sempre passa a valer por cima do mapa
   const dica=document.getElementById('orbDica');if(dica)dica.style.opacity='';
   _orbFoco=null;
   _orbMuralAberto=false;_orbMuralNotaId=null;_orbMuralRect=null;
@@ -8982,6 +9171,7 @@ function abrirOrbital(){
 function fecharOrbital(){
   const ov=document.getElementById('orbOverlay');
   if(ov)ov.classList.remove('on');
+  _sincIbarSobreMapa();
   _fcFecharPainel();
   _orbFecharMural();
   _orbPts.clear();_orbPan=false;_orbPinch=null;
@@ -12859,6 +13049,7 @@ function forceReset(){
   document.querySelectorAll('.proc-card').forEach(c=>c.remove());
   // 4. Zera todos os flags de estado
   isRec=false;isProc=false;stagedFile=null;MR=null;curStream=null;chunks=[];recStart=null;
+  _flAbrirNoProximoCard=false; // destravar a UI também desarma o "o próximo card abre como janela"
   _ibarDragDepth=0;_showAudioDrop(false);
   document.querySelector('.ibar')?.classList.remove('rec-on');
   activeTA=null;activeTACard=null;
@@ -14554,7 +14745,27 @@ async function startRec(targetCardId=null,targetTA=null){
     const stream=await getCaptureStream();curStream=stream;
     MR=makeRecorder(stream);
     MR.start(100);recStart=Date.now();isRec=true;
-    navigator.vibrate?.(30); // FASE 4b: feedback tátil ao iniciar (Android; iOS/desktop ignoram silenciosamente)
+    // Feedback tátil ao iniciar (Android; iOS/desktop ignoram silenciosamente).
+    // Era um toque seco de 30ms; agora são dois, curto→longo (14ms, pausa de
+    // 26, 34ms) — a mesma diferença entre "tec" e "ta-TUM". Combina com o
+    // padrão que o PARAR já usava ([20,40,20]) sem soar igual a ele.
+    navigator.vibrate?.([14,26,34]);
+    // O visual do mesmo instante: o botão dá um soco (o gesto da bolinha de
+    // cor da pasta) e uma onda sai DELE. Antes de qualquer display:none —
+    // depois disso o rect do botão é 0×0 e não haveria de onde a onda sair.
+    const _bRec=document.getElementById('btnRec');
+    if(_bRec&&!_voxReduzMov()){
+      _bRec.classList.remove('rec-soco');void _bRec.offsetWidth;_bRec.classList.add('rec-soco');
+      setTimeout(()=>_bRec.classList.remove('rec-soco'),400);
+    }
+    _recOnda(_bRec);
+    // Gravou com o Fluxograma/Órbita aberto e sem card alvo? Então o card que
+    // essa gravação criar nasce como janela flutuante AQUI, igual ao botão "+"
+    // da barra de cima. Com um card em foco (targetCardId/targetTA) o texto
+    // vai pro card que já existe — não há card novo pra abrir, e a bandeira
+    // nem é levantada. Fora dos mapas, nada disso acontece: o caminho da
+    // lista principal segue idêntico.
+    _flAbrirNoProximoCard=(!targetCardId&&!targetTA&&_mapaAberto());
     document.querySelector('.ibar')?.classList.add('rec-on');
     closeSheet(); // FASE 1: começar a gravar fecha o sheet recolhido (mobile) automaticamente
     segCard=null;segIndex=0;segTotalSec=0;
@@ -14570,6 +14781,7 @@ async function startRec(targetCardId=null,targetTA=null){
     initVU(stream);setStatus('Gravando…','rec');
   }catch(err){
     stopCapture();
+    _flAbrirNoProximoCard=false; // gravação não chegou a existir: nenhum card nasce dela
     document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
     recTargetTA=null;recTargetCard=null;
     const src=cfg.audioSource||'mic';
@@ -14657,9 +14869,14 @@ function setSegCardLive(id,on){
   if(on){
     if(!b){b=document.createElement('span');b.className='badge proc';b.id='seglive-'+id;b.textContent=t('🔴 gravando ao vivo');card.querySelector('.ch-left')?.appendChild(b);}
   }else if(b){b.remove();}
+  // Se este card estiver aberto como janela flutuante (gravação longa feita
+  // com o Fluxograma/Órbita aberto), a moldura dela é quem mostra o "ao vivo"
+  // — o selo acima mora no cabeçalho, que a janela recolhe ao nascer.
+  card.closest('.float-window')?.classList.toggle('fl-ao-vivo',!!on);
 }
 function cancelRec(){
   if(!isRec||!MR)return;
+  _flAbrirNoProximoCard=false; // cancelou: o próximo card a nascer não tem nada a ver com esta gravação
   if(segTimer){clearInterval(segTimer);segTimer=null}
   try{MR.stop()}catch(e){}stopCapture();clearInterval(recTimer);stopVU();chunks=[];
   if(segCard!==null){const c=document.getElementById(segCard);if(c)c.remove();segCard=null;saveHistory()}
@@ -18157,6 +18374,24 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   initCardDrag(el);
   el.scrollIntoView({behavior:'smooth',block:'center'});
   if(save){saveHistory();renderFolders();applyFolderFilter()}
+  // Card nascido de uma gravação feita com o Fluxograma/Órbita aberto: em vez
+  // de ficar escondido na lista atrás do mapa, ele abre como janela flutuante
+  // ali mesmo (mesmo caminho do botão "+" da barra de cima). Serve aos dois
+  // fluxos de graça, porque os dois passam por aqui: a gravação curta (card
+  // pronto no fim) e a longa (card nasce vazio na 1ª rotação e vai sendo
+  // preenchido ao vivo, com o selo "🔴 gravando ao vivo" do setSegCardLive).
+  // type==='gravacao' é a trava fina: se a pessoa criar um card pelo "+"
+  // enquanto grava, a bandeira não é gasta com ele — aquele botão já abre a
+  // própria janela sozinho.
+  if(_flAbrirNoProximoCard&&type==='gravacao'){
+    _flAbrirNoProximoCard=false;
+    if(_mapaAberto()){
+      const _org=_recOrigemVisual();
+      // rAF: o card acabou de entrar no DOM; o FLIP de _flAbrirCard mede
+      // rects, e medir antes do primeiro quadro dá números do layout velho.
+      requestAnimationFrame(()=>_flAbrirCard(id,_org));
+    }
+  }
   return id;
 }
 
