@@ -2460,9 +2460,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .cal-titulo>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .cal-tit-mes{display:none;color:var(--text3);flex-shrink:0}
 .cal-tit-mes svg{width:13px;height:13px;display:block}
-#calOverlay[data-visao="dia"] .cal-titulo{cursor:pointer}
-#calOverlay[data-visao="dia"] .cal-titulo:active{transform:scale(.97)}
-#calOverlay[data-visao="dia"] .cal-tit-mes{display:block}
+/* Fase 3: o título afasta um degrau em QUALQUER visão, não só no Dia. No Ano
+   ele para de ser botão porque não existe degrau acima — e um botão que não
+   faz nada é pior que botão nenhum. */
+#calOverlay:not([data-visao="ano"]) .cal-titulo{cursor:pointer}
+#calOverlay:not([data-visao="ano"]) .cal-titulo:active{transform:scale(.97)}
+#calOverlay:not([data-visao="ano"]) .cal-tit-mes{display:block}
 .cal-folga{flex:1}
 /* O palco é o pai posicionado da camada de cards flutuantes
    (.float-layer é position:absolute;inset:0) — sem position:relative aqui
@@ -2589,8 +2592,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    duração real do áudio. Quando a pessoa redimensiona, a haste fica menor ou
    maior que o bloco — e essa diferença é a explicação inteira, sem texto:
    o bloco é o que você MARCOU, a haste é o que a gravação TEM. */
-#calOverlay:not([data-visao="dia"]) .cal-dia,
-#calOverlay:not([data-visao="dia"]) .cal-mes-btn{display:none}
+#calOverlay:not([data-visao="dia"]) .cal-dia{display:none}
 #calOverlay[data-visao="dia"] .cal-grade,
 #calOverlay[data-visao="dia"] .cal-sem{display:none}
 .cal-dia{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
@@ -2754,40 +2756,246 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .cal-dia.cal-vira-esq .cal-dia-todo-fitas>*,
   .cal-dia.cal-vira-dir .cal-dia-todo-fitas>*{animation-duration:.01ms}
 }
+/* ══ VISÕES SEMESTRE e ANO — fase 3 (a régua de zoom fechada) ═══════════════
+   Dia → Mês → Semestre → Ano é o MESMO espaço visto de mais longe, não quatro
+   telas. Aqui a informação muda de natureza de propósito: some o nome da nota
+   e sobra "onde tem coisa". Escrever texto num quadradinho de 14px seria
+   mostrar nada com mais tinta.
+   Duas leituras do mesmo período — e só uma delas é o padrão:
+     · VOLUME (padrão) — a escada de densidade. Funciona pra qualquer pessoa,
+       inclusive pra quem nunca usou uma etiqueta de cor na vida, que é o caso
+       de estreia e é a maioria.
+     · COR — a etiqueta que mandou no dia. Só rende pra quem etiqueta com
+       disciplina; sem isso vira mosaico sem leitura (o plano chamou de
+       "confete", e é isso mesmo). Por isso ela é uma escolha guardada no menu
+       de toque longo, e não um botão a mais numa barra que já está cheia. */
+/* As duas cores da malha moram no PALCO, não no painel — bug real, achado
+   medindo: a legenda é IRMÃ do painel, não filha, então um `--cal-neutro`
+   declarado em .cal-mini não chegava nela e o quadradinho de amostra de "sem
+   etiqueta" era pintado com rgba(0,0,0,0), ou seja, nada. Uma legenda com um
+   quadrado invisível explicando uma cor é pior que legenda nenhuma. */
+.cal-palco{
+  /* Cinza do dia VAZIO. Ele é a MALHA do heatmap: se some, o padrão perde a
+     régua e o olho não consegue mais dizer onde um mês acaba.
+     O valor é um equilíbrio medido, não um gosto: a 11% ele mede 1,28:1 contra
+     o card e fica bonito sozinho — mas come a faixa inteira que a escada tem
+     pra trabalhar no tema claro, e foi assim que o degrau de "uma nota" caiu
+     pra 1,03:1 contra ele. A 7% a malha ainda mede 1,17:1 (o mesmo do GitHub,
+     que usa #ebedf0 sobre branco = 1,12) e devolve faixa pra escada. */
+  --cal-vazio:rgba(0,0,0,.07);
+  /* O dia que tem nota mas nenhuma etiqueta, na leitura por cor. Precisa ser
+     claramente mais escuro que o vazio e claramente não-colorido — senão
+     "sem etiqueta" viraria uma nona cor. */
+  --cal-neutro:#9c9ca3}
+.cal-mini{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  display:grid;align-content:start;gap:9px;padding:2px 1px 4px;
+  grid-template-columns:repeat(4,minmax(0,1fr));width:100%;margin:0 auto;
+  /* A malha fica CENTRADA na altura sobrando: ancorada no topo, o ano ocupava
+     490 de 727px e deixava um vazio de 240px embaixo, com o bloco escorado no
+     teto como se tivesse caído.
+     `safe` não é enfeite: com `center` puro, o dia em que a malha NÃO couber
+     ela transborda pros dois lados e a rolagem não alcança mais a primeira
+     fileira — é o defeito clássico de centralizar conteúdo rolável. Com
+     `safe`, o navegador volta sozinho pra `start` quando falta espaço. E o
+     `align-content:start` da linha de cima é a rede pra navegador que não
+     conheça a palavra: ele ignora a declaração inteira e fica no começo. */
+  align-content:safe center}
+[data-theme="dark"] .cal-palco{--cal-vazio:rgba(255,255,255,.10);--cal-neutro:#75757e}
+/* Na leitura por COR a malha afrouxa, e o motivo é medido: as oito cores de
+   etiqueta foram calibradas contra a célula BRANCA (3,40–3,94:1) e sobre o
+   vazio a 7% duas delas caem pra 2,91 e 2,97:1 — abaixo do mínimo de 3:1 do
+   WCAG 1.4.11. A 5% as oito voltam a passar, e a malha ainda mede 1,12:1, que
+   é exatamente o contraste que o GitHub usa. Aqui a malha pode ceder porque
+   quem separa um dia do outro nesta leitura é a MATIZ, não a luminosidade —
+   no volume é o contrário, e por isso o valor é diferente. */
+.cal-palco.cal-por-cor{--cal-vazio:rgba(0,0,0,.05)}
+[data-theme="dark"] .cal-palco.cal-por-cor{--cal-vazio:rgba(255,255,255,.09)}
+/* O TETO DE LARGURA É O TETO DO QUADRADINHO, e ele foi medido: sem teto, numa
+   janela de 1280px o quadradinho do Ano dava 35,2px. A 35px ele para de ser
+   uma marca de densidade e vira uma célula — e célula de 35px faz o olho
+   perguntar por que não tem número dentro. O GitHub trava em 11px justamente
+   por isso.
+   A conta é: largura do mini-mês = 7·quadradinho + 14 de respiro + 9 dos seis
+   vãos de 1,5. Daí:
+     · Ano      → quadradinho de 20px  →  4 colunas de 163 + 3 vãos = 680px
+     · Semestre → quadradinho de 26px  →  3 colunas de 205 + 2 vãos = 640px
+   O Semestre tem o quadradinho MAIOR de propósito: ele é um degrau mais perto
+   que o Ano, e a régua de zoom só se lê como régua se cada degrau for
+   visivelmente maior que o de fora (mês ≈ 150px → semestre 26 → ano 20). */
+#calOverlay[data-visao="sem"] .cal-mini{grid-template-columns:repeat(3,minmax(0,1fr));max-width:640px}
+#calOverlay[data-visao="ano"] .cal-mini{max-width:680px}
+/* JANELA BAIXA: o ano tem que caber DE UMA VEZ, senão ele deixa de responder a
+   única pergunta que justifica existir. Medido numa janela de 790×545: as três
+   linhas do Ano pediam 499px e o painel tinha 412 — a fileira de set a dez
+   ficava cortada embaixo.
+   Como a altura de um mini-mês é proporcional à largura dele (o quadradinho é
+   quadrado), quem baixa a altura é o teto de largura: 520px devolvem um
+   quadradinho de 14px e 386px de altura total. O painel continua rolando se
+   nem isso bastar — mas aí a tela é menor que qualquer celular em pé. */
+@media(max-height:660px){
+  #calOverlay[data-visao="ano"] .cal-mini{max-width:520px}
+  #calOverlay[data-visao="sem"] .cal-mini{max-width:470px}
+}
+#calOverlay[data-visao="sem"] .cal-grade,#calOverlay[data-visao="sem"] .cal-sem,
+#calOverlay[data-visao="ano"] .cal-grade,#calOverlay[data-visao="ano"] .cal-sem{display:none}
+#calOverlay:not([data-visao="sem"]):not([data-visao="ano"]) .cal-mini,
+#calOverlay:not([data-visao="sem"]):not([data-visao="ano"]) .cal-legenda{display:none}
+/* O mini-mês é um <button> de verdade, não uma div com onclick: no
+   Semestre/Ano ele é o ÚNICO alvo de toque da tela, e ganhar teclado e leitor
+   de tela de graça vale mais que qualquer estilo que eu precise resetar. */
+.cal-mm{appearance:none;font:inherit;color:inherit;text-align:left;
+  background:var(--bg-card);border:1px solid transparent;border-radius:10px;
+  padding:6px 7px 7px;cursor:pointer;min-width:0;display:block;
+  transition:transform 130ms var(--fc-curva),box-shadow 170ms var(--fc-curva),
+    border-color 170ms var(--fc-curva)}
+.cal-mm:hover{box-shadow:var(--shadow-card)}
+/* No escuro sombra sozinha não cria camada: quem levanta o mês sob o dedo é a
+   borda clara. */
+[data-theme="dark"] .cal-mm:hover{border-color:var(--border2)}
+.cal-mm:active{transform:scale(.97)}
+.cal-mm:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cal-mm-t{display:flex;align-items:baseline;justify-content:space-between;gap:5px;
+  font-size:10.5px;font-weight:700;color:var(--text2);margin-bottom:5px;
+  line-height:1.25;white-space:nowrap;overflow:hidden}
+.cal-mm-t b{font-weight:inherit;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* O contador NÃO é --text3. Medido sobre o card: o #8e8e93 dá 3,26:1 e
+   reprova o mínimo de 4,5:1 de texto pequeno — e aqui ele não é legenda
+   redundante como os nomes dos dias da semana da fase 1, é o único número da
+   tela. Em --text2 dá 9,12:1, e quem faz a hierarquia contra o nome do mês é
+   o TAMANHO (9,5 contra 10,5) e o peso (650 contra 700), não o texto apagado.
+   Mesma lição do dia do mês vizinho na grade. */
+.cal-mm-t i{font-style:normal;font-size:9.5px;font-weight:650;color:var(--text2);
+  flex-shrink:0;font-variant-numeric:tabular-nums}
+/* SEIS linhas fixas, a mesma lição da grade do Mês: sem elas um mês que cabe
+   em 5 semanas ficaria mais baixo que o vizinho de 6 e a malha inteira
+   dançaria de altura ao virar o ano. */
+.cal-mm-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+  grid-template-rows:repeat(6,minmax(0,1fr));gap:1.5px}
+.cal-q{aspect-ratio:1;border-radius:2.5px;min-width:0;background:var(--cal-q,var(--cal-vazio))}
+.cal-q.fora{background:none}
+/* "Hoje" usa a MESMA cor e a mesma lógica de .cal-cel.hoje — --accent2 no
+   claro, --accent no escuro, a cor confirmando e nunca carregando sozinha. O
+   que muda é onde o traço mora, e isso foi medido: DENTRO do quadradinho ele
+   ficaria sobre o preenchimento do próprio dia, e como o topo da escada é
+   justamente --accent2, o traço num dia cheio media 1,00:1 — sumia exatamente
+   no dia mais cheio do ano. Do lado de fora ele cai sempre sobre o card, e o
+   contraste passa a ser constante (medido: 14,6:1 no claro).
+   A regra do Mês não foi tocada — esta é a tradução dela pra um alvo de 20px,
+   onde não existe número pra engordar nem beirada interna que sobreviva. */
+/* 2px de traço e 1px de folga, não 1,5px: em tela de densidade 1 o navegador
+   arredonda 1,5 pra 1px, e a 1px o anel de "hoje" some no meio da malha. A
+   folga de 1px é o que separa o anel do preenchimento do próprio dia — sem
+   ela, no dia mais cheio do ano (que é o topo da escada, --accent2) o anel
+   teria a MESMA cor do quadradinho e mediria 1,00:1. Com a folga, ele
+   sempre encosta no card e mede 3,45 a 6,58:1 dependendo da pele. */
+.cal-q.hoje{outline:2px solid var(--accent2);outline-offset:1px}
+[data-theme="dark"] .cal-q.hoje{outline-color:var(--accent)}
+.cal-mm.hoje .cal-mm-t{font-weight:800;color:var(--text)}
+/* A legenda mora no TOPO, não no rodapé como a do GitHub — e isso não foi
+   gosto: medida no lugar de baixo, a barra de gravação flutuante (que fica
+   por cima do mapa desde a fase 1) cobria ela inteira nos DOIS tamanhos.
+   Em 360px a ibar ocupa de 666 a 730 e a legenda caía em 699–716: invisível.
+   No desktop, 764–842 contra 816–834: idem. Uma legenda que ninguém vê não é
+   discreta, é um enfeite — e sem ela o heatmap não se explica.
+   `order:-1` resolve sem tocar no HTML nem nas outras visões (ela só existe
+   no Semestre e no Ano), e de quebra a escala passa a ser lida ANTES da
+   malha, que é a ordem em que ela serve. */
+.cal-legenda{order:-1;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  gap:7px;flex-wrap:wrap;padding:0 6px 5px;font-size:10px;font-weight:650;
+  color:var(--text3);line-height:1.35;text-align:center}
+.cal-legenda .esc{display:flex;gap:2px;flex-shrink:0}
+.cal-legenda i{width:11px;height:11px;border-radius:2.5px;display:block;flex-shrink:0}
+/* O degrau pra FORA reaproveita a mesma entrada que voltar do Dia pro Mês já
+   usa: 300ms, scale .985 + opacidade, ZERO escalonamento. Escalonar 12
+   mini-meses a 20ms daria 240ms de cauda; escalonar os 365 quadradinhos daria
+   7,3 segundos — trocar de degrau é ocasional, não é uma cerimônia. */
+.cal-mini.cal-nascendo>*{animation:calVoltaMes 300ms var(--fc-curva) both}
+/* Virar de semestre/ano é a mesma virada de sempre: 240ms, mesma direção do
+   gesto, mesmo orçamento baixo. */
+.cal-mini.cal-vira-esq>*{animation:calViraE 240ms var(--fc-curva) both}
+.cal-mini.cal-vira-dir>*{animation:calViraD 240ms var(--fc-curva) both}
+.cal-zoom-btn{flex-shrink:0}
+/* No Ano o botão fica DESABILITADO em vez de sumir: a barra não muda de
+   largura no meio da navegação, e ver o botão apagado é o que diz "chegou no
+   fim da régua". Botão que some não ensina nada — só desaparece. */
+.cal-zoom-btn[disabled]{opacity:.32;cursor:default;pointer-events:none}
+
 /* Abaixo de 700px a fita com TEXTO não cabe: nem "Reunião" entra numa célula
    de 48px de largura. Ela vira uma ficha de cor (que continua sendo o alvo de
    arrasto — no celular esse gesto não pode sumir) e a leitura passa a ser
    número + cor, exatamente como o calendário do celular de todo mundo. */
 @media(max-width:700px){
+  .cal-mini{gap:6px;grid-template-columns:repeat(3,minmax(0,1fr))}
+  #calOverlay[data-visao="sem"] .cal-mini{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cal-mm{padding:5px 5px 6px;border-radius:9px}
+  .cal-legenda{font-size:9.5px;gap:5px;padding:0 4px 4px}
   /* Aqui o respiro sai pra a célula caber no alvo de toque. Medido em 360px
      com padding 6 e gap 2: a célula dava 43,42px — 0,58px ABAIXO do
      --card-tap-min de 44px do próprio app. Com padding 4 e gap 1 dá 44,86px.
      Meio pixel importa quando o número é uma regra escrita. */
   .cal-palco{padding:6px 4px 8px}
   .cal-grade,.cal-sem{gap:1px}
-  .cal-topbar{padding:9px 8px;gap:4px}
+  .cal-topbar{padding:9px 6px;gap:3px}
   .cal-titulo{font-size:13px;min-width:0;flex:1}
+  /* Cada pixel destes é o rótulo do mês não virando "Set…". A barra do Mês em
+     360px tem 312px úteis e gasta 152 na navegação e 156 nas ações: sobram 4.
+     O glifo novo do título (13px + 5 de vão) tinha comido justamente a folga
+     que existia antes da fase 3, e "Set 2026" pede 57px.
+     Medido de novo depois de apertar tudo: respiro da barra 8→6 (4px), vãos
+     4→3 em três lugares (6px), respiro do título 2→0 (4px), glifo 13→12 (1px).
+     Sobram ~15px de folga real.
+     Por que 15 e não 2: a primeira tentativa parou em 2px de folga e passou no
+     Chromium, mas REPROVOU no WebKit — a medida da fonte difere por
+     sub-pixel entre os dois. Foi o teste nos dois navegadores que pegou, e é a
+     prova prática do "raspando não é passar" que este arquivo já pregava. */
+  .cal-nav{gap:3px}
+  .cal-titulo{padding:0;gap:3px}
+  .cal-tit-mes svg{width:12px;height:12px}
   .cal-folga{display:none}
-  .cal-topbar .fc-topbar-actions{gap:4px}
+  .cal-topbar .fc-topbar-actions{gap:3px}
   .cal-topbar .fc-new-card-btn{margin-right:0}
   .cal-ics-btn{display:none}
-  /* ── a SEGUNDA LINHA da barra, só na visão Dia ──
+  /* ── a SEGUNDA LINHA da barra, em TODA visão que não é o Mês ──
      Medido em 360px: a barra do Dia tinha 7 alvos de 36px (252px) numa faixa
      de 328px e sobravam 50px pro nome do dia, que precisa de 82px — o título
      virava "Qu…". Encolher o botão pra 32px cortaria o alvo de toque; esconder
      o de flutuantes quebraria o contrato dos três mapas.
      A saída já estava no plano: uma segunda linha, o mesmo precedente que a
-     trilha da Órbita abriu. Só no Dia — a barra do MÊS cabe numa linha (a fase
-     1 mediu isso) e roubar 44px de altura da grade lá seria uma piora. */
-  #calOverlay[data-visao="dia"] .cal-topbar{flex-wrap:wrap;row-gap:6px}
-  #calOverlay[data-visao="dia"] .cal-nav{width:100%;gap:4px}
+     trilha da Órbita abriu.
+     Fase 3: o Semestre e o Ano entraram na mesma regra porque o botão novo de
+     afastar recolocou o problema. Medido de novo, com ele na barra: o título
+     ficava com 4px no Semestre ("Jul–dez 2026" pede 86) e 22px no Ano. Aqui a
+     segunda linha custa 42px de painel e devolve o rótulo inteiro — e, mais
+     importante, mantém o botão de afastar VISÍVEL no celular, que é onde o
+     Rafa procurou estas duas visões e não achou. */
+  #calOverlay[data-visao="dia"] .cal-topbar,
+  #calOverlay[data-visao="sem"] .cal-topbar,
+  #calOverlay[data-visao="ano"] .cal-topbar{flex-wrap:wrap;row-gap:6px}
+  #calOverlay[data-visao="dia"] .cal-nav,
+  #calOverlay[data-visao="sem"] .cal-nav,
+  #calOverlay[data-visao="ano"] .cal-nav{width:100%;gap:4px}
   /* Sem flex:1 no título: com ele o › era empurrado 150px pra longe do ‹, e
      virar o dia é a ação mais repetida desta tela. As duas setas andam JUNTAS,
      como a fase 1 já tinha decidido pro mês no desktop — quem sobra é a folga
      da direita, não a distância entre os dois botões. */
-  #calOverlay[data-visao="dia"] .cal-titulo{flex:0 1 auto;min-width:0;padding:0 4px}
-  #calOverlay[data-visao="dia"] .cal-folga{display:none}
-  #calOverlay[data-visao="dia"] .fc-topbar-actions{width:100%;justify-content:flex-end}
+  #calOverlay[data-visao="dia"] .cal-titulo,
+  #calOverlay[data-visao="sem"] .cal-titulo,
+  #calOverlay[data-visao="ano"] .cal-titulo{flex:0 1 auto;min-width:0;padding:0 4px}
+  #calOverlay[data-visao="dia"] .cal-folga,
+  #calOverlay[data-visao="sem"] .cal-folga,
+  #calOverlay[data-visao="ano"] .cal-folga{display:none}
+  #calOverlay[data-visao="dia"] .fc-topbar-actions,
+  #calOverlay[data-visao="sem"] .fc-topbar-actions,
+  #calOverlay[data-visao="ano"] .fc-topbar-actions{width:100%;justify-content:flex-end}
+  /* No MÊS o botão de afastar sai da barra e quem faz o papel dele é o próprio
+     título, com o glifo de seis blocos do lado — exatamente o que a fase 2a já
+     tinha decidido pro botão de grade, e pelo mesmo número: com o botão na
+     fila, o título do Mês ficava com 4px de largura pra um rótulo que pede 60.
+     Sem ele sobram 72px e "Set. 2026" cabe inteiro.
+     O Mês é a única visão que continua numa linha só: ela é a visão principal,
+     e roubar 42px da grade aqui seria pagar caro por um botão que o título já
+     faz. */
+  #calOverlay[data-visao="mes"] .cal-zoom-btn{display:none}
   .cal-fita{font-size:0;line-height:0;height:14px;padding:0 0 0 4px;border-radius:4px;
     border-left-width:3px}
   .cal-fita.voando{font-size:10.5px;line-height:1.35;height:auto;
@@ -2810,6 +3018,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .cal-ev.pousando,.cal-dia-todo::before,.cal-dia-borda::before,
   .cal-dia-borda,.cal-ev-alca::after{transition-duration:.01ms}
   .cal-grade.cal-nascendo>*{animation-duration:.01ms}
+  .cal-mini.cal-nascendo>*,.cal-mini.cal-vira-esq>*,
+  .cal-mini.cal-vira-dir>*{animation-duration:.01ms}
 }
 .folder-cfg-panel{display:none;background:var(--bg-input);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px}
 .folder-cfg-panel.on{display:block}
@@ -5517,7 +5727,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.02.2';
+const VOX_VERSION='2026.09.02.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5665,7 +5875,6 @@ let I18N_EN={
 // CALENDÁRIO — fase 2a (visão Dia)
 "Dia anterior":"Previous day",
 "Próximo dia":"Next day",
-"Voltar pro mês":"Back to the month",
 "o dia todo":"all day",
 "arraste pra cima ou pra baixo pra mudar a hora":"drag up or down to change the time",
 "Nada marcado neste dia ainda. Arraste uma nota pra cá, ou toque no + aqui em cima.":"Nothing set on this day yet. Drag a note over here, or tap the + up top.",
@@ -5678,6 +5887,27 @@ let I18N_EN={
 "marcado: {a} às {b}":"set: {a} to {b}",
 "Marquei pra {d}.":"Set for {d}.",
 "Marquei pra {d}, às {h}.":"Set for {d}, at {h}.",
+// CALENDÁRIO — fase 3 (visões Semestre e Ano)
+"Ver o mês":"See the month",
+"Ver o semestre":"See the half-year",
+"Ver o ano":"See the year",
+"Semestre anterior":"Previous half-year",
+"Próximo semestre":"Next half-year",
+"Ano anterior":"Previous year",
+"Próximo ano":"Next year",
+"1º semestre de {a}":"First half of {a}",
+"2º semestre de {a}":"Second half of {a}",
+"toque num mês pra ver os dias":"tap a month to see its days",
+"Abrir este mês":"Open this month",
+"Nota nova neste mês":"New note in this month",
+"Pintar por cor da etiqueta":"Paint by tag color",
+"Pintar por quantidade de notas":"Paint by number of notes",
+"menos":"fewer",
+"mais notas por dia":"more notes a day",
+"sem etiqueta":"no tag",
+"as outras pegam a cor da etiqueta que mais apareceu no dia":"the rest take the color of the tag that showed up most that day",
+"1 nota":"1 note",
+"{n} notas":"{n} notes",
 "Card novo — arraste pelo ⠿ até uma pasta":"New card — drag it by the ⠿ onto a folder",
 "Voltar pro mapa":"Back to the map",
 "Fechar janela":"Close window",
@@ -11029,12 +11259,29 @@ const CAL_ICO={
   ics:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
   fechar:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
   dia:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
-  // Voltar pro mês: a grade inteira, o degrau de onde a pessoa veio. Não é uma
-  // seta de "voltar" genérica de propósito — as setas ‹ › da mesma barra já
-  // querem dizer outra coisa (andar um dia), e duas setas com significados
-  // diferentes lado a lado é o jeito mais rápido de confundir todo mundo.
+  // A grade do mês inteira. Não é uma seta de "voltar" genérica de propósito —
+  // as setas ‹ › da mesma barra já querem dizer outra coisa (andar um período),
+  // e duas setas com significados diferentes lado a lado é o jeito mais rápido
+  // de confundir todo mundo.
+  // Fase 3: o rótulo virou "Ver o mês" pra entrar na mesma família de "Ver o
+  // semestre" e "Ver o ano". Três degraus com três verbos diferentes seria
+  // exatamente o tipo de texto que soa desconjuntado sem ninguém saber dizer
+  // por quê.
   mes:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="21.5"/><line x1="15" y1="10" x2="15" y2="21.5"/><line x1="3" y1="16" x2="21" y2="16"/></svg>',
+  // Fase 3 — os dois degraus de fora. A família é a mesma e o que conta a
+  // história é a CONTAGEM: seis blocos = seis meses, doze = doze. Não são
+  // molduras de calendário como o `mes` de propósito — ali cada bloco é um
+  // mês inteiro em miniatura, que é literalmente o que a tela mostra.
+  // O do ano é preenchido, não traçado: doze retângulos de 4,4px com traço de
+  // 1,6 viram uma mancha cinza a 16px — medido no zoom do screenshot, não
+  // estimado.
+  sem:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="1.6" y="5" width="6" height="6" rx="1.6"/><rect x="9" y="5" width="6" height="6" rx="1.6"/><rect x="16.4" y="5" width="6" height="6" rx="1.6"/><rect x="1.6" y="13" width="6" height="6" rx="1.6"/><rect x="9" y="13" width="6" height="6" rx="1.6"/><rect x="16.4" y="13" width="6" height="6" rx="1.6"/></svg>',
+  ano:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="1.1" y="4" width="4.6" height="4.6" rx="1.2"/><rect x="7.1" y="4" width="4.6" height="4.6" rx="1.2"/><rect x="13.1" y="4" width="4.6" height="4.6" rx="1.2"/><rect x="19.1" y="4" width="3.8" height="4.6" rx="1.2"/><rect x="1.1" y="10" width="4.6" height="4.6" rx="1.2"/><rect x="7.1" y="10" width="4.6" height="4.6" rx="1.2"/><rect x="13.1" y="10" width="4.6" height="4.6" rx="1.2"/><rect x="19.1" y="10" width="3.8" height="4.6" rx="1.2"/><rect x="1.1" y="16" width="4.6" height="4.6" rx="1.2"/><rect x="7.1" y="16" width="4.6" height="4.6" rx="1.2"/><rect x="13.1" y="16" width="4.6" height="4.6" rx="1.2"/><rect x="19.1" y="16" width="3.8" height="4.6" rx="1.2"/></svg>',
   relogio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>',
+  // A escada de densidade em quatro degraus — o mesmo desenho da legenda do
+  // heatmap, reduzido. O item do menu que liga essa leitura mostra a própria
+  // coisa que ele liga.
+  escada:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2" y="15" width="4.4" height="4.4" rx="1.1" opacity=".28"/><rect x="8" y="15" width="4.4" height="4.4" rx="1.1" opacity=".52"/><rect x="14" y="15" width="4.4" height="4.4" rx="1.1" opacity=".76"/><rect x="2" y="8" width="4.4" height="4.4" rx="1.1" opacity=".52"/><rect x="8" y="8" width="4.4" height="4.4" rx="1.1" opacity=".76"/><rect x="14" y="8" width="4.4" height="4.4" rx="1.1"/></svg>',
   mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/></svg>'
 };
 let _calFoco=null;              // Date do 1º dia do mês em foco
@@ -11045,13 +11292,24 @@ let _calHoraProxCard=null;      // e a hora, quando veio do menu da coluna
 // Fase 2a: 'mes' ou 'dia'. A visão Dia NÃO é um modo novo do app — é um degrau
 // de zoom do mesmo calendário, e por isso ela não tem botão próprio na barra
 // lateral nem estado salvo: sai-se dela voltando pro mês, sempre.
+// Fase 3: 'dia' | 'mes' | 'sem' | 'ano'. Os quatro são degraus de zoom da MESMA
+// tela, e a ordem abaixo é a régua — o botão de afastar anda um passo pra
+// direita, e tocar num período anda um passo pra esquerda.
 let _calVisao='mes';
+const CAL_DEGRAUS=['dia','mes','sem','ano'];
 let _calDiaFoco=null;           // 'AAAA-MM-DD' da visão Dia
-let _calPrefs={aconteceu:true,icsTexto:false};
+// Semestre CIVIL (jan–jun / jul–dez), não "o mês atual + 5". Motivo prático: só
+// o semestre civil deixa a seta ‹ › ter um significado que se memoriza. Com uma
+// janela deslizante, ‹ viraria "seis meses atrás" e a mesma tela nunca se
+// repetiria duas vezes — nada pra reconhecer, nada pra voltar.
+let _calAnoFoco=null;           // ano em foco nas visões Semestre e Ano
+let _calSemFoco=0;              // 0 = jan–jun, 1 = jul–dez
+let _calPrefs={aconteceu:true,icsTexto:false,anoCor:false};
 try{
   const _p=JSON.parse(localStorage.getItem('vox_cal')||'{}');
   if(typeof _p.aconteceu==='boolean')_calPrefs.aconteceu=_p.aconteceu;
   if(typeof _p.icsTexto==='boolean')_calPrefs.icsTexto=_p.icsTexto;
+  if(typeof _p.anoCor==='boolean')_calPrefs.anoCor=_p.anoCor;
 }catch(e){}
 function _calSalvarPrefs(){try{localStorage.setItem('vox_cal',JSON.stringify(_calPrefs))}catch(e){}}
 
@@ -11085,9 +11343,25 @@ function _calMaiuscula(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s}
 // cortado com reticências. Medido, não estimado.
 function _calRotuloMes(d,curto){
   try{
-    if(curto)return _calMaiuscula(d.toLocaleDateString(getLocale(),{month:'short'}))+' '+d.getFullYear();
+    // Sem o ponto da abreviação: em pt-BR o locale devolve "set." e o ponto
+    // vale 4px numa barra de 360px que está no limite. Mesma limpeza que o
+    // título da visão Dia já fazia desde a fase 2a.
+    if(curto)return _calMaiuscula(d.toLocaleDateString(getLocale(),{month:'short'}).replace(/\.$/,''))+' '+d.getFullYear();
     return _calMaiuscula(d.toLocaleDateString(getLocale(),{month:'long',year:'numeric'}));
   }catch(e){return d.getFullYear()+'-'+(d.getMonth()+1)}
+}
+function _calMesCurto(ano,m){
+  try{return _calMaiuscula(new Date(ano,m,1).toLocaleDateString(getLocale(),{month:'short'}).replace(/\.$/,''))}
+  catch(e){return String(m+1)}
+}
+// No estreito o semestre vira "Jan–jun 2026" em vez de "1º semestre de 2026".
+// Medido em 360px: o rótulo por extenso pede 121px e sobram ~104 entre as
+// setas — ele apareceria como "1º semestre d…". E o intervalo abreviado não é
+// um consolo: ele diz exatamente os meses que estão na tela, o que o nome
+// ordinal só sugere. Mesmo padrão do _calRotuloMes da fase 1.
+function _calRotuloSemestre(ano,s,curto){
+  if(curto)return _calMesCurto(ano,s?6:0)+'–'+_calMesCurto(ano,s?11:5).toLowerCase()+' '+ano;
+  return (s?t('2º semestre de {a}'):t('1º semestre de {a}')).replace('{a}',ano);
 }
 function _calRotuloDia(k){
   try{
@@ -11210,7 +11484,7 @@ function abrirCalendario(){
           <button type="button" class="fc-fit-btn" id="calAnt" onclick="_calAndar(-1)" title="${escHtml(t('Mês anterior'))}" aria-label="${escHtml(t('Mês anterior'))}">${CAL_ICO.ant}</button>
           <button type="button" class="fc-title cal-titulo" id="calTitulo" onclick="_calTituloClique()"><span id="calTituloTxt"></span><i class="cal-tit-mes">${CAL_ICO.mes}</i></button>
           <button type="button" class="fc-fit-btn" id="calProx" onclick="_calAndar(1)" title="${escHtml(t('Próximo mês'))}" aria-label="${escHtml(t('Próximo mês'))}">${CAL_ICO.prox}</button>
-          <button type="button" class="fc-fit-btn cal-mes-btn" onclick="_calVoltarPraMes()" title="${escHtml(t('Voltar pro mês'))}" aria-label="${escHtml(t('Voltar pro mês'))}">${CAL_ICO.mes}</button>
+          <button type="button" class="fc-fit-btn cal-zoom-btn" id="calZoom" onclick="_calZoomFora()" title="${escHtml(t('Ver o mês'))}" aria-label="${escHtml(t('Ver o mês'))}">${CAL_ICO.mes}</button>
         </div>
         <span class="cal-folga"></span>
         <div class="fc-topbar-actions">
@@ -11239,6 +11513,8 @@ function abrirCalendario(){
           <div class="cal-dia-borda esq" id="calDiaBordaE">${CAL_ICO.ant}<span></span></div>
           <div class="cal-dia-borda dir" id="calDiaBordaD">${CAL_ICO.prox}<span></span></div>
         </div>
+        <div class="cal-mini" id="calMini"></div>
+        <div class="cal-legenda" id="calLegenda"></div>
         <div class="cal-dica" id="calDica">${escHtml(t('arraste uma nota de um dia pro outro'))}</div>
       </div>
     </div>`;
@@ -11283,6 +11559,8 @@ function abrirCalendario(){
   // mês qualquer seria desorientador.
   _calVisao='mes';
   _calDiaFoco=_calChave(hj);
+  _calAnoFoco=hj.getFullYear();
+  _calSemFoco=hj.getMonth()<6?0:1;
   ov.dataset.visao='mes';
   _calDicaPadrao();
   ov.classList.add('on');
@@ -11342,6 +11620,7 @@ window.addEventListener('resize',()=>{
 // chamando a mesma função e não precisam saber em que degrau a tela está.
 function _calPintar(){
   if(_calVisao==='dia')return _calPintarDia();
+  if(_calVisao==='sem'||_calVisao==='ano')return _calPintarMini();
   return _calPintarMes();
 }
 function _calPintarMes(){
@@ -11482,6 +11761,362 @@ function _calPintarCor(el,c){
   }
   const pasta=_calCorDaPasta(c);
   if(pasta)el.style.setProperty('--cal-pasta',pasta);
+}
+
+// ══ VISÕES SEMESTRE e ANO — fase 3 ══════════════════════════════════════════
+// O Mês responde "em que dia"; o Semestre e o Ano respondem "em que ÉPOCA".
+// São a mesma tela vista de mais longe, e a única mudança de conteúdo é
+// honesta: um quadradinho de 14px não cabe um nome, então ele para de tentar
+// e passa a dizer só "tem coisa aqui, e mais ou menos quanto".
+//
+// AS DUAS LEITURAS, e por que só uma é o padrão:
+//   · VOLUME (padrão) — a escada de densidade do GitHub. Funciona pra qualquer
+//     pessoa, incluindo quem nunca tocou numa etiqueta de cor — que é o caso
+//     de estreia e é a maioria. Todos os quadradinhos são da mesma matiz e só
+//     variam de luminosidade, então o olho agrupa o padrão inteiro de uma vez.
+//   · COR — a etiqueta que mandou no dia. Responde "onde estava minha
+//     atenção", mas só pra quem etiqueta com disciplina: com oito matizes em
+//     posições arbitrárias o olho não agrupa nada, e vira o "confete" que o
+//     próprio plano tinha previsto. Por isso ela é escolha, não padrão, e mora
+//     no menu de toque longo — o mesmo lugar do interruptor de "aconteceu".
+//
+// COPIAMOS A ESCADA DO GITHUB, NÃO O PLACAR. Nada aqui conta sequência, dia
+// seguido, recorde ou meta: num app de anotação isso vira culpa, e culpa não é
+// game feel, é sistema de progresso. A legenda é neutra de propósito
+// ("menos … mais notas por dia").
+// QUATRO degraus e o vazio, não cinco. O número saiu de uma medição, não de
+// uma cópia do GitHub: no tema CLARO a distância total entre o quadradinho
+// vazio e a cor de acento cheia é de só 2,09:1 (pele âmbar) a 5,38:1
+// (índigo) — e no escuro a pior é 2,65:1 (índigo). Cortar essa faixa em cinco
+// degraus deixa cada passo em 1,17:1, que é o mesmo que não ter degrau. Em
+// quatro, o pior passo do pior tema fica em 1,28:1.
+const CAL_FAIXAS=[1,3,7];   // 1 · 2–3 · 4–7 · 8+
+function _calDegrauDens(n){
+  if(n<=0)return 0;
+  for(let i=0;i<CAL_FAIXAS.length;i++)if(n<=CAL_FAIXAS[i])return i+1;
+  return CAL_FAIXAS.length+1;
+}
+// ── a escada, RESOLVIDA na hora de pintar ──────────────────────────────────
+// BUG REAL, achado medindo esta tela em 02/09/2026 e a razão de esta função
+// existir: a primeira versão usava alfas fixos (22/40/62/84/100%) e o degrau
+// de "uma nota" media 1,03:1 contra o dia vazio — ou seja, um dia COM nota se
+// anunciando como vazio, que é o pior jeito de uma informação sumir. E não
+// dava pra consertar com um número fixo: a faixa disponível muda de 2,09 a
+// 5,38:1 conforme a pele e o tema, então o alfa que salva o âmbar estoura o
+// índigo.
+// A saída é resolver em vez de chutar: mede-se a cor real do card, a do
+// quadradinho vazio e a de acento, e procura-se por busca binária o alfa de
+// cada degrau que deixa a razão de contraste IGUAL entre vizinhos. A escada
+// fica perceptualmente uniforme em qualquer pele, em qualquer tema — e o
+// degrau 1 nunca mais some no vazio.
+// O topo é --accent2 no claro e --accent no escuro: é o tom mais escuro que
+// cada tema oferece, e quanto maior a faixa, mais folgado fica cada degrau.
+function _calLumin(c){
+  const s=c.map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});
+  return .2126*s[0]+.7152*s[1]+.0722*s[2];
+}
+function _calRazao(a,b){
+  const l1=_calLumin(a),l2=_calLumin(b);
+  return (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05);
+}
+// O HEXADECIMAL É TESTADO PRIMEIRO, e isso é um defeito que eu mesmo cometi
+// aqui e só apareci porque medi: '#0b6e72' casa TRÊS vezes na busca por
+// números ('0', '6', '72'), então um parser que tenta rgb() antes lê a cor
+// como rgb(0,6,72) — um azul-marinho quase preto no lugar de um verde-azulado.
+// A escada inteira saía escura demais e o número da medição foi o que
+// entregou (18,76:1 onde a conta à mão dava 3,47).
+function _calCorLida(v,fallback){
+  const s=String(v||'').trim();
+  const h=s.replace('#','');
+  if(/^[0-9a-f]{6}$/i.test(h))return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),1];
+  if(/^[0-9a-f]{3}$/i.test(h))return [parseInt(h[0]+h[0],16),parseInt(h[1]+h[1],16),parseInt(h[2]+h[2],16),1];
+  const m=s.match(/-?[\d.]+/g);
+  if(m&&m.length>=3)return [+m[0],+m[1],+m[2],m.length>3?+m[3]:1];
+  return fallback;
+}
+function _calSobre(f,b){const a=f[3];return [0,1,2].map(i=>f[i]*a+b[i]*(1-a))}
+function _calEscadaVolume(){
+  const host=document.getElementById('calMini');
+  const mm=host&&host.querySelector('.cal-mm');
+  const raiz=getComputedStyle(document.documentElement);
+  const escuro=document.documentElement.getAttribute('data-theme')==='dark';
+  const card=_calCorLida(mm?getComputedStyle(mm).backgroundColor:'',escuro?[33,33,36,1]:[255,255,255,1]);
+  const cs=host?getComputedStyle(host):raiz;
+  const vazio=_calSobre(_calCorLida(cs.getPropertyValue('--cal-vazio'),[0,0,0,.07]),card);
+  const alvo=_calCorLida(raiz.getPropertyValue(escuro?'--accent':'--accent2'),[16,185,129,1]);
+  const passos=CAL_FAIXAS.length+1;
+  const total=_calRazao(alvo,vazio);
+  const saida=[null];
+  for(let s=1;s<passos;s++){
+    const quero=Math.pow(total,s/passos);
+    let lo=0,hi=1,a=.5;
+    for(let it=0;it<28;it++){
+      a=(lo+hi)/2;
+      if(_calRazao(_calSobre([alvo[0],alvo[1],alvo[2],a],card),vazio)<quero)lo=a;else hi=a;
+    }
+    saida.push('rgba('+alvo[0]+','+alvo[1]+','+alvo[2]+','+a.toFixed(3)+')');
+  }
+  saida.push('rgb('+alvo[0]+','+alvo[1]+','+alvo[2]+')');
+  return saida;
+}
+// Um índice do período inteiro numa passada só, com a MESMA regra do Mês: card
+// marcado conta no dia em que está marcado; card sem marca conta no dia em que
+// aconteceu, e só se a camada "aconteceu" estiver ligada. Nada é contado duas
+// vezes, e desligar o "aconteceu" esvazia as três visões junto — coerência de
+// graça.
+// As chaves 'AAAA-MM-DD' comparam com < e > em ordem cronológica: é só por
+// isso que o recorte do período pode ser uma comparação de string.
+function _calIndicePeriodo(ano,mes0,nMeses){
+  const ini=_calChave(new Date(ano,mes0,1));
+  const fim=_calChave(new Date(ano,mes0+nMeses,0));
+  const idx={};
+  _calCardsDoCalendario().forEach(c=>{
+    let k='';
+    if(c.dataset.quando){if(!_calValida(c.dataset.quando))return;k=c.dataset.quando}
+    else if(_calPrefs.aconteceu)k=_calChaveDoIso(c.dataset.dt);
+    if(!k||k<ini||k>fim)return;
+    const e=idx[k]||(idx[k]={n:0,tc:{}});
+    e.n++;
+    const bruto=c.dataset.tc;
+    const i=(bruto===undefined||bruto===''||isNaN(+bruto))?-1:(((+bruto%8)+8)%8);
+    e.tc[i]=(e.tc[i]||0)+1;
+  });
+  return idx;
+}
+// Cor dominante do dia. No empate ganha a etiqueta EXPLÍCITA sobre o "sem
+// etiqueta": a leitura por cor conta o que a pessoa marcou, e não marcar não é
+// uma marcação.
+function _calCorDominante(e){
+  let melhor=-1,cont=0;
+  Object.keys(e.tc).forEach(kk=>{
+    const i=+kk,v=e.tc[kk];
+    if(v>cont||(v===cont&&i>=0&&melhor<0)){cont=v;melhor=i}
+  });
+  return melhor<0?'var(--cal-neutro)':_folderLuz(melhor).ca;
+}
+// Os 12 mini-meses e os 12×42 quadradinhos nascem UMA vez e nunca mais — a
+// mesma regra das 42 células do Mês e das 24 linhas do Dia, e aqui ela pesa
+// mais: são 504 nós, e recriá-los a cada virada de ano faria a malha inteira
+// piscar em vez de deslizar.
+// Os mini-meses são indexados pelo MÊS DO ANO (0 a 11), sempre — mesmo no
+// Semestre, onde seis deles ficam escondidos. É isso que faz julho continuar
+// sendo o mesmo nó ao sair do 2º semestre pro ano inteiro: os seis que já
+// estavam na tela ficam, e os outros seis é que chegam.
+function _calMontarMini(host){
+  if(host.children.length)return;
+  const frag=document.createDocumentFragment();
+  for(let m=0;m<12;m++){
+    const mm=document.createElement('button');
+    mm.type='button';
+    mm.className='cal-mm';
+    mm.dataset.mes=String(m);
+    const cab=document.createElement('div');
+    cab.className='cal-mm-t';
+    cab.appendChild(document.createElement('b'));
+    cab.appendChild(document.createElement('i'));
+    const g=document.createElement('div');
+    g.className='cal-mm-g';
+    for(let i=0;i<42;i++){
+      const q=document.createElement('span');
+      q.className='cal-q fora';
+      g.appendChild(q);
+    }
+    mm.appendChild(cab);mm.appendChild(g);
+    frag.appendChild(mm);
+  }
+  host.appendChild(frag);
+  host.addEventListener('click',_calMiniClick);
+  host.addEventListener('contextmenu',_calMenuContexto);
+  _mapaLigarToqueLongo(host,_calMenuContexto);
+}
+function _calPintarMini(){
+  const host=document.getElementById('calMini');
+  if(!host)return;
+  if(_calAnoFoco===null)_calAnoFoco=new Date().getFullYear();
+  _calMontarMini(host);
+  const sem=_calVisao==='sem';
+  const ano=_calAnoFoco,m0=sem?(_calSemFoco?6:0):0,nM=sem?6:12;
+  const idx=_calIndicePeriodo(ano,m0,nM);
+  const porCor=!!_calPrefs.anoCor;
+  // A classe vem ANTES de resolver a escada: é ela que troca o --cal-vazio, e
+  // a escada é calculada a partir do vazio REAL, lido da folha de estilo.
+  // Ela mora no PALCO pra a legenda (que é irmã do painel) herdar as duas
+  // cores da malha — sem isso o quadradinho de amostra dela sai transparente.
+  document.getElementById('calPalco')?.classList.toggle('cal-por-cor',porCor);
+  const escada=_calEscadaVolume();
+  const hj=new Date(),kHoje=_calChave(hj);
+  const mesHoje=hj.getFullYear()===ano?hj.getMonth():-1;
+
+  host.classList.remove('cal-vira-esq','cal-vira-dir');
+  if(_calDir&&!_voxReduzMov()){
+    void host.offsetWidth;   // reinicia a animação sem recriar nó nenhum
+    host.classList.add(_calDir<0?'cal-vira-esq':'cal-vira-dir');
+  }
+  _calDir=0;
+
+  for(let m=0;m<12;m++){
+    const mm=host.children[m];
+    const dentro=m>=m0&&m<m0+nM;
+    mm.style.display=dentro?'':'none';
+    if(!dentro)continue;
+    const prim=new Date(ano,m,1).getDay();
+    const nd=new Date(ano,m+1,0).getDate();
+    const g=mm.lastElementChild;
+    let total=0;
+    for(let i=0;i<42;i++){
+      const q=g.children[i];
+      const d=i-prim+1;
+      if(d<1||d>nd){
+        if(q.className!=='cal-q fora')q.className='cal-q fora';
+        q.style.removeProperty('--cal-q');
+        if(q.title)q.removeAttribute('title');
+        continue;
+      }
+      const k=ano+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const e=idx[k];
+      const n=e?e.n:0;
+      total+=n;
+      const cls='cal-q'+(k===kHoje?' hoje':'');
+      if(q.className!==cls)q.className=cls;
+      if(!n)q.style.removeProperty('--cal-q');
+      else q.style.setProperty('--cal-q',porCor?_calCorDominante(e):escada[_calDegrauDens(n)]);
+      // Só o dia que TEM nota ganha balão. Fora o ruído de anunciar 365 dias
+      // vazios, o rótulo passa por toLocaleDateString: pendurar isso em 504
+      // nós a cada virada de ano custaria alguns milissegundos por nada.
+      if(n)q.title=_calRotuloDia(k)+' · '+_calContaNotas(n);
+      else if(q.title)q.removeAttribute('title');
+    }
+    mm.classList.toggle('hoje',m===mesHoje);
+    mm.querySelector('.cal-mm-t b').textContent=_calMesCurto(ano,m);
+    // Contador zero não aparece: é a mesma lição que a barra de pastas já
+    // aprendeu (contador em zero é ruído puro e ainda cobra espaço).
+    mm.querySelector('.cal-mm-t i').textContent=total?String(total):'';
+    const nome=_calMaiuscula(_calMesCurto(ano,m))+' '+ano;
+    mm.setAttribute('aria-label',total?nome+', '+_calContaNotas(total):nome);
+    mm.title=total?nome+' · '+_calContaNotas(total):nome;
+  }
+  _calPintarLegenda(escada);
+  const tit=document.getElementById('calTituloTxt');
+  const estreito=window.matchMedia('(max-width:700px)').matches;
+  if(tit)tit.textContent=sem?_calRotuloSemestre(ano,_calSemFoco,estreito):String(ano);
+  _calSincSetas();
+}
+function _calContaNotas(n){
+  return n===1?t('1 nota'):t('{n} notas').replace('{n}',n);
+}
+// A legenda é o manual da tela inteira em uma linha, e ela muda junto com a
+// leitura: escada de tinta quando é volume, o quadradinho neutro quando é cor.
+// Sem ela o heatmap é um enfeite — quem não sabe o que "mais escuro" quer
+// dizer não lê nada ali.
+function _calPintarLegenda(escada){
+  const el=document.getElementById('calLegenda');
+  if(!el)return;
+  el.textContent='';
+  const txt=s=>{const e=document.createElement('span');e.textContent=s;return e};
+  if(_calPrefs.anoCor){
+    const amostra=document.createElement('i');
+    amostra.style.background='var(--cal-neutro)';
+    el.appendChild(amostra);
+    el.appendChild(txt(t('sem etiqueta')));
+    el.appendChild(txt(t('as outras pegam a cor da etiqueta que mais apareceu no dia')));
+    return;
+  }
+  el.appendChild(txt(t('menos')));
+  const esc=document.createElement('span');
+  esc.className='esc';
+  const cores=escada||_calEscadaVolume();
+  for(let i=0;i<=CAL_FAIXAS.length+1;i++){
+    const q=document.createElement('i');
+    q.style.background=i===0?'var(--cal-vazio)':cores[i];
+    esc.appendChild(q);
+  }
+  el.appendChild(esc);
+  el.appendChild(txt(t('mais notas por dia')));
+}
+// ── a régua de zoom ────────────────────────────────────────────────────────
+// Um degrau pra fora. É o que o botão da barra e o título fazem, e é a mesma
+// função nos dois — dois caminhos, um comportamento.
+function _calDegrauFora(v){
+  const i=CAL_DEGRAUS.indexOf(v||_calVisao);
+  return (i>=0&&i<CAL_DEGRAUS.length-1)?CAL_DEGRAUS[i+1]:'';
+}
+function _calZoomFora(){
+  const alvo=_calDegrauFora();
+  if(alvo==='mes')return _calVoltarPraMes();
+  if(alvo==='sem')return _calAbrirSemestre();
+  if(alvo==='ano')return _calAbrirAno();
+}
+// O semestre que se abre é o do MÊS que estava na tela, não o de hoje: quem
+// estava olhando março de 2024 espera cair no primeiro semestre de 2024. Sair
+// pra outro lugar que não aquele de onde se veio é o jeito mais rápido de
+// perder alguém — é a mesma regra que o voltar do Dia pro Mês já seguia.
+function _calAbrirSemestre(){
+  const base=_calFoco||new Date();
+  _calAnoFoco=base.getFullYear();
+  _calSemFoco=base.getMonth()<6?0:1;
+  _calTrocarDegrau('sem');
+}
+function _calAbrirAno(){
+  if(_calAnoFoco===null)_calAnoFoco=(_calFoco||new Date()).getFullYear();
+  _calTrocarDegrau('ano');
+}
+function _calTrocarDegrau(v){
+  _calCancelarArrasto();
+  _calCancelarArrastoDia();
+  _calCancelarRedim();
+  _calPararRelogio();
+  _calVisao=v;
+  const ov=document.getElementById('calOverlay');
+  if(ov)ov.dataset.visao=v;
+  _calDir=0;
+  _calPintar();
+  _calDicaPadrao();
+  const host=document.getElementById('calMini');
+  if(!host||_voxReduzMov())return;
+  host.classList.remove('cal-nascendo');
+  void host.offsetWidth;
+  host.classList.add('cal-nascendo');
+  setTimeout(()=>host.classList.remove('cal-nascendo'),340);
+}
+// Tocar num mini-mês abre AQUELE mês, tanto no Semestre quanto no Ano — nunca
+// o degrau logo abaixo. A régua vale pra afastar; pra aproximar vale o dedo:
+// quem apontou pra janeiro dentro do ano quer janeiro, não "o primeiro
+// semestre".
+// E o alvo é o mês INTEIRO, nunca o quadradinho do dia. Medido em 360px: o
+// quadradinho mede 13,6px, um terço do alvo de toque de 44px que o app promete
+// (--card-tap-min). Um destino por gesto, e o dia continua a um toque de
+// distância pela grade do mês.
+function _calMiniClick(e){
+  if(Date.now()-_calCliqueBloqueado<350)return;
+  if(e.target.closest('.float-layer, .mapa-menu, .fc-card-panel'))return;
+  const mm=e.target.closest('.cal-mm');
+  if(!mm)return;
+  _calAbrirMesDoMini(parseInt(mm.dataset.mes,10),mm);
+}
+function _calAbrirMesDoMini(m,origem){
+  if(isNaN(m)||_calAnoFoco===null)return;
+  _calFoco=new Date(_calAnoFoco,m,1);
+  _calVisao='mes';
+  const ov=document.getElementById('calOverlay');
+  if(ov)ov.dataset.visao='mes';
+  _calDir=0;
+  _calPintar();
+  _calDicaPadrao();
+  // A grade NASCE do mini-mês que a pessoa tocou — o mesmo "mergulhar" que
+  // entrar num dia já faz desde a fase 2a, na mesma função.
+  _calNascerDaCelula(origem,_calGradeEl);
+  // A tira dos nomes dos dias não escala junto (ela vive fora da grade), então
+  // ela chega pelo fade da mesma duração: sem isto ela aparecia inteira e
+  // pronta enquanto a grade ainda estava crescendo debaixo dela.
+  const semEl=document.getElementById('calSem');
+  if(semEl&&!_voxReduzMov()){
+    semEl.style.transition='none';semEl.style.opacity='0';
+    requestAnimationFrame(()=>{
+      semEl.style.transition='opacity 260ms var(--fc-curva)';
+      semEl.style.opacity='1';
+      setTimeout(()=>{semEl.style.transition='';semEl.style.opacity=''},300);
+    });
+  }
 }
 
 // ══ VISÃO DIA — fase 2a ═════════════════════════════════════════════════════
@@ -11692,11 +12327,43 @@ function _calPararRelogio(){if(_calRelogio){clearInterval(_calRelogio);_calRelog
 // o degrau. Trocar o rótulo delas (e não o botão) é o que mantém o músculo do
 // dedo valendo nas duas visões.
 function _calSincSetas(){
-  const dia=_calVisao==='dia';
+  const v=_calVisao;
   const a=document.getElementById('calAnt'),p=document.getElementById('calProx');
-  const ra=dia?t('Dia anterior'):t('Mês anterior'),rp=dia?t('Próximo dia'):t('Próximo mês');
+  const ra=v==='dia'?t('Dia anterior'):v==='sem'?t('Semestre anterior')
+          :v==='ano'?t('Ano anterior'):t('Mês anterior');
+  const rp=v==='dia'?t('Próximo dia'):v==='sem'?t('Próximo semestre')
+          :v==='ano'?t('Próximo ano'):t('Próximo mês');
   if(a){a.title=ra;a.setAttribute('aria-label',ra)}
   if(p){p.title=rp;p.setAttribute('aria-label',rp)}
+  _calSincDegrau();
+}
+// O botão de afastar e o glifo do título mostram o DESTINO, não um símbolo
+// genérico de "zoom out": seis blocos quer dizer semestre, doze quer dizer
+// ano, e a moldura de grade quer dizer mês. Quem chegou no Ano vê o botão
+// apagado — a régua acabou, e isso se lê sem ler nada.
+// Só troca o desenho quando o degrau muda: _calSincSetas roda a cada pintura,
+// e reescrever dois SVGs a cada virada de mês seria trabalho jogado fora.
+function _calSincDegrau(){
+  const fora=_calDegrauFora();
+  const rot=fora==='mes'?t('Ver o mês'):fora==='sem'?t('Ver o semestre'):t('Ver o ano');
+  // No Ano (sem degrau de fora) o botão apagado guarda o glifo do PRÓPRIO ano,
+  // não o de mês. Achado olhando o screenshot: com o glifo de grade ele
+  // parecia um "voltar pro mês" desligado — um botão apagado tem que dizer
+  // "você já está aqui", não sugerir uma ação que ele não faz.
+  const ico=fora==='mes'?CAL_ICO.mes:fora==='sem'?CAL_ICO.sem:CAL_ICO.ano;
+  const b=document.getElementById('calZoom');
+  if(b){
+    b.disabled=!fora;
+    b.title=rot;b.setAttribute('aria-label',rot);
+    if(b.dataset.deg!==(fora||'-')){b.dataset.deg=fora||'-';b.innerHTML=ico}
+  }
+  const tt=document.getElementById('calTitulo');
+  if(tt){
+    if(fora){tt.title=rot;tt.setAttribute('aria-label',rot)}
+    else{tt.removeAttribute('title');tt.removeAttribute('aria-label')}
+    const gl=tt.querySelector('.cal-tit-mes');
+    if(gl&&gl.dataset.deg!==(fora||'-')){gl.dataset.deg=fora||'-';gl.innerHTML=ico}
+  }
 }
 // A bolha de dica da fase 1, reaproveitada. `fixo` = frase temporária (a do
 // áudio, enquanto o dedo redimensiona); sem ele, volta pra dica do degrau.
@@ -11708,8 +12375,12 @@ function _calDicaMostrar(txt){
   _calDicaEl.classList.remove('cal-dica-off');
 }
 function _calDicaTexto(){
-  return _calVisao==='dia'?t('arraste pra cima ou pra baixo pra mudar a hora')
-                          :t('arraste uma nota de um dia pro outro');
+  if(_calVisao==='dia')return t('arraste pra cima ou pra baixo pra mudar a hora');
+  // No Semestre e no Ano não há o que arrastar (um dia mede 14px), então a
+  // dica ensina o único gesto que existe ali — e é justamente o caminho de
+  // volta pra dentro.
+  if(_calVisao==='sem'||_calVisao==='ano')return t('toque num mês pra ver os dias');
+  return t('arraste uma nota de um dia pro outro');
 }
 // Trocar de degrau é tela nova e gesto novo: a dica volta a aparecer, com a
 // frase do degrau. Ela some no primeiro arrasto, como já sumia na fase 1.
@@ -12089,8 +12760,11 @@ function _calAbrirDia(k,origem){
 // "mergulhar" da Órbita traduzido pro calendário. Escala UNIFORME de propósito:
 // escalar largura e altura por fatores diferentes esticaria o texto feito
 // borracha durante os 380ms, e o olho lê isso como defeito.
-function _calNascerDaCelula(origem){
-  const dia=document.getElementById('calDia');
+// Fase 3: a mesma função serve os DOIS mergulhos — a célula que vira dia e o
+// mini-mês que vira mês. É literalmente o mesmo movimento pro mesmo gesto, e
+// por isso ganhou um segundo parâmetro em vez de um gêmeo.
+function _calNascerDaCelula(origem,destino){
+  const dia=destino||document.getElementById('calDia');
   if(!dia||!origem||_voxReduzMov())return;
   const rc=origem.getBoundingClientRect(),rp=dia.getBoundingClientRect();
   if(!rc.width||!rp.width)return;
@@ -12145,6 +12819,24 @@ function _calAndar(n){
     _calPintar();
     return;
   }
+  if(_calVisao==='sem'){
+    if(_calAnoFoco===null)_calAnoFoco=new Date().getFullYear();
+    // Conta em "meio-anos desde o ano 0" pra a virada de dezembro pra janeiro
+    // sair sozinha, sem um if pra cada ponta.
+    const s=_calAnoFoco*2+_calSemFoco+n;
+    _calAnoFoco=Math.floor(s/2);
+    _calSemFoco=((s%2)+2)%2;
+    _calDir=n<0?-1:1;
+    _calPintar();
+    return;
+  }
+  if(_calVisao==='ano'){
+    if(_calAnoFoco===null)_calAnoFoco=new Date().getFullYear();
+    _calAnoFoco+=n;
+    _calDir=n<0?-1:1;
+    _calPintar();
+    return;
+  }
   if(!_calFoco)return;
   _calFoco=new Date(_calFoco.getFullYear(),_calFoco.getMonth()+n,1);
   _calDir=n<0?-1:1;
@@ -12160,6 +12852,26 @@ function _calHoje(){
     _calRolarPraHora(hj.getHours()*60-60);
     return;
   }
+  // "Hoje" quer dizer "me devolve ao período de agora" em qualquer degrau — no
+  // Semestre é o semestre corrente, no Ano é o ano corrente. Um botão que só
+  // funcionasse em duas das quatro visões seria pior que não existir.
+  if(_calVisao==='sem'){
+    const a=hj.getFullYear(),s=hj.getMonth()<6?0:1;
+    if(_calAnoFoco===null)_calAnoFoco=a;
+    const de=_calAnoFoco*2+_calSemFoco,pra=a*2+s;
+    _calDir=pra===de?0:(pra>de?1:-1);
+    _calAnoFoco=a;_calSemFoco=s;
+    _calPintar();
+    return;
+  }
+  if(_calVisao==='ano'){
+    const a=hj.getFullYear();
+    if(_calAnoFoco===null)_calAnoFoco=a;
+    _calDir=a===_calAnoFoco?0:(a>_calAnoFoco?1:-1);
+    _calAnoFoco=a;
+    _calPintar();
+    return;
+  }
   const alvo=new Date(hj.getFullYear(),hj.getMonth(),1);
   if(!_calFoco)_calFoco=alvo;
   _calDir=alvo.getTime()===_calFoco.getTime()?0:(alvo>_calFoco?1:-1);
@@ -12171,6 +12883,15 @@ function _calHoje(){
 function _calDiaEmFoco(){
   const hj=new Date();
   if(_calVisao==='dia'&&_calValida(_calDiaFoco))return _calDiaFoco;
+  // No Semestre e no Ano o "dia em foco" segue a mesma ideia, um degrau acima:
+  // hoje, se hoje estiver dentro do período na tela; senão o primeiro dia do
+  // período. Nada de inventar uma seleção de dia que a tela não tem.
+  if(_calVisao==='sem'||_calVisao==='ano'){
+    const ano=_calAnoFoco===null?hj.getFullYear():_calAnoFoco;
+    const m0=_calVisao==='sem'?(_calSemFoco?6:0):0,nM=_calVisao==='sem'?6:12;
+    if(hj.getFullYear()===ano&&hj.getMonth()>=m0&&hj.getMonth()<m0+nM)return _calChave(hj);
+    return _calChave(new Date(ano,m0,1));
+  }
   if(_calFoco&&hj.getFullYear()===_calFoco.getFullYear()&&hj.getMonth()===_calFoco.getMonth())return _calChave(hj);
   return _calFoco?_calChave(_calFoco):_calChave(hj);
 }
@@ -12334,6 +13055,7 @@ function _calMenuContexto(ev){
   ev.preventDefault();
   const fita=ev.target.closest('.cal-fita,.cal-pt,.cal-ev');
   const cel=ev.target.closest('.cal-cel');
+  const mm=ev.target.closest('.cal-mm');
   // Na visão Dia o "onde eu toquei" não é uma célula: é uma HORA. O alvo já
   // sabe traduzir ponto de tela em dia+hora — é o mesmo que o arrasto usa.
   const alvo=_calVisao==='dia'?_calAlvoEmPonto(ev.clientX,ev.clientY,false):null;
@@ -12359,6 +13081,16 @@ function _calMenuContexto(ev){
       }
     }
     if(marcado)itens.push({ic:CAL_ICO.dia,rot:t('Tirar deste dia'),fn:()=>_calTirarDoDia(card.id)});
+  }else if(mm){
+    // O menu do mini-mês não repete a densidade que a tela já mostra: ele só
+    // oferece o que o dedo não alcança ali — abrir o mês e criar uma nota
+    // dentro dele.
+    const mi=parseInt(mm.dataset.mes,10);
+    const ano=_calAnoFoco===null?new Date().getFullYear():_calAnoFoco;
+    titulo=_calMaiuscula(_calMesCurto(ano,mi))+' '+ano;
+    itens.push({ic:CAL_ICO.mes,rot:t('Abrir este mês'),fn:()=>_calAbrirMesDoMini(mi,mm)});
+    itens.push({ic:MAPA_ICO.mais,rot:t('Nota nova neste mês'),
+      fn:()=>_calNovaNotaAqui(mm,_calChave(new Date(ano,mi,1)))});
   }else if(dia){
     titulo=hora?_calRotuloDia(dia)+' · '+hora:_calRotuloDia(dia);
     itens.push({ic:MAPA_ICO.mais,
@@ -12366,6 +13098,22 @@ function _calMenuContexto(ev){
       fn:()=>_calNovaNotaAqui(cel||document.getElementById('calDia'),dia,hora)});
   }
   itens.push({grupo:t('o calendário')});
+  // O degrau de fora também mora aqui, escrito por extenso. O botão da barra e
+  // o glifo do título dizem isso em desenho; um app que só ensina por desenho
+  // deixa gente procurando — foi o que aconteceu com estas duas visões.
+  const fora=_calDegrauFora();
+  if(fora){
+    itens.push({ic:fora==='sem'?CAL_ICO.sem:fora==='ano'?CAL_ICO.ano:CAL_ICO.mes,
+      rot:fora==='mes'?t('Ver o mês'):fora==='sem'?t('Ver o semestre'):t('Ver o ano'),
+      fn:_calZoomFora});
+  }
+  // A troca de leitura só existe onde ela pinta alguma coisa. Um item que não
+  // muda nada na tela em que está é ruído.
+  if(_calVisao==='sem'||_calVisao==='ano'){
+    itens.push({ic:_calPrefs.anoCor?CAL_ICO.escada:ICO.palette,
+      rot:_calPrefs.anoCor?t('Pintar por quantidade de notas'):t('Pintar por cor da etiqueta'),
+      fn:()=>{_calPrefs.anoCor=!_calPrefs.anoCor;_calSalvarPrefs();_calPintar()}});
+  }
   itens.push({ic:_calPrefs.aconteceu?ICO.eyeOff:ICO.eye,
     rot:_calPrefs.aconteceu?t('Esconder o que já aconteceu'):t('Mostrar o que já aconteceu'),
     fn:()=>{_calPrefs.aconteceu=!_calPrefs.aconteceu;_calSalvarPrefs();_calPintar()}});
@@ -12407,10 +13155,12 @@ function _calTirarDoDia(cid){
 // Tirar só a HORA: a nota continua marcada naquele dia, só volta pra faixa do
 // dia todo. É o mesmo destino do arrasto pra faixa lá em cima — o menu existe
 // pra quem não descobriu o gesto.
-// No estreito o botão de grade não cabe na barra, e o título faz o papel dele.
-// No Mês o título não faz nada de propósito: não existe degrau acima.
+// O título é o segundo caminho pro mesmo degrau de fora — no estreito ele é o
+// caminho mais confortável, porque o polegar já está no meio da barra. Fase 3:
+// ele deixou de valer só na visão Dia e passou a valer na régua inteira. No
+// Ano ele volta a ser texto: não existe degrau acima.
 function _calTituloClique(){
-  if(_calVisao==='dia')_calVoltarPraMes();
+  _calZoomFora();
 }
 function _calTirarAHora(cid){
   const card=document.getElementById(cid);
