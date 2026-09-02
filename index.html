@@ -259,11 +259,44 @@
 #corFiltro:not(:empty){margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
 .cf-hd{font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--text4);margin-bottom:8px;padding:0 2px}
 .cf-row{display:flex;flex-wrap:wrap;gap:7px}
-.cf-dot{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;position:relative;display:flex;align-items:center;justify-content:center;transition:transform var(--transition)}
-.cf-dot:hover{transform:scale(1.12)}
+/* A curva mudou de var(--transition) (cubic-bezier(.4,0,.2,1)) pra --fc-curva:
+   a antiga tem ENTRADA lenta, que atrasa o movimento justo no quadro em que o
+   olho está olhando. E `border-color` estava de fora da lista de transições —
+   ligar o filtro trocava a borda a seco. */
+.cf-dot{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;position:relative;display:flex;align-items:center;justify-content:center;
+  transition:transform 200ms var(--fc-curva),border-color 200ms var(--fc-curva),box-shadow 200ms var(--fc-curva)}
+.cf-dot:hover{transform:scale(1.10)}
+.cf-dot:active{transform:scale(.94)}
 .cf-dot.on{border-color:var(--text)}
-/* Contagem dentro da bolinha: diz de cara quanto tem de cada cor, sem legenda */
-.cf-n{font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.45);line-height:1}
+/* Contagem dentro da bolinha: diz de cara quanto tem de cada cor, sem legenda.
+   Virou uma janelinha de 12px de altura com overflow escondido porque o dígito
+   ROLA quando o número muda (o velho sobe e apaga, o novo entra por baixo) —
+   sem a janela, os dois apareceriam por cima do resto da bolinha. */
+.cf-n{position:relative;display:block;width:100%;height:12px;overflow:hidden;
+  font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.45);line-height:12px}
+.cf-n i{position:absolute;inset:0;font-style:normal;display:flex;align-items:center;justify-content:center}
+.cf-n i.cf-sobe{animation:cfDigSobe 260ms var(--fc-curva) both}
+.cf-n i.cf-entra{animation:cfDigEntra 260ms var(--fc-curva) both}
+@keyframes cfDigSobe{from{transform:translateY(0);opacity:1}to{transform:translateY(-110%);opacity:0}}
+@keyframes cfDigEntra{from{transform:translateY(110%);opacity:0}to{transform:translateY(0);opacity:1}}
+/* Soco e anel: o MESMO gesto da bolinha de cor da pasta (folderDotSoco), mesma
+   duração e mesma curva, com a proporção ajustada ao tamanho. A da pasta mede
+   11px e vai a 1.5 (ganha 5,5px de diâmetro); esta mede 26px, e 1.5 daria
+   39px — encostaria nas vizinhas, que ficam a 7px. 1.22 leva a 31,7px: ganho
+   de 5,7px, praticamente o mesmo movimento ABSOLUTO que a pasta já faz.
+   O anel segue a mesma conta (3.4 em 11px ≈ 2.4 em 26px) e só toca quando o
+   filtro LIGA: desligar não toma a tela, então não ganha anel. */
+.cf-anel{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--cfc,var(--text3));opacity:0;pointer-events:none}
+@keyframes cfDotSoco{0%{transform:scale(1)}38%{transform:scale(1.22)}100%{transform:scale(1)}}
+@keyframes cfAnelAbre{from{transform:scale(1);opacity:.62}to{transform:scale(2.4);opacity:0}}
+.cf-dot.soco{animation:cfDotSoco .46s var(--fc-curva)}
+.cf-anel.abre{animation:cfAnelAbre .6s var(--fc-curva)}
+/* Cor que aparece na fileira pela primeira vez nasce NO LUGAR DELA — nunca de
+   scale(0) e nunca vindo do canto da tela. A saída (a cor acabou) é o caminho
+   inverso, um pouco mais rápida, e mora no JS porque precisa fechar a largura
+   pra fileira não pular. */
+.cf-wrap.cf-nasce{animation:cfNasce 300ms var(--fc-curva) both}
+@keyframes cfNasce{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:none}}
 /* ⋮ de renomear: irmão da bolinha (nunca dentro — botão dentro de botão perde o
    clique), acompanhando a borda em vez de flutuar longe dela. Fica no fluxo
    normal do flex (nunca position:absolute) — assim reserva o próprio espaço e
@@ -279,14 +312,33 @@
   font-size:11.5px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:6px;
   transition:background .15s linear,color .15s linear}
 .cf-aviso-escondidos:hover{background:var(--accent-glow);color:var(--text2)}
-.cf-menu{width:16px;height:26px;padding:0;margin-left:1px;flex-shrink:0;
+/* BUG REAL, achado em 07/09/2026: o `display:flex` acima é regra de CLASSE e
+   ganha do `[hidden]{display:none}` do navegador (mesma especificidade, e
+   folha do autor vence a do agente). Ou seja: `el.hidden=true` NUNCA escondeu
+   este aviso. Até agora isso passava batido porque renderFiltroCores()
+   destruía e recriava o elemento a cada desenho, sempre vazio — a faxina
+   escondia o defeito. Com o desenho por diferença o nó passou a sobreviver, e
+   o recado velho ("7 escondidos por este filtro") ficava na tela com filtro
+   nenhum ligado, ocupando 43px medidos. */
+.cf-aviso-escondidos[hidden]{display:none}
+/* Em repouso o ⋮ tinha opacidade 0 — medido, não achado: ele só existia com o
+   mouse em cima. Enquanto ele só renomeava dava pra viver com isso; agora é a
+   porta de seis opções, e porta que não se vê não é porta.
+   O primeiro conserto foi opacidade .42 sobre var(--text4), copiado da maquete
+   — e medindo no app deu 1,36:1 sobre o branco do painel no tema claro. Isso
+   não é "discreto", é invisível (a maquete era escura, onde o mesmo .42 dá
+   1,91). Aqui o ⋮ passou a ser um controle de verdade, então ganhou os 3:1 que
+   controle não-textual pede: var(--text3) opaco dá 3,26:1 no claro e 5,96:1 no
+   escuro, e o hover sobe pra var(--text2) (9,12:1). Sem opacidade nenhuma no
+   meio do caminho — cor sólida é o que dá pra medir. */
+.cf-menu{position:relative;width:16px;height:26px;padding:0;margin-left:1px;flex-shrink:0;
   border:none;background:transparent;cursor:pointer;
-  color:var(--text4);font-size:13px;line-height:1;opacity:0;
+  color:var(--text3);font-size:13px;line-height:1;
   display:flex;align-items:center;justify-content:center;
-  transition:opacity var(--transition),color var(--transition)}
-.cf-wrap:hover .cf-menu{opacity:.75}
-.cf-menu:hover{opacity:1!important;color:var(--text2)}
-.cf-menu:focus-visible{opacity:1}
+  transition:color 160ms var(--fc-curva),transform 110ms var(--fc-curva)}
+.cf-menu svg{width:14px;height:14px;display:block}
+.cf-wrap:hover .cf-menu,.cf-menu:hover,.cf-menu:focus-visible{color:var(--text2)}
+.cf-menu:active{transform:scale(.9)}
 /* Alvo de toque no celular. A bolinha continua pequena de propósito (ela divide
    espaço com os badges do cabeçalho), mas ganha uma área invisível ao redor —
    mesmo hit-slop que o app já usa no botão de pastas. As cores do popover, essas,
@@ -298,8 +350,18 @@
   .cdot-grid{gap:9px}
   .cdot-none{padding:11px;font-size:13px}
   .cf-dot{width:34px;height:34px}
-  /* Sem hover em toque — o ⋮ precisa estar sempre visível, senão some pra sempre */
-  .cf-menu{opacity:.75;width:20px;height:34px;font-size:15px}
+  /* Sem hover em toque — o ⋮ já nasce visível (var(--text3)), aqui ele só
+     cresce junto com a bolinha. */
+  .cf-menu{width:20px;height:34px;font-size:15px}
+  .cf-menu svg{width:16px;height:16px}
+  /* Folga de toque: o botão desenhado continua estreito (ele divide 26px de
+     fileira com a bolinha), mas o alvo cresce pra 26×46. A folga NÃO avança
+     pra esquerda de propósito — ali começa a bolinha, e comer a borda dela
+     faria o toque abrir o menu em vez de filtrar. */
+  .cf-menu::after{content:'';position:absolute;inset:-6px -6px -6px 0}
+}
+@media(prefers-reduced-motion:reduce){
+  .cf-dot,.cf-anel,.cf-wrap,.cf-n i{animation:none!important;transition:none!important}
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased}
 .wrap{max-width:1100px;margin:0 auto;padding:0 20px;width:100%}
@@ -1620,6 +1682,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .mapa-menu button:focus-visible{outline:2px solid var(--fc-novo);outline-offset:-2px}
 .mapa-menu .mm-ic{display:flex;align-items:center;justify-content:center;width:18px;flex-shrink:0;opacity:.85}
 .mapa-menu .mm-ic svg{width:17px;height:17px;display:block}
+/* Número à direita (quantos cards a pasta já tem, no seletor de destino).
+   Tabular pra coluna não dançar de linha pra linha. */
+.mapa-menu .mm-atalho{margin-left:auto;padding-left:10px;font-size:11px;font-weight:700;
+  opacity:.55;font-variant-numeric:tabular-nums}
+/* Subpasta recuada UM nível no seletor de pasta. Mais fundo que isso vira só
+   recuo, sem árvore: menu não é lugar de navegar hierarquia. */
+.mapa-menu button.mm-nivel1{padding-left:26px}
+.mapa-menu button.mm-nivel2{padding-left:42px}
+.mapa-menu button.mm-nivel3{padding-left:58px}
+/* O rótulo corta com reticências quando o nome da pasta é longo — sem isto o
+   menu esticava até o max-width e o número da direita saía de vista. */
+.mapa-menu .mm-rot{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 @media(prefers-reduced-motion:reduce){
   .fc-node,.fc-broto{transition:none}
   .fc-node-previa,.fc-node-firmou,.mapa-menu,.mapa-menu button{animation:none;opacity:1;translate:none}
@@ -5050,7 +5124,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.01.3';
+const VOX_VERSION='2026.09.01.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5106,6 +5180,39 @@ let I18N_EN={
 "Nome desta etiqueta (vazio volta ao padrão):":"Name for this label (leave empty for default):",
 "✏️ Etiqueta renomeada":"✏️ Label renamed",
 "✏️ Nome devolvido ao padrão":"✏️ Name reset to default",
+// MENU DOS TRÊS PONTINHOS DA ETIQUETA DE COR (07/09/2026)
+"Opções da etiqueta {cor}":"{cor} label options",
+"etiqueta":"label",
+"Ver este card":"View this card",
+"Ver os {n} cards":"View all {n} cards",
+"Mostrar todos de novo":"Show everything again",
+"este card de {cor}":"this {cor} card",
+"os {n} cards de {cor}":"the {n} {cor} cards",
+"este card de {cor} em {pasta}":"this {cor} card in {pasta}",
+"os {n} cards de {cor} em {pasta}":"the {n} {cor} cards in {pasta}",
+"Mover para uma pasta…":"Move to a folder…",
+"Tirar a etiqueta deste card":"Remove the label from this card",
+"Tirar a etiqueta dos {n}":"Remove the label from all {n}",
+"Arquivar este card":"Archive this card",
+"Arquivar os {n}":"Archive all {n}",
+"Apagar este card":"Delete this card",
+"Apagar os {n}":"Delete all {n}",
+"Tudo (fora de pasta)":"Everything (outside folders)",
+"pastas":"folders",
+"Nova pasta…":"New folder…",
+"mover este card de {cor} para":"move this {cor} card to",
+"mover {n} cards de {cor} para":"move {n} {cor} cards to",
+"📁 1 card de {cor} foi para \"{pasta}\"":"📁 1 {cor} card moved to \"{pasta}\"",
+"📁 {n} cards de {cor} foram para \"{pasta}\"":"📁 {n} {cor} cards moved to \"{pasta}\"",
+"↩ Cada card voltou pra pasta em que estava":"↩ Every card went back to the folder it came from",
+"🎨 A etiqueta saiu de 1 card — ele continua onde estava":"🎨 The label came off 1 card — it's still right where it was",
+"🎨 A etiqueta saiu de {n} cards — eles continuam onde estavam":"🎨 The label came off {n} cards — they're still right where they were",
+"↩ Etiqueta de volta em {cards}":"↩ Label back on {cards}",
+"📦 1 card de {cor} arquivado":"📦 1 {cor} card archived",
+"📦 {n} cards de {cor} arquivados":"📦 {n} {cor} cards archived",
+"🗑️ 1 card de {cor} na lixeira · some em 30 dias":"🗑️ 1 {cor} card in the bin · gone in 30 days",
+"🗑️ {n} cards de {cor} na lixeira · somem em 30 dias":"🗑️ {n} {cor} cards in the bin · gone in 30 days",
+"↩ {cards} de volta":"↩ {cards} back",
 "Ver como fluxograma":"View as flowchart",
 "Fluxograma de pastas":"Folder flowchart",
 "Ver como órbita":"View as orbit",
@@ -7259,6 +7366,7 @@ function getFolderCounts(){
   return counts;
 }
 function renderFolders(){
+  if(_voxLote)return;   // lote em curso: quem abriu redesenha uma vez só, no fim
   // O filtro de etiquetas vive no mesmo painel e muda pelas mesmas razões
   // (card criado, apagado, importado) — desenhar junto evita ficar espalhando
   // chamada de atualização por todo lado.
@@ -7501,8 +7609,13 @@ function _mapaAbrirMenu(px,py,titulo,itens,escuro,aoFechar){
     }
     // 26ms entre um item e o outro: é o que faz ler como "abriu" em vez de
     // "apareceu". Mesmo escalonamento que os satélites da Órbita já usam.
-    html+=`<button type="button" role="menuitem" data-i="${i}"${it.perigo?' class="perigo"':''} style="animation-delay:${60+i*26}ms">`+
-      `<span class="mm-ic">${it.ic||''}</span>${escHtml(it.rot)}</button>`;
+    // `nivel` recua a linha (subpasta no seletor de destino) e `atalho` é o
+    // número que fica na direita. Os dois são opcionais: item que não passa
+    // nenhum dos dois sai byte a byte igual ao que já saía.
+    const cls=(it.perigo?'perigo ':'')+(it.nivel?'mm-nivel'+Math.min(it.nivel,3):'');
+    html+=`<button type="button" role="menuitem" data-i="${i}"${cls.trim()?` class="${cls.trim()}"`:''} style="animation-delay:${60+i*26}ms">`+
+      `<span class="mm-ic">${it.ic||''}</span><span class="mm-rot">${escHtml(it.rot)}</span>`+
+      `${it.atalho!==undefined?`<span class="mm-atalho">${escHtml(it.atalho)}</span>`:''}</button>`;
   });
   m.innerHTML=html;
   document.body.appendChild(m);
@@ -10413,6 +10526,10 @@ function TAG_NOMES(){
   });
 }
 let corFiltroAtivo=null; // null = mostra todas
+// >0 enquanto um lote (arquivar/apagar/mover a cor inteira) está em curso —
+// ver _cfEmLote(). Mora aqui em cima porque saveHistory(), renderFolders() e
+// applyFolderFilter() consultam ela, e as três são definidas antes do menu.
+let _voxLote=0;
 // Toque rápido troca a cor na hora; segurar abre o menu pra escolher direto.
 // A ideia é que o caso comum (só quero marcar isto de alguma cor) não custe
 // duas ações — e quem já sabe qual cor quer não precise ficar ciclando.
@@ -10459,12 +10576,17 @@ function toggleCdotPop(id){
   <button type="button" class="cdot-none" onclick="event.stopPropagation();setCardCor('${escJs(id)}',null)">${escHtml(t('Sem etiqueta'))}</button>`;
   pop.classList.add('on');
 }
-function setCardCor(id,i){
+// `silencioso`: usado pelo menu da etiqueta, que mexe em muitos cards de uma
+// vez. Ele troca a cor e mais nada — sem a tinta saindo da bolinha (quarenta
+// cards derramando tinta ao mesmo tempo não é recibo, é confusão), sem gravar
+// e sem redesenhar. Quem chamou faz as três coisas uma vez só, no fim.
+function setCardCor(id,i,silencioso){
   const c=document.getElementById(id);
   if(!c)return;
-  _corSaiDaBolinha(c,i);
+  if(!silencioso)_corSaiDaBolinha(c,i);
   if(i===null)delete c.dataset.tc;
   else c.dataset.tc=String(i);
+  if(silencioso)return;
   document.querySelectorAll('.cdot-pop.on').forEach(p=>p.classList.remove('on'));
   saveHistory();
   renderFiltroCores();
@@ -10519,9 +10641,29 @@ document.addEventListener('click',e=>{
     document.querySelectorAll('.cdot-pop.on').forEach(p=>p.classList.remove('on'));
 });
 function selecionarFiltroCor(i){
-  corFiltroAtivo=(corFiltroAtivo===i)?null:i; // clicar de novo na mesma cor desliga
+  const ligando=corFiltroAtivo!==i;          // clicar de novo na mesma cor desliga
+  corFiltroAtivo=ligando?i:null;
+  _cfSoco(i,ligando);
   renderFiltroCores();
   applyFolderFilter();
+}
+// O recibo do clique. Só dispara em ação DA PESSOA sobre aquela bolinha —
+// nunca quando o número muda sozinho (alguém etiquetou um card lá na lista).
+// Se disparasse também aí, ele deixaria de significar "você apertou" e viraria
+// um tique nervoso do painel.
+// O anel só toca quando o filtro LIGA: ele quer dizer "esta cor tomou a tela",
+// e desligar não toma nada.
+function _cfSoco(i,comAnel){
+  if(_voxReduzMov())return;
+  const dot=document.querySelector('#corFiltro .cf-wrap[data-cf="'+i+'"] .cf-dot');
+  if(!dot)return;
+  dot.classList.remove('soco');void dot.offsetWidth;dot.classList.add('soco');
+  setTimeout(()=>dot.classList.remove('soco'),480);
+  if(!comAnel)return;
+  const anel=dot.querySelector('.cf-anel');
+  if(!anel)return;
+  anel.classList.remove('abre');void anel.offsetWidth;anel.classList.add('abre');
+  setTimeout(()=>anel.classList.remove('abre'),620);
 }
 // Renomear a etiqueta. Segue o mesmo desenho de renameFolder(): prompt simples,
 // cancelar não faz nada, e o nome em branco devolve o padrão da cor.
@@ -10536,34 +10678,352 @@ function renomearEtiqueta(i){
   salvos[i]=novo.trim().slice(0,24);   // teto curto: nome comprido estoura o balãozinho
   localStorage.setItem('vox_tag_nomes',JSON.stringify(salvos));
   renderFiltroCores();
-  // renderFiltroCores() recria o aviso de "N escondidos" já escondido por
-  // padrão — sem isto, renomear QUALQUER etiqueta apagava o aviso de um
-  // filtro que continuava ligado e continuava escondendo card.
+  _cfSoco(i);   // qual das oito bolinhas mudou de nome, se o nome não aparece na fileira
+  // Desde que a fileira passou a ser redesenhada por DIFERENÇA, o aviso de "N
+  // escondidos" não é mais destruído aqui (era: renomear qualquer etiqueta
+  // apagava o aviso de um filtro que continuava ligado). A chamada fica como
+  // rede de segurança — ela é barata e mantém a conta do aviso em dia.
   applyFolderFilter();
   toast(novo.trim()?t('✏️ Etiqueta renomeada'):t('✏️ Nome devolvido ao padrão'));
 }
 // Só desenha as cores que EXISTEM em algum card — uma fileira de 8 bolinhas
 // sempre visível, com 7 delas vazias, seria promessa de organização que não
 // existe. A fileira cresce conforme a pessoa etiqueta.
+// Os cards que a vista de AGORA (Tudo, uma pasta, Arquivados ou Lixeira)
+// mostraria se nenhum filtro de cor estivesse ligado — a mesma regra que
+// applyFolderFilter() usa, sem o pedaço da cor.
+//
+// BUG QUE ISTO CONSERTA (07/09/2026): a bolinha do painel contava TODO card
+// com aquela cor — arquivado, na lixeira, de outra pasta. Arquivar os 4 verdes
+// deixava a bolinha dizendo "4"; clicar nela levava a uma tela em branco com o
+// recado "nenhum card tem a etiqueta verde", o que é mentira. O número da
+// bolinha tem que ser uma promessa verdadeira do que o clique vai mostrar —
+// ainda mais agora, que o menu dela arquiva e apaga exatamente esses cards.
+//
+// Não dá pra reaproveitar _flCardsVivos() direto: ela responde "está vivo?",
+// e aqui a pergunta é "aparece NESTA vista?", que também depende da pasta
+// aberta e das duas visões (Arquivados / Lixeira). As primitivas, essas, são
+// as mesmas — _cardArquivado / _cardNaLixeira.
+function _cardsDaVista(){
+  const naArq=activeFolderId===VISTA_ARQ,naLix=activeFolderId===VISTA_LIX;
+  return [...document.querySelectorAll('#cardsList .card:not(.proc-card)')].filter(c=>{
+    const arq=_cardArquivado(c),lix=_cardNaLixeira(c);
+    if(naLix)return lix;
+    if(naArq)return arq&&!lix;
+    return !arq&&!lix&&(activeFolderId===null||(c.dataset.folder||'')===activeFolderId);
+  });
+}
+function _cardsDaCorNaVista(i){
+  return _cardsDaVista().filter(c=>c.dataset.tc!==undefined&&c.dataset.tc!==''&&+c.dataset.tc===i);
+}
+// "1 card" / "5 cards" num lugar só. A alternativa era uma dupla de strings pra
+// cada frase do menu — e aí "1 cards" escapa em alguma delas.
+function _cfCards(n){return n===1?t('1 card'):t('{n} cards').replace('{n}',n)}
+
+const CF_CURVA='cubic-bezier(0.22,1,0.36,1)';
+const CF_SAI_MS=220;
+let _cfMontou=false;          // já desenhou alguma bolinha nesta sessão?
+const _cfSaindo=new Map();    // cor → timer da despedida, pra poder cancelar
+
+// Só desenha as cores que EXISTEM em algum card visível — uma fileira de 8
+// bolinhas sempre na tela, com 7 delas vazias, seria promessa de organização
+// que não existe. A fileira cresce conforme a pessoa etiqueta.
+//
+// SEGUNDO BUG QUE ISTO CONSERTA: até 06/09 a fileira inteira era destruída e
+// recriada a cada render (`box.innerHTML=...`). Enquanto foi assim, nenhuma
+// animação do painel podia existir — trocar a cor de UM card fazia a fileira
+// toda piscar, e qualquer movimento em andamento morria no meio. Agora o
+// render é por DIFERENÇA: cada cor tem um nó só, criado uma vez, e o redesenho
+// mexe apenas no que mudou (a classe do filtro, o rótulo, o dígito). Mesma
+// ideia que _fcRender() do Fluxograma já usa.
 function renderFiltroCores(){
   const box=document.getElementById('corFiltro');
   if(!box)return;
   const usadas=new Map();
-  document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+  _cardsDaVista().forEach(c=>{
     const tc=c.dataset.tc;
     if(tc!==undefined&&tc!=='')usadas.set(+tc,(usadas.get(+tc)||0)+1);
   });
-  if(!usadas.size){box.innerHTML='';return}
-  const nomes=TAG_NOMES();
-  const ordem=[...usadas.keys()].sort((a,b)=>a-b);
-  box.innerHTML=`<div class="cf-hd">${escHtml(t('Etiquetas'))}</div>
-    <div class="cf-row">${ordem.map(i=>
-      `<span class="cf-wrap">
-        <button type="button" class="cf-dot${corFiltroAtivo===i?' on':''}" style="background:${TAG_CORES[i]}" onclick="selecionarFiltroCor(${i})" title="${escHtml(nomes[i])} (${usadas.get(i)})" aria-label="${escHtml(nomes[i])}"><span class="cf-n">${usadas.get(i)}</span></button>
-        <button type="button" class="cf-menu" onclick="event.stopPropagation();renomearEtiqueta(${i})" title="${escHtml(t('Renomear etiqueta'))}" aria-label="${escHtml(t('Renomear etiqueta'))}">⋮</button>
-      </span>`
-    ).join('')}</div>
-    <div class="cf-aviso-escondidos" id="cfAvisoEscondidos" onclick="corFiltroAtivo=null;renderFiltroCores();applyFolderFilter()" hidden></div>`;
+  // Nada etiquetado e nada se despedindo: o painel some inteiro (quem apaga o
+  // fio de cima junto é o #corFiltro:not(:empty) do CSS).
+  if(!usadas.size&&!box.querySelector('.cf-wrap')){
+    if(box.firstChild)box.textContent='';
+    return;
+  }
+  let row=box.querySelector('.cf-row');
+  if(!row){
+    box.innerHTML=`<div class="cf-hd">${escHtml(t('Etiquetas'))}</div><div class="cf-row"></div>`+
+      `<div class="cf-aviso-escondidos" id="cfAvisoEscondidos" onclick="corFiltroAtivo=null;renderFiltroCores();applyFolderFilter()" hidden></div>`;
+    row=box.querySelector('.cf-row');
+  }
+  const nomes=TAG_NOMES(),reduz=_voxReduzMov();
+  TAG_CORES.forEach((cor,i)=>{
+    const n=usadas.get(i)||0;
+    let wrap=row.querySelector('.cf-wrap[data-cf="'+i+'"]');
+    if(!n){
+      if(wrap&&!_cfSaindo.has(i))_cfDespedir(i,wrap,reduz);
+      return;
+    }
+    if(wrap&&_cfSaindo.has(i))_cfCancelarSaida(i,wrap);
+    if(!wrap){
+      wrap=document.createElement('span');
+      wrap.className='cf-wrap';
+      wrap.dataset.cf=String(i);
+      wrap.style.setProperty('--cfc',cor);
+      wrap.innerHTML=`<button type="button" class="cf-dot" style="background:${cor}" onclick="selecionarFiltroCor(${i})">`+
+          `<span class="cf-n"><i>${n}</i></span><span class="cf-anel"></span></button>`+
+        `<button type="button" class="cf-menu" onclick="event.stopPropagation();menuEtiqueta(${i},event)">${ICO.moreV}</button>`;
+      // A fileira segue a ordem das cores mesmo quando uma nasce no meio: ela
+      // entra ANTES da primeira vizinha de índice maior que já estiver lá.
+      let antes=null;
+      for(let j=i+1;j<TAG_CORES.length;j++){
+        const c2=row.querySelector('.cf-wrap[data-cf="'+j+'"]');
+        if(c2){antes=c2;break}
+      }
+      row.insertBefore(wrap,antes);
+      // Nasce só quando é cor NOVA no meio do uso. Na primeira pintura do
+      // painel (abrir o app) as bolinhas já estão lá — florescer todas de uma
+      // vez seria movimento sem pergunta nenhuma por trás.
+      if(_cfMontou&&!reduz){
+        wrap.classList.add('cf-nasce');
+        setTimeout(()=>wrap.classList.remove('cf-nasce'),320);
+      }
+    }
+    // Daqui pra baixo é SÓ o que mudou.
+    const dot=wrap.querySelector('.cf-dot');
+    dot.classList.toggle('on',corFiltroAtivo===i);
+    const rot=(nomes[i]||'')+' ('+n+')';
+    if(dot.getAttribute('title')!==rot){dot.setAttribute('title',rot);dot.setAttribute('aria-label',rot)}
+    const bm=wrap.querySelector('.cf-menu');
+    const rotM=t('Opções da etiqueta {cor}').replace('{cor}',nomes[i]||'');
+    if(bm&&bm.getAttribute('aria-label')!==rotM){bm.setAttribute('aria-label',rotM);bm.setAttribute('title',rotM)}
+    _cfTrocaDigito(wrap.querySelector('.cf-n'),n,reduz);
+  });
+  _cfMontou=true;
+}
+// O dígito velho sobe e apaga, o novo entra por baixo — 260ms. Só acontece
+// quando o número muda DE VERDADE; render que não mexeu na conta não anima
+// nada (o painel é redesenhado em situação que não tem nada a ver com cor).
+function _cfTrocaDigito(cx,n,reduz){
+  if(!cx)return;
+  const atual=cx.querySelector('i:not(.cf-sobe)');
+  if(!atual||atual.textContent===String(n))return;
+  if(reduz){atual.textContent=String(n);return}
+  const velho=atual;
+  velho.classList.add('cf-sobe');
+  setTimeout(()=>velho.remove(),280);
+  const novo=document.createElement('i');
+  novo.textContent=String(n);
+  novo.className='cf-entra';
+  cx.appendChild(novo);
+  setTimeout(()=>novo.classList.remove('cf-entra'),280);
+}
+// A cor acabou. A bolinha encolhe e apaga, e a LARGURA vai a zero na mesma
+// transição — é a largura que faz as vizinhas fecharem o buraco deslizando em
+// vez de pularem pro lugar. O margin negativo come o gap de 7px, que ficaria
+// aberto se só a largura zerasse.
+function _cfDespedir(i,wrap,reduz){
+  if(reduz){wrap.remove();_cfLimpaSeVazio();return}
+  wrap.style.width=wrap.offsetWidth+'px';   // trava o tamanho de agora...
+  void wrap.offsetWidth;                    // ...e só então manda fechar
+  wrap.style.transition=`opacity ${CF_SAI_MS}ms ${CF_CURVA},transform ${CF_SAI_MS}ms ${CF_CURVA},width ${CF_SAI_MS}ms ${CF_CURVA},margin-right ${CF_SAI_MS}ms ${CF_CURVA}`;
+  wrap.style.overflow='hidden';
+  wrap.style.pointerEvents='none';
+  wrap.style.opacity='0';
+  wrap.style.transform='scale(.8)';
+  wrap.style.width='0px';
+  wrap.style.marginRight='-7px';
+  _cfSaindo.set(i,setTimeout(()=>{
+    _cfSaindo.delete(i);
+    wrap.remove();
+    _cfLimpaSeVazio();
+  },CF_SAI_MS+10));
+}
+// Desfazer chegou antes de a bolinha terminar de sumir: ela volta pelo mesmo
+// caminho, no MESMO nó. Recriar aqui seria piscar.
+function _cfCancelarSaida(i,wrap){
+  clearTimeout(_cfSaindo.get(i));
+  _cfSaindo.delete(i);
+  ['opacity','transform','width','marginRight','overflow','pointerEvents'].forEach(p=>{wrap.style[p]=''});
+  setTimeout(()=>{wrap.style.transition=''},CF_SAI_MS+10);
+}
+function _cfLimpaSeVazio(){
+  const box=document.getElementById('corFiltro');
+  if(box&&!box.querySelector('.cf-wrap'))box.textContent='';
+}
+
+// ══ O MENU DA ETIQUETA DE COR (07/09/2026) ═══════════════════════════════════
+// Até aqui os três pontinhos abriam direto o prompt() de renomear. Agora eles
+// abrem o mesmo menu de contexto dos mapas (_mapaAbrirMenu): nasce no ponto do
+// clique, itens escalonados de 26ms, item destrutivo em vermelho já ajustado
+// pros dois temas, fecha no Esc e no clique fora.
+//
+// A escolha de palavra que evita o acidente: "apagar a cor" tem duas leituras —
+// apagar os CARDS, ou tirar a ETIQUETA. Por isso nenhuma ação destrutiva diz
+// "etiqueta": diz "Apagar os 12", com o número, logo abaixo de uma legenda que
+// diz "os 12 cards de Verde". A outra leitura tem o botão dela uma linha acima.
+// É o mesmo par que o menu da pasta já usa ("Limpar pasta" acima de "Apagar
+// pasta"), pela mesma razão.
+function menuEtiqueta(i,ev){
+  const nomes=TAG_NOMES(),nome=nomes[i]||'';
+  const n=_cardsDaCorNaVista(i).length;
+  if(!n)return;
+  const ligado=corFiltroAtivo===i;
+  const alvo=ev&&(ev.currentTarget||ev.target);
+  const r=(alvo&&alvo.getBoundingClientRect)?alvo.getBoundingClientRect():{right:20,bottom:20};
+  const px=r.right,py=r.bottom;
+  const itens=[
+    {ic:ligado?ICO.eyeOff:ICO.eye,
+     rot:ligado?t('Mostrar todos de novo'):(n===1?t('Ver este card'):t('Ver os {n} cards').replace('{n}',n)),
+     fn:()=>selecionarFiltroCor(i)},
+    {ic:ICO.pen,rot:t('Renomear etiqueta'),fn:()=>renomearEtiqueta(i)}
+  ];
+  // Dentro de Arquivados e da Lixeira o menu para nas duas primeiras linhas:
+  // ali os cards já estão fora de cena, e "arquivar o que já está arquivado"
+  // ou "apagar o que já está na lixeira" seriam botões que não fazem nada
+  // visível — ruído com cara de ação.
+  if(activeFolderId!==VISTA_ARQ&&activeFolderId!==VISTA_LIX){
+    itens.push({grupo:_cfRotuloDoLote(i,n)});
+    itens.push({ic:ICO.folder,rot:t('Mover para uma pasta…'),fn:()=>_cfSeletorDePasta(i,px,py)});
+    itens.push({ic:ICO.eraser,
+      rot:n===1?t('Tirar a etiqueta deste card'):t('Tirar a etiqueta dos {n}').replace('{n}',n),
+      fn:()=>_cfTirarEtiqueta(i)});
+    itens.push({ic:ICO.archive,
+      rot:n===1?t('Arquivar este card'):t('Arquivar os {n}').replace('{n}',n),
+      fn:()=>_cfLote(i,'arq')});
+    itens.push({ic:ICO.trash,perigo:true,
+      rot:n===1?t('Apagar este card'):t('Apagar os {n}').replace('{n}',n),
+      fn:()=>_cfLote(i,'lix')});
+  }
+  // O menu abre pro lado ESQUERDO do ⋮ (o padrão de _mapaAbrirMenu): o painel
+  // de pastas é uma barra da direita, e abrir pra direita jogaria o menu contra
+  // a parede — de onde ele voltaria pra cima da própria fileira de bolinhas,
+  // que é justo a coisa sobre a qual ele está falando.
+  _mapaAbrirMenu(px,py,t('etiqueta')+' '+nome+' · '+_cfCards(n),itens);
+}
+// A legenda que separa "o menu está falando da etiqueta" de "o menu está
+// falando dos cards". Sem ela, "Apagar" logo abaixo de "Renomear etiqueta"
+// fica ambíguo. Dentro de uma pasta ela diz a pasta, porque é ali que o lote
+// para: o que a bolinha conta é o que o botão vai pegar.
+function _cfRotuloDoLote(i,n){
+  const cor=TAG_NOMES()[i]||'';
+  const pasta=(activeFolderId&&activeFolderId!==VISTA_ARQ&&activeFolderId!==VISTA_LIX)
+    ?(folders.find(f=>f.id===activeFolderId)?.name||''):'';
+  const base=pasta
+    ?(n===1?t('este card de {cor} em {pasta}'):t('os {n} cards de {cor} em {pasta}'))
+    :(n===1?t('este card de {cor}'):t('os {n} cards de {cor}'));
+  return base.replace('{n}',n).replace('{cor}',cor).replace('{pasta}',pasta);
+}
+// O seletor de pasta é o MESMO menu, aberto uma segunda vez do MESMO ponto:
+// parece que o menu virou de página, não que abriu outro programa. Ele já vem
+// com teto de altura e rolagem, então trinta pastas não quebram nada.
+function _cfSeletorDePasta(i,px,py){
+  const nome=TAG_NOMES()[i]||'';
+  const n=_cardsDaCorNaVista(i).length;
+  if(!n)return;
+  const counts=getFolderCounts();
+  // "Tudo" em primeiro, com um fio embaixo: é o único jeito de TIRAR um monte
+  // de cards de pasta de uma vez — antes disso não existia.
+  const itens=[{ic:ICO.inbox,rot:t('Tudo (fora de pasta)'),fn:()=>_cfMover(i,'')}];
+  const empilha=(pai,lvl)=>{
+    getFolderChildrenVisiveis(pai).forEach(f=>{
+      itens.push({
+        ic:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="${safeColor(f.color)}"/></svg>`,
+        rot:f.name,atalho:String(getFolderCount(f.id,counts)),nivel:Math.min(lvl,3),
+        fn:()=>_cfMover(i,f.id)});
+      empilha(f.id,lvl+1);
+    });
+  };
+  if(getFolderChildrenVisiveis(null).length){
+    itens.push({grupo:t('pastas')});
+    empilha(null,0);
+  }
+  itens.push({grupo:' '});
+  itens.push({ic:ICO.folderPlus,rot:t('Nova pasta…'),fn:()=>_cfNovaPastaComACor(i)});
+  const titulo=(n===1?t('mover este card de {cor} para'):t('mover {n} cards de {cor} para'))
+    .replace('{n}',n).replace('{cor}',nome);
+  _mapaAbrirMenu(px,py,titulo,itens);
+}
+function _cfMover(i,fid){
+  const cards=_cardsDaCorNaVista(i);
+  if(!cards.length)return;
+  // A pasta de ORIGEM de cada card, uma a uma. Os cards de uma cor podem estar
+  // espalhados por pastas diferentes — um desfazer que jogasse todos numa
+  // pasta só não seria desfazer, seria uma segunda mudança.
+  const antes=cards.map(c=>({id:c.id,pasta:c.dataset.folder||''}));
+  _cfEmLote(()=>antes.forEach(a=>assignCardToFolder(a.id,fid,true)));
+  _cfSoco(i);
+  const n=antes.length;
+  const nomeP=fid?(folders.find(f=>f.id===fid)?.name||t('pasta')):t('Tudo');
+  const msg=(n===1?t('📁 1 card de {cor} foi para "{pasta}"'):t('📁 {n} cards de {cor} foram para "{pasta}"'))
+    .replace('{n}',n).replace('{cor}',TAG_NOMES()[i]||'').replace('{pasta}',nomeP);
+  toastDesfazer(msg,()=>{
+    _cfEmLote(()=>antes.forEach(a=>assignCardToFolder(a.id,a.pasta,true)));
+    toast(t('↩ Cada card voltou pra pasta em que estava'));
+  });
+}
+// Cria e já move pra dentro — é o caso comum: a pessoa separou uma cor
+// justamente porque aquilo virou assunto. Não muda a pasta aberta de propósito:
+// trocar a vista no mesmo instante em que 12 cards mudam de lugar seria duas
+// surpresas de uma vez.
+function _cfNovaPastaComACor(i){
+  const nome=prompt(t('Nome da nova pasta:'));
+  if(!nome||!nome.trim())return;
+  const nova=_mapaNovaPasta(null,nome);
+  if(!nova)return;
+  _cfMover(i,nova.id);
+}
+function _cfTirarEtiqueta(i){
+  const ids=_cardsDaCorNaVista(i).map(c=>c.id);
+  if(!ids.length)return;
+  // Sem isto a tela fica EM BRANCO: o filtro daquela cor continuaria ligado
+  // sobre zero cards, com o recado "nenhum card tem a etiqueta X" —
+  // tecnicamente certo, péssimo de ler.
+  const eraFiltro=corFiltroAtivo===i;
+  if(eraFiltro)corFiltroAtivo=null;
+  _cfEmLote(()=>ids.forEach(id=>setCardCor(id,null,true)));
+  const n=ids.length;
+  const msg=n===1?t('🎨 A etiqueta saiu de 1 card — ele continua onde estava')
+                 :t('🎨 A etiqueta saiu de {n} cards — eles continuam onde estavam').replace('{n}',n);
+  toastDesfazer(msg,()=>{
+    if(eraFiltro)corFiltroAtivo=i;
+    _cfEmLote(()=>ids.forEach(id=>setCardCor(id,i,true)));
+    _cfSoco(i);
+    toast(t('↩ Etiqueta de volta em {cards}').replace('{cards}',_cfCards(n)));
+  });
+}
+// Arquivar e apagar a cor inteira, seguindo o padrão que a pasta já usa: sem
+// confirm() (a ação é reversível e o toast entrega o desfazer imediato, que é
+// o que a pessoa quer nos 3 segundos em que percebe o erro), um desfazer só
+// pro lote todo, e lixeira em vez de sumiço.
+function _cfLote(i,tipo){
+  const ids=_cardsDaCorNaVista(i).map(c=>c.id);
+  if(!ids.length)return;
+  const eraFiltro=corFiltroAtivo===i;
+  if(eraFiltro)corFiltroAtivo=null;
+  _cfEmLote(()=>ids.forEach(id=>tipo==='arq'?arquivarCard(id,true):paraLixeira(id,true)));
+  const n=ids.length;
+  const msg=(tipo==='arq'
+    ?(n===1?t('📦 1 card de {cor} arquivado'):t('📦 {n} cards de {cor} arquivados'))
+    :(n===1?t('🗑️ 1 card de {cor} na lixeira · some em 30 dias')
+           :t('🗑️ {n} cards de {cor} na lixeira · somem em 30 dias'))
+  ).replace('{n}',n).replace('{cor}',TAG_NOMES()[i]||'');
+  toastDesfazer(msg,()=>{
+    if(eraFiltro)corFiltroAtivo=i;
+    _cfEmLote(()=>ids.forEach(id=>tipo==='arq'?desarquivarCard(id,true):restaurarDaLixeira(id,true)));
+    _cfSoco(i);
+    toast(t('↩ {cards} de volta').replace('{cards}',_cfCards(n)));
+  });
+}
+// Um lote reaproveita as funções que já sabem fazer o serviço card a card —
+// só que cada uma delas grava o histórico e redesenha o app inteiro. Em 40
+// cards isso seria 40 gravações e 40 redesenhos pra um resultado só. Aqui as
+// três chamadas caras ficam mudas durante o laço e acontecem UMA vez, no fim.
+// (a trava _voxLote é declarada lá em cima, junto de corFiltroAtivo)
+function _cfEmLote(fn){
+  _voxLote++;
+  try{fn()}finally{_voxLote--}
+  saveHistory();renderFolders();applyFolderFilter();
 }
 // Chamado por applyFolderFilter() sempre que ela já sabe quantos cards
 // desta pasta o filtro de cor tirou de vista — não recalcula nada, só
@@ -10572,7 +11032,9 @@ function renderFiltroCores(){
 function _atualizaAvisoCorEscondidos(n){
   const el=document.getElementById('cfAvisoEscondidos');
   if(!el)return;
-  if(!n){el.hidden=true;return}
+  // Apaga o texto junto de esconder: o nó agora sobrevive aos redesenhos, e um
+  // recado guardado é um recado que uma hora reaparece por engano.
+  if(!n){el.hidden=true;el.textContent='';return}
   el.hidden=false;
   el.textContent='🎨 '+t('{n} {esc} por este filtro — tirar').replace('{n}',n).replace('{esc}',t(n===1?'escondido':'escondidos'));
 }
@@ -10607,6 +11069,7 @@ function _pastaNaLixeira(fid){
 function _cardArquivado(c){return c.dataset.arch==='1'||_pastaArquivada(c.dataset.folder||'')}
 function _cardNaLixeira(c){return c.dataset.del==='1'||_pastaNaLixeira(c.dataset.folder||'')}
 function applyFolderFilter(){
+  if(_voxLote)return;   // lote em curso: quem abriu redesenha uma vez só, no fim
   const naArq=activeFolderId===VISTA_ARQ,naLix=activeFolderId===VISTA_LIX;
   // Conta pra decidir se some tudo sem explicação nenhuma — o susto que o
   // Rafa teve (achou que tinha perdido 7 gravações; era só o filtro de cor
@@ -11456,9 +11919,12 @@ function moveFolder(id,destId){
   saveFolders();renderFolders();applyFolderFilter();
   toast(t('📁 Pasta movida'));
 }
-function assignCardToFolder(cardId,fid){
+// `silencioso`: mesma ideia do setCardCor — o menu da etiqueta move a cor
+// inteira de uma vez e quer UM toast no fim, não um por card.
+function assignCardToFolder(cardId,fid,silencioso){
   const card=document.getElementById(cardId);if(!card)return;
   card.dataset.folder=fid;
+  if(silencioso)return;
   saveHistory();renderFolders();applyFolderFilter();
   const fname=fid?(folders.find(f=>f.id===fid)?.name||t('pasta')):t('Tudo');
   toast(t('📁 Movido para "')+fname+'"');
@@ -14444,6 +14910,7 @@ function updateRecencyBadges(){
   });
 }
 function saveHistory(){
+  if(_voxLote)return;   // lote em curso: quem abriu grava uma vez só, no fim
   const items=[];
   document.querySelectorAll('.card:not(.proc-card)').forEach(c=>{
     const ta=c.querySelector('textarea');
@@ -17579,6 +18046,9 @@ async function polishCard(id){
 // ── ÍCONES (SVG de linha reaproveitados em toda a UI — mesma função, mesmo símbolo) ──
 const ICO={
   more:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
+  // Mesmo ícone em pé — pra coluna estreita, como a do ⋮ da etiqueta de cor,
+  // onde três pontos deitados não caberiam sem encostar na bolinha vizinha.
+  moreV:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>',
   qr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3"/><path d="M14 20h3"/><path d="M20 20h1"/></svg>',
   copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
   textOnly:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
@@ -17633,6 +18103,9 @@ const ICO={
   inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
   archive:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>',
   folderPlus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>',
+  // Pasta sem o "+": "mover para uma pasta" não cria pasta nenhuma, e o mesmo
+  // desenho nas duas linhas do menu faria uma prometer o que é da outra.
+  folder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
   stetho:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>',
   msgs:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>',
   volume:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>',
