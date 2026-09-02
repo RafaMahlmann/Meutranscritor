@@ -2421,6 +2421,172 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .orb-modal .fc-lista-del-btn{border-color:var(--orb-borda-sat);color:var(--orb-texto3)}
 .orb-modal .fc-panel-handle-bar{background:rgba(255,255,255,.28)}
 .orb-modal .fc-panel-handle:hover .fc-panel-handle-bar{background:rgba(255,255,255,.5)}
+
+/* ══ CALENDÁRIO — Fase 1 (mês · arrastar · exportar .ics) ══════════════════
+   Terceiro modo de ver a MESMA coleção de cards, ao lado do Fluxograma e da
+   Órbita. Aqueles dois respondem ONDE a nota mora; este responde QUANDO.
+   Duas tintas na mesma grade:
+     · FITA  = card marcado num dia (dataset.quando). É o que se arrasta e o
+               que vira evento no arquivo .ics.
+     · PONTO = card que ACONTECEU naquele dia (dataset.dt) e não está marcado
+               em lugar nenhum. Vem de graça — o dado já existe em todo card,
+               e é o que impede o calendário de estrear vazio.
+   A moldura é a MESMA dos outros dois mapas de propósito (.tx-overlay,
+   .fc-modal, .fc-topbar, botão de 36×36): três telas, um app só. */
+/* Achado medindo: `.fc-overlay{z-index:920}` (linha ~1422) NÃO vale nada — a
+   regra `.tx-overlay{z-index:900}` vem depois no arquivo, tem a mesma
+   especificidade e vence. Os dois mapas rodam em 900 desde sempre e ninguém
+   notou porque 900 já está acima de tudo. Aqui o seletor é duplo de propósito
+   pra o número escrito ser o número aplicado. */
+.tx-overlay.cal-overlay{z-index:920}
+.cal-topbar{gap:6px}
+/* ‹ título › andam JUNTOS, à esquerda — não com o título esticado no meio da
+   barra. Numa tela de 1280px o flex:1 jogava as duas setas a 1.100px uma da
+   outra: virar o mês, que é a ação mais repetida desta tela, viraria uma
+   viagem de mouse de ponta a ponta. Quem empurra os botões de ação pra
+   direita é a folga, não o título. */
+.cal-titulo{flex:0 1 auto;min-width:146px;text-align:center;padding:0 2px}
+.cal-folga{flex:1}
+/* O palco é o pai posicionado da camada de cards flutuantes
+   (.float-layer é position:absolute;inset:0) — sem position:relative aqui
+   a janela flutuante iria parar no canto do documento. */
+.cal-palco{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;
+  padding:8px 10px 10px;gap:3px}
+.cal-sem{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;flex-shrink:0}
+.cal-sem span{font-size:10px;font-weight:750;letter-spacing:.05em;color:var(--text3);
+  text-align:center;text-transform:uppercase;padding:2px 0;overflow:hidden;white-space:nowrap}
+/* SEIS linhas fixas, sempre — nunca 5, nunca 7. Se a altura da grade mudasse
+   ao virar o mês, a tela inteira pularia; é o erro que mais gente comete em
+   grade de mês, e é de graça acertar. */
+.cal-grade{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+  grid-template-rows:repeat(6,minmax(0,1fr));gap:2px}
+/* overflow VISÍVEL de propósito: quem recorta é a lista de fitas lá dentro.
+   Com overflow:hidden na célula, o anel de confirmação (que cresce de
+   scale(1) até 1.35) era recortado na borda e não aparecia nada — o clássico
+   "animei e não vi": não era sutileza, era invisível. */
+.cal-cel{background:var(--bg-card);border-radius:8px;padding:3px 4px 4px;position:relative;
+  display:flex;flex-direction:column;gap:2px;min-width:0;min-height:0}
+.cal-cel.fds{background:#f7f7f7}
+[data-theme="dark"] .cal-cel.fds{background:#2a2a2d}
+/* O dia do mês vizinho tem que VENCER o fim de semana — um sábado do mês que
+   vem é "de fora" antes de ser sábado. A segunda regra existe porque
+   [data-theme] + .fds tem especificidade maior que .cal-cel.fora sozinho.
+   No claro ele perde o branco; no escuro ele perde a ELEVAÇÃO e vira o fundo
+   (#131315 sob o #212124 da célula) — no tema escuro, elevação é
+   pertencimento. O NÚMERO não leva opacidade nenhuma: a 62% ele cairia pra
+   3,1:1 no claro, e quem faz a hierarquia aqui é a superfície. */
+.cal-cel.fora,[data-theme="dark"] .cal-cel.fora{background:var(--bg)}
+/* Alvo do arrasto: opacity + transform num ::before. Mudar o background das
+   42 células a cada movimento do dedo forçaria repintura de tudo. */
+.cal-cel::before{content:'';position:absolute;inset:0;border-radius:8px;pointer-events:none;
+  border:2px solid var(--cal-alvo,transparent);background:var(--cal-alvobg,transparent);
+  opacity:0;transform:scale(.985);z-index:2;
+  transition:opacity 140ms var(--fc-curva),transform 140ms var(--fc-curva)}
+.cal-cel.mira::before{opacity:1;transform:scale(1)}
+.cal-cel.cal-pulsando{z-index:5}
+.cal-dnum{font-size:11px;font-weight:640;color:var(--text2);line-height:1.25;padding-left:2px;
+  flex-shrink:0;transform-origin:left center;transition:transform 140ms var(--fc-curva)}
+.cal-cel.mira .cal-dnum{transform:scale(1.06)}
+/* "Hoje" é PESO 800 + traço de 2px sob o número, nunca só a cor de acento:
+   medido, o verde --accent dá 2,54:1 contra a célula branca (2,44:1 na skin
+   âmbar). A tipografia carrega, a cor só confirma. */
+.cal-cel.hoje .cal-dnum{font-weight:800;color:var(--text);padding-bottom:3px}
+.cal-cel.hoje .cal-dnum span{position:relative}
+.cal-cel.hoje .cal-dnum span::after{content:'';position:absolute;left:0;right:0;bottom:-3px;
+  height:2px;border-radius:1px;background:var(--accent2)}
+[data-theme="dark"] .cal-cel.hoje .cal-dnum span::after{background:var(--accent)}
+.cal-fitas{display:flex;flex-direction:column;gap:2px;min-height:0;overflow:hidden}
+/* flex-shrink:0 é obrigatório. Sem ele o navegador ESMAGA a fita pra fazer
+   caber — medido numa maquete: 5,4px numa fita que devia ter 17, com o texto
+   cortado ao meio. Fita ou cabe inteira, ou vira "+N". */
+/* Cinza da nota SEM etiqueta. Não é --text3: medido, o #8e8e93 dá 3,04:1
+   contra a célula de fim de semana e 3,0:1 contra o dia de fora — passa o
+   mínimo de 3:1 raspando, e "raspando" não é passar. Este tom dá 4,5–5,1:1
+   nas três superfícies do tema claro. No escuro o --text3 já dá 5,96:1 e
+   fica. */
+.cal-fita{--cal-fundo:var(--bg-input);--cal-txt:var(--text2);--cal-ca:#6e6e73;
+  flex-shrink:0;border-radius:5px;padding:1.5px 5px 1.5px 4px;font-size:10.5px;font-weight:660;
+  line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  border-left:3px solid var(--cal-pasta,transparent);
+  background:var(--cal-fundo);color:var(--cal-txt);
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.cal-fita:active{cursor:grabbing}
+/* O ponto é a MESMA ficha com o texto colapsado — mesmo nó do começo ao fim
+   do arrasto. Ao voar, ele "abre" e vira legível. Bolinha de 5px dentro de
+   um alvo de 10×14: a discrição vem do tamanho, não da transparência
+   (a 55% de opacidade ela mediria 1,9:1 no claro — invisível). */
+.cal-pt{--cal-ca:#6e6e73;
+  width:10px;height:14px;flex-shrink:0;font-size:0;line-height:0;overflow:hidden;
+  border-radius:3px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(circle at 50% 50%,var(--cal-ca) 0 2.5px,rgba(0,0,0,0) 2.9px)}
+.cal-pt:active{cursor:grabbing}
+/* Quando a célula fica baixa demais pra uma ficha caber inteira (janela curta,
+   celular deitado), a nota MARCADA também vira ponto — informação nenhuma pode
+   sumir em silêncio. Pra as duas tintas não virarem uma só, o ponto de
+   "marcado" é maior: 7px contra 5px. É a diferença que se lê lado a lado sem
+   precisar de legenda. */
+.cal-pt.cal-pt-marcado{background:radial-gradient(circle at 50% 50%,var(--cal-ca) 0 3.5px,rgba(0,0,0,0) 3.9px)}
+[data-theme="dark"] .cal-fita,[data-theme="dark"] .cal-pt{--cal-ca:var(--text3)}
+.cal-pontos{display:flex;gap:0;margin-top:auto;padding-left:0;flex-shrink:0;overflow:hidden;
+  align-items:center;min-height:0}
+.cal-mais{font-size:9.5px;font-weight:700;color:var(--text3);padding-left:5px;flex-shrink:0;
+  line-height:1.3;white-space:nowrap;overflow:hidden}
+/* A ficha em voo: position:fixed pra acompanhar o dedo em translate3d puro.
+   pointer-events:none faz o elementFromPoint enxergar a célula debaixo sem
+   precisar esconder/mostrar o nó a cada quadro. */
+.cal-fita.voando,.cal-pt.voando{position:fixed;left:0;top:0;z-index:960;pointer-events:none;
+  cursor:grabbing;margin:0;transition:none;box-shadow:0 6px 24px rgba(0,0,0,.22)}
+[data-theme="dark"] .cal-fita.voando,[data-theme="dark"] .cal-pt.voando{box-shadow:0 8px 30px rgba(0,0,0,.7)}
+.cal-pt.voando{width:auto;height:auto;font-size:10.5px;line-height:1.35;font-weight:660;
+  padding:1.5px 6px 1.5px 5px;border-radius:5px;overflow:hidden;white-space:nowrap;
+  max-width:190px;text-overflow:ellipsis;
+  background:var(--cal-fundo,var(--bg-input));color:var(--cal-txt,var(--text2));
+  border-left:3px solid var(--cal-pasta,var(--cal-ca))}
+.cal-fita.pousando{transition:transform 300ms var(--fc-curva)}
+.cal-anel{position:absolute;inset:0;border-radius:8px;border:1.5px solid var(--cal-acor,var(--accent));
+  pointer-events:none;opacity:0;z-index:4}
+@keyframes calAnel{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(1.35)}}
+/* A virada de mês acontece dezenas de vezes por sessão: orçamento BAIXO.
+   240ms, sem escalonamento nenhum — escalonar 30 fitas a 20ms daria 600ms de
+   cauda e quem folheia meses clicaria de novo antes de o anterior terminar.
+   E são os mesmos 42 nós: só o conteúdo troca, a moldura não pisca. */
+.cal-grade.cal-vira-esq .cal-cel>*{animation:calViraE 240ms var(--fc-curva) both}
+.cal-grade.cal-vira-dir .cal-cel>*{animation:calViraD 240ms var(--fc-curva) both}
+@keyframes calViraE{from{opacity:0;transform:translateX(-3%)}to{opacity:1;transform:none}}
+@keyframes calViraD{from{opacity:0;transform:translateX(3%)}to{opacity:1;transform:none}}
+.cal-dica{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+  background:var(--bg-card);border:1px solid var(--border);border-radius:20px;
+  padding:5px 13px;font-size:11.5px;font-weight:600;color:var(--text3);
+  box-shadow:var(--shadow-card);pointer-events:none;z-index:6;max-width:calc(100% - 20px);
+  text-align:center;transition:opacity 240ms var(--fc-curva)}
+.cal-dica.cal-dica-off{opacity:0}
+/* Abaixo de 700px a fita com TEXTO não cabe: nem "Reunião" entra numa célula
+   de 48px de largura. Ela vira uma ficha de cor (que continua sendo o alvo de
+   arrasto — no celular esse gesto não pode sumir) e a leitura passa a ser
+   número + cor, exatamente como o calendário do celular de todo mundo. */
+@media(max-width:700px){
+  /* Aqui o respiro sai pra a célula caber no alvo de toque. Medido em 360px
+     com padding 6 e gap 2: a célula dava 43,42px — 0,58px ABAIXO do
+     --card-tap-min de 44px do próprio app. Com padding 4 e gap 1 dá 44,86px.
+     Meio pixel importa quando o número é uma regra escrita. */
+  .cal-palco{padding:6px 4px 8px}
+  .cal-grade,.cal-sem{gap:1px}
+  .cal-topbar{padding:9px 8px;gap:4px}
+  .cal-titulo{font-size:13px;min-width:0;flex:1}
+  .cal-folga{display:none}
+  .cal-topbar .fc-topbar-actions{gap:4px}
+  .cal-topbar .fc-new-card-btn{margin-right:0}
+  .cal-ics-btn{display:none}
+  .cal-fita{font-size:0;line-height:0;height:14px;padding:0 0 0 4px;border-radius:4px;
+    border-left-width:3px}
+  .cal-fita.voando{font-size:10.5px;line-height:1.35;height:auto;
+    padding:1.5px 6px 1.5px 5px;border-radius:5px;max-width:190px}
+  .cal-mais{font-size:9px;padding-left:3px}
+}
+@media(prefers-reduced-motion:reduce){
+  .cal-cel::before,.cal-dnum,.cal-fita.pousando{transition-duration:.01ms}
+  .cal-grade.cal-vira-esq .cal-cel>*,.cal-grade.cal-vira-dir .cal-cel>*{animation-duration:.01ms}
+}
 .folder-cfg-panel{display:none;background:var(--bg-input);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px}
 .folder-cfg-panel.on{display:block}
 .folder-cfg-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -4032,6 +4198,9 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <button class="folder-fc-btn" id="btnFolderOrb" onclick="abrirOrbital()" title="Ver como órbita" data-i18n-title>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><ellipse cx="12" cy="12" rx="9.5" ry="4.2" transform="rotate(-25 12 12)"/><circle cx="20.3" cy="8.5" r="1.4"/></svg>
         </button>
+        <button class="folder-fc-btn" id="btnFolderCal" onclick="abrirCalendario()" title="Ver como calendário" data-i18n-title>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </button>
         <button class="folder-fc-btn" id="btnFolderNova" onclick="_folderIrCriarNova()" title="Nova pasta" data-i18n-title>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
         </button>
@@ -5124,7 +5293,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.01.4';
+const VOX_VERSION='2026.09.02.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -5244,6 +5413,31 @@ let I18N_EN={
 "Nome removido":"Name removed",
 "Ver cards flutuantes":"View floating cards",
 "Criar card aqui":"Create a card here",
+// CALENDÁRIO — fase 1
+"Ver como calendário":"View as calendar",
+"Mês anterior":"Previous month",
+"Próximo mês":"Next month",
+"Hoje":"Today",
+"Exportar para calendário (.ics)":"Export to calendar (.ics)",
+"arraste uma nota de um dia pro outro":"drag a note from one day to another",
+"Nota sem nome":"Untitled note",
+"calendário":"calendar",
+"o calendário":"the calendar",
+"Abrir a nota":"Open the note",
+"Tirar deste dia":"Take it off this day",
+"Tirei do dia.":"Taken off the day.",
+"Nota nova neste dia":"New note on this day",
+"Esconder o que já aconteceu":"Hide what already happened",
+"Mostrar o que já aconteceu":"Show what already happened",
+"Levar o texto da nota no arquivo":"Include the note's text in the file",
+"ligado":"on",
+"desligado":"off",
+"O texto inteiro vai dentro do arquivo. Se você importar num calendário da nuvem, ele sai do seu aparelho.":"The whole text goes inside the file. If you import it into a cloud calendar, it leaves your device.",
+"O arquivo vai levar só o nome da nota.":"The file will carry only the note's name.",
+"Anotado no Vox.":"Noted in Vox.",
+"Nenhuma nota está marcada num dia ainda — arraste uma pro calendário primeiro.":"No note is set on a day yet — drag one onto the calendar first.",
+"{n} notas no arquivo do calendário.":"{n} notes in the calendar file.",
+"1 nota no arquivo do calendário.":"1 note in the calendar file.",
 "Card novo — arraste pelo ⠿ até uma pasta":"New card — drag it by the ⠿ onto a folder",
 "Voltar pro mapa":"Back to the map",
 "Fechar janela":"Close window",
@@ -8869,12 +9063,35 @@ function _flNovoCardAqui(btn){
 //     addCard() — armar uma bandeirinha ali cobre os dois sem duplicar regra.
 function _mapaAberto(){
   return !!(document.getElementById('fcOverlay')?.classList.contains('on')||
-            document.getElementById('orbOverlay')?.classList.contains('on'));
+            document.getElementById('orbOverlay')?.classList.contains('on')||
+            document.getElementById('calOverlay')?.classList.contains('on'));
 }
 function _sincIbarSobreMapa(){
   document.body.classList.toggle('ibar-sobre-mapa',_mapaAberto());
 }
 let _flAbrirNoProximoCard=false;
+// ── A DURAÇÃO REAL DO ÁUDIO, QUE ATÉ AQUI IA PRO LIXO ──────────────────────
+// processAudio(file,durSec,fromRec) recebe a duração real da gravação
+// (Math.floor((Date.now()-recStart)/1000)) e usava ela só pra calcular custo e
+// somar em stats.sec — depois de transcrever, sumia. É informação que NÃO
+// volta: uma gravação de 50 minutos feita hoje sem esse campo é uma duração
+// perdida pra sempre.
+// Mesma ponte de _flAbrirNoProximoCard: uma bandeirinha armada por quem sabe o
+// número e gasta pelo primeiro card de áudio que nascer. Os dois caminhos de
+// gravação (curta e longa) e todos os de diarização desembocam em
+// addCard/addDiarCard, então uma bandeira cobre todos sem duplicar regra.
+let _durAudioProxCard=null;
+function _armarDurAudio(sec){
+  const n=Math.round(+sec||0);
+  _durAudioProxCard=n>0?n:null;
+}
+// Só card de ÁUDIO gasta a bandeira: um card de texto criado pelo "+" no meio
+// de uma transcrição não pode roubar a duração de uma gravação alheia.
+function _gastarDurAudio(el,tipo){
+  if(_durAudioProxCard==null||tipo==='texto')return;
+  el.dataset.durAudio=String(_durAudioProxCard);
+  _durAudioProxCard=null;
+}
 // De onde a janela flutuante "voa" (FLIP). Enquanto grava, o #btnRec está
 // display:none — o rect dele é 0×0 e a janela nasceria da quina da tela, com
 // a escala mínima de 0.15. Nesse estado quem representa a gravação na tela é
@@ -10491,6 +10708,638 @@ function _flReclampJanelas(){
   },120);
 }
 
+// ══ CALENDÁRIO — Fase 1 ═════════════════════════════════════════════════════
+// Terceiro modo de ver a MESMA árvore/coleção, ao lado do Fluxograma e da
+// Órbita. Eles respondem ONDE a nota mora; este responde QUANDO.
+//
+// DUAS TINTAS NA MESMA GRADE:
+//   · "aconteceu"  → dataset.dt (já existe em todo card desde sempre). É o que
+//     faz o calendário estrear CHEIO em vez de vazio, sem a pessoa preencher
+//     nada. Aparece como bolinha no rodapé da célula.
+//   · "marcado"    → dataset.quando ('AAAA-MM-DD', campo novo). É o que se
+//     arrasta e o que vira evento no .ics. Aparece como fita.
+//
+// REGRA QUE NÃO PODE SER REVERTIDA SEM MATAR O MODO: nota NUNCA nasce com
+// `quando` automático. Se toda nota nascesse marcada em hoje, a agenda — a
+// parte que a pessoa DECIDE — sumiria no meio do registro de tudo que já
+// existe. Marcar é sempre um ato deliberado: arrastar, ou criar pelo "+".
+//
+// `quando` é INDEPENDENTE de pasta. Mudar de dia nunca muda de pasta e
+// vice-versa: no Fluxograma/Órbita soltar um card sobre um nó já significa
+// "mudar de pasta"; se soltar num dia também mexesse nisso, o mesmo gesto
+// teria dois significados no mesmo app.
+const CAL_ICO={
+  ant:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+  prox:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+  // "Enquadrar" dos outros dois mapas vira "Hoje": enquadrar não existe aqui
+  // (não há pan/zoom livre, a grade é ancorada), mas o SIGNIFICADO — "me
+  // devolve ao ponto de referência" — é o mesmo, e é o botão mais usado de
+  // qualquer calendário. Mesma moldura, mesma posição, o músculo do dedo
+  // continua valendo.
+  hoje:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>',
+  ics:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
+  fechar:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  dia:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+};
+let _calFoco=null;              // Date do 1º dia do mês em foco
+let _calGradeEl=null,_calDicaEl=null;
+let _calDir=0;                  // -1 = veio da esquerda, +1 = da direita, 0 = sem virada
+let _calDiaProxCard=null;       // dia que o próximo card nascido deve receber
+let _calPrefs={aconteceu:true,icsTexto:false};
+try{
+  const _p=JSON.parse(localStorage.getItem('vox_cal')||'{}');
+  if(typeof _p.aconteceu==='boolean')_calPrefs.aconteceu=_p.aconteceu;
+  if(typeof _p.icsTexto==='boolean')_calPrefs.icsTexto=_p.icsTexto;
+}catch(e){}
+function _calSalvarPrefs(){try{localStorage.setItem('vox_cal',JSON.stringify(_calPrefs))}catch(e){}}
+
+// ── datas: SEMPRE hora local, NUNCA toISOString() ──
+// new Date('2026-09-03') é meia-noite UTC — no Brasil isso é dia 2 às 21h, e a
+// nota apareceria no dia errado. É o bug mais escorregadio que existe em
+// calendário, e ele já mordeu meio mundo.
+function _calChave(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function _calValida(k){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(k||'')))return false;
+  const p=k.split('-');
+  const d=new Date(+p[0],+p[1]-1,+p[2]);
+  return d.getFullYear()===+p[0]&&d.getMonth()===+p[1]-1&&d.getDate()===+p[2];
+}
+function _calDaChave(k){const p=String(k).split('-');return new Date(+p[0],+p[1]-1,+p[2])}
+function _calSomaDias(k,n){const d=_calDaChave(k);d.setDate(d.getDate()+n);return _calChave(d)}
+// dataset.dt é um ISO completo, e card importado de backup antigo pode trazer
+// string vazia ou fora do padrão: new Date('') é Invalid Date e viraria NaN na
+// grade. Data inválida vira "sem dia" e a nota simplesmente não entra.
+function _calChaveDoIso(iso){
+  if(!iso)return '';
+  const d=new Date(iso);
+  return isNaN(d.getTime())?'':_calChave(d);
+}
+function _calMaiuscula(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s}
+// No estreito o rótulo é montado à mão ("set. 2026") em vez de pedir o formato
+// pronto ao locale: em pt-BR o {month:'short',year:'numeric'} devolve "set. de
+// 2026", que mede 75px e não cabe nos 72px que sobram entre as setas — ficava
+// cortado com reticências. Medido, não estimado.
+function _calRotuloMes(d,curto){
+  try{
+    if(curto)return _calMaiuscula(d.toLocaleDateString(getLocale(),{month:'short'}))+' '+d.getFullYear();
+    return _calMaiuscula(d.toLocaleDateString(getLocale(),{month:'long',year:'numeric'}));
+  }catch(e){return d.getFullYear()+'-'+(d.getMonth()+1)}
+}
+function _calRotuloDia(k){
+  try{
+    return _calMaiuscula(_calDaChave(k).toLocaleDateString(getLocale(),{day:'numeric',month:'long'}));
+  }catch(e){return k}
+}
+// O nome que a nota mostra na fita e leva pro .ics. Sem sessionName, a primeira
+// linha escrita diz muito mais que a data formatada — um calendário cheio de
+// "01/09/2026 14:32" não responde nada.
+function _calNomeDoCard(c){
+  const sn=(c.dataset.sessionName||'').trim();
+  if(sn)return sn;
+  const ta=c.querySelector('textarea');
+  const linha=String((ta&&ta.value)||'').split('\n').map(s=>s.trim()).find(s=>s);
+  if(linha)return linha.length>70?linha.slice(0,69)+'…':linha;
+  return c.dataset.dt?fmtDt(c.dataset.dt):t('Nota sem nome');
+}
+function _calCorDaPasta(c){
+  const id=c.dataset.folder||'';
+  if(!id)return null;
+  const f=folders.find(x=>x.id===id);
+  return (f&&f.color)?safeColor(f.color):null;
+}
+function _calCaminhoPasta(c){
+  const id=c.dataset.folder||'';
+  if(!id)return '';
+  return getFolderPath(id).map(f=>f.name).join(' / ');
+}
+// A paleta CALIBRADA (a mesma de .card[data-tc], via FOLDER_LUZ) — nunca o
+// array TAG_CORES cru. Medido contra a célula branca: das 8 cores cruas, 7
+// reprovam o mínimo de 3:1 do WCAG 1.4.11 (o amarelo #eab308 dá 1,92:1); a
+// calibrada passa 8 de 8 (3,40–3,94:1 no claro, 7,58–8,52:1 no escuro).
+function _calLuzDoCard(c){
+  const tc=c.dataset.tc;
+  if(tc===undefined||tc===''||isNaN(+tc))return null;
+  return _folderLuz(+tc);
+}
+function _calCardsDoCalendario(){
+  // Arquivado e lixeira somem — a MESMA regra dos outros dois mapas, de graça.
+  // (O campo `quando` fica gravado: desarquivar devolve a nota ao dia dela.)
+  return _flCardsVivos();
+}
+
+// ── abrir / fechar ──
+function abrirCalendario(){
+  let ov=document.getElementById('calOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='calOverlay';
+    ov.className='tx-overlay cal-overlay';
+    ov.innerHTML=`<div class="fc-modal">
+      <div class="fc-topbar cal-topbar">
+        <button type="button" class="fc-fit-btn" onclick="_calAndar(-1)" title="${escHtml(t('Mês anterior'))}" aria-label="${escHtml(t('Mês anterior'))}">${CAL_ICO.ant}</button>
+        <span class="fc-title cal-titulo" id="calTitulo"></span>
+        <button type="button" class="fc-fit-btn" onclick="_calAndar(1)" title="${escHtml(t('Próximo mês'))}" aria-label="${escHtml(t('Próximo mês'))}">${CAL_ICO.prox}</button>
+        <span class="cal-folga"></span>
+        <div class="fc-topbar-actions">
+          <button type="button" class="fc-new-card-btn" onclick="_calNovaNotaAqui(this)" title="${escHtml(t('Criar card aqui'))}" aria-label="${escHtml(t('Criar card aqui'))}">${FC_NEW_CARD_ICON}</button>
+          <button type="button" class="fc-float-toggle-btn" onclick="_flAlternarCamada()" title="${escHtml(t('Ver cards flutuantes'))}" aria-label="${escHtml(t('Ver cards flutuantes'))}">${FC_FLOAT_TOGGLE_ICON}</button>
+          <button type="button" class="fc-fit-btn" onclick="_calHoje()" title="${escHtml(t('Hoje'))}" aria-label="${escHtml(t('Hoje'))}">${CAL_ICO.hoje}</button>
+          <button type="button" class="fc-fit-btn cal-ics-btn" onclick="_calExportarIcs()" title="${escHtml(t('Exportar para calendário (.ics)'))}" aria-label="${escHtml(t('Exportar para calendário (.ics)'))}">${CAL_ICO.ics}</button>
+          <button type="button" class="fc-close-btn" onclick="fecharCalendario()" title="${escHtml(t('Fechar'))}" aria-label="${escHtml(t('Fechar'))}">${CAL_ICO.fechar}</button>
+        </div>
+      </div>
+      <div class="cal-palco" id="calPalco">
+        <div class="cal-sem" id="calSem"></div>
+        <div class="cal-grade" id="calGrade"></div>
+        <div class="cal-dica" id="calDica">${escHtml(t('arraste uma nota de um dia pro outro'))}</div>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    _calGradeEl=document.getElementById('calGrade');
+    _calDicaEl=document.getElementById('calDica');
+    // As 42 células nascem UMA vez e nunca mais. Virar o mês troca o conteúdo
+    // delas, não os nós — recriar a grade a cada mês faria a tela piscar;
+    // reaproveitar faz o conteúdo deslizar.
+    for(let i=0;i<42;i++){
+      const c=document.createElement('div');
+      c.className='cal-cel';
+      c.innerHTML='<div class="cal-dnum"><span></span></div><div class="cal-fitas"></div><div class="cal-pontos"></div>';
+      _calGradeEl.appendChild(c);
+    }
+    _calGradeEl.addEventListener('pointerdown',_calPointerDown);
+    _calGradeEl.addEventListener('contextmenu',_calMenuContexto);
+    _mapaLigarToqueLongo(_calGradeEl,_calMenuContexto);
+  }
+  _calGradeEl=document.getElementById('calGrade');
+  _calDicaEl=document.getElementById('calDica');
+  // A camada de cards flutuantes é COMPARTILHADA com os outros dois mapas —
+  // ela se muda de dono (appendChild move o nó), nunca ganha uma cópia.
+  _flAcoplarCamada(document.getElementById('calPalco'));
+  _fcFecharPainel();
+  // Abre sempre no mês de hoje e SEM filtro de pasta ("Tudo"), como a Órbita e
+  // o Fluxograma. Previsível é melhor que esperto.
+  const hj=new Date();
+  _calFoco=new Date(hj.getFullYear(),hj.getMonth(),1);
+  _calDir=0;
+  if(_calDicaEl)_calDicaEl.classList.remove('cal-dica-off');
+  ov.classList.add('on');
+  _sincIbarSobreMapa();  // a barra de gravação de sempre passa a valer por cima
+  _calMontarSemana();
+  _calPintar();
+}
+function fecharCalendario(){
+  const ov=document.getElementById('calOverlay');
+  if(ov)ov.classList.remove('on');
+  _mapaFecharMenu();
+  _calCancelarArrasto();
+  _sincIbarSobreMapa();
+  _fcFecharPainel();
+  if(_flAtiva)_flAlternarCamada();
+  _flPointers.clear();_flPanAtivo=false;_flPinchDist=null;
+  // Fechar devolve todo card flutuante pro lugar — senão ele ficaria escondido
+  // num #floatWorld sem dono visível, fora de #cardsList.
+  [..._flAbertas].forEach(j=>_flFecharJanela(j.id));
+}
+function _calAberto(){
+  return !!document.getElementById('calOverlay')?.classList.contains('on');
+}
+// Nomes dos dias vêm do locale (1/set/2024 foi um domingo) — nada de array
+// traduzido à mão que sai do ar quando a pessoa troca o idioma.
+function _calMontarSemana(){
+  const el=document.getElementById('calSem');
+  if(!el)return;
+  const estreito=window.matchMedia('(max-width:700px)').matches;
+  el.innerHTML='';
+  for(let i=0;i<7;i++){
+    const d=new Date(2024,8,1+i);
+    let nome=d.getDate()+'';
+    try{nome=d.toLocaleDateString(getLocale(),{weekday:'short'}).replace(/\.$/,'')}catch(e){}
+    const s=document.createElement('span');
+    s.textContent=estreito?nome.charAt(0):nome;
+    el.appendChild(s);
+  }
+}
+
+// Passar a linha dos 700px troca a forma da grade (nome do dia inteiro ou só a
+// inicial, ficha com texto ou ficha de cor, quantas bolinhas cabem) — então a
+// virada de largura repinta, sem recriar nó nenhum.
+let _calResizeT=null;
+window.addEventListener('resize',()=>{
+  if(!_calAberto())return;
+  clearTimeout(_calResizeT);
+  _calResizeT=setTimeout(()=>{_calMontarSemana();_calPintar()},140);
+});
+
+// ── desenho ──
+function _calPintar(){
+  if(!_calGradeEl||!_calFoco)return;
+  const base=_calFoco;
+  const primeiro=new Date(base.getFullYear(),base.getMonth(),1);
+  const d0=new Date(primeiro);
+  d0.setDate(1-primeiro.getDay());
+  const hoje=_calChave(new Date());
+  const estreito=window.matchMedia('(max-width:700px)').matches;
+
+  // Um índice por dia, numa passada só. Card MARCADO entra como fita no dia
+  // dele; card sem marca entra como bolinha no dia em que aconteceu. Assim
+  // nada é contado duas vezes — e o primeiro arrasto (bolinha vira fita) é o
+  // que ensina o modelo inteiro, sem uma linha de texto explicativo.
+  const marcados={},aconteceu={};
+  _calCardsDoCalendario().forEach(c=>{
+    const q=c.dataset.quando;
+    if(q&&_calValida(q)){(marcados[q]=marcados[q]||[]).push(c);return}
+    if(!_calPrefs.aconteceu)return;
+    const k=_calChaveDoIso(c.dataset.dt);
+    if(k)(aconteceu[k]=aconteceu[k]||[]).push(c);
+  });
+  const porData=(a,b)=>String(a.dataset.dt||'').localeCompare(String(b.dataset.dt||''));
+  Object.keys(marcados).forEach(k=>marcados[k].sort(porData));
+  Object.keys(aconteceu).forEach(k=>aconteceu[k].sort(porData));
+
+  _calGradeEl.classList.remove('cal-vira-esq','cal-vira-dir');
+  if(_calDir&&!_voxReduzMov()){
+    void _calGradeEl.offsetWidth;   // reinicia a animação sem recriar nó nenhum
+    _calGradeEl.classList.add(_calDir<0?'cal-vira-esq':'cal-vira-dir');
+  }
+  _calDir=0;
+
+  // Quantas fichas cabem de verdade nesta célula, medido — não chutado em 3.
+  // Numa janela baixa (312px de altura, que acontece em laptop com muita
+  // barra e em celular deitado) a linha fica com 28px: o número do dia já
+  // come 15 e a ficha de 17 não entra. Sem esta conta as fichas eram
+  // recortadas pelo overflow e a nota marcada sumia SEM AVISO — que é o pior
+  // jeito de uma informação desaparecer. Com teto 0, ela vira ponto (maior
+  // que o de "aconteceu") e continua arrastável.
+  const alturaCel=_calGradeEl.children[0].getBoundingClientRect().height;
+  const unidade=estreito?15:17;
+  const tetoFitas=Math.max(0,Math.min(3,Math.floor((alturaCel-15-4)/unidade)));
+  const tetoPontos=estreito?4:5;
+  for(let i=0;i<42;i++){
+    const d=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i);
+    const k=_calChave(d);
+    const cel=_calGradeEl.children[i];
+    cel.dataset.dia=k;
+    cel.classList.toggle('fora',d.getMonth()!==base.getMonth());
+    cel.classList.toggle('fds',d.getDay()===0||d.getDay()===6);
+    cel.classList.toggle('hoje',k===hoje);
+    cel.querySelector('.cal-dnum span').textContent=d.getDate();
+
+    const fitas=cel.querySelector('.cal-fitas');
+    fitas.textContent='';
+    const doDia=marcados[k]||[];
+    doDia.slice(0,tetoFitas).forEach(c=>fitas.appendChild(_calFazFita(c)));
+    if(doDia.length>tetoFitas){
+      const m=document.createElement('div');
+      m.className='cal-mais';
+      m.textContent='+'+(doDia.length-tetoFitas);
+      fitas.appendChild(m);
+    }
+    const pts=cel.querySelector('.cal-pontos');
+    pts.textContent='';
+    // As marcadas que não couberam como ficha entram aqui, na frente das que
+    // só aconteceram — o que a pessoa DECIDIU vem antes do que o app registrou.
+    const sobrando=tetoFitas===0?doDia:[];
+    sobrando.slice(0,tetoPontos).forEach(c=>pts.appendChild(_calFazPonto(c,true)));
+    (aconteceu[k]||[]).slice(0,Math.max(0,tetoPontos-sobrando.length))
+      .forEach(c=>pts.appendChild(_calFazPonto(c)));
+  }
+  const tit=document.getElementById('calTitulo');
+  if(tit)tit.textContent=_calRotuloMes(base,estreito);
+}
+function _calFazFita(c){
+  const f=document.createElement('div');
+  f.className='cal-fita';
+  f.dataset.cid=c.id;
+  const nome=_calNomeDoCard(c);
+  f.textContent=nome;          // textContent: dado do usuário nunca vira HTML
+  f.title=nome;
+  _calPintarCor(f,c);
+  return f;
+}
+function _calFazPonto(c,marcado){
+  const p=document.createElement('div');
+  p.className='cal-pt'+(marcado?' cal-pt-marcado':'');
+  p.dataset.cid=c.id;
+  const nome=_calNomeDoCard(c);
+  p.textContent=nome;          // colapsado por font-size:0 — reaparece no voo
+  p.title=nome;
+  _calPintarCor(p,c);
+  return p;
+}
+function _calPintarCor(el,c){
+  const luz=_calLuzDoCard(c);
+  if(luz){
+    el.style.setProperty('--cal-fundo',luz.b);
+    el.style.setProperty('--cal-txt',luz.txt);
+    el.style.setProperty('--cal-ca',luz.ca);
+  }
+  const pasta=_calCorDaPasta(c);
+  if(pasta)el.style.setProperty('--cal-pasta',pasta);
+}
+
+// ── navegação ──
+function _calAndar(n){
+  if(!_calFoco)return;
+  _calFoco=new Date(_calFoco.getFullYear(),_calFoco.getMonth()+n,1);
+  _calDir=n<0?-1:1;
+  _calPintar();
+}
+function _calHoje(){
+  const hj=new Date();
+  const alvo=new Date(hj.getFullYear(),hj.getMonth(),1);
+  if(!_calFoco)_calFoco=alvo;
+  _calDir=alvo.getTime()===_calFoco.getTime()?0:(alvo>_calFoco?1:-1);
+  _calFoco=alvo;
+  _calPintar();
+}
+// "Dia em foco" na visão Mês: hoje, se o mês na tela for o de hoje; senão o
+// primeiro dia do mês na tela. Sem inventar uma seleção de dia que não existe.
+function _calDiaEmFoco(){
+  const hj=new Date();
+  if(_calFoco&&hj.getFullYear()===_calFoco.getFullYear()&&hj.getMonth()===_calFoco.getMonth())return _calChave(hj);
+  return _calFoco?_calChave(_calFoco):_calChave(hj);
+}
+// O "+" é o MESMO de sempre (_flNovoCardAqui: cria card em branco e já abre
+// como janela flutuante, com o FLIP saindo do botão). Só ganha um detalhe: a
+// nota nasce já marcada no dia em foco — é o único caminho em que `quando`
+// nasce junto com o card, e é deliberado (a pessoa apertou o botão dentro do
+// calendário).
+function _calNovaNotaAqui(btn,dia){
+  _calDiaProxCard=dia||_calDiaEmFoco();
+  try{_flNovoCardAqui(btn)}finally{_calDiaProxCard=null}
+  _calPintar();
+}
+
+// ── arrastar: o MESMO nó do começo ao fim ──
+let _calArr=null,_calQuadro=false;
+function _calPointerDown(e){
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  const el=e.target.closest('.cal-fita,.cal-pt');
+  if(!el)return;
+  const cid=el.dataset.cid;
+  const card=cid&&document.getElementById(cid);
+  if(!card)return;
+  e.preventDefault();
+  const r=el.getBoundingClientRect();
+  const luz=_calLuzDoCard(card);
+  _calArr={
+    el,cid,ptr:e.pointerId,
+    dx:e.clientX-r.left,dy:e.clientY-r.top,
+    x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,
+    ehPonto:el.classList.contains('cal-pt'),
+    mira:null,moveu:false,
+    ca:luz?luz.ca:'var(--accent)',
+    alvobg:luz?_folderRgba(luz.ca,.10):'var(--accent-glow)'
+  };
+  try{el.setPointerCapture(e.pointerId)}catch(err){}
+  document.addEventListener('pointermove',_calPointerMove);
+  document.addEventListener('pointerup',_calPointerUp);
+  // pointercancel NÃO é um soltar: é o sistema tomando o dedo de volta (uma
+  // ligação chegando, o gesto virando rolagem). Tratar como soltura gravaria
+  // uma data que a pessoa não escolheu.
+  document.addEventListener('pointercancel',_calCancelarArrasto);
+}
+function _calPointerMove(e){
+  const a=_calArr;
+  if(!a)return;
+  a.x=e.clientX;a.y=e.clientY;
+  if(!a.moveu){
+    // 4px de folga: abaixo disso é toque, não arrasto — e é o que deixa o
+    // toque longo (menu) acontecer sem o gesto brigar com ele.
+    if(Math.hypot(e.clientX-a.x0,e.clientY-a.y0)<4)return;
+    a.moveu=true;
+    a.el.classList.add('voando');
+    // A bolinha "abre" e vira ficha legível ao voar: o dedo passa a segurar
+    // ela perto da beirada esquerda, não no ponto exato de 5px onde apertou.
+    if(a.ehPonto){a.dx=14;a.dy=9}
+    if(_calDicaEl)_calDicaEl.classList.add('cal-dica-off');
+  }
+  if(_calQuadro)return;
+  _calQuadro=true;
+  requestAnimationFrame(_calQuadroArrasto);
+}
+// Uma leitura de elementFromPoint por QUADRO, não por pointermove — e só
+// transform, nunca left/top (que forçariam layout a cada quadro).
+function _calQuadroArrasto(){
+  _calQuadro=false;
+  const a=_calArr;
+  if(!a||!a.moveu)return;
+  a.el.style.transform='translate3d('+Math.round(a.x-a.dx)+'px,'+Math.round(a.y-a.dy)+'px,0) scale(1.03)';
+  // .voando tem pointer-events:none, então o elementFromPoint enxerga a
+  // célula debaixo sem precisar esconder e remostrar o nó a cada quadro.
+  const sob=document.elementFromPoint(a.x,a.y);
+  const cel=(sob&&sob.closest)?sob.closest('.cal-cel'):null;
+  if(cel!==a.mira){
+    if(a.mira)a.mira.classList.remove('mira');
+    a.mira=cel;
+    if(cel){
+      // O ímã acende na cor da etiqueta DA NOTA que está sendo arrastada —
+      // não numa cor genérica de sistema.
+      cel.style.setProperty('--cal-alvo',a.ca);
+      cel.style.setProperty('--cal-alvobg',a.alvobg);
+      cel.classList.add('mira');
+    }
+  }
+}
+function _calPointerUp(){
+  document.removeEventListener('pointermove',_calPointerMove);
+  document.removeEventListener('pointerup',_calPointerUp);
+  document.removeEventListener('pointercancel',_calCancelarArrasto);
+  const a=_calArr;_calArr=null;
+  if(!a)return;
+  if(a.mira)a.mira.classList.remove('mira');
+  const el=a.el;
+  if(!a.moveu){el.classList.remove('voando');el.style.transform='';return}
+  const destino=(a.mira&&a.mira.dataset.dia)||'';
+  const antes=el.getBoundingClientRect();
+  el.classList.remove('voando');
+  el.style.transform='';
+  const card=document.getElementById(a.cid);
+  let mudou=false;
+  if(card&&_calValida(destino)&&card.dataset.quando!==destino){
+    card.dataset.quando=destino;
+    mudou=true;
+    saveHistory();
+  }
+  _calPintar();
+  if(!mudou)return;
+  const celDest=[..._calGradeEl.children].find(c=>c.dataset.dia===destino);
+  // FLIP: a fita não CAI, ela ENCAIXA — parte do ponto onde o dedo largou e
+  // chega na vaga real. Aos 70ms já cruzou dois terços do caminho: a sensação
+  // é de puxão magnético, não de queda.
+  const chegou=[..._calGradeEl.querySelectorAll('.cal-fita')].find(f=>f.dataset.cid===a.cid);
+  if(chegou&&!_voxReduzMov()){
+    const dep=chegou.getBoundingClientRect();
+    chegou.style.transform='translate('+(antes.left-dep.left)+'px,'+(antes.top-dep.top)+'px) scale(1.03)';
+    requestAnimationFrame(()=>{
+      chegou.classList.add('pousando');
+      chegou.style.transform='';
+      setTimeout(()=>{chegou.classList.remove('pousando')},340);
+    });
+  }
+  _calAnel(celDest,a.ca);
+}
+function _calCancelarArrasto(){
+  const a=_calArr;_calArr=null;
+  if(!a)return;
+  document.removeEventListener('pointermove',_calPointerMove);
+  document.removeEventListener('pointerup',_calPointerUp);
+  document.removeEventListener('pointercancel',_calCancelarArrasto);
+  if(a.mira)a.mira.classList.remove('mira');
+  a.el.classList.remove('voando');
+  a.el.style.transform='';
+}
+// O recibo da chegada: o mesmo anel que o app já usa ao tocar numa cor. Uma
+// vez, sem repetir e sem deixar marca — é recibo, não alerta.
+function _calAnel(cel,cor){
+  if(!cel||_voxReduzMov())return;
+  const an=document.createElement('div');
+  an.className='cal-anel';
+  an.style.setProperty('--cal-acor',cor);
+  an.style.animation='calAnel 420ms cubic-bezier(.22,1,.36,1) forwards';
+  cel.classList.add('cal-pulsando');
+  cel.appendChild(an);
+  setTimeout(()=>{an.remove();cel.classList.remove('cal-pulsando')},480);
+}
+
+// ── menu de toque longo / botão direito ──
+// Mora aqui (e não num botão fixo na barra) o interruptor da camada
+// "aconteceu" e o marcador de privacidade do .ics: a barra de cima já está
+// cheia, e nenhum dos dois é ação de todo dia.
+function _calMenuContexto(ev){
+  if(ev.target.closest('.float-layer, .mapa-menu, .fc-card-panel'))return;
+  ev.preventDefault();
+  const fita=ev.target.closest('.cal-fita,.cal-pt');
+  const cel=ev.target.closest('.cal-cel');
+  const dia=cel?cel.dataset.dia:'';
+  const itens=[];
+  let titulo=t('calendário');
+  if(fita&&fita.dataset.cid&&document.getElementById(fita.dataset.cid)){
+    const card=document.getElementById(fita.dataset.cid);
+    const marcado=!!card.dataset.quando;
+    titulo=_calNomeDoCard(card);
+    itens.push({ic:ICO.eye,rot:t('Abrir a nota'),fn:()=>_flAbrirCard(card.id,fita)});
+    if(marcado)itens.push({ic:CAL_ICO.dia,rot:t('Tirar deste dia'),fn:()=>_calTirarDoDia(card.id)});
+  }else if(dia){
+    titulo=_calRotuloDia(dia);
+    itens.push({ic:MAPA_ICO.mais,rot:t('Nota nova neste dia'),
+      fn:()=>_calNovaNotaAqui(cel,dia)});
+  }
+  itens.push({grupo:t('o calendário')});
+  itens.push({ic:_calPrefs.aconteceu?ICO.eyeOff:ICO.eye,
+    rot:_calPrefs.aconteceu?t('Esconder o que já aconteceu'):t('Mostrar o que já aconteceu'),
+    fn:()=>{_calPrefs.aconteceu=!_calPrefs.aconteceu;_calSalvarPrefs();_calPintar()}});
+  itens.push({ic:ICO.export,rot:t('Exportar para calendário (.ics)'),fn:_calExportarIcs});
+  itens.push({ic:ICO.textOnly,rot:t('Levar o texto da nota no arquivo'),
+    atalho:_calPrefs.icsTexto?t('ligado'):t('desligado'),
+    fn:()=>{
+      _calPrefs.icsTexto=!_calPrefs.icsTexto;
+      _calSalvarPrefs();
+      // O aviso escrito: um .ics importado num calendário da nuvem SAI do
+      // aparelho. Por isso isto nasce desligado e só liga a pedido.
+      if(_calPrefs.icsTexto)toast(t('O texto inteiro vai dentro do arquivo. Se você importar num calendário da nuvem, ele sai do seu aparelho.'));
+      else toast(t('O arquivo vai levar só o nome da nota.'));
+    }});
+  _mapaAbrirMenu(ev.clientX,ev.clientY,titulo,itens);
+}
+function _calTirarDoDia(cid){
+  const card=document.getElementById(cid);
+  if(!card||!card.dataset.quando)return;
+  const antes=card.dataset.quando;
+  delete card.dataset.quando;
+  saveHistory();
+  _calPintar();
+  // Nada some no Vox sem volta — e tirar do dia é justamente o gesto que a
+  // pessoa faz por engano depois de arrastar.
+  toastDesfazer(t('Tirei do dia.'),()=>{
+    const c=document.getElementById(cid);
+    if(!c)return;
+    c.dataset.quando=antes;
+    saveHistory();
+    _calPintar();
+  });
+}
+
+// ── EXPORTAR .ics (iCalendar, RFC 5545) ─────────────────────────────────────
+// Texto puro, JS puro, sem CDN e sem biblioteca. Cinco armadilhas fazem o
+// arquivo ser SILENCIOSAMENTE rejeitado pelo Google (sem mensagem de erro
+// nenhuma) — as cinco estão tratadas aqui:
+//   1. fim de linha é \r\n, não \n (o Google tolera; o Outlook não);
+//   2. a linha dobra em 75 OCTETOS e o corte é por PONTO DE CÓDIGO — cortar
+//      por .length do JavaScript parte um "ç" (2 bytes em UTF-8) no meio e
+//      corrompe o arquivo inteiro;
+//   3. a ordem do escape importa: a barra invertida vem primeiro, senão você
+//      escapa as suas próprias barras;
+//   4. DTEND de evento de dia inteiro é EXCLUSIVO — um evento só no dia 3 vai
+//      de 20260903 a 20260904. É o erro mais comum de todos;
+//   5. fuso: dia inteiro vai como VALUE=DATE, que não tem fuso e não tem como
+//      errar. Zero VTIMEZONE, zero dependência.
+const _calEnc=new TextEncoder();
+function _icsEsc(s){
+  return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,')
+    .replace(/\r\n|\r|\n/g,'\\n');
+}
+function _icsDobrar(linha){
+  const partes=[];
+  let atual='',bytes=0;
+  for(const ch of String(linha)){          // for…of anda por ponto de código
+    const b=_calEnc.encode(ch).length;
+    const teto=partes.length===0?75:74;    // continuação gasta 1 octeto no espaço
+    if(bytes+b>teto){partes.push(atual);atual='';bytes=0}
+    atual+=ch;bytes+=b;
+  }
+  partes.push(atual);
+  return partes.map((s,i)=>(i>0?' ':'')+s).join('\r\n');
+}
+function _icsP2(n){return String(n).padStart(2,'0')}
+function _icsData(k){return k.replace(/-/g,'')}
+function _icsCarimbo(d){
+  return d.getUTCFullYear()+_icsP2(d.getUTCMonth()+1)+_icsP2(d.getUTCDate())+'T'+
+    _icsP2(d.getUTCHours())+_icsP2(d.getUTCMinutes())+_icsP2(d.getUTCSeconds())+'Z';
+}
+function _calDescricaoIcs(c){
+  const base=t('Anotado no Vox.');
+  if(!_calPrefs.icsTexto)return base;
+  const txt=String(c.querySelector('textarea')?.value||'').trim();
+  return txt?base+'\n\n'+txt:base;
+}
+function _calMontarIcs(cards){
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Vox//My Transcriber//PT-BR','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  const carimbo=_icsCarimbo(new Date());
+  cards.forEach(c=>{
+    const k=c.dataset.quando;
+    L.push('BEGIN:VEVENT');
+    // UID estável (o id do card): é o que separa "exportou" de "quase
+    // sincroniza" — reexportar ATUALIZA o evento em vez de duplicar.
+    L.push(_icsDobrar('UID:'+c.id+'@vox.local'));
+    L.push('DTSTAMP:'+carimbo);
+    L.push('SEQUENCE:0');
+    L.push('DTSTART;VALUE=DATE:'+_icsData(k));
+    L.push('DTEND;VALUE=DATE:'+_icsData(_calSomaDias(k,1)));
+    L.push(_icsDobrar('SUMMARY:'+_icsEsc(_calNomeDoCard(c))));
+    L.push(_icsDobrar('DESCRIPTION:'+_icsEsc(_calDescricaoIcs(c))));
+    const cat=_calCaminhoPasta(c);
+    if(cat)L.push(_icsDobrar('CATEGORIES:'+_icsEsc(cat)));
+    L.push('END:VEVENT');
+  });
+  L.push('END:VCALENDAR');
+  return L.join('\r\n')+'\r\n';
+}
+function _calExportarIcs(){
+  const cards=_calCardsDoCalendario()
+    .filter(c=>c.dataset.quando&&_calValida(c.dataset.quando))
+    .sort((a,b)=>a.dataset.quando.localeCompare(b.dataset.quando));
+  if(!cards.length){
+    toast(t('Nenhuma nota está marcada num dia ainda — arraste uma pro calendário primeiro.'),true);
+    return;
+  }
+  dl(_calMontarIcs(cards),'vox-agenda.ics','text/calendar;charset=utf-8');
+  toast(cards.length===1?t('1 nota no arquivo do calendário.')
+    :t('{n} notas no arquivo do calendário.').replace('{n}',cards.length));
+}
+
 // ── ETIQUETAS DE COR ──
 // A pessoa marca o card com uma cor pra achar depois de bater o olho. É
 // etiqueta, não enfeite: por isso é escolhida (nunca sorteada) e por isso
@@ -10510,6 +11359,10 @@ function _restaurarEtiqueta(id,it){
   // ressuscitava tudo que a pessoa tinha tirado da frente.
   if(el&&it.arch){el.dataset.arch='1';if(it.archAt)el.dataset.archAt=it.archAt}
   if(el&&it.del){el.dataset.del='1';if(it.delAt)el.dataset.delAt=it.delAt}
+  // O dia marcado no calendário e a duração real do áudio voltam pelo mesmo
+  // caminho. Campo ausente em backup antigo simplesmente não entra.
+  if(el&&it.quando&&_calValida(it.quando))el.dataset.quando=it.quando;
+  if(el&&it.durAudio&&+it.durAudio>0)el.dataset.durAudio=String(Math.round(+it.durAudio));
 }
 // Os nomes das etiquetas são do dono do aparelho, não nossos. O padrão é a cor
 // ("Verde"), mas quem usa quase sempre quer o SIGNIFICADO ("Urgente", "Cliente").
@@ -13323,9 +14176,12 @@ function exportAll(fmt,onlyToday=false){
   dl(out,`vox_historico_${slug}.${fmt==='md'?'md':'txt'}`);
   toast(`📄 ${list.length} `+t('itens salvos'));
 }
-function dl(content,filename){
+// `tipo` é opcional e o padrão é o de sempre — quem já chamava dl(txt,nome)
+// continua saindo byte a byte igual. Só o .ics do calendário precisa de outro
+// MIME (text/calendar), senão o sistema não oferece o app de calendário.
+function dl(content,filename,tipo){
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([content],{type:'text/plain;charset=utf-8'}));
+  a.href=URL.createObjectURL(new Blob([content],{type:tipo||'text/plain;charset=utf-8'}));
   a.download=filename;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
@@ -14749,6 +15605,7 @@ function forceReset(){
   // 4. Zera todos os flags de estado
   isRec=false;isProc=false;stagedFile=null;MR=null;curStream=null;chunks=[];recStart=null;
   _flAbrirNoProximoCard=false; // destravar a UI também desarma o "o próximo card abre como janela"
+  _durAudioProxCard=null;      // e a duração de uma gravação que não chegou a virar card
   _ibarDragDepth=0;_showAudioDrop(false);
   document.querySelector('.ibar')?.classList.remove('rec-on');
   activeTA=null;activeTACard=null;
@@ -14927,7 +15784,17 @@ function saveHistory(){
       // Arquivado e lixeira só entram quando existem — card normal continua
       // salvando exatamente o mesmo que salvava antes.
       ...(c.dataset.arch==='1'?{arch:1,archAt:c.dataset.archAt||''}:{}),
-      ...(c.dataset.del==='1'?{del:1,delAt:c.dataset.delAt||''}:{})
+      ...(c.dataset.del==='1'?{del:1,delAt:c.dataset.delAt||''}:{}),
+      // quando = o dia em que a nota está MARCADA no calendário (só data).
+      // Não confundir com dt, que é o nascimento do card e é imutável: se o
+      // calendário redefinisse dt ao arrastar, a ordem da lista lateral
+      // mudaria sozinha. Mesmo molde de arch/del — card sem marca salva byte
+      // a byte igual ao que salvava antes, e backup velho abre sem tratamento.
+      ...(c.dataset.quando?{quando:c.dataset.quando}:{}),
+      // Duração REAL do áudio em segundos. Antes o app calculava isso em
+      // processAudio() só pra somar custo e estatística, e jogava fora — a
+      // informação não voltava depois.
+      ...(c.dataset.durAudio?{durAudio:parseInt(c.dataset.durAudio)||0}:{})
     };
     if(c.dataset.diarized==='true'){
       items.push({...base,diarized:true,utterances:c.dataset.utterances||'[]',speakers:c.dataset.speakers||'{}',view:c.dataset.view||'roteiro',chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
@@ -16631,6 +17498,13 @@ function sendTxt(){
 async function processAudio(file,durSec,fromRec){
   const sn=document.getElementById('snameInput').value.trim();
   const mode=sessionMode;
+  // Guarda a duração real ANTES de qualquer coisa — daqui pra frente ela vira
+  // dataset.durAudio no card que nascer (ver _armarDurAudio). Só vale pra
+  // gravação: em arquivo anexado o durSec que chega aqui é um chute pelo
+  // tamanho (30s por MB, em confirmTranscribe), e gravar um chute como se
+  // fosse medida seria pior que não gravar nada. Arquivo grande recupera a
+  // duração de verdade lá no doTranscribe, quando o áudio é decodificado.
+  _armarDurAudio(fromRec?durSec:0);
   if(recTargetTA){
     // Existe um alvo travado (gravar aqui num card já existente, ou ditar na
     // caixinha do chat do Modo Conversa) — sempre transcrição simples, nunca
@@ -16702,6 +17576,9 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
         r=await splitChunks(file,pid,key);
       }
       text=r.text;actualSec=r.sec;
+      // Aqui a duração é MEDIDA (o áudio foi decodificado pra ser fatiado),
+      // então vale mais que o palpite pelo tamanho do arquivo.
+      _armarDurAudio(actualSec);
     }
     else{
       // Formato arriscado pra esse provedor (ex: OGG fora do Groq, AMR/WMA/3GP de
@@ -16742,7 +17619,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
     recordTiming(Date.now()-_t0, actualSec);
     updateStats();saveHistory();setStatus('Pronto','ready');
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
-  finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null}
+  finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null;_durAudioProxCard=null}
 }
 
 // ── ASSEMBLYAI DIARIZATION ──
@@ -16988,6 +17865,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
   el.dataset.speakers=JSON.stringify(speakers);el.dataset.view=view;
   el.dataset.sessionName=sn;el.dataset.mode=mode;el.dataset.pinned=pinned?'true':'false';el.dataset.folder=folder;
   el.dataset.chatHistory=chatHistory;
+  _gastarDurAudio(el,'gravacao');
   if(chAberto){chHeaderOpenCards.add(id);chFooterOpenCards.add(id);}
 
   el.innerHTML=`
@@ -20037,6 +20915,12 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-header-open ch-footer-open':''}`;el.id=id;
   el.dataset.type=type;el.dataset.prov=provStr;el.dataset.cost=costUSD;el.dataset.ci=ci%PALETTE;el.dataset.dt=dt;
   el.dataset.tags=tags.join(',');el.dataset.sessionName=sn;el.dataset.mode=mode;el.dataset.pinned=pinned?'true':'false';el.dataset.speakers='{}';el.dataset.folder=folder;el.dataset.chatHistory=chatHistory;
+  _gastarDurAudio(el,type);
+  // Nota nascida pelo "+" DENTRO do calendário já nasce marcada no dia em
+  // foco. É o único caminho em que `quando` nasce com o card — e é deliberado
+  // (a pessoa apertou o botão ali). Card nascido em qualquer outro lugar do
+  // app NUNCA ganha data sozinho: ver o comentário grande do calendário.
+  if(_calDiaProxCard&&save)el.dataset.quando=_calDiaProxCard;
   if(chAberto){chHeaderOpenCards.add(id);chFooterOpenCards.add(id);}
 
   el.innerHTML=`
@@ -21700,6 +22584,15 @@ document.addEventListener('keydown',e=>{
     if(fc&&fc.classList.contains('on')){e.preventDefault();fecharFluxograma();return}
     const ob=document.getElementById('orbOverlay');
     if(ob&&ob.classList.contains('on')){e.preventDefault();fecharOrbital();return}
+    const cal=document.getElementById('calOverlay');
+    if(cal&&cal.classList.contains('on')){e.preventDefault();fecharCalendario();return}
+  }
+  // Virar o mês pelas setas — só com o calendário aberto e sem ninguém
+  // digitando (senão roubaria a seta de dentro de um textarea).
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_calAberto()&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
+    const ae=document.activeElement;
+    const digitando=ae&&(ae.tagName==='TEXTAREA'||ae.tagName==='INPUT'||ae.isContentEditable);
+    if(!digitando){e.preventDefault();_calAndar(e.key==='ArrowLeft'?-1:1);return}
   }
   if(e.key==='Enter'&&!e.shiftKey&&document.activeElement===document.getElementById('itxt')&&!isRec&&!isProc&&!stagedFile){e.preventDefault();sendTxt()}
   if((e.ctrlKey||e.metaKey)&&(e.key==='z'||e.key==='Z')){
