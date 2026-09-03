@@ -5941,7 +5941,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.02.4';
+const VOX_VERSION='2026.09.03.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6969,7 +6969,10 @@ let I18N_EN={
 "❌ Senha incorreta ou arquivo corrompido":"❌ Wrong password or corrupted file",
 "Como funciona":"How it works",
 "card":"card",
-"cards":"cards"
+"cards":"cards",
+// EXPORTS CARREGAM A MARCA DO CALENDÁRIO (03/09/2026)
+"marcado: {d}":"marked: {d}",
+"Marcado:":"Marked:"
 };
 
 // ── STATE ──
@@ -12892,7 +12895,11 @@ function _calDiaPointerUp(){
   if(!a)return;
   const el=a.el,alvo=a.alvo;
   _calLimparAlvo();
-  if(!a.moveu){_calSoltarNoLugar(el);return}
+  // Sem arrastar: na visão Dia não existe "mais fundo" pra navegar (diferente
+  // do Mês, onde tocar numa fita abre o Dia) — então o toque simples já é
+  // a ação final, abrir a nota. Antes disto só o menu de botão direito/toque
+  // longo abria, e ninguém achava.
+  if(!a.moveu){_calSoltarNoLugar(el);if(a.cid)_flAbrirCard(a.cid,el);return}
   const antes=el.getBoundingClientRect();
   _calSoltarNoLugar(el);
   const mudou=alvo?_calAplicarAlvo(a.cid,alvo):false;
@@ -13699,6 +13706,26 @@ function _calExportarIcs(){
   dl(_calMontarIcs(cards),'vox-agenda.ics','text/calendar;charset=utf-8');
   toast(cards.length===1?t('1 nota no arquivo do calendário.')
     :t('{n} notas no arquivo do calendário.').replace('{n}',cards.length));
+}
+// O .ics já carrega quando/quandoHora pro calendário externo — mas os
+// exports em texto (.md/.txt/.html/Obsidian) nunca olhavam pra esses campos,
+// só pra `dt` (o nascimento do card). Se a nota foi marcada num dia diferente
+// de quando foi gravada, o export ficava mudo sobre isso. Estas duas leem a
+// marca uma vez só, pros seis lugares que exportam texto reaproveitarem.
+// Ausente quando a nota não está marcada — export sai idêntico ao de antes.
+function _calMetaExport(card){
+  const k=card?.dataset.quando;
+  if(!k||!_calValida(k))return'';
+  let s=_calDaChave(k).toLocaleDateString(getLocale(),{day:'2-digit',month:'2-digit',year:'numeric'});
+  if(_calValidaHora(card.dataset.quandoHora))s+=' '+card.dataset.quandoHora;
+  return s;
+}
+// Mesma marca em AAAA-MM-DD[THH:MM], pro frontmatter YAML — a `date:` de cima
+// também não é traduzida por ser lida por máquina, não por gente.
+function _calMetaFrontmatter(card){
+  const k=card?.dataset.quando;
+  if(!k||!_calValida(k))return'';
+  return _calValidaHora(card.dataset.quandoHora)?k+'T'+card.dataset.quandoHora:k;
 }
 
 // ── ETIQUETAS DE COR ──
@@ -15128,7 +15155,8 @@ function exportFolder(id){
   cards.forEach((c,i)=>{
     const t2=c.querySelector('textarea')?.value.trim()||'';
     const tags=(c.dataset.tags||'').split(',').filter(t=>t).map(t=>'#'+t).join(' ');
-    out+=`## ${i+1}. ${c.dataset.sessionName||fmtDt(c.dataset.dt||'')}\n> **${t('Modo:')}** ${c.dataset.mode||'livre'} · **API:** ${c.dataset.prov||'whisper'}${tags?' · '+tags:''}\n\n${t2}\n\n---\n\n`;
+    const marcado=_calMetaExport(c);
+    out+=`## ${i+1}. ${c.dataset.sessionName||fmtDt(c.dataset.dt||'')}\n> **${t('Modo:')}** ${c.dataset.mode||'livre'} · **API:** ${c.dataset.prov||'whisper'}${tags?' · '+tags:''}${marcado?' · **'+t('Marcado:')+'** '+marcado:''}\n\n${t2}\n\n---\n\n`;
   });
   dl(out,`vox_${f.name.replace(/[^\w\-]+/g,'_')}.md`);
   toast(t('📄 Pasta "')+f.name+t('" exportada'));
@@ -16534,13 +16562,15 @@ function exportAll(fmt,onlyToday=false){
       const t2=c.querySelector('textarea')?.value.trim()||'';
       const sn=c.dataset.sessionName?`**${t('Sessão:')}** ${c.dataset.sessionName}\n`:'';
       const tags=(c.dataset.tags||'').split(',').filter(t=>t).map(t=>'#'+t).join(' ');
-      out+=`## ${i+1}. ${c.dataset.sessionName||fmtDt(c.dataset.dt||'')}\n${sn}> **${t('Modo:')}** ${c.dataset.mode||'livre'} · **API:** ${c.dataset.prov||'whisper'}${tags?' · '+tags:''}\n\n${t2}\n\n---\n\n`;
+      const marcado=_calMetaExport(c);
+      out+=`## ${i+1}. ${c.dataset.sessionName||fmtDt(c.dataset.dt||'')}\n${sn}> **${t('Modo:')}** ${c.dataset.mode||'livre'} · **API:** ${c.dataset.prov||'whisper'}${tags?' · '+tags:''}${marcado?' · **'+t('Marcado:')+'** '+marcado:''}\n\n${t2}\n\n---\n\n`;
     });
   }else{
     out=`${t('HISTÓRICO')} — VOX\n${t('Exportado:')} ${now.toLocaleString(getLocale())}\n${'═'.repeat(60)}\n\n`;
     list.forEach((c,i)=>{
       const t2=c.querySelector('textarea')?.value.trim()||'';
-      out+=`[${i+1}] ${c.dataset.sessionName||fmtDt(c.dataset.dt||'')} (${c.dataset.mode||'livre'})\n${'─'.repeat(60)}\n${t2}\n\n`;
+      const marcado=_calMetaExport(c);
+      out+=`[${i+1}] ${c.dataset.sessionName||fmtDt(c.dataset.dt||'')} (${c.dataset.mode||'livre'})${marcado?' · '+t('marcado: {d}').replace('{d}',marcado):''}\n${'─'.repeat(60)}\n${t2}\n\n`;
     });
   }
   dl(out,`vox_historico_${slug}.${fmt==='md'?'md':'txt'}`);
@@ -23730,7 +23760,8 @@ function cardMarkdown(id){
   const isoDt=new Date(c.dataset.dt||Date.now()).toISOString().slice(0,19);
   const mode=c.dataset.mode||'livre',prov=c.dataset.prov||'whisper';
   const fmTags=tags.length?`\ntags: [${tags.map(x=>x.trim().replace(/\s+/g,'-')).join(', ')}]`:'';
-  let out=`---\ndate: ${isoDt}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n# ${name}\n\n${txt}\n`;
+  const fmMarcado=_calMetaFrontmatter(c);
+  let out=`---\ndate: ${isoDt}${fmMarcado?'\nmarked: '+fmMarcado:''}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n# ${name}\n\n${txt}\n`;
   const hist=getDiarChatHistory(id);
   if(hist.length){
     out+='\n## '+t('Conversa')+'\n\n';
@@ -23758,7 +23789,8 @@ function _cardFrontmatter(card){
   const isoDt=new Date(card.dataset.dt||Date.now()).toISOString().slice(0,19);
   const mode=card.dataset.mode||'livre',prov=card.dataset.prov||'whisper';
   const fmTags=tags.length?`\ntags: [${tags.map(x=>x.trim().replace(/\s+/g,'-')).join(', ')}]`:'';
-  return `---\ndate: ${isoDt}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n`;
+  const fmMarcado=_calMetaFrontmatter(card);
+  return `---\ndate: ${isoDt}${fmMarcado?'\nmarked: '+fmMarcado:''}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n`;
 }
 function _obsName(card){return `vox_obsidian_${(card.dataset.sessionName||'nota').replace(/[^\w\-]+/g,'_').slice(0,40)}.md`}
 async function copyCardObsidian(id){
@@ -23804,6 +23836,8 @@ function exportCard(id,fmt){
   const tags=(c.dataset.tags||'').split(',').filter(x=>x);
   const dt=new Date(c.dataset.dt||Date.now()).toLocaleString(getLocale());
   const prov=c.dataset.prov||'whisper',mode=c.dataset.mode||'livre';
+  const marcado=_calMetaExport(c);
+  const marcadoTxt=marcado?' · '+t('marcado: {d}').replace('{d}',marcado):'';
   let out,ext;
   if(fmt==='md'){
     ext='md';
@@ -23811,10 +23845,10 @@ function exportCard(id,fmt){
   }else if(fmt==='html'){
     ext='html';
     const tagsHtml=tags.length?`<div class="tags">${tags.map(x=>`<span class="tag">#${escHtml(x)}</span>`).join('')}</div>`:'';
-    out=`<!DOCTYPE html><html lang="${getLocale()}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(name)} — Vox</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:760px;margin:40px auto;padding:20px;color:#1a1a1a;line-height:1.75}h1{font-size:22px;border-bottom:2px solid #e5e7eb;padding-bottom:10px;margin-bottom:4px}.meta{color:#6b7280;font-size:13px;margin-bottom:24px}.card-text{white-space:pre-wrap;font-size:15px}.tags{margin-top:16px;display:flex;gap:6px;flex-wrap:wrap}.tag{background:#ede9fe;color:#7c3aed;border-radius:20px;padding:2px 10px;font-size:12px}</style></head><body><h1>${escHtml(name)}</h1><div class="meta">${dt} · ${mode} · ${prov}</div><div class="card-text">${escHtml(txt)}</div>${tagsHtml}</body></html>`;
+    out=`<!DOCTYPE html><html lang="${getLocale()}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(name)} — Vox</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:760px;margin:40px auto;padding:20px;color:#1a1a1a;line-height:1.75}h1{font-size:22px;border-bottom:2px solid #e5e7eb;padding-bottom:10px;margin-bottom:4px}.meta{color:#6b7280;font-size:13px;margin-bottom:24px}.card-text{white-space:pre-wrap;font-size:15px}.tags{margin-top:16px;display:flex;gap:6px;flex-wrap:wrap}.tag{background:#ede9fe;color:#7c3aed;border-radius:20px;padding:2px 10px;font-size:12px}</style></head><body><h1>${escHtml(name)}</h1><div class="meta">${dt} · ${mode} · ${prov}${escHtml(marcadoTxt)}</div><div class="card-text">${escHtml(txt)}</div>${tagsHtml}</body></html>`;
   }else{
     ext='txt';
-    out=`${name}\n${dt} · ${mode} · ${prov}${tags.length?'\n'+t('Tags:')+' '+tags.join(', '):''}\n${'='.repeat(40)}\n\n${txt}\n`;
+    out=`${name}\n${dt} · ${mode} · ${prov}${marcadoTxt}${tags.length?'\n'+t('Tags:')+' '+tags.join(', '):''}\n${'='.repeat(40)}\n\n${txt}\n`;
   }
   dl(out,`vox_${safe}.${ext}`);
   toast(t('📥 Baixado (.{ext})').replace('{ext}',ext));
@@ -25036,7 +25070,8 @@ function exportObsidian(){
     const dt=c.dataset.dt||new Date().toISOString();
     const tags=['transcrição',c.dataset.mode||'livre',...(c.dataset.tags||'').split(',').filter(t=>t)];
     const spks=JSON.parse(c.dataset.speakers||'{}');const spkList=Object.values(spks).filter(Boolean).join(', ');
-    out+=`---\ndate: ${new Date(dt).toISOString().slice(0,19)}\ntags: [${tags.join(', ')}]\nmode: ${c.dataset.mode||'livre'}\napi: ${c.dataset.prov||'whisper'}\n`;
+    const marcado=_calMetaFrontmatter(c);
+    out+=`---\ndate: ${new Date(dt).toISOString().slice(0,19)}${marcado?'\nmarked: '+marcado:''}\ntags: [${tags.join(', ')}]\nmode: ${c.dataset.mode||'livre'}\napi: ${c.dataset.prov||'whisper'}\n`;
     if(c.dataset.sessionName)out+=`title: ${c.dataset.sessionName}\n`;
     if(spkList)out+=`speakers: [${spkList}]\n`;
     out+=`---\n\n`;
