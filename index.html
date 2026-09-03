@@ -2485,7 +2485,36 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    scale(1) até 1.35) era recortado na borda e não aparecia nada — o clássico
    "animei e não vi": não era sutileza, era invisível. */
 .cal-cel{background:var(--bg-card);border-radius:8px;padding:3px 4px 4px;position:relative;
-  display:flex;flex-direction:column;gap:2px;min-width:0;min-height:0}
+  display:flex;flex-direction:column;gap:2px;min-width:0;min-height:0;
+  /* A célula É o alvo principal desta tela: é ela que abre a visão Dia. Até
+     aqui ela não tinha cursor de mão, não reagia ao mouse e não afundava no
+     toque — a resposta pra "dá pra clicar aqui?" só chegava depois do clique. */
+  cursor:pointer;transition:transform 120ms var(--fc-curva)}
+/* PASSAR O MOUSE: a sombra de card do app, em 140ms de OPACIDADE PURA. Ela mora
+   num ::after que já nasce com opacity:0 — animar a sombra em si obrigaria a
+   repintar 42 células a cada quadro. (O ::before desta mesma célula já é o ímã
+   do arrasto, por isso a sombra ficou no ::after.) */
+.cal-cel::after{content:'';position:absolute;inset:0;border-radius:8px;pointer-events:none;
+  opacity:0;z-index:0;box-shadow:var(--shadow-card);
+  transition:opacity 140ms var(--fc-curva)}
+/* No escuro a sombra preta sobre fundo escuro não cria profundidade nenhuma —
+   quem levanta a célula lá é a borda clara, exatamente como o mini-mês do
+   Semestre/Ano e o resto do app já fazem.
+   22% e não os 18% do --border2: medido sobre a célula (#212124), o token dá
+   1,79:1 e este dá 2,06:1. Numa borda de 1px atrás de fitas coloridas, os
+   0,27 de diferença são a diferença entre um fio que se nota e um que se
+   adivinha. */
+[data-theme="dark"] .cal-cel::after{box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+@media(hover:hover){.cal-cel:hover::after{opacity:1}}
+/* APERTAR AFUNDA — 1,6px numa célula de 108px. E é uma CLASSE, não :active, por
+   um motivo medido: a fita em voo é `position:fixed` e vive DENTRO da célula;
+   qualquer transform num ancestral faria o `fixed` passar a se posicionar
+   contra a célula em vez da janela, e a nota arrastada grudaria no lugar. Com
+   a classe, quem aperta uma fita nunca liga o afundar. E como é transform, a
+   grade não se mexe um milímetro.
+   Isto é o que dá retorno tátil no CELULAR, onde hover não existe: metade do
+   efeito não pode depender de um mouse que metade das pessoas não tem. */
+.cal-cel.cal-apertada{transform:scale(.985)}
 .cal-cel.fds{background:#f7f7f7}
 [data-theme="dark"] .cal-cel.fds{background:#2a2a2d}
 /* O dia do mês vizinho tem que VENCER o fim de semana — um sábado do mês que
@@ -2504,17 +2533,107 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   transition:opacity 140ms var(--fc-curva),transform 140ms var(--fc-curva)}
 .cal-cel.mira::before{opacity:1;transform:scale(1)}
 .cal-cel.cal-pulsando{z-index:5}
+/* A ALTURA DO NÚMERO É A MESMA EM TODA CÉLULA, e isso não é enfeite: a conta de
+   "quantas fichas cabem" mede este nó UMA vez, na célula 0 (ver `hNum` em
+   _calPintarMes). Se a célula de hoje fosse mais alta que as outras — como era,
+   com os 3px de padding do traço antigo —, a medida mentiria justamente na
+   célula que a pessoa mais olha. Os 17px reservados aqui são os mesmos que a
+   pastilha de hoje ocupa, então o resto do mês paga o espaço e ninguém estoura.
+   Custo medido contra o desenho anterior (13,75px de linha + 3 de padding no
+   hoje): 0,25px por célula. */
 .cal-dnum{font-size:11px;font-weight:640;color:var(--text2);line-height:1.25;padding-left:2px;
-  flex-shrink:0;transform-origin:left center;transition:transform 140ms var(--fc-curva)}
+  flex-shrink:0;min-height:17px;display:flex;align-items:center;
+  transform-origin:left center;transition:transform 140ms var(--fc-curva)}
 .cal-cel.mira .cal-dnum{transform:scale(1.06)}
-/* "Hoje" é PESO 800 + traço de 2px sob o número, nunca só a cor de acento:
-   medido, o verde --accent dá 2,54:1 contra a célula branca (2,44:1 na skin
-   âmbar). A tipografia carrega, a cor só confirma. */
-.cal-cel.hoje .cal-dnum{font-weight:800;color:var(--text);padding-bottom:3px}
-.cal-cel.hoje .cal-dnum span{position:relative}
-.cal-cel.hoje .cal-dnum span::after{content:'';position:absolute;left:0;right:0;bottom:-3px;
-  height:2px;border-radius:1px;background:var(--accent2)}
-[data-theme="dark"] .cal-cel.hoje .cal-dnum span::after{background:var(--accent)}
+/* ── "HOJE": PASTILHA CHEIA, não um traço de 2px ────────────────────────────
+   O desenho antigo era peso 800 + um traço de 6,36 × 2px sob o número: 12,7px²
+   de tinta numa célula de 108 × 93 (0,13% dela), morando no mesmo cantinho de
+   11px onde já ficam as fitas e as bolinhas. Medido, não achado — e o Rafa
+   disse que procurava o dia de hoje. A pastilha dá ~227px² no MESMO espaço.
+   Ela não usa a cor sozinha (o --accent dá 2,54:1 contra a célula branca):
+   quem carrega é o PREENCHIMENTO, e o número por cima dele é que fica branco.
+   No escuro a lógica INVERTE, e isso é regra de tema escuro, não capricho: uma
+   pastilha escura o bastante pra segurar texto branco fica quase da mesma
+   luminosidade da célula (#0b6e72 sobre #212124 = 2,67:1 — a bolinha some).
+   Superfície que se destaca no escuro fica MAIS CLARA, então lá a pastilha é
+   --accent com o número quase preto. */
+/* O PREENCHIMENTO NÃO É O --accent2 CRU, e quem mandou consertar foi o número:
+   medido nas quatro peles do app, o branco sobre o --accent2 dá 3,45:1 no âmbar
+   e 3,77:1 no verde padrão — os dois REPROVAM o mínimo de 4,5:1 de texto
+   pequeno. (Índigo 6,29 e teal 6,02 passavam; um destaque que só é legível em
+   duas das quatro peles não é um destaque, é um sorteio.)
+   A correção escurece o acento com uma camada de preto a 28% — um gradiente de
+   uma cor só, nada de color-mix, que ainda não é seguro em todo lugar. E ela
+   melhora as DUAS medidas de uma vez, porque a pastilha também fica mais
+   escura contra a célula branca. Os números abaixo saíram do PIXEL PINTADO
+   (amostrado no screenshot), não da conta à mão — as duas diferem por
+   arredondamento de composição, e quem manda é o que a tela mostra:
+     verde  #059669 → número 6,45:1 · pastilha contra a célula 6,45:1 (era 3,77)
+     âmbar  #b87f1c → 5,94:1 (era 3,45)
+     índigo #4f46e5 → 9,59:1 (era 6,29)
+     teal   #0b6e72 → 9,33:1 (era 6,02)
+   Continua sendo a cor da pele, só que na versão que aguenta texto por cima. */
+.cal-cel.hoje .cal-dnum{padding-left:0;color:var(--text)}
+.cal-cel.hoje .cal-dnum span{width:17px;height:17px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(rgba(0,0,0,.28),rgba(0,0,0,.28)),var(--accent2);
+  color:#fff;font-weight:750;font-size:10.5px;line-height:1;
+  font-variant-numeric:tabular-nums}
+/* O TOM ESCURO NÃO É O --accent CRU, e o número mandou consertar: medido, o
+   --accent da pele teal (#0e8a8f) atrás de um número quase preto dá 4,46:1 —
+   reprova o mínimo de 4,5:1 de texto pequeno por 0,04, e raspando não é passar.
+   A correção é clarear o acento com uma camada de branco a 34% (gradiente de
+   uma cor só — nada de color-mix, que ainda não é seguro em todo lugar). O
+   valor sai da MEDIÇÃO do pixel pintado nas quatro peles, não de gosto:
+     verde  #10b981 → número 9,93:1 · pastilha contra a célula 8,59:1
+     âmbar  #d99a2b → 10,43:1 · 9,03:1
+     índigo #6366f1 →  7,32:1 · 6,34:1
+     teal   #0e8a8f →  7,54:1 · 6,53:1
+   E é exatamente o que a regra de tema escuro manda: superfície que se destaca
+   fica MAIS CLARA que o fundo, não mais escura — uma pastilha escura o
+   bastante pra segurar texto branco ficaria na mesma luminosidade da célula
+   (#0b6e72 sobre #212124 = 2,67:1) e a bolinha sumiria. */
+[data-theme="dark"] .cal-cel.hoje .cal-dnum span{
+  background:linear-gradient(rgba(255,255,255,.34),rgba(255,255,255,.34)),var(--accent);
+  color:#131315}
+/* HOJE QUE NÃO É DESTE MÊS → ANEL VAZADO. Conserta um defeito de verdade da
+   fase 1: agosto de 2026 termina numa segunda, então 2/set (que era hoje)
+   escorria pra última linha da grade e levava o tratamento inteiro de hoje —
+   peso 800 e 16,83:1 de contraste, contra os 640 e 9,12:1 de todo vizinho de
+   fora. O marcador só se fazia notar no momento em que ele apontava pro mês
+   errado: invisível quando servia, chamativo quando atrapalhava.
+   A regra que fecha as três marcas de hoje do app numa frase: CHEIO quando há
+   espaço vazio (a célula do Mês), VAZADO quando já há informação no lugar
+   (o quadradinho do heatmap, e o dia de outro mês, que precisa continuar
+   legível como dia de fora). */
+/* O anel leva o MESMO véu de 28% da pastilha cheia, e pelo mesmo motivo
+   medido: com o --accent2 cru ele dá 3,09:1 contra o dia-de-fora na pele
+   âmbar — passa o mínimo de 3:1 raspando, e raspando não é passar. Com o véu o
+   pixel pintado mede 4,57:1 no âmbar, 4,94 no verde, 6,89 no teal e 7,18 no
+   índigo — o pior caso das quatro peles subiu 1,5 ponto.
+   Dois anéis inset na mesma posição: o de cima é o véu preto translúcido, e o
+   acento aparece por baixo já escurecido. É o mesmo 28% do preenchimento, sem
+   precisar de um token de cor novo no app inteiro. */
+.cal-cel.hoje.fora .cal-dnum span{background:none;color:var(--text2);font-weight:700;
+  box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.28),inset 0 0 0 1.5px var(--accent2)}
+/* No escuro o véu é branco (a mesma inversão da pastilha) e por isso o anel
+   também sobe: o --accent cru dá 4,15:1 no índigo, e com o véu o pixel medido
+   dá 6,44 — o pior das quatro peles no escuro. */
+[data-theme="dark"] .cal-cel.hoje.fora .cal-dnum span{
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.34),inset 0 0 0 1.5px var(--accent)}
+/* A letra da COLUNA de hoje. Custo: zero pixel. Ganho: o olho encontra a
+   coluna antes de encontrar a célula — e ela é a única marca de hoje que
+   sobrevive quando o mês na tela não é o de hoje. */
+.cal-sem span.hoje{color:var(--text);font-weight:820}
+/* O único movimento do "hoje", e ele responde a uma pergunta: apertar o botão
+   Hoje quer dizer "cadê?". Um pulso só, 80ms DEPOIS de os 240ms da virada de
+   mês assentarem — dois movimentos ao mesmo tempo não somam, se atrapalham.
+   Abrir o calendário, virar o mês na seta ou voltar do Dia não pulsam nada.
+   `backwards` e não `both`: com `both` a animação continua dona do transform
+   depois de terminar, e o afundar da célula pararia de valer (é a mesma
+   armadilha que o comentário da virada do Dia já registra). */
+.cal-cel.hoje.cal-pulso .cal-dnum span{animation:calHojePulso 260ms var(--fc-curva) 80ms backwards}
+@keyframes calHojePulso{0%{transform:scale(1)}42%{transform:scale(1.14)}100%{transform:scale(1)}}
 .cal-fitas{display:flex;flex-direction:column;gap:2px;min-height:0;overflow:hidden}
 /* flex-shrink:0 é obrigatório. Sem ele o navegador ESMAGA a fita pra fazer
    caber — medido numa maquete: 5,4px numa fita que devia ter 17, com o texto
@@ -2563,6 +2682,28 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   background:var(--cal-fundo,var(--bg-input));color:var(--cal-txt,var(--text2));
   border-left:3px solid var(--cal-pasta,var(--cal-ca))}
 .cal-fita.pousando{transition:transform 300ms var(--fc-curva)}
+/* ── A VAGA: o buraco que a nota deixou ────────────────────────────────────
+   DEFEITO MEDIDO na fase 1: no instante em que a fita de cima vira `.voando`
+   (que é position:fixed e sai do fluxo), a de baixo SALTA 19,17px pra cima em
+   um único quadro — a altura da fita (17,17) mais o vão (2). O conteúdo se
+   reorganiza embaixo do dedo bem no momento em que a pessoa está mirando em
+   outro lugar.
+   A vaga segura exatamente essa altura durante o arrasto inteiro, e ainda diz
+   de onde a nota saiu. Ela some no repintar do pouso — e aí o eventual
+   fechamento da célula de origem acontece no quadro em que o olho já está no
+   DESTINO, olhando o anel de recibo.
+   Por que ela não "murcha" em 160ms como eu tinha proposto: scaleY não devolve
+   espaço nenhum (transform não refaz layout), então a vaga encolheria na tela
+   e o buraco continuaria lá até o fim do arrasto — o salto voltaria inteiro,
+   só que atrasado. Devolver o espaço de verdade custaria animar `height`, que
+   é layout a cada quadro. Segurar é mais honesto e mais barato. */
+.cal-vaga{flex-shrink:0;border-radius:5px;background:var(--bg-input);opacity:0;
+  animation:calVagaEntra 120ms var(--fc-curva) forwards}
+@keyframes calVagaEntra{to{opacity:.85}}
+/* A vaga de uma BOLINHA é só espaçador: um retângulo cinza de 10×14 no meio da
+   fileira de pontos viraria um nono ponto, de uma cor que não quer dizer
+   nada. */
+.cal-vaga.pt{background:none;animation:none}
 .cal-anel{position:absolute;inset:0;border-radius:8px;border:1.5px solid var(--cal-acor,var(--accent));
   pointer-events:none;opacity:0;z-index:4}
 @keyframes calAnel{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(1.35)}}
@@ -2737,7 +2878,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    de propósito: escalar X e Y por fatores diferentes esticaria o texto feito
    borracha durante os 380ms. */
 .cal-dia.cal-nascendo{transform-origin:0 0}
-.cal-dia.cal-voando-pro-mes{transform-origin:0 0;pointer-events:none}
+/* ── E A VOLTA, que faltava ────────────────────────────────────────────────
+   Achado lendo o arquivo: `.cal-voando-pro-mes` estava escrita aqui desde a
+   fase 2a e NENHUMA linha de JS ligava ela. A entrada existia
+   (_calNascerDaCelula), a saída era um corte seco — o Dia sumia e a grade
+   reaparecia. Era literalmente a metade que faltou.
+   O `display:flex` e o `position:absolute` deste bloco são o que deixam o Dia
+   continuar na tela, por cima da grade que já está pintada atrás dele, depois
+   de a visão já ter virado 'mes'. A geometria exata vem inline, medida antes
+   da troca — inset:0 daria a caixa do PALCO (com o respiro dele) e o quadro
+   um pularia antes de encolher. */
+#calOverlay .cal-dia.cal-voando-pro-mes{display:flex;position:absolute;z-index:7;
+  transform-origin:0 0;pointer-events:none}
 .cal-grade.cal-nascendo>*{animation:calVoltaMes 300ms var(--fc-curva) both}
 @keyframes calVoltaMes{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
 /* Virar de DIA é tão repetido quanto virar de mês: mesmo orçamento baixo,
@@ -2890,6 +3042,17 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    sempre encosta no card e mede 3,45 a 6,58:1 dependendo da pele. */
 .cal-q.hoje{outline:2px solid var(--accent2);outline-offset:1px}
 [data-theme="dark"] .cal-q.hoje{outline-color:var(--accent)}
+/* O MÊS DE HOJE, com tinta e não só com peso de fonte. Até aqui ele só tinha o
+   cabeçalho em 800 — a mesma doença do traço de 2px da célula do Mês: dois
+   sinais tipográficos de ~0,3px de traço a mais, no meio de 12 cartões
+   idênticos. O anel dá ~1.300px² e se acha de longe.
+   Ele é VAZADO, e pela mesma regra do resto: dentro do cartão a malha do
+   heatmap já é a informação, e preencher por cima apagaria o dado.
+   2px de borda com o respiro compensado em 1px nos quatro lados: a caixa do
+   cartão fica EXATAMENTE do mesmo tamanho dos outros onze, então a malha não
+   dança de posição quando o ano vira. */
+.cal-mm.hoje{border-width:2px;border-color:var(--accent2);padding:5px 6px 6px}
+[data-theme="dark"] .cal-mm.hoje{border-color:var(--accent)}
 .cal-mm.hoje .cal-mm-t{font-weight:800;color:var(--text)}
 /* A legenda mora no TOPO, não no rodapé como a do GitHub — e isso não foi
    gosto: medida no lugar de baixo, a barra de gravação flutuante (que fica
@@ -2914,6 +3077,43 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    gesto, mesmo orçamento baixo. */
 .cal-mini.cal-vira-esq>*{animation:calViraE 240ms var(--fc-curva) both}
 .cal-mini.cal-vira-dir>*{animation:calViraD 240ms var(--fc-curva) both}
+/* ══ A ABERTURA ═════════════════════════════════════════════════════════════
+   Até aqui o calendário inteiro aparecia em UM quadro: `.tx-overlay.on` troca
+   display:none por flex e pronto. Modo inteiro, tela cheia, escurecimento de
+   45% — tudo de uma vez.
+   As regras moram no `.cal-overlay`, NÃO no `.tx-overlay` compartilhado, e isso
+   é escolha: a mesma moldura serve o Fluxograma e a Órbita, e o escalonamento
+   por LINHA não quer dizer nada numa árvore ou numa constelação. Se ficar bom
+   aqui, aquelas duas herdam depois, de propósito e testadas — não de carona.
+   Nada nasce de scale(0): o painel nasce de .985 + 6px, que é o quanto basta
+   pra o olho ler "chegou" em vez de "estava lá". */
+/* A CLASSE É `.cal-abrindo`, POSTA E TIRADA PELO JS — e não `.on`, que era o
+   caminho óbvio e estava ERRADO. Achado olhando o screenshot da volta do Dia
+   pro Mês: a grade aparecia VAZIA atrás do painel que encolhia.
+   Duas coisas quebravam de uma vez, as duas por causa do `.on`:
+     1. a grade é `display:none` na visão Dia, e voltar de `none` pra `grid`
+        REINICIA as animações CSS do elemento — é o mesmo mecanismo que faz a
+        abertura funcionar. Então cada volta do Dia repetia os 500ms de entrada
+        escalonada, e a grade nascia invisível no meio da transição;
+     2. `.cal-overlay.on .cal-cel` tem três classes e vencia
+        `.cal-grade.cal-nascendo>*`, que tem duas — a animação de volta pro Mês
+        (calVoltaMes, 300ms) simplesmente nunca rodava.
+   Com a classe temporária, a entrada acontece uma vez, na abertura, e some. */
+@keyframes calFundoEntra{from{opacity:0}to{opacity:1}}
+@keyframes calPainelEntra{from{opacity:0;transform:scale(.985) translateY(6px)}
+  to{opacity:1;transform:none}}
+@keyframes calLinhaEntra{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.cal-overlay.cal-abrindo{animation:calFundoEntra 180ms var(--fc-curva) backwards}
+.cal-overlay.cal-abrindo .fc-modal{animation:calPainelEntra 320ms var(--fc-curva) backwards}
+/* ESCALONA POR LINHA, NUNCA POR CÉLULA: 42 células a 20ms dariam 840ms de rabo
+   numa tela que se abre várias vezes por dia. Seis linhas a 22ms dão 132ms de
+   cauda e tudo acaba em 500ms. `--cal-lin` é gravado uma vez, quando as 42
+   células nascem.
+   `backwards` e não `both` pelo mesmo motivo de sempre: com `both` a animação
+   ficaria dona do transform da célula pra sempre, e o afundar do toque
+   (.cal-apertada) nunca mais valeria. */
+.cal-overlay.cal-abrindo .cal-cel{animation:calLinhaEntra 260ms var(--fc-curva) backwards;
+  animation-delay:calc(120ms + var(--cal-lin,0) * 22ms)}
 .cal-zoom-btn{flex-shrink:0}
 /* No Ano o botão fica DESABILITADO em vez de sumir: a barra não muda de
    largura no meio da navegação, e ver o botão apagado é o que diz "chegou no
@@ -2928,6 +3128,8 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .cal-mini{gap:6px;grid-template-columns:repeat(3,minmax(0,1fr))}
   #calOverlay[data-visao="sem"] .cal-mini{grid-template-columns:repeat(2,minmax(0,1fr))}
   .cal-mm{padding:5px 5px 6px;border-radius:9px}
+  /* A mesma compensação de 1px do desktop, com o respiro do estreito. */
+  .cal-mm.hoje{padding:4px 4px 5px}
   .cal-legenda{font-size:9.5px;gap:5px;padding:0 4px 4px}
   /* Aqui o respiro sai pra a célula caber no alvo de toque. Medido em 360px
      com padding 6 e gap 2: a célula dava 43,42px — 0,58px ABAIXO do
@@ -3020,6 +3222,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .cal-grade.cal-nascendo>*{animation-duration:.01ms}
   .cal-mini.cal-nascendo>*,.cal-mini.cal-vira-esq>*,
   .cal-mini.cal-vira-dir>*{animation-duration:.01ms}
+  /* A abertura, o pulso do hoje e a vaga do arrasto: some o movimento, fica o
+     DESENHO. A vaga continua segurando o espaço (ela é conserto de layout, não
+     enfeite — sem ela o salto de 19,17px volta), só chega sem fade. */
+  .cal-overlay.cal-abrindo,.cal-overlay.cal-abrindo .fc-modal,
+  .cal-overlay.cal-abrindo .cal-cel,
+  .cal-cel.hoje.cal-pulso .cal-dnum span{animation-duration:.01ms;animation-delay:0ms}
+  .cal-vaga{animation-duration:.01ms;opacity:.85}
+  /* O afundar do toque some inteiro, como o "+" de card novo já faz. Um pulo
+     de 1,6px sem interpolação é um piscar, não um retorno. */
+  .cal-cel{transition-duration:.01ms}
+  .cal-cel.cal-apertada{transform:none}
+  .cal-cel::after{transition-duration:.01ms}
 }
 .folder-cfg-panel{display:none;background:var(--bg-input);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px}
 .folder-cfg-panel.on{display:block}
@@ -5727,7 +5941,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.02.3';
+const VOX_VERSION='2026.09.02.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -11527,6 +11741,10 @@ function abrirCalendario(){
     for(let i=0;i<42;i++){
       const c=document.createElement('div');
       c.className='cal-cel';
+      // A LINHA da célula, gravada uma vez: é ela que escalona a entrada da
+      // grade na abertura (22ms por linha). Fica no nó porque o nó nunca é
+      // recriado — a linha de uma célula não muda quando o mês vira.
+      c.style.setProperty('--cal-lin',String(Math.floor(i/7)));
       c.innerHTML='<div class="cal-dnum"><span></span></div><div class="cal-fitas"></div><div class="cal-pontos"></div>';
       _calGradeEl.appendChild(c);
     }
@@ -11564,13 +11782,29 @@ function abrirCalendario(){
   ov.dataset.visao='mes';
   _calDicaPadrao();
   ov.classList.add('on');
+  // A entrada é uma CLASSE TEMPORÁRIA e não o próprio `.on`: a grade some e
+  // volta (display:none) toda vez que se entra e se sai da visão Dia, e voltar
+  // de display:none reinicia animação de CSS — pendurada no `.on`, a abertura
+  // se repetia a cada volta do Dia e a grade nascia invisível no meio dela.
+  // Ver o comentário grande do bloco @keyframes calFundoEntra.
+  clearTimeout(_calAbrindoT);
+  ov.classList.remove('cal-abrindo');
+  if(!_voxReduzMov()){
+    void ov.offsetWidth;   // reinicia a entrada sem recriar nó nenhum
+    ov.classList.add('cal-abrindo');
+    // 620 > 490ms (120 de atraso + 5 linhas × 22 + 260 da última): a classe só
+    // sai depois que a última linha assentou.
+    _calAbrindoT=setTimeout(()=>ov.classList.remove('cal-abrindo'),620);
+  }
   _sincIbarSobreMapa();  // a barra de gravação de sempre passa a valer por cima
   _calMontarSemana();
   _calPintar();
 }
+let _calAbrindoT=null;
 function fecharCalendario(){
   const ov=document.getElementById('calOverlay');
-  if(ov)ov.classList.remove('on');
+  clearTimeout(_calAbrindoT);
+  if(ov)ov.classList.remove('on','cal-abrindo');
   _mapaFecharMenu();
   _calCancelarArrasto();
   _calCancelarArrastoDia();
@@ -11593,6 +11827,7 @@ function _calMontarSemana(){
   const el=document.getElementById('calSem');
   if(!el)return;
   const estreito=window.matchMedia('(max-width:700px)').matches;
+  const hojeCol=new Date().getDay();
   el.innerHTML='';
   for(let i=0;i<7;i++){
     const d=new Date(2024,8,1+i);
@@ -11600,6 +11835,10 @@ function _calMontarSemana(){
     try{nome=d.toLocaleDateString(getLocale(),{weekday:'short'}).replace(/\.$/,'')}catch(e){}
     const s=document.createElement('span');
     s.textContent=estreito?nome.charAt(0):nome;
+    // A coluna de hoje em --text/820 contra --text3/750 das outras. Ela é a
+    // única marca de hoje que continua valendo quando o mês na tela não é o de
+    // hoje — a pastilha vira anel ali, mas a coluna é a mesma o ano inteiro.
+    if(i===hojeCol)s.className='hoje';
     el.appendChild(s);
   }
 }
@@ -12045,6 +12284,57 @@ function _calZoomFora(){
   if(alvo==='mes')return _calVoltarPraMes();
   if(alvo==='sem')return _calAbrirSemestre();
   if(alvo==='ano')return _calAbrirAno();
+}
+// O irmão simétrico: um degrau pra DENTRO, na mesma régua.
+function _calDegrauDentro(v){
+  const i=CAL_DEGRAUS.indexOf(v||_calVisao);
+  return i>0?CAL_DEGRAUS[i-1]:'';
+}
+// ── ESC: ANDA UM DEGRAU NA DIREÇÃO DO MÊS, e no Mês fecha ──────────────────
+// Antes desta função o Escape fazia uma coisa só em qualquer visão: fechava o
+// calendário inteiro. A tecla mais universal de "volta um passo" jogava a
+// pessoa pra fora do modo — inclusive de dentro da visão Dia, onde ela tinha
+// acabado de MERGULHAR e o passo de volta óbvio era o mês.
+//
+// POR QUE CONVERGIR PRO MÊS, e não simplesmente andar sempre pro mesmo lado da
+// régua. As duas alternativas "puras" quebram, e cada uma no caso mais comum:
+//   · sempre pra FORA (dia→mes→sem→ano→fecha): quem abre o calendário cai no
+//     Mês, e o Esc dessa pessoa — o caso de longe mais frequente — abriria o
+//     Semestre em vez de sair. Esc que dá zoom out não é sair.
+//   · sempre pra DENTRO (ano→sem→mes→dia→fecha): o Esc no Mês abriria a visão
+//     Dia. Esc não entra em lugar nenhum, em app nenhum.
+// O Mês é a casa: o calendário sempre ABRE nele, e todo caminho sai dele
+// (pra dentro no Dia, pra fora no Semestre e no Ano). Andar na direção da casa
+// é, na prática, desfazer o último passo em qualquer trajeto real — sem
+// precisar guardar histórico de navegação nenhum.
+function _calEscVoltar(){
+  if(_calVisao==='dia')return _calVoltarPraMes();
+  if(_calVisao==='ano')return _calVoltarPraSemestre();
+  if(_calVisao==='sem')return _calVoltarPraMesDoPeriodo();
+  fecharCalendario();
+}
+// Do Ano pro Semestre: o semestre de HOJE se hoje estiver no ano na tela, senão
+// o primeiro do ano na tela — a mesma regra que o _calDiaEmFoco já usa em todo
+// o resto da tela, em vez de inventar uma segunda.
+function _calVoltarPraSemestre(){
+  const d=_calDaChave(_calDiaEmFoco());
+  _calAnoFoco=d.getFullYear();
+  _calSemFoco=d.getMonth()<6?0:1;
+  _calTrocarDegrau('sem');
+}
+// Do Semestre pro Mês: pelo MESMO caminho do dedo (_calAbrirMesDoMini), então
+// a grade nasce do mini-mês correspondente igualzinho a quando se toca nele.
+// Uma tecla e um toque que fazem a mesma coisa têm que fazer o mesmo desenho.
+function _calVoltarPraMesDoPeriodo(){
+  const d=_calDaChave(_calDiaEmFoco());
+  // _calAbrirMesDoMini desiste calado se o ano em foco for nulo — e uma tecla
+  // que não faz nada é pior que uma que faz a coisa errada, porque ninguém
+  // descobre por quê. Aqui ele nunca é nulo na prática (abrirCalendario e
+  // _calPintarMini já preenchem), mas o Esc não pode depender disso.
+  if(_calAnoFoco===null)_calAnoFoco=d.getFullYear();
+  const host=document.getElementById('calMini');
+  const mm=host?[...host.children].find(x=>+x.dataset.mes===d.getMonth()&&x.style.display!=='none'):null;
+  _calAbrirMesDoMini(d.getMonth(),mm);
 }
 // O semestre que se abre é o do MÊS que estava na tela, não o de hoje: quem
 // estava olhando março de 2024 espera cair no primeiro semestre de 2024. Sair
@@ -12785,6 +13075,12 @@ function _calVoltarPraMes(){
   _calCancelarArrastoDia();
   _calCancelarRedim();
   _calPararRelogio();
+  // A geometria do Dia é medida AGORA, enquanto ele ainda está no fluxo. Depois
+  // da troca de visão ele é display:none, e um retângulo de zero não anima
+  // nada — é o clássico "animei e não vi".
+  const diaEl=document.getElementById('calDia');
+  const palcoEl=document.getElementById('calPalco');
+  const voo=(_voxReduzMov()||!diaEl||!palcoEl)?null:_calPinarDia(diaEl,palcoEl);
   _calVisao='mes';
   const ov=document.getElementById('calOverlay');
   if(ov)ov.dataset.visao='mes';
@@ -12803,7 +13099,57 @@ function _calVoltarPraMes(){
   // O anel diz "você estava aqui": sem ele, voltar de um dia 27 pro mês deixa
   // a pessoa procurando de qual célula ela tinha saído.
   const cel=[..._calGradeEl.children].find(c=>c.dataset.dia===kk);
+  if(voo)_calEncolherPraCelula(voo,cel);
   if(cel)setTimeout(()=>_calAnel(cel,'var(--accent)'),120);
+}
+// Prende o painel do Dia na posição EXATA em que ele está, em pixels, antes de
+// a troca de visão escondê-lo. `inset:0` não serviria: ele daria a caixa do
+// palco (com o respiro de 8/10px do palco em volta), e o painel pularia um
+// quadro pra fora antes de começar a encolher.
+function _calPinarDia(dia,palco){
+  const rp=dia.getBoundingClientRect(),rpal=palco.getBoundingClientRect();
+  if(!rp.width||!rp.height)return null;
+  dia.classList.add('cal-voando-pro-mes');
+  dia.style.transition='none';
+  dia.style.transform='';
+  dia.style.opacity='1';
+  dia.style.left=(rp.left-rpal.left)+'px';
+  dia.style.top=(rp.top-rpal.top)+'px';
+  dia.style.width=rp.width+'px';
+  dia.style.height=rp.height+'px';
+  return {dia,rp};
+}
+// O INVERSO de _calNascerDaCelula, e a metade que faltava desde a fase 2a: a
+// classe .cal-voando-pro-mes estava escrita no CSS e nenhuma linha de JS ligava
+// ela. 300ms pra voltar contra 380 pra ir — voltar é sempre mais rápido que ir.
+//
+// A OPACIDADE NÃO USA A MESMA CURVA DA ENTRADA, e isso eu só descobri medindo a
+// maquete: com `opacity 190ms var(--fc-curva)` (a curva de saída forte da
+// entrada) o painel já estava em 0,0017 de opacidade aos 150ms — invisível —
+// enquanto o encolher ainda tinha metade do caminho pela frente. O movimento
+// inteiro acontecia DEPOIS de a imagem sumir.
+// Entrando, 0→1 em curva de saída forte está certo: aparece rápido e assenta.
+// Saindo é o contrário — a forma tem que continuar visível ENQUANTO encolhe.
+// Daí `opacity 200ms linear 100ms`: segura a tinta nos primeiros 100ms e acaba
+// junto com o fim do movimento, aos 300.
+function _calEncolherPraCelula(voo,cel){
+  const dia=voo.dia,rp=voo.rp;
+  const limpar=()=>{
+    dia.classList.remove('cal-voando-pro-mes');
+    dia.style.transition='';dia.style.transform='';dia.style.opacity='';
+    dia.style.left='';dia.style.top='';dia.style.width='';dia.style.height='';
+  };
+  const rc=cel?cel.getBoundingClientRect():null;
+  if(!rc||!rc.width){limpar();return}
+  // Escala UNIFORME, como na entrada: escalar largura e altura por fatores
+  // diferentes esticaria o texto feito borracha, e o olho lê isso como defeito.
+  const s=Math.max(.05,Math.min(1,rc.width/rp.width));
+  requestAnimationFrame(()=>{
+    dia.style.transition='transform 300ms var(--fc-curva),opacity 200ms linear 100ms';
+    dia.style.transform='translate('+(rc.left-rp.left)+'px,'+(rc.top-rp.top)+'px) scale('+s+')';
+    dia.style.opacity='0';
+    setTimeout(limpar,330);
+  });
 }
 
 // ── navegação ──
@@ -12877,6 +13223,21 @@ function _calHoje(){
   _calDir=alvo.getTime()===_calFoco.getTime()?0:(alvo>_calFoco?1:-1);
   _calFoco=alvo;
   _calPintar();
+  _calPulsarHoje();
+}
+// O ÚNICO movimento do destaque de hoje, e ele só acontece aqui: apertar o
+// botão "Hoje" é a pergunta "cadê?" feita em voz alta, e o pulso é a resposta.
+// Abrir o calendário, virar o mês na seta ou voltar do Dia não pulsam nada —
+// ali ninguém perguntou. Movimento que decora a tela em vez de responder
+// alguma coisa vira ruído na terceira vez que se vê.
+function _calPulsarHoje(){
+  if(_voxReduzMov()||_calVisao!=='mes'||!_calGradeEl)return;
+  const cel=[..._calGradeEl.children].find(c=>c.classList.contains('hoje')&&!c.classList.contains('fora'));
+  if(!cel)return;
+  cel.classList.remove('cal-pulso');
+  void cel.offsetWidth;   // reinicia a animação sem recriar nó nenhum
+  cel.classList.add('cal-pulso');
+  setTimeout(()=>cel.classList.remove('cal-pulso'),420);
 }
 // "Dia em foco" na visão Mês: hoje, se o mês na tela for o de hoje; senão o
 // primeiro dia do mês na tela. Sem inventar uma seleção de dia que não existe.
@@ -12912,13 +13273,39 @@ function _calNovaNotaAqui(btn,dia,hora){
 
 // ── arrastar: o MESMO nó do começo ao fim ──
 let _calArr=null,_calQuadro=false;
+// O afundar da célula, por CLASSE e não por :active — e o motivo é sério: a
+// fita em voo é `position:fixed` e continua sendo filha da célula. Qualquer
+// transform num ancestral faz o `fixed` passar a se posicionar contra ESSE
+// ancestral em vez da janela, e a nota arrastada grudaria no lugar em vez de
+// seguir o dedo. Com a classe, quem aperta uma fita simplesmente não liga o
+// afundar, e o caminho do arrasto continua limpo.
+let _calApertada=null;
+function _calSoltarAperto(){
+  document.removeEventListener('pointerup',_calSoltarAperto);
+  document.removeEventListener('pointercancel',_calSoltarAperto);
+  if(_calApertada)_calApertada.classList.remove('cal-apertada');
+  _calApertada=null;
+}
+function _calApertarCel(cel){
+  _calSoltarAperto();
+  if(!cel)return;
+  _calApertada=cel;
+  cel.classList.add('cal-apertada');
+  document.addEventListener('pointerup',_calSoltarAperto);
+  document.addEventListener('pointercancel',_calSoltarAperto);
+}
 function _calPointerDown(e){
   if(e.pointerType==='mouse'&&e.button!==0)return;
   const el=e.target.closest('.cal-fita,.cal-pt');
-  if(!el)return;
+  if(!el){_calApertarCel(e.target.closest('.cal-cel'));return}
   const cid=el.dataset.cid;
   const card=cid&&document.getElementById(cid);
   if(!card)return;
+  // Cinto e suspensório: se por qualquer motivo um afundar tiver ficado
+  // pendurado numa célula, ele sai AGORA. Célula com transform vira o bloco de
+  // contenção da fita `position:fixed` que está prestes a voar, e a nota
+  // grudaria no lugar em vez de seguir o dedo.
+  _calSoltarAperto();
   e.preventDefault();
   const r=el.getBoundingClientRect();
   const luz=_calLuzDoCard(card);
@@ -12948,6 +13335,10 @@ function _calPointerMove(e){
     // toque longo (menu) acontecer sem o gesto brigar com ele.
     if(Math.hypot(e.clientX-a.x0,e.clientY-a.y0)<4)return;
     a.moveu=true;
+    // A VAGA entra ANTES de a fita virar `.voando` — e a medida é tirada antes
+    // também, porque no estreito a fita muda de altura ao voar (ela recupera o
+    // texto). Sem isto a de baixo salta 19,17px em um quadro, medido.
+    _calAbrirVaga(a);
     a.el.classList.add('voando');
     // A bolinha "abre" e vira ficha legível ao voar: o dedo passa a segurar
     // ela perto da beirada esquerda, não no ponto exato de 5px onde apertou.
@@ -12957,6 +13348,21 @@ function _calPointerMove(e){
   if(_calQuadro)return;
   _calQuadro=true;
   requestAnimationFrame(_calQuadroArrasto);
+}
+function _calAbrirVaga(a){
+  const pai=a.el.parentNode;
+  if(!pai||a.vaga)return;
+  const r=a.el.getBoundingClientRect();
+  if(!r.height)return;
+  const vg=document.createElement('div');
+  vg.className='cal-vaga'+(a.ehPonto?' pt':'');
+  vg.style.height=r.height+'px';
+  vg.style.width=r.width+'px';
+  pai.insertBefore(vg,a.el);
+  a.vaga=vg;
+}
+function _calFecharVaga(a){
+  if(a&&a.vaga){a.vaga.remove();a.vaga=null}
 }
 // Uma leitura de elementFromPoint por QUADRO, não por pointermove — e só
 // transform, nunca left/top (que forçariam layout a cada quadro).
@@ -12987,6 +13393,9 @@ function _calPointerUp(){
   document.removeEventListener('pointercancel',_calCancelarArrasto);
   const a=_calArr;_calArr=null;
   if(!a)return;
+  // A vaga sai no mesmo passo em que a grade é repintada logo abaixo: nenhum
+  // quadro chega a ser desenhado com a célula já fechada e a fita ainda no ar.
+  _calFecharVaga(a);
   if(a.mira)a.mira.classList.remove('mira');
   const el=a.el;
   if(!a.moveu){el.classList.remove('voando');el.style.transform='';return}
@@ -13029,6 +13438,9 @@ function _calCancelarArrasto(){
   document.removeEventListener('pointermove',_calPointerMove);
   document.removeEventListener('pointerup',_calPointerUp);
   document.removeEventListener('pointercancel',_calCancelarArrasto);
+  // Aqui NÃO há repintura depois (cancelar não grava nada), então a vaga tem
+  // que sair explicitamente — senão ela ficaria de lembrança na célula.
+  _calFecharVaga(a);
   if(a.mira)a.mira.classList.remove('mira');
   a.el.classList.remove('voando');
   a.el.style.transform='';
@@ -24553,7 +24965,9 @@ document.addEventListener('keydown',e=>{
     const ob=document.getElementById('orbOverlay');
     if(ob&&ob.classList.contains('on')){e.preventDefault();fecharOrbital();return}
     const cal=document.getElementById('calOverlay');
-    if(cal&&cal.classList.contains('on')){e.preventDefault();fecharCalendario();return}
+    // No calendário o Esc anda um degrau na direção do Mês em vez de fechar o
+    // modo de cara — ver _calEscVoltar(), que explica a régua inteira.
+    if(cal&&cal.classList.contains('on')){e.preventDefault();_calEscVoltar();return}
   }
   // Virar o mês pelas setas — só com o calendário aberto e sem ninguém
   // digitando (senão roubaria a seta de dentro de um textarea).
