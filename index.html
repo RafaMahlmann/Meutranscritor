@@ -1732,14 +1732,62 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-voltar-btn:hover{color:var(--text)}
 /* A lista de cards da pasta — é ela que segura o conteúdo que antes estourava
    o desenho. Rola, e o texto fica no tamanho de sempre. */
-.fc-lista{padding:6px}
-.fc-lista-item{display:flex;flex-direction:column;width:100%;border-radius:10px;padding:10px 10px;
-  transition:background var(--transition)}
+/* No tema claro o painel é branco E a ficha é branca: sem um chão atrás
+   dela, a borda e a lombada flutuam no nada. O miolo da lista recebe o
+   cinza de tela do app, então a ficha lê como papel POR CIMA de alguma
+   coisa. No escuro o caminho é o inverso (a ficha é que clareia, ver
+   abaixo), então ali o chão volta a ser transparente. */
+.fc-lista{padding:6px;background:var(--bg)}
+[data-theme="dark"] .fc-lista{background:transparent}
+/* ── FICHA "ABA DE ARQUIVO" — a MESMA da .orb-mural-it (proposta 2, 03/09).
+   É o mesmo componente em dois mapas; o que muda aqui é que este painel
+   segue o tema do app, então a superfície troca de direção: no claro a
+   ficha é papel branco sobre cinza, no escuro ela CLAREIA sobre o painel. */
+/* Sem overflow:hidden, pelo mesmo motivo da .orb-mural-it (ver lá): ele
+   zera a altura mínima automática do item e quebra o cálculo da caixa —
+   aqui a lista é bloco e não morde hoje, mas é armadilha guardada. */
+.fc-lista-item{position:relative;display:flex;flex-direction:column;width:100%;border-radius:10px;
+  padding:10px 10px 10px 14px;
+  background-color:var(--bg-card);border:1px solid var(--border);
+  transition:background-color var(--transition),border-color var(--transition)}
+.fc-lista-item+.fc-lista-item{margin-top:4px}
+[data-theme="dark"] .fc-lista-item{background-color:rgba(255,255,255,.045);border-color:rgba(255,255,255,.08)}
+/* Contorno da etiqueta de cor — este painel NÃO tinha nenhum até hoje.
+   Mesma fórmula do .card[data-tc], com os dois pesos do app: 26% no claro,
+   42% no escuro. Quem escolhe a paleta é o JS (_fcLuzDaEtiqueta), porque
+   este painel é emprestado pra Órbita e lá ele é escuro à força. */
+.fc-lista-item[data-tc]{
+  border-color:color-mix(in srgb,var(--fc-lista-ca) 26%,transparent);
+  background-image:linear-gradient(90deg,color-mix(in srgb,var(--fc-lista-ca) 13%,transparent),transparent 42%);
+}
+[data-theme="dark"] .fc-lista-item[data-tc]{
+  border-color:color-mix(in srgb,var(--fc-lista-ca) 42%,transparent);
+  background-image:linear-gradient(90deg,color-mix(in srgb,var(--fc-lista-ca) 15%,transparent),transparent 42%);
+}
+/* A lombada — cinza em toda ficha, colorida quando há etiqueta. O :not()
+   nas versões neutras é o que impede a regra do tema (mesma especificidade,
+   escrita depois) de apagar a cor da etiqueta. */
+.fc-lista-item::before{
+  content:'';position:absolute;left:1px;top:6px;bottom:6px;width:3px;
+  border-radius:3px;background:rgba(0,0,0,.16);
+  pointer-events:none;z-index:1;transform-origin:left center;
+  transition:transform 180ms var(--fc-curva);
+}
+[data-theme="dark"] .fc-lista-item:not([data-tc])::before{background:rgba(255,255,255,.20)}
+.fc-lista-item[data-tc]::before{background:var(--fc-lista-ca)}
+.fc-lista-item:hover::before{transform:scaleX(1.5)}
+.fc-lista-item-expandida::before{transform:scaleX(1.7)}
 /* Cascata de entrada — só nos primeiros itens (script limita a 8): reusa o
    mesmo flChReveal dos cards flutuantes, mesmo raciocínio de "abriu" em vez
    de "apareceu" sem virar demora perceptível num painel de dezenas de linhas. */
 .fc-lista-item-entra{animation:flChReveal .18s cubic-bezier(.2,.8,.2,1) backwards}
-.fc-lista-item:hover{background:var(--bg-input)}
+/* background-COLOR, não o atalho: o atalho apagaria o degradê da etiqueta
+   (background-image) no hover — a nota colorida ficava cinza ao passar o
+   mouse e voltava a ter cor ao sair. */
+.fc-lista-item:hover{background-color:var(--bg-input)}
+.fc-lista-item-expandida{border-color:var(--border2)}
+.fc-lista-item-expandida[data-tc]{border-color:color-mix(in srgb,var(--fc-lista-ca) 45%,transparent)}
+[data-theme="dark"] .fc-lista-item-expandida[data-tc]{border-color:color-mix(in srgb,var(--fc-lista-ca) 58%,transparent)}
 .fc-lista-item-corpo{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;
   background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:var(--font)}
 .fc-lista-acoes{display:flex;align-items:center;gap:6px;margin-top:8px}
@@ -1754,13 +1802,29 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   border-radius:8px;cursor:pointer;transition:all var(--transition)}
 .fc-lista-del-btn:hover{background:rgba(239,68,68,0.12);border-color:#ef4444;color:#ef4444}
 .fc-lista-del-btn svg{width:13px;height:13px}
-.fc-lista-nome{font-size:12.5px;font-weight:600;color:var(--text);
+.fc-lista-nome{font-size:12.5px;font-weight:600;letter-spacing:-.008em;color:var(--text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;
   border-radius:6px;padding:1px 4px;margin:-1px -4px;align-self:flex-start;max-width:100%}
 .fc-lista-nome:hover{background:var(--bg-hover,rgba(0,0,0,.06))}
 .fc-lista-nome-vazia{opacity:.55;font-weight:500;font-style:italic}
-.fc-lista-previa{font-size:11.5px;color:var(--text4);line-height:1.45;
+/* --text4 era a cor daqui e é tom de metadado desligado: medido sobre o
+   branco do painel dava 2,21:1 num texto de 11,5px — o CONTEÚDO da nota era
+   a coisa mais apagada da tela. Estes dois tons dão 5,28:1 no claro e
+   6,84:1 no escuro, sem encostar no nome (16,8:1 e 14,8:1). */
+.fc-lista-previa{font-size:11.5px;color:#6b6b73;line-height:1.5;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-theme="dark"] .fc-lista-previa{color:var(--orb-texto-pv,#a3a9bb)}
+/* Bug que estava no ar desde sempre e só apareceu ao testar este componente
+   lado a lado com o Mural: clicar no item pede 700 caracteres ao JS
+   (_fcListarCards, `limite=expandido?700:90`), mas NENHUMA regra tirava o
+   -webkit-line-clamp:2 — o texto extra chegava e ficava recortado nas mesmas
+   duas linhas. Ou seja, "clique pra ver mais" não mostrava mais nada: os
+   outros 610 caracteres eram baixados, montados no DOM e escondidos. O Mural
+   da Órbita sempre teve o par desta regra (.orb-mural-it.aberta .orb-mural-pv);
+   aqui ela nunca existiu. */
+.fc-lista-item-expandida .fc-lista-previa{
+  -webkit-line-clamp:unset;display:block;color:var(--text2);line-height:1.55;margin-top:2px;
+}
 .fc-lista-vazia{padding:18px 14px;font-size:12.5px;color:var(--text4);text-align:center}
 .fc-lista-rodape{padding:8px 14px 10px;border-top:1px solid var(--border);
   font-size:10.5px;color:var(--text4);flex-shrink:0}
@@ -1971,7 +2035,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fl-rz-nw{top:-5px;left:-5px;width:16px;height:16px;cursor:nwse-resize}
 .fl-rz-se{bottom:-5px;right:-5px;width:16px;height:16px;cursor:nwse-resize}
 .fl-rz-sw{bottom:-5px;left:-5px;width:16px;height:16px;cursor:nesw-resize}
-.fc-lista-item-aberta{background:var(--accent-glow)}
+/* Marca a nota que JÁ está aberta numa janela flutuante. Dois detalhes que
+   parecem manha e não são, desde que a ficha ganhou superfície própria
+   (proposta 2): (1) background-COLOR, senão o atalho apagaria o degradê da
+   etiqueta de cor numa nota que fosse colorida E flutuante ao mesmo tempo;
+   (2) a classe repetida (.fc-lista-item.fc-lista-item-aberta) só pra empatar
+   em especificidade com `[data-theme="dark"] .fc-lista-item` — sem isso o
+   destaque simplesmente sumia no tema escuro, que é onde ele mais aparecia. */
+.fc-lista-item.fc-lista-item-aberta{background-color:var(--accent-glow)}
 /* Fase 6 — alvo de drop em destaque enquanto uma janela é arrastada por
    cima de um nó do mapa de trás (pasta do Fluxograma ou bolha da Órbita). */
 .fc-node.fl-drop-alvo{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
@@ -2028,6 +2099,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   --orb-borda-sat:rgba(255,255,255,.10);
   --orb-borda-foco:rgba(255,255,255,.2);
   --orb-texto:#f0f0f4;--orb-texto2:#d6dae6;--orb-texto3:#8d92a2;--orb-texto4:#6e7382;
+  /* Cor do CORPO da nota nas listas escuras (prévia do Mural e do painel
+     emprestado). Não é --orb-texto4: aquele é tom de metadado DESLIGADO e,
+     medido contra o fundo da ficha (#252a35), dava 3,04:1 num texto de 11px
+     — reprova os 4,5:1 de texto pequeno. O paradoxo era que justamente o que
+     a pessoa quer ler era o mais apagado da tela. Este tom dá 6,12:1 e ainda
+     fica bem abaixo do nome (12,6:1), então a hierarquia continua de pé. */
+  --orb-texto-pv:#a3a9bb;
   --orb-curva:cubic-bezier(0.22,1,0.36,1);
   --orb-curva-foco:cubic-bezier(0.2,1.28,0.36,1);
   --orb-t-mover:430ms;
@@ -2312,39 +2390,93 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   gap:4px;align-content:start;padding:5px;overflow-y:auto;
   max-height:var(--orb-mural-maxa,186px);
 }
+/* ── FICHA "ABA DE ARQUIVO" (proposta 2, escolhida pelo Rafa em 03/09/2026)
+   A ficha deixou de ser texto encostado em texto e virou OBJETO: superfície
+   própria (mais clara que o fundo — regra de elevação no escuro, onde sombra
+   sozinha não cria profundidade) + lombada de 3px na esquerda. A borda de
+   1px agora é de TODAS as fichas, não só das coloridas: antes a ficha com
+   etiqueta ficava 2px mais alta que a vizinha sem etiqueta na mesma linha do
+   grid, e o topo delas não batia. Agora só a COR da borda muda. */
+/* NÃO colocar overflow:hidden aqui. Medido em 360px: `overflow:hidden` zera
+   a altura mínima automática de um item de grid, e aí a LINHA do grid é
+   calculada menor que a ficha. Com a nota aberta a linha saiu 125,6px pra
+   uma ficha de 166px — 36px da ficha aberta caíam POR CIMA das duas de
+   baixo, texto sobre texto. Sem ele a linha volta a medir 166px, exatos.
+   O recorte que ele fazia (a ponta quadrada da lombada escapando pela quina
+   arredondada) está resolvido na geometria da própria lombada, abaixo. */
 .orb-mural-it{
   position:relative;border-radius:9px;align-self:start;
+  background-color:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);
   transition:background-color 150ms var(--orb-curva),border-color 150ms var(--orb-curva);
 }
 /* Contorno da etiqueta de cor da nota — mesma fórmula de .card[data-tc] no
    resto do app (border-color:color-mix(in srgb,var(--ca) N%,transparent)),
-   fixa no peso ESCURO (42%) porque o Mural nunca sai do tema escuro. */
-.orb-mural-it[data-tc]{border:1px solid color-mix(in srgb,var(--orb-mural-ca) 42%,transparent)}
+   fixa no peso ESCURO (42%) porque o Mural nunca sai do tema escuro.
+   O respingo de cor morre em 42% da largura: é sotaque saindo da lombada,
+   não superfície tingida — com 7 fichas coloridas seguidas numa gaveta,
+   tinta cheia vira cansaço. background-IMAGE de propósito, pra o hover e o
+   .aberta poderem mexer só no background-COLOR sem apagar o degradê. */
+.orb-mural-it[data-tc]{
+  border-color:color-mix(in srgb,var(--orb-mural-ca) 42%,transparent);
+  background-image:linear-gradient(90deg,color-mix(in srgb,var(--orb-mural-ca) 15%,transparent),transparent 42%);
+}
+/* A lombada. Existe em TODA ficha, cinza quando não há etiqueta: se ela
+   nascesse só nas coloridas, o texto das outras começaria 3px à esquerda e
+   a coluna ficaria com dois alinhamentos. Aqui o lugar da cor está sempre
+   reservado — o que muda é só a tinta. */
+/* left:1px e cantos todos arredondados: a 6px do topo, a curva de 9px da
+   borda ainda avança 0,51px pra dentro — encostada em left:0 a ponta da
+   lombada escapava pela quina. 1px resolve sem precisar recortar a ficha. */
+.orb-mural-it::before{
+  content:'';position:absolute;left:1px;top:6px;bottom:6px;width:3px;
+  border-radius:3px;background:rgba(255,255,255,.20);
+  pointer-events:none;z-index:1;transform-origin:left center;
+  transition:transform 180ms var(--orb-curva);
+}
+.orb-mural-it[data-tc]::before{background:var(--orb-mural-ca)}
+/* scaleX, não width: largura força recálculo de layout a cada quadro; o
+   transform o navegador anima sozinho na GPU. E é só reforço — no celular,
+   onde hover não existe, a lombada já está lá em repouso. */
+.orb-mural-it:hover::before{transform:scaleX(1.5)}
 .orb-mural-it.entra{animation:orbMuralItEntra 250ms var(--orb-curva) backwards}
 @keyframes orbMuralItEntra{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 .orb-mural-it.desliza{transition:transform 380ms var(--orb-curva)}
+/* padding-left maior que o resto: a lombada come 3px e o texto não pode
+   encostar nela. */
 .orb-mural-corpo{
   display:block;width:100%;text-align:left;appearance:none;border:0;background:none;
-  font-family:var(--font);color:inherit;padding:8px 9px;border-radius:9px;cursor:pointer;
+  font-family:var(--font);color:inherit;padding:8px 9px 8px 13px;border-radius:8px;cursor:pointer;
   transition:background-color 150ms var(--orb-curva),transform 120ms var(--orb-curva);
 }
-.orb-mural-corpo:hover{background:rgba(255,255,255,.055)}
+.orb-mural-corpo:hover{background:rgba(255,255,255,.045)}
 .orb-mural-corpo:active{transform:scale(.98)}
+/* Peso 600, não 650: com a prévia legível embaixo, o nome parou de precisar
+   gritar pra vencer o cinza — os dois lidos juntos é que formam a hierarquia. */
 .orb-mural-nm{
-  font-size:12.5px;font-weight:650;color:var(--orb-texto);display:block;
+  font-size:12.5px;font-weight:600;letter-spacing:-.008em;color:var(--orb-texto);display:block;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .orb-mural-nm.vazia{opacity:.5;font-weight:500;font-style:italic}
 .orb-mural-pv{
-  font-size:11px;line-height:1.4;color:var(--orb-texto4);display:-webkit-box;
-  -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:1px;
+  font-size:11.5px;line-height:1.5;color:var(--orb-texto-pv);display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:3px;
 }
 /* A ficha aberta toma a linha inteira e mostra o texto todo, no lugar onde
    já estava — as vizinhas só descem (FLIP em _orbMuralAlterna). */
+/* background-COLOR e border-color, nunca o atalho `background`: o atalho
+   apagaria o degradê da etiqueta (que é background-image) e a ficha aberta
+   perderia a cor bem na hora em que ela é o assunto da tela. O anel
+   inset de 1px saiu: agora existe uma borda de verdade, e os dois juntos
+   desenhavam um filete duplo. */
 .orb-mural-it.aberta{
-  grid-column:1/-1;background:rgba(255,255,255,.07);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09);
+  grid-column:1/-1;background-color:rgba(255,255,255,.085);
+  border-color:rgba(255,255,255,.15);
 }
+.orb-mural-it.aberta[data-tc]{
+  border-color:color-mix(in srgb,var(--orb-mural-ca) 58%,transparent);
+  background-image:linear-gradient(90deg,color-mix(in srgb,var(--orb-mural-ca) 20%,transparent),transparent 38%);
+}
+.orb-mural-it.aberta::before{transform:scaleX(1.7)}
 /* Número ímpar de notas em duas colunas deixava a última sozinha, com um vão
    vazio do lado — o cartão terminava num "dente" em vez de num retângulo.
    A última esticada fecha a borda de baixo. Só quando NÃO há ficha aberta:
@@ -2357,7 +2489,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 }
 @keyframes orbMuralTxAbre{from{opacity:0}to{opacity:1}}
 .orb-mural-it.aberta .orb-mural-nm{white-space:normal;overflow:visible}
-.orb-mural-acoes{display:flex;gap:6px;padding:0 9px 9px;animation:orbMuralTxAbre 200ms var(--orb-curva) 90ms both}
+.orb-mural-acoes{display:flex;gap:6px;padding:0 9px 9px 13px;animation:orbMuralTxAbre 200ms var(--orb-curva) 90ms both}
 .orb-mural-acoes button{
   appearance:none;border:1px solid rgba(255,255,255,.13);border-radius:8px;
   background:rgba(255,255,255,.06);color:var(--orb-texto2);cursor:pointer;
@@ -2398,7 +2530,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .orb-mural-fio{opacity:0 !important}
 }
 @media(prefers-reduced-motion:reduce){
-  .orb-mural,.orb-mural-it.desliza{transition-duration:1ms}
+  .orb-mural,.orb-mural-it.desliza,.orb-mural-it::before,.fc-lista-item::before{transition-duration:1ms}
   .orb-mural-it.entra,.orb-mural-it.aberta .orb-mural-pv,.orb-mural-acoes{animation:none}
   .orb-segsvg circle{transition-duration:1ms}
 }
@@ -2418,10 +2550,29 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .orb-modal .fc-card-panel-close:hover,.orb-modal .fc-voltar-btn:hover{color:var(--orb-texto)}
 .orb-modal .fc-card-panel-body{color:var(--orb-texto2)}
 .orb-modal .fc-card-panel-actions{border-top-color:var(--orb-borda-sat)}
-.orb-modal .fc-lista-item:hover{background:rgba(255,255,255,.05)}
+/* A ficha "aba de arquivo" no painel EMPRESTADO. Aqui não dá pra confiar no
+   [data-theme]: o app pode estar no claro e este painel continua escuro. Por
+   isso a superfície, a lombada neutra e os pesos de cor são repetidos com a
+   régua escura, e o chão claro do .fc-lista é desligado. */
+.orb-modal .fc-lista{background:transparent}
+.orb-modal .fc-lista-item{background-color:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08)}
+.orb-modal .fc-lista-item[data-tc]{
+  border-color:color-mix(in srgb,var(--fc-lista-ca) 42%,transparent);
+  background-image:linear-gradient(90deg,color-mix(in srgb,var(--fc-lista-ca) 15%,transparent),transparent 42%);
+}
+.orb-modal .fc-lista-item:not([data-tc])::before{background:rgba(255,255,255,.20)}
+.orb-modal .fc-lista-item:hover{background-color:rgba(255,255,255,.09)}
+/* Repetido aqui porque `.orb-modal .fc-lista-item` vem DEPOIS da regra do
+   destaque de "já flutuando" no arquivo e, com a mesma especificidade,
+   apagaria ela dentro da Órbita. */
+.orb-modal .fc-lista-item.fc-lista-item-aberta{background-color:var(--accent-glow)}
+.orb-modal .fc-lista-item-expandida{border-color:rgba(255,255,255,.15)}
+.orb-modal .fc-lista-item-expandida[data-tc]{border-color:color-mix(in srgb,var(--fc-lista-ca) 58%,transparent)}
 .orb-modal .fc-lista-nome{color:var(--orb-texto)}
 .orb-modal .fc-lista-nome:hover{background:rgba(255,255,255,.08)}
-.orb-modal .fc-lista-previa,.orb-modal .fc-lista-vazia{color:var(--orb-texto4)}
+.orb-modal .fc-lista-previa{color:var(--orb-texto-pv)}
+.orb-modal .fc-lista-item-expandida .fc-lista-previa{color:var(--orb-texto2)}
+.orb-modal .fc-lista-vazia{color:var(--orb-texto4)}
 .orb-modal .fc-lista-del-btn{border-color:var(--orb-borda-sat);color:var(--orb-texto3)}
 .orb-modal .fc-panel-handle-bar{background:rgba(255,255,255,.28)}
 .orb-modal .fc-panel-handle:hover .fc-panel-handle-bar{background:rgba(255,255,255,.5)}
@@ -5945,7 +6096,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.03.2';
+const VOX_VERSION='2026.09.03.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -9207,8 +9358,23 @@ function _fcListarCards(id,nomePasta,manterExpansao){
         </div>`:'';
         // Cascata de entrada só nos 8 primeiros — depois disso o atraso
         // acumulado (20ms cada) já vira lentidão perceptível, não "abriu".
-        const entra=i<8?` fc-lista-item-entra" style="animation-delay:${i*20}ms`:'';
-        return `<div class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}${entra}">
+        const entraClasse=i<8?' fc-lista-item-entra':'';
+        // Contorno + lombada com a cor da etiqueta. A variável nasce por item
+        // (--fc-lista-ca) porque a ficha da lista não é o .card real, é um
+        // wrapper — mesma solução do --orb-mural-ca no Mural.
+        const luz=_fcLuzDaEtiqueta(c);
+        const tcAttr=luz?` data-tc="${escHtml(c.dataset.tc)}"`:'';
+        // Uma lista de estilos, UM atributo style. A versão antiga fechava o
+        // atributo class no meio da string pra enfiar o animation-delay
+        // (` fc-lista-item-entra" style="..."`); acrescentar a cor ali daria
+        // dois atributos style no mesmo nó, e o HTML descarta o segundo
+        // inteiro em silêncio — a cor sumiria justo nas 8 primeiras fichas.
+        // Mesmo bug que já tinha mordido o Mural.
+        const estilos=[];
+        if(i<8)estilos.push(`animation-delay:${i*20}ms`);
+        if(luz)estilos.push(`--fc-lista-ca:${safeColor(luz.ca)}`);
+        const styleAttr=estilos.length?` style="${estilos.join(';')}"`:'';
+        return `<div class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}${entraClasse}"${tcAttr}${styleAttr}>
           <button type="button" class="fc-lista-item-corpo" onclick="_fcAlternarExpansao('${escJs(c.id)}')">
             <span class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();_fcRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
             <span class="fc-lista-previa">${previaTxt}</span>
@@ -14467,6 +14633,21 @@ function _orbLuzDaEtiqueta(c){
   const tc=c.dataset.tc;
   if(tc===undefined||tc===''||isNaN(+tc))return null;
   return FOLDER_LUZ.escuro[((+tc%8)+8)%8];
+}
+// Gêmea da de cima, para a lista lateral (.fc-lista-item) — e com uma
+// diferença que existe por um motivo, não por descuido: aquele painel é
+// EMPRESTADO. No Fluxograma ele segue o tema do app, então a paleta certa é
+// a de _folderLuz(). Dentro da Órbita o mesmo painel é forçado escuro pelo
+// .orb-modal, e aí a paleta tem que ser a escura MESMO com o app no claro —
+// senão a cor calibrada pra fundo branco cai num painel #282c37 e some. Um
+// if só, no lugar onde a decisão pode ser tomada: em tempo de desenho.
+function _fcLuzDaEtiqueta(c){
+  const tc=c.dataset.tc;
+  if(tc===undefined||tc===''||isNaN(+tc))return null;
+  const i=((+tc%8)+8)%8;
+  return document.getElementById('orbOverlay')?.classList.contains('on')
+    ?FOLDER_LUZ.escuro[i]
+    :_folderLuz(i);
 }
 function _folderRgba(hex,al){const h=hex.replace('#','');
   return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${al})`}
