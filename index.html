@@ -2314,8 +2314,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 }
 .orb-mural-it{
   position:relative;border-radius:9px;align-self:start;
-  transition:background-color 150ms var(--orb-curva);
+  transition:background-color 150ms var(--orb-curva),border-color 150ms var(--orb-curva);
 }
+/* Contorno da etiqueta de cor da nota — mesma fórmula de .card[data-tc] no
+   resto do app (border-color:color-mix(in srgb,var(--ca) N%,transparent)),
+   fixa no peso ESCURO (42%) porque o Mural nunca sai do tema escuro. */
+.orb-mural-it[data-tc]{border:1px solid color-mix(in srgb,var(--orb-mural-ca) 42%,transparent)}
 .orb-mural-it.entra{animation:orbMuralItEntra 250ms var(--orb-curva) backwards}
 @keyframes orbMuralItEntra{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 .orb-mural-it.desliza{transition:transform 380ms var(--orb-curva)}
@@ -5941,7 +5945,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.03.1';
+const VOX_VERSION='2026.09.03.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -10772,8 +10776,22 @@ function _orbMuralFichas(cards,cols){
       <button type="button" onclick="event.stopPropagation();_flAbrirCard('${escJs(c.id)}',this)">${ICO.expand}${escHtml(t('Abrir flutuante'))}</button>
       <button type="button" class="orb-mural-del" onclick="event.stopPropagation();_orbMuralExcluir('${escJs(c.id)}')" title="${escHtml(t('Excluir'))}" aria-label="${escHtml(t('Excluir'))}">${ICO.trash}</button>
     </div>`:'';
-    const entra=(i<10&&!_voxReduzMov())?` entra" style="animation-delay:${i*22}ms`:'';
-    return `<div class="orb-mural-it${aberta?' aberta':''}${flutuando?' flutuando':''}${i===orfa?' orfa':''}${entra}" data-nid="${escHtml(c.id)}">
+    const entraClasse=(i<10&&!_voxReduzMov())?' entra':'';
+    // Contorno com a cor da etiqueta — mesmo tratamento de .card[data-tc]
+    // (border-color em color-mix sobre --ca), só que aqui a variável nasce
+    // por card (--orb-mural-ca) porque a ficha do Mural não é o .card real,
+    // é um wrapper novo. Ver _orbLuzDaEtiqueta pro porquê da paleta fixa.
+    const luz=_orbLuzDaEtiqueta(c);
+    const tcAttr=luz?` data-tc="${c.dataset.tc}"`:'';
+    // Um `style` só — dois atributos `style` no mesmo nó não são um erro
+    // silencioso: o HTML descarta o segundo inteiro, e a cor simplesmente
+    // não aplicava nas fichas que também tinham animation-delay (as 10
+    // primeiras). Por isso os dois pedaços entram na mesma lista.
+    const estilos=[];
+    if(entraClasse)estilos.push(`animation-delay:${i*22}ms`);
+    if(luz)estilos.push(`--orb-mural-ca:${safeColor(luz.ca)}`);
+    const styleAttr=estilos.length?` style="${estilos.join(';')}"`:'';
+    return `<div class="orb-mural-it${aberta?' aberta':''}${flutuando?' flutuando':''}${i===orfa?' orfa':''}${entraClasse}" data-nid="${escHtml(c.id)}"${tcAttr}${styleAttr}>
       <button type="button" class="orb-mural-corpo" onclick="_orbMuralAlterna('${escJs(c.id)}')">
         <span class="orb-mural-nm${sn?'':' vazia'}" title="${sn?escHtml(sn):escHtml(t('Clique para nomear este card'))}" onclick="event.stopPropagation();_orbMuralRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
         <span class="orb-mural-pv">${previa}</span>
@@ -14440,6 +14458,16 @@ const FOLDER_LUZ={
 };
 function _folderEhEscuro(){return document.documentElement.getAttribute('data-theme')==='dark'}
 function _folderLuz(i){return FOLDER_LUZ[_folderEhEscuro()?'escuro':'claro'][((i%8)+8)%8]}
+// A ficha do Mural do Órbita mora num painel SEMPRE escuro (ver comentário
+// em ~2401 — "nunca o branco do resto do app"), então a borda da etiqueta
+// não pode seguir _folderEhEscuro(): se o app estivesse no tema claro, ela
+// pegaria a paleta clara e erraria o contraste contra um fundo que nunca
+// clareia. Por isso lê FOLDER_LUZ.escuro direto, não _folderLuz().
+function _orbLuzDaEtiqueta(c){
+  const tc=c.dataset.tc;
+  if(tc===undefined||tc===''||isNaN(+tc))return null;
+  return FOLDER_LUZ.escuro[((+tc%8)+8)%8];
+}
 function _folderRgba(hex,al){const h=hex.replace('#','');
   return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${al})`}
 // Ângulo do degradê ajustado ao formato: no card (quase quadrado) 157deg
