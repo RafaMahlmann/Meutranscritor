@@ -1802,6 +1802,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   border-radius:8px;cursor:pointer;transition:all var(--transition)}
 .fc-lista-del-btn:hover{background:rgba(239,68,68,0.12);border-color:#ef4444;color:#ef4444}
 .fc-lista-del-btn svg{width:13px;height:13px}
+/* Arquivar, do lado do excluir (07/09/2026). Mesma caixa do lixo, sem o
+   vermelho: é a alternativa MAIS leve das duas, e o desenho tem que dizer
+   isso antes da pessoa ler o balãozinho. */
+.fc-lista-arq-btn{display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  width:26px;height:26px;background:none;border:1px solid var(--border2);color:var(--text3);
+  border-radius:8px;cursor:pointer;transition:all var(--transition)}
+.fc-lista-arq-btn:hover{background:var(--bg-input);border-color:var(--text4);color:var(--text2)}
+.fc-lista-arq-btn svg{width:13px;height:13px}
 .fc-lista-nome{font-size:12.5px;font-weight:600;letter-spacing:-.008em;color:var(--text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;
   border-radius:6px;padding:1px 4px;margin:-1px -4px;align-self:flex-start;max-width:100%}
@@ -2573,7 +2581,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .orb-modal .fc-lista-previa{color:var(--orb-texto-pv)}
 .orb-modal .fc-lista-item-expandida .fc-lista-previa{color:var(--orb-texto2)}
 .orb-modal .fc-lista-vazia{color:var(--orb-texto4)}
-.orb-modal .fc-lista-del-btn{border-color:var(--orb-borda-sat);color:var(--orb-texto3)}
+.orb-modal .fc-lista-del-btn,.orb-modal .fc-lista-arq-btn{border-color:var(--orb-borda-sat);color:var(--orb-texto3)}
 .orb-modal .fc-panel-handle-bar{background:rgba(255,255,255,.28)}
 .orb-modal .fc-panel-handle:hover .fc-panel-handle-bar{background:rgba(255,255,255,.5)}
 
@@ -3647,6 +3655,193 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   font-variant-numeric:tabular-nums}
 .folder-desarq{border:1px solid var(--border);background:none;color:var(--accent);font-family:var(--font);font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;cursor:pointer;flex-shrink:0;transition:background .12s linear}
 .folder-desarq:hover{background:var(--accent-glow)}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SELEÇÃO MÚLTIPLA + RESTAURAR NO CARD (07/09/2026)
+
+   Duas medidas de contraste guiaram as cores daqui, e nenhuma é gosto:
+   - o verde --accent (#10b981) como ANEL de seleção dá 2,56:1 sobre o card
+     branco. A WCAG 1.4.11 pede 3:1 pra elemento não-textual, e o anel é
+     literalmente a única coisa que diz "este está marcado". O --accent2
+     (#059669) dá 3,76:1 e passa. No escuro o problema não existe: o --accent
+     dá 6,26:1 sobre o #212124 do card, então lá ele fica.
+   - a caixa vazia com --border2 (rgba(0,0,0,.12)) dá 1,32:1: some. Com
+     --text3 (#8e8e93) dá 3,27:1. Caixa de marcar que não se vê não é
+     discrição, é ausência.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{--anel-sel:#059669}
+[data-theme="dark"]{--anel-sel:#10b981}
+
+/* ── linha do botão "Selecionar" ── */
+.lista-bar{display:flex;justify-content:flex-end;padding:0 2px 9px}
+.lista-sel-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);
+  background:var(--bg-card);color:var(--text2);font-family:var(--font);font-size:11.5px;
+  font-weight:700;padding:6px 12px;border-radius:20px;cursor:pointer;
+  transition:color .14s linear,border-color .14s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+.lista-sel-btn .svgi{font-size:14px}
+.lista-sel-btn:hover{color:var(--text);border-color:var(--text4)}
+.lista-sel-btn:active{transform:scale(.96)}
+body.sel-modo .lista-sel-btn{color:var(--anel-sel);border-color:var(--anel-sel)}
+
+/* ── a caixinha, na calha da alça de arrastar ──
+   Ela não inventa espaço: ocupa o MESMO canto que a .drag-handle já ocupa em
+   todo card, e as duas se revezam. É honesto além de barato — não dá pra
+   reordenar a lista enquanto se escolhe o que apagar. */
+.card-cbx{display:none;position:relative;flex:none;width:32px;height:44px;
+  align-self:flex-start;align-items:center;justify-content:center;
+  border:none;background:none;padding:0;cursor:pointer;color:#fff}
+body.sel-modo .card-cbx{display:flex}
+body.sel-modo .ch>.drag-handle{display:none}
+.card-cbx::before{content:'';width:19px;height:19px;border-radius:6px;
+  border:1.6px solid var(--text3);background:var(--bg-card);
+  transition:background .16s linear,border-color .16s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+/* alvo de toque de 44px, mesmo truque do .ch-del-btn */
+.card-cbx::after{content:'';position:absolute;top:50%;left:50%;
+  width:var(--card-tap-min);height:var(--card-tap-min);transform:translate(-50%,-50%)}
+.card-cbx .svgi{position:absolute;font-size:13px;opacity:0;transform:scale(.5);pointer-events:none;
+  transition:opacity .14s linear,transform .26s cubic-bezier(.22,1,.36,1)}
+.card-cbx:active::before{transform:scale(.9)}
+.card.sel-on .card-cbx::before{background:var(--anel-sel);border-color:var(--anel-sel)}
+.card.sel-on .card-cbx .svgi{opacity:1;transform:scale(1)}
+/* entrada escalonada: lê como "abriu", não como "apareceu". Só nos 10
+   primeiros — depois disso o atraso acumulado vira lentidão. */
+body.sel-modo .card-cbx{animation:cbxNasce .26s cubic-bezier(.22,1,.36,1) backwards}
+.cards .card:nth-child(-n+10) .card-cbx{animation-delay:calc((var(--cbx-i,0)) * 22ms)}
+@keyframes cbxNasce{from{opacity:0;transform:translateX(-7px)}to{opacity:1;transform:none}}
+
+/* ── card marcado ──
+   O anel é um nó próprio, NÃO o ::after do .card: aquele já é usado pelo fio
+   de luz da etiqueta de cor (.card[data-tc]::after) e roubá-lo apagaria a cor
+   justo nos cards etiquetados. */
+.card-anel{position:absolute;inset:-1px;border-radius:var(--radius-card);pointer-events:none;
+  z-index:4;border:2px solid var(--anel-sel);opacity:0;transform:scale(1.012);
+  transition:opacity .2s linear,transform .3s cubic-bezier(.22,1,.36,1)}
+.card.sel-on .card-anel{opacity:1;transform:scale(1)}
+/* A tinta sozinha é um sussurro (1,08:1 sobre o branco). Quem grita é o anel e
+   a caixa cheia; ela só existe pra linha não ficar "branca com moldura". */
+.card.sel-on{background:color-mix(in srgb,var(--accent) 7%,var(--bg-card))}
+[data-theme="dark"] .card.sel-on{background:color-mix(in srgb,var(--accent) 10%,var(--bg-card))}
+/* Em modo seleção o card inteiro vira alvo: o cursor precisa dizer isso, e o
+   texto não pode ser selecionado por engano a cada toque. */
+body.sel-modo #cardsList .card{cursor:pointer}
+body.sel-modo #cardsList .card .ch-left,
+body.sel-modo #cardsList .card .card-body{-webkit-user-select:none;user-select:none}
+
+/* ── pílula "Restaurar" dentro da Lixeira e do Arquivo ──
+   Mesma peça da pasta (.folder-desarq) e mesma gramática de linha:
+   nome … prazo · Restaurar. Se a pasta e o card oferecem a volta com desenhos
+   diferentes, viram duas promessas diferentes. */
+.ch-restaurar{display:inline-flex;align-items:center;gap:6px;flex:none}
+.ch-restaurar-btn{position:relative;display:inline-flex;align-items:center;gap:5px;
+  border:1px solid var(--border2);background:none;color:var(--accent2);font-family:var(--font);
+  font-size:11px;font-weight:800;padding:4px 10px 4px 8px;border-radius:20px;cursor:pointer;
+  transition:background .13s linear,border-color .13s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+[data-theme="dark"] .ch-restaurar-btn{color:var(--accent)}
+.ch-restaurar-btn .svgi{font-size:12px}
+.ch-restaurar-btn:hover{background:var(--accent-glow);
+  border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.ch-restaurar-btn:active{transform:scale(.96)}
+/* A .folder-desarq da pasta tem ~22px de altura e nunca ganhou alvo de toque.
+   Aqui não: 44px invisíveis, os mesmos que o app promete em --card-tap-min. */
+.ch-restaurar-btn::after{content:'';position:absolute;top:50%;left:0;right:0;
+  height:var(--card-tap-min);transform:translateY(-50%)}
+.ch-prazo{font-size:10px;font-weight:800;letter-spacing:.3px;padding:2px 7px;border-radius:20px;
+  background:rgba(255,149,0,.15);color:#a35f00;flex:none}
+[data-theme="dark"] .ch-prazo{color:var(--warning)}
+.ch-prazo.urgente{background:rgba(255,59,48,.12);color:var(--danger)}
+/* A pílula entra no grupo da direita, ANTES da bolinha de cor — e por isso é
+   ela que passa a carregar o margin-left:auto que era da .cdot-wrap. Com os
+   dois "auto" ligados o espaço se dividiria e a pílula pararia no meio. */
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .ch-restaurar{order:8;margin-left:auto}
+.card.ch-header-open .ch-left .ch-restaurar{order:3;margin-left:auto}
+/* Os :not() daqui não são enfeite: sem eles esta regra tem 4 classes e a que
+   põe margin-left:auto na .cdot-wrap tem 6, então ela ganharia e os DOIS
+   margin-left:auto ficariam ligados ao mesmo tempo. Medido antes de corrigir:
+   o espaço livre se dividia entre os dois e a pílula parava no meio da linha,
+   a 292px, com a bolinha lá em 521px. */
+.card.tem-restaurar:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .cdot-wrap{margin-left:0}
+.card.tem-restaurar.ch-header-open .ch-left .cdot-wrap{margin-left:0}
+
+/* ── barra de ações ── */
+/* MEDIDO no app rodando: a .ibar (a barra de gravar/digitar) também é fixed em
+   bottom:18px. As duas nasciam uma em cima da outra — a de seleção ganhava por
+   z-index e cobria o botão de gravar, parecendo defeito. Agora ela se empilha
+   ACIMA: o --sel-bar-bottom é calculado por _selPosicionaBarra() a partir da
+   altura real da .ibar, porque essa altura muda (uma linha, duas linhas,
+   gravando). O 18px é só o fallback de antes de a conta rodar. */
+.sel-bar{position:fixed;left:50%;bottom:var(--sel-bar-bottom,18px);z-index:9998;
+  display:flex;align-items:center;gap:7px;
+  background:#1d1d1f;color:#f0f0f4;border-radius:17px;padding:8px 9px 8px 13px;
+  box-shadow:0 2px 8px rgba(0,0,0,.10),0 18px 44px rgba(0,0,0,.22);
+  opacity:0;pointer-events:none;transform:translate(-50%,14px);
+  transition:opacity .2s linear,transform .34s cubic-bezier(.22,1,.36,1)}
+[data-theme="dark"] .sel-bar{background:#2b2b30;border:1px solid rgba(255,255,255,.13)}
+.sel-bar.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.sel-cnt{display:flex;align-items:baseline;gap:5px;font-size:13px;font-weight:700;
+  padding-right:3px;white-space:nowrap;order:1}
+.sel-cnt small{font-size:11.5px;font-weight:600;color:#a9a9b2}
+/* Estado "modo ligado, nada escolhido ainda" — texto, não número. */
+.sel-cnt-vazio{font-size:12.5px;font-weight:600;color:#a9a9b2}
+/* O dígito velho sobe e apaga, o novo entra por baixo — o mesmo truque que o
+   painel de etiquetas já usa em _cfTrocaDigito.
+   MEDIDO: sem line-height:1 a caixa fica com 14,9px e o line-box do dígito com
+   19,5px (13px × 1.5 herdado), e o topo do número é cortado pelo overflow. */
+.sel-num{position:relative;display:inline-block;min-width:.72em;height:1.25em;overflow:hidden;
+  font-variant-numeric:tabular-nums;line-height:1}
+.sel-num i{position:absolute;inset:0;font-style:normal;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .26s cubic-bezier(.22,1,.36,1),opacity .2s linear}
+.sel-num i.sobe{transform:translateY(-100%);opacity:0}
+.sel-num i.entra{transform:translateY(100%);opacity:0}
+.sel-sep{width:1px;height:22px;background:rgba(255,255,255,.14);flex:none}
+.sel-act{border:none;background:rgba(255,255,255,.09);color:#f0f0f4;font-family:var(--font);
+  font-size:12.5px;font-weight:700;padding:8px 12px;border-radius:11px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  transition:background .14s linear,color .14s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+.sel-act .svgi{font-size:14px}
+.sel-act:hover{background:rgba(255,255,255,.17)}
+.sel-act:active{transform:scale(.965)}
+.sel-act.perigo:hover{background:rgba(255,90,80,.26);color:#ffd9d5}
+.sel-act.fantasma{background:none;color:#a9a9b2;padding:8px 9px}
+.sel-act.fantasma:hover{background:rgba(255,255,255,.1);color:#f0f0f4}
+.sel-bar [data-sa="tudo"]{order:2}
+.sel-quebra{display:none;order:4}
+.sel-acts{order:5;display:flex;align-items:center;gap:7px}
+.sel-sair{order:9}
+/* Confirmação do "apagar de vez" — acontece DENTRO da barra, não num
+   confirm() do navegador. É a única porta sem volta do app, e merece um
+   aviso que a pessoa lê no mesmo lugar em que estava trabalhando. */
+.sel-bar.perigo{background:#5c1a16}
+[data-theme="dark"] .sel-bar.perigo{background:#4a1512}
+.sel-conf{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;order:1}
+.sel-conf .svgi{font-size:15px;flex:none}
+.sel-conf .sel-aviso{color:#ffb0a9;display:flex;align-items:center;gap:7px}
+/* A lista precisa de chão sobrando: a barra flutua POR CIMA dela, e sem isso o
+   último card fica coberto pra sempre. Sem transição de propósito — mexer em
+   padding é mexer em layout, e isso não se anima. */
+body.sel-modo .content-area{padding-bottom:var(--sel-chao,86px)}
+@media(max-width:640px){
+  /* MEDIDO em 360px: numa fila só a barra pedia 561px e tinha 310 — o botão de
+     sair e o "Mover para…" ficavam fora da tela. Duas linhas resolvem sem
+     esconder nada importante. */
+  .sel-bar{left:10px;right:10px;transform:translateY(14px);border-radius:16px;
+    flex-wrap:wrap;row-gap:7px;gap:6px;padding:9px 10px}
+  .sel-bar.on{transform:translateY(0)}
+  .sel-cnt{margin-right:auto;padding-right:0}
+  .sel-quebra{display:block;flex-basis:100%;height:0}
+  .sel-acts{flex-basis:100%;gap:6px}
+  .sel-acts .sel-act{flex:1;justify-content:center;padding:9px 8px}
+  /* o "⋯" não é um verbo: não merece a mesma fatia que Arquivar e Excluir */
+  .sel-acts .sel-act.fantasma{flex:0 0 44px;padding:9px 0}
+  .sel-sair{order:3}
+  .sel-bar .sel-sep{display:none}
+  .sel-conf{flex-basis:100%}
+  body.sel-modo .content-area{padding-bottom:var(--sel-chao,120px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .card-cbx{animation:none!important}
+  .sel-bar,.card-anel,.sel-num i,.card-cbx::before,.card-cbx .svgi{transition-duration:1ms}
+}
 .folder-esvaziar{width:100%;margin-top:6px;border:1px solid var(--border);background:none;color:var(--danger);font-family:var(--font);font-size:12px;font-weight:700;padding:8px;border-radius:11px;cursor:pointer;transition:background .12s linear}
 .folder-esvaziar:hover{background:rgba(239,68,68,.1)}
 /* BUG ANTIGO (achado em 19/08/2026): esta transição de max-height nunca fez
@@ -4984,6 +5179,17 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <button class="doc-tbtn doc-tbtn-exit" onclick="setViewMode('list')" title="Voltar à lista" data-i18n-title><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> <span data-i18n>Voltar</span></button>
         </div>
       </div>
+      <!-- Linha fina só pro botão "Selecionar" (07/09/2026). Não repete o nome
+           da pasta nem a contagem: os dois já existem na plaqueta do painel de
+           pastas, e um segundo cabeçalho dizendo a mesma coisa seria ruído.
+           Aparece só quando há card na tela pra selecionar — ver
+           _selAtualizaBotao(). -->
+      <div class="lista-bar" id="listaBar" hidden>
+        <button type="button" class="lista-sel-btn" id="btnSelModo" onclick="selModoAlternar()"
+                title="Escolher vários cards de uma vez" data-i18n-title>
+          <span class="svgi" aria-hidden="true"></span><span data-i18n>Selecionar</span>
+        </button>
+      </div>
       <div class="cards" id="cardsList" style="display:none"></div>
     </div>
     <aside class="folders-bar" id="foldersBar">
@@ -6062,6 +6268,13 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   </div>
 </div>
 
+<!-- BARRA DE SELEÇÃO MÚLTIPLA (07/09/2026) — fixa no rodapé da TELA, não da
+     lista: com absolute ela sairia de vista assim que a pessoa rolasse, justo
+     enquanto escolhe o quinto card. O conteúdo é montado por _selDesenhaBarra(),
+     que muda os verbos conforme a vista (pasta / lixeira / arquivo).
+     Não briga com o toast: o toast deste app mora no TOPO (top:68px). -->
+<div class="sel-bar" id="selBar" role="toolbar" aria-live="polite"></div>
+
 <!-- FASE 4e: indicador de "puxar pra criar card" (mobile, Lista/Masonry) —
      ver _ptcTouchMove()/_showPtcIndicator() no script principal -->
 <div class="ptc-indicator" id="ptcIndicator" style="display:none"></div>
@@ -6096,7 +6309,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.03.3';
+const VOX_VERSION='2026.09.04.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6134,6 +6347,41 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── SELEÇÃO MÚLTIPLA, RESTAURAR NO CARD E CONSERTO DO MURAL (07/09/2026) ──
+"Selecionar":"Select",
+"Concluir":"Done",
+"Escolher vários cards de uma vez":"Pick several cards at once",
+"Marcar este card":"Select this card",
+// ("Selecionar tudo" já existe mais abaixo, vindo do seletor de arquivos —
+//  mesma frase, mesma tradução. Repetir aqui só criaria duas verdades pra
+//  manter em dia.)
+"Sair da seleção":"Leave selection",
+"Nenhum card escolhido":"No card picked yet",
+"selecionado":"selected",
+"selecionados":"selected",
+"Apagar de vez":"Delete forever",
+"Apagar 1 card de vez? Isso não tem volta.":"Delete 1 card forever? There's no going back.",
+"Apagar {n} cards de vez? Isso não tem volta.":"Delete {n} cards forever? There's no going back.",
+"🗑️ 1 card apagado de vez":"🗑️ 1 card deleted forever",
+"🗑️ {n} cards apagados de vez":"🗑️ {n} cards deleted forever",
+"📦 1 card arquivado":"📦 1 card archived",
+"📦 {n} cards arquivados":"📦 {n} cards archived",
+"🗑️ 1 card na lixeira · some em 30 dias":"🗑️ 1 card in the trash · gone in 30 days",
+"🗑️ {n} cards na lixeira · somem em 30 dias":"🗑️ {n} cards in the trash · gone in 30 days",
+"↩ 1 card de volta":"↩ 1 card back",
+"↩ {n} cards de volta":"↩ {n} cards back",
+"↩ 1 card restaurado — {onde}":"↩ 1 card restored — {onde}",
+"↩ {n} cards restaurados — {onde}":"↩ {n} cards restored — {onde}",
+"↩ 1 card voltou pra onde estava":"↩ 1 card went back where it was",
+"↩ {n} cards voltaram pra onde estavam":"↩ {n} cards went back where they were",
+"voltou pra \"{pasta}\"":"back in \"{pasta}\"",
+"voltou pra Tudo":"back in All",
+"cada um voltou pra pasta em que estava":"each one back in its own folder",
+"Tirar da lixeira e devolver pra pasta de origem":"Take out of the trash and put back in its folder",
+"Desarquivar e devolver pra pasta de origem":"Unarchive and put back in its folder",
+"🗑️ Nota na lixeira · some em 30 dias":"🗑️ Note in the trash · gone in 30 days",
+"📦 Nota arquivada":"📦 Note archived",
+"↩ Nota de volta":"↩ Note back",
 // AJUSTES ONBOARDING
 "Você será levado direto às configurações para conectar suas chaves de acesso.":"You'll be taken straight to settings to connect your access keys.",
 // FASE 5 — Tags/Transformar recolhíveis no Modo Documento (mobile)
@@ -7955,6 +8203,11 @@ function toggleView(){
 }
 function setViewMode(m){
   viewMode=m;localStorage.setItem('vox_view',m);applyView();
+  // O Modo Documento é um card por vez: escolher vários não quer dizer nada
+  // ali. Sair dele com uma seleção viva também não faria sentido, então o
+  // modo cai junto — ver _selPodeSelecionar().
+  if(viewMode==='doc'&&selModo)selSair();
+  _selAtualizaBotao();
 }
 // O Modo Documento é o único modo de "um card por vez" — reaproveita a mesma
 // máquina de sempre (mesmo card .focus-active, mesmo applyFocusCard/editor
@@ -9352,8 +9605,12 @@ function _fcListarCards(id,nomePasta,manterExpansao){
         // Botão de "jogar pra flutuante" só nasce quando expandido — clicar no
         // item, de saída, só mostra mais texto ali mesmo na coluna; abrir uma
         // janela por cima é uma segunda decisão, com botão próprio.
+        // Arquivar entrou em 07/09/2026: era a única lista do app que oferecia
+        // excluir sem oferecer a alternativa mais leve do lado. Fica ANTES do
+        // lixo de propósito — a ordem sugere a ordem de preferência.
         const acoes=expandido?`<div class="fc-lista-acoes">
           <button type="button" class="fc-lista-float-btn" onclick="event.stopPropagation();_flAbrirCard('${escJs(c.id)}',this)">${ICO.expand} ${t('Abrir flutuante')}</button>
+          <button type="button" class="fc-lista-arq-btn" onclick="event.stopPropagation();_fcArquivarCard('${escJs(c.id)}')" title="${t('Arquivar')}" aria-label="${t('Arquivar')}">${ICO.archive}</button>
           <button type="button" class="fc-lista-del-btn" onclick="event.stopPropagation();_fcExcluirCard('${escJs(c.id)}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.trash}</button>
         </div>`:'';
         // Cascata de entrada só nos 8 primeiros — depois disso o atraso
@@ -9417,25 +9674,54 @@ function _fcAlternarExpansao(id){
   _fcItemExpandidoId=(_fcItemExpandidoId===id)?null:id;
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
 }
-// Excluir direto da lista lateral (Órbita/Fluxograma) — a lista lateral não
-// tem o .conf-overlay do card de verdade pra pedir confirmação inline (é um
-// elemento separado, leve, sem esse HTML todo duplicado), então usa confirm()
-// nativo, mesmo padrão já usado em deleteFolder(). Se o card estiver
-// flutuando no momento, limpa a janela ANTES de apagar — senão sobrava uma
-// moldura vazia (mesma classe de bug do #floatLayer travado).
+// Excluir direto da lista lateral (Órbita/Fluxograma).
+//
+// BUG CORRIGIDO EM 07/09/2026: até aqui esta função chamava doDelete(id) — a
+// mesma função de apagar DEFINITIVO que só deveria rodar de dentro da lixeira.
+// Ou seja: excluir uma nota pela lista do Fluxograma não mandava pra lixeira,
+// apagava de vez, com um confirm() do navegador como único freio e nenhum
+// desfazer depois. O resto do app treinou a pessoa a esperar lixeira, e aqui
+// ela não existia. Agora usa paraLixeira(id), igual ao "x" do card.
+// O confirm() saiu junto, e não por descuido: ele existia porque a ação era
+// sem volta. Com volta, perguntar só cobra um toque a mais pra não dizer nada
+// — é a mesma decisão de 19/08 que vale pro card na lista principal.
+// Se a nota estiver flutuando, limpa a janela ANTES — senão sobra uma moldura
+// vazia (mesma classe de bug do #floatLayer travado).
 function _fcExcluirCard(id){
-  const card=document.getElementById(id);
-  const nome=(card?.dataset.sessionName||'').trim()||t('este card');
-  if(!confirm(t('Excluir "{name}"?').replace('{name}',nome)))return;
-  if(_flAbertas.some(j=>j.id===id)){
-    document.getElementById('floatwin-'+id)?.remove();
-    _flAbertas=_flAbertas.filter(j=>j.id!==id);
-    if(!_flAbertas.length&&_flAtiva)_flAlternarCamada();
-  }
-  doDelete(id);
+  if(!document.getElementById(id))return;
+  _fcFecharFlutuanteDe(id);
+  paraLixeira(id,true);
   if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
-  toast(t('🗑️ Nota excluída'));
+  toastDesfazer(t('🗑️ Nota na lixeira · some em 30 dias'),()=>{
+    restaurarDaLixeira(id,true);
+    if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+    toast(t('↩ Nota de volta'));
+  });
+}
+// Arquivar pela lista lateral. Chama o arquivarCard que já existe — o mesmo
+// que o menu "⋯" do card usa — só que aqui ele fica à vista, do lado do
+// excluir, como em todo o resto do app.
+function _fcArquivarCard(id){
+  if(!document.getElementById(id))return;
+  _fcFecharFlutuanteDe(id);
+  arquivarCard(id,true);
+  if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
+  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+  toastDesfazer(t('📦 Nota arquivada'),()=>{
+    desarquivarCard(id,true);
+    if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+    toast(t('↩ Nota de volta'));
+  });
+}
+// Some com a janela flutuante da nota, se houver. Extraído porque agora são
+// três chamadores (excluir e arquivar aqui, excluir no Mural) e o trecho
+// duplicado é justamente o que costuma ficar pra trás numa correção.
+function _fcFecharFlutuanteDe(id){
+  if(!_flAbertas.some(j=>j.id===id))return;
+  document.getElementById('floatwin-'+id)?.remove();
+  _flAbertas=_flAbertas.filter(j=>j.id!==id);
+  if(!_flAbertas.length&&_flAtiva)_flAlternarCamada();
 }
 // Estado 2 do painel: o texto de um card, com volta pra lista de onde veio.
 function _fcAbrirCard(id){
@@ -10940,6 +11226,7 @@ function _orbMuralFichas(cards,cols){
     // .fc-lista-item do painel já usa.
     const acoes=aberta?`<div class="orb-mural-acoes">
       <button type="button" onclick="event.stopPropagation();_flAbrirCard('${escJs(c.id)}',this)">${ICO.expand}${escHtml(t('Abrir flutuante'))}</button>
+      <button type="button" onclick="event.stopPropagation();_orbMuralArquivar('${escJs(c.id)}')" title="${escHtml(t('Arquivar'))}" aria-label="${escHtml(t('Arquivar'))}">${ICO.archive}${escHtml(t('Arquivar'))}</button>
       <button type="button" class="orb-mural-del" onclick="event.stopPropagation();_orbMuralExcluir('${escJs(c.id)}')" title="${escHtml(t('Excluir'))}" aria-label="${escHtml(t('Excluir'))}">${ICO.trash}</button>
     </div>`:'';
     const entraClasse=(i<10&&!_voxReduzMov())?' entra':'';
@@ -11122,21 +11409,36 @@ function _orbMuralRenomear(id){
   renameSname(id);
   _orbMuralAtualizar();
 }
+// MESMO BUG, MESMA CORREÇÃO (07/09/2026): o Mural também chamava doDelete(id)
+// e apagava a nota PRA SEMPRE — o Rafa achava que tinha ido pra lixeira porque
+// é isso que o resto do app faz. Agora vai mesmo, e com desfazer. Ver o
+// comentário longo em _fcExcluirCard.
 function _orbMuralExcluir(id){
-  const card=document.getElementById(id);
-  const nome=(card?.dataset.sessionName||'').trim()||t('este card');
-  if(!confirm(t('Excluir "{name}"?').replace('{name}',nome)))return;
-  if(_flAbertas.some(j=>j.id===id)){
-    document.getElementById('floatwin-'+id)?.remove();
-    _flAbertas=_flAbertas.filter(j=>j.id!==id);
-    if(!_flAbertas.length&&_flAtiva)_flAlternarCamada();
-  }
-  doDelete(id);
+  if(!document.getElementById(id))return;
+  _fcFecharFlutuanteDe(id);
+  paraLixeira(id,true);
   if(_orbMuralNotaId===id)_orbMuralNotaId=null;
   // A pasta tem uma nota a menos: o anel fatiado e a legenda mudam junto.
   _orbDesenhar();
   _orbAbrirMural(_orbFoco);
-  toast(t('🗑️ Nota excluída'));
+  toastDesfazer(t('🗑️ Nota na lixeira · some em 30 dias'),()=>{
+    restaurarDaLixeira(id,true);
+    _orbDesenhar();_orbAbrirMural(_orbFoco);
+    toast(t('↩ Nota de volta'));
+  });
+}
+function _orbMuralArquivar(id){
+  if(!document.getElementById(id))return;
+  _fcFecharFlutuanteDe(id);
+  arquivarCard(id,true);
+  if(_orbMuralNotaId===id)_orbMuralNotaId=null;
+  _orbDesenhar();
+  _orbAbrirMural(_orbFoco);
+  toastDesfazer(t('📦 Nota arquivada'),()=>{
+    desarquivarCard(id,true);
+    _orbDesenhar();_orbAbrirMural(_orbFoco);
+    toast(t('↩ Nota de volta'));
+  });
 }
 // Modelo do Finder, igual ao Fluxograma: tocar numa pasta mostra o conteúdo
 // dela — nunca há dúvida sobre qual pasta está sendo exibida, porque é
@@ -13964,6 +14266,15 @@ let corFiltroAtivo=null; // null = mostra todas
 // ver _cfEmLote(). Mora aqui em cima porque saveHistory(), renderFolders() e
 // applyFolderFilter() consultam ela, e as três são definidas antes do menu.
 let _voxLote=0;
+// ── Estado da SELEÇÃO MÚLTIPLA (07/09/2026) ──
+// Mora aqui em cima, e não junto das funções lá embaixo, porque
+// applyFolderFilter() consulta as três — e ela roda durante o carregamento,
+// antes de o trecho da seleção ser executado. Declaradas lá, ficariam em zona
+// morta (TDZ) e o primeiro render morreria com ReferenceError. Mesmo motivo
+// que já trouxe o _voxLote pra cá.
+let selModo=false;              // o modo está ligado?
+const selIds=new Set();         // ids marcados — a fonte da verdade, não o CSS
+let _selConfirmando=false;      // barra vermelha do "apagar de vez" em cena?
 // Toque rápido troca a cor na hora; segurar abre o menu pra escolher direto.
 // A ideia é que o caso comum (só quero marcar isto de alguma cor) não custe
 // duas ações — e quem já sabe qual cor quer não precise ficar ciclando.
@@ -14528,6 +14839,12 @@ function applyFolderFilter(){
   _atualizaAvisoCorEscondidos(corFiltroAtivo!==null?semCor-comCor:0);
   if(viewMode==='doc')applyFocusCard();
   updateRecencyBadges();
+  // A pílula "Restaurar" e a barra de seleção dependem da VISTA, e a vista
+  // muda exatamente aqui. Este é o ponto único de sincronia — o mesmo hábito
+  // que o updateFooter já usa pro editor do Modo Foco.
+  _selAtualizaPilulas();
+  _selPodaInvisiveis();
+  _selSincroniza();
 }
 // A explicação mora exatamente onde a dúvida nasce: a tela vazia. Nunca
 // "algo deu errado" — a pessoa não fez nada errado, só esqueceu um filtro
@@ -15944,6 +16261,10 @@ function doSearch(q){
   }
   cnt.textContent=q?(shown+' '+t(shown!==1?'resultados':'resultado')):'';
   updateRecencyBadges();
+  // A busca esconde e mostra card sem passar pelo applyFolderFilter (quando há
+  // texto digitado ela o ignora de propósito), então a seleção precisa ser
+  // reconferida aqui também — senão a barra continua contando card que sumiu.
+  _selPodaInvisiveis();_selSincroniza();
   // Busca por sentido entra como SEGUNDA onda, nunca no lugar da primeira: a
   // exata é instantânea e de graça. Só busca de texto (tag e locutor são
   // exatas por natureza) e só com 3+ letras — abaixo disso não há sentido a
@@ -20486,8 +20807,10 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
 
   el.innerHTML=`
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir esta transcrição?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
+    <span class="card-anel" aria-hidden="true"></span>
     <div class="diar-main-col">
       <div class="ch">
+        <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span></button>
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}"><span class="svgi">${ICO.grip}</span></div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
@@ -21626,6 +21949,17 @@ const ICO={
   play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
   fileText:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>',
   barChart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg>',
+  // ── SELEÇÃO MÚLTIPLA / RESTAURAR (07/09/2026) ──
+  // "restaurar" é uma seta que dá a volta e PARA: não é o undo (seta reta, que
+  // desfaz a última coisa) nem o refreshCw (círculo fechado, que recomeça). Ela
+  // diz "isto volta de onde estava", que é outra ideia.
+  restaurar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 5 2 11 8 11"/><path d="M4.2 15.5a8.5 8.5 0 1 0 1.9-8.9L2 11"/></svg>',
+  // Caixa vazia — o estado "não marcado" no menu. No card a caixinha é
+  // desenhada em CSS (borda + fundo), porque ali ela muda de estado.
+  quadroVazio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>',
+  // Triângulo de aviso — aparece SÓ na barra vermelha do "apagar de vez".
+  // Em nenhum outro lugar do app: se aparecesse em tudo, deixaria de avisar.
+  alerta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
   layoutGrid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'
 };
 // ── MENU DO CÉREBRO — troca rápida de provedor, sem abrir Configurações ──
@@ -23544,8 +23878,10 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
 
   el.innerHTML=`
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
+    <span class="card-anel" aria-hidden="true"></span>
     <div class="diar-main-col">
       <div class="ch">
+        <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span></button>
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}"><span class="svgi">${ICO.grip}</span></div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
@@ -23747,6 +24083,411 @@ function restaurarDaLixeira(id,silencioso){
   saveHistory();renderFolders();applyFolderFilter();
   if(!silencioso)toast(t('↩ Card restaurado'));
 }
+// Restaurar dizendo PRA ONDE. O dataset.folder sempre esteve preservado — o
+// card já voltava sozinho pra pasta certa — mas isso acontecia em silêncio, e
+// em silêncio ninguém confia. O Rafa achava que faltava "um registro de pra
+// onde o card volta": o registro existe, faltava ele ser dito em voz alta.
+// Devolve o nome do destino pra quem for montar a mensagem.
+function _destinoDaVolta(c){
+  const fid=c.dataset.folder||'';
+  if(!fid)return '';
+  // A pasta pode ter ido pra lixeira/arquivo enquanto o card estava guardado.
+  // Nesse caso restaurarDaLixeira/desarquivarCard soltam o card em "Tudo", e a
+  // mensagem tem que contar isso — senão a pessoa procura numa pasta que não
+  // vai mostrar nada.
+  if(_pastaNaLixeira(fid)||_pastaArquivada(fid))return '';
+  return folders.find(f=>f.id===fid)?.name||'';
+}
+// Quantos dias faltam pra ESTE CARD sumir de vez — irmã de _pastaDiasNaLixeira.
+// Mesma regra: sem delAt (card de versão anterior) o prazo conta cheio.
+function _cardDiasNaLixeira(c){
+  const q=Date.parse(c.dataset.delAt||'');
+  if(!q)return LIXEIRA_DIAS;
+  return Math.max(0,Math.ceil(LIXEIRA_DIAS-(Date.now()-q)/(24*60*60*1000)));
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SELEÇÃO MÚLTIPLA (07/09/2026) — "Selecionar declarado"
+//
+// Existe só na lista principal, nas três vistas que importam: pasta comum,
+// Lixeira e Arquivo. Mural, Fluxograma e Calendário ficam de fora de propósito
+// — são vistas de navegação, e uma barra de lote dentro de uma gaveta de 360px
+// seria um quarto padrão pra aprender.
+//
+// A marca mora AQUI, num Set de ids, e não só na aparência do card: a lista é
+// redesenhada o tempo todo (renderFolders/applyFolderFilter), e classe de CSS
+// sozinha não sobrevive a isso. Também não entra no saveHistory() — seleção é
+// estado de sessão, não conteúdo do usuário.
+// ══════════════════════════════════════════════════════════════════════════
+// (selModo / selIds / _selConfirmando moram lá em cima, junto do _voxLote —
+//  applyFolderFilter() chama funções daqui e roda ANTES desta linha durante o
+//  carregamento; um `let` aqui deixaria a variável em zona morta e estouraria
+//  um ReferenceError no primeiro render.)
+
+// A seleção só faz sentido onde a lista é uma lista. No Modo Documento é um
+// card por vez, e no meio de uma busca a vista muda debaixo dos pés.
+function _selPodeSelecionar(){return viewMode!=='doc'}
+function _selVista(){
+  if(activeFolderId===VISTA_LIX)return 'lix';
+  if(activeFolderId===VISTA_ARQ)return 'arq';
+  return 'pasta';
+}
+// Só o que está REALMENTE na tela: _cardsDaVista() não sabe do filtro de cor
+// nem da busca, e "Selecionar tudo" pegando card escondido seria uma armadilha.
+function _selVisiveis(){
+  return _cardsDaVista().filter(c=>!c.classList.contains('folder-hidden')&&!c.classList.contains('hidden'));
+}
+function selModoAlternar(){selModo?selSair():selEntrar()}
+function selEntrar(){
+  if(selModo||!_selPodeSelecionar())return;
+  selModo=true;document.body.classList.add('sel-modo');
+  // Índice pra cascata de entrada das caixinhas (22ms entre elas).
+  _selVisiveis().forEach((c,i)=>c.style.setProperty('--cbx-i',String(Math.min(i,10))));
+  _selSincroniza();
+}
+function selSair(){
+  if(!selModo)return;
+  selModo=false;_selConfirmando=false;selIds.clear();
+  document.body.classList.remove('sel-modo');
+  _selSincroniza();
+}
+function selAlterna(id){
+  if(!_selPodeSelecionar())return;
+  if(!selModo)selEntrar();
+  selIds.has(id)?selIds.delete(id):selIds.add(id);
+  _selConfirmando=false;
+  _selSincroniza();
+}
+// Pinta o que está marcado + redesenha a barra. Chamada de tudo que mexe na
+// seleção; nunca recria card nenhum, só liga e desliga classe.
+function _selSincroniza(){
+  document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+    c.classList.toggle('sel-on',selIds.has(c.id));
+  });
+  _selDesenhaBarra();
+  _selAtualizaBotao();
+  // Depois de desenhar: a conta precisa da altura que a barra REALMENTE ficou
+  // (uma linha no desktop, duas em 360px).
+  _selPosicionaBarra();
+}
+// Some com ids que saíram de cena (foram arquivados, apagados, filtrados). Sem
+// isto a barra continuaria contando cards que a pessoa não vê mais.
+function _selPodaInvisiveis(){
+  if(!selIds.size)return;
+  const vivos=new Set(_selVisiveis().map(c=>c.id));
+  [...selIds].forEach(id=>{if(!vivos.has(id))selIds.delete(id)});
+}
+function _selAtualizaBotao(){
+  const bar=document.getElementById('listaBar'),btn=document.getElementById('btnSelModo');
+  if(!bar||!btn)return;
+  const mostra=_selPodeSelecionar()&&_selVisiveis().length>0;
+  bar.hidden=!mostra;
+  if(!mostra&&selModo)selSair();
+  const ico=btn.querySelector('.svgi');
+  if(ico)ico.innerHTML=selModo?ICO.close:ICO.checkSquare;
+  const rot=btn.querySelector('[data-i18n]');
+  if(rot)rot.textContent=selModo?t('Concluir'):t('Selecionar');
+  btn.setAttribute('aria-pressed',selModo?'true':'false');
+}
+
+// ── a barra ──
+function _selDesenhaBarra(){
+  const b=document.getElementById('selBar');if(!b)return;
+  const n=selIds.size;
+  if(!selModo){
+    b.classList.remove('on','perigo');_selConfirmando=false;
+    // esvazia só depois da saída, senão o conteúdo pisca no meio da animação
+    setTimeout(()=>{if(!selModo)b.innerHTML=''},240);
+    return;
+  }
+  // Modo ligado e nada marcado: a barra CONTINUA em cena, só que sem verbos.
+  // Ela existe aqui pra oferecer o "Selecionar tudo" e a saída — sem isso,
+  // marcar todos exigiria marcar um card na mão primeiro, que é justamente o
+  // trabalho que o botão deveria poupar. Nenhum verbo aparece porque não há
+  // sobre o que agir, e botão que não faz nada é pior que botão ausente.
+  if(!n){
+    _selConfirmando=false;
+    b.classList.remove('perigo');
+    b.innerHTML=`<span class="sel-cnt sel-cnt-vazio">${escHtml(t('Nenhum card escolhido'))}</span>`+
+      `<button type="button" class="sel-act" data-sa="tudo"><span class="svgi">${ICO.checkSquare}</span>${escHtml(t('Selecionar tudo'))}</button>`+
+      `<button type="button" class="sel-act fantasma sel-sair" data-sa="sair" title="${escHtml(t('Sair da seleção'))}" aria-label="${escHtml(t('Sair da seleção'))}"><span class="svgi">${ICO.close}</span></button>`;
+    b.classList.add('on');
+    _selLigaBotoes(b);
+    return;
+  }
+  if(_selConfirmando){
+    b.classList.add('on','perigo');
+    b.innerHTML=`<span class="sel-conf"><span class="sel-aviso"><span class="svgi">${ICO.alerta}</span>`+
+      `${escHtml(n===1?t('Apagar 1 card de vez? Isso não tem volta.')
+                     :t('Apagar {n} cards de vez? Isso não tem volta.').replace('{n}',n))}</span></span>`+
+      `<span class="sel-quebra"></span><span class="sel-acts">`+
+      `<button type="button" class="sel-act perigo" data-sa="devezSim">${escHtml(t('Apagar de vez'))}</button>`+
+      `<button type="button" class="sel-act fantasma" data-sa="devezNao">${escHtml(t('Cancelar'))}</button></span>`;
+    _selLigaBotoes(b);
+    return;
+  }
+  b.classList.remove('perigo');
+  const v=_selVista();
+  const acts=v==='lix'
+    ? `<button type="button" class="sel-act" data-sa="rest"><span class="svgi">${ICO.restaurar}</span>${escHtml(t('Restaurar'))}</button>`+
+      `<button type="button" class="sel-act perigo" data-sa="devez"><span class="svgi">${ICO.trash}</span>${escHtml(t('Apagar de vez'))}</button>`
+    : v==='arq'
+    ? `<button type="button" class="sel-act" data-sa="rest"><span class="svgi">${ICO.restaurar}</span>${escHtml(t('Restaurar'))}</button>`+
+      `<button type="button" class="sel-act" data-sa="lix"><span class="svgi">${ICO.trash}</span>${escHtml(t('Excluir'))}</button>`
+    : `<button type="button" class="sel-act" data-sa="arq"><span class="svgi">${ICO.archive}</span>${escHtml(t('Arquivar'))}</button>`+
+      `<button type="button" class="sel-act" data-sa="lix"><span class="svgi">${ICO.trash}</span>${escHtml(t('Excluir'))}</button>`;
+  // Contador: se a barra já existe, só o dígito troca (deslizando). Recriar a
+  // barra inteira a cada clique mataria a animação e faria tudo piscar.
+  const jaTem=b.querySelector('.sel-num');
+  if(!jaTem){
+    b.innerHTML=`<span class="sel-cnt"><span class="sel-num"><i>${n}</i></span>`+
+      `<small>${escHtml(n===1?t('selecionado'):t('selecionados'))}</small></span>`+
+      `<button type="button" class="sel-act fantasma" data-sa="tudo" title="${escHtml(t('Selecionar tudo'))}" aria-label="${escHtml(t('Selecionar tudo'))}"><span class="svgi">${ICO.checkSquare}</span></button>`+
+      `<button type="button" class="sel-act fantasma sel-sair" data-sa="sair" title="${escHtml(t('Sair da seleção'))}" aria-label="${escHtml(t('Sair da seleção'))}"><span class="svgi">${ICO.close}</span></button>`+
+      `<span class="sel-quebra"></span>`+
+      `<span class="sel-acts"><span class="sel-sep"></span>${acts}<span class="sel-sep"></span></span>`;
+  }else{
+    _selTrocaDigito(jaTem,n);
+    const s=b.querySelector('.sel-cnt small');
+    if(s)s.textContent=n===1?t('selecionado'):t('selecionados');
+    // a vista pode ter mudado com a seleção viva (raro, mas acontece)
+    const cx=b.querySelector('.sel-acts');
+    if(cx&&cx.dataset.v!==v)cx.innerHTML=`<span class="sel-sep"></span>${acts}<span class="sel-sep"></span>`;
+  }
+  const cx=b.querySelector('.sel-acts');if(cx)cx.dataset.v=v;
+  b.classList.add('on');
+  _selLigaBotoes(b);
+}
+function _selLigaBotoes(b){
+  b.querySelectorAll('[data-sa]').forEach(x=>x.onclick=()=>_selAcao(x.dataset.sa));
+}
+// Empilha a barra ACIMA da .ibar (a barra de gravar/digitar), que também é
+// fixed no rodapé. A altura dela não é fixa — muda com uma linha, duas linhas,
+// gravando — então a conta é feita com o tamanho real, na hora, e guardada
+// numa variável de CSS. O mesmo número vira o chão reservado pra lista, senão
+// o último card fica embaixo das duas barras somadas.
+function _selPosicionaBarra(){
+  const raiz=document.documentElement;
+  if(!selModo){raiz.style.removeProperty('--sel-bar-bottom');raiz.style.removeProperty('--sel-chao');return}
+  const ib=document.querySelector('.ibar');
+  const alturaIb=(ib&&getComputedStyle(ib).display!=='none')?ib.getBoundingClientRect().height:0;
+  const base=alturaIb?Math.round(alturaIb+18+10):18;   // 18 = o bottom da ibar, 10 = respiro
+  raiz.style.setProperty('--sel-bar-bottom',base+'px');
+  const barra=document.getElementById('selBar');
+  const hb=barra&&barra.classList.contains('on')?barra.getBoundingClientRect().height:48;
+  raiz.style.setProperty('--sel-chao',Math.round(base+hb+14)+'px');
+}
+window.addEventListener('resize',()=>{if(selModo)_selPosicionaBarra()});
+function _selTrocaDigito(cx,n){
+  const atual=cx.querySelector('i:not(.sobe)');
+  if(!atual||atual.textContent===String(n))return;
+  if(_voxReduzMov()){atual.textContent=String(n);return}
+  atual.classList.add('sobe');const velho=atual;setTimeout(()=>velho.remove(),300);
+  const novo=document.createElement('i');novo.textContent=String(n);novo.classList.add('entra');
+  cx.appendChild(novo);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>novo.classList.remove('entra')));
+}
+
+// ── as ações ──
+function _selAcao(a){
+  const ids=[...selIds];
+  if(a==='sair')return selSair();
+  if(a==='devezNao'){_selConfirmando=false;return _selDesenhaBarra()}
+  if(a==='tudo'){
+    const vis=_selVisiveis().map(c=>c.id);
+    vis.every(i=>selIds.has(i))?selIds.clear():vis.forEach(i=>selIds.add(i));
+    return _selSincroniza();
+  }
+  if(!ids.length)return;
+  if(a==='devez'){_selConfirmando=true;return _selDesenhaBarra()}
+  if(a==='devezSim')return _selApagarDeVez(ids);
+  if(a==='rest')return _selRestaurar(ids);
+  if(a==='arq')return _selLote(ids,'arq');
+  if(a==='lix')return _selLote(ids,'lix');
+}
+// Arquivar / mandar pra lixeira em lote. Sem confirm(): a ação tem volta, e a
+// escolha entre arquivar e excluir já foi feita no botão — o verbo É a
+// pergunta. Um desfazer só pro lote inteiro, como o menu da etiqueta já faz.
+function _selLote(ids,tipo){
+  _cfEmLote(()=>ids.forEach(id=>tipo==='arq'?arquivarCard(id,true):paraLixeira(id,true)));
+  selSair();
+  const n=ids.length;
+  const msg=(tipo==='arq'
+    ?(n===1?t('📦 1 card arquivado'):t('📦 {n} cards arquivados'))
+    :(n===1?t('🗑️ 1 card na lixeira · some em 30 dias')
+           :t('🗑️ {n} cards na lixeira · somem em 30 dias'))).replace('{n}',n);
+  toastDesfazer(msg,()=>{
+    _cfEmLote(()=>ids.forEach(id=>tipo==='arq'?desarquivarCard(id,true):restaurarDaLixeira(id,true)));
+    toast(n===1?t('↩ 1 card de volta'):t('↩ {n} cards de volta').replace('{n}',n));
+  });
+}
+// Restaurar em lote. Guarda a pasta de CADA card antes: restaurarDaLixeira
+// zera o dataset.folder quando a pasta de origem também está na lixeira, e sem
+// o registro o desfazer devolveria os cards pra lugar nenhum — seria uma
+// segunda mudança, não um desfazer. Mesmo cuidado do _cfMover.
+function _selRestaurar(ids){
+  const eraLix=_selVista()==='lix';
+  const antes=ids.map(id=>{
+    const c=document.getElementById(id);
+    return {id,pasta:c?(c.dataset.folder||''):'',
+            del:c?c.dataset.del:undefined,delAt:c?c.dataset.delAt:undefined,
+            arch:c?c.dataset.arch:undefined,archAt:c?c.dataset.archAt:undefined};
+  });
+  // Onde eles foram parar, pra mensagem poder dizer em voz alta.
+  const destinos=new Set(ids.map(id=>{
+    const c=document.getElementById(id);return c?_destinoDaVolta(c):'';
+  }));
+  _cfEmLote(()=>ids.forEach(id=>eraLix?restaurarDaLixeira(id,true):desarquivarCard(id,true)));
+  selSair();
+  const n=ids.length;
+  let onde;
+  if(destinos.size===1){
+    const d=[...destinos][0];
+    onde=d?t('voltou pra "{pasta}"').replace('{pasta}',d):t('voltou pra Tudo');
+  }else onde=t('cada um voltou pra pasta em que estava');
+  const msg=(n===1?t('↩ 1 card restaurado — {onde}'):t('↩ {n} cards restaurados — {onde}'))
+    .replace('{n}',n).replace('{onde}',onde);
+  toastDesfazer(msg,()=>{
+    _cfEmLote(()=>antes.forEach(a=>{
+      const c=document.getElementById(a.id);if(!c)return;
+      c.dataset.folder=a.pasta;
+      if(a.del!==undefined)c.dataset.del=a.del;
+      if(a.delAt!==undefined)c.dataset.delAt=a.delAt;
+      if(a.arch!==undefined)c.dataset.arch=a.arch;
+      if(a.archAt!==undefined)c.dataset.archAt=a.archAt;
+    }));
+    toast(n===1?t('↩ 1 card voltou pra onde estava'):t('↩ {n} cards voltaram pra onde estavam').replace('{n}',n));
+  });
+}
+// A ÚNICA porta sem volta. Já veio confirmada pela barra vermelha, com o
+// número na frente — não há segundo aviso, e não há desfazer.
+function _selApagarDeVez(ids){
+  _selConfirmando=false;
+  _cfEmLote(()=>ids.forEach(id=>{if(document.getElementById(id))doDelete(id)}));
+  selSair();
+  const n=ids.length;
+  toast(n===1?t('🗑️ 1 card apagado de vez'):t('🗑️ {n} cards apagados de vez').replace('{n}',n));
+}
+
+// ── a pílula "Restaurar" no card ──
+// Só existe dentro da Lixeira e do Arquivo. Montada por diferença: o botão é
+// criado UMA vez por card e reaproveitado; render que não mudou nada não
+// encosta no DOM. (Mesma disciplina do renderFiltroCores.)
+function _selAtualizaPilulas(){
+  const v=_selVista(),quer=(v==='lix'||v==='arq');
+  document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+    const temIsto=quer&&!c.classList.contains('folder-hidden');
+    let box=c.querySelector('.ch-restaurar');
+    if(!temIsto){
+      if(box){box.remove();c.classList.remove('tem-restaurar')}
+      return;
+    }
+    const chLeft=c.querySelector('.ch-left');if(!chLeft)return;
+    if(!box){
+      box=document.createElement('span');box.className='ch-restaurar';
+      box.innerHTML=`<span class="ch-prazo" hidden></span>`+
+        `<button type="button" class="ch-restaurar-btn"><span class="svgi">${ICO.restaurar}</span>`+
+        `<span class="ch-restaurar-lbl"></span></button>`;
+      // onclick em JS (não inline) porque o id do card entra por closure — não
+      // passa por string nenhuma, então não há o que escapar.
+      box.querySelector('.ch-restaurar-btn').addEventListener('click',ev=>{
+        ev.stopPropagation();
+        if(selModo)return selAlterna(c.id);   // em modo seleção tudo vira alvo
+        _selRestaurarUm(c.id);
+      });
+      chLeft.appendChild(box);
+      c.classList.add('tem-restaurar');
+    }
+    const btn=box.querySelector('.ch-restaurar-btn');
+    const lbl=box.querySelector('.ch-restaurar-lbl');
+    if(lbl.textContent!==t('Restaurar'))lbl.textContent=t('Restaurar');
+    const dica=v==='lix'?t('Tirar da lixeira e devolver pra pasta de origem')
+                        :t('Desarquivar e devolver pra pasta de origem');
+    if(btn.getAttribute('title')!==dica){btn.setAttribute('title',dica);btn.setAttribute('aria-label',dica)}
+    // O prazo só aparece na última semana. Aviso permanente por evento raro é
+    // ruído; aviso que aparece quando aperta é informação — mesma régua que a
+    // pasta já usa. No Arquivo não há prazo nenhum: o combinado é "um dia eu
+    // acho", e um contador ali quebraria essa promessa.
+    const pz=box.querySelector('.ch-prazo');
+    if(v==='lix'){
+      const dias=_cardDiasNaLixeira(c);
+      if(dias<=PRAZO_AVISO_DIAS){
+        const txt=dias<=1?t('some hoje'):t('{n}d').replace('{n}',dias);
+        if(pz.textContent!==txt)pz.textContent=txt;
+        pz.classList.toggle('urgente',dias<=1);
+        pz.hidden=false;
+      }else{pz.hidden=true;pz.textContent=''}
+    }else{pz.hidden=true;pz.textContent=''}
+  });
+}
+// Restaurar UM card pela pílula — sem confirmação (a ação já é a volta) e com
+// a mensagem dizendo o destino.
+function _selRestaurarUm(id){
+  const c=document.getElementById(id);if(!c)return;
+  const naLix=_cardNaLixeira(c);
+  const antes={pasta:c.dataset.folder||'',del:c.dataset.del,delAt:c.dataset.delAt,
+               arch:c.dataset.arch,archAt:c.dataset.archAt};
+  const destino=_destinoDaVolta(c);
+  naLix?restaurarDaLixeira(id,true):desarquivarCard(id,true);
+  const onde=destino?t('voltou pra "{pasta}"').replace('{pasta}',destino):t('voltou pra Tudo');
+  toastDesfazer(t('↩ 1 card restaurado — {onde}').replace('{onde}',onde),()=>{
+    const c2=document.getElementById(id);if(!c2)return;
+    c2.dataset.folder=antes.pasta;
+    if(antes.del!==undefined)c2.dataset.del=antes.del;
+    if(antes.delAt!==undefined)c2.dataset.delAt=antes.delAt;
+    if(antes.arch!==undefined)c2.dataset.arch=antes.arch;
+    if(antes.archAt!==undefined)c2.dataset.archAt=antes.archAt;
+    saveHistory();renderFolders();applyFolderFilter();
+    toast(t('↩ 1 card voltou pra onde estava'));
+  });
+}
+
+// ── entrar no modo segurando o card (atalho, principalmente no celular) ──
+// Delegado no document, como os outros gestos do app: roda uma vez só e não
+// depende de quando o card nasce. Não briga com o gesto de arrastar de lado —
+// aquele exige MOVIMENTO, este exige ficar parado.
+(function(){
+  let tmr=null,alvo=null,x0=0,y0=0;
+  const SEGURAR=450, TOLERANCIA=8;   // px de tremida que ainda contam como "parado"
+  function cancela(){clearTimeout(tmr);tmr=null;alvo=null}
+  document.addEventListener('pointerdown',e=>{
+    if(selModo||!_selPodeSelecionar())return;
+    const card=e.target.closest?.('#cardsList .card:not(.proc-card)');
+    if(!card)return;
+    // não sequestra quem está mexendo em controle ou escrevendo
+    if(e.target.closest('button,textarea,input,select,a,.ca-wrap,.cdot-wrap,.drag-handle,.ctags'))return;
+    alvo=card;x0=e.clientX;y0=e.clientY;
+    tmr=setTimeout(()=>{
+      if(!alvo)return;
+      selEntrar();selAlterna(alvo.id);
+      try{navigator.vibrate&&navigator.vibrate(12)}catch(_){}
+      cancela();
+    },SEGURAR);
+  },{passive:true});
+  document.addEventListener('pointermove',e=>{
+    if(!tmr)return;
+    if(Math.abs(e.clientX-x0)>TOLERANCIA||Math.abs(e.clientY-y0)>TOLERANCIA)cancela();
+  },{passive:true});
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>
+    document.addEventListener(ev,cancela,{passive:true}));
+  // Clicar em qualquer lugar do card, em modo seleção, marca/desmarca. Fica na
+  // fase de CAPTURA pra chegar antes do toggleChCollapse do cabeçalho e do
+  // foco do textarea — senão o primeiro toque abriria o card em vez de marcar.
+  document.addEventListener('click',e=>{
+    if(!selModo)return;
+    const card=e.target.closest?.('#cardsList .card:not(.proc-card)');
+    if(!card)return;
+    if(e.target.closest('.card-cbx'))return;      // a caixinha já tem o dela
+    e.preventDefault();e.stopPropagation();
+    selAlterna(card.id);
+  },true);
+  // Esc sai do modo — mas só se não houver nada mais urgente aberto.
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape'||!selModo)return;
+    if(document.querySelector('.overlay.on,.conf-overlay.on,.tx-overlay.on'))return;
+    selSair();
+  });
+})();
 // Quantos dias faltam pra esta pasta sumir de vez. Sem delAt (pasta vinda de
 // uma versão anterior) o prazo conta como cheio — a dúvida sempre joga a favor
 // de manter o que é do usuário.
@@ -23809,6 +24550,9 @@ function _faxinaLixeira(){
   }
   document.addEventListener('touchstart',e=>{
     if(!_voxToque()||e.touches.length!==1)return;
+    // Em modo seleção o dedo está escolhendo, não organizando: deslizar aqui
+    // arrastaria um card pra fora no meio de uma escolha de vários.
+    if(selModo)return;
     const card=e.target.closest?.('#cardsList .card:not(.proc-card)');
     if(!card||card.classList.contains('focus-active'))return;
     // Não sequestra gesto de quem está mexendo em controle ou escrevendo.
@@ -23838,7 +24582,18 @@ function _faxinaLixeira(){
       card.style.transform='translateX('+(dx>0?1:-1)*window.innerWidth+'px)';
       card.style.opacity='0';
       const id=card.id;
-      setTimeout(()=>{card.style.transition='';card.style.transform='';card.style.opacity='';arquivarCard(id)},200);
+      // BUG CORRIGIDO EM 07/09/2026: este gesto não olhava em que VISTA estava.
+      // Deslizar um card dentro do Arquivo mandava arquivar de novo — nada
+      // mudava na tela e mesmo assim aparecia "Card arquivado"; e deslizar um
+      // card DA LIXEIRA arquivava um card que continuava na lixeira, um estado
+      // que a interface não sabe mostrar. Nessas duas vistas o gesto agora faz
+      // a única coisa óbvia que existe ali: devolve o card pro lugar dele.
+      const naLix=activeFolderId===VISTA_LIX,naArq=activeFolderId===VISTA_ARQ;
+      setTimeout(()=>{
+        card.style.transition='';card.style.transform='';card.style.opacity='';
+        if(naLix||naArq)_selRestaurarUm(id);
+        else arquivarCard(id);
+      },200);
     }else{
       card.style.transform='';card.style.opacity='';
     }
