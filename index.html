@@ -2958,6 +2958,12 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   --cal-fundo:var(--bg-input);--cal-txt:var(--text2);--cal-ca:#6e6e73}
 [data-theme="dark"] .cal-ev{--cal-ca:var(--text3)}
 .cal-ev:active{cursor:grabbing}
+/* "Aconteceu", não marcado: a pessoa não decidiu nada aqui, então o bloco
+   fala mais baixo — corpo um pouco apagado e borda tracejada em vez de
+   sólida, mesma cor de etiqueta por baixo. Arrastar pra outro horário
+   promove o card a marcado de verdade, e ele perde essa classe sozinho no
+   próximo repaint (_calPintarDia lê dataset.quando, não guarda estado à parte). */
+.cal-ev.aconteceu .cal-ev-corpo{opacity:.72;border-left-style:dashed}
 /* O corpo é quem recorta (o bloco em si é overflow:visible de propósito, pra
    a haste do áudio poder passar do fim dele quando a gravação for mais longa
    que o horário marcado — se ela fosse recortada, a informação mais
@@ -3915,6 +3921,30 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .ibar #diarBanner{position:absolute!important;left:0;bottom:calc(100% + 8px);width:min(620px,100%);margin-bottom:0!important}
 .fstage{display:none;position:absolute;left:0;bottom:calc(100% + 8px);width:min(540px,100%);background:var(--bg-card);border:1px solid rgba(16,185,129,0.35);border-radius:16px;padding:10px 12px;margin:0;box-shadow:0 14px 42px rgba(0,0,0,0.18);animation:slideIn 0.25s ease}
 .fstage.on{display:block}
+/* A pilulazinha de "transcrevendo" por cima do mapa (achado 04/09/2026, ver
+   comentário no HTML). pointer-events:none de propósito — é só aviso, nunca
+   pode roubar clique/arrasto do mapa por baixo (foi exatamente esse bug que
+   encolheu a barra em 01/09; não repetir o erro num elemento novo). Ancorada
+   à DIREITA (a barra encolhida cola nesse lado) e por cima dela, do mesmo
+   jeito que o .fstage já faz — nunca alarga a .ibar-inner. */
+.ibar-proc-flutuante{display:none;position:absolute;right:0;bottom:calc(100% + 8px);
+  align-items:center;gap:7px;width:max-content;max-width:min(260px,80vw);
+  background:var(--bg-card);border:1px solid var(--border);border-radius:100px;
+  padding:7px 13px 7px 11px;box-shadow:0 10px 28px rgba(0,0,0,0.18);
+  pointer-events:none;font-size:12px;font-weight:700;color:var(--text2);
+  animation:slideIn 0.2s ease}
+.ibar-proc-flutuante.on{display:flex}
+/* A pilula é FILHA da .ibar — z-index de filho não escapa a pilha de
+   empilhamento da mãe. Sem isto, ela nasceria visível (.on) mas continuaria
+   atrás do #cchat-overlay (9999) por dentro de uma .ibar ainda em 100: bug
+   que só aparece testando de verdade, não lendo o CSS da pilula sozinho.
+   Mesmo valor do .ibar.rec-on (10000) de propósito — os dois nunca ligam
+   junto (um é só type==='proc', o outro só type==='rec'). */
+.ibar.proc-sobre-tela{z-index:10000}
+.ibar-proc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--accent2);
+  animation:ibarProcPisca 1.1s ease-in-out infinite}
+@keyframes ibarProcPisca{0%,100%{opacity:1}50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.ibar-proc-dot{animation:none}}
 .ibar.file-drag .fstage{display:block;border:2px dashed var(--danger);background:rgba(255,59,48,0.08)}
 .fstage-top{display:flex;align-items:center;gap:10px}
 .fstage-info{flex:1;min-width:0}
@@ -5260,6 +5290,18 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 <!-- IBAR -->
 <div class="ibar">
   <div class="ibar-inner">
+    <!-- Achado pelo Rafa (04/09/2026): com Órbita/Fluxograma/Calendário
+         abertos, a barra encolhe pro botão sozinho (ver comentário grande no
+         CSS, 01/09) — e enquanto TRANSCREVENDO (não gravando: aquilo já tem
+         a .ibar.rec-on, bem visível) não sobrava nenhum aviso: o texto "Pronto/
+         Transcrevendo" mora no cabeçalho, que o mapa cobre inteiro. A pessoa
+         não tinha como saber se estava rodando ou tinha travado. Mesmo
+         desenho do .fstage acima: pilulazinha flutuando por cima da barra
+         encolhida, não dentro dela — não alarga a barra nem devolve a faixa
+         de clique que capturava o pan do mapa (bug de 01/09). Sincronizada
+         em setStatus()/_sincIbarSobreMapa(), nunca aparece fora de cima de
+         um mapa (a tela normal já tem o aviso no cabeçalho). -->
+    <div class="ibar-proc-flutuante" id="ibarProcFlutuante"><span class="ibar-proc-dot"></span><span id="ibarProcTxt"></span></div>
     <div class="fstage" id="fstage">
       <div class="fstage-top">
         <div id="fsIco" style="font-size:22px">🎵</div>
@@ -6314,7 +6356,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.04.3';
+const VOX_VERSION='2026.09.04.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6513,6 +6555,7 @@ let I18N_EN={
 "Você está mudando o horário marcado. A gravação continua com {d}.":"You're changing the time you set. The recording itself is still {d} long.",
 "{d} de gravação":"{d} of recording",
 "marcado: {a} às {b}":"set: {a} to {b}",
+"aconteceu às {a}":"happened at {a}",
 "Marquei pra {d}.":"Set for {d}.",
 "Marquei pra {d}, às {h}.":"Set for {d}, at {h}.",
 // CALENDÁRIO — fase 3 (visões Semestre e Ano)
@@ -10222,6 +10265,10 @@ function _mapaAberto(){
 }
 function _sincIbarSobreMapa(){
   document.body.classList.toggle('ibar-sobre-mapa',_mapaAberto());
+  // Cobre o caso de abrir/fechar o mapa DURANTE um processamento que já
+  // estava rolando (setStatus não vai ser chamado de novo nesse instante,
+  // então a pilulazinha precisa se resincronizar sozinha aqui também).
+  _sincIndicadorProcSobreMapa(isProc?'proc':'ready',document.getElementById('stext')?.textContent||'');
 }
 let _flAbrirNoProximoCard=false;
 // ── A DURAÇÃO REAL DO ÁUDIO, QUE ATÉ AQUI IA PRO LIXO ──────────────────────
@@ -12102,6 +12149,25 @@ function _calRotuloDiaTitulo(k,curto){
 // um erro: é uma nota do dia todo, que é a maioria delas.
 function _calValidaHora(h){return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(h||''))}
 function _calMinDaHora(h){const p=String(h).split(':');return (+p[0])*60+(+p[1])}
+// Minuto do dia em que o card ACONTECEU de verdade, em hora LOCAL — nunca
+// toISOString(), pela mesma razão de sempre (viraria UTC e erraria a hora
+// pra quem não mora em GMT). Pedido do Rafa em 04/09/2026: a visão Dia virar
+// histórico cronológico de verdade, não só uma fileira de bolinhas sem hora
+// nenhuma pras notas que ninguém marcou.
+// `dataset.dt` sozinho não basta: é a hora do ARQUIVAMENTO (depois de
+// transcrever), sempre um pouco DEPOIS do áudio ter começado — minutos, ou
+// mais num arquivo grande. Com `durAudio` (a duração real, medida) dá pra
+// voltar no tempo até o instante em que a gravação de fato começou. Sem
+// duração medida (card de texto, ou upload sem esse dado), usa dt puro —
+// ainda é a melhor informação que existe, só não tenta ser mais exata do
+// que é.
+function _calMinDoDt(c){
+  const d=new Date(c.dataset.dt||'');
+  if(isNaN(d.getTime()))return null;
+  const segs=parseInt(c.dataset.durAudio||'0',10);
+  const inicio=segs>0?new Date(d.getTime()-segs*1000):d;
+  return inicio.getHours()*60+inicio.getMinutes();
+}
 function _calHoraDoMin(m){
   m=Math.max(0,Math.min(24*60-1,Math.round(m)));
   return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
@@ -12918,13 +12984,20 @@ function _calAbrirMesDoMini(m,origem){
 // ROLAGEM: entra-se no dia já na primeira coisa dele (ou às 8h, ou uma hora
 // antes de agora), com a madrugada existindo logo acima, alcançável.
 //
-// O que ENTRA na coluna: só o que tem hora marcada. Uma nota que apenas
-// ACONTECEU naquele dia fica na faixa "o dia todo", como bolinha — igual à
-// célula do Mês. Ela até tem um horário no `dt`, mas `dt` é a hora em que a
-// nota foi ARQUIVADA (depois de transcrever), não a hora em que o áudio
-// começou: pendurar um bloco de 45 min naquele horário seria inventar uma
-// informação que não temos. Arrastar a bolinha pra coluna é o gesto que dá a
-// ela uma hora de verdade — a mesma promoção que a fase 1 ensinou.
+// O que ENTRA na coluna: o que tem hora marcada, E (desde 04/09/2026, a
+// pedido do Rafa: "é pra virar histórico cronológico") o que só ACONTECEU
+// naquele dia — plantado na hora real, não mais preso na faixa "o dia todo".
+// Um cuidado que quase se perdeu: `dt` é a hora em que a nota foi ARQUIVADA
+// (depois de transcrever), não a hora em que o áudio COMEÇOU — pendurar o
+// bloco ali seria uma mentirinha de alguns minutos (ou mais, em arquivo
+// grande) toda vez. _calMinDoDt() desconta a duração real do áudio
+// (`durAudio`) de `dt` antes de converter em hora, então o bloco nasce no
+// instante em que a gravação de fato começou — a melhor estimativa que os
+// dados permitem, sem inventar precisão que não existe. Evento "aconteceu"
+// continua visualmente mais discreto que um marcado de propósito (não foi
+// decisão da pessoa) — ver `.cal-ev.aconteceu` no CSS e o rótulo "aconteceu
+// às", nunca "marcado". Arrastar a bolinha continua sendo o gesto que
+// PROMOVE ela a marcada de verdade, com hora escolhida à mão.
 function _calPintarDia(){
   const grade=document.getElementById('calDiaGrade');
   const evs=document.getElementById('calDiaEventos');
@@ -12960,11 +13033,22 @@ function _calPintarDia(){
     if(_calChaveDoIso(c.dataset.dt)===kk)aconteceu.push(c);
   });
   const porData=(a,b)=>String(a.dataset.dt||'').localeCompare(String(b.dataset.dt||''));
-  semHora.sort(porData);aconteceu.sort(porData);
+  semHora.sort(porData);
+  // PEDIDO DO RAFA (04/09/2026): a visão Dia virar histórico cronológico de
+  // verdade. Até aqui todo "aconteceu" virava bolinha solta na fileira do
+  // topo, mesmo tendo hora exata guardada em dataset.dt — a informação
+  // existia e não aparecia. Agora ela planta na grade, na hora real, igual a
+  // um evento marcado — só que mais discreta (ver .cal-ev.aconteceu no CSS)
+  // e com o rótulo dizendo "aconteceu", nunca "marcado", porque a pessoa não
+  // decidiu nada aqui. Só cai de volta na fileira solta se por algum motivo
+  // dataset.dt não puder virar hora (defeito de dado, não o caminho normal).
+  const aconteceuComHora=[],aconteceuSemHora=[];
+  aconteceu.forEach(c=>(_calMinDoDt(c)===null?aconteceuSemHora:aconteceuComHora).push(c));
+  aconteceuSemHora.sort(porData);
 
   topo.textContent='';
   semHora.forEach(c=>topo.appendChild(_calFazFita(c)));
-  aconteceu.forEach(c=>topo.appendChild(_calFazPonto(c)));
+  aconteceuSemHora.forEach(c=>topo.appendChild(_calFazPonto(c)));
 
   const hp=_calHoraPx();
   // Um evento de 5 min mede 4px: dois deles às 14h ficariam empilhados no mesmo
@@ -12974,14 +13058,18 @@ function _calPintarDia(){
   const itens=comHora.map(c=>{
     const min0=_calMinDaHora(c.dataset.quandoHora);
     const dur=_calDurMin(c);
-    return{c,min0,dur,min1:min0+Math.max(dur,minVis),col:0,cols:1};
-  }).sort((a,b)=>a.min0-b.min0||b.dur-a.dur);
+    return{c,min0,dur,min1:min0+Math.max(dur,minVis),col:0,cols:1,marcado:true};
+  }).concat(aconteceuComHora.map(c=>{
+    const min0=_calMinDoDt(c);
+    const dur=_calDurMin(c);
+    return{c,min0,dur,min1:min0+Math.max(dur,minVis),col:0,cols:1,marcado:false};
+  })).sort((a,b)=>a.min0-b.min0||b.dur-a.dur);
   _calColunasDoDia(itens);
   evs.textContent='';
   itens.forEach(it=>evs.appendChild(_calFazEvento(it,hp)));
 
   const vazio=document.getElementById('calDiaVazio');
-  if(vazio)vazio.style.display=(itens.length||semHora.length||aconteceu.length)?'none':'';
+  if(vazio)vazio.style.display=(itens.length||semHora.length||aconteceuSemHora.length)?'none':'';
   const ag=document.getElementById('calDiaAgora');
   if(ag){
     const hj=new Date();
@@ -13033,7 +13121,10 @@ function _calColunasDoDia(itens){
 function _calFazEvento(it,hp){
   const c=it.c;
   const el=document.createElement('div');
-  el.className='cal-ev';
+  // .aconteceu: mesma ideia da bolinha de sempre, só que agora dentro da
+  // grade — mais discreta que um bloco marcado de propósito, porque a
+  // pessoa não decidiu nada aqui (ver comentário grande acima de _calPintarDia).
+  el.className='cal-ev'+(it.marcado?'':' aconteceu');
   el.dataset.cid=c.id;
   el.dataset.min=String(it.min0);
   el.dataset.dur=String(it.dur);
@@ -13068,20 +13159,25 @@ function _calFazEvento(it,hp){
     el.appendChild(a);
   });
   _calPintarCor(el,c);
-  _calEvRotulo(el,it.min0,it.dur,c);
+  _calEvRotulo(el,it.min0,it.dur,c,it.marcado);
   _calEvAltura(el,it.dur,hp);
   return el;
 }
-function _calEvRotulo(el,min,dur,c){
+function _calEvRotulo(el,min,dur,c,marcado=true){
   const a=_calHoraDoMin(min),b=_calHoraDoMin(Math.min(24*60-1,min+dur));
   const h=el.querySelector('.cal-ev-h');
   if(h)h.textContent=a+' – '+b+' · '+_calDurTexto(dur);
   // O título em palavras é a outra metade da explicação: a haste mostra, o
   // texto nomeia. "marcado" e "de gravação" são propositalmente palavras
   // diferentes — é a distinção inteira do modo, em duas linhas.
+  // "aconteceu às", nunca "marcado": a hora aqui é estimada (dt menos a
+  // duração do áudio), não uma escolha da pessoa — dizer "marcado" prometeria
+  // uma precisão que este bloco não tem.
   const linhas=[];
   if(c)linhas.push(_calNomeDoCard(c));
-  linhas.push(t('marcado: {a} às {b}').replace('{a}',a).replace('{b}',b));
+  linhas.push(marcado
+    ?t('marcado: {a} às {b}').replace('{a}',a).replace('{b}',b)
+    :t('aconteceu às {a}').replace('{a}',a));
   const aud=c?_calAudioMin(c):0;
   if(aud>0)linhas.push(t('{d} de gravação').replace('{d}',_calDurTexto(aud)));
   el.title=linhas.filter(Boolean).join('\n');
@@ -17183,10 +17279,20 @@ function exportSummaryObsidian(){
 // opts: {system: persona/system prompt, temperature: 0–1 por tarefa (baixa=precisão, alta=criatividade)}
 // Resolve qual(is) IA de texto usar (aba "IA de texto"). provider='auto' devolve
 // uma LISTA em ordem de preferência (a escolhida pelo usuário primeiro, depois as
-// outras chaves já configuradas como reserva — ex: Assembly, que a pessoa já tem
-// pra diarização, também fala o formato compatível com OpenAI via LLM Gateway).
-// provider explícito (não-auto) devolve só aquele, sem fallback — usado onde a
-// escolha do provedor é intencional (ex: renomear card com IA).
+// outras chaves já configuradas como reserva). provider explícito (não-auto)
+// devolve só aquele, sem fallback — usado onde a escolha do provedor é
+// intencional (ex: renomear card com IA).
+//
+// ACHADO 04/09/2026 (relato do Rafa): o 'assembly' andava NA LISTA AUTOMÁTICA
+// — se a pessoa já tinha uma chave AssemblyAI salva (mesmo com diarização
+// DESLIGADA, a chave continua guardada), uma sugestão de tag que falhasse no
+// Groq acabava tentando o AssemblyAI escondido, e o erro final citava um
+// serviço que a pessoa nunca escolheu pra nada disso — "não é pra ficar
+// interferindo", nas palavras dele. Não existe nem opção na tela de
+// Configurações pra escolher 'assembly' como IA de texto (só Groq/OpenAI/
+// API própria) — ele só entrava por essa porta dos fundos. Tirado da lista
+// automática; a função mk.assembly fica viva sem uso, caso um dia isso vire
+// escolha explícita de verdade.
 function _txtAITargets(provider='auto'){
   const mk={
     custom:()=>cfg.txtBaseUrl?{pv:'custom',url:cfg.txtBaseUrl.replace(/\/+$/,'')+'/chat/completions',key:cfg.txtKey||'ollama',model:cfg.txtModel||'llama3.2',name:cfg.txtBaseUrl.includes('localhost')||cfg.txtBaseUrl.includes('127.0.0.1')?'IA local':'API custom'}:null,
@@ -17195,7 +17301,7 @@ function _txtAITargets(provider='auto'){
     assembly:()=>cfg.apiKeyAssembly?{pv:'assembly',url:'https://llm-gateway.assemblyai.com/v1/chat/completions',key:cfg.apiKeyAssembly,model:'claude-sonnet-4-6',name:'AssemblyAI'}:null,
   };
   if(provider!=='auto'){const t=mk[provider]?.();return t?[t]:[]}
-  const order=[cfg.txtProvider||'groq','groq','openai','assembly','custom'];
+  const order=[cfg.txtProvider||'groq','groq','openai','custom'];
   const seen=new Set(),list=[];
   order.forEach(pv=>{if(seen.has(pv))return;seen.add(pv);const t=mk[pv]?.();if(t)list.push(t)});
   return list;
@@ -25769,13 +25875,39 @@ function updateStats(){
   }
 }
 function setStatus(txt,type){
-  document.getElementById('stext').textContent=t(txt);
+  const txtTraduzido=t(txt);
+  document.getElementById('stext').textContent=txtTraduzido;
   const d=document.getElementById('sdot');d.className='sdot';
   if(type==='ready')d.style.background='var(--accent)';
   else if(type==='rec')d.classList.add('rec');
   else if(type==='proc')d.classList.add('proc');
   else if(type==='err')d.style.background='var(--danger)';
   else d.classList.add('off');
+  _sincIndicadorProcSobreMapa(type,txtTraduzido);
+}
+// A pilulazinha de "transcrevendo" só existe pra reaparecer o aviso que uma
+// tela cheia cobre — na tela normal o cabeçalho já mostra isto, então ela
+// fica escondida ali de propósito. 'rec' fica de fora: gravando já tem a
+// barra grande (.ibar.rec-on) bem visível sozinha, por cima de QUALQUER
+// coisa (10000) — mostrar as duas juntas seria barulho duplicado.
+//
+// Cobre Órbita/Fluxograma/Calendário (via _mapaAberto) E o Modo Conversa
+// (#cchat-overlay, 9999) — achado conferindo o código a pedido do Rafa: o
+// microfone de dentro do chat (cchatMic) chama o startRec de sempre, então
+// sofre exatamente o mesmo apagão durante "transcrevendo" que os mapas
+// tinham. Não reaproveita a classe `ibar-sobre-mapa` de propósito: aquela
+// também encolhe a barra pra não capturar o arrasto do mapa (bug de 01/09),
+// regra que não faz sentido nenhum dentro do chat, que não tem pan.
+function _sincIndicadorProcSobreMapa(type,txtTraduzido){
+  const el=document.getElementById('ibarProcFlutuante');if(!el)return;
+  // #cchat-overlay nasce/morre no DOM (openConversaMode/closeConversaMode
+  // usam overlay.remove(), não uma classe) — existir já é estar aberto.
+  const telaCheiaCobrindo=_mapaAberto()||!!document.getElementById('cchat-overlay');
+  const mostra=type==='proc'&&telaCheiaCobrindo;
+  el.classList.toggle('on',mostra);
+  // A .ibar em si precisa subir junto — ver comentário no CSS (.proc-sobre-tela).
+  document.querySelector('.ibar')?.classList.toggle('proc-sobre-tela',mostra);
+  if(mostra){const t2=document.getElementById('ibarProcTxt');if(t2)t2.textContent=txtTraduzido}
 }
 function autoR(el){
   if(el.closest&&el.closest('.focus-active'))return;
