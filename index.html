@@ -6314,7 +6314,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.04.2';
+const VOX_VERSION='2026.09.04.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6352,6 +6352,12 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── TRANSCRIÇÃO LONGA: NOVA TENTATIVA E TRABALHO PARCIAL SALVO (04/09/2026) ──
+"⏳ Conexão instável — tentando de novo em {s}s…":"⏳ Unstable connection — retrying in {s}s…",
+"Falha de conexão — verifique sua internet e tente de novo.":"Connection failed — check your internet and try again.",
+"⏳ O servidor da IA falhou — tentando de novo em {s}s…":"⏳ The AI server failed — retrying in {s}s…",
+"Transcrição incompleta — parou no bloco {i} de {n}. Toque em Transcrever de novo com o mesmo arquivo pra tentar completar o resto.":"Incomplete transcription — stopped at block {i} of {n}. Tap Transcribe again with the same file to try finishing the rest.",
+"⚠️ Parou no meio — o que já foi transcrito está salvo no card.":"⚠️ Stopped partway — what was already transcribed is saved in the card.",
 // ── SELEÇÃO MÚLTIPLA, RESTAURAR NO CARD E CONSERTO DO MURAL (07/09/2026) ──
 "Selecionar":"Select",
 "Concluir":"Done",
@@ -20560,7 +20566,25 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
     stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
     recordTiming(Date.now()-_t0, actualSec);
     updateStats();saveHistory();setStatus('Pronto','ready');
-  }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
+  }catch(err){
+    document.getElementById(pid)?.remove();
+    setStatus('Erro','err');
+    // ACHADO 04/09/2026: até aqui, travar no meio de um arquivo longo perdia
+    // TUDO — os blocos já transcritos (às vezes 20+ minutos de trabalho) iam
+    // pro lixo junto com o erro. Se splitChunks/splitChunksFFmpeg conseguiram
+    // preservar algo (`err.partial`), ele vira card de verdade, marcado como
+    // incompleto — nunca silencioso, mas também nunca perdido.
+    if(err.partial){
+      const p=err.partial;
+      _armarDurAudio(p.sec);
+      const aviso='\n\n⚠️ '+t('Transcrição incompleta — parou no bloco {i} de {n}. Toque em Transcrever de novo com o mesmo arquivo pra tentar completar o resto.').replace('{i}',p.doneChunks).replace('{n}',p.totalChunks);
+      addCard(p.text+aviso,file,0,fromRec?'gravacao':'arquivo',cfg.provider,true,null,null,[],sn,mode,false);
+      saveHistory();
+      toast(t('⚠️ Parou no meio — o que já foi transcrito está salvo no card.'),true);
+    }else{
+      toast('❌ '+err.message,true);
+    }
+  }
   finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null;_durAudioProxCard=null}
 }
 
@@ -25883,10 +25907,25 @@ async function splitChunks(file,pid,key){
       const s=i*spc,e=Math.min(s+spc,tot),l=e-s;const mono=new Float32Array(l);
       for(let c=0;c<nch;c++){const cd=chs[c];for(let j=0;j<l;j++)mono[j]+=cd[s+j]/nch}
       const wf=encWAV(mono,sr);const cf=new File([wf],`p${i+1}.wav`,{type:'audio/wav'});
-      res.push((await txChunk(cf,key)).trim());
+      try{
+        res.push((await txChunk(cf,key)).trim());
+      }catch(chunkErr){
+        // ACHADO 04/09/2026: se o bloco 8 de 12 falhasse mesmo depois das novas
+        // tentativas do txChunk, os 7 blocos já transcritos eram jogados fora —
+        // a pessoa perdia meia hora de espera e não tinha nada, só um erro na
+        // tela. Agora o que já foi feito vai junto no erro (`.partial`) pra
+        // doTranscribe poder salvar como card em vez de descartar.
+        if(res.length){
+          const err=new Error(chunkErr.message);
+          err.partial={text:res.join(' '),sec:Math.round(s/sr),doneChunks:i,totalChunks:nc};
+          throw err;
+        }
+        throw chunkErr;
+      }
     }
     return{text:res.join(' '),sec:realSec};
   }catch(e){
+    if(e.partial)throw e;   // já é a falha parcial montada acima — não tenta de novo do zero via FFmpeg
     // Decodificação nativa falhou (ex: OGG grande no Safari, ou formato raro) —
     // rede de segurança: o FFmpeg dá conta de praticamente qualquer coisa.
     return await splitChunksFFmpeg(file,pid,key);
@@ -25918,7 +25957,17 @@ async function splitChunksFFmpeg(file,pid,key){
     setPL(pid,t('Transcrevendo {i}/{n}…').replace('{i}',i+1).replace('{n}',list.length));
     const data=await ff.readFile(list[i].name);
     const cf=new File([data.buffer],`p${i+1}.mp3`,{type:'audio/mp3'});
-    res.push((await txChunk(cf,key)).trim());
+    try{
+      res.push((await txChunk(cf,key)).trim());
+    }catch(chunkErr){
+      // Mesmo cuidado do splitChunks: bloco que falha não apaga os anteriores.
+      if(res.length){
+        const err=new Error(chunkErr.message);
+        err.partial={text:res.join(' '),sec:i*CHUNK_SEC,doneChunks:i,totalChunks:list.length};
+        throw err;
+      }
+      throw chunkErr;
+    }
     await ff.deleteFile(list[i].name).catch(()=>{});
   }
   await ff.deleteFile(inName).catch(()=>{});
@@ -25926,21 +25975,58 @@ async function splitChunksFFmpeg(file,pid,key){
   const realSec=list.length*CHUNK_SEC;
   return{text:res.join(' '),sec:realSec};
 }
+// Espera exponencial + jitter pra falha de rede/servidor — 1,5s, 3s, 6s (+ até
+// 500ms aleatório, pra várias abas/tentativas não baterem no provedor juntas
+// no mesmo instante). Prática padrão de retry, não inventada aqui.
+function _txBackoffMs(attempt){return Math.min(15000,1500*Math.pow(2,attempt)+Math.random()*500)}
 async function txChunk(file,key){
   // Mesma espera automática do callAI: 429 (limite por minuto/hora de áudio do
   // provedor) lê o "try again in Xs" e refaz — áudios de horas não quebram no meio.
-  for(let attempt=0;attempt<3;attempt++){
-    const fd=new FormData();fd.append('file',file);let res;
-    if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd})}
-    else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd})}
-    else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd})}
-    else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd})}
-    if(res.status===429&&attempt<2){
+  //
+  // ACHADO EM 04/09/2026 (relato do Rafa: arquivo de +30min às vezes "trava" e
+  // não tenta de novo): antes disto, SÓ o 429 tinha novo tentativa. Um bloco de
+  // 10min (CHUNK_SEC) que falhasse por queda de rede, timeout ou erro 5xx do
+  // provedor — nenhum deles raro numa sequência de várias chamadas seguidas —
+  // derrubava a função na hora, sem tentar de novo. Pior: como cada `fetch` não
+  // tinha limite de tempo nenhum, uma conexão que trava (não cai, só para de
+  // responder) ficava esperando pra sempre — é o "trava" que o Rafa via, não
+  // um erro. Agora: timeout de 90s por tentativa (aborta e tenta de novo, não
+  // espera o navegador desistir sozinho) + falha de rede E erro 5xx entram no
+  // mesmo retry de espera crescente que o 429 já tinha.
+  const MAX=4;
+  for(let attempt=0;attempt<MAX;attempt++){
+    const fd=new FormData();fd.append('file',file);
+    const ctrl=new AbortController();
+    const to=setTimeout(()=>ctrl.abort(),90000);
+    let res;
+    try{
+      if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
+      else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
+      else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd,signal:ctrl.signal})}
+      else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
+    }catch(netErr){
+      clearTimeout(to);
+      if(attempt<MAX-1){
+        const wait=_txBackoffMs(attempt);
+        toast(t('⏳ Conexão instável — tentando de novo em {s}s…').replace('{s}',Math.ceil(wait/1000)));
+        await new Promise(r=>setTimeout(r,wait));
+        continue;
+      }
+      throw new Error(t('Falha de conexão — verifique sua internet e tente de novo.'));
+    }
+    clearTimeout(to);
+    if(res.status===429&&attempt<MAX-1){
       const e=await res.json().catch(()=>({}));
       const m=/try again in (?:(\d+)m)?([\d.]+)s/i.exec(e.error?.message||'');
       const wait=Math.min(120,m?((+m[1]||0)*60+parseFloat(m[2])+1):20);
       toast(t('⏳ Limite por minuto da IA — aguardando {s}s e continuando…').replace('{s}',Math.ceil(wait)));
       await new Promise(r=>setTimeout(r,wait*1000));
+      continue;
+    }
+    if(res.status>=500&&attempt<MAX-1){
+      const wait=_txBackoffMs(attempt);
+      toast(t('⏳ O servidor da IA falhou — tentando de novo em {s}s…').replace('{s}',Math.ceil(wait/1000)));
+      await new Promise(r=>setTimeout(r,wait));
       continue;
     }
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+res.status)}
