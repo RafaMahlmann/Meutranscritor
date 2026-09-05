@@ -37,6 +37,23 @@
   --grok:#f97316;--grok-glow:rgba(249,115,22,0.18);
   --groq:#22c55e;--groq-glow:rgba(34,197,94,0.18);
   --diar:#8b5cf6;--diar-glow:rgba(139,92,246,0.18);
+  /* --diar é a cor de PREENCHIMENTO (fundo de botão roxo com texto branco por
+     cima). Para TEXTO/ÍCONE/BORDA roxos sobre superfície clara ela reprova:
+     medido, #8b5cf6 dá 3,26:1 sobre o branco do card e 3,79:1 sobre o #212124
+     do card escuro — texto pequeno precisa de 4,5:1 (WCAG 1.4.3). Daí um
+     segundo tom, só para tinta: 5,70:1 no claro e 5,90:1 no escuro. Não dá
+     para unificar os dois: clarear --diar quebraria o texto branco em cima
+     dele (o botão "Configurar agora" do banner de diarização). */
+  --diar-txt:#7c3aed;--diar-track:rgba(124,58,237,0.10);
+  /* O fio entre segmentos precisa de tom próprio: --border2 sobre o trilho
+     mede 1,31:1 — foi exatamente a medida que condenou a borda tracejada do
+     chip antigo, e repetir o erro num elemento novo seria burrice. Este dá
+     1,72:1 no claro e 2,17:1 no escuro. Continua sendo fio de 1px: quem
+     carrega a separação é o indicador que desliza, não ele. */
+  --smode-divisor:rgba(0,0,0,0.26);
+  /* Elevação do segmented control da barra de sessão. No escuro, sombra
+     sozinha não cria camada — entra também uma borda clara por dentro. */
+  --smode-elev:0 1px 3px rgba(0,0,0,0.14),0 1px 1px rgba(0,0,0,0.05);
   --radius-card:20px;--radius-btn:12px;--radius-input:18px;
   --font:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --transition:0.2s cubic-bezier(0.4,0,0.2,1);
@@ -84,6 +101,8 @@
   --shadow-hover:0 2px 12px rgba(0,0,0,0.6),0 16px 48px rgba(0,0,0,0.7);
   --shadow-input:0 2px 8px rgba(0,0,0,0.5),0 8px 24px rgba(0,0,0,0.5);
   --text:#f5f5f7;--text2:#cfcfd4;--text3:#9d9da4;--text4:#8a8a93;
+  --diar-txt:#a78bfa;--diar-track:rgba(167,139,250,0.13);--smode-divisor:rgba(255,255,255,0.30);
+  --smode-elev:0 1px 3px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.09) inset;
   --fc-novo:#4f9dff;
   /* No escuro o azul precisa de um halo mais forte pra ler como halo: o mesmo
      20% que funciona sobre #fff some sobre #131315. */
@@ -3982,23 +4001,127 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .vu-cancel::after{content:'';position:absolute;inset:-10px}
 .vu-cancel:hover{opacity:1;color:var(--danger)}
 
-/* ── SESSION MODE ── */
-.smode-bar{display:flex;align-items:center;justify-content:flex-start;gap:6px;flex-wrap:wrap;max-width:calc(100% - 180px)}
+/* ── SESSION MODE ──
+   Desenho aprovado 04/09/2026 ("uma cápsula só, ligada por um fio"). O que
+   mudou e por quê, tudo medido antes:
+   - eram 5 pílulas idênticas numa fileira: 4 modos que se EXCLUEM e 1
+     liga/desliga INDEPENDENTE, com o mesmo desenho. A única diferença em
+     repouso era uma borda tracejada de 1px em rgba(0,0,0,.12), medida em
+     1,32:1 de contraste — na prática, invisível;
+   - agora os 4 modos dividem um trilho (segmented control de verdade, com
+     UM indicador que desliza), e a diarização sai do trilho e vira
+     interruptor: outra forma, outro gesto, outra categoria;
+   - os dois moram na MESMA cápsula, ligados por um fio de 2px que fica
+     ACESO EM REPOUSO em Consulta/Reunião/Entrevista. Aceso em repouso é o
+     que faz a informação existir no celular, onde não há hover, e para quem
+     chegou depois e não viu a animação;
+   - o roxo (--diar) marcava o modo ATIVO, inclusive o "Livre", que é
+     justamente o modo SEM diarização. Aqui roxo só significa diarização. */
+.smode-bar{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:wrap;max-width:calc(100% - 180px)}
 .ibar.rec-on .smode-bar{display:none}
-.smode-btn{font-size:11px;font-weight:700;padding:6px 13px;border-radius:999px;border:1px solid var(--border2);background:var(--bg-card);color:var(--text3);cursor:pointer;font-family:var(--font);transition:all var(--transition);box-shadow:0 8px 24px rgba(0,0,0,0.08)}
-.smode-btn:hover{border-color:var(--text3);color:var(--text)}
-.smode-btn.active{background:var(--bg-card);border-color:var(--diar);color:var(--diar);box-shadow:0 0 0 3px var(--diar-glow),0 8px 24px rgba(0,0,0,0.08)}
+/* A cápsula: trilho + fio + diarização numa caixa só. */
+.smode-cap{display:flex;align-items:center;gap:0;min-width:0;padding:4px;border-radius:15px;
+  background:var(--bg-card);border:1px solid var(--border);box-shadow:var(--smode-elev)}
+/* O trilho. width:max-content é obrigatório: sem ele, as colunas 1fr encolhem
+   até o rótulo virar 1px quando a barra briga por espaço com o campo de texto
+   (foi o que apareceu no teste). Com max-content, as 4 colunas ficam iguais e
+   do tamanho do rótulo mais largo. */
+.smode-rail{position:relative;display:inline-grid;--cols:4;--rows:1;width:max-content;flex-shrink:0;
+  padding:3px;border-radius:12px;background:var(--bg-input);
+  grid-template-columns:repeat(var(--cols),minmax(0,1fr))}
+/* UM nó de DOM que nunca é recriado — só recebe translate. Largura = uma
+   coluna, então translate de 100% anda exatamente um segmento, sem medir
+   pixel nenhum no JS (e sobrevive a troca de idioma, que muda a largura). */
+.smode-ind{position:absolute;left:3px;top:3px;
+  width:calc((100% - 6px) / var(--cols));height:calc((100% - 6px) / var(--rows));
+  border-radius:9px;background:var(--bg-card);box-shadow:var(--smode-elev);
+  transform:var(--ind-t,translate(0,0));
+  transition:transform .34s var(--fc-curva);will-change:transform;pointer-events:none}
+/* O JS escreve SÓ a variável --ind-t, nunca style.transform. Estilo inline
+   ganha de qualquer seletor: com o transform escrito inline, esta regra aqui
+   nunca valia e o indicador não afundava no clique (medido — a matriz vinha
+   com escala 1). O mesmo erro estava no protótipo. */
+.smode-rail.seg-press .smode-ind{transform:var(--ind-t) scale(.965)}
+/* --text2 e não --text3: medido, o #8e8e93 dá 3,26:1 sobre o branco e este
+   rótulo tem 11,5px (precisa de 4,5:1). O --text2 dá 8,59:1. */
+.smode-btn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  font-family:var(--font);font-size:11.5px;font-weight:700;line-height:1;color:var(--text2);
+  background:none;border:0;box-shadow:none;padding:9px 12px;border-radius:9px;cursor:pointer;
+  white-space:nowrap;min-width:0;-webkit-tap-highlight-color:transparent;
+  transition:color .22s var(--fc-curva),transform .11s var(--fc-curva)}
+.smode-btn .svgi{width:14px;height:14px;opacity:.85}
+.smode-btn>span:not(.svgi){overflow:hidden;text-overflow:ellipsis;min-width:0}
+.smode-btn:hover{color:var(--text)}
+.smode-btn.active{color:var(--text)}
+.smode-btn:active{transform:scale(.965)}
+/* Alvo de toque de 44px (--card-tap-min) sem engordar o desenho: cresce só na
+   vertical, então nunca invade o segmento vizinho. Mesmo truque do
+   .vu-cancel e do .ch-del-btn. */
+.smode-btn::after{content:'';position:absolute;left:0;right:0;top:50%;
+  height:var(--card-tap-min);transform:translateY(-50%)}
+/* Fio-divisor entre segmentos, que some junto do indicador (padrão iOS).
+   Fica no ::before porque o ::after já é a área de toque. */
+.smode-btn::before{content:'';position:absolute;left:0;top:22%;bottom:22%;width:1px;
+  background:var(--smode-divisor);opacity:1;transition:opacity .2s}
+.smode-btn:first-child::before,.smode-btn.active::before,.smode-btn.active+.smode-btn::before{opacity:0}
+/* O fio da cápsula: acende do trilho para a diarização e ESCORRE DE VOLTA
+   (mesmo nó, transform-origin invertido) ao voltar para Livre. */
+.smode-fio{position:relative;flex:0 0 26px;height:2px;align-self:center;border-radius:2px;
+  background:var(--border2);overflow:hidden}
+.smode-fio b{position:absolute;inset:0;display:block;border-radius:2px;background:var(--diar-txt);
+  transform-origin:left center;transform:scaleX(0);opacity:0;
+  transition:transform .3s var(--fc-curva) .09s,opacity .18s ease-out .09s}
+.smode-cap[data-multi="1"] .smode-fio b{transform:scaleX(1);opacity:1}
+.smode-cap[data-multi="0"] .smode-fio b{transform-origin:right center;transition-delay:0s}
+.smode-diar{display:flex;align-items:center;gap:4px;min-width:0;padding:0 4px 0 2px}
 .sname-input{display:none;font-size:12px;font-family:var(--font);background:var(--bg-input);border:1px solid transparent;border-radius:10px;padding:4px 10px;color:var(--text);outline:none;transition:all var(--transition);min-width:0;flex:1;max-width:220px}
-.sname-input:focus{border-color:var(--diar);background:var(--bg2)}
+.sname-input:focus{border-color:var(--diar-txt);background:var(--bg2)}
 .sname-input::placeholder{color:var(--text4)}
-.diar-toggle-chip{font-size:11px;font-weight:700;color:var(--text3);display:inline-flex;align-items:center;gap:4px;border:1px dashed var(--border2);background:var(--bg-card);border-radius:20px;padding:6px 11px;cursor:pointer;font-family:var(--font);transition:all var(--transition);box-shadow:0 8px 24px rgba(0,0,0,0.08)}
-.diar-toggle-chip:hover{border-color:var(--diar);color:var(--diar)}
-.diar-toggle-chip.on{background:var(--diar-glow,rgba(139,92,246,0.14));border-style:solid;border-color:var(--diar);color:var(--diar)}
+.diar-toggle-chip{position:relative;display:inline-flex;align-items:center;gap:9px;
+  font-family:var(--font);font-size:11.5px;font-weight:700;color:var(--text2);
+  background:none;border:0;box-shadow:none;border-radius:12px;padding:6px 4px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .12s var(--fc-curva),background .25s var(--fc-curva),color .25s var(--fc-curva)}
+.diar-toggle-chip .svgi{width:18px;height:18px;color:var(--text3);
+  transition:color .25s var(--fc-curva),transform .3s var(--fc-curva)}
+.diar-toggle-chip:hover{color:var(--text)}
+.diar-toggle-chip:active{transform:scale(.97)}
+.diar-toggle-chip.on,.diar-toggle-chip.on .svgi{color:var(--diar-txt)}
+/* Pertinência: o modo escolhido costuma ter mais de uma voz falando. É o
+   estado em repouso do fio, dito de novo do lado de cá. */
+.smode-cap[data-multi="1"] .diar-toggle-chip{background:var(--diar-track)}
+.smode-cap[data-multi="1"] .diar-toggle-chip,
+.smode-cap[data-multi="1"] .diar-toggle-chip .svgi{color:var(--diar-txt)}
+/* Interruptor de verdade — a forma já diz "liga/desliga" sem precisar da cor. */
+.diar-sw{position:relative;width:36px;height:21px;flex-shrink:0;border-radius:999px;
+  background:var(--bg-input);border:1px solid var(--border2);
+  transition:background .28s var(--fc-curva),border-color .28s var(--fc-curva)}
+.diar-sw i{position:absolute;left:2px;top:2px;width:15px;height:15px;display:block;border-radius:50%;
+  background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,.3);
+  transition:transform .28s var(--fc-curva)}
+.diar-toggle-chip.on .diar-sw{background:var(--diar-txt);border-color:var(--diar-txt)}
+.diar-toggle-chip.on .diar-sw i{transform:translateX(15px)}
 /* Provedor local ativo: separar vozes nao roda. Apagadinho pra pessoa ver ANTES de gravar. */
-.diar-toggle-chip.incompat{opacity:.45;border-style:dotted}
-.diar-toggle-chip.incompat:hover{border-color:var(--border2);color:var(--text3)}
-.diar-help-btn{width:24px;height:24px;border-radius:50%;border:1px solid var(--border2);background:var(--bg-card);color:var(--text4);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;box-shadow:0 8px 24px rgba(0,0,0,0.08)}
-.diar-help-btn:hover{border-color:var(--diar);color:var(--diar)}
+.diar-toggle-chip.incompat{opacity:.45}
+.diar-toggle-chip.incompat .diar-sw{border-style:dashed}
+.diar-toggle-chip.incompat:hover{color:var(--text2)}
+/* O aviso: UM pulso, só quando a pertinência muda (entrar num modo de várias
+   vozes vindo de Livre) — nunca a cada clique. */
+.diar-halo{position:absolute;inset:-3px;border-radius:15px;pointer-events:none;
+  border:1.5px solid var(--diar-txt);opacity:0;transform:scale(.94)}
+.diar-toggle-chip.avisou .diar-halo{animation:diarHalo .52s var(--fc-curva) 1}
+.diar-toggle-chip.avisou .svgi{animation:diarCutuca .34s var(--fc-curva) 1}
+@keyframes diarHalo{0%{opacity:0;transform:scale(.94)}
+  32%{opacity:1;transform:scale(1.02)}100%{opacity:0;transform:scale(1.06)}}
+@keyframes diarCutuca{0%,100%{transform:translateY(0)}42%{transform:translateY(-2.5px)}}
+@keyframes smodeEntra{from{opacity:0;transform:translateY(5px) scale(.97)}to{opacity:1;transform:none}}
+/* 26px de desenho, 44px de alvo. O inset é contado a partir da caixa de
+   PADDING, não da de borda: com -9px a área media 42px (medido). -10px dá os
+   44px. Era --text4 (#aeaeb2, 2,00:1 sobre o branco): ilegível num "?" de 11px. */
+.diar-help-btn{position:relative;width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);background:var(--bg-card);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;box-shadow:none;transition:color var(--transition),border-color var(--transition),transform .12s var(--fc-curva)}
+.diar-help-btn::after{content:'';position:absolute;inset:-10px}
+.diar-help-btn:hover{border-color:var(--diar-txt);color:var(--diar-txt)}
+.diar-help-btn:active{transform:scale(.94)}
 
 /* flex-wrap:wrap — em tela estreita (iPhone), as 3 dicas juntas passavam da
    largura da tela; sem quebra de linha nem indicador visível de rolagem,
@@ -4168,6 +4291,11 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   .ibar.rec-on .vu-wrap,.ibar.rec-on .vu-meta{animation:none}
   .vu-lbl::after{animation:none;transform:scale(1);opacity:.35}
   .c-rec:active,.c-attach:active:not(:disabled),.c-cancel:active,.c-stop:active,.aud-gear:active,.vu-cancel:active{transform:none}
+  /* A INFORMAÇÃO continua: o fio segue aceso, o interruptor segue virado,
+     o indicador segue no lugar certo. Só o movimento sai. */
+  .smode-ind,.smode-fio b,.diar-sw,.diar-sw i,.smode-chip-dot{transition-duration:.01ms}
+  .diar-toggle-chip.avisou .diar-halo,.diar-toggle-chip.avisou .svgi{animation:none}
+  .smode-btn:active,.diar-toggle-chip:active,.diar-help-btn:active{transform:none}
 }
 @media(max-width:640px){
   /* FASE 1 — bottom sheet: o rodapé nasce recolhido numa fileira única
@@ -4187,7 +4315,33 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
      gap:0 no .ibar-inner (acima) + margin-bottom aqui evitam que o "gap"
      fixo do flex some 8px mesmo com o bloco recolhido a 0px de altura. */
   .smode-bar{gap:5px;max-width:100%;max-height:0;opacity:0;overflow:hidden;pointer-events:none;margin-bottom:0;transition:max-height .2s ease,opacity .15s ease,margin-bottom .2s ease}
-  .ibar.sheet-open .smode-bar{max-height:160px;opacity:1;pointer-events:auto;margin-bottom:8px}
+  /* 160px → 184px: a cápsula da gaveta mede 168px (medido no app, com os
+     alvos de toque de 44px que o próprio Vox promete em --card-tap-min e que
+     a barra antiga não cumpria: 27px no modo, 24px no "?"). A folga extra
+     absorve o rótulo mais longo em inglês sem cortar nada. */
+  .ibar.sheet-open .smode-bar{max-height:184px;opacity:1;pointer-events:auto;margin-bottom:8px}
+  /* Na gaveta a cápsula vira coluna: trilho 2×2 em cima, fio vertical,
+     diarização embaixo. Antes a fileira quebrava sozinha e deixava "Livre"
+     na mesma linha do chip de diarização — agrupando justo os dois que NÃO
+     são a mesma escolha. */
+  .smode-cap{flex-direction:column;align-items:stretch;width:100%;padding:4px}
+  .smode-rail{display:grid;width:100%;--cols:2;--rows:2}
+  .smode-btn{padding-top:15px;padding-bottom:15px}
+  .smode-btn:nth-child(odd)::before{opacity:0}
+  .smode-fio{flex:0 0 auto;width:2px;height:20px;align-self:flex-start;margin-left:22px}
+  .smode-fio b{transform:scaleY(0);transform-origin:top center}
+  .smode-cap[data-multi="1"] .smode-fio b{transform:scaleY(1)}
+  .smode-cap[data-multi="0"] .smode-fio b{transform-origin:bottom center}
+  .smode-diar{justify-content:space-between;padding:0 4px 0 6px}
+  .diar-toggle-chip{flex:1;justify-content:flex-start;padding-top:11px;padding-bottom:11px}
+  /* Entrada escalonada de 24ms: é o que faz a gaveta "abrir" em vez de
+     "aparecer". fill-mode backwards (não "both") de propósito — com "both" o
+     último quadro (transform:none) fica grudado e mata o :active dos
+     segmentos, que é o afundar do clique. */
+  .ibar.sheet-open .smode-rail .smode-btn{animation:smodeEntra .3s var(--fc-curva) backwards}
+  .ibar.sheet-open .smode-rail .smode-btn:nth-child(2){animation-delay:.024s}
+  .ibar.sheet-open .smode-rail .smode-btn:nth-child(3){animation-delay:.048s}
+  .ibar.sheet-open .smode-rail .smode-btn:nth-child(4){animation-delay:.072s}
   .ibar-row{display:flex;align-items:center;gap:6px;width:100%;flex-shrink:0}
   /* width subiu de 44→72px pra caber a barra maior (64px) com a mesma
      folga de ~4px de cada lado que já existia (44-36=8px total antes;
@@ -4201,14 +4355,23 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
      na cor de destaque do tema fazem o cérebro reconhecer "isto é clicável"
      na hora, sem precisar aprender — mesmo princípio do chevron do cabeçalho
      do card (.ch-mode-badge), pra ficarem consistentes. */
-  .smode-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-glow);border:1px solid var(--accent);border-radius:999px;padding:6px 10px 6px 12px;cursor:pointer;font-family:var(--font);min-width:0;max-width:150px;flex-shrink:1;transition:opacity var(--transition)}
+  /* gap 5→4 e padding 12/10→10/8: medido em 360px, a fileira recolhida deixa
+     só 104px para o chip (72 da alcinha + 130 do .ibox comem o resto), e o
+     texto passou de "Menu" para o nome do modo. Esses 6px são o que faz
+     "Entrevista" caber inteiro em português. */
+  .smode-chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-glow);border:1px solid var(--accent);border-radius:999px;padding:6px 8px 6px 10px;cursor:pointer;font-family:var(--font);min-width:0;max-width:150px;flex-shrink:1;transition:opacity var(--transition)}
   .smode-chip:active{opacity:0.75}
   .smode-chip-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  /* Com a gaveta FECHADA (que é o padrão), este chip era a única coisa na
+     tela — e dizia "Menu", palavra fixa que nenhum JS atualizava. Ou seja: no
+     celular não dava para saber nem o modo nem se a diarização estava ligada.
+     Agora ele diz o modo e ganha o ponto roxo quando a diarização está no ar. */
+  .smode-chip-dot{width:7px;height:7px;flex-shrink:0;border-radius:50%;background:var(--diar-txt);
+    opacity:0;transform:scale(.4);transition:opacity .22s,transform .3s var(--fc-curva)}
+  .smode-chip.diar-on .smode-chip-dot{opacity:1;transform:scale(1)}
   /* Chevron gira 180° quando o sheet abre — mesma linguagem do .ch-mode-badge. */
   .smode-chip-chev{flex-shrink:0;font-size:11px;line-height:1;transition:transform var(--transition)}
   .ibar.sheet-open .smode-chip-chev{transform:rotate(180deg)}
-  .smode-btn{font-size:10.5px;padding:6px 10px}
-  .diar-toggle-chip{font-size:10.5px;padding:6px 10px}
   .circle{width:38px;height:38px}
   .aud-gear{width:30px;height:30px}
   .fstage{border-radius:15px;padding:9px 10px}
@@ -4217,6 +4380,14 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   .btn-cancel-file{padding:7px 8px}
   .vu-wrap{right:10px;width:min(210px,calc(100vw - 88px))}
   .ibar.rec-on .vu-wrap{width:min(210px,calc(100vw - 78px))}
+}
+/* DEPOIS do @media(max-width:640px) de propósito. A entrada escalonada da
+   gaveta é declarada lá dentro; um "animation:none" com a MESMA
+   especificidade escrito antes perde na ordem de origem e a animação
+   continuava rodando com reduced-motion ligado (medido: animationName seguia
+   "smodeEntra"). Aqui ele vem depois e ganha. */
+@media(prefers-reduced-motion:reduce){
+  .ibar.sheet-open .smode-rail .smode-btn{animation:none}
 }
 
 /* ── EXPORT DROPDOWN ── */
@@ -5338,15 +5509,30 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         </div>
       </div>
     </div>
-    <!-- SESSION MODE BAR -->
+    <!-- SESSION MODE BAR — "uma cápsula só, ligada por um fio".
+         Os 4 modos dividem um trilho (role=radiogroup: escolher um desliga os
+         outros) e a diarização fica FORA do trilho, ligada por um fio, porque
+         é outra decisão (liga/desliga independente). O .smode-ind vem DEPOIS
+         dos botões de propósito: com ele em primeiro, o :first-child nunca
+         casaria e o primeiro segmento nasceria com um fio divisor grudado na
+         borda do trilho. Ele é absoluto, então a ordem não muda a pintura —
+         só o casamento dos seletores. -->
     <div class="smode-bar">
-      <button class="smode-btn" data-m="consulta" onclick="setMode('consulta')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg></span> <span data-i18n>Consulta</span></button>
-      <button class="smode-btn" data-m="reuniao" onclick="setMode('reuniao')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n>Reunião</span></button>
-      <button class="smode-btn" data-m="entrevista" onclick="setMode('entrevista')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg></span> <span data-i18n>Entrevista</span></button>
-      <button class="smode-btn active" data-m="livre" onclick="setMode('livre')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span> <span data-i18n>Livre</span></button>
+      <div class="smode-cap" id="smodeCap" data-multi="0">
+        <div class="smode-rail" id="smodeRail" role="radiogroup" aria-label="Tipo de sessão">
+          <button class="smode-btn" data-m="consulta" role="radio" aria-checked="false" onclick="setMode('consulta')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg></span> <span data-i18n>Consulta</span></button>
+          <button class="smode-btn" data-m="reuniao" role="radio" aria-checked="false" onclick="setMode('reuniao')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n>Reunião</span></button>
+          <button class="smode-btn" data-m="entrevista" role="radio" aria-checked="false" onclick="setMode('entrevista')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg></span> <span data-i18n>Entrevista</span></button>
+          <button class="smode-btn active" data-m="livre" role="radio" aria-checked="true" onclick="setMode('livre')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span> <span data-i18n>Livre</span></button>
+          <div class="smode-ind" aria-hidden="true"></div>
+        </div>
+        <span class="smode-fio" aria-hidden="true"><b></b></span>
+        <div class="smode-diar">
+          <button class="diar-toggle-chip" id="diarStatus" onclick="toggleDiarQuick()" title="Ligar/desligar diarização" data-i18n-title aria-pressed="false"><span class="diar-halo" aria-hidden="true"></span><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span id="diarChipLbl" data-i18n>Diarização</span><span class="diar-sw" aria-hidden="true"><i></i></span></button>
+          <button class="diar-help-btn" onclick="showDiarHelp()" title="O que é diarização?" data-i18n-title aria-label="O que é diarização?">?</button>
+        </div>
+      </div>
       <input class="sname-input" id="snameInput" placeholder="Nome da sessão (opcional)" data-i18n-placeholder maxlength="60">
-      <button class="diar-toggle-chip" id="diarStatus" onclick="toggleDiarQuick()" title="Ligar/desligar diarização" data-i18n-title><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span id="diarChipLbl" data-i18n>Diarização</span></button>
-      <button class="diar-help-btn" onclick="showDiarHelp()" title="O que é diarização?" data-i18n-title aria-label="O que é diarização?">?</button>
     </div>
     <div class="tips">
       <div class="tip" id="tipSpace" data-i18n-html><kbd>Espaço</kbd> gravar / parar</div>
@@ -5362,7 +5548,11 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <span class="sheet-handle-bar"></span>
       </button>
       <button type="button" class="smode-chip" id="smodeChip" onclick="toggleSheet()" aria-expanded="false">
-        <span class="smode-chip-txt" data-i18n>Menu</span>
+        <span class="smode-chip-dot" aria-hidden="true"></span>
+        <!-- Sem data-i18n aqui de propósito: o texto é DINÂMICO (o nome do modo
+             ativo, já traduzido, escrito por _smodeSync()). "Menu" é só o que
+             aparece se o modo for desconhecido. -->
+        <span class="smode-chip-txt">Menu</span>
         <span class="smode-chip-chev" aria-hidden="true">˅</span>
       </button>
       <div class="ibox" id="ibox">
@@ -6356,7 +6546,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.04.4';
+const VOX_VERSION='2026.09.05.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7013,6 +7203,7 @@ let I18N_EN={
 "Transcrever":"Transcribe","Configurar agora":"Set it up now","IA de texto — os cérebros do Vox":"Text AI — Vox's brains","criar chave Groq":"create Groq key","site oficial":"official site","Avançado — endereço e modelo":"Advanced — address and model","Exportar Obsidian":"Export to Obsidian","Abrir console.groq.com/keys":"Open console.groq.com/keys","Criar conta grátis no AssemblyAI":"Create a free AssemblyAI account","Copiar caminho do arquivo":"Copy the file path","Fixado":"Pinned","Baixar .md":"Download .md","Copiado!":"Copied!","ouvi:":"heard:","pensando…":"thinking…","sugestões:":"suggestions:","analisando texto…":"analyzing text…","EXTRAIR TERMOS — {n} encontrados":"EXTRACT TERMS — {n} found","Nenhuma repetição suspeita encontrada":"No suspicious repetition found","REVISÃO — {n} palavras repetidas":"REVIEW — {n} repeated words","Perguntar à IA sobre as palavras marcadas":"Ask AI about the marked words","Diarizado":"Diarized","Diarizando":"Diarizing","Relatório para o Obsidian":"Report for Obsidian","Relatório pronto!":"Report ready!",
 "Nova subpasta":"New subfolder","Renomear":"Rename","Exportar pasta":"Export folder","Excluir pasta":"Delete folder",
 "Consulta":"Consultation","Reunião":"Meeting","Entrevista":"Interview","Livre":"Free",
+"Tipo de sessão":"Session type",
 "Claro":"Light","Escuro":"Dark","Testar conexão":"Test connection","Atualizar lista":"Refresh list",
 "Liberar + Resetar":"Release + Reset","Baixar backup antes":"Download backup first","Aplicar sugestão":"Apply suggestion",
 "extrair":"extract","falar":"speak","Revisão":"Review","Perguntar à IA sobre as repetições":"Ask AI about the repetitions",
@@ -15886,8 +16077,18 @@ function _updateThemeColor(){
 const DIAR_MODES=['consulta','reuniao','entrevista'];
 let bannerDismissed=false;
 function setMode(m){
+  const antesMulti=DIAR_MODES.includes(sessionMode);
   sessionMode=m;
-  document.querySelectorAll('.smode-btn').forEach(b=>b.classList.toggle('active',b.dataset.m===m));
+  document.querySelectorAll('.smode-btn').forEach(b=>{
+    const on=b.dataset.m===m;
+    b.classList.toggle('active',on);
+    b.setAttribute('aria-checked',on?'true':'false');
+  });
+  // O indicador afunda junto do clique (120ms) — é o que dá a sensação de
+  // apertar. O botão em si afunda pelo :active do CSS.
+  const rail=document.getElementById('smodeRail');
+  if(rail){rail.classList.add('seg-press');setTimeout(()=>rail.classList.remove('seg-press'),120)}
+  _smodeSync(true);
   const needsDiar=DIAR_MODES.includes(m);
   const hasKey=cfg.apiKeyAssembly||cfg.apiKeyGladia||cfg.apiKeyPyannote||(cfg.diarProvider==='openai'&&cfg.apiKey);
   // Consulta/reunião/entrevista já ligam a diarização se houver chave (fluxo direto)
@@ -15897,7 +16098,62 @@ function setMode(m){
   const banner=document.getElementById('diarBanner');
   if(needsDiar&&!hasKey&&!bannerDismissed){banner.style.display='block'}
   else{banner.style.display='none'}
+  // O aviso só dispara quando a PERTINÊNCIA muda (entrou num modo de várias
+  // vozes vindo de Livre) — nunca a cada clique, senão vira ruído.
+  if(needsDiar&&!antesMulti)_smodeAvisa();
 }
+// Estado visual do trilho + do chip do celular. Chamado por setMode() e por
+// updateDiarStatus() — nunca recria nó nenhum, só mexe em classe/atributo
+// (recriar = piscar; reaproveitar = deslizar).
+let _smodeAvisoT=null;
+function _smodeSync(anima){
+  const multi=DIAR_MODES.includes(sessionMode);
+  const cap=document.getElementById('smodeCap');
+  if(cap)cap.dataset.multi=multi?'1':'0';
+  const rail=document.getElementById('smodeRail');
+  const ind=rail&&rail.querySelector('.smode-ind');
+  if(rail&&ind){
+    const segs=[...rail.querySelectorAll('.smode-btn')];
+    let i=segs.findIndex(s=>s.dataset.m===sessionMode);if(i<0)i=0;
+    // --cols vem do CSS (4 no desktop, 2 na gaveta do celular): assim o JS não
+    // repete o breakpoint, ele PERGUNTA pro CSS quantas colunas existem agora.
+    const cols=parseInt(getComputedStyle(rail).getPropertyValue('--cols'),10)||4;
+    const tr='translate('+((i%cols)*100)+'%,'+(Math.floor(i/cols)*100)+'%)';
+    // Primeira vez (nada posicionado ainda) nunca anima: senão o indicador
+    // nasce em "Consulta" e desliza sozinho até "Livre" ao abrir o app.
+    const salta=!anima||!ind.style.getPropertyValue('--ind-t');
+    if(salta)ind.style.transition='none';
+    ind.style.setProperty('--ind-t',tr);
+    if(salta){void ind.offsetHeight;ind.style.transition=''}
+  }
+  const chip=document.getElementById('smodeChip');
+  if(chip){
+    const rot=document.querySelector('.smode-btn[data-m="'+sessionMode+'"] span:not(.svgi)');
+    const nome=(rot&&rot.textContent.trim())||t('Menu');
+    const txt=chip.querySelector('.smode-chip-txt');
+    if(txt&&txt.textContent!==nome)txt.textContent=nome;
+    const diarNoAr=typeof cfg!=='undefined'&&!!cfg.diarEnabled&&cfg.provider!=='local';
+    chip.classList.toggle('diar-on',diarNoAr);
+    chip.title=diarNoAr?(nome+' · '+t('Diarização ON')):nome;
+  }
+}
+function _smodeAvisa(){
+  const d=document.getElementById('diarStatus');if(!d)return;
+  clearTimeout(_smodeAvisoT);
+  // 170ms de atraso: o fio precisa CHEGAR antes de o bloco reagir. Causa
+  // antes do efeito, senão os dois viram um borrão só.
+  _smodeAvisoT=setTimeout(()=>{
+    d.classList.remove('avisou');void d.offsetWidth;d.classList.add('avisou');
+    setTimeout(()=>d.classList.remove('avisou'),560);
+  },170);
+}
+// Girar o aparelho troca 4 colunas por 2 (ou o contrário): o indicador precisa
+// reposicionar, e sem animação — não é uma escolha da pessoa, é a tela mudando.
+let _smodeResizeT=null;
+window.addEventListener('resize',()=>{
+  clearTimeout(_smodeResizeT);
+  _smodeResizeT=setTimeout(()=>_smodeSync(false),120);
+});
 function syncSessionName(v){
   const clean=String(v||'').slice(0,60);
   const main=document.getElementById('snameInput');
@@ -18119,10 +18375,13 @@ function updateDiarStatus(){
   const incompat=cfg.provider==='local';
   st.classList.toggle('incompat',incompat);
   st.classList.toggle('on',cfg.diarEnabled&&!incompat);
+  st.setAttribute('aria-pressed',(cfg.diarEnabled&&!incompat)?'true':'false');
   st.title=incompat?t('Indisponível com o transcritor local — toque no ? para ver os caminhos')
                    :t('Ligar/desligar diarização');
   const lbl=document.getElementById('diarChipLbl');
   if(lbl)lbl.textContent=incompat?t('Diarização'):(cfg.diarEnabled?t('Diarização ON'):t('Diarização'));
+  // O chip do celular (gaveta fechada) só sabe da diarização por aqui.
+  if(typeof _smodeSync==='function')_smodeSync(true);
 }
 // ── DICIONÁRIO PESSOAL + CORREÇÕES APRENDIDAS (Fase 0 da revisão de repetições) ──
 // Duas listas simples, globais (não por pasta — foi a decisão explícita do
