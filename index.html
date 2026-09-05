@@ -6681,7 +6681,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.05.2';
+const VOX_VERSION='2026.09.05.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -11622,6 +11622,13 @@ function _orbMuralFichas(cards,cols){
     const flutuando=_flAbertas.some(j=>j.id===c.id);
     const limite=aberta?700:120;
     const previa=txt?escHtml(txt.slice(0,limite))+(txt.length>limite?'…':''):escHtml(t('(card vazio)'));
+    // Sinal A do Plano 18 (Etapa 3): miniatura de 34px da 1ª foto anexada,
+    // com contador por cima quando há mais de uma. O <img> entra depois,
+    // via _orbMuralPintarFotos — a ficha é reconstruída a cada render, e
+    // ler o Blob do IndexedDB é assíncrono (ver comentário lá).
+    let imgsCard=[];
+    try{imgsCard=JSON.parse(c.dataset.images||'[]')}catch(e){}
+    const mthumb=imgsCard.length?`<span class="mthumb" data-img-k="${escHtml(imgsCard[0].k)}">${imgsCard.length>1?'<b>'+imgsCard.length+'</b>':''}</span>`:'';
     // Botão dentro de botão é HTML inválido: a ficha é uma div, o corpo é o
     // botão, e as ações ficam do lado de fora dele — mesmo desenho que a
     // .fc-lista-item do painel já usa.
@@ -11646,12 +11653,31 @@ function _orbMuralFichas(cards,cols){
     if(luz)estilos.push(`--orb-mural-ca:${safeColor(luz.ca)}`);
     const styleAttr=estilos.length?` style="${estilos.join(';')}"`:'';
     return `<div class="orb-mural-it${aberta?' aberta':''}${flutuando?' flutuando':''}${i===orfa?' orfa':''}${entraClasse}" data-nid="${escHtml(c.id)}"${tcAttr}${styleAttr}>
-      <button type="button" class="orb-mural-corpo" onclick="_orbMuralAlterna('${escJs(c.id)}')">
+      <button type="button" class="orb-mural-corpo${mthumb?' tem-foto':''}" onclick="_orbMuralAlterna('${escJs(c.id)}')">
+        ${mthumb}<span class="orb-mural-txt">
         <span class="orb-mural-nm${sn?'':' vazia'}" title="${sn?escHtml(sn):escHtml(t('Clique para nomear este card'))}" onclick="event.stopPropagation();_orbMuralRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
         <span class="orb-mural-pv">${previa}</span>
+        </span>
       </button>${acoes}
     </div>`;
   }).join('');
+}
+// Resolve o Blob de cada .mthumb ainda sem <img> — chamado depois de todo
+// innerHTML que usa _orbMuralFichas(). Assíncrono por natureza (IndexedDB);
+// se o Blob ainda não voltou quando a ficha some de novo render, o `<img>`
+// nunca chega a entrar — nunca aparece ícone quebrado.
+async function _orbMuralPintarFotos(root){
+  if(!root)return;
+  const els=[...root.querySelectorAll('.mthumb[data-img-k]')];
+  for(const el of els){
+    if(el.querySelector('img'))continue;
+    const k=el.dataset.imgK;
+    let url;
+    try{url=await imgUrl(k)}catch(e){continue}
+    if(!url||!document.body.contains(el))continue;
+    const img=document.createElement('img');img.src=url;img.alt='';
+    el.prepend(img);
+  }
 }
 function _orbAbrirMural(id){
   const wrap=document.getElementById('orbMural');
@@ -11672,6 +11698,7 @@ function _orbAbrirMural(id){
     </div>
     <div class="orb-mural-body" id="orbMuralBody">${_orbMuralFichas(cards,f.gaveta?2:f.cols)}</div>
     ${nSub?`<div class="orb-mural-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na órbita, atrás deste cartão':'subpastas continuam na órbita, atrás deste cartão'))}</div>`:''}`;
+  _orbMuralPintarFotos(document.getElementById('orbMuralBody'));
   wrap.classList.add('viva');
   _orbMuralAberto=true;
   _orbMuralPosicionar();
@@ -11768,6 +11795,7 @@ function _orbMuralAlterna(id){
   _orbMuralNotaId=(_orbMuralNotaId===id)?null:id;
   const cards=_orbCardsDiretos(_orbFoco);
   body.innerHTML=_orbMuralFichas(cards,_orbMuralColsAtuais());
+  _orbMuralPintarFotos(body);
   const depois=[...body.querySelectorAll('.orb-mural-it')];
   if(_voxReduzMov())return;
   depois.forEach(e=>{
@@ -11804,6 +11832,7 @@ function _orbMuralAtualizar(){
   if(!body)return;
   const topo=body.scrollTop;
   body.innerHTML=_orbMuralFichas(_orbCardsDiretos(_orbFoco),_orbMuralColsAtuais());
+  _orbMuralPintarFotos(body);
   body.scrollTop=topo;
 }
 function _orbMuralRenomear(id){
