@@ -6681,7 +6681,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.05.3';
+const VOX_VERSION='2026.09.05.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -19385,13 +19385,39 @@ function saveHistory(){
 }
 
 // ── PROJETO: SALVAR / CONTINUAR (backup portátil) ──
-function exportProject(){
+function _blobParaDataURL(blob){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result);
+    r.onerror=()=>reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+function _dataURLParaBlob(durl){return fetch(durl).then(r=>r.blob())}
+async function exportProject(){
   saveHistory();
   const history=_historyCache||[];
   if(!history.length){toast(t('ℹ️ Nada para salvar ainda — grave algo primeiro'),true);return}
+  // Backup/exportar projeto É o dado (Plano 18, Etapa 5): embute o Blob de
+  // cada foto em base64 dentro do JSON — sem os bytes, restaurar em outro
+  // aparelho deixaria referência morta. Fica mais pesado, mas é o backup,
+  // não o dia a dia (esse caminho é o .txt/.md do exportCard, que NÃO
+  // embute — ver comentário lá).
+  const history2=await Promise.all(history.map(async it=>{
+    if(!it.images||!it.images.length)return it;
+    const images=await Promise.all(it.images.map(async im=>{
+      try{
+        const blob=await imgCarregar(im.k);
+        if(!blob)return im;
+        const data=await _blobParaDataURL(blob);
+        return{...im,data};
+      }catch(e){return im}
+    }));
+    return{...it,images};
+  }));
   const data={
     app:'vox',version:1,exportedAt:new Date().toISOString(),
-    history,
+    history:history2,
     folders:JSON.parse(localStorage.getItem('vox_folders')||'[]'),
     stats:JSON.parse(localStorage.getItem('vox_stats')||'{}')
   };
@@ -19431,7 +19457,7 @@ function _importFile(file){
   };
   reader.readAsText(file);
 }
-function _restoreProject(data){
+async function _restoreProject(data){
   const existing=new Set([...document.querySelectorAll('.card:not(.proc-card)')].map(c=>{
     const txt=c.querySelector('textarea')?.value||'';return (c.dataset.dt||'')+'|'+txt.slice(0,60);
   }));
@@ -19446,19 +19472,34 @@ function _restoreProject(data){
     }
   }catch(e){}
   let added=0,skipped=0;
-  (data.history||[]).forEach(it=>{
+  for(const it of (data.history||[])){
     const sig=(it.dt||'')+'|'+(it.text||'').slice(0,60);
-    if(existing.has(sig)){skipped++;return}
+    if(existing.has(sig)){skipped++;continue}
     existing.add(sig);
+    // Fotos do backup (Etapa 5): o Blob veio embutido em base64 — grava de
+    // volta no IndexedDB DESTE aparelho, com a MESMA chave, antes de montar
+    // o card. Sem isso o card nasceria apontando pra um Blob que só existe
+    // no aparelho de origem.
+    let imgsRestauradas=it.images||[];
+    if(imgsRestauradas.length){
+      imgsRestauradas=await Promise.all(imgsRestauradas.map(async im=>{
+        if(!im.data)return{k:im.k,w:im.w||0,h:im.h||0};
+        try{
+          const blob=await _dataURLParaBlob(im.data);
+          await imgSalvar(blob,im.w||0,im.h||0,im.k);
+        }catch(e){}
+        return{k:im.k,w:im.w||0,h:im.h||0};
+      }));
+    }
     let _novoId;
     if(it.diarized){
       _novoId=addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',it.folder||'',it.chatHistory||'[]');
     }else{
-      _novoId=addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]');
+      _novoId=addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]',imgsRestauradas,it.links||[]);
     }
     _restaurarEtiqueta(_novoId,it);
     added++;
-  });
+  }
   saveHistory();
   if(typeof loadFolders==='function')loadFolders();
   applyFolderFilter&&applyFolderFilter();
@@ -25750,7 +25791,8 @@ function cardMarkdown(id){
   const mode=c.dataset.mode||'livre',prov=c.dataset.prov||'whisper';
   const fmTags=tags.length?`\ntags: [${tags.map(x=>x.trim().replace(/\s+/g,'-')).join(', ')}]`:'';
   const fmMarcado=_calMetaFrontmatter(c);
-  let out=`---\ndate: ${isoDt}${fmMarcado?'\nmarked: '+fmMarcado:''}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n# ${name}\n\n${txt}\n`;
+  const notaFotos=_notaFotosExport(c);
+  let out=`---\ndate: ${isoDt}${fmMarcado?'\nmarked: '+fmMarcado:''}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n# ${name}\n\n${txt}\n${notaFotos?'\n'+notaFotos+'\n':''}`;
   const hist=getDiarChatHistory(id);
   if(hist.length){
     out+='\n## '+t('Conversa')+'\n\n';
@@ -25794,7 +25836,8 @@ async function copyCardObsidian(id){
     const prompt=`Reformate a transcrição abaixo como um relatório em Markdown bem estruturado para o Obsidian. Regras:\n- Comece com um título "# " claro e descritivo, baseado no conteúdo.\n- Organize em seções com "## " quando fizer sentido.\n- Use listas com "- " para enumerações.\n- Destaque termos-chave com **negrito**.\n- Use callouts do Obsidian quando ajudar: "> [!note]", "> [!tip]" (evidências/pontos positivos), "> [!warning]" (riscos/ressalvas), "> [!info]".\n- Seja FIEL ao conteúdo: não invente fatos, não adicione informação externa, não remova ideias. Só organize e formate o que já está no texto.\n- NÃO inclua cabeçalho YAML (---). Responda APENAS com o corpo do relatório em Markdown. ${_promptLang()}\n\nTranscrição:\n${text}`;
     const maxTok=Math.min(6000,Math.ceil(text.length/2)+800);
     const body=(await callAI(prompt,key,'auto',maxTok)).trim();
-    const md=_cardFrontmatter(card)+body+'\n';
+    const notaFotos=_notaFotosExport(card);
+    const md=_cardFrontmatter(card)+body+'\n'+(notaFotos?'\n'+notaFotos+'\n':'');
     _renderObsidianResult(id,md,card);
   }catch(e){
     toast('❌ '+e.message,true);
@@ -25827,6 +25870,7 @@ function exportCard(id,fmt){
   const prov=c.dataset.prov||'whisper',mode=c.dataset.mode||'livre';
   const marcado=_calMetaExport(c);
   const marcadoTxt=marcado?' · '+t('marcado: {d}').replace('{d}',marcado):'';
+  const notaFotos=_notaFotosExport(c);
   let out,ext;
   if(fmt==='md'){
     ext='md';
@@ -25834,10 +25878,11 @@ function exportCard(id,fmt){
   }else if(fmt==='html'){
     ext='html';
     const tagsHtml=tags.length?`<div class="tags">${tags.map(x=>`<span class="tag">#${escHtml(x)}</span>`).join('')}</div>`:'';
-    out=`<!DOCTYPE html><html lang="${getLocale()}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(name)} — Vox</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:760px;margin:40px auto;padding:20px;color:#1a1a1a;line-height:1.75}h1{font-size:22px;border-bottom:2px solid #e5e7eb;padding-bottom:10px;margin-bottom:4px}.meta{color:#6b7280;font-size:13px;margin-bottom:24px}.card-text{white-space:pre-wrap;font-size:15px}.tags{margin-top:16px;display:flex;gap:6px;flex-wrap:wrap}.tag{background:#ede9fe;color:#7c3aed;border-radius:20px;padding:2px 10px;font-size:12px}</style></head><body><h1>${escHtml(name)}</h1><div class="meta">${dt} · ${mode} · ${prov}${escHtml(marcadoTxt)}</div><div class="card-text">${escHtml(txt)}</div>${tagsHtml}</body></html>`;
+    const notaHtml=notaFotos?`<p class="card-nota-fotos" style="color:#6b7280;font-size:13px">${escHtml(notaFotos)}</p>`:'';
+    out=`<!DOCTYPE html><html lang="${getLocale()}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(name)} — Vox</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:760px;margin:40px auto;padding:20px;color:#1a1a1a;line-height:1.75}h1{font-size:22px;border-bottom:2px solid #e5e7eb;padding-bottom:10px;margin-bottom:4px}.meta{color:#6b7280;font-size:13px;margin-bottom:24px}.card-text{white-space:pre-wrap;font-size:15px}.tags{margin-top:16px;display:flex;gap:6px;flex-wrap:wrap}.tag{background:#ede9fe;color:#7c3aed;border-radius:20px;padding:2px 10px;font-size:12px}</style></head><body><h1>${escHtml(name)}</h1><div class="meta">${dt} · ${mode} · ${prov}${escHtml(marcadoTxt)}</div><div class="card-text">${escHtml(txt)}</div>${notaHtml}${tagsHtml}</body></html>`;
   }else{
     ext='txt';
-    out=`${name}\n${dt} · ${mode} · ${prov}${marcadoTxt}${tags.length?'\n'+t('Tags:')+' '+tags.join(', '):''}\n${'='.repeat(40)}\n\n${txt}\n`;
+    out=`${name}\n${dt} · ${mode} · ${prov}${marcadoTxt}${tags.length?'\n'+t('Tags:')+' '+tags.join(', '):''}\n${'='.repeat(40)}\n\n${txt}\n${notaFotos?'\n'+notaFotos+'\n':''}`;
   }
   dl(out,`vox_${safe}.${ext}`);
   toast(t('📥 Baixado (.{ext})').replace('{ext}',ext));
@@ -27154,6 +27199,8 @@ function exportObsidian(){
     out+=`---\n\n`;
     if(c.dataset.sessionName)out+=`# ${c.dataset.sessionName}\n\n`;
     out+=text;
+    const notaFotos=_notaFotosExport(c);
+    if(notaFotos)out+='\n\n'+notaFotos;
     if(i<cards.length-1)out+='\n\n---\n\n';
   });
   dl(out,`vox_obsidian_${slug}.md`);
