@@ -26,6 +26,12 @@
   --shadow-input:0 1px 2px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.06);
   --text:#1d1d1f;--text2:#48484a;--text3:#8e8e93;--text4:#aeaeb2;
   --accent:#10b981;--accent2:#059669;--accent-glow:rgba(16,185,129,0.18);
+  /* Fio por dentro da miniatura de foto (Plano 18): no claro separa foto
+     CLARA do card branco; no escuro separa foto ESCURA do card #212124. Sem
+     ele, um print de tela escura encosta no card e a miniatura perde o
+     contorno. Medido/justificado em scratchpad/PROPOSTA_ANEXO_IMAGENS.html. */
+  --foto-borda:rgba(0,0,0,.11);--foto-vazio:rgba(0,0,0,.045);
+  --lb-fundo:rgba(20,20,24,.82);
   /* Azul do "+" que cria card — o mesmo papel do #btnNewCard da barra de
      status, mas aqui o ícone é o ÚNICO sinal (não tem rótulo "Novo card"
      do lado), então ele precisa passar sozinho no contraste mínimo de
@@ -101,6 +107,10 @@
   --shadow-hover:0 2px 12px rgba(0,0,0,0.6),0 16px 48px rgba(0,0,0,0.7);
   --shadow-input:0 2px 8px rgba(0,0,0,0.5),0 8px 24px rgba(0,0,0,0.5);
   --text:#f5f5f7;--text2:#cfcfd4;--text3:#9d9da4;--text4:#8a8a93;
+  /* No escuro a sombra não cria camada — quem cria é a borda clara. 14% é o
+     mínimo que ainda lê sobre um print preto (medido). */
+  --foto-borda:rgba(255,255,255,.14);--foto-vazio:rgba(255,255,255,.055);
+  --lb-fundo:rgba(8,8,10,.88);
   --diar-txt:#a78bfa;--diar-track:rgba(167,139,250,0.13);--smode-divisor:rgba(255,255,255,0.30);
   --smode-elev:0 1px 3px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.09) inset;
   --fc-novo:#4f9dff;
@@ -1093,6 +1103,118 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .icon-btn.rec-here{color:var(--ca,var(--accent));background:var(--cag,var(--accent-glow))}
 .icon-btn.pinned{color:#f59e0b}
 .icon-btn.recording-this{background:var(--danger);color:white;animation:pulse-red 1.5s infinite}
+/* ═══════════════ FOTOS NO CARD (Plano 18, 05/09/2026 — Proposta 1 "a tira")
+   Bloco irmão da caixa de texto, igual o .card-audio já faz hoje: nunca
+   dentro do textarea. Nomes de classe e desenho vêm quase literais do
+   mockup aprovado (scratchpad/PROPOSTA_ANEXO_IMAGENS.html). ═══════════════ */
+/* Anel de confirmação "colado aqui" — nó PRÓPRIO, não o .card-anel (que já
+   é o anel de seleção múltipla). inset:0 e não inset:-2px como no mockup:
+   .card daqui tem overflow:hidden, e um anel que nasce fora da borda seria
+   cortado por ele. */
+.anel-foto{position:absolute;inset:0;border-radius:var(--radius-card);pointer-events:none;
+  z-index:4;border:2px solid var(--accent);opacity:0}
+.card.confirmou-foto .anel-foto{animation:anelPulsoFoto .52s cubic-bezier(.22,1,.36,1) 1}
+@keyframes anelPulsoFoto{0%{opacity:0}30%{opacity:.9}100%{opacity:0}}
+.tira{display:flex;gap:6px;align-items:center;padding:10px 14px 2px;overflow-x:auto;
+  scroll-snap-type:x proximity;scrollbar-width:thin}
+.tira:empty{display:none}
+.tira::-webkit-scrollbar{height:6px}
+.tira::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.thumb{position:relative;border-radius:10px;overflow:hidden;background:var(--foto-vazio);
+  cursor:zoom-in;padding:0;border:none;display:block;flex:none;width:76px;height:76px;
+  scroll-snap-align:start;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+/* O fio vive num ::after porque a <img> cobre qualquer inset-shadow do pai. */
+.thumb::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 0 0 1px var(--foto-borda)}
+.thumb:active{transform:scale(.965)}
+.thumb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Nasce em .95 + opacidade — nunca em scale(0). */
+.thumb.entra{animation:thEntra .34s cubic-bezier(.22,1,.36,1) backwards}
+@keyframes thEntra{from{opacity:0;transform:scale(.95) translateY(6px)}to{opacity:1;transform:none}}
+/* Estado "ainda salvando" (Blob indo pro IndexedDB). Véu no ::before, NÃO
+   opacity no elemento: a animação de entrada já anima a opacidade do nó, e
+   as duas juntas piscam. */
+.thumb::before{content:'';position:absolute;inset:0;z-index:2;border-radius:inherit;
+  background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s linear}
+.thumb.salvando::before{opacity:1}
+/* Miniatura maior quando o card tem largura de sobra (item 0.1 do plano) —
+   mesmo @container do .card, só tamanho, a tira continua rolando. */
+@container (min-width:520px){
+  .tira .thumb,.tira .chip-link{width:92px;height:92px}
+}
+.tira-add{width:76px;height:76px;border-radius:10px;border:1px dashed var(--border2);
+  background:none;color:var(--text3);display:grid;place-items:center;cursor:pointer;flex:none;
+  transition:color .14s linear,border-color .14s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+.tira-add .svgi{font-size:19px}
+.tira-add:hover{color:var(--text2);border-color:var(--text4)}
+.tira-add:active{transform:scale(.96)}
+/* chip de link — na tira ele guarda TUDO que não é foto (Etapa 4) */
+.chip-link{display:flex;align-items:center;gap:7px;height:76px;padding:0 12px;flex:none;
+  border-radius:10px;background:var(--foto-vazio);color:var(--text2);cursor:pointer;
+  border:none;font-family:var(--font);font-size:11.5px;font-weight:700;max-width:190px;
+  position:relative;text-align:left;text-decoration:none;
+  transition:transform .12s cubic-bezier(.22,1,.36,1),color .14s linear}
+.chip-link::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 0 0 1px var(--foto-borda)}
+.chip-link .svgi{font-size:16px;color:var(--text3);flex:none}
+.chip-link b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip-link:hover{color:var(--text)}
+.chip-link:active{transform:scale(.97)}
+/* zona de soltar — visível em REPOUSO, só no Modo Documento e só quando a
+   tira está vazia (item 0.2 do plano). */
+.solte{border:1px dashed var(--border2);border-radius:10px;color:var(--text4);
+  font-size:10.5px;font-weight:700;text-align:center;padding:14px 10px;line-height:1.35;
+  flex:1 1 auto;min-width:140px;cursor:default}
+.solte .svgi{font-size:17px;display:block;margin:0 auto 5px}
+.solte.sobre{border-color:var(--accent);color:var(--accent2)}
+[data-theme="dark"] .solte.sobre{color:var(--accent)}
+
+/* ═══════════════ TELA CHEIA DA FOTO (Etapa 2, FLIP a partir da miniatura) */
+.lb{position:fixed;inset:0;z-index:900;display:none;place-items:center}
+.lb.on{display:grid}
+.lb-fundo{position:absolute;inset:0;background:var(--lb-fundo);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  opacity:0;transition:opacity .28s linear}
+.lb.abrindo .lb-fundo{opacity:1}
+.lb-img{position:relative;max-width:min(92vw,1000px);max-height:78vh;border-radius:14px;
+  display:block;box-shadow:0 30px 80px rgba(0,0,0,.6);
+  transform-origin:50% 50%;will-change:transform}
+.lb-barra{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;gap:6px;
+  background:rgba(28,28,32,.92);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:6px;
+  opacity:0;transition:opacity .22s linear .12s}
+.lb.abrindo .lb-barra{opacity:1}
+.lb-barra button{min-width:44px;height:44px;padding:0 14px;border-radius:11px;border:none;
+  background:none;color:#e8e8ee;font-family:var(--font);font-size:12.5px;font-weight:700;
+  display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  transition:background .14s linear,color .14s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+.lb-barra button .svgi{font-size:16px}
+.lb-barra button:hover{background:rgba(255,255,255,.12)}
+.lb-barra button:active{transform:scale(.96)}
+.lb-barra button.del{color:#ff8b83}
+.lb-barra .sep{width:1px;background:rgba(255,255,255,.14);margin:6px 2px}
+.lb-fechar{position:absolute;top:18px;right:18px;width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.14);background:rgba(28,28,32,.92);color:#e8e8ee;
+  display:grid;place-items:center;cursor:pointer;opacity:0;
+  transition:opacity .22s linear .1s,transform .12s cubic-bezier(.22,1,.36,1)}
+.lb.abrindo .lb-fechar{opacity:1}
+.lb-fechar .svgi{font-size:19px}
+.lb-fechar:active{transform:scale(.94)}
+.lb-cont{position:absolute;top:24px;left:50%;transform:translateX(-50%);font-size:12px;
+  font-weight:700;color:#c9c9d2;background:rgba(28,28,32,.92);border-radius:20px;padding:5px 12px;
+  opacity:0;transition:opacity .22s linear .1s}
+.lb.abrindo .lb-cont{opacity:1}
+
+/* ═══════════════ MURAL DO ÓRBITA — sinal A (Etapa 3): miniatura 34px ═══ */
+.mthumb{position:relative;width:34px;height:34px;border-radius:6px;overflow:hidden;flex:none;
+  background:rgba(255,255,255,.06)}
+.mthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.mthumb::after{content:'';position:absolute;inset:0;border-radius:inherit;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.mthumb b{position:absolute;right:0;bottom:0;left:0;background:rgba(0,0,0,.62);color:#fff;
+  font-size:9.5px;font-weight:800;text-align:center;line-height:13px;z-index:2}
+.orb-mural-corpo.tem-foto{display:flex;gap:9px;align-items:flex-start}
+.orb-mural-corpo.tem-foto .orb-mural-txt{min-width:0;flex:1}
 .cb{padding:12px 14px 10px;background:var(--cat,transparent)}
 .cb textarea{width:100%;background:transparent;border:none;color:var(--text);font-size:var(--cf-sz,14px);font-family:var(--font);line-height:1.75;resize:vertical;outline:none;min-height:72px;caret-color:var(--ca,var(--accent))}
 .cb textarea::placeholder{color:var(--text4)}
@@ -5559,7 +5681,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <textarea id="itxt" class="itxt" rows="1" placeholder="Digite ou 📎 anexe um áudio…" data-i18n-placeholder oninput="autoR(this);checkSend()"></textarea>
       <div class="ibtns">
         <input type="file" id="fInput" style="display:none" onchange="handleFile(event)">
-        <input type="file" id="fInputCard" style="display:none" onchange="handleCardFile(event)">
+        <input type="file" id="fInputCard" multiple style="display:none" onchange="handleCardFile(event)">
         <input type="file" id="projInput" accept=".json,.txt,.md,application/json,text/plain" style="display:none" onchange="importProjectFile(event)">
         <button class="circle c-attach" id="btnAttach" onclick="document.getElementById('fInput').click()" title="Anexar áudio" data-i18n-title>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -6505,6 +6627,19 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   </div>
 </div>
 
+<!-- ═══════ FOTOS: TELA CHEIA (Plano 18, Etapa 2 · 05/09/2026) ═══════ -->
+<div class="lb" id="imgLb" onclick="_lbFundoClique(event)">
+  <div class="lb-fundo"></div>
+  <div class="lb-cont" id="lbCont"></div>
+  <button type="button" class="lb-fechar" onclick="fecharImgLb()" aria-label="Fechar"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span></button>
+  <img class="lb-img" id="lbImg" alt="">
+  <div class="lb-barra" onclick="event.stopPropagation()">
+    <button type="button" onclick="_lbBaixar()"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span><span data-i18n>Baixar</span></button>
+    <span class="sep"></span>
+    <button type="button" class="del" onclick="_lbExcluir()"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span data-i18n>Excluir</span></button>
+  </div>
+</div>
+
 <!-- BARRA DE SELEÇÃO MÚLTIPLA (07/09/2026) — fixa no rodapé da TELA, não da
      lista: com absolute ela sairia de vista assim que a pessoa rolasse, justo
      enquanto escolhe o quinto card. O conteúdo é montado por _selDesenhaBarra(),
@@ -6546,7 +6681,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.05.1';
+const VOX_VERSION='2026.09.05.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6584,6 +6719,17 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── FOTOS NO CARD — PROPOSTA 1, "A TIRA" (Plano 18, 05/09/2026) ──
+"Ver foto {n} em tela cheia":"View photo {n} full screen",
+"Adicionar fotos":"Add photos",
+"Solte fotos aqui":"Drop photos here",
+"🖼️ 1 foto anexada":"🖼️ 1 photo attached",
+"🖼️ {n} fotos anexadas":"🖼️ {n} photos attached",
+"⚠️ Não foi possível abrir esta foto":"⚠️ Couldn't open this photo",
+"⚠️ Não foi possível baixar esta foto":"⚠️ Couldn't download this photo",
+"{a} de {b}":"{a} of {b}",
+"[1 imagem anexada — abra no Vox para ver]":"[1 image attached — open in Vox to view]",
+"[{n} imagens anexadas — abra no Vox para ver]":"[{n} images attached — open in Vox to view]",
 // ── TRANSCRIÇÃO LONGA: NOVA TENTATIVA E TRABALHO PARCIAL SALVO (04/09/2026) ──
 "⏳ Conexão instável — tentando de novo em {s}s…":"⏳ Unstable connection — retrying in {s}s…",
 "Falha de conexão — verifique sua internet e tente de novo.":"Connection failed — check your internet and try again.",
@@ -7633,6 +7779,11 @@ let activeTA=null,activeTACard=null;
 let recTargetTA=null,recTargetCard=null;
 let stagedFile=null,searchActive=false;
 const blobReg=new Map();
+// Fotos anexadas ao card (Plano 18, Etapa 1): chave da imagem no IndexedDB
+// (store 'imgs') → Object URL em memória. Mesmo papel do blobReg do áudio,
+// mas por FOTO em vez de por card — uma foto pode aparecer em mais de um
+// lugar ao mesmo tempo (tira do card + Mural do Órbita).
+const imgBlobReg=new Map();
 let colorIdx=0;
 const PALETTE=8;
 const COST_W=0.006,COST_G=0.10/60,COST_GQ=0.04/60;
@@ -8472,7 +8623,7 @@ function applyView(){
   // no max-width de 1100px sobrando vazio enorme numa tela grande.
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-masonry',viewMode==='masonry'||viewMode==='list'));
   if(!isFocusLike)_unmountFocusEditor();
-  document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
+  document.querySelectorAll('#cardsList .card').forEach(c=>{c.classList.remove('focus-active');_tiraSolteLimpar(c.id)});
   if(!isFocusLike){
     document.querySelectorAll('#cardsList .card.conversa-on').forEach(c=>c.classList.remove('conversa-on'));
     document.querySelectorAll('#cardsList .card.diar-chat-on').forEach(c=>c.classList.remove('diar-chat-on'));
@@ -8748,7 +8899,7 @@ function applyFocusCard(){
   const cards=getFocusCards();if(!cards.length)return;
   focusCardIdx=Math.max(0,Math.min(focusCardIdx,cards.length-1));
   _unmountFocusEditor();
-  document.querySelectorAll('#cardsList .card').forEach(c=>c.classList.remove('focus-active'));
+  document.querySelectorAll('#cardsList .card').forEach(c=>{c.classList.remove('focus-active');_tiraSolteLimpar(c.id)});
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
   const fc=cards[focusCardIdx];
   fc.classList.add('focus-active');
@@ -8765,6 +8916,7 @@ function applyFocusCard(){
   const docLbl=document.getElementById('docNavLbl');if(docLbl)docLbl.textContent=`${focusCardIdx+1} / ${cards.length}`;
   fc.scrollIntoView({behavior:'smooth',block:'start'});
   _mountFocusEditor(fc.id);
+  _tiraSolteSync(fc.id);
 }
 function toggleDocHeaderFold(){
   const cid=_docCardId();const card=document.getElementById(cid);if(!card)return;
@@ -18987,12 +19139,21 @@ watchStuck();
 // aqui — configs pequenas (tema, idioma, chaves, pastas) continuam no
 // localStorage, não precisam de banco de dados pra um punhado de KB.
 const IDB_NAME='vox_db',IDB_STORE='kv';
+// Store novo (Plano 18, Etapa 1 — fotos no card): o Blob mora aqui, keyPath
+// 'id'. Mesmo banco de sempre (vox_db), só sobe a versão do schema — não é
+// um banco separado. onupgradeneeded checa objectStoreNames antes de criar
+// pra funcionar tanto em quem já tinha só 'kv' quanto em instalação nova.
+const IDB_IMG_STORE='imgs';
 let _idbPromise=null,_idbWarnShown=false;
 function _openIDB(){
   if(_idbPromise)return _idbPromise;
   _idbPromise=new Promise((resolve,reject)=>{
-    const req=indexedDB.open(IDB_NAME,1);
-    req.onupgradeneeded=()=>{req.result.createObjectStore(IDB_STORE)};
+    const req=indexedDB.open(IDB_NAME,2);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(IDB_STORE))db.createObjectStore(IDB_STORE);
+      if(!db.objectStoreNames.contains(IDB_IMG_STORE))db.createObjectStore(IDB_IMG_STORE,{keyPath:'id'});
+    };
     req.onsuccess=()=>resolve(req.result);
     req.onerror=()=>reject(req.error);
   });
@@ -19022,6 +19183,69 @@ function idbDelete(key){
   }));
 }
 
+// ── FOTOS NO CARD: persistência real (Plano 18, Etapa 1) ──
+// O Blob mora no IndexedDB (store 'imgs'); o card guarda só a CHAVE em
+// dataset.images. Nada de base64 dentro do card/histórico — infla o JSON
+// à toa. Por dentro o registro guarda ArrayBuffer + mime, não o Blob puro:
+// testado no WebKit (Playwright, Windows) e o `put` de um Blob direto falha
+// com "UnknownError: Error preparing Blob/File data to be stored in object
+// store" — limitação do backend de IndexedDB dessa build, documentada aqui
+// porque não é óbvia. ArrayBuffer é aceito nos dois motores, e o
+// imgCarregar devolve um Blob de verdade de qualquer forma — quem chama
+// imgSalvar/imgCarregar nunca vê essa diferença.
+function _imgNovaChave(){return 'img_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)}
+// w/h são opcionais (quem chama já mediu, se precisar cachear pra reservar
+// espaço antes do Blob carregar) — sem eles o registro grava 0,0.
+async function imgSalvar(blob,w=0,h=0,chave){
+  const id=chave||_imgNovaChave();
+  const mime=blob.type||'application/octet-stream';
+  const buf=await blob.arrayBuffer();
+  return _openIDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(IDB_IMG_STORE,'readwrite');
+    tx.objectStore(IDB_IMG_STORE).put({id,buf,mime,w,h,criadoEm:Date.now()});
+    tx.oncomplete=()=>resolve(id);
+    tx.onerror=()=>reject(tx.error);
+  }));
+}
+function imgCarregar(chave){
+  return _openIDB().then(db=>new Promise((resolve,reject)=>{
+    const req=db.transaction(IDB_IMG_STORE,'readonly').objectStore(IDB_IMG_STORE).get(chave);
+    req.onsuccess=()=>{
+      const rec=req.result;
+      resolve(rec?new Blob([rec.buf],{type:rec.mime||''}):null);
+    };
+    req.onerror=()=>reject(req.error);
+  }));
+}
+function imgApagar(chave){
+  return _openIDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(IDB_IMG_STORE,'readwrite');
+    tx.objectStore(IDB_IMG_STORE).delete(chave);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+  }));
+}
+// Resolve pra um Object URL, cacheado em imgBlobReg — chamado toda vez que
+// uma miniatura (tira ou Mural) precisa mostrar uma foto que já foi salva
+// (ex.: card reconstruído no reload). Nunca cria dois URLs pra mesma chave.
+async function imgUrl(chave){
+  if(imgBlobReg.has(chave))return imgBlobReg.get(chave);
+  const blob=await imgCarregar(chave);
+  if(!blob)return null;
+  const url=URL.createObjectURL(blob);
+  imgBlobReg.set(chave,url);
+  return url;
+}
+function _imgRevoke(chave){
+  if(imgBlobReg.has(chave)){URL.revokeObjectURL(imgBlobReg.get(chave));imgBlobReg.delete(chave)}
+}
+// Mesmo aviso de "espaço pode estar cheio" que o idbSet do histórico já usa
+// (updateStorageMeter/_idbWarnShown) — reaproveitado, não recriado (Etapa 6).
+function _imgAvisoFalha(err){
+  console.error('Falha ao salvar imagem:',err);
+  if(!_idbWarnShown){_idbWarnShown=true;toast(t('⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio'),true)}
+}
+
 // ── HISTORY ──
 let _historyCache=[];
 async function loadHistory(){
@@ -19043,7 +19267,7 @@ async function loadHistory(){
       if(it.diarized){
         _novoId=addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',it.folder||'',it.chatHistory||'[]');
       }else{
-        _novoId=addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]');
+        _novoId=addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.folder||'',it.chatHistory||'[]',it.images||[],it.links||[]);
       }
       _restaurarEtiqueta(_novoId,it);
     });
@@ -19107,7 +19331,11 @@ function saveHistory(){
       // Duração REAL do áudio em segundos. Antes o app calculava isso em
       // processAudio() só pra somar custo e estatística, e jogava fora — a
       // informação não voltava depois.
-      ...(c.dataset.durAudio?{durAudio:parseInt(c.dataset.durAudio)||0}:{})
+      ...(c.dataset.durAudio?{durAudio:parseInt(c.dataset.durAudio)||0}:{}),
+      // Fotos e links anexados (Plano 18) — só a referência (chave/URL); o
+      // Blob mora no IndexedDB (store 'imgs'), não aqui.
+      ...(c.dataset.images?{images:JSON.parse(c.dataset.images)}:{}),
+      ...(c.dataset.links?{links:JSON.parse(c.dataset.links)}:{})
     };
     if(c.dataset.diarized==='true'){
       items.push({...base,diarized:true,utterances:c.dataset.utterances||'[]',speakers:c.dataset.speakers||'{}',view:c.dataset.view||'roteiro',chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
@@ -20442,7 +20670,17 @@ function attachHere(cid){
 }
 function handleCardFile(e){
   if(!e.target.files.length){recTargetTA=null;recTargetCard=null;return}
-  const f=e.target.files[0];e.target.value='';
+  const allFiles=[...e.target.files];
+  const f=allFiles[0];e.target.value='';
+  // Foto (Plano 18, Etapa 2): novo ramo antes de decidir áudio/texto — se a
+  // pessoa escolheu foto(s), nenhum dos dois caminhos de sempre se aplica.
+  if(f.type&&f.type.startsWith('image/')){
+    const cid=recTargetCard;
+    recTargetTA=null;recTargetCard=null;
+    if(!cid||!document.getElementById(cid))return;
+    attachImages(cid,allFiles.filter(x=>x.type&&x.type.startsWith('image/')));
+    return;
+  }
   const isText=/\.(txt|md)$/i.test(f.name)||f.type.startsWith('text/');
   if(isText){
     const reader=new FileReader();
@@ -20462,6 +20700,350 @@ function handleCardFile(e){
     return;
   }
   stageFile(f); // áudio/vídeo: barrinha normal; destino já travado em recTarget
+}
+
+// ══════════════ FOTOS NO CARD (Plano 18, 05/09/2026 — Proposta 1) ══════════════
+// Estrutura visual e nomes de classe vêm do mockup aprovado
+// (scratchpad/PROPOSTA_ANEXO_IMAGENS.html). Persistência: ver imgSalvar/
+// imgCarregar/imgApagar, junto do resto do IndexedDB (~linha 18989).
+function _imagesGet(card){try{return JSON.parse(card.dataset.images||'[]')}catch(e){return[]}}
+function _imagesSet(card,arr){if(arr.length)card.dataset.images=JSON.stringify(arr);else delete card.dataset.images}
+function _linksGet(card){try{return JSON.parse(card.dataset.links||'[]')}catch(e){return[]}}
+function _linksSet(card,arr){if(arr.length)card.dataset.links=JSON.stringify(arr);else delete card.dataset.links}
+// Exportação em .txt/.md/Obsidian NÃO embute a imagem (infla o arquivo e não
+// tem como decodificar de volta com sentido nesses formatos — Plano 18,
+// Etapa 5). Em vez de a foto desaparecer EM SILÊNCIO, entra esta linha.
+function _notaFotosExport(card){
+  const n=_imagesGet(card).length;
+  if(!n)return'';
+  return n===1?t('[1 imagem anexada — abra no Vox para ver]'):t('[{n} imagens anexadas — abra no Vox para ver]').replace('{n}',n);
+}
+function _pulsarConfirmacaoFoto(cid){
+  const c=document.getElementById(cid);if(!c)return;
+  c.classList.remove('confirmou-foto');void c.offsetWidth;c.classList.add('confirmou-foto');
+}
+// HTML de uma miniatura pra montagem INICIAL do card (addCard, string única).
+// O <img> nasce sem src — quem preenche é _tiraPintarFotos, depois que o
+// nó já existe no DOM (o Blob vem do IndexedDB, é sempre assíncrono aqui).
+function _tiraThumbHTML(im,idx){
+  return `<button type="button" class="thumb" data-k="${escHtml(im.k)}" aria-label="${escHtml(t('Ver foto {n} em tela cheia').replace('{n}',idx+1))}"><img alt="" data-k="${escHtml(im.k)}"></button>`;
+}
+function _tiraChipHTML(lk){
+  return `<a class="chip-link" href="${escHtml(lk.url)}" target="_blank" rel="noopener noreferrer" title="${escHtml(lk.url)}"><span class="svgi">${ICO.link}</span><b>${escHtml(lk.host||'')}</b></a>`;
+}
+function _tiraAddHTML(cid){
+  return `<button type="button" class="tira-add" onclick="attachHere('${escJs(cid)}')" aria-label="${escHtml(t('Adicionar fotos'))}"><span class="svgi">${ICO.plus}</span></button>`;
+}
+// Chamada só por addCard, na montagem inicial (reload/histórico). Fora daí,
+// os nós entram um a um (paste/attachImages) — nunca recriando a tira
+// inteira, pra ninguém que já estava lá piscar.
+function tiraHTML(cid,images,links){
+  images=images||[];links=links||[];
+  if(!images.length&&!links.length)return '';
+  let h=`<div class="tira" id="tira-${cid}">`;
+  images.forEach((im,i)=>h+=_tiraThumbHTML(im,i));
+  links.forEach(lk=>h+=_tiraChipHTML(lk));
+  h+=_tiraAddHTML(cid);
+  h+='</div>';
+  return h;
+}
+async function _tiraPintarFotos(root){
+  const imgs=[...root.querySelectorAll('.thumb img[data-k]')].filter(im=>!im.getAttribute('src'));
+  for(const im of imgs){
+    let url;
+    try{url=await imgUrl(im.dataset.k)}catch(e){continue}
+    if(url)im.src=url;
+  }
+}
+// Garante o container .tira do card, criando-o (vazio) se ainda não existe
+// — primeira foto/link de um card que nasceu sem nenhum. Se só tinha a zona
+// de soltar do Modo Documento, ela some: a primeira foto de verdade
+// substitui a promessa vazia.
+function _tiraGarantir(cid){
+  const card=document.getElementById(cid);if(!card)return null;
+  let tira=document.getElementById('tira-'+cid);
+  if(tira){
+    const solte=tira.querySelector('.solte');if(solte)solte.remove();
+    return tira;
+  }
+  tira=document.createElement('div');tira.className='tira';tira.id='tira-'+cid;
+  const cb=card.querySelector('.cb');
+  if(!cb||!cb.parentNode)return null;
+  cb.parentNode.insertBefore(tira,cb);
+  return tira;
+}
+function _tiraInserirAntesDoFinal(cid,tira,no){
+  let add=tira.querySelector('.tira-add');
+  if(!add){
+    const tmp=document.createElement('div');tmp.innerHTML=_tiraAddHTML(cid);
+    add=tmp.firstElementChild;tira.appendChild(add);
+  }
+  tira.insertBefore(no,add);
+}
+function _criarThumbNode(chave,url,animar){
+  const btn=document.createElement('button');
+  btn.type='button';btn.className='thumb'+(animar?' entra salvando':'');
+  btn.dataset.k=chave;
+  const img=document.createElement('img');img.alt='';if(url)img.src=url;
+  btn.appendChild(img);
+  return btn;
+}
+function _tiraLimparSeVazia(cid){
+  const tira=document.getElementById('tira-'+cid);if(!tira)return;
+  if(tira.querySelector('.thumb')||tira.querySelector('.chip-link'))return;
+  const card=document.getElementById(cid);
+  if(card&&card.classList.contains('focus-active')){_tiraSolteSync(cid);return}
+  tira.remove();
+}
+function _medirImagemUrl(url){
+  return new Promise(resolve=>{
+    const im=new Image();
+    im.onload=()=>resolve({w:im.naturalWidth||0,h:im.naturalHeight||0});
+    im.onerror=()=>resolve({w:0,h:0});
+    im.src=url;
+  });
+}
+// Uma foto: mede, mostra na hora (Object URL do próprio arquivo, sem
+// esperar o IndexedDB), grava dataset.images e só então salva de verdade —
+// o véu .salvando cobre a miniatura até o Blob estar seguro no disco.
+async function _anexarUmaImagem(cid,file){
+  const card=document.getElementById(cid);if(!card)return null;
+  const tira=_tiraGarantir(cid);if(!tira)return null;
+  const url=URL.createObjectURL(file);
+  const{w,h}=await _medirImagemUrl(url);
+  const chave=_imgNovaChave();
+  imgBlobReg.set(chave,url);
+  const images=_imagesGet(card);
+  images.push({k:chave,w,h});
+  _imagesSet(card,images);
+  const no=_criarThumbNode(chave,url,true);
+  _tiraInserirAntesDoFinal(cid,tira,no);
+  try{
+    await imgSalvar(file,w,h,chave);
+  }catch(e){
+    _imgAvisoFalha(e);
+  }
+  no.classList.remove('salvando');
+  return chave;
+}
+// Colar (Ctrl+V) — só se houver um card com foco no momento (não cria card
+// novo a partir de paste solto na tela). Etapa 4: texto colado que é só uma
+// URL vira chip, sem mexer no que a textarea faz com o texto.
+document.addEventListener('paste',e=>{
+  const ativo=document.activeElement;
+  const card=ativo&&ativo.closest?ativo.closest('.card'):null;
+  if(!card)return;
+  const cid=card.id;
+  const items=(e.clipboardData&&e.clipboardData.items)||[];
+  let imgFile=null;
+  for(let i=0;i<items.length;i++){
+    if(items[i].type&&items[i].type.indexOf('image/')===0){imgFile=items[i].getAsFile();break}
+  }
+  if(imgFile){
+    e.preventDefault();
+    _anexarUmaImagem(cid,imgFile).then(chave=>{
+      if(chave){_pulsarConfirmacaoFoto(cid);saveHistory()}
+    });
+    return;
+  }
+  const texto=((e.clipboardData&&e.clipboardData.getData('text/plain'))||'').trim();
+  if(texto&&/^https?:\/\/\S+$/.test(texto))_anexarLink(cid,texto);
+});
+function _anexarLink(cid,url){
+  const card=document.getElementById(cid);if(!card)return;
+  let host='';
+  try{host=new URL(url).hostname.replace(/^www\./,'')}catch(e){return}
+  const links=_linksGet(card);
+  if(links.some(l=>l.url===url))return; // mesmo link colado 2x seguidas: não duplica
+  const tira=_tiraGarantir(cid);if(!tira)return;
+  links.push({url,host});
+  _linksSet(card,links);
+  const a=document.createElement('a');
+  a.className='chip-link entra';a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.title=url;
+  a.innerHTML='<span class="svgi">'+ICO.link+'</span>';
+  const b=document.createElement('b');b.textContent=host;a.appendChild(b);
+  _tiraInserirAntesDoFinal(cid,tira,a);
+  setTimeout(()=>a.classList.remove('entra'),500);
+  _pulsarConfirmacaoFoto(cid);
+  saveHistory();
+}
+// Clique na miniatura abre a tela cheia — delegado, cobre tanto os .thumb
+// nascidos no addCard (string) quanto os inseridos depois (paste/anexo).
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('.thumb');
+  if(!btn)return;
+  const tira=btn.closest('.tira');if(!tira)return;
+  const cid=tira.id.replace(/^tira-/,'');
+  const idx=[...tira.querySelectorAll('.thumb')].indexOf(btn);
+  if(idx>=0)abrirImgLb(cid,idx,btn);
+});
+// ── Anexar pelo clipe, com seleção múltipla (Etapa 2.3) ──
+async function attachImages(cid,fileList){
+  const files=[...fileList].filter(f=>f.type&&f.type.startsWith('image/'));
+  if(!files.length)return;
+  const chaves=[];
+  for(const f of files){
+    const k=await _anexarUmaImagem(cid,f);
+    if(k)chaves.push(k);
+  }
+  if(!chaves.length)return;
+  _pulsarConfirmacaoFoto(cid);
+  saveHistory();
+  const n=chaves.length;
+  toastDesfazer(
+    n===1?t('🖼️ 1 foto anexada'):t('🖼️ {n} fotos anexadas').replace('{n}',n),
+    ()=>{
+      const card=document.getElementById(cid);if(!card)return;
+      const imgsRestantes=_imagesGet(card).filter(im=>!chaves.includes(im.k));
+      _imagesSet(card,imgsRestantes);
+      const tira=document.getElementById('tira-'+cid);
+      if(tira)chaves.forEach(k=>{const no=tira.querySelector('.thumb[data-k="'+CSS.escape(k)+'"]');if(no)no.remove()});
+      chaves.forEach(k=>{imgApagar(k).catch(()=>{});_imgRevoke(k)});
+      _tiraLimparSeVazia(cid);
+      saveHistory();
+    }
+  );
+}
+
+// ── Zona de soltar visível em repouso — só no Modo Documento e só quando a
+// tira está vazia (item 0.2 do plano). Hooks: applyView()/applyFocusCard(). ──
+function _tiraSolteLimpar(cid){
+  const tira=document.getElementById('tira-'+cid);if(!tira)return;
+  if(tira.querySelector('.thumb')||tira.querySelector('.chip-link'))return;
+  tira.remove();
+}
+function _tiraSolteSync(cid){
+  const c=document.getElementById(cid);if(!c)return;
+  let tira=document.getElementById('tira-'+cid);
+  if(tira&&(tira.querySelector('.thumb')||tira.querySelector('.chip-link')))return;
+  if(!tira){
+    tira=document.createElement('div');tira.className='tira';tira.id='tira-'+cid;
+    const cb=c.querySelector('.cb');
+    if(!cb||!cb.parentNode)return;
+    cb.parentNode.insertBefore(tira,cb);
+  }
+  if(tira.querySelector('.solte'))return;
+  const d=document.createElement('div');
+  d.className='solte';
+  d.innerHTML='<span class="svgi">'+ICO.solte+'</span><span>'+t('Solte fotos aqui')+'</span>';
+  tira.appendChild(d);
+  tira.addEventListener('dragover',_tiraDragOver);
+  tira.addEventListener('dragleave',_tiraDragLeave);
+  tira.addEventListener('drop',_tiraDrop);
+}
+function _tiraDragOver(e){
+  if(!_hasFileDrag(e))return;
+  e.preventDefault();e.stopPropagation();
+  e.dataTransfer.dropEffect='copy';
+  const s=e.currentTarget.querySelector('.solte');if(s)s.classList.add('sobre');
+}
+function _tiraDragLeave(e){
+  const alvo=e.currentTarget;
+  if(e.relatedTarget&&alvo.contains(e.relatedTarget))return;
+  const s=alvo.querySelector('.solte');if(s)s.classList.remove('sobre');
+}
+function _tiraDrop(e){
+  if(!_hasFileDrag(e))return;
+  e.preventDefault();e.stopPropagation();
+  const s=e.currentTarget.querySelector('.solte');if(s)s.classList.remove('sobre');
+  // Fecha a barrinha global de "solte um arquivo aqui" (initAudioDropzone):
+  // o stopPropagation acima impede o listener dela de rodar, e sem isto ela
+  // ficaria presa aberta.
+  _ibarDragDepth=0;_showAudioDrop(false);
+  const cid=e.currentTarget.id.replace(/^tira-/,'');
+  const files=[...(e.dataTransfer?.files||[])].filter(f=>f.type&&f.type.startsWith('image/'));
+  if(files.length)attachImages(cid,files);
+}
+
+// ── Tela cheia da foto (FLIP a partir da miniatura) — Etapa 2.4 ──
+let _lbCid=null,_lbIdx=0,_lbDeQuem=null;
+function _lbImagens(cid){
+  const card=document.getElementById(cid);if(!card)return[];
+  return _imagesGet(card);
+}
+async function abrirImgLb(cid,idx,origem){
+  const imgs=_lbImagens(cid);
+  const im=imgs[idx];if(!im)return;
+  const lb=document.getElementById('imgLb'),lbImg=document.getElementById('lbImg'),lbCont=document.getElementById('lbCont');
+  if(!lb||!lbImg)return;
+  let url;
+  try{url=await imgUrl(im.k)}catch(e){url=null}
+  if(!url){toast(t('⚠️ Não foi possível abrir esta foto'),true);return}
+  _lbCid=cid;_lbIdx=idx;_lbDeQuem=origem||null;
+  lbCont.textContent=t('{a} de {b}').replace('{a}',idx+1).replace('{b}',imgs.length);
+  lbImg.src=url;
+  lb.classList.add('on');
+  requestAnimationFrame(()=>{
+    lbImg.style.transition='none';
+    lbImg.style.transform=_lbDaMiniatura(_lbDeQuem);
+    requestAnimationFrame(()=>{
+      lbImg.style.transition='transform .38s cubic-bezier(.22,1,.36,1)';
+      lbImg.style.transform='none';
+      lb.classList.add('abrindo');
+    });
+  });
+}
+// Escala ÚNICA (Math.max, não X/Y separado) — a miniatura é quadrada e
+// recortada, a foto aberta não é: escalar os eixos por fatores diferentes
+// faz a imagem nascer achatada e "desamassar" durante o voo (bug documentado
+// e corrigido no mockup aprovado).
+function _lbDaMiniatura(botao){
+  const lbImg=document.getElementById('lbImg');
+  if(!botao||!document.contains(botao))return'none';
+  const de=botao.getBoundingClientRect(),para=lbImg.getBoundingClientRect();
+  if(!para.width||!para.height)return'none';
+  const s=Math.max(de.width/para.width,de.height/para.height);
+  const dx=(de.left+de.width/2)-(para.left+para.width/2);
+  const dy=(de.top+de.height/2)-(para.top+para.height/2);
+  return`translate(${dx}px,${dy}px) scale(${s})`;
+}
+function fecharImgLb(){
+  const lb=document.getElementById('imgLb');if(!lb||!lb.classList.contains('on'))return;
+  const lbImg=document.getElementById('lbImg');
+  lb.classList.remove('abrindo');
+  if(_lbDeQuem&&document.contains(_lbDeQuem)){
+    lbImg.style.transition='transform .32s cubic-bezier(.22,1,.36,1)';
+    lbImg.style.transform=_lbDaMiniatura(_lbDeQuem);
+  }
+  setTimeout(()=>{lb.classList.remove('on');lbImg.style.transition='none';lbImg.style.transform='none';lbImg.src=''},330);
+}
+function _lbFundoClique(e){
+  if(e.target.closest('.lb-img'))return;
+  fecharImgLb();
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const lb=document.getElementById('imgLb');if(lb&&lb.classList.contains('on'))fecharImgLb()}
+});
+async function _lbBaixar(){
+  const imgs=_lbImagens(_lbCid);const im=imgs[_lbIdx];if(!im)return;
+  try{
+    const blob=await imgCarregar(im.k);
+    if(!blob){toast(t('⚠️ Não foi possível baixar esta foto'),true);return}
+    const ext=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg');
+    dl(blob,`vox_foto_${Date.now()}.${ext}`,blob.type);
+  }catch(e){toast(t('⚠️ Não foi possível baixar esta foto'),true)}
+}
+// Excluir só existe aqui, na tela cheia — não na miniatura (um "x" ali seria
+// pequeno demais pro dedo e só existiria no hover, que não existe no
+// celular; decisão já validada com o Rafa). Ação direta, sem desfazer: só
+// se chega aqui depois de abrir a foto de propósito.
+function _lbExcluir(){
+  const cid=_lbCid,idx=_lbIdx;
+  const card=document.getElementById(cid);if(!card)return;
+  const imgs=_imagesGet(card);const im=imgs[idx];if(!im)return;
+  imgs.splice(idx,1);
+  _imagesSet(card,imgs);
+  const tira=document.getElementById('tira-'+cid);
+  if(tira){
+    const no=tira.querySelectorAll('.thumb')[idx];
+    if(no)no.remove();
+  }
+  imgApagar(im.k).catch(()=>{});
+  _imgRevoke(im.k);
+  _tiraLimparSeVazia(cid);
+  saveHistory();
+  if(typeof _orbMuralAberto!=='undefined'&&_orbMuralAberto)_orbMuralAtualizar();
+  fecharImgLb();
 }
 
 // ── VU METER ──
@@ -22354,7 +22936,10 @@ const ICO={
   // Triângulo de aviso — aparece SÓ na barra vermelha do "apagar de vez".
   // Em nenhum outro lugar do app: se aparecesse em tudo, deixaria de avisar.
   alerta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  layoutGrid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'
+  layoutGrid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+  // ── FOTOS NO CARD (Plano 18, 05/09/2026) ──
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  solte:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 9 12 4 17 9"/><line x1="12" y1="4" x2="12" y2="16"/></svg>'
 };
 // ── MENU DO CÉREBRO — troca rápida de provedor, sem abrir Configurações ──
 // Reaproveita 100% as funções de troca que já existem (setProvider/
@@ -24236,7 +24821,7 @@ async function runLens(id,lensKey,focus=''){
 }
 
 // ── REGULAR CARD ──
-function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null,tags=[],sn='',mode='livre',pinned=false,folder='',chatHistory='[]'){
+function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null,tags=[],sn='',mode='livre',pinned=false,folder='',chatHistory='[]',images=[],links=[]){
   showCards();
   if(save&&!folder&&activeFolderId)folder=activeFolderId;
   const ci=forceCI!==null?forceCI:colorIdx;if(forceCI===null)colorIdx++;
@@ -24259,6 +24844,12 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-header-open ch-footer-open':''}`;el.id=id;
   el.dataset.type=type;el.dataset.prov=provStr;el.dataset.cost=costUSD;el.dataset.ci=ci%PALETTE;el.dataset.dt=dt;
   el.dataset.tags=tags.join(',');el.dataset.sessionName=sn;el.dataset.mode=mode;el.dataset.pinned=pinned?'true':'false';el.dataset.speakers='{}';el.dataset.folder=folder;el.dataset.chatHistory=chatHistory;
+  // Fotos e links anexados (Plano 18) — referência só (chave/URL), o Blob
+  // mora no IndexedDB (ver imgSalvar). Dataset só grava quando existe algo,
+  // pra um card sem foto continuar salvando byte a byte como antes.
+  if(images&&images.length)el.dataset.images=JSON.stringify(images);
+  if(links&&links.length)el.dataset.links=JSON.stringify(links);
+  const tiraHtml=tiraHTML(id,images,links);
   _gastarDurAudio(el,type);
   // Nota nascida pelo "+" DENTRO do calendário já nasce marcada no dia em
   // foco. É o único caminho em que `quando` nasce com o card — e é deliberado
@@ -24273,6 +24864,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   el.innerHTML=`
     <div class="conf-overlay" id="conf-${id}"><div class="conf-msg">${t('🗑️ Excluir?')}</div><div class="conf-btns"><button class="conf-yes" onclick="doDelete('${id}')">${t('Excluir')}</button><button class="conf-no" onclick="cancelDel('${id}')">${t('Cancelar')}</button></div></div>
     <span class="card-anel" aria-hidden="true"></span>
+    <span class="anel-foto" aria-hidden="true"></span>
     <div class="diar-main-col">
       <div class="ch">
         <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span></button>
@@ -24342,6 +24934,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <button class="conversa-btn primary" onclick="openConversaMode('${id}')">${ICO.messageCircle}<span class="conversa-lbl-curto">${t('Conversar')}</span><span class="conversa-lbl-longo">${t('Conversar sobre este texto')}</span></button>
         <button class="conversa-btn" onclick="toggleLensMenu('${id}')">${ICO.magicWand}${t('Transformar')}</button>
       </div>
+      ${tiraHtml}
       <div class="cb">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
         <div class="md-preview" id="mdp-${id}" style="display:none"></div>
@@ -24354,6 +24947,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
     `;
 
   document.getElementById('cardsList').prepend(el);
+  if(images&&images.length)_tiraPintarFotos(el);
   // Entrada 1x do dock só em card genuinamente novo (save=true) — ver
   // comentário equivalente em addDiarCard.
   if(save){
@@ -24425,7 +25019,15 @@ function askDel(id){
 }
 function cancelDel(id){document.getElementById('conf-'+id)?.classList.remove('on')}
 function doDelete(id){
-  revokeBlob(id);document.getElementById(id)?.remove();
+  revokeBlob(id);
+  // Card apagado DE VEZ (única ação sem volta do app): as fotos vão junto,
+  // senão o IndexedDB acumula Blob órfão pra sempre. Trashed/arquivado não
+  // passa por aqui — só quando não há mais como restaurar o card.
+  const _c=document.getElementById(id);
+  if(_c){
+    try{_imagesGet(_c).forEach(im=>{imgApagar(im.k).catch(()=>{});_imgRevoke(im.k)})}catch(e){}
+  }
+  _c?.remove();
   stats.count=Math.max(0,stats.count-1);updateStats();saveHistory();
   renderFolders();applyFolderFilter();
   if(!document.getElementById('cardsList').children.length){
