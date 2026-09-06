@@ -6681,7 +6681,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.05.4';
+const VOX_VERSION='2026.09.05.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -19393,7 +19393,18 @@ function _blobParaDataURL(blob){
     r.readAsDataURL(blob);
   });
 }
-function _dataURLParaBlob(durl){return fetch(durl).then(r=>r.blob())}
+// NÃO usar fetch(durl) aqui: a CSP do app trava connect-src em https:/localhost/
+// 127.0.0.1/blob: — fetch de uma data: URL é bloqueado (silenciosamente, sem
+// exceção síncrona: a Promise rejeita e o catch do chamador engolia o erro).
+// Decodificar o base64 à mão não passa por connect-src nenhum.
+function _dataURLParaBlob(durl){
+  const virgula=durl.indexOf(',');
+  const mime=(durl.slice(5,virgula).split(';')[0])||'application/octet-stream';
+  const bin=atob(durl.slice(virgula+1));
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  return Promise.resolve(new Blob([bytes],{type:mime}));
+}
 async function exportProject(){
   saveHistory();
   const history=_historyCache||[];
@@ -20891,7 +20902,17 @@ async function _anexarUmaImagem(cid,file){
   try{
     await imgSalvar(file,w,h,chave);
   }catch(e){
+    // Falhou de verdade (ex.: sem espaço) — desfaz o otimista. Sem isto a
+    // chave ficava em dataset.images apontando pra um Blob que nunca existiu,
+    // e no próximo reload virava uma miniatura eternamente quebrada, sem
+    // nenhum sinal do que aconteceu. O aviso já disparou (_imgAvisoFalha);
+    // aqui o card só volta a ficar como se a foto nunca tivesse entrado.
     _imgAvisoFalha(e);
+    _imagesSet(card,_imagesGet(card).filter(im=>im.k!==chave));
+    no.remove();
+    _imgRevoke(chave);
+    _tiraLimparSeVazia(cid);
+    return null;
   }
   no.classList.remove('salvando');
   return chave;
