@@ -6983,7 +6983,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.9';
+const VOX_VERSION='2026.09.06.10';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7033,6 +7033,16 @@ let I18N_EN={
 "Toque no ícone de Compartilhar (o quadrado com a seta) e depois em \"Adicionar à Tela de Início\".":"Tap the Share icon (the square with the arrow) and then \"Add to Home Screen\".",
 "🛡️ Este navegador prometeu guardar os dados do Vox — o risco de perda por falta de espaço é bem menor.":"🛡️ This browser promised to keep Vox's data — the risk of losing it to low storage is much lower.",
 "Este navegador ainda não prometeu guardar os dados do Vox — sob pouco espaço, ele pode apagar sozinho.":"This browser hasn't promised to keep Vox's data yet — under low storage, it may erase it on its own.",
+// ── ARMAZENAMENTO DURÁVEL — Etapa 2: lembrete de backup (06/09/2026) ──
+"Faz {n} dias desde o seu último backup":"It's been {n} days since your last backup",
+"Foram {n} notas novas desde então. Um arquivo agora leva tudo.":"There have been {n} new notes since then. One file now takes everything with it.",
+"Um arquivo agora leva tudo.":"One file now takes everything with it.",
+"{n} notas novas desde o último backup":"{n} new notes since your last backup",
+"Foi há {n} dias. Você andou gravando bastante — vale guardar uma cópia.":"That was {n} days ago. You've been recording a lot — worth saving a copy.",
+"Você ainda não tem nenhuma cópia do seu Vox":"You don't have a copy of your Vox yet",
+"Tudo o que está aqui existe só neste aparelho. Um arquivo resolve isso em dois segundos.":"Everything here only exists on this device. One file fixes that in two seconds.",
+"Salvar agora":"Save now",
+"Não lembrar mais":"Don't remind me again",
 // ── FOTOS NO CARD — PROPOSTA 1, "A TIRA" (Plano 18, 05/09/2026) ──
 "Ver foto {n} em tela cheia":"View photo {n} full screen",
 "Adicionar fotos":"Add photos",
@@ -8963,6 +8973,78 @@ function _voxMomentoDeConfianca(){
   }
   _voxTentarConvite();
 }
+// ── Etapa 2: o backup que lembra sozinho ──
+// Gatilho duplo (valores ajustáveis, não são número sagrado): dias desde o
+// último backup >= 7 OU notas novas desde o último backup >= 15. Nunca em
+// cima de uma gravação em andamento, nunca antes de a pessoa ter algo a
+// perder (reaproveita _contarNotas(), o mesmo contador da Etapa 1).
+const VOX_LEMBRETE_DIAS=7,VOX_LEMBRETE_NOTAS=15;
+function _voxDiasDesde(iso){
+  if(!iso)return Infinity;
+  const d=new Date(iso).getTime();
+  if(isNaN(d))return Infinity;
+  return(Date.now()-d)/86400000;
+}
+const VOX_LEMBRETE_TXT={
+  tempo:(dias,notas)=>({ic:'relogioAviso',
+    t:t('Faz {n} dias desde o seu último backup').replace('{n}',Math.floor(dias)),
+    p:notas>0?t('Foram {n} notas novas desde então. Um arquivo agora leva tudo.').replace('{n}',notas):t('Um arquivo agora leva tudo.')}),
+  volume:(dias,notas)=>({ic:'alerta',
+    t:t('{n} notas novas desde o último backup').replace('{n}',notas),
+    p:t('Foi há {n} dias. Você andou gravando bastante — vale guardar uma cópia.').replace('{n}',Math.floor(dias))}),
+  primeiro:()=>({ic:'escudo',
+    t:t('Você ainda não tem nenhuma cópia do seu Vox'),
+    p:t('Tudo o que está aqui existe só neste aparelho. Um arquivo resolve isso em dois segundos.')})
+};
+function _voxCheckLembreteBackup(){
+  if(isRec||isProc)return; // nunca em cima de uma gravação em andamento
+  if(localStorage.getItem('vox_lembrete_backup_off')==='1')return;
+  if(document.getElementById('voxConvite')?.style.display==='flex')return; // um cartão de cada vez
+  if(document.getElementById('voxLembrete')?.style.display==='flex')return; // já visível
+  const adiadoAte=+localStorage.getItem('vox_lembrete_adiado_ate')||0;
+  if(Date.now()<adiadoAte)return;
+  const ultimo=localStorage.getItem('vox_last_backup');
+  if(!ultimo){
+    if(_contarNotas()<3)return; // sem nada relevante a perder ainda
+    _voxMostrarLembrete('primeiro',Infinity,_contarNotas());
+    return;
+  }
+  const dias=_voxDiasDesde(ultimo),notasNovas=_contarNotas(ultimo);
+  if(dias>=VOX_LEMBRETE_DIAS){_voxMostrarLembrete('tempo',dias,notasNovas);return}
+  if(notasNovas>=VOX_LEMBRETE_NOTAS){_voxMostrarLembrete('volume',dias,notasNovas);return}
+}
+function _voxMostrarLembrete(tipo,dias,notas){
+  const el=document.getElementById('voxLembrete');
+  if(!el)return;
+  const c=(VOX_LEMBRETE_TXT[tipo]||VOX_LEMBRETE_TXT.tempo)(dias,notas);
+  el.innerHTML=`<span class="ic-b"><span class="svgi">${ICO[c.ic]||''}</span></span>`+
+    `<span class="txt"><b>${escHtml(c.t)}</b>${escHtml(c.p)}</span>`+
+    `<span class="lemb-bts">`+
+    `<button type="button" class="conv-p" onclick="_voxLembreteSalvar()">${escHtml(t('Salvar agora'))}</button>`+
+    `<button type="button" class="conv-s" onclick="_voxLembreteAdiar()">${escHtml(t('Agora não'))}</button>`+
+    `<button type="button" class="conv-s" onclick="_voxLembreteDesligar()">${escHtml(t('Não lembrar mais'))}</button>`+
+    `</span>`;
+  el.style.display='flex';
+  el.dataset.tipo=tipo;
+}
+async function _voxLembreteSalvar(){
+  await exportProject();
+  _voxFecharLembrete();
+}
+function _voxLembreteAdiar(){
+  // "Agora não" não é definitivo (isso é "Não lembrar mais") — adia por um
+  // dia; se a condição continuar valendo, volta a aparecer depois.
+  localStorage.setItem('vox_lembrete_adiado_ate',String(Date.now()+24*3600*1000));
+  _voxFecharLembrete();
+}
+function _voxLembreteDesligar(){
+  localStorage.setItem('vox_lembrete_backup_off','1');
+  _voxFecharLembrete();
+}
+function _voxFecharLembrete(){
+  const el=document.getElementById('voxLembrete');
+  if(el)el.style.display='none';
+}
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',async()=>{
@@ -8998,8 +9080,11 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // (Etapa 1 do plano de armazenamento durável, 06/09/2026) — o gatilho
   // agora é _voxMomentoDeConfianca(), chamado de dentro de saveHistory(),
   // porque o primeiro segundo do primeiro acesso é a hora de MENOR chance
-  // de o navegador dizer "sim" a um pedido de persistência.
+  // de o navegador dizer "sim" a um pedido de persistência. Chamado também
+  // aqui pra quem abre o app depois de dias sem usar (sem precisar salvar
+  // nada nesta sessão pra descobrir que já tinha 3+ notas).
   _voxMomentoDeConfianca();
+  _voxCheckLembreteBackup(); // Etapa 2: idem — checa assim que o app abre
   // Vídeo de abertura: primeira execução ou após reset de fábrica
   maybeAutoPlayIntro();
   const vintroVideo=document.getElementById('vintroVideo');
@@ -19969,6 +20054,7 @@ function saveHistory(){
   localStorage.setItem('vox_stats',JSON.stringify(stats));
   updateRecencyBadges();
   _voxMomentoDeConfianca(); // Etapa 1: dispara no momento em que a nota vira a 3ª (ou depois)
+  _voxCheckLembreteBackup(); // Etapa 2: backup que lembra sozinho
 }
 
 // ── PROJETO: SALVAR / CONTINUAR (backup portátil) ──
@@ -20025,6 +20111,10 @@ async function exportProject(){
   dl(JSON.stringify(data),`vox_projeto_${new Date().toISOString().slice(0,10)}.json`);
   toast(t('💾 Projeto salvo ({n} {itemword})! Guarde o arquivo .json no seu PC.').replace('{n}',history.length).replace('{itemword}',t(history.length===1?'item':'itens')));
   document.getElementById('expDrop')?.classList.remove('on');
+  // Etapa 2 do plano de armazenamento durável: todo backup gerado com
+  // sucesso (manual ou pelo lembrete) atualiza a data — é o que permite o
+  // lembrete saber quanto tempo faz e quantas notas novas existem desde então.
+  localStorage.setItem('vox_last_backup',new Date().toISOString());
 }
 function triggerImportProject(){document.getElementById('projInput').click()}
 function importProjectFile(e){
