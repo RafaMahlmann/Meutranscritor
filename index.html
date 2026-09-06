@@ -1286,6 +1286,104 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
   opacity:0;transition:opacity .22s linear .1s}
 .lb.abrindo .lb-cont{opacity:1}
 
+/* ═══════ TELA CHEIA: "TRAZER O TEXTO" (Plano 19, Etapa 3 · 06/09/2026) ═══════
+   Nomes de classe e desenho vêm do mockup aprovado (Proposta 1,
+   scratchpad/PROPOSTA_EXTRAIR_TEXTO_IMAGEM.html). O wrap existe só pra dar à
+   varredura (.scan) um retângulo do TAMANHO EXATO da foto renderizada — sem
+   ele o efeito cobriria o viewport inteiro, não a foto. O FLIP (abrirImgLb/
+   fecharImgLb/_lbDaMiniatura) passou a animar o wrap, não a <img> direto. */
+.lb-img-wrap{position:relative;display:inline-block;line-height:0}
+.lb-barra button.prim{color:#7ee2bd}
+.scan{position:absolute;inset:0;border-radius:14px;overflow:hidden;pointer-events:none;
+  opacity:0;transition:opacity .22s linear}
+.lb[data-fase="lendo"] .scan{opacity:1}
+.scan .veu{position:absolute;inset:0;background:rgba(6,20,16,.42)}
+.scan .banda{position:absolute;left:0;right:0;top:0;height:38%;will-change:transform;
+  background:linear-gradient(to bottom,rgba(16,185,129,0) 0%,rgba(16,185,129,.30) 55%,
+    rgba(126,226,189,.85) 96%,rgba(126,226,189,0) 100%);
+  transform:translateY(-100%)}
+.lb[data-fase="lendo"] .scan .banda{animation:ocrVarre 1.6s linear infinite}
+.scan .fio{position:absolute;left:6%;right:6%;height:2px;background:#7ee2bd;
+  box-shadow:0 0 12px rgba(126,226,189,.75);top:0;will-change:transform;transform:translateY(0)}
+.lb[data-fase="lendo"] .scan .fio{animation:scanFio 1.6s linear infinite}
+@keyframes scanFio{from{transform:translateY(0)}to{transform:translateY(260px)}}
+/* a barra some inteira enquanto baixa/lê/confere — sumir só os botões e
+   deixar a caixa vazia flutuando (bug já documentado no mockup) */
+.lb[data-fase="lendo"] .lb-barra,.lb[data-fase="pronto"] .lb-barra,
+.lb[data-fase="baixando"] .lb-barra{opacity:0;pointer-events:none}
+/* status "lendo" flutuante — mesma família visual da .lb-barra */
+.lb-status{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:none;
+  align-items:center;gap:10px;background:rgba(28,28,32,.94);border:1px solid rgba(255,255,255,.14);
+  border-radius:16px;padding:10px 12px 10px 14px;max-width:calc(100% - 20px);z-index:2}
+.lb[data-fase="lendo"] .lb-status{display:flex;animation:lbSobe .34s cubic-bezier(.22,1,.36,1) backwards}
+@keyframes lbSobe{from{opacity:0;transform:translateX(-50%) translateY(10px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.lb-status .txt{font-size:12.5px;font-weight:700;color:#e8e8ee}
+.lb-status .txt i{display:block;font-style:normal;font-weight:500;font-size:10.5px;color:#9a9aa6;
+  margin-top:1px}
+.lb .cancel{border:1px solid rgba(255,255,255,.18);background:none;color:#c9c9d2;
+  font-family:var(--font);font-size:11.5px;font-weight:700;height:32px;padding:0 11px;
+  border-radius:9px;cursor:pointer;transition:background .14s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+.lb .cancel:hover{background:rgba(255,255,255,.10)}
+.lb .cancel:active{transform:scale(.96)}
+.lb-motor .cancel{height:40px;padding:0 14px;font-size:12.5px}
+.pulso{width:9px;height:9px;border-radius:50%;background:#7ee2bd;flex:none;
+  animation:pulsa 1.25s ease-out infinite}
+@keyframes pulsa{0%{opacity:.35}45%{opacity:1}100%{opacity:.35}}
+/* folha de conferência — sobe do rodapé da TELA (não só da foto), com o
+   texto lido, editável antes de aceitar */
+.lb-folha{position:absolute;left:0;right:0;bottom:0;background:#1b1b20;
+  border-top:1px solid rgba(255,255,255,.14);border-radius:16px 16px 0 0;
+  padding:14px 15px 13px;transform:translateY(101%);opacity:0;
+  transition:transform .4s cubic-bezier(.22,1,.36,1),opacity .2s linear;max-height:88%;
+  display:flex;flex-direction:column;z-index:3;overflow:auto}
+.lb[data-fase="pronto"] .lb-folha{transform:translateY(0);opacity:1}
+.lb-folha .folha-topo{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+.lb-folha .folha-topo h4{margin:0;font-size:13px;color:#f0f0f4;display:flex;align-items:center;gap:7px}
+.lb-folha .folha-topo h4 .svgi{font-size:15px;color:#7ee2bd}
+.lb-folha .selo-ia{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  background:rgba(255,255,255,.09);color:#a9a9b6;border-radius:20px;padding:3px 8px;line-height:1}
+.lb-folha .folha-corpo{overflow:auto;font-size:12.8px;line-height:1.72;color:#e2e2e9;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:11px;
+  padding:11px 12px;white-space:pre-wrap;font-family:var(--font);width:100%;resize:none;
+  min-height:96px;max-height:40vh;outline:none;caret-color:#7ee2bd}
+.lb-folha .folha-corpo:focus{border-color:rgba(126,226,189,.55)}
+.lb-folha .folha-pe{display:flex;align-items:center;gap:8px;margin-top:11px;flex-wrap:wrap;
+  position:sticky;bottom:-13px;background:#1b1b20;padding:9px 0 13px;margin-bottom:-13px;
+  box-shadow:0 -10px 14px -6px #1b1b20}
+.lb-folha .aviso-ia{font-size:10.8px;color:#8c8c99;flex:1;min-width:150px;display:flex;
+  gap:6px;align-items:flex-start}
+.lb-folha .aviso-ia .svgi{font-size:13px;margin-top:1px;flex:none;color:#c9c9d2}
+.lb-folha .bt{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#e8e8ee;
+  font-family:var(--font);font-size:12.5px;font-weight:700;height:40px;padding:0 14px;
+  border-radius:11px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  transition:background .14s linear,transform .12s cubic-bezier(.22,1,.36,1)}
+.lb-folha .bt:hover{background:rgba(255,255,255,.13)}
+.lb-folha .bt:active{transform:scale(.965)}
+.lb-folha .bt .svgi{font-size:15px}
+.lb-folha .bt.ok{background:#10b981;border-color:#10b981;color:#06231a}
+.lb-folha .bt.ok:hover{background:#2ac795}
+/* painel do motor — o único com progresso determinístico (bytes reais) */
+.lb-motor{position:absolute;left:50%;bottom:26px;transform:translate(-50%,12px);opacity:0;
+  width:min(430px,calc(100% - 20px));background:#1b1b20;border:1px solid rgba(255,255,255,.14);
+  border-radius:16px;padding:14px 15px;z-index:4;pointer-events:none;
+  transition:transform .34s cubic-bezier(.22,1,.36,1),opacity .2s linear}
+.lb[data-fase="baixando"] .lb-motor{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.lb-motor h4{margin:0 0 5px;font-size:13.5px;color:#f0f0f4;display:flex;align-items:center;gap:8px}
+.lb-motor h4 .svgi{font-size:16px;color:#7ee2bd}
+.lb-motor p{margin:0 0 11px;font-size:12.4px;color:#b9b9c4;line-height:1.62}
+.lb-motor p b{color:#e8e8ee}
+.lb-motor .lin-pe{display:flex;align-items:center;gap:10px;margin-top:9px;flex-wrap:wrap}
+.lb-motor .num{font-size:11.5px;font-weight:700;color:#a9a9b6;
+  font-variant-numeric:tabular-nums;flex:1;min-width:130px}
+.lb-motor .por{font-size:10.8px;color:#83838f;margin:10px 0 0;line-height:1.5}
+.lb-motor .prog{display:block;height:7px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
+.lb-motor .prog i{display:block;height:100%;border-radius:4px;
+  background:linear-gradient(90deg,#10b981,#7ee2bd);
+  transform:scaleX(0);transform-origin:0 50%;will-change:transform;
+  transition:transform .28s linear}
+.lb-motor .prog.ligando i{animation:progRespira 1.1s ease-out infinite}
+
 /* ═══════════════ MURAL DO ÓRBITA — sinal A (Etapa 3): miniatura 34px ═══ */
 .mthumb{position:relative;width:34px;height:34px;border-radius:6px;overflow:hidden;flex:none;
   background:rgba(255,255,255,.06)}
@@ -6709,15 +6807,46 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 </div>
 
 <!-- ═══════ FOTOS: TELA CHEIA (Plano 18, Etapa 2 · 05/09/2026) ═══════ -->
-<div class="lb" id="imgLb" onclick="_lbFundoClique(event)">
+<div class="lb" id="imgLb" onclick="_lbFundoClique(event)" data-fase="idle">
   <div class="lb-fundo"></div>
   <div class="lb-cont" id="lbCont"></div>
   <button type="button" class="lb-fechar" onclick="fecharImgLb()" aria-label="Fechar"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span></button>
-  <img class="lb-img" id="lbImg" alt="">
+  <div class="lb-img-wrap" id="lbImgWrap">
+    <img class="lb-img" id="lbImg" alt="">
+    <div class="scan"><div class="veu"></div><div class="banda"></div><div class="fio"></div></div>
+  </div>
+  <div class="lb-status" id="lbStatus" onclick="event.stopPropagation()">
+    <span class="pulso"></span>
+    <span class="txt"><span data-i18n>Lendo a foto…</span><i data-i18n>aqui no seu aparelho · nada sai daqui</i></span>
+    <button type="button" class="cancel" onclick="_lbOcrCancelar()" data-i18n>Cancelar</button>
+  </div>
   <div class="lb-barra" onclick="event.stopPropagation()">
     <button type="button" onclick="_lbBaixar()"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span><span data-i18n>Baixar</span></button>
+    <button type="button" class="prim" onclick="_lbTrazerTexto()"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="13" height="13" rx="2"/><path d="M3 12.5 6.5 9l4 4"/><circle cx="7.5" cy="7" r="1.2"/><line x1="10" y1="20" x2="21" y2="20"/><line x1="14" y1="16" x2="21" y2="16"/></svg></span><span data-i18n>Trazer o texto</span></button>
     <span class="sep"></span>
     <button type="button" class="del" onclick="_lbExcluir()"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span data-i18n>Excluir</span></button>
+  </div>
+  <div class="lb-folha" id="lbFolha" onclick="event.stopPropagation()">
+    <div class="folha-topo">
+      <h4><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="13" height="13" rx="2"/><path d="M3 12.5 6.5 9l4 4"/><circle cx="7.5" cy="7" r="1.2"/><line x1="10" y1="20" x2="21" y2="20"/><line x1="14" y1="16" x2="21" y2="16"/></svg></span><span data-i18n>Texto encontrado na foto</span></h4>
+      <span class="selo-ia" data-i18n>lido aqui no aparelho</span>
+    </div>
+    <textarea class="folha-corpo" id="lbFolhaTxt" spellcheck="false"></textarea>
+    <div class="folha-pe">
+      <span class="aviso-ia"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span data-i18n>Confira antes de aceitar — leitura de foto sempre erra alguma letra.</span></span>
+      <button type="button" class="bt" onclick="_lbFolhaCopiar(this)"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span><span data-i18n>Copiar</span></button>
+      <button type="button" class="bt ok" onclick="_lbFolhaAceitar()"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span data-i18n>Colocar no card</span></button>
+    </div>
+  </div>
+  <div class="lb-motor" id="lbMotor" onclick="event.stopPropagation()">
+    <h4><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span><span data-i18n>Preparando a leitura de texto</span></h4>
+    <p data-i18n-html>Só desta vez: o Vox está buscando o leitor de texto — <b>6,8 MB</b>. Depois disso ele fica guardado no aparelho e a leitura passa a ser <b>instantânea de começar, de graça e sem internet</b>.</p>
+    <div class="prog" id="lbMotorProg"><i></i></div>
+    <div class="lin-pe">
+      <span class="num" id="lbMotorNum">0,0 MB de 6,8 MB</span>
+      <button type="button" class="cancel" onclick="_lbOcrCancelar()" data-i18n>Cancelar</button>
+    </div>
+    <p class="por" data-i18n>Sua foto não foi a lugar nenhum — o que está descendo é o programa que lê, não a imagem.</p>
   </div>
 </div>
 
@@ -6762,7 +6891,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.2';
+const VOX_VERSION='2026.09.06.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6826,6 +6955,16 @@ let I18N_EN={
 "Ler de novo":"Read again",
 "Juntar à transcrição":"Add to transcript",
 "✅ Texto juntado à transcrição":"✅ Text added to the transcript",
+// ── TEXTO DA FOTO: botão na tela cheia (Plano 19, Etapa 3, 06/09/2026) ──
+"Trazer o texto":"Bring in the text",
+"Lendo a foto…":"Reading the photo…",
+"aqui no seu aparelho · nada sai daqui":"right on your device · nothing leaves here",
+"Texto encontrado na foto":"Text found in the photo",
+"Confira antes de aceitar — leitura de foto sempre erra alguma letra.":"Double-check before accepting — reading a photo always misses a letter here and there.",
+"Colocar no card":"Put it in the card",
+"Preparando a leitura de texto":"Getting the text reader ready",
+"Só desta vez: o Vox está buscando o leitor de texto — <b>6,8 MB</b>. Depois disso ele fica guardado no aparelho e a leitura passa a ser <b>instantânea de começar, de graça e sem internet</b>.":"Just this once: Vox is fetching the text reader — <b>6.8 MB</b>. After that it stays saved on your device, and reading becomes <b>instant to start, free, and offline</b>.",
+"Sua foto não foi a lugar nenhum — o que está descendo é o programa que lê, não a imagem.":"Your photo didn't go anywhere — what's downloading is the reader program, not the image.",
 // ── TRANSCRIÇÃO LONGA: NOVA TENTATIVA E TRABALHO PARCIAL SALVO (04/09/2026) ──
 "⏳ Conexão instável — tentando de novo em {s}s…":"⏳ Unstable connection — retrying in {s}s…",
 "Falha de conexão — verifique sua internet e tente de novo.":"Connection failed — check your internet and try again.",
@@ -21491,21 +21630,23 @@ function _lbImagens(cid){
 async function abrirImgLb(cid,idx,origem){
   const imgs=_lbImagens(cid);
   const im=imgs[idx];if(!im)return;
-  const lb=document.getElementById('imgLb'),lbImg=document.getElementById('lbImg'),lbCont=document.getElementById('lbCont');
+  const lb=document.getElementById('imgLb'),lbImg=document.getElementById('lbImg'),lbCont=document.getElementById('lbCont'),lbWrap=document.getElementById('lbImgWrap');
   if(!lb||!lbImg)return;
   let url;
   try{url=await imgUrl(im.k)}catch(e){url=null}
   if(!url){toast(t('⚠️ Não foi possível abrir esta foto'),true);return}
   _lbCid=cid;_lbIdx=idx;_lbDeQuem=origem||null;
+  _lbOcrToken++; // qualquer leitura de uma foto anterior fica invalidada
+  lb.dataset.fase='idle';
   lbCont.textContent=t('{a} de {b}').replace('{a}',idx+1).replace('{b}',imgs.length);
   lbImg.src=url;
   lb.classList.add('on');
   requestAnimationFrame(()=>{
-    lbImg.style.transition='none';
-    lbImg.style.transform=_lbDaMiniatura(_lbDeQuem);
+    lbWrap.style.transition='none';
+    lbWrap.style.transform=_lbDaMiniatura(_lbDeQuem);
     requestAnimationFrame(()=>{
-      lbImg.style.transition='transform .38s cubic-bezier(.22,1,.36,1)';
-      lbImg.style.transform='none';
+      lbWrap.style.transition='transform .38s cubic-bezier(.22,1,.36,1)';
+      lbWrap.style.transform='none';
       lb.classList.add('abrindo');
     });
   });
@@ -21513,11 +21654,13 @@ async function abrirImgLb(cid,idx,origem){
 // Escala ÚNICA (Math.max, não X/Y separado) — a miniatura é quadrada e
 // recortada, a foto aberta não é: escalar os eixos por fatores diferentes
 // faz a imagem nascer achatada e "desamassar" durante o voo (bug documentado
-// e corrigido no mockup aprovado).
+// e corrigido no mockup aprovado). Mede o WRAP, não a <img> direto (Etapa 3):
+// o wrap é quem leva o transform agora, porque precisa ficar do tamanho
+// exato da foto pra varredura (.scan) não vazar pelo viewport inteiro.
 function _lbDaMiniatura(botao){
-  const lbImg=document.getElementById('lbImg');
+  const lbWrap=document.getElementById('lbImgWrap');
   if(!botao||!document.contains(botao))return'none';
-  const de=botao.getBoundingClientRect(),para=lbImg.getBoundingClientRect();
+  const de=botao.getBoundingClientRect(),para=lbWrap.getBoundingClientRect();
   if(!para.width||!para.height)return'none';
   const s=Math.max(de.width/para.width,de.height/para.height);
   const dx=(de.left+de.width/2)-(para.left+para.width/2);
@@ -21526,13 +21669,15 @@ function _lbDaMiniatura(botao){
 }
 function fecharImgLb(){
   const lb=document.getElementById('imgLb');if(!lb||!lb.classList.contains('on'))return;
-  const lbImg=document.getElementById('lbImg');
+  const lbImg=document.getElementById('lbImg'),lbWrap=document.getElementById('lbImgWrap');
+  _lbOcrToken++; // cancela qualquer leitura em curso desta foto
+  lb.dataset.fase='idle';
   lb.classList.remove('abrindo');
   if(_lbDeQuem&&document.contains(_lbDeQuem)){
-    lbImg.style.transition='transform .32s cubic-bezier(.22,1,.36,1)';
-    lbImg.style.transform=_lbDaMiniatura(_lbDeQuem);
+    lbWrap.style.transition='transform .32s cubic-bezier(.22,1,.36,1)';
+    lbWrap.style.transform=_lbDaMiniatura(_lbDeQuem);
   }
-  setTimeout(()=>{lb.classList.remove('on');lbImg.style.transition='none';lbImg.style.transform='none';lbImg.src=''},330);
+  setTimeout(()=>{lb.classList.remove('on');lbWrap.style.transition='none';lbWrap.style.transform='none';lbImg.src=''},330);
 }
 function _lbFundoClique(e){
   if(e.target.closest('.lb-img'))return;
@@ -21573,6 +21718,94 @@ function _lbExcluir(){
   saveHistory();
   if(typeof _orbMuralAberto!=='undefined'&&_orbMuralAberto)_orbMuralAtualizar();
   fecharImgLb();
+}
+
+// ══════════ TEXTO DA FOTO: botão na tela cheia (Plano 19, Etapa 3 · 06/09/2026) ══════════
+// Mesmo motor/leitura da Etapa 2 (_ocrGarantirMotor/_ocrLerImagem/
+// _ocrSalvarTexto) — só o gatilho e o destino visual mudam (varredura sobre a
+// própria foto + folha de conferência, em vez do selo + bloco no card).
+// O token invalida uma leitura que ficou pra trás (fechou a tela ou trocou de
+// foto no meio) — sem ele, uma resposta atrasada podia pintar a folha por
+// cima de OUTRA foto que a pessoa já tivesse aberto depois.
+let _lbOcrToken=0;
+async function _lbTrazerTexto(){
+  const cid=_lbCid,idx=_lbIdx;
+  const card=document.getElementById(cid);if(!card)return;
+  const imgs=_imagesGet(card);const im=imgs[idx];if(!im)return;
+  const lb=document.getElementById('imgLb');if(!lb)return;
+  const meuToken=++_lbOcrToken;
+  const salvo=_txtImgGet(card)[im.k];
+  if(salvo&&salvo.texto){_lbMostrarFolha(salvo.texto);return}
+  lb.dataset.fase='lendo';
+  try{
+    await _ocrGarantirMotor((baixado,total,fase)=>{
+      if(meuToken!==_lbOcrToken)return;
+      lb.dataset.fase='baixando';
+      _lbPintarDownload(baixado,total,fase);
+    });
+    if(meuToken!==_lbOcrToken)return;
+    lb.dataset.fase='lendo';
+    const blob=await imgCarregar(im.k);
+    if(!blob)throw new Error(t('Não encontrei esta foto'));
+    const texto=await _ocrLerImagem(blob);
+    if(meuToken!==_lbOcrToken)return;
+    _ocrSalvarTexto(cid,im.k,texto);
+    _lbMostrarFolha(texto);
+  }catch(e){
+    if(meuToken!==_lbOcrToken)return;
+    lb.dataset.fase='idle';
+    toast('❌ '+((e&&e.message)||t('Não consegui ler o texto desta foto')),true);
+  }
+}
+function _lbPintarDownload(baixado,total,fase){
+  const painel=document.getElementById('lbMotor');if(!painel)return;
+  const fill=painel.querySelector('.prog i'),prog=painel.querySelector('.prog'),num=document.getElementById('lbMotorNum');
+  const p=total?baixado/total:0;
+  fill.style.transform='scaleX('+p.toFixed(3)+')';
+  prog.classList.toggle('ligando',fase==='ligando');
+  num.textContent=fase==='baixando'
+    ?t('{a} de {b}').replace('{a}',_ocrFmtMB(baixado)+' MB').replace('{b}',_ocrFmtMB(OCR_BYTES_TOTAL)+' MB')
+    :t('Baixado. Ligando o motor…');
+}
+function _lbMostrarFolha(texto){
+  const ta=document.getElementById('lbFolhaTxt');if(ta)ta.value=texto;
+  const lb=document.getElementById('imgLb');if(lb)lb.dataset.fase='pronto';
+}
+// Cancelar vale nas duas fases (baixando o motor ou lendo a foto) — o botão
+// muda de posição na tela, mas a ação é a mesma: desiste, sem nada pela metade.
+function _lbOcrCancelar(){
+  _lbOcrToken++;
+  const lb=document.getElementById('imgLb');if(lb)lb.dataset.fase='idle';
+}
+function _lbFolhaCopiar(btn){
+  const texto=document.getElementById('lbFolhaTxt')?.value||'';
+  if(!texto)return;
+  navigator.clipboard?.writeText(texto).then(()=>{
+    const antes=btn.innerHTML;
+    btn.innerHTML=`<span class="svgi">${ICO.check}</span><span>${escHtml(t('Copiado!'))}</span>`;
+    setTimeout(()=>{btn.innerHTML=antes},1400);
+  }).catch(()=>toast(t('❌ Não consegui copiar. Seu navegador bloqueou a área de transferência.'),true));
+}
+// "Colocar no card" — igual "Juntar à transcrição" da Etapa 2 (fim da
+// textarea, linha em branco antes), só que a folha fecha de volta pra foto
+// aberta, não pro card (a pessoa ainda está na tela cheia).
+function _lbFolhaAceitar(){
+  const cid=_lbCid,idx=_lbIdx;
+  const card=document.getElementById(cid);if(!card)return;
+  const imgs=_imagesGet(card);const im=imgs[idx];if(!im)return;
+  const texto=document.getElementById('lbFolhaTxt')?.value||'';
+  const obj=_txtImgGet(card);
+  obj[im.k]={texto,juntou:true};
+  _txtImgSet(card,obj);
+  const ta=card.querySelector('.cb textarea');
+  if(ta){
+    const antes=ta.value;
+    ta.value=(antes?antes.replace(/\s+$/,'')+'\n\n':'')+texto;
+    autoR(ta);updateFooter(cid);
+  }
+  saveHistory();
+  const lb=document.getElementById('imgLb');if(lb)lb.dataset.fase='idle';
+  toast(t('✅ Texto juntado à transcrição'));
 }
 
 // ── VU METER ──
