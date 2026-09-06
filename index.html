@@ -1250,6 +1250,12 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 @keyframes progRespira{0%{opacity:.55}45%{opacity:1}100%{opacity:.55}}
 .aviso-c .num{font-size:11px;font-weight:700;color:var(--text3);margin-top:7px;display:block;
   font-variant-numeric:tabular-nums}
+.aviso-c .pe{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+/* Cancelar do painel do motor é alvo de dedo de verdade: a espera do
+   download é a mais longa das duas (a outra é a leitura em si) e por isso a
+   chance de desistir é maior — 40px, não os 34px do .bt-s comum (mockup
+   aprovado, medido). */
+.aviso-c.motor-c .bt-s{height:40px}
 
 /* ═══════════════ TELA CHEIA DA FOTO (Etapa 2, FLIP a partir da miniatura) */
 .lb{position:fixed;inset:0;z-index:900;display:none;place-items:center}
@@ -6891,7 +6897,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.3';
+const VOX_VERSION='2026.09.06.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -21346,6 +21352,15 @@ function _ocrSalvarTexto(cid,chave,texto){
   _txtImgSet(card,obj);
   saveHistory();
 }
+// Token por card (Etapa 4): cancelar durante o download não aborta o fetch
+// em si (ele é compartilhado — _ocrGarantirMotor é uma promessa única pro
+// aparelho inteiro — deixá-lo terminar sozinho aproveita o que já baixou pra
+// próxima vez), só faz a UI parar de reagir a ele e voltar ao repouso.
+const _ocrCardTokens={};
+function _ocrCardCancelar(cid){
+  _ocrCardTokens[cid]=(_ocrCardTokens[cid]||0)+1;
+  _ocrLimparDownloadNoCard(cid);
+}
 // O fluxo inteiro de uma leitura: garante o motor (baixa se for a 1ª vez,
 // pintando o aviso verde no lugar onde o texto vai nascer), lê, guarda,
 // mostra. btn pode ser null (ex.: "Ler de novo" a partir do próprio bloco,
@@ -21353,24 +21368,33 @@ function _ocrSalvarTexto(cid,chave,texto){
 async function _ocrLerParaCard(cid,chave,btn){
   const card=document.getElementById(cid);if(!card)return;
   const thumb=card.querySelector('.thumb[data-k="'+CSS.escape(chave)+'"]');
+  const meuToken=(_ocrCardTokens[cid]=(_ocrCardTokens[cid]||0)+1);
+  const cancelou=()=>_ocrCardTokens[cid]!==meuToken;
   _ocrEstadoLendoNoThumb(thumb,btn,true);
   try{
-    await _ocrGarantirMotor((baixado,total,fase)=>_ocrPintarDownloadNoCard(cid,baixado,total,fase));
+    await _ocrGarantirMotor((baixado,total,fase)=>{
+      if(cancelou())return;
+      _ocrPintarDownloadNoCard(cid,baixado,total,fase);
+    });
+    if(cancelou())return;
     const blob=await imgCarregar(chave);
     if(!blob)throw new Error(t('Não encontrei esta foto'));
     const texto=await _ocrLerImagem(blob);
+    if(cancelou())return;
     _ocrSalvarTexto(cid,chave,texto);
     _blocoTxtMostrar(cid,chave,texto);
   }catch(e){
+    if(cancelou())return;
     _ocrLimparDownloadNoCard(cid);
     toast('❌ '+((e&&e.message)||t('Não consegui ler o texto desta foto')),true);
   }finally{
-    _ocrEstadoLendoNoThumb(thumb,btn,false);
+    if(!cancelou())_ocrEstadoLendoNoThumb(thumb,btn,false);
   }
 }
 // Painel "baixando o motor" (Etapa 4, só na 1ª vez do aparelho) — nasce no
 // mesmo lugar onde o texto vai aparecer: o download não é um desvio, é o
-// começo da mesma coisa.
+// começo da mesma coisa. Cancelar de verdade, alvo de dedo confortável
+// (.aviso-c.motor-c .bt-s sobe pra 40px — CSS).
 function _ocrPintarDownloadNoCard(cid,baixado,total,fase){
   const slot=_blocoTxtGarantir(cid);if(!slot)return;
   let painel=slot.querySelector('.aviso-c.motor-c');
@@ -21378,7 +21402,9 @@ function _ocrPintarDownloadNoCard(cid,baixado,total,fase){
     slot.innerHTML=`<div class="aviso-c motor-c"><span class="svgi">${ICO.download}</span>
       <span><b>${escHtml(t('Preparando a leitura de texto — só desta vez.'))}</b> `+
       escHtml(t('São 6,8 MB do leitor que vai ficar guardado no seu aparelho. Depois disso, ler qualquer foto é instantâneo de começar, de graça e sem internet.'))+
-      `<span class="prog"><i></i></span><span class="num"></span></span></div>`;
+      `<span class="prog"><i></i></span><span class="num"></span>`+
+      `<span class="pe"><button type="button" class="bt-s" onclick="_ocrCardCancelar('${escJs(cid)}')">${escHtml(t('Cancelar'))}</button></span>`+
+      `</span></div>`;
     painel=slot.querySelector('.aviso-c.motor-c');
   }
   const fill=painel.querySelector('.prog i'),prog=painel.querySelector('.prog'),num=painel.querySelector('.num');
