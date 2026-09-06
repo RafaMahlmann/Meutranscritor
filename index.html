@@ -1256,6 +1256,25 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
    chance de desistir é maior — 40px, não os 34px do .bt-s comum (mockup
    aprovado, medido). */
 .aviso-c.motor-c .bt-s{height:40px}
+/* cinza tracejado: o polimento (Organizar com IA) falhou, mas a função
+   inteira continua de pé — texto cru já aceito, então o peso visual é bem
+   mais fraco que o do painel de download. */
+.aviso-c.brando{background:var(--bg-input);border:1px dashed var(--border2);font-size:11.6px}
+.aviso-c.brando .svgi{color:var(--text3);font-size:15px}
+
+/* ═══ ORGANIZAR COM IA (Plano 19, Etapa 5) — opcional, nunca obrigatório ═══ */
+.bloco-txt .formatos{display:inline-flex;gap:2px;background:var(--bg-card);
+  border:1px solid var(--border2);border-radius:9px;padding:2px}
+.bloco-txt .formatos button{border:none;background:none;font-family:var(--font);font-size:10.5px;
+  font-weight:700;color:var(--text3);padding:4px 8px;border-radius:7px;cursor:pointer;
+  transition:color .14s linear,background .18s cubic-bezier(.22,1,.36,1)}
+.bloco-txt .formatos button.on{background:var(--bg-input);color:var(--text)}
+.bt-s.ia{border-color:color-mix(in srgb,var(--accent) 40%,transparent);color:var(--accent2)}
+[data-theme="dark"] .bt-s.ia{color:var(--accent)}
+.bt-s.ia:hover{background:var(--accent-glow);color:var(--accent2)}
+[data-theme="dark"] .bt-s.ia:hover{color:var(--accent)}
+.bt-s .aro{width:12px;height:12px;border-radius:50%;border:2px solid var(--accent-glow);
+  border-top-color:var(--accent);animation:seloTxtGira .8s linear infinite;flex:none}
 
 /* ═══════════════ TELA CHEIA DA FOTO (Etapa 2, FLIP a partir da miniatura) */
 .lb{position:fixed;inset:0;z-index:900;display:none;place-items:center}
@@ -1369,6 +1388,31 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 .lb-folha .bt .svgi{font-size:15px}
 .lb-folha .bt.ok{background:#10b981;border-color:#10b981;color:#06231a}
 .lb-folha .bt.ok:hover{background:#2ac795}
+/* ═══ ORGANIZAR COM IA na tela cheia (Plano 19, Etapa 5) — mesma ideia do
+   card, versão escura. O seletor NÃO nasce com a folha: só existe depois que
+   a IA responde (senão prometeria duas abas e entregaria uma). */
+.lb-folha .formatos{display:none;gap:4px;background:rgba(255,255,255,.07);border-radius:11px;
+  padding:3px;flex-wrap:wrap}
+.lb-folha .formatos.on{display:flex}
+.lb-folha .formatos button{border:none;background:none;font-family:var(--font);font-size:11.5px;
+  font-weight:700;color:#9a9aa6;padding:6px 10px;border-radius:8px;cursor:pointer;
+  transition:color .14s linear,background .18s cubic-bezier(.22,1,.36,1)}
+.lb-folha .formatos button.on{background:rgba(255,255,255,.13);color:#f0f0f4}
+.lb-folha .etapa2{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.lb-folha .etapa2:empty{display:none;margin-top:0}
+.lb-folha .etapa2 .nota2{font-size:11px;color:#83838f;flex:1;min-width:140px;line-height:1.45}
+.lb-folha .bt.ia{border-color:rgba(126,226,189,.34);color:#9fe9cb}
+.lb-folha .bt.ia:hover{background:rgba(126,226,189,.12)}
+.lb-folha .bt .aro{width:14px;height:14px;border-radius:50%;border:2px solid rgba(126,226,189,.28);
+  border-top-color:#7ee2bd;animation:seloTxtGira .8s linear infinite;flex:none}
+.lb-folha .falhou-ia{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding:9px 11px;
+  border-radius:11px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.15);
+  font-size:11.6px;color:#a9a9b6;line-height:1.5;width:100%}
+.lb-folha .falhou-ia .svgi{font-size:14px;color:#8c8c99;margin-top:1px;flex:none}
+.lb-folha .falhou-ia b{color:#dcdce4}
+.lb-folha .falhou-ia .re{margin-left:auto;border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.07);color:#e8e8ee;font-family:var(--font);font-size:11.5px;
+  font-weight:700;height:30px;padding:0 10px;border-radius:8px;cursor:pointer;flex:none}
 /* painel do motor — o único com progresso determinístico (bytes reais) */
 .lb-motor{position:absolute;left:50%;bottom:26px;transform:translate(-50%,12px);opacity:0;
   width:min(430px,calc(100% - 20px));background:#1b1b20;border:1px solid rgba(255,255,255,.14);
@@ -6836,8 +6880,10 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
     <div class="folha-topo">
       <h4><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="13" height="13" rx="2"/><path d="M3 12.5 6.5 9l4 4"/><circle cx="7.5" cy="7" r="1.2"/><line x1="10" y1="20" x2="21" y2="20"/><line x1="14" y1="16" x2="21" y2="16"/></svg></span><span data-i18n>Texto encontrado na foto</span></h4>
       <span class="selo-ia" data-i18n>lido aqui no aparelho</span>
+      <span class="formatos" id="lbFormatos"></span>
     </div>
     <textarea class="folha-corpo" id="lbFolhaTxt" spellcheck="false"></textarea>
+    <div class="etapa2" id="lbEtapa2"></div>
     <div class="folha-pe">
       <span class="aviso-ia"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span data-i18n>Confira antes de aceitar — leitura de foto sempre erra alguma letra.</span></span>
       <button type="button" class="bt" onclick="_lbFolhaCopiar(this)"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span><span data-i18n>Copiar</span></button>
@@ -6897,7 +6943,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.4';
+const VOX_VERSION='2026.09.06.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6971,6 +7017,16 @@ let I18N_EN={
 "Preparando a leitura de texto":"Getting the text reader ready",
 "Só desta vez: o Vox está buscando o leitor de texto — <b>6,8 MB</b>. Depois disso ele fica guardado no aparelho e a leitura passa a ser <b>instantânea de começar, de graça e sem internet</b>.":"Just this once: Vox is fetching the text reader — <b>6.8 MB</b>. After that it stays saved on your device, and reading becomes <b>instant to start, free, and offline</b>.",
 "Sua foto não foi a lugar nenhum — o que está descendo é o programa que lê, não a imagem.":"Your photo didn't go anywhere — what's downloading is the reader program, not the image.",
+// ── TEXTO DA FOTO: Organizar com IA (Plano 19, Etapa 5, opcional, 06/09/2026) ──
+"Como está na foto":"As it is in the photo",
+"Arrumado":"Cleaned up",
+"Organizar com IA":"Organize with AI",
+"Organizando…":"Organizing…",
+"Não consegui organizar agora.":"I couldn't organize it right now.",
+"Sua IA não respondeu. O texto lido continua aí em cima, inteiro — dá pra aceitar assim mesmo.":"Your AI didn't respond. The text that was read is still up there, complete — you can go ahead and accept it as is.",
+"Tentar":"Try",
+"Opcional. Manda só o texto lido pra sua IA — a foto não vai.":"Optional. Sends only the text that was read to your AI — the photo doesn't go.",
+"Nenhuma IA de texto configurada":"No text AI configured",
 // ── TRANSCRIÇÃO LONGA: NOVA TENTATIVA E TRABALHO PARCIAL SALVO (04/09/2026) ──
 "⏳ Conexão instável — tentando de novo em {s}s…":"⏳ Unstable connection — retrying in {s}s…",
 "Falha de conexão — verifique sua internet e tente de novo.":"Connection failed — check your internet and try again.",
@@ -21326,9 +21382,28 @@ function _ocrChecarSelo(imgEl,cid,chave,forcar){
 function _ocrTocarSelo(cid,chave,btn){
   const card=document.getElementById(cid);if(!card)return;
   const salvo=_txtImgGet(card)[chave];
-  if(salvo&&salvo.texto){_blocoTxtMostrar(cid,chave,salvo.texto);return}
+  if(salvo&&salvo.texto){_blocoTxtMostrar(cid,chave);return}
   _ocrLerParaCard(cid,chave,btn);
 }
+// ══════ ORGANIZAR COM IA (Plano 19, Etapa 5 · 06/09/2026 — opcional) ══════
+// Manda só o TEXTO que o OCR já leu — nunca a imagem (callAI não muda).
+// Compartilhado pelas duas telas que mostram texto de foto (bloco no card e
+// folha da tela cheia). Cada uma guarda seu próprio estado transitório de
+// aba/carregando/falhou — só o resultado (arrumado) é persistido, em
+// dataset.textosImagem junto do texto cru.
+function _ocrPromptOrganizar(texto){
+  return 'Organize o texto abaixo, que veio de uma leitura automática de uma foto, em formato limpo e legível. Não invente informação que não está no texto. Texto: '+texto;
+}
+async function _ocrOrganizarTexto(texto){
+  const tgt=_txtAITargets('auto')[0];
+  if(!tgt)throw new Error(t('Nenhuma IA de texto configurada'));
+  return(await callAI(_ocrPromptOrganizar(texto),tgt.key,'auto',1400)).trim();
+}
+// Estado transitório por foto (aba escolhida / organizando / falhou) — não
+// precisa persistir: se a pessoa fechar e reabrir, volta pra "como está na
+// foto", que é sempre o que existe de verdade.
+const _ocrIaEstado={};
+function _ocrIaChave(cid,chave){return cid+'|'+chave}
 // Liga/desliga o estado visual de "lendo" no par miniatura+selo.
 function _ocrEstadoLendoNoThumb(thumb,btn,ligado){
   if(thumb){
@@ -21382,7 +21457,7 @@ async function _ocrLerParaCard(cid,chave,btn){
     const texto=await _ocrLerImagem(blob);
     if(cancelou())return;
     _ocrSalvarTexto(cid,chave,texto);
-    _blocoTxtMostrar(cid,chave,texto);
+    _blocoTxtMostrar(cid,chave);
   }catch(e){
     if(cancelou())return;
     _ocrLimparDownloadNoCard(cid);
@@ -21432,29 +21507,80 @@ function _blocoTxtGarantir(cid){
   cb.parentNode.insertBefore(slot,cb.nextSibling);
   return slot;
 }
-function _blocoTxtMostrar(cid,chave,texto){
+// Lê o texto ATUALMENTE exibido (cru ou arrumado, conforme a aba escolhida)
+// — Copiar/Juntar sempre agem sobre o que está na tela, nunca escondido.
+function _blocoTxtTextoAtivo(cid,chave){
+  const card=document.getElementById(cid);if(!card)return'';
+  const item=_txtImgGet(card)[chave];if(!item)return'';
+  const st=_ocrIaEstado[_ocrIaChave(cid,chave)];
+  return(st&&st.aba==='arrumado'&&item.arrumado)?item.arrumado:(item.texto||'');
+}
+function _blocoTxtMostrar(cid,chave){
   const slot=_blocoTxtGarantir(cid);if(!slot)return;
+  const card=document.getElementById(cid);if(!card)return;
+  const item=_txtImgGet(card)[chave];if(!item)return;
+  const k=_ocrIaChave(cid,chave);
+  const st=_ocrIaEstado[k]||{aba:'cru'};
+  const temArr=!!item.arrumado;
+  const aba=temArr?(st.aba||'cru'):'cru';
+  const corpo=aba==='arrumado'?item.arrumado:item.texto;
+  const podeIA=!temArr&&!st.carregando&&_txtAITargets('auto').length>0;
   slot.innerHTML=`<div class="bloco-txt">
     <div class="bt-topo"><span class="svgi">${ICO.textoFoto}</span><b>${escHtml(t('Texto da foto'))}</b>
       <span class="de">${escHtml(t('lido aqui no aparelho'))}</span>
+      ${temArr?`<span class="formatos">
+        <button type="button" class="${aba==='cru'?'on':''}" onclick="_blocoTxtAba('${escJs(cid)}','${escJs(chave)}','cru')">${escHtml(t('Como está na foto'))}</button>
+        <button type="button" class="${aba==='arrumado'?'on':''}" onclick="_blocoTxtAba('${escJs(cid)}','${escJs(chave)}','arrumado')">${escHtml(t('Arrumado'))}</button>
+      </span>`:''}
       <span class="esq">
         <button type="button" class="icon-btn" title="${escHtml(t('Ler de novo'))}" onclick="_ocrLerParaCard('${escJs(cid)}','${escJs(chave)}',null)"><span class="svgi">${ICO.refreshCw}</span></button>
         <button type="button" class="icon-btn" title="${escHtml(t('Fechar'))}" onclick="_blocoTxtFechar('${escJs(cid)}')"><span class="svgi">${ICO.close}</span></button>
       </span>
     </div>
-    <div class="corpo">${escHtml(texto)}</div>
+    <div class="corpo">${escHtml(corpo)}</div>
+    ${st.falhou?`<div class="aviso-c brando" style="margin:0 11px 10px"><span class="svgi">${ICO.info}</span><span><b>${escHtml(t('Não consegui organizar agora.'))}</b> ${escHtml(t('Sua IA não respondeu. O texto lido continua aí em cima, inteiro — dá pra aceitar assim mesmo.'))}</span></div>`:''}
     <div class="acoes">
       <button type="button" class="bt-s ok" onclick="_blocoTxtJuntar('${escJs(cid)}','${escJs(chave)}')"><span class="svgi">${ICO.check}</span>${escHtml(t('Juntar à transcrição'))}</button>
       <button type="button" class="bt-s" onclick="_blocoTxtCopiar(this,'${escJs(cid)}','${escJs(chave)}')"><span class="svgi">${ICO.copy}</span>${escHtml(t('Copiar'))}</button>
+      ${st.carregando?`<button type="button" class="bt-s ia" disabled style="opacity:.65"><span class="aro"></span>${escHtml(t('Organizando…'))}</button>`
+        :st.falhou?`<button type="button" class="bt-s" onclick="_blocoTxtOrganizar('${escJs(cid)}','${escJs(chave)}')"><span class="svgi">${ICO.refreshCw}</span>${escHtml(t('Tentar'))}</button>`
+        :podeIA?`<button type="button" class="bt-s ia" onclick="_blocoTxtOrganizar('${escJs(cid)}','${escJs(chave)}')"><span class="svgi">${ICO.sparkles}</span>${escHtml(t('Organizar com IA'))}</button>`:''}
     </div>
   </div>`;
 }
 function _blocoTxtFechar(cid){
   const slot=document.getElementById('blocotxt-'+cid);if(slot)slot.remove();
 }
-function _blocoTxtCopiar(btn,cid,chave){
+function _blocoTxtAba(cid,chave,aba){
+  const k=_ocrIaChave(cid,chave);
+  _ocrIaEstado[k]={...(_ocrIaEstado[k]||{}),aba};
+  _blocoTxtMostrar(cid,chave);
+}
+// Botão "Organizar com IA" só existe se _txtAITargets('auto') tiver alguma
+// IA configurada (checado em _blocoTxtMostrar) — sem cadeado, sem aviso, sem
+// pedir chave: se não tiver, o botão simplesmente não nasce. Falha aqui é
+// discreta e não trava nada — o texto cru já está aceito e funcionando.
+async function _blocoTxtOrganizar(cid,chave){
   const card=document.getElementById(cid);if(!card)return;
-  const texto=(_txtImgGet(card)[chave]||{}).texto||'';
+  const item=_txtImgGet(card)[chave];if(!item)return;
+  const k=_ocrIaChave(cid,chave);
+  _ocrIaEstado[k]={...(_ocrIaEstado[k]||{}),carregando:true,falhou:false};
+  _blocoTxtMostrar(cid,chave);
+  try{
+    const arrumado=await _ocrOrganizarTexto(item.texto);
+    const obj=_txtImgGet(card);
+    if(!obj[chave])return; // a foto foi excluída no meio da espera
+    obj[chave]={...obj[chave],arrumado};
+    _txtImgSet(card,obj);
+    saveHistory();
+    _ocrIaEstado[k]={aba:'arrumado',carregando:false,falhou:false};
+  }catch(e){
+    _ocrIaEstado[k]={...(_ocrIaEstado[k]||{}),carregando:false,falhou:true};
+  }
+  _blocoTxtMostrar(cid,chave);
+}
+function _blocoTxtCopiar(btn,cid,chave){
+  const texto=_blocoTxtTextoAtivo(cid,chave);
   if(!texto)return;
   navigator.clipboard?.writeText(texto).then(()=>{
     const antes=btn.innerHTML;
@@ -21463,13 +21589,16 @@ function _blocoTxtCopiar(btn,cid,chave){
   }).catch(()=>toast(t('❌ Não consegui copiar. Seu navegador bloqueou a área de transferência.'),true));
 }
 // "Juntar à transcrição" — só quando a pessoa pede, nunca sozinho. Insere no
-// FIM da textarea, com uma linha em branco antes (mockup aprovado).
+// FIM da textarea, com uma linha em branco antes (mockup aprovado). Junta o
+// texto da aba ATIVA (cru ou arrumado, se a pessoa organizou e escolheu ver
+// aquele).
 function _blocoTxtJuntar(cid,chave){
   const card=document.getElementById(cid);if(!card)return;
   const obj=_txtImgGet(card);const item=obj[chave];if(!item)return;
+  const texto=_blocoTxtTextoAtivo(cid,chave);
   const ta=card.querySelector('.cb textarea');if(!ta)return;
   const antes=ta.value;
-  ta.value=(antes?antes.replace(/\s+$/,'')+'\n\n':'')+item.texto;
+  ta.value=(antes?antes.replace(/\s+$/,'')+'\n\n':'')+texto;
   item.juntou=true;_txtImgSet(card,obj);
   autoR(ta);updateFooter(cid);
   saveHistory();
@@ -21793,9 +21922,70 @@ function _lbPintarDownload(baixado,total,fase){
     ?t('{a} de {b}').replace('{a}',_ocrFmtMB(baixado)+' MB').replace('{b}',_ocrFmtMB(OCR_BYTES_TOTAL)+' MB')
     :t('Baixado. Ligando o motor…');
 }
+// Estado transitório da folha (aba/carregando/falhou) — uma instância só (a
+// tela cheia só mostra uma foto por vez), reseta a cada _lbMostrarFolha.
+let _lbIaEstado={aba:'cru',carregando:false,falhou:false};
 function _lbMostrarFolha(texto){
-  const ta=document.getElementById('lbFolhaTxt');if(ta)ta.value=texto;
+  _lbIaEstado={aba:'cru',carregando:false,falhou:false};
   const lb=document.getElementById('imgLb');if(lb)lb.dataset.fase='pronto';
+  _lbAtualizarFormatos();
+}
+// Redesenha o seletor de formatos, a textarea (conforme a aba) e a fileira
+// da Etapa 5 (Organizar com IA) — chamado toda vez que algo desse estado
+// muda. O seletor só nasce depois que existe uma versão "arrumado" de
+// verdade: mostrar 2 abas antes disso prometeria uma coisa que ainda não
+// existe.
+function _lbAtualizarFormatos(){
+  const card=document.getElementById(_lbCid);if(!card)return;
+  const imgs=_imagesGet(card);const im=imgs[_lbIdx];if(!im)return;
+  const item=_txtImgGet(card)[im.k]||{texto:''};
+  const temArr=!!item.arrumado;
+  const fmt=document.getElementById('lbFormatos');
+  if(fmt){
+    if(temArr){
+      fmt.classList.add('on');
+      fmt.innerHTML=`<button type="button" class="${_lbIaEstado.aba==='cru'?'on':''}" onclick="_lbFolhaAba('cru')">${escHtml(t('Como está na foto'))}</button>`+
+        `<button type="button" class="${_lbIaEstado.aba==='arrumado'?'on':''}" onclick="_lbFolhaAba('arrumado')">${escHtml(t('Arrumado'))}</button>`;
+    }else{fmt.classList.remove('on');fmt.innerHTML=''}
+  }
+  const ta=document.getElementById('lbFolhaTxt');
+  if(ta)ta.value=(temArr&&_lbIaEstado.aba==='arrumado')?item.arrumado:(item.texto||'');
+  const podeIA=!temArr&&!_lbIaEstado.carregando&&_txtAITargets('auto').length>0;
+  const et2=document.getElementById('lbEtapa2');if(!et2)return;
+  if(_lbIaEstado.carregando){
+    et2.innerHTML=`<button type="button" class="bt ia" disabled style="opacity:.65"><span class="aro"></span>${escHtml(t('Organizando…'))}</button>`;
+  }else if(_lbIaEstado.falhou){
+    et2.innerHTML=`<span class="falhou-ia"><span class="svgi">${ICO.info}</span>`+
+      `<span><b>${escHtml(t('Não consegui organizar agora.'))}</b> ${escHtml(t('Sua IA não respondeu. O texto lido continua aí em cima, inteiro — dá pra aceitar assim mesmo.'))}</span>`+
+      `<button type="button" class="re" onclick="_lbFolhaOrganizar()">${escHtml(t('Tentar'))}</button></span>`;
+  }else if(podeIA){
+    et2.innerHTML=`<button type="button" class="bt ia" onclick="_lbFolhaOrganizar()"><span class="svgi">${ICO.sparkles}</span>${escHtml(t('Organizar com IA'))}</button>`+
+      `<span class="nota2">${escHtml(t('Opcional. Manda só o texto lido pra sua IA — a foto não vai.'))}</span>`;
+  }else{et2.innerHTML=''}
+}
+function _lbFolhaAba(aba){
+  _lbIaEstado.aba=aba;
+  _lbAtualizarFormatos();
+}
+async function _lbFolhaOrganizar(){
+  const cid=_lbCid,idx=_lbIdx;
+  const card=document.getElementById(cid);if(!card)return;
+  const imgs=_imagesGet(card);const im=imgs[idx];if(!im)return;
+  const item=_txtImgGet(card)[im.k];if(!item)return;
+  _lbIaEstado={...(_lbIaEstado),carregando:true,falhou:false};
+  _lbAtualizarFormatos();
+  try{
+    const arrumado=await _ocrOrganizarTexto(item.texto);
+    const obj=_txtImgGet(card);
+    if(!obj[im.k])return; // a foto foi excluída no meio da espera
+    obj[im.k]={...obj[im.k],arrumado};
+    _txtImgSet(card,obj);
+    saveHistory();
+    _lbIaEstado={aba:'arrumado',carregando:false,falhou:false};
+  }catch(e){
+    _lbIaEstado={...(_lbIaEstado),carregando:false,falhou:true};
+  }
+  _lbAtualizarFormatos();
 }
 // Cancelar vale nas duas fases (baixando o motor ou lendo a foto) — o botão
 // muda de posição na tela, mas a ação é a mesma: desiste, sem nada pela metade.
@@ -21814,14 +22004,17 @@ function _lbFolhaCopiar(btn){
 }
 // "Colocar no card" — igual "Juntar à transcrição" da Etapa 2 (fim da
 // textarea, linha em branco antes), só que a folha fecha de volta pra foto
-// aberta, não pro card (a pessoa ainda está na tela cheia).
+// aberta, não pro card (a pessoa ainda está na tela cheia). Nunca sobrescreve
+// o texto cru/arrumado já guardados — só marca juntou:true; quem entra na
+// textarea do card é o que está NA TELA agora (cru, arrumado, ou editado à
+// mão, se a pessoa corrigiu algo antes de aceitar).
 function _lbFolhaAceitar(){
   const cid=_lbCid,idx=_lbIdx;
   const card=document.getElementById(cid);if(!card)return;
   const imgs=_imagesGet(card);const im=imgs[idx];if(!im)return;
   const texto=document.getElementById('lbFolhaTxt')?.value||'';
   const obj=_txtImgGet(card);
-  obj[im.k]={texto,juntou:true};
+  obj[im.k]={...(obj[im.k]||{texto}),juntou:true};
   _txtImgSet(card,obj);
   const ta=card.querySelector('.cb textarea');
   if(ta){
