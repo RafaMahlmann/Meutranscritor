@@ -4881,6 +4881,35 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .txp-steps{margin:6px 0 0;padding-left:20px}
 .txp-steps li{margin-bottom:2px}
 .tx-tut-hide{display:block;margin-top:10px;background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);padding:0}
+/* ── ARMAZENAMENTO DURÁVEL (06/09/2026) — convite de instalar (Etapa 1) e
+   lembrete de backup (Etapa 2). Visual copiado quase literal do mockup
+   aprovado (scratchpad/PROPOSTA_ARMAZENAMENTO_DURAVEL.html), com os tokens
+   do PRÓPRIO app. Os únicos tokens novos são --ok-bg/--ok-txt e
+   --warn-bg/--warn-txt: o Vox já tinha --accent/--warning, mas só como cor
+   de PREENCHIMENTO — sem par de fundo-claro+texto-escuro seguro pra pílula
+   pequena. Números copiados direto do documento aprovado (já medidos). */
+:root{--ok-bg:#d4f2e8;--ok-txt:#046b4d;--warn-bg:#ffecd1;--warn-txt:#8a5000}
+[data-theme="dark"]{--ok-bg:#183329;--ok-txt:#10b981;--warn-bg:#44372b;--warn-txt:#ffc078}
+.convite,.lembrete{background:var(--bg-card);border:1px solid var(--border2);
+  box-shadow:var(--shadow-card);display:flex;gap:11px;align-items:flex-start;margin:0 0 14px}
+.convite{border-radius:16px;padding:13px 14px;max-width:430px}
+.lembrete{border-radius:14px;padding:11px 12px;max-width:470px;align-items:center;flex-wrap:wrap;gap:8px 10px}
+.convite .ic-b,.lembrete .ic-b{border-radius:10px;background:var(--ok-bg);color:var(--ok-txt);
+  display:grid;place-items:center;flex:none;width:34px;height:34px;font-size:18px}
+.lembrete .ic-b{width:30px;height:30px;border-radius:9px;background:var(--warn-bg);color:var(--warn-txt);font-size:16px}
+.lembrete.ok .ic-b{background:var(--ok-bg);color:var(--ok-txt)}
+.convite h5{margin:0 0 3px;font-size:13.2px;color:var(--text)}
+.convite p{margin:0 0 10px;font-size:11.8px;color:var(--text2);line-height:1.5}
+.convite .bts{display:flex;gap:14px 7px;flex-wrap:wrap}
+.lembrete .txt{flex:1 1 190px;min-width:0;font-size:12.2px;color:var(--text2);line-height:1.45}
+.lembrete .txt b{color:var(--text);display:block;font-size:12.5px}
+.lembrete .lemb-bts{display:flex;gap:14px 6px;flex-wrap:wrap;flex:none;margin-left:auto}
+.conv-p{border:none;background:var(--accent);color:#fff;font-family:var(--font);font-size:11.5px;
+  font-weight:800;padding:8px 13px;border-radius:20px;cursor:pointer}
+.conv-p:active{transform:scale(.965)}
+.conv-s{border:none;background:none;color:var(--text3);font-family:var(--font);font-size:11.5px;
+  font-weight:700;padding:8px 10px;border-radius:20px;cursor:pointer}
+.conv-s:hover{color:var(--text2)}
 .tx-qr-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:12px 0}
 .tx-qr-wrap img{width:230px;height:230px;image-rendering:pixelated;border-radius:12px;background:#fff;padding:6px}
 .tx-part-nav{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:700;color:var(--text2)}
@@ -5747,6 +5776,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <span class="svgi" aria-hidden="true"></span><span data-i18n>Selecionar</span>
         </button>
       </div>
+      <!-- Etapa 1/2 do plano de armazenamento durável (06/09/2026): convite
+           de instalar e lembrete de backup. Vazios/ocultos por padrão —
+           populados por _voxTentarConvite()/_voxMostrarLembrete() só depois
+           de um sinal real de uso (3ª nota salva), nunca no primeiro acesso. -->
+      <div class="convite" id="voxConvite" style="display:none"></div>
+      <div class="lembrete" id="voxLembrete" style="display:none"></div>
       <div class="cards" id="cardsList" style="display:none"></div>
     </div>
     <aside class="folders-bar" id="foldersBar">
@@ -6345,7 +6380,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <div class="storage-meter-bar"><div class="storage-meter-fill" id="storageMeterFill"></div></div>
         </div>
         <div class="tx-tut" id="storageMeterExplain" style="margin-bottom:16px"></div>
-        <div class="tx-tut" id="pwaInstallTip" style="display:none;margin-bottom:16px;border:1px solid rgba(16,185,129,0.3)" data-i18n-html>📲 <strong>Proteja seus dados no iPhone/iPad:</strong> o Safari pode apagar dados de sites que ficam muitos dias sem ser abertos. Instalar o Vox na tela de início evita isso — toque no ícone de <strong>Compartilhar</strong> (o quadrado com a seta) e depois em <strong>"Adicionar à Tela de Início"</strong>.</div>
+        <!-- A dica de instalar no iPhone morava aqui (Configurações → depois
+             do medidor de espaço). Etapa 1 do plano de armazenamento durável
+             (06/09/2026): mudou de lugar E de hora — agora é o cartão
+             #voxConvite, na tela principal, no momento da 3ª nota salva. Este
+             slot virou o sinal honesto de navigator.storage.persist(). -->
+        <div class="tx-tut" id="storagePersistStatus" style="display:none;margin-bottom:16px"></div>
       </div>
 
       <div class="section-title" style="margin-top:16px" data-i18n>📖 Dicionário e correções aprendidas</div>
@@ -6943,7 +6983,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.8';
+const VOX_VERSION='2026.09.06.9';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6981,6 +7021,18 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── ARMAZENAMENTO DURÁVEL — Etapa 1: convite de instalar (06/09/2026) ──
+"Guarde o Vox na tela de início":"Save Vox to your home screen",
+"No iPhone e no iPad, o Safari apaga os dados de sites que ficam uma semana sem ser abertos. Na tela de início, o Vox deixa de ser \"um site\" e suas transcrições param de correr esse risco.":"On iPhone and iPad, Safari erases the data of sites that go a week without being opened. On the home screen, Vox stops being \"a website\" and your transcripts stop running that risk.",
+"Mostrar como":"Show me how",
+"Instalar o Vox neste celular":"Install Vox on this phone",
+"Fica com ícone próprio, abre em tela cheia e o Android passa a tratar seus dados como dados de um app — não de uma aba que você pode fechar sem querer.":"It gets its own icon, opens full screen, and Android starts treating your data like app data — not like a tab you could close by accident.",
+"Instalar":"Install",
+"Instalar o Vox neste computador":"Install Vox on this computer",
+"Vira uma janela própria, com ícone na barra de tarefas. E o navegador passa a proteger melhor o que está guardado aqui — apps instalados são os últimos a ser limpos quando falta espaço.":"It becomes its own window, with an icon in the taskbar. And the browser protects what's stored here better — installed apps are the last to be cleared when space runs low.",
+"Toque no ícone de Compartilhar (o quadrado com a seta) e depois em \"Adicionar à Tela de Início\".":"Tap the Share icon (the square with the arrow) and then \"Add to Home Screen\".",
+"🛡️ Este navegador prometeu guardar os dados do Vox — o risco de perda por falta de espaço é bem menor.":"🛡️ This browser promised to keep Vox's data — the risk of losing it to low storage is much lower.",
+"Este navegador ainda não prometeu guardar os dados do Vox — sob pouco espaço, ele pode apagar sozinho.":"This browser hasn't promised to keep Vox's data yet — under low storage, it may erase it on its own.",
 // ── FOTOS NO CARD — PROPOSTA 1, "A TIRA" (Plano 18, 05/09/2026) ──
 "Ver foto {n} em tela cheia":"View photo {n} full screen",
 "Adicionar fotos":"Add photos",
@@ -8804,19 +8856,112 @@ function showBrowserBanner(title,msg,color){
 // Pede armazenamento persistente ao navegador — blinda o IndexedDB contra
 // limpeza automática sob pressão de espaço. Silencioso: a maioria dos
 // navegadores decide sozinha (sem prompt pro usuário), e navegadores sem
-// suporte simplesmente ignoram a chamada.
-function _requestPersistentStorage(){
-  navigator.storage?.persist?.().catch(()=>{});
+// suporte simplesmente ignoram a chamada. Etapa 1 do plano de armazenamento
+// durável (06/09/2026): a resposta agora é GUARDADA (antes era descartada
+// com .catch(()=>{})) pra updateStorageMeter() poder mostrar um sinal
+// honesto — e a chamada só acontece depois de um sinal real de uso
+// (ver _voxMomentoDeConfianca), nunca mais no DOMContentLoaded do primeiro
+// acesso, que é a hora de MENOR confiança do navegador.
+async function _requestPersistentStorage(){
+  try{
+    const ok=await navigator.storage?.persist?.();
+    localStorage.setItem('vox_storage_persisted',ok?'1':'0');
+  }catch(e){}
 }
-// No iOS, storage.persist() não existe/não ajuda de verdade — o que protege
-// os dados é instalar como PWA (tela de início). Mostra a dica só pra quem
-// está no Safari do iPhone/iPad E ainda não instalou.
-function _updatePwaTip(){
-  const el=document.getElementById('pwaInstallTip');
-  if(!el)return;
+// ── Etapa 1: convidar pra instalar, no momento certo ──
+// Guarda o evento de instalação (Android/Chrome/Edge no PC) pra poder chamar
+// .prompt() depois — não existia nenhum ouvinte disto antes (confirmado por
+// busca no arquivo; zero ocorrências de beforeinstallprompt).
+let _voxDeferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  _voxDeferredInstall=e;
+  _voxTentarConvite();
+});
+window.addEventListener('appinstalled',()=>{_voxFecharConvite()});
+const VOX_CONVITE_TXT={
+  ios:{t:()=>t('Guarde o Vox na tela de início'),
+    p:()=>t('No iPhone e no iPad, o Safari apaga os dados de sites que ficam uma semana sem ser abertos. Na tela de início, o Vox deixa de ser "um site" e suas transcrições param de correr esse risco.'),
+    b:()=>t('Mostrar como')},
+  android:{t:()=>t('Instalar o Vox neste celular'),
+    p:()=>t('Fica com ícone próprio, abre em tela cheia e o Android passa a tratar seus dados como dados de um app — não de uma aba que você pode fechar sem querer.'),
+    b:()=>t('Instalar')},
+  desktop:{t:()=>t('Instalar o Vox neste computador'),
+    p:()=>t('Vira uma janela própria, com ícone na barra de tarefas. E o navegador passa a proteger melhor o que está guardado aqui — apps instalados são os últimos a ser limpos quando falta espaço.'),
+    b:()=>t('Instalar')}
+};
+// Passo a passo do iPhone — o mesmo texto que morava em Configurações
+// (ver comentário no HTML de #storagePersistStatus), só que agora aparece
+// no momento certo em vez de enterrado três níveis de profundidade.
+const VOX_CONVITE_IOS_PASSO=()=>t('Toque no ícone de Compartilhar (o quadrado com a seta) e depois em "Adicionar à Tela de Início".');
+function _voxTipoConvite(){
+  if(localStorage.getItem('vox_convite_dispensado')==='1')return null;
   const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isStandalone=window.navigator.standalone===true||window.matchMedia?.('(display-mode: standalone)')?.matches;
-  el.style.display=(isIOS&&!isStandalone)?'block':'none';
+  if(isStandalone)return null;
+  if(isIOS)return'ios';
+  if(_voxDeferredInstall)return/Android/i.test(navigator.userAgent)?'android':'desktop';
+  return null;
+}
+function _voxTentarConvite(){
+  if(_contarNotas()<3)return;
+  if(document.getElementById('voxLembrete')?.style.display==='flex')return; // um cartão de cada vez
+  const tipo=_voxTipoConvite();
+  if(!tipo)return;
+  const el=document.getElementById('voxConvite');
+  if(!el)return;
+  const c=VOX_CONVITE_TXT[tipo];
+  el.innerHTML=`<span class="ic-b"><span class="svgi">${ICO.instalar||''}</span></span>`+
+    `<div style="flex:1;min-width:0"><h5>${escHtml(c.t())}</h5><p>${escHtml(c.p())}</p>`+
+    `<div class="bts"><button type="button" class="conv-p" onclick="_voxConviteAceitar('${tipo}')">${escHtml(c.b())}</button>`+
+    `<button type="button" class="conv-s" onclick="_voxConviteDispensar()">${escHtml(t('Agora não'))}</button></div></div>`;
+  el.style.display='flex';
+}
+async function _voxConviteAceitar(tipo){
+  if(tipo==='ios'){
+    // Não existe API pra instalar sozinho no iOS — mostra o passo a passo
+    // dentro do próprio cartão e tira o botão de ação (só resta fechar).
+    const el=document.getElementById('voxConvite');
+    const p=el?.querySelector('p');if(p)p.textContent=VOX_CONVITE_IOS_PASSO();
+    const btn=el?.querySelector('.conv-p');if(btn)btn.remove();
+    return;
+  }
+  if(_voxDeferredInstall){
+    _voxDeferredInstall.prompt();
+    try{await _voxDeferredInstall.userChoice}catch(e){}
+    _voxDeferredInstall=null;
+  }
+  _voxFecharConvite();
+}
+function _voxConviteDispensar(){
+  localStorage.setItem('vox_convite_dispensado','1');
+  _voxFecharConvite();
+}
+function _voxFecharConvite(){
+  const el=document.getElementById('voxConvite');
+  if(el)el.style.display='none';
+}
+// Conta notas do histórico — opcionalmente só as criadas depois de uma data.
+// Um contador só, reaproveitado pelo convite de instalar (Etapa 1, "já tem
+// algo a perder" = 3ª nota) e pelo lembrete de backup (Etapa 2, notas desde
+// o último backup) — não duplica a mesma lógica duas vezes.
+function _contarNotas(desdeISO){
+  const hist=_historyCache||[];
+  if(!desdeISO)return hist.length;
+  const desde=new Date(desdeISO).getTime();
+  if(isNaN(desde))return hist.length;
+  return hist.filter(it=>it.dt&&new Date(it.dt).getTime()>desde).length;
+}
+// Momento de confiança: dispara persist() (uma vez só, guardado em
+// localStorage) e tenta mostrar o convite de instalar — nunca no primeiro
+// acesso, só depois que a pessoa já salvou pelo menos 3 notas.
+function _voxMomentoDeConfianca(){
+  if(_contarNotas()<3)return;
+  if(!localStorage.getItem('vox_persist_solicitado')){
+    localStorage.setItem('vox_persist_solicitado','1');
+    _requestPersistentStorage();
+  }
+  _voxTentarConvite();
 }
 
 // ── INIT ──
@@ -8849,7 +8994,12 @@ document.addEventListener('DOMContentLoaded',async()=>{
     _ajustarAlturaPastas();
   }
   updateSpeedBadge();syncLocalModel();checkMicPermission();checkBrowser();
-  _requestPersistentStorage();_updatePwaTip();
+  // _requestPersistentStorage() e o convite de instalar NÃO rodam mais aqui
+  // (Etapa 1 do plano de armazenamento durável, 06/09/2026) — o gatilho
+  // agora é _voxMomentoDeConfianca(), chamado de dentro de saveHistory(),
+  // porque o primeiro segundo do primeiro acesso é a hora de MENOR chance
+  // de o navegador dizer "sim" a um pedido de persistência.
+  _voxMomentoDeConfianca();
   // Vídeo de abertura: primeira execução ou após reset de fábrica
   maybeAutoPlayIntro();
   const vintroVideo=document.getElementById('vintroVideo');
@@ -18951,6 +19101,22 @@ async function updateStorageMeter(){
     }else{
       explainEl.innerHTML=t('O Vox guarda tudo aqui, direto no seu aparelho — nada vai pra nuvem. Suas transcrições são só texto, então ocupam bem pouco espaço: pra maioria das pessoas isso nunca chega a ser um problema. Se um dia quiser liberar espaço mesmo assim, é só exportar as antigas (viram um arquivo no seu computador) e apagar aqui embaixo.');
     }
+    // Etapa 1 do plano de armazenamento durável: sinal honesto sobre o que
+    // navigator.storage.persist() respondeu — antes a resposta era
+    // descartada e o app nunca sabia (nem mostrava) se estava protegido.
+    const persistEl=document.getElementById('storagePersistStatus');
+    if(persistEl){
+      const p=localStorage.getItem('vox_storage_persisted');
+      if(p==='1'){
+        persistEl.style.display='block';
+        persistEl.textContent=t('🛡️ Este navegador prometeu guardar os dados do Vox — o risco de perda por falta de espaço é bem menor.');
+      }else if(p==='0'){
+        persistEl.style.display='block';
+        persistEl.textContent=t('Este navegador ainda não prometeu guardar os dados do Vox — sob pouco espaço, ele pode apagar sozinho.');
+      }else{
+        persistEl.style.display='none';
+      }
+    }
   }catch(e){
     section.style.display='none';
   }
@@ -19802,6 +19968,7 @@ function saveHistory(){
   });
   localStorage.setItem('vox_stats',JSON.stringify(stats));
   updateRecencyBadges();
+  _voxMomentoDeConfianca(); // Etapa 1: dispara no momento em que a nota vira a 3ª (ou depois)
 }
 
 // ── PROJETO: SALVAR / CONTINUAR (backup portátil) ──
@@ -23985,7 +24152,13 @@ const ICO={
   // Foto com linhas de texto saindo — a ação inteira num só desenho. Vem do
   // mockup aprovado (scratchpad/PROPOSTA_EXTRAIR_TEXTO_IMAGEM.html).
   textoFoto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="13" height="13" rx="2"/><path d="M3 12.5 6.5 9l4 4"/><circle cx="7.5" cy="7" r="1.2"/><line x1="10" y1="20" x2="21" y2="20"/><line x1="14" y1="16" x2="21" y2="16"/></svg>',
-  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  // ── ARMAZENAMENTO DURÁVEL (06/09/2026) — convite de instalar (Etapa 1) e
+  // lembrete de backup (Etapa 2). Ícones copiados do mockup aprovado
+  // (scratchpad/PROPOSTA_ARMAZENAMENTO_DURAVEL.html).
+  instalar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3"/><polyline points="8 7 12 3 16 7"/><path d="M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg>',
+  relogioAviso:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>',
+  escudo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
 };
 // ── MENU DO CÉREBRO — troca rápida de provedor, sem abrir Configurações ──
 // Reaproveita 100% as funções de troca que já existem (setProvider/
