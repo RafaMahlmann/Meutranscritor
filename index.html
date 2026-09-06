@@ -6388,6 +6388,24 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <div class="tx-tut" id="storagePersistStatus" style="display:none;margin-bottom:16px"></div>
       </div>
 
+      <!-- Etapa 3 do plano de armazenamento durável (06/09/2026): pasta real
+           do computador (File System Access API). Só existe em Chrome/Edge/
+           Opera no desktop — _pastaBackupInit() esconde a seção inteira nos
+           demais (Firefox, Safari, qualquer celular); quem estiver lá cai
+           só no lembrete da Etapa 2. -->
+      <div id="pastaBackupSection" style="display:none">
+        <div class="section-title" style="margin-top:16px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span data-i18n>Pasta de backup no computador</span></div>
+        <p class="fhint" style="margin-bottom:8px" data-i18n>Escolha uma pasta uma vez; o Vox mantém um backup atualizado sozinho ali — sobrevive até a limpar os dados do navegador. Apontar pra uma pasta do OneDrive, iCloud Drive, Google Drive ou Dropbox dá backup fora do aparelho sem o Vox precisar de nuvem própria.</p>
+        <div class="maint-box" style="margin-bottom:8px">
+          <div class="maint-info">
+            <div class="maint-title" id="pastaBackupNome" data-i18n>Nenhuma pasta escolhida ainda</div>
+            <div class="maint-desc" id="pastaBackupStatus" data-i18n>Um clique, uma vez só.</div>
+          </div>
+          <button class="maint-btn" id="pastaBackupBtn" onclick="_pastaBackupEscolher()" data-i18n>Escolher pasta</button>
+        </div>
+        <div class="tx-tut" id="pastaBackupPermissaoAviso" style="display:none;margin-bottom:16px"></div>
+      </div>
+
       <div class="section-title" style="margin-top:16px" data-i18n>📖 Dicionário e correções aprendidas</div>
       <p class="fhint" style="margin-bottom:8px" data-i18n>Ao revisar palavras repetidas/suspeitas num texto, escolher "sempre ignorar" ou "sempre trocar" guarda a regra aqui — visível e editável a qualquer momento, nunca escondida.</p>
       <div class="maint-box" style="margin-bottom:8px;flex-direction:column;align-items:stretch;gap:0">
@@ -6983,7 +7001,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.10';
+const VOX_VERSION='2026.09.06.11';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7043,6 +7061,19 @@ let I18N_EN={
 "Tudo o que está aqui existe só neste aparelho. Um arquivo resolve isso em dois segundos.":"Everything here only exists on this device. One file fixes that in two seconds.",
 "Salvar agora":"Save now",
 "Não lembrar mais":"Don't remind me again",
+// ── ARMAZENAMENTO DURÁVEL — Etapa 3: pasta real no computador (06/09/2026) ──
+"Pasta de backup no computador":"Backup folder on this computer",
+"Escolha uma pasta uma vez; o Vox mantém um backup atualizado sozinho ali — sobrevive até a limpar os dados do navegador. Apontar pra uma pasta do OneDrive, iCloud Drive, Google Drive ou Dropbox dá backup fora do aparelho sem o Vox precisar de nuvem própria.":"Choose a folder once; Vox keeps a backup there updated on its own — it survives even clearing the browser's data. Pointing it to a OneDrive, iCloud Drive, Google Drive or Dropbox folder gives you an off-device backup without Vox needing its own cloud.",
+"Nenhuma pasta escolhida ainda":"No folder chosen yet",
+"Um clique, uma vez só.":"One click, just once.",
+"Escolher pasta":"Choose folder",
+"Backup automático ativo nesta pasta.":"Automatic backup active in this folder.",
+"A permissão precisa ser confirmada de novo.":"Permission needs to be confirmed again.",
+"Por segurança, o navegador pede essa confirmação de vez em quando antes de deixar o Vox voltar a escrever nesta pasta — não é um defeito, é assim que a API funciona.":"For security, the browser asks for this confirmation every now and then before letting Vox write to this folder again — this isn't a bug, it's how the API works.",
+"Confirmar permissão":"Confirm permission",
+"✅ Permissão confirmada":"✅ Permission confirmed",
+"Trocar pasta":"Change folder",
+"📁 Pasta de backup escolhida!":"📁 Backup folder chosen!",
 // ── FOTOS NO CARD — PROPOSTA 1, "A TIRA" (Plano 18, 05/09/2026) ──
 "Ver foto {n} em tela cheia":"View photo {n} full screen",
 "Adicionar fotos":"Add photos",
@@ -9085,6 +9116,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // nada nesta sessão pra descobrir que já tinha 3+ notas).
   _voxMomentoDeConfianca();
   _voxCheckLembreteBackup(); // Etapa 2: idem — checa assim que o app abre
+  _pastaBackupInit(); // Etapa 3: recarrega o handle da pasta cedo, pro backup automático já funcionar nesta sessão sem precisar abrir Configurações
   // Vídeo de abertura: primeira execução ou após reset de fábrica
   maybeAutoPlayIntro();
   const vintroVideo=document.getElementById('vintroVideo');
@@ -19152,6 +19184,7 @@ function openModal(){
   updateStorageMeter();
   renderLearningPanel();
   if(cfg.provider==='local'){updateLocalPanel();checkLocalStatusNow()}
+  _pastaBackupInit(); // Etapa 3 do plano de armazenamento durável
 }
 function closeModal(){document.getElementById('overlay').classList.remove('on')}
 function _fmtBytes(n){
@@ -20078,6 +20111,115 @@ function _dataURLParaBlob(durl){
   for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
   return Promise.resolve(new Blob([bytes],{type:mime}));
 }
+// ── Etapa 3 do plano de armazenamento durável: pasta real no computador ──
+// File System Access API — só existe em Chrome/Edge/Opera no desktop.
+// Detecção de recurso pura (nunca farejar o navegador pelo user-agent).
+let _pastaBackupHandle=null;
+function _temFileSystemAccess(){return'showDirectoryPicker'in window}
+async function _pastaBackupInit(){
+  const sec=document.getElementById('pastaBackupSection');
+  if(!sec)return;
+  if(!_temFileSystemAccess()){sec.style.display='none';return}
+  sec.style.display='block';
+  try{
+    const handle=_pastaBackupHandle||await idbGet('pasta_backup_handle');
+    if(!handle){_pastaBackupRenderVazio();return}
+    _pastaBackupHandle=handle;
+    const perm=await handle.queryPermission({mode:'readwrite'});
+    _pastaBackupRenderEscolhida(handle.name,perm==='granted');
+  }catch(e){_pastaBackupRenderVazio()}
+}
+function _pastaBackupRenderVazio(){
+  const nomeEl=document.getElementById('pastaBackupNome'),statusEl=document.getElementById('pastaBackupStatus'),
+    btnEl=document.getElementById('pastaBackupBtn'),avisoEl=document.getElementById('pastaBackupPermissaoAviso');
+  if(!nomeEl)return;
+  nomeEl.textContent=t('Nenhuma pasta escolhida ainda');
+  statusEl.textContent=t('Um clique, uma vez só.');
+  btnEl.textContent=t('Escolher pasta');
+  if(avisoEl)avisoEl.style.display='none';
+}
+function _pastaBackupRenderEscolhida(nome,concedida){
+  const nomeEl=document.getElementById('pastaBackupNome'),statusEl=document.getElementById('pastaBackupStatus'),
+    btnEl=document.getElementById('pastaBackupBtn'),avisoEl=document.getElementById('pastaBackupPermissaoAviso');
+  if(!nomeEl)return;
+  // textContent, não innerHTML: o nome da pasta vem do sistema de arquivos
+  // (conteúdo externo) e não deve entrar no DOM sem escape — textContent já
+  // não interpreta marcação nenhuma, então não precisa de escHtml() aqui.
+  nomeEl.textContent=nome;
+  btnEl.textContent=t('Trocar pasta');
+  if(concedida){
+    statusEl.textContent=t('Backup automático ativo nesta pasta.');
+    if(avisoEl)avisoEl.style.display='none';
+  }else{
+    statusEl.textContent=t('A permissão precisa ser confirmada de novo.');
+    if(avisoEl){
+      avisoEl.style.display='block';
+      avisoEl.textContent='';
+      avisoEl.append(t('Por segurança, o navegador pede essa confirmação de vez em quando antes de deixar o Vox voltar a escrever nesta pasta — não é um defeito, é assim que a API funciona.'));
+      avisoEl.appendChild(document.createElement('br'));
+      const btnConfirmar=document.createElement('button');
+      btnConfirmar.type='button';btnConfirmar.className='tx-tut-hide';
+      btnConfirmar.textContent=t('Confirmar permissão');
+      btnConfirmar.onclick=_pastaBackupReconfirmar;
+      avisoEl.appendChild(btnConfirmar);
+    }
+  }
+}
+async function _pastaBackupReconfirmar(){
+  if(!_pastaBackupHandle)return;
+  try{
+    const perm=await _pastaBackupHandle.requestPermission({mode:'readwrite'});
+    _pastaBackupRenderEscolhida(_pastaBackupHandle.name,perm==='granted');
+    if(perm==='granted')toast(t('✅ Permissão confirmada'));
+  }catch(e){}
+}
+async function _pastaBackupEscolher(){
+  if(!_temFileSystemAccess())return;
+  try{
+    const handle=await window.showDirectoryPicker({id:'vox-backup',mode:'readwrite'});
+    await idbSet('pasta_backup_handle',handle);
+    _pastaBackupHandle=handle;
+    _pastaBackupRenderEscolhida(handle.name,true);
+    toast(t('📁 Pasta de backup escolhida!'));
+  }catch(e){} // cancelou o seletor — silencioso, não é erro
+}
+// Apara a pasta pros 5 arquivos de backup mais recentes — nome tem a data
+// (vox_backup_AAAA-MM-DD.json), então ordenar o nome já ordena por dia.
+async function _pastaBackupRotacionar(handle){
+  try{
+    const arquivos=[];
+    for await(const nome of handle.keys()){
+      if(/^vox_backup_\d{4}-\d{2}-\d{2}\.json$/.test(nome))arquivos.push(nome);
+    }
+    arquivos.sort().reverse();
+    for(const nome of arquivos.slice(5)){
+      try{await handle.removeEntry(nome)}catch(e){}
+    }
+  }catch(e){}
+}
+// Reaproveita o MESMO json que exportProject() já gerou pro download manual
+// — nenhuma lógica de serialização duplicada. Silencioso: se a pasta não
+// estiver configurada, ou a permissão não estiver concedida, ou a escrita
+// falhar por qualquer motivo (pen drive removido, pasta apagada...), o
+// download manual já aconteceu de qualquer forma — nunca perde o backup
+// por causa disto.
+async function _pastaBackupSalvarSeConfigurada(json){
+  if(!_temFileSystemAccess())return false;
+  try{
+    const handle=_pastaBackupHandle||await idbGet('pasta_backup_handle');
+    if(!handle)return false;
+    _pastaBackupHandle=handle;
+    const perm=await handle.queryPermission({mode:'readwrite'});
+    if(perm!=='granted')return false;
+    const nomeArq=`vox_backup_${new Date().toISOString().slice(0,10)}.json`;
+    const fileHandle=await handle.getFileHandle(nomeArq,{create:true});
+    const writable=await fileHandle.createWritable();
+    await writable.write(json);
+    await writable.close();
+    await _pastaBackupRotacionar(handle);
+    return true;
+  }catch(e){return false}
+}
 async function exportProject(){
   saveHistory();
   const history=_historyCache||[];
@@ -20108,13 +20250,17 @@ async function exportProject(){
     learnedRules:JSON.parse(localStorage.getItem('vox_learned_rules')||'null'),
     tagNomes:JSON.parse(localStorage.getItem('vox_tag_nomes')||'null')
   };
-  dl(JSON.stringify(data),`vox_projeto_${new Date().toISOString().slice(0,10)}.json`);
+  const json=JSON.stringify(data);
+  dl(json,`vox_projeto_${new Date().toISOString().slice(0,10)}.json`);
   toast(t('💾 Projeto salvo ({n} {itemword})! Guarde o arquivo .json no seu PC.').replace('{n}',history.length).replace('{itemword}',t(history.length===1?'item':'itens')));
   document.getElementById('expDrop')?.classList.remove('on');
   // Etapa 2 do plano de armazenamento durável: todo backup gerado com
   // sucesso (manual ou pelo lembrete) atualiza a data — é o que permite o
   // lembrete saber quanto tempo faz e quantas notas novas existem desde então.
   localStorage.setItem('vox_last_backup',new Date().toISOString());
+  // Etapa 3: se existir uma pasta configurada com permissão concedida,
+  // grava o MESMO json ali também — reaproveitando, não duplicando.
+  _pastaBackupSalvarSeConfigurada(json);
 }
 function triggerImportProject(){document.getElementById('projInput').click()}
 function importProjectFile(e){
