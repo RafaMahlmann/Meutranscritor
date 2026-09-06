@@ -6943,7 +6943,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.7';
+const VOX_VERSION='2026.09.06.8';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -19850,7 +19850,10 @@ async function exportProject(){
     app:'vox',version:1,exportedAt:new Date().toISOString(),
     history:history2,
     folders:JSON.parse(localStorage.getItem('vox_folders')||'[]'),
-    stats:JSON.parse(localStorage.getItem('vox_stats')||'{}')
+    stats:JSON.parse(localStorage.getItem('vox_stats')||'{}'),
+    personalDict:JSON.parse(localStorage.getItem('vox_personal_dict')||'null'),
+    learnedRules:JSON.parse(localStorage.getItem('vox_learned_rules')||'null'),
+    tagNomes:JSON.parse(localStorage.getItem('vox_tag_nomes')||'null')
   };
   dl(JSON.stringify(data),`vox_projeto_${new Date().toISOString().slice(0,10)}.json`);
   toast(t('💾 Projeto salvo ({n} {itemword})! Guarde o arquivo .json no seu PC.').replace('{n}',history.length).replace('{itemword}',t(history.length===1?'item':'itens')));
@@ -19902,6 +19905,19 @@ async function _restoreProject(data){
       localStorage.setItem('vox_folders',JSON.stringify(cur));
     }
   }catch(e){}
+  // Etapa 0 do plano de armazenamento durável: o backup já exportava stats,
+  // dicionário, regras aprendidas e nomes de etiqueta, mas a restauração
+  // ignorava tudo isso em silêncio. Só grava se existir no arquivo (backups
+  // antigos não têm essas chaves).
+  try{if(data.stats){localStorage.setItem('vox_stats',JSON.stringify(data.stats));stats=data.stats}}catch(e){}
+  try{if(data.personalDict)localStorage.setItem('vox_personal_dict',JSON.stringify(data.personalDict))}catch(e){}
+  try{if(data.learnedRules)localStorage.setItem('vox_learned_rules',JSON.stringify(data.learnedRules))}catch(e){}
+  try{if(data.tagNomes)localStorage.setItem('vox_tag_nomes',JSON.stringify(data.tagNomes))}catch(e){}
+  if((data.personalDict||data.learnedRules)&&typeof loadLearningData==='function'){
+    loadLearningData();
+    if(typeof renderLearningPanel==='function')renderLearningPanel();
+  }
+  if(data.stats&&typeof updateStats==='function')updateStats();
   let added=0,skipped=0;
   for(const it of (data.history||[])){
     const sig=(it.dt||'')+'|'+(it.text||'').slice(0,60);
