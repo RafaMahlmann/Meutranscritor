@@ -6943,7 +6943,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.6';
+const VOX_VERSION='2026.09.06.7';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -6986,6 +6986,7 @@ let I18N_EN={
 "Adicionar fotos":"Add photos",
 "Solte fotos aqui":"Drop photos here",
 "🖼️ 1 foto anexada":"🖼️ 1 photo attached",
+"📋 Card criado a partir do que você copiou":"📋 Card created from what you copied",
 "🖼️ {n} fotos anexadas":"🖼️ {n} photos attached",
 "⚠️ Não foi possível abrir esta foto":"⚠️ Couldn't open this photo",
 "⚠️ Não foi possível baixar esta foto":"⚠️ Couldn't download this photo",
@@ -21148,6 +21149,17 @@ function newEmptyCard(paraJanela){
   const cid=addCard('',null,0,'texto',cfg.provider,true,null,null,[],document.getElementById('snameInput').value.trim(),sessionMode,false);
   stats.count++;updateStats();
   if(paraJanela)return cid;
+  _irParaCardNovo(cid);
+  toast(t('✏️ Card novo criado — escreva, grave ou anexe!'));
+  return cid;
+}
+// Mostra um card recém-criado na tela, seja qual for a visualização atual —
+// extraído de newEmptyCard() pra ser reaproveitado por qualquer caminho que
+// crie um card "do nada" (hoje: o botão + e o colar sem card em foco, ver
+// _pasteSemCardCriaNovo). addCard() já chama showCards() sozinho, então quem
+// estava numa tela sem card (Calendário, Mural, Configurações) já volta pra
+// uma tela de card antes desta função rodar.
+function _irParaCardNovo(cid){
   if(viewMode==='doc'){
     // Só um card fica visível por vez no Modo Documento — sem isso, o card
     // novo era criado mas a tela continuava mostrando o card anterior.
@@ -21157,8 +21169,6 @@ function newEmptyCard(paraJanela){
     const el=document.getElementById(cid);
     if(el){el.scrollIntoView({behavior:'smooth',block:'center'});const ta=el.querySelector('textarea');if(ta)setTimeout(()=>ta.focus(),300)}
   }
-  toast(t('✏️ Card novo criado — escreva, grave ou anexe!'));
-  return cid;
 }
 // ── Anexar aqui: arquivo externo (áudio→transcreve, texto→insere) NO card ──
 function attachHere(cid){
@@ -21653,7 +21663,15 @@ async function _anexarUmaImagem(cid,file){
 document.addEventListener('paste',e=>{
   const ativo=document.activeElement;
   const card=ativo&&ativo.closest?ativo.closest('.card'):null;
-  if(!card)return;
+  if(!card){
+    // Colar sem nenhum card em foco. Se o alvo ativo é um campo de entrada
+    // legítimo fora de um card (renomear sessão, chave de API, busca, chat
+    // com a IA), o colar é DELE — continua funcionando normal, não interceptar.
+    // Só quando não há absolutamente nada pronto pra receber é que cria card.
+    const legitimo=ativo&&(ativo.tagName==='INPUT'||ativo.tagName==='TEXTAREA'||ativo.isContentEditable);
+    if(!legitimo)_pasteSemCardCriaNovo(e);
+    return;
+  }
   const cid=card.id;
   const items=(e.clipboardData&&e.clipboardData.items)||[];
   let imgFile=null;
@@ -21670,6 +21688,32 @@ document.addEventListener('paste',e=>{
   const texto=((e.clipboardData&&e.clipboardData.getData('text/plain'))||'').trim();
   if(texto&&/^https?:\/\/\S+$/.test(texto))_anexarLink(cid,texto);
 });
+// Colar em QUALQUER tela do app, sem nenhum card em foco e sem nenhum outro
+// campo pronto pra receber (ver o `if(!card)` do listener acima): cria um
+// card novo e coloca ali o que veio da área de transferência — foto na tira,
+// link vira chip, texto solto vira o rascunho pra pessoa completar. Pedido
+// do Rafa (06/09): "se eu não clicar em card em lugar nenhum e der Ctrl+V,
+// tem que abrir um card novo, onde eu estiver".
+function _pasteSemCardCriaNovo(e){
+  const items=(e.clipboardData&&e.clipboardData.items)||[];
+  let imgFile=null;
+  for(let i=0;i<items.length;i++){
+    if(items[i].type&&items[i].type.indexOf('image/')===0){imgFile=items[i].getAsFile();break}
+  }
+  const textoBruto=((e.clipboardData&&e.clipboardData.getData('text/plain'))||'').trim();
+  if(!imgFile&&!textoBruto)return; // área de transferência sem nada útil: não cria card à toa
+  e.preventDefault();
+  const ehSoLink=!!textoBruto&&/^https?:\/\/\S+$/.test(textoBruto);
+  // Um link solto vira chip (ver _anexarLink), não texto cru na caixa — mesma
+  // regra do colar dentro de um card já existente.
+  const cid=addCard(ehSoLink?'':textoBruto,null,0,'texto',cfg.provider,true,null,null,[],
+    document.getElementById('snameInput').value.trim(),sessionMode,false);
+  stats.count++;updateStats();
+  _irParaCardNovo(cid);
+  if(ehSoLink)_anexarLink(cid,textoBruto); // já chama saveHistory() sozinho
+  if(imgFile)_anexarUmaImagem(cid,imgFile).then(()=>saveHistory());
+  toastDesfazer(t('📋 Card criado a partir do que você copiou'),()=>doDelete(cid));
+}
 function _anexarLink(cid,url){
   const card=document.getElementById(cid);if(!card)return;
   let host='';
