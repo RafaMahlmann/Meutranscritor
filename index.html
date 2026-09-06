@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src https: http://localhost:* http://127.0.0.1:* blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src https: http://localhost:* http://127.0.0.1:* blob: data:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'">
 <title>Vox · My Transcriber</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#10b981">
@@ -6681,7 +6681,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.05.5';
+const VOX_VERSION='2026.09.06.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -19275,6 +19275,125 @@ function _imgAvisoFalha(err){
   if(!_idbWarnShown){_idbWarnShown=true;toast(t('⚠️ Não foi possível salvar — espaço de armazenamento pode estar cheio'),true)}
 }
 
+// ══════════════ OCR LOCAL: MOTOR DE LEITURA (Plano 19, Etapa 1 · 06/09/2026) ══════════════
+// Lê texto de dentro de fotos, no próprio aparelho — a imagem nunca sai daqui.
+// Motor: Tesseract.js 5.1.1 (tesseract.js-core 5.1.1, tessdata 4.0.0_fast),
+// arquivos de verdade em lib/tesseract/ (same-origin, sem CDN — o Rafa
+// autorizou o app sair do monobloco só pra isto). Versões/tamanhos testados
+// de propósito nos dois motores (Chromium/WebKit) sob a CSP do Vox — ver
+// PLANO_DIRETOR/19_PLANO_EXTRACAO_TEXTO_IMAGEM_2026-09-06.md, seção 0.
+const OCR_ARQUIVOS=[
+  {rel:'lib/tesseract/tesseract.min.js',bytes:66695},
+  {rel:'lib/tesseract/worker.min.js',bytes:123724},
+  {rel:'lib/tesseract/tesseract-core-simd-lstm.wasm.js',bytes:3938657},
+  {rel:'lib/tesseract/eng.traineddata.gz',bytes:1984273},
+  {rel:'lib/tesseract/por.traineddata.gz',bytes:1009185}
+];
+const OCR_BYTES_TOTAL=OCR_ARQUIVOS.reduce((s,a)=>s+a.bytes,0); // 7.122.534 (~6,8 MiB)
+// Opções fixas do worker — mesma configuração testada na validação (variante
+// "embed": o core já traz o WASM embutido em base64; é o único formato que o
+// Vox baixa. Ver seção 0 do plano pro ajuste de CSP que esse embutimento
+// pediu no WebKit).
+function _ocrWorkerOpts(){
+  return{
+    workerPath:'lib/tesseract/worker.min.js',
+    corePath:'lib/tesseract/tesseract-core-simd-lstm.wasm.js',
+    langPath:'lib/tesseract',
+    cacheMethod:'none',
+    gzip:true
+  };
+}
+// Confere se os 5 arquivos do motor já estão em cache — sem gastar rede
+// nenhuma. caches.match() varre todo o cache-storage da origem (não só o
+// nome que o sw.js usa hoje): se ele mudar de versão, esta checagem continua
+// válida sem duplicar essa string aqui.
+async function _ocrEstado(){
+  if(!window.caches)return false;
+  try{
+    for(const a of OCR_ARQUIVOS){
+      if(!(await caches.match(a.rel)))return false;
+    }
+    return true;
+  }catch(e){return false}
+}
+function _ocrFmtMB(bytes){return(bytes/1024/1024).toFixed(1).replace('.',',')}
+// Carrega o tesseract.min.js na página (uma vez só) — é o arquivo que expõe
+// window.Tesseract. Pequeno (66KB) e entra na conta dos 6,8MB, mas quem tira
+// ele do disco/rede é a tag <script>, não fetch nosso — por isso os bytes
+// dele (1º item de OCR_ARQUIVOS) só contam pro progresso via _ocrBaixarUm,
+// chamado ANTES de injetar a tag (a tag em si vem do cache, instantânea).
+let _ocrLibPromise=null;
+function _ocrCarregarLib(){
+  if(window.Tesseract)return Promise.resolve();
+  if(_ocrLibPromise)return _ocrLibPromise;
+  _ocrLibPromise=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='lib/tesseract/tesseract.min.js';
+    s.onload=()=>resolve();
+    s.onerror=()=>{_ocrLibPromise=null;reject(new Error(t('Não consegui carregar o leitor de texto.')))};
+    document.head.appendChild(s);
+  });
+  return _ocrLibPromise;
+}
+// Baixa um arquivo lendo o corpo em pedaços, pra reportar bytes de verdade —
+// nunca uma barra fingida. Quem cacheia de fato é o sw.js (o fetch já passa
+// por ele, cache-first pra sempre depois desta primeira vez; nenhuma linha
+// nova precisou entrar lá — ele já cacheia todo GET same-origin que não é
+// HTML).
+async function _ocrBaixarUm(arquivo,onBytes){
+  const res=await fetch(arquivo.rel);
+  if(!res.ok)throw new Error(t('Não consegui baixar o leitor de texto — confira sua internet.'));
+  if(res.body&&res.body.getReader){
+    const reader=res.body.getReader();
+    for(;;){
+      const{done,value}=await reader.read();
+      if(done)break;
+      if(value&&value.length)onBytes(value.length);
+    }
+  }else{
+    await res.arrayBuffer();
+    onBytes(arquivo.bytes);
+  }
+}
+// A porta única: toda leitura passa por aqui antes de reconhecer. Se o motor
+// já está no aparelho, resolve na hora sem chamar aoProgredir nenhuma vez —
+// é o que acontece em 100% das vezes menos a primeira desta instalação.
+// aoProgredir(bytesBaixados,bytesTotal,fase) — fase é 'baixando' ou 'ligando'.
+let _ocrMotorPromise=null;
+function _ocrGarantirMotor(aoProgredir){
+  if(_ocrMotorPromise)return _ocrMotorPromise;
+  _ocrMotorPromise=(async()=>{
+    const jaPronto=await _ocrEstado();
+    if(!jaPronto){
+      let baixado=0;
+      for(const a of OCR_ARQUIVOS){
+        await _ocrBaixarUm(a,delta=>{
+          baixado=Math.min(baixado+delta,OCR_BYTES_TOTAL);
+          if(aoProgredir)aoProgredir(baixado,OCR_BYTES_TOTAL,'baixando');
+        });
+      }
+      if(aoProgredir)aoProgredir(OCR_BYTES_TOTAL,OCR_BYTES_TOTAL,'ligando');
+    }
+    await _ocrCarregarLib();
+  })();
+  _ocrMotorPromise.catch(()=>{_ocrMotorPromise=null});
+  return _ocrMotorPromise;
+}
+// Lê o texto de uma foto. Cria o worker, reconhece, termina — sem manter
+// worker vivo entre leituras (cada foto é rara o bastante pra isso não custar
+// caro, e assim nada fica preso na memória à toa). Chamar só depois de
+// _ocrGarantirMotor ter resolvido.
+async function _ocrLerImagem(blob){
+  if(!window.Tesseract)throw new Error(t('O leitor de texto ainda não carregou — tente de novo.'));
+  const worker=await Tesseract.createWorker('eng+por',Tesseract.OEM.LSTM_ONLY,_ocrWorkerOpts());
+  try{
+    const{data}=await worker.recognize(blob);
+    return(data.text||'').trim();
+  }finally{
+    worker.terminate().catch(()=>{});
+  }
+}
+
 // ── HISTORY ──
 let _historyCache=[];
 async function loadHistory(){
@@ -27230,7 +27349,16 @@ function exportObsidian(){
 </script>
 <script>
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
+  // Registra assim que este script roda (fim do <body>, DOM já montado) — não
+  // espera o evento 'load' da janela. Achado testando o Plano 19 (OCR local)
+  // no WebKit: o <video preload="auto"> da introdução (id="vintroVideo",
+  // ~linha 6614) nunca termina de "carregar" sob esse motor, e por isso
+  // 'load' nunca disparava — o Service Worker nunca registrava, nunca
+  // cacheava nada, para sempre, nesse motor (Safari/iOS incluídos, já que são
+  // todos WebKit). Bug pré-existente, não introduzido por este plano; corrigido
+  // aqui porque a Etapa 1 do OCR depende do cache do sw.js pra cumprir "baixa
+  // o motor uma vez só, nunca mais, nem offline".
+  navigator.serviceWorker.register('sw.js');
 }
 // ── Aviso de nova versão: compara o ETag do index.html no servidor ──
 // (o app nunca é cacheado pelo SW; o que segura versão velha é o cache HTTP.
