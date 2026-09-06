@@ -7001,7 +7001,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.11';
+const VOX_VERSION='2026.09.06.12';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -19804,13 +19804,91 @@ function idbDelete(key){
 // porque não é óbvia. ArrayBuffer é aceito nos dois motores, e o
 // imgCarregar devolve um Blob de verdade de qualquer forma — quem chama
 // imgSalvar/imgCarregar nunca vê essa diferença.
-function _imgNovaChave(){return 'img_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)}
-// w/h são opcionais (quem chama já mediu, se precisar cachear pra reservar
-// espaço antes do Blob carregar) — sem eles o registro grava 0,0.
-async function imgSalvar(blob,w=0,h=0,chave){
-  const id=chave||_imgNovaChave();
-  const mime=blob.type||'application/octet-stream';
-  const buf=await blob.arrayBuffer();
+//
+// ── OPFS PARA FOTOS NOVAS (Etapa 4 do plano de armazenamento durável,
+// 06/09/2026 — a etapa mais delicada, ler PLANO_DIRETOR antes de mexer) ──
+// REGRA DE OURO: fotos que já existem no IndexedDB FICAM onde estão. Só
+// fotos anexadas a partir de agora vão pro OPFS, e só quando a API existe.
+// Nada de migração em massa — é isso que reduz o risco desta etapa.
+//
+// Onde a decisão acontece: _imgNovaChave() (chamada em dois lugares só —
+// _anexarUmaImagem, foto nova, e dentro do próprio imgSalvar como
+// fallback) já nasce com o prefixo 'opfs_' quando a API existe, ou 'img_'
+// quando não existe — igual a hoje. O prefixo decide tudo: imgSalvar/
+// imgCarregar/imgApagar só OLHAM a chave que já receberam pra saber onde
+// procurar. Quem chama essas 4 funções (Plano 18 inteiro) não muda uma
+// linha, porque a assinatura e o contrato de retorno continuam os mesmos.
+function _temOpfs(){
+  return'storage'in navigator&&typeof navigator.storage.getDirectory==='function';
+}
+function _imgNovaChave(){
+  const base=Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  return(_temOpfs()?'opfs_':'img_')+base;
+}
+// FileSystemSyncAccessHandle (a via rápida e síncrona) só existe dentro de
+// um Worker — testado na validação técnica do plano. O worker nasce de um
+// Blob URL (a CSP já permite worker-src 'self' blob:), sem arquivo novo.
+// Um só worker, reaproveitado pra toda escrita da sessão — cada mensagem
+// carrega a própria chave pra casar pedido com resposta.
+let _opfsWorkerPromise=null;
+function _opfsWorkerCodigo(){
+  return "self.onmessage=async function(ev){"+
+    "const{chave,buf}=ev.data;"+
+    "try{"+
+      "const root=await navigator.storage.getDirectory();"+
+      "const fh=await root.getFileHandle(chave,{create:true});"+
+      "const sync=await fh.createSyncAccessHandle();"+
+      "sync.truncate(0);"+
+      "sync.write(new Uint8Array(buf),{at:0});"+
+      "sync.flush();sync.close();"+
+      "self.postMessage({ok:true,chave});"+
+    "}catch(e){self.postMessage({ok:false,chave,erro:String(e&&e.message||e)})}"+
+  "};";
+}
+function _opfsWorker(){
+  if(_opfsWorkerPromise)return _opfsWorkerPromise;
+  _opfsWorkerPromise=new Promise((resolve,reject)=>{
+    try{
+      const blob=new Blob([_opfsWorkerCodigo()],{type:'application/javascript'});
+      resolve(new Worker(URL.createObjectURL(blob)));
+    }catch(e){reject(e)}
+  });
+  return _opfsWorkerPromise;
+}
+function _opfsEscrever(chave,buf){
+  return new Promise((resolve,reject)=>{
+    _opfsWorker().then(worker=>{
+      function onMsg(ev){
+        if(ev.data.chave!==chave)return;
+        worker.removeEventListener('message',onMsg);
+        if(ev.data.ok)resolve();else reject(new Error(ev.data.erro||'falha ao gravar no OPFS'));
+      }
+      worker.addEventListener('message',onMsg);
+      worker.postMessage({chave,buf});
+    },reject);
+  });
+}
+// Leitura não precisa de worker — API assíncrona normal, direto no thread
+// principal (só a ESCRITA com handle síncrono exige o worker).
+async function _opfsLer(chave){
+  const root=await navigator.storage.getDirectory();
+  const fh=await root.getFileHandle(chave);
+  return fh.getFile(); // File extends Blob — serve como retorno de imgCarregar
+}
+async function _opfsApagar(chave){
+  const root=await navigator.storage.getDirectory();
+  await root.removeEntry(chave);
+}
+// Comparação byte a byte — usada só na conferência da gravação nova
+// (grava, lê de volta, compara, do jeito que foi testado na validação
+// técnica do plano; nunca considera sucesso sem essa conferência).
+function _buffersIguais(a,b){
+  if(a.byteLength!==b.byteLength)return false;
+  const va=new Uint8Array(a),vb=new Uint8Array(b);
+  for(let i=0;i<va.length;i++)if(va[i]!==vb[i])return false;
+  return true;
+}
+function _imgSalvarIndexedDB(id,buf,mime,w,h){
   return _openIDB().then(db=>new Promise((resolve,reject)=>{
     const tx=db.transaction(IDB_IMG_STORE,'readwrite');
     tx.objectStore(IDB_IMG_STORE).put({id,buf,mime,w,h,criadoEm:Date.now()});
@@ -19818,7 +19896,33 @@ async function imgSalvar(blob,w=0,h=0,chave){
     tx.onerror=()=>reject(tx.error);
   }));
 }
-function imgCarregar(chave){
+// w/h são opcionais (quem chama já mediu, se precisar cachear pra reservar
+// espaço antes do Blob carregar) — sem eles o registro grava 0,0.
+async function imgSalvar(blob,w=0,h=0,chave){
+  const id=chave||_imgNovaChave();
+  const mime=blob.type||'application/octet-stream';
+  const buf=await blob.arrayBuffer();
+  if(id.startsWith('opfs_')&&_temOpfs()){
+    try{
+      await _opfsEscrever(id,buf);
+      // Nunca perder uma foto por causa da troca: grava, LÊ DE VOLTA e
+      // confere byte a byte antes de considerar sucesso.
+      const bufLido=await(await _opfsLer(id)).arrayBuffer();
+      if(_buffersIguais(buf,bufLido)){
+        idbSet('opfsmeta_'+id,{mime,w,h,criadoEm:Date.now()}).catch(()=>{}); // metadado leve, não bloqueia o sucesso
+        return id;
+      }
+      await _opfsApagar(id).catch(()=>{}); // conferência falhou — não deixa lixo pra trás
+    }catch(e){
+      console.warn('OPFS falhou ao salvar a foto — caindo pro IndexedDB com a mesma chave:',e);
+    }
+    // Qualquer falha acima cai pro IndexedDB de sempre, com a MESMA chave
+    // (ainda com o prefixo opfs_ — é só uma string; imgCarregar sabe achar
+    // ali também). Nunca fica um "meio-termo" sem nenhuma cópia gravada.
+  }
+  return _imgSalvarIndexedDB(id,buf,mime,w,h);
+}
+function _imgCarregarIndexedDB(chave){
   return _openIDB().then(db=>new Promise((resolve,reject)=>{
     const req=db.transaction(IDB_IMG_STORE,'readonly').objectStore(IDB_IMG_STORE).get(chave);
     req.onsuccess=()=>{
@@ -19828,13 +19932,39 @@ function imgCarregar(chave){
     req.onerror=()=>reject(req.error);
   }));
 }
-function imgApagar(chave){
+async function _imgCarregarOpfs(chave){
+  try{
+    return await _opfsLer(chave);
+  }catch(e){
+    // Não achou no OPFS — pode ter caído no fallback do IndexedDB na hora
+    // de salvar (escrita no OPFS falhou lá atrás). Mesma chave, outro lugar.
+    return _imgCarregarIndexedDB(chave);
+  }
+}
+function imgCarregar(chave){
+  if(chave&&chave.startsWith('opfs_'))return _imgCarregarOpfs(chave);
+  return _imgCarregarIndexedDB(chave);
+}
+function _imgApagarIndexedDB(chave){
   return _openIDB().then(db=>new Promise((resolve,reject)=>{
     const tx=db.transaction(IDB_IMG_STORE,'readwrite');
     tx.objectStore(IDB_IMG_STORE).delete(chave);
     tx.oncomplete=()=>resolve();
     tx.onerror=()=>reject(tx.error);
   }));
+}
+function imgApagar(chave){
+  if(chave&&chave.startsWith('opfs_')){
+    // Apaga dos dois lugares possíveis (OPFS + o fallback de IndexedDB que
+    // pode ter acontecido na gravação) — apagar uma chave que não existe
+    // num dos dois não dá erro, então é seguro tentar sempre os dois.
+    return Promise.all([
+      _opfsApagar(chave).catch(()=>{}),
+      idbDelete('opfsmeta_'+chave).catch(()=>{}),
+      _imgApagarIndexedDB(chave).catch(()=>{})
+    ]).then(()=>{});
+  }
+  return _imgApagarIndexedDB(chave);
 }
 // Resolve pra um Object URL, cacheado em imgBlobReg — chamado toda vez que
 // uma miniatura (tira ou Mural) precisa mostrar uma foto que já foi salva
