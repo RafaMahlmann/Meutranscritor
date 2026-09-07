@@ -1734,6 +1734,17 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .drag-handle{cursor:grab;padding:2px 8px;color:var(--text4);font-size:16px;line-height:1;user-select:none;flex-shrink:0;border-radius:6px;display:flex;align-items:center;transition:all .15s}
 .drag-handle:hover{color:var(--accent);background:var(--accent-glow)}
 .drag-handle:active{cursor:grabbing}
+/* Plano de 07/09/2026, Etapa 1: a alça NOVA, só do calendário — nasce ao lado
+   da alça de 6 pontos de sempre, nunca no lugar dela, e só quando a janela é
+   flutuante e o calendário está aberto (ver _flMontarAlcaCalendario). Regra de
+   ouro: só ESTA alça pode marcar no calendário; a de 6 pontos nunca verifica
+   alvo de calendário, em lugar nenhum. */
+.drag-handle-cal{cursor:grab;padding:2px 7px;margin-left:2px;color:var(--accent);font-size:15px;
+  line-height:1;user-select:none;flex-shrink:0;border-radius:6px;display:flex;align-items:center;
+  background:var(--accent-glow);transition:all .15s}
+.drag-handle-cal:hover{filter:brightness(1.12)}
+.drag-handle-cal:active{cursor:grabbing}
+.card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch .drag-handle-cal{padding:2px 4px;font-size:12px}
 /* "Respiração": aviso discreto de que há texto selecionado no card — o ⠿
    ganha uma segunda função nesse estado (ver initSelectionGlow). */
 @keyframes dragHandleBreath{0%,100%{opacity:.45;transform:scale(1);color:var(--text4)}50%{opacity:1;transform:scale(1.2);color:var(--accent)}}
@@ -2280,6 +2291,10 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    pega e se move" antes de qualquer clique — sem precisar de rótulo. */
 .float-window:hover{box-shadow:0 14px 44px rgba(0,0,0,0.32),0 3px 10px rgba(0,0,0,0.14)}
 .float-window-arrastando{opacity:.88;box-shadow:0 18px 48px rgba(0,0,0,0.32),0 4px 12px rgba(0,0,0,0.18)}
+/* Etapa 1 do plano de 07/09: contorno verde enquanto a alça NOVA está no ar —
+   "soltar aqui marca". A alça de 6 pontos nunca liga esta classe. */
+.float-window.fl-modo-marcar{border:1px solid var(--accent);
+  box-shadow:0 18px 48px rgba(0,0,0,0.32),0 0 0 3px var(--accent-glow)}
 /* Fase 9 — game feel. Fechar encolhe em vez de cortar seco; soltar depois de
    mover "assenta" com um leve overshoot (peso pousando, não parada morta);
    bater no tamanho mínimo do resize treme uma vez só, não gruda sem aviso. */
@@ -3053,6 +3068,13 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    Isto é o que dá retorno tátil no CELULAR, onde hover não existe: metade do
    efeito não pode depender de um mouse que metade das pessoas não tem. */
 .cal-cel.cal-apertada{transform:scale(.985)}
+/* Etapa 1 do plano de 07/09: enquanto a alça NOVA da janela flutuante está no
+   ar, a grade inteira "acorda" com um brilho fraco — não é o alvo forte (isso
+   continua sendo .mira, só na célula sob o ponteiro), é só "pronta pra
+   receber em qualquer célula". */
+#calPalco.cal-pronta-receber .cal-cel{box-shadow:inset 0 0 0 1px var(--accent-glow)}
+#calPalco.cal-pronta-receber .cal-dia-grade,
+#calPalco.cal-pronta-receber #calDiaTodo{box-shadow:inset 0 0 0 1px var(--accent-glow)}
 .cal-cel.fds{background:#f7f7f7}
 [data-theme="dark"] .cal-cel.fds{background:#2a2a2d}
 /* O dia do mês vizinho tem que VENCER o fim de semana — um sábado do mês que
@@ -7001,7 +7023,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.07.2';
+const VOX_VERSION='2026.09.07.3';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7039,6 +7061,8 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── Diário e cards flutuantes no Calendário (07/09/2026) ──
+"Arrastar para marcar no calendário":"Drag to schedule on the calendar",
 // ── ARMAZENAMENTO DURÁVEL — Etapa 1: convite de instalar (06/09/2026) ──
 "Guarde o Vox na tela de início":"Save Vox to your home screen",
 "No iPhone e no iPad, o Safari apaga os dados de sites que ficam uma semana sem ser abertos. Na tela de início, o Vox deixa de ser \"um site\" e suas transcrições param de correr esse risco.":"On iPhone and iPad, Safari erases the data of sites that go a week without being opened. On the home screen, Vox stops being \"a website\" and your transcripts stop running that risk.",
@@ -10995,6 +11019,27 @@ function _flWheel(e){
   _flAplicarTransform();
 }
 
+// Etapa 1 do plano de 07/09/2026: monta a alça NOVA (só do calendário) ao
+// lado da alça de 6 pontos de sempre, dentro do cabeçalho (.ch) do card que
+// acabou de virar janela flutuante — mas só quando `_calAberto()`. Uma
+// janela nunca troca de mapa sem fechar primeiro (fecharCalendario/
+// fecharFluxograma/fecharOrbital fecham todas as flutuantes de propósito),
+// então não existe cenário de "calendário fechou com a janela viva" — a alça
+// não precisa de um caminho de remoção depois de criada.
+function _flMontarAlcaCalendario(card){
+  if(!_calAberto())return;
+  const grip=card.querySelector('.ch .drag-handle');
+  if(!grip||card.querySelector('.drag-handle-cal'))return;
+  const alca=document.createElement('div');
+  alca.className='drag-handle-cal';
+  alca.title=t('Arrastar para marcar no calendário');
+  alca.innerHTML=`<span class="svgi">${CAL_ICO.dia}</span>`;
+  grip.insertAdjacentElement('afterend',alca);
+  // Mesmo par de listeners que initCardDrag usa pra alça de sempre — só troca
+  // o modo passado a _flStartWindowDrag.
+  alca.addEventListener('mousedown',e=>{e.preventDefault();_flStartWindowDrag(card,{clientX:e.clientX,clientY:e.clientY},false,'marcar')});
+  alca.addEventListener('touchstart',e=>{e.preventDefault();const tt=e.touches[0];_flStartWindowDrag(card,{clientX:tt.clientX,clientY:tt.clientY},true,'marcar')},{passive:false});
+}
 // Abre uma janela flutuante pro card `id` — ou, se já tiver uma aberta,
 // só traz ela pra frente. `origemEl` (o item da lista clicado) é opcional:
 // quando existe, a janela nasce voando de lá até a posição final (FLIP).
@@ -11051,6 +11096,9 @@ function _flAbrirCard(id,origemEl,posFixa){
   // é uma visão à parte — nunca deveria nascer invisível por causa de um
   // filtro de outra tela.
   card.classList.remove('folder-hidden','hidden');
+  // Etapa 1 do plano de 07/09: a alça nova só nasce com o calendário aberto —
+  // em Fluxograma/Órbita a janela continua com uma alça só, nada muda lá.
+  _flMontarAlcaCalendario(card);
   world.appendChild(win);
   // O card pode chegar aqui JÁ ao vivo: na gravação longa ele nasce e é
   // aberto no mesmo quadro, antes de setSegCardLive marcar a janela (que
@@ -11403,9 +11451,15 @@ function _flAlvoPastaEmPonto(x,y){
 // Fluxograma e na Órbita, lugar é PASTA (onde a nota mora). No calendário,
 // lugar é DIA e HORA (quando ela é). São eixos independentes de propósito:
 // soltar num dia nunca mexe na pasta, e soltar numa pasta nunca mexe no dia.
-// Com o calendário aberto, nó de pasta não é alvo — nem existe um na tela.
-function _flAlvoDropEmPonto(x,y){
-  if(_calAberto())return _calAlvoEmPonto(x,y,false);
+// Etapa 1 do plano de 07/09/2026 — "regra de ouro": a intenção agora é
+// declarada por QUAL ALÇA iniciou o arrasto, nunca mais adivinhada pela
+// posição. `modo==='marcar'` (a alça nova, só existe com o calendário aberto)
+// SÓ enxerga alvo de calendário; `modo==='mover'` (a alça de 6 pontos de
+// sempre) SÓ enxerga alvo de pasta — mesmo com o calendário aberto por cima
+// dela, ela nunca mais chama _calAlvoEmPonto. É isto que resolve o relato do
+// Rafa: afastar janelas empilhadas pela alça de sempre não marca mais nada.
+function _flAlvoDropEmPonto(x,y,modo){
+  if(modo==='marcar')return _calAberto()?_calAlvoEmPonto(x,y,false):null;
   const p=_flAlvoPastaEmPonto(x,y);
   return p?{tipo:'pasta',el:p.el,folderId:p.folderId}:null;
 }
@@ -11429,7 +11483,12 @@ function _flLimiteVisivel(winW,winH){
     maxY:(r.height-_flY)/_flS-m
   };
 }
-function _flStartWindowDrag(el,e0,isTouch){
+function _flStartWindowDrag(el,e0,isTouch,modo){
+  // Etapa 1 do plano de 07/09/2026: `modo` diz qual alça começou o gesto.
+  // 'mover' (padrão, a alça de 6 pontos de sempre) e 'marcar' (a alça nova,
+  // só existe com o calendário aberto — ver _flMontarAlcaCalendario). Nunca
+  // outro valor: qualquer coisa que não seja 'marcar' vira 'mover'.
+  modo=(modo==='marcar')?'marcar':'mover';
   const win=el.closest('.float-window');
   if(!win)return;
   const id=win.id.replace('floatwin-','');
@@ -11438,11 +11497,18 @@ function _flStartWindowDrag(el,e0,isTouch){
   const origLeft=parseFloat(win.style.left)||0,origTop=parseFloat(win.style.top)||0;
   const winW=parseFloat(win.style.width)||FL_LARG,winH=parseFloat(win.style.height)||FL_ALT;
   let ativo=false,alvoAtual=null;
+  // A grade só "acorda" (brilho fraco) pela alça de marcar — a de mover nunca
+  // liga esta classe, em lugar nenhum.
+  const calPalcoEl=(modo==='marcar')?document.getElementById('calPalco'):null;
   function coords(e){if(isTouch){const tt=e.touches[0]||e.changedTouches[0];return{x:tt.clientX,y:tt.clientY}}return{x:e.clientX,y:e.clientY}}
   function onMove(e){
     if(isTouch)e.preventDefault();
     const{x,y}=coords(e);
-    if(!ativo){if(Math.hypot(x-ox,y-oy)<4)return;ativo=true;win.classList.add('float-window-arrastando')}
+    if(!ativo){
+      if(Math.hypot(x-ox,y-oy)<4)return;
+      ativo=true;win.classList.add('float-window-arrastando');
+      if(modo==='marcar'){win.classList.add('fl-modo-marcar');calPalcoEl?.classList.add('cal-pronta-receber')}
+    }
     const limite=_flLimitePainel();
     const visivel=_flLimiteVisivel(winW,winH);
     let nx=origLeft+(x-ox)/_flS,ny=origTop+(y-oy)/_flS;
@@ -11451,7 +11517,7 @@ function _flStartWindowDrag(el,e0,isTouch){
     win.style.left=nx+'px';win.style.top=ny+'px';
     const j=_flAbertas.find(j=>j.id===id);if(j){j.x=nx;j.y=ny}
     _orbFiosDasNotas(); // o fio acompanha a nota enquanto ela é arrastada
-    const achado=_flAlvoDropEmPonto(x,y);
+    const achado=_flAlvoDropEmPonto(x,y,modo);
     if(achado&&achado.tipo==='cal'){
       // No calendário quem acende é a célula/vaga, com a linguagem do próprio
       // calendário (o ímã da fase 1 e a vaga tracejada da coluna) — não a
@@ -11468,11 +11534,12 @@ function _flStartWindowDrag(el,e0,isTouch){
   function onUp(e){
     document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
     document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
-    win.classList.remove('float-window-arrastando');
+    win.classList.remove('float-window-arrastando','fl-modo-marcar');
+    calPalcoEl?.classList.remove('cal-pronta-receber');
     alvoAtual?.classList.remove('fl-drop-alvo');
     if(!ativo){_calLimparAlvo();return}
     const{x,y}=coords(e);
-    const achado=_flAlvoDropEmPonto(x,y);
+    const achado=_flAlvoDropEmPonto(x,y,modo);
     // ── soltar num dia/hora do calendário: marca QUANDO, não mexe em pasta ──
     if(achado&&achado.tipo==='cal'){
       const alvoEl=achado.el;
@@ -11536,6 +11603,20 @@ function _flStartWindowDrag(el,e0,isTouch){
         if(document.getElementById('fcOverlay')?.classList.contains('on'))_fcRender();
         else if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbDesenhar();
       },260);
+      return;
+    }
+    // Etapa 1 do plano de 07/09: a alça de marcar é SÓ pra agendar, nunca pra
+    // mover — sem alvo, a janela não fica "onde caiu", ela volta exatamente
+    // pra posição de antes do arrasto começar (.float-window-reclamp já existe
+    // e já anima left/top, usada hoje pra reencaixar depois de redimensionar
+    // o painel — reaproveitada aqui pra voltar, não pra crescer).
+    if(modo==='marcar'){
+      _calLimparAlvo();
+      win.classList.add('float-window-reclamp');
+      win.style.left=origLeft+'px';win.style.top=origTop+'px';
+      const j=_flAbertas.find(j=>j.id===id);if(j){j.x=origLeft;j.y=origTop}
+      _orbFiosDasNotas();
+      setTimeout(()=>win.classList.remove('float-window-reclamp'),260);
       return;
     }
     _flSalvarPosicao(id);
