@@ -3392,6 +3392,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .cal-gav-h{font-size:9.5px;font-weight:700;color:var(--text3);flex:none;
   font-variant-numeric:tabular-nums;width:34px}
 .cal-gav-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:660}
+/* Etapa 3 do plano de 07/09: a alça (só visual — a linha inteira já abre a
+   nota) e o X (excluir de verdade) de cada linha da gaveta. */
+.cal-gav-g{width:12px;height:12px;color:var(--text3);opacity:.55;flex:none;display:flex;align-items:center}
+.cal-gav-g svg{width:12px;height:12px;display:block}
+.cal-gav-x{flex:none;width:20px;height:20px;border-radius:50%;border:1px solid transparent;
+  background:none;color:var(--text3);display:grid;place-items:center;cursor:pointer;padding:0}
+.cal-gav-x svg{width:10px;height:10px}
+.cal-gav-x:hover{color:var(--danger,#ff3b30);border-color:var(--danger,#ff3b30)}
 .cal-ev{position:absolute;border-radius:6px;overflow:visible;cursor:grab;
   touch-action:none;user-select:none;-webkit-user-select:none;pointer-events:auto;
   --cal-fundo:var(--bg-input);--cal-txt:var(--text2);--cal-ca:#6e6e73}
@@ -3452,6 +3460,34 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .cal-ev.alto .cal-ev-alca::after{opacity:.3}
 .cal-ev.medio .cal-ev-alca.s::after{opacity:.3}
 .cal-ev:hover .cal-ev-alca::after,.cal-ev.redim .cal-ev-alca::after{opacity:.55}
+/* Etapa 3 do plano de 07/09/2026 — a alça de 6 pontos, na lateral ESQUERDA
+   do bloco (topo/base já são as alças de duração, a direita já é a haste do
+   áudio). Só existe a partir de 22px de altura (.com-grip, ver _calEvAltura)
+   — abaixo disso ela é fisicamente maior que o bloco. */
+.cal-ev-grip{position:absolute;left:2px;top:0;bottom:0;width:12px;z-index:4;cursor:grab;
+  display:none;place-items:center;color:var(--cal-txt,var(--text2));opacity:.62;
+  touch-action:none;transition:opacity .14s linear}
+.cal-ev-grip svg{width:11px;height:11px}
+.cal-ev.com-grip .cal-ev-grip{display:grid}
+.cal-ev.com-grip .cal-ev-corpo{padding-left:15px}
+.cal-ev:hover .cal-ev-grip{opacity:1}
+.cal-ev-grip:active{cursor:grabbing}
+/* O X: FORA do bloco, no canto — mesma posição que o botão de fechar da
+   janela flutuante já usa hoje (top:-10px;right:-10px). Duas condições pra
+   existir, não uma: (a) altura mínima de 36px (.mostra-x, ver _calEvAltura)
+   e (b) só no bloco em FOCO (mouse por cima, ou o último tocado) — nunca em
+   todos ao mesmo tempo, senão os X's de blocos vizinhos se invadem (medido
+   no mockup aprovado: 14 de 20 blocos colidiam com o X permanente). */
+.cal-ev-x{position:absolute;top:-9px;right:-9px;width:20px;height:20px;border-radius:50%;
+  border:1px solid var(--border2);background:var(--bg-card);color:var(--text3);
+  display:none;place-items:center;cursor:pointer;z-index:7;padding:0;
+  box-shadow:0 2px 6px rgba(0,0,0,.18);opacity:0;transform:scale(.9);
+  transition:opacity .14s linear,transform .14s var(--fc-curva),color .14s linear,border-color .14s linear}
+.cal-ev-x svg{width:11px;height:11px}
+.cal-ev.mostra-x .cal-ev-x{display:grid}
+.cal-ev.mostra-x:hover .cal-ev-x,.cal-ev.mostra-x.foco .cal-ev-x{opacity:1;transform:none}
+.cal-ev-x:hover{color:var(--danger,#ff3b30);border-color:var(--danger,#ff3b30)}
+.cal-ev-x:active{transform:scale(.9)}
 .cal-ev.voando{z-index:12;box-shadow:0 6px 24px rgba(0,0,0,.22);transition:none}
 [data-theme="dark"] .cal-ev.voando{box-shadow:0 8px 30px rgba(0,0,0,.7)}
 .cal-ev.pousando{transition:top 260ms var(--fc-curva),height 260ms var(--fc-curva),
@@ -7070,7 +7106,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.07.4';
+const VOX_VERSION='2026.09.07.5';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7113,6 +7149,8 @@ let I18N_EN={
 "Abrir esta hora ({n} notas)":"Open this hour ({n} notes)",
 "Fechar esta hora":"Close this hour",
 "{n} notas":"{n} notes",
+"Arrastar para mudar de hora":"Drag to change the time",
+"Excluir esta nota":"Delete this note",
 // ── ARMAZENAMENTO DURÁVEL — Etapa 1: convite de instalar (06/09/2026) ──
 "Guarde o Vox na tela de início":"Save Vox to your home screen",
 "No iPhone e no iPad, o Safari apaga os dados de sites que ficam uma semana sem ser abertos. Na tela de início, o Vox deixa de ser \"um site\" e suas transcrições param de correr esse risco.":"On iPhone and iPad, Safari erases the data of sites that go a week without being opened. On the home screen, Vox stops being \"a website\" and your transcripts stop running that risk.",
@@ -14378,6 +14416,34 @@ function _calFazEvento(it,hp){
     a.className='cal-ev-alca '+l;
     el.appendChild(a);
   });
+  // Etapa 3 do plano de 07/09/2026: cada borda do bloco com um trabalho —
+  // topo/base já eram as alças de duração, a direita já é a haste do áudio;
+  // a ESQUERDA passa a ser a alça de mover no tempo, e o X mora FORA do
+  // bloco, no canto (mesmo padrão que o botão de fechar da janela flutuante
+  // já usa: top:-9px;right:-9px). As duas só aparecem com altura pra
+  // conviver com o resto — ver _calEvAltura (.com-grip/.mostra-x).
+  const grip=document.createElement('div');
+  grip.className='cal-ev-grip';
+  grip.title=t('Arrastar para mudar de hora');
+  grip.innerHTML=ICO.grip;
+  el.appendChild(grip);
+  const xBtn=document.createElement('button');
+  xBtn.type='button';
+  xBtn.className='cal-ev-x';
+  xBtn.title=t('Excluir esta nota');
+  xBtn.innerHTML=ICO.close;
+  // Nunca vira arrasto/toque do bloco por baixo — o X cuida só de si mesmo.
+  xBtn.addEventListener('pointerdown',ev2=>ev2.stopPropagation());
+  xBtn.addEventListener('click',ev2=>{
+    ev2.stopPropagation();
+    // askDel() é o caminho certo: manda pra Lixeira (paraLixeira), com
+    // desfazer — nunca doDelete direto. Já é o mesmo botão usado no
+    // cabeçalho do card; aqui só falta repintar o Diário, que ninguém mais
+    // faz sozinho depois de excluir.
+    askDel(c.id);
+    _calPintar();
+  });
+  el.appendChild(xBtn);
   _calPintarCor(el,c);
   _calEvRotulo(el,it.min0,it.dur,c,it.marcado);
   _calEvAltura(el,pxAlt);
@@ -14410,6 +14476,12 @@ function _calEvAltura(el,px){
   el.classList.toggle('baixo',px<34);            // não cabe a segunda linha
   el.classList.toggle('medio',px>=24&&px<44);    // só a alça de baixo em repouso
   el.classList.toggle('alto',px>=44);            // as duas em repouso
+  // Etapa 3 do plano de 07/09: a alça de mover e o X só EXISTEM (não só
+  // "ficam discretos") a partir de uma certa altura — abaixo disso o
+  // controle é fisicamente maior que o bloco. 22px/36px medidos no mockup
+  // aprovado (scratchpad/PROPOSTA_CALENDARIO_INTERACAO.html).
+  el.classList.toggle('com-grip',px>=22);
+  el.classList.toggle('mostra-x',px>=36);
 }
 function _calRolarPraHora(min){
   const rolo=document.getElementById('calDiaRolo');
@@ -14523,10 +14595,18 @@ function _calMontarGaveta(hAberto,itens){
     row.className='cal-gav-it';
     row.dataset.cid=it.c.id;
     _calPintarCor(row,it.c);
+    // Etapa 3 do plano de 07/09: o espaço da alça e do X, já reservado desde
+    // a Etapa 2 (linha de 28px) — aqui a alça é só visual (a linha inteira já
+    // abre a nota ao tocar, não precisa de arrasto próprio nesta lista) e o X
+    // exclui de verdade, pelo mesmo caminho seguro do resto do app.
+    const grip=document.createElement('span');grip.className='cal-gav-g';grip.innerHTML=ICO.grip;
     const h=document.createElement('span');h.className='cal-gav-h';h.textContent=_calHoraDoMin(it.min0);
     const nome=document.createElement('span');nome.className='cal-gav-n';
     nome.textContent=_calNomeDoCard(it.c);   // textContent: dado do usuário nunca vira HTML
-    row.appendChild(h);row.appendChild(nome);
+    const xBtn=document.createElement('button');
+    xBtn.type='button';xBtn.className='cal-gav-x';xBtn.title=t('Excluir esta nota');xBtn.innerHTML=ICO.close;
+    xBtn.addEventListener('click',ev=>{ev.stopPropagation();askDel(it.c.id);_calPintar()});
+    row.appendChild(grip);row.appendChild(h);row.appendChild(nome);row.appendChild(xBtn);
     row.addEventListener('click',()=>_flAbrirCard(it.c.id,row));
     lst.appendChild(row);
   });
@@ -14781,18 +14861,30 @@ function _calAplicarAlvo(cid,alvo){
 
 // ── arrastar dentro do dia: o MESMO nó do começo ao fim ────────────────────
 let _calArrDia=null,_calQuadroDia=false;
+// Etapa 3 do plano de 07/09: "em foco" é o único jeito de revelar o X no
+// TOQUE — não existe :hover lá. É o último bloco tocado, nunca mais de um
+// (senão os X's de blocos vizinhos se invadem — medido no mockup aprovado).
+function _calFocarEv(el){
+  document.querySelectorAll('.cal-ev.foco').forEach(n=>{if(n!==el)n.classList.remove('foco')});
+  el.classList.add('foco');
+}
 function _calDiaPointerDown(e){
   if(e.pointerType==='mouse'&&e.button!==0)return;
   if(e.target.closest('.float-layer'))return;
+  // O X cuida da própria exclusão (askDel→paraLixeira) — só precisa não
+  // também virar um arrasto/toque do bloco por baixo dele.
+  if(e.target.closest('.cal-ev-x'))return;
   const ev=e.target.closest('.cal-ev');
   const alca=e.target.closest('.cal-ev-alca');
   if(ev&&alca)return _calRedimDown(e,ev,alca.classList.contains('n')?'n':'s');
+  const grip=e.target.closest('.cal-ev-grip');
   const solto=e.target.closest('.cal-dia-todo .cal-fita,.cal-dia-todo .cal-pt');
   const el=ev||solto;
   if(!el)return;
   const cid=el.dataset.cid;
   const card=cid&&document.getElementById(cid);
   if(!card)return;
+  if(ev)_calFocarEv(ev);
   e.preventDefault();
   const r=el.getBoundingClientRect();
   const luz=_calLuzDoCard(card);
@@ -14802,6 +14894,11 @@ function _calDiaPointerDown(e){
     x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,
     ehPonto:el.classList.contains('cal-pt'),
     moveu:false,alvo:null,
+    // Etapa 3: um .cal-ev só arrasta pela alça nova, na lateral esquerda — o
+    // corpo virou só "abrir a nota", nunca mais "mover no tempo". A fita
+    // solta da faixa "o dia todo" (`solto`) não ganhou alça nesta etapa e
+    // continua arrastável pelo corpo inteiro, como sempre foi.
+    podeArrastar:!ev||!!grip,
     ca:luz?luz.ca:'var(--accent)'
   };
   try{el.setPointerCapture(e.pointerId)}catch(err){}
@@ -14815,6 +14912,9 @@ function _calDiaPointerMove(e){
   a.x=e.clientX;a.y=e.clientY;
   if(!a.moveu){
     if(Math.hypot(e.clientX-a.x0,e.clientY-a.y0)<4)return;
+    // Corpo do bloco (sem pegar a alça nova): nunca vira arrasto — só abre
+    // a nota ao soltar, mesmo que o dedo/mouse tenha se mexido um pouco.
+    if(!a.podeArrastar)return;
     a.moveu=true;
     a.el.classList.add('voando');
     if(a.ehEv){
