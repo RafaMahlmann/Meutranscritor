@@ -7001,7 +7001,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.06.12';
+const VOX_VERSION='2026.09.07.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -20744,12 +20744,19 @@ function getAllUsedTags(){
   });
   return [...set];
 }
-async function suggestTags(id){
+// `silencioso=true` é o caminho automático (disparado sozinho ~600ms depois
+// de uma transcrição terminar, ver os dois `setTimeout(()=>suggestTags(...))`
+// mais abaixo no arquivo) — sugerir tag é um extra, nunca a ação que a pessoa
+// pediu. Um "❌" vermelho ali logo depois de uma transcrição bem-sucedida
+// parecia dizer "a transcrição falhou", quando só o extra automático é que
+// não rodou. Clique manual no botão "+ tag IA" continua avisando normalmente:
+// aí a pessoa pediu a ação, silêncio seria pior (achado do Rafa, 07/09/2026).
+async function suggestTags(id,silencioso){
   const card=document.getElementById(id);if(!card)return;
   const text=(card.querySelector('textarea')?.value||'').trim();
-  if(!text){toast(t('ℹ️ Card vazio — nada para analisar'),true);return}
+  if(!text){if(!silencioso)toast(t('ℹ️ Card vazio — nada para analisar'),true);return}
   const key=cfg.apiKeyGroq||cfg.apiKey;
-  if(!key){toast(t('🔑 Configure uma chave de IA (Groq é grátis) para sugerir tags'),true);openModal();return}
+  if(!key){if(!silencioso){toast(t('🔑 Configure uma chave de IA (Groq é grátis) para sugerir tags'),true);openModal()}return}
   const box=document.getElementById('tagsug-'+id);
   if(box)box.innerHTML=`<span class="tagsug-lbl"><span class="svgi">${ICO.sparkles}</span> ${t('pensando…')}</span>`;
   const sgBtn=card.querySelector('.ctag-suggest-btn');sgBtn?.classList.add('loading');
@@ -20762,7 +20769,8 @@ async function suggestTags(id){
     renderTagSuggestions(id,tags);
   }catch(e){
     if(box)box.innerHTML='';
-    toast('❌ '+e.message,true);
+    if(silencioso)console.warn('Sugestão automática de tags não rodou:',e.message);
+    else toast('❌ '+e.message,true);
   }finally{sgBtn?.classList.remove('loading')}
 }
 function renderTagSuggestions(id,tags){
@@ -22885,7 +22893,7 @@ async function handleSegment(blob,durSec,cardId,isFinal){
     if(isFinal){
       setSegCardLive(cardId,false);
       if(!isProc)setStatus('Pronto','ready');
-      if(cfg.apiKeyGroq||cfg.apiKey)setTimeout(()=>suggestTags(cardId),600);
+      if(cfg.apiKeyGroq||cfg.apiKey)setTimeout(()=>suggestTags(cardId,true),600);
     }
   }
 }
@@ -23081,7 +23089,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre'){
       const cid=addCard(text,fromRec?file:file,cost,fromRec?'gravacao':'arquivo',cfg.provider,true,null,null,[],sn,mode,false);
       navigator.clipboard.writeText(text).catch(()=>{});
       toast(t('📋 Copiado para a área de transferência!'));
-      if(cid&&(cfg.apiKeyGroq||cfg.apiKey))setTimeout(()=>suggestTags(cid),400);
+      if(cid&&(cfg.apiKeyGroq||cfg.apiKey))setTimeout(()=>suggestTags(cid,true),400);
     }
     const words=text.split(/\s+/).filter(w=>w).length;
     stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
