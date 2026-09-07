@@ -3344,7 +3344,54 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .cal-hrot{position:absolute;left:0;width:37px;text-align:right;top:2px;
   font-size:9.5px;font-weight:700;color:var(--text2);line-height:1;
   font-variant-numeric:tabular-nums}
+/* Etapa 2 do plano de 07/09/2026 — o botão de abrir a hora, na calha, e o
+   selo de quantidade colado nele. Presença em REPOUSO (não só no hover): no
+   celular hover não existe, e é exatamente aí que este botão mais importa. */
+.cal-hexp{position:absolute;left:1px;top:16px;width:20px;height:20px;border-radius:6px;
+  border:1px solid var(--border2);background:var(--bg-card);color:var(--text3);
+  display:grid;place-items:center;cursor:pointer;padding:0;z-index:6;pointer-events:auto;
+  opacity:.75;transition:transform .13s var(--fc-curva),opacity .14s linear,color .14s linear,
+    border-color .14s linear,background .14s linear}
+.cal-hexp .svgi,.cal-hexp svg{width:11px;height:11px}
+.cal-hexp:hover{opacity:1;color:var(--cal-alvo,var(--accent));border-color:var(--cal-alvo,var(--accent))}
+.cal-hexp:active{transform:scale(.9)}
+.cal-hexp.cal-hexp-aberta{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);opacity:1}
+.cal-hqtd{position:absolute;left:1px;top:38px;font-size:9px;font-weight:800;color:var(--accent);
+  background:var(--accent-glow);border-radius:20px;padding:1px 5px;line-height:1.35;
+  pointer-events:none;z-index:5;font-variant-numeric:tabular-nums}
+/* A régua fina de 5 em 5 min, só dentro da hora aberta (acordeão) — o fio
+   principal continua sendo o de meia hora (::after de .cal-hlin, acima). */
+.cal-hlin-fina{position:absolute;left:44px;right:2px;height:0;border-top:1px solid var(--border);
+  opacity:.35;pointer-events:none}
+.cal-hlin-fina.cheia{opacity:.5}
+.cal-hrot-fina{position:absolute;left:2px;top:-6px;width:37px;text-align:right;
+  font-size:8.5px;font-weight:650;color:var(--text3);opacity:.8;
+  font-variant-numeric:tabular-nums}
 .cal-dia-eventos{position:absolute;left:44px;right:2px;top:0;bottom:0;pointer-events:none}
+/* O resumo que substitui as notas individuais na coluna ESTREITA quando a
+   hora está "aberta" — abrir ali não cresce (não sobra largura pra
+   aproveitar), vira uma gaveta rolável por cima (.cal-gaveta, abaixo). */
+.cal-ev-resumo{cursor:pointer}
+.cal-ev-resumo .cal-ev-corpo{background:var(--bg-input);border-left-color:var(--text4)}
+/* A gaveta: lista rolável por cima da coluna, mesma família visual do
+   fantasma de alvo (borda tracejada = "isto é passageiro, não é um bloco"). */
+.cal-gaveta{position:absolute;left:44px;right:2px;background:var(--bg-card);border-radius:8px;
+  border:1px solid var(--border2);box-shadow:var(--shadow-card,0 4px 16px rgba(0,0,0,.18));
+  z-index:8;overflow:hidden;display:flex;flex-direction:column}
+.cal-gav-cab{display:flex;align-items:center;gap:7px;padding:6px 8px;font-size:10.5px;
+  font-weight:800;color:var(--accent);background:var(--accent-glow);flex:none}
+.cal-gav-cab .cal-gav-ic svg{width:13px;height:13px;display:block}
+.cal-gav-tit{flex:1;min-width:0}
+.cal-gav-fechar{flex:none;width:22px;height:22px;border-radius:50%;border:none;background:none;
+  color:inherit;display:grid;place-items:center;cursor:pointer;padding:0}
+.cal-gav-fechar svg{width:11px;height:11px}
+.cal-gav-lista{overflow-y:auto;flex:1;padding:3px;overscroll-behavior:contain}
+.cal-gav-it{display:flex;align-items:center;gap:6px;padding:5px 5px 5px 3px;border-radius:6px;
+  font-size:11px;color:var(--cal-txt,var(--text2));border-left:3px solid var(--cal-pasta,transparent);
+  background:var(--cal-fundo,var(--bg-input));margin-bottom:3px;min-height:28px;cursor:pointer}
+.cal-gav-h{font-size:9.5px;font-weight:700;color:var(--text3);flex:none;
+  font-variant-numeric:tabular-nums;width:34px}
+.cal-gav-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:660}
 .cal-ev{position:absolute;border-radius:6px;overflow:visible;cursor:grab;
   touch-action:none;user-select:none;-webkit-user-select:none;pointer-events:auto;
   --cal-fundo:var(--bg-input);--cal-txt:var(--text2);--cal-ca:#6e6e73}
@@ -7023,7 +7070,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.07.3';
+const VOX_VERSION='2026.09.07.4';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7063,6 +7110,9 @@ function applyStaticI18n(){
 let I18N_EN={
 // ── Diário e cards flutuantes no Calendário (07/09/2026) ──
 "Arrastar para marcar no calendário":"Drag to schedule on the calendar",
+"Abrir esta hora ({n} notas)":"Open this hour ({n} notes)",
+"Fechar esta hora":"Close this hour",
+"{n} notas":"{n} notes",
 // ── ARMAZENAMENTO DURÁVEL — Etapa 1: convite de instalar (06/09/2026) ──
 "Guarde o Vox na tela de início":"Save Vox to your home screen",
 "No iPhone e no iPad, o Safari apaga os dados de sites que ficam uma semana sem ser abertos. Na tela de início, o Vox deixa de ser \"um site\" e suas transcrições param de correr esse risco.":"On iPhone and iPad, Safari erases the data of sites that go a week without being opened. On the home screen, Vox stops being \"a website\" and your transcripts stop running that risk.",
@@ -13296,15 +13346,65 @@ function _calDurMin(c){
   if(a>0)return Math.min(24*60,a);
   return CAL_DUR_PADRAO;
 }
-// Altura de UMA hora, medida na tela — não a constante do CSS. A folha muda
-// esse número em 700px (60px → 52px) e a conta de posição tem que acompanhar
-// sozinha, senão os blocos deslizam pra fora das linhas na virada de largura.
+// Altura de UMA hora COMUM, medida na tela — não a constante crua do CSS. A
+// folha muda esse número em 700px (60px → 52px) via a custom property
+// --cal-h, e a conta de posição tem que acompanhar sozinha, senão os blocos
+// deslizam pra fora das linhas na virada de largura.
+// Lê a CUSTOM PROPERTY, não `getBoundingClientRect().height/24`: desde a
+// Etapa 2 (07/09/2026) a altura TOTAL da grade pode não ser mais 24×hp (uma
+// hora pode estar aberta, maior que as outras) — dividir a altura total por
+// 24 nesse caso devolveria um "hp" errado e entraria em looping com quem lê
+// esse valor pra montar a própria altura total.
 function _calHoraPx(){
   const g=document.getElementById('calDiaGrade');
   if(!g)return 60;
-  const h=g.getBoundingClientRect().height/24;
-  return h>4?h:60;
+  const v=parseFloat(getComputedStyle(g).getPropertyValue('--cal-h'));
+  return v>4?v:60;
 }
+// ── Etapa 2 do plano de 07/09/2026: abrir a hora (acordeão) ────────────────
+// Uma hora "cheia" (3+ notas) pode crescer sozinha, sem mexer no tamanho das
+// outras 23 — é isto que faz o dia inteiro continuar visível. Índice 0–23 ou
+// null; é um estado de LEITURA (nunca persiste, reseta ao trocar de dia ou
+// reabrir o calendário — ver abrirCalendario() e o topo de _calPintarDia()).
+let _calHoraAberta=null;
+let _calHoraAbertaDia=null;
+// Atualizada a cada _calPintarDia(): decide se "abrir a hora" cresce no
+// lugar (acordeão) ou vira gaveta por cima, SEM MEXER na altura de ninguém —
+// crescer a ALTURA não ajuda uma coluna que já está apertada de LARGURA.
+let _calEstreitoAtual=false;
+const CAL_HORA_ABERTA_PX=300;
+// Altura de UMA hora específica — a maioria usa _calHoraPx(), só a aberta usa
+// o tamanho fixo do acordeão, e só quando a coluna é larga o bastante pra
+// virar acordeão (na gaveta a grade não muda de tamanho nenhum).
+function _calAlturaHora(h){
+  return(h===_calHoraAberta&&!_calEstreitoAtual)?CAL_HORA_ABERTA_PX:_calHoraPx();
+}
+// Onde a hora `h` COMEÇA, em px — soma cumulativa, porque uma das 24 pode
+// estar mais alta que as outras. Sem isto, abrir uma hora no meio do dia
+// empurraria tudo depois dela sem ninguém saber pra onde foi.
+function _calYDaHora(h){
+  let y=0;for(let k=0;k<h;k++)y+=_calAlturaHora(k);
+  return y;
+}
+// Minuto → pixel, e o inverso (pixel → minuto), os dois cientes da hora
+// aberta. TODO lugar que hoje faz `min/60*hp` (ou o inverso) precisa passar
+// por aqui — são os únicos dois pontos que sabem que uma hora pode ser
+// diferente das outras.
+function _calYDoMin(min){
+  min=Math.max(0,Math.min(24*60-.001,min));
+  const h=Math.floor(min/60),resto=min-h*60;
+  return _calYDaHora(h)+(resto/60)*_calAlturaHora(h);
+}
+function _calMinDoY(y){
+  let acc=0;
+  for(let h=0;h<24;h++){
+    const alt=_calAlturaHora(h);
+    if(y<acc+alt||h===23)return h*60+Math.max(0,Math.min(60,(y-acc)/alt*60));
+    acc+=alt;
+  }
+  return 24*60-1;
+}
+function _calAlturaTotalDia(){return _calYDaHora(24)}
 // O nome que a nota mostra na fita e leva pro .ics. Sem sessionName, a primeira
 // linha escrita diz muito mais que a data formatada — um calendário cheio de
 // "01/09/2026 14:32" não responde nada.
@@ -13434,6 +13534,9 @@ function abrirCalendario(){
   // mês qualquer seria desorientador.
   _calVisao='mes';
   _calDiaFoco=_calChave(hj);
+  // Etapa 2 do plano de 07/09: abrir a hora é um estado de leitura — reabrir
+  // o calendário nunca deveria lembrar qual hora estava aberta da vez passada.
+  _calHoraAberta=null;_calHoraAbertaDia=null;
   _calAnoFoco=hj.getFullYear();
   _calSemFoco=hj.getMonth()<6?0:1;
   ov.dataset.visao='mes';
@@ -14096,13 +14199,17 @@ function _calPintarDia(){
   if(!grade||!evs||!topo)return;
   if(!_calValida(_calDiaFoco))_calDiaFoco=_calChave(new Date());
   const kk=_calDiaFoco,estreito=window.matchMedia('(max-width:700px)').matches;
+  // Etapa 2 do plano de 07/09/2026: abrir a hora é um estado de LEITURA, não
+  // algo que o app lembra — trocar de dia fecha a hora aberta sozinho.
+  if(_calHoraAbertaDia!==kk){_calHoraAberta=null;_calHoraAbertaDia=kk}
+  _calEstreitoAtual=estreito;
   // As 24 linhas nascem UMA vez, como as 42 células do mês. Virar de dia troca
   // o conteúdo, nunca os nós — recriar faria a régua de horas piscar.
   if(!grade.querySelector('.cal-hlin')){
     const frag=document.createDocumentFragment();
     for(let h=0;h<24;h++){
       const l=document.createElement('div');
-      l.className='cal-hlin';
+      l.className='cal-hlin';l.dataset.h=String(h);
       l.style.top='calc('+h+' * var(--cal-h,60px))';
       const r=document.createElement('span');
       r.className='cal-hrot';
@@ -14156,8 +14263,23 @@ function _calPintarDia(){
     return{c,min0,dur,min1:min0+Math.max(dur,minVis),col:0,cols:1,marcado:false};
   })).sort((a,b)=>a.min0-b.min0||b.dur-a.dur);
   _calColunasDoDia(itens);
+  // Etapa 2 do plano de 07/09: quantas notas cada hora tem — decide quem
+  // ganha o botão de abrir (3 ou mais) e, na coluna estreita, quem vira gaveta
+  // em vez de crescer no lugar (crescer a ALTURA não ajuda quem já está
+  // apertado de LARGURA — ver a nota grande em _calMontarCalha).
+  const porHora=new Array(24).fill(0);
+  itens.forEach(it=>{porHora[Math.min(23,Math.floor(it.min0/60))]++});
+  const gavetaAtiva=estreito&&_calHoraAberta!==null;
+  const itensRender=gavetaAtiva?itens.filter(it=>Math.floor(it.min0/60)!==_calHoraAberta):itens;
   evs.textContent='';
-  itens.forEach(it=>evs.appendChild(_calFazEvento(it,hp)));
+  itensRender.forEach(it=>evs.appendChild(_calFazEvento(it,hp)));
+  _calMontarResumoHora(evs,gavetaAtiva?_calHoraAberta:null,itens);
+  _calMontarGaveta(gavetaAtiva?_calHoraAberta:null,itens);
+  _calMontarCalha(grade,porHora);
+  // A altura total só é 24×hp enquanto nenhuma hora está aberta — com uma
+  // aberta (acordeão), o dia fica mais alto sem as outras 23 mudarem de
+  // tamanho. Ver _calAlturaTotalDia/_calYDoMin, que sabem contar isso.
+  grade.style.height=_calAlturaTotalDia()+'px';
 
   const vazio=document.getElementById('calDiaVazio');
   if(vazio)vazio.style.display=(itens.length||semHora.length||aconteceuSemHora.length)?'none':'';
@@ -14166,7 +14288,7 @@ function _calPintarDia(){
     const hj=new Date();
     const ehHoje=_calChave(hj)===kk;
     ag.style.display=ehHoje?'':'none';
-    if(ehHoje)ag.style.top=((hj.getHours()*60+hj.getMinutes())/60*hp)+'px';
+    if(ehHoje)ag.style.top=_calYDoMin(hj.getHours()*60+hj.getMinutes())+'px';
   }
   const be=document.getElementById('calDiaBordaE'),bd=document.getElementById('calDiaBordaD');
   if(be)be.querySelector('span').textContent=_calDaChave(_calSomaDias(kk,-1)).getDate();
@@ -14219,8 +14341,13 @@ function _calFazEvento(it,hp){
   el.dataset.cid=c.id;
   el.dataset.min=String(it.min0);
   el.dataset.dur=String(it.dur);
-  el.style.top=(it.min0/60*hp)+'px';
-  el.style.height=Math.max(CAL_EV_MIN_PX,it.dur/60*hp)+'px';
+  // Etapa 2 do plano de 07/09: top/altura por SOMA CUMULATIVA (_calYDoMin),
+  // não mais `min/60*hp` reto — uma das 24 horas pode estar aberta (mais alta
+  // que as outras), e só a soma sabe empurrar quem vem depois dela.
+  const yTopo=_calYDoMin(it.min0),yBase=_calYDoMin(it.min0+it.dur);
+  const pxAlt=Math.max(CAL_EV_MIN_PX,yBase-yTopo);
+  el.style.top=yTopo+'px';
+  el.style.height=pxAlt+'px';
   const larg=100/Math.max(1,it.cols);
   el.style.left=(it.col*larg)+'%';
   el.style.width='calc('+larg+'% - 2px)';
@@ -14241,7 +14368,9 @@ function _calFazEvento(it,hp){
   if(aud>0){
     const b=document.createElement('i');
     b.className='cal-ev-audio';
-    b.style.height=Math.max(3,aud/60*hp)+'px';
+    // A haste usa a escala LOCAL da hora onde a nota começa — dentro da hora
+    // aberta ela também cresce, com a mesma folga que o bloco ganhou.
+    b.style.height=Math.max(3,aud/60*_calAlturaHora(Math.floor(it.min0/60)))+'px';
     el.appendChild(b);
   }
   ['n','s'].forEach(l=>{
@@ -14251,7 +14380,7 @@ function _calFazEvento(it,hp){
   });
   _calPintarCor(el,c);
   _calEvRotulo(el,it.min0,it.dur,c,it.marcado);
-  _calEvAltura(el,it.dur,hp);
+  _calEvAltura(el,pxAlt);
   return el;
 }
 function _calEvRotulo(el,min,dur,c,marcado=true){
@@ -14273,8 +14402,11 @@ function _calEvRotulo(el,min,dur,c,marcado=true){
   if(aud>0)linhas.push(t('{d} de gravação').replace('{d}',_calDurTexto(aud)));
   el.title=linhas.filter(Boolean).join('\n');
 }
-function _calEvAltura(el,dur,hp){
-  const px=Math.max(CAL_EV_MIN_PX,dur/60*hp);
+// Etapa 2 do plano de 07/09: recebe a altura em PX já calculada por quem
+// chama (_calFazEvento/_calRedimMove já precisam desse número pra escrever
+// style.height de qualquer jeito) — evita recalcular `dur/60*hp` aqui dentro,
+// que discordaria da soma cumulativa sempre que uma hora estiver aberta.
+function _calEvAltura(el,px){
   el.classList.toggle('baixo',px<34);            // não cabe a segunda linha
   el.classList.toggle('medio',px>=24&&px<44);    // só a alça de baixo em repouso
   el.classList.toggle('alto',px>=44);            // as duas em repouso
@@ -14282,7 +14414,162 @@ function _calEvAltura(el,dur,hp){
 function _calRolarPraHora(min){
   const rolo=document.getElementById('calDiaRolo');
   if(!rolo)return;
-  rolo.scrollTop=Math.max(0,(Math.max(0,min)/60*_calHoraPx())-26);
+  rolo.scrollTop=Math.max(0,_calYDoMin(Math.max(0,min))-26);
+}
+// ── Etapa 2 do plano de 07/09/2026: abrir a hora ────────────────────────────
+// Reposiciona as 24 linhas da calha (uma pode estar mais alta que as outras)
+// e liga/desliga, por hora, o botão de expandir + o selo de quantidade — só
+// existe a partir de 3 notas na mesma hora, porque é o ponto em que a fita
+// mede menos de ~18px e vira ilegível. O ICO.expand nunca aparece sozinho: o
+// número ao lado é o que desambigua dos outros dois sentidos do mesmo ícone
+// no app (abrir flutuante, ver como documento).
+function _calMontarCalha(grade,porHora){
+  const linhas=grade.querySelectorAll(':scope > .cal-hlin');
+  linhas.forEach(l=>{
+    const h=+l.dataset.h;
+    l.style.top=_calYDaHora(h)+'px';
+    l.style.height=_calAlturaHora(h)+'px';
+    const n=porHora[h]||0;
+    let bt=l.querySelector('.cal-hexp');
+    if(n>=3){
+      if(!bt){
+        bt=document.createElement('button');
+        bt.type='button';bt.className='cal-hexp';
+        bt.addEventListener('click',ev=>{ev.stopPropagation();_calAbrirHora(+l.dataset.h)});
+        l.appendChild(bt);
+      }
+      const aberta=(_calHoraAberta===h);
+      bt.classList.toggle('cal-hexp-aberta',aberta);
+      bt.innerHTML=aberta?ICO.collapse:ICO.expand;
+      bt.title=aberta?t('Fechar esta hora'):t('Abrir esta hora ({n} notas)').replace('{n}',String(n));
+      let selo=l.querySelector('.cal-hqtd');
+      if(!selo){selo=document.createElement('span');selo.className='cal-hqtd';l.appendChild(selo)}
+      selo.textContent=String(n);
+    }else{
+      bt?.remove();
+      l.querySelector('.cal-hqtd')?.remove();
+    }
+    // A régua fina de 5 em 5 min só nasce no ACORDEÃO (a hora ficou de
+    // verdade maior na tela) — na gaveta a hora continua do tamanho de
+    // sempre, então uma régua fina ali não teria onde caber.
+    l.querySelectorAll('.cal-hlin-fina').forEach(f=>f.remove());
+    if(h===_calHoraAberta&&!_calEstreitoAtual){
+      const altAberta=_calAlturaHora(h);
+      for(let mm=5;mm<60;mm+=5){
+        const f=document.createElement('div');
+        f.className='cal-hlin-fina'+(mm%10===0?' cheia':'');
+        f.style.top=((mm/60)*altAberta)+'px';
+        if(mm%10===0){
+          const rr=document.createElement('span');
+          rr.className='cal-hrot-fina';
+          rr.textContent=':'+String(mm).padStart(2,'0');
+          f.appendChild(rr);
+        }
+        l.appendChild(f);
+      }
+    }
+  });
+}
+// Na coluna ESTREITA a hora aberta não cresce (crescer a ALTURA não ajuda
+// quem já está apertado de LARGURA) — em vez disso vira uma linha-resumo, no
+// lugar de sempre, que abre a gaveta (_calMontarGaveta) ao ser tocada.
+function _calMontarResumoHora(evs,hAberto,itens){
+  let resumo=document.getElementById('calDiaResumo');
+  if(hAberto===null){resumo?.remove();return}
+  if(!resumo){
+    resumo=document.createElement('div');
+    resumo.className='cal-ev cal-ev-resumo alto';
+    resumo.id='calDiaResumo';
+    resumo.innerHTML='<div class="cal-ev-corpo"><div class="cal-ev-nome"></div></div>';
+    resumo.addEventListener('click',()=>_calAbrirHora(_calHoraAberta));
+  }
+  const doHora=itens.filter(it=>Math.floor(it.min0/60)===hAberto);
+  resumo.querySelector('.cal-ev-nome').textContent=_calHoraDoMin(hAberto*60)+' · '+
+    t('{n} notas').replace('{n}',String(doHora.length));
+  const y0=_calYDaHora(hAberto),y1=_calYDaHora(hAberto+1);
+  resumo.style.top=y0+'px';
+  resumo.style.height=Math.max(CAL_EV_MIN_PX,y1-y0-2)+'px';
+  resumo.style.left='0';resumo.style.width='calc(100% - 2px)';
+  if(resumo.parentNode!==evs)evs.appendChild(resumo);
+}
+// A gaveta: uma lista rolável, por cima da coluna, com uma linha por nota —
+// nasce só na coluna estreita (ver _calPintarDia). Linha de 28px: hora, nome
+// (a alça e o X da Etapa 3 entram aqui depois, no mesmo espaço já reservado).
+function _calMontarGaveta(hAberto,itens){
+  let gav=document.getElementById('calDiaGaveta');
+  if(hAberto===null){if(gav)gav.style.display='none';return}
+  const grade=document.getElementById('calDiaGrade');
+  if(!grade)return;
+  if(!gav){
+    gav=document.createElement('div');
+    gav.className='cal-gaveta';
+    gav.id='calDiaGaveta';
+    gav.innerHTML='<div class="cal-gav-cab"><span class="svgi cal-gav-ic"></span>'+
+      '<span class="cal-gav-tit"></span>'+
+      '<button type="button" class="cal-gav-fechar" title="'+escHtml(t('Fechar'))+'"></button></div>'+
+      '<div class="cal-gav-lista"></div>';
+    gav.querySelector('.cal-gav-ic').innerHTML=CAL_ICO.dia;
+    gav.querySelector('.cal-gav-fechar').innerHTML=ICO.collapse;
+    gav.querySelector('.cal-gav-fechar').addEventListener('click',()=>_calAbrirHora(_calHoraAberta));
+    grade.appendChild(gav);
+  }
+  const doHora=itens.filter(it=>Math.floor(it.min0/60)===hAberto).sort((a,b)=>a.min0-b.min0);
+  gav.querySelector('.cal-gav-tit').textContent=_calHoraDoMin(hAberto*60)+' · '+
+    t('{n} notas').replace('{n}',String(doHora.length));
+  const lst=gav.querySelector('.cal-gav-lista');
+  lst.textContent='';
+  doHora.forEach(it=>{
+    const row=document.createElement('div');
+    row.className='cal-gav-it';
+    row.dataset.cid=it.c.id;
+    _calPintarCor(row,it.c);
+    const h=document.createElement('span');h.className='cal-gav-h';h.textContent=_calHoraDoMin(it.min0);
+    const nome=document.createElement('span');nome.className='cal-gav-n';
+    nome.textContent=_calNomeDoCard(it.c);   // textContent: dado do usuário nunca vira HTML
+    row.appendChild(h);row.appendChild(nome);
+    row.addEventListener('click',()=>_flAbrirCard(it.c.id,row));
+    lst.appendChild(row);
+  });
+  gav.style.display='flex';
+  const rolo=document.getElementById('calDiaRolo');
+  const roloH=rolo?rolo.getBoundingClientRect().height:260;
+  gav.style.top=_calYDaHora(hAberto)+'px';
+  gav.style.height=Math.max(120,Math.min(230,roloH-40))+'px';
+}
+// Abre/fecha uma hora. `_calPintarDia` aqui dentro RECRIA todos os blocos do
+// zero (não existe cache de nó nesta tela) — então a transição não pode ser
+// CSS pura, tem que ser um FLIP feito na mão, exatamente como
+// `_calDiaPointerUp` já faz depois de um arrasto: mede ANTES de repintar,
+// repinta, e anima a diferença nos nós que sobreviveram (mesmo `cid`).
+function _calAbrirHora(h){
+  const evs=document.getElementById('calDiaEventos');
+  const antes=new Map();
+  if(evs&&!_voxReduzMov()){
+    [...evs.children].forEach(n=>{
+      if(n.dataset.cid)antes.set(n.dataset.cid,n.getBoundingClientRect());
+    });
+  }
+  const abrindo=(_calHoraAberta!==h);
+  _calHoraAberta=abrindo?h:null;
+  _calPintarDia();
+  const evs2=document.getElementById('calDiaEventos');
+  if(evs2&&antes.size){
+    [...evs2.children].forEach(n=>{
+      const ant=n.dataset.cid&&antes.get(n.dataset.cid);
+      if(!ant)return;
+      const dep=n.getBoundingClientRect();
+      const dx=ant.left-dep.left,dy=ant.top-dep.top;
+      const sx=Math.max(.15,ant.width/dep.width),sy=Math.max(.15,ant.height/dep.height);
+      n.style.transition='none';
+      n.style.transform='translate('+dx+'px,'+dy+'px) scale('+sx+','+sy+')';
+      requestAnimationFrame(()=>{
+        n.classList.add('pousando');
+        n.style.transform='';
+        setTimeout(()=>n.classList.remove('pousando'),340);
+      });
+    });
+  }
+  if(abrindo)_calRolarPraHora(h*60);
 }
 // A linha de "agora" tem que andar sozinha: uma pessoa deixa o calendário
 // aberto numa aba a manhã inteira. Um minuto de passo é o que basta e é o que
@@ -14296,7 +14583,7 @@ function _calTocarRelogio(){
     if(!ag||ag.style.display==='none')return;
     const hj=new Date();
     if(_calChave(hj)!==_calDiaFoco)return;
-    ag.style.top=((hj.getHours()*60+hj.getMinutes())/60*_calHoraPx())+'px';
+    ag.style.top=_calYDoMin(hj.getHours()*60+hj.getMinutes())+'px';
   },60000);
 }
 function _calPararRelogio(){if(_calRelogio){clearInterval(_calRelogio);_calRelogio=null}}
@@ -14412,8 +14699,10 @@ function _calAlvoEmPonto(x,y,comBordas,yHora){
     const rolo=document.getElementById('calDiaRolo'),g=document.getElementById('calDiaGrade');
     const rg=g?g.getBoundingClientRect():null;
     if(bate(rolo)&&rg){
-      const hp=_calHoraPx();
-      let min=Math.round(((yHora===undefined?y:yHora)-rg.top)/hp*60/CAL_SNAP)*CAL_SNAP;
+      // Etapa 2 do plano de 07/09: _calMinDoY já sabe que uma das 24 horas
+      // pode estar mais alta que as outras (a aberta) — substitui a conta
+      // reta `/hp*60`, que discordaria da posição real dos blocos nesse caso.
+      let min=Math.round(_calMinDoY((yHora===undefined?y:yHora)-rg.top)/CAL_SNAP)*CAL_SNAP;
       min=Math.max(0,Math.min(24*60-CAL_SNAP,min));
       return{tipo:'cal',el:g,dia:_calDiaFoco,hora:_calHoraDoMin(min),min};
     }
@@ -14448,9 +14737,9 @@ function _calMostrarAlvo(alvo,card){
       g.appendChild(f);
     }
     const dur=card?_calDurMin(card):CAL_DUR_PADRAO;
-    const hp=_calHoraPx();
-    f.style.top=(alvo.min/60*hp)+'px';
-    f.style.height=Math.max(CAL_EV_MIN_PX,dur/60*hp)+'px';
+    const yTopo=_calYDoMin(alvo.min),yBase=_calYDoMin(alvo.min+dur);
+    f.style.top=yTopo+'px';
+    f.style.height=Math.max(CAL_EV_MIN_PX,yBase-yTopo)+'px';
     f.style.setProperty('--cal-alvo',ca);
     f.style.setProperty('--cal-alvobg',bg);
     f.textContent=alvo.hora+' · '+_calDurTexto(dur);
@@ -14640,11 +14929,15 @@ function _calRedimDown(e,ev,lado){
   const cid=ev.dataset.cid,card=cid&&document.getElementById(cid);
   if(!card)return;
   e.preventDefault();e.stopPropagation();
+  // Etapa 2 do plano de 07/09: guarda o TOPO da grade, não mais um "px por
+  // hora" fixo — com uma hora aberta a escala muda dentro do próprio dia, e
+  // só uma conversão ponto-a-ponto (_calMinDoY) acerta nos dois trechos.
+  const g=document.getElementById('calDiaGrade');
   _calRedim={
-    ev,cid,lado,hp:_calHoraPx(),
+    ev,cid,lado,gTop:g?g.getBoundingClientRect().top:0,
     min0:parseInt(ev.dataset.min||'0',10),
     dur0:parseInt(ev.dataset.dur||String(CAL_DUR_PADRAO),10),
-    y0:e.clientY,min:parseInt(ev.dataset.min||'0',10),
+    min:parseInt(ev.dataset.min||'0',10),
     dur:parseInt(ev.dataset.dur||String(CAL_DUR_PADRAO),10),mudou:false
   };
   ev.classList.add('redim');
@@ -14659,23 +14952,28 @@ function _calRedimDown(e,ev,lado){
 function _calRedimMove(e){
   const r=_calRedim;
   if(!r)return;
-  const passo=Math.round((e.clientY-r.y0)/r.hp*60/CAL_SNAP)*CAL_SNAP;
+  // Etapa 2 do plano de 07/09: ponto-a-ponto (onde o dedo está AGORA, em
+  // minuto do dia), não mais delta×hp fixo — dentro da hora aberta, o mesmo
+  // deslocamento em px vale MENOS minutos (é o que dá o controle fino).
+  const alvoMin=Math.round(_calMinDoY(e.clientY-r.gTop)/CAL_SNAP)*CAL_SNAP;
   let min=r.min0,dur=r.dur0;
   if(r.lado==='s'){
-    dur=Math.max(CAL_SNAP,Math.min(24*60-min,r.dur0+passo));
+    dur=Math.max(CAL_SNAP,Math.min(24*60-min,alvoMin-r.min0));
   }else{
     const fim=r.min0+r.dur0;
-    min=Math.max(0,Math.min(fim-CAL_SNAP,r.min0+passo));
+    min=Math.max(0,Math.min(fim-CAL_SNAP,alvoMin));
     dur=fim-min;
   }
   if(min===r.min&&dur===r.dur)return;
   r.min=min;r.dur=dur;r.mudou=true;
   // O ímã de 15 min acontece AQUI, sob o dedo, não no soltar: é o que dá o
   // clique de encaixe enquanto a pessoa ainda está decidindo.
-  r.ev.style.top=(min/60*r.hp)+'px';
-  r.ev.style.height=Math.max(CAL_EV_MIN_PX,dur/60*r.hp)+'px';
+  const yTopo=_calYDoMin(min),yBase=_calYDoMin(min+dur);
+  const pxAlt=Math.max(CAL_EV_MIN_PX,yBase-yTopo);
+  r.ev.style.top=yTopo+'px';
+  r.ev.style.height=pxAlt+'px';
   _calEvRotulo(r.ev,min,dur,document.getElementById(r.cid));
-  _calEvAltura(r.ev,dur,r.hp);
+  _calEvAltura(r.ev,pxAlt);
 }
 function _calRedimUp(){
   document.removeEventListener('pointermove',_calRedimMove);
