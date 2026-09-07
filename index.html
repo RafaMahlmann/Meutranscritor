@@ -3281,6 +3281,26 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   box-shadow:var(--shadow-card);pointer-events:none;z-index:6;max-width:calc(100% - 20px);
   text-align:center;transition:opacity 240ms var(--fc-curva)}
 .cal-dica.cal-dica-off{opacity:0}
+/* Etapa 4 do plano de 07/09/2026 — a doca: na visão Mês a grade ocupa o
+   palco inteiro (não existe "fora da grade" geometricamente), então esta
+   faixa é a saída. Só aparece durante ESTE arrasto específico (uma ficha na
+   mão, nunca uma janela flutuante — isso já usa outra linguagem, o brilho
+   fraco da Etapa 1). Mesma peça nas duas visões (Dia e Mês). */
+.cal-doca{position:absolute;left:16px;right:16px;bottom:14px;min-height:52px;border-radius:12px;
+  border:2px dashed var(--border2);background:var(--bg-card);z-index:50;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  font-size:12px;font-weight:750;color:var(--text3);text-align:center;padding:8px 14px;
+  opacity:0;transform:translateY(14px);pointer-events:none;
+  transition:opacity .2s linear,transform .3s var(--fc-curva),border-color .16s linear,
+    background .16s linear,color .16s linear}
+.cal-doca .svgi svg{width:17px;height:17px}
+.cal-doca.visivel{opacity:1;transform:none}
+.cal-doca.mira{border-color:var(--accent);border-style:solid;background:var(--accent-glow);color:var(--accent)}
+/* A ficha/bloco cuja nota está aberta numa janela flutuante agora — sinal de
+   "aberta em outro lugar", nunca de "desmarcada" (quando/quandoHora não
+   mudam). Texto mais apagado + contorno pontilhado. */
+.cal-fita.aberta-fora{opacity:.55;outline:1px dashed var(--text4);outline-offset:1px}
+.cal-ev.aberta-fora .cal-ev-corpo{opacity:.6;border-left-style:dashed}
 
 /* ══ VISÃO DIA — fase 2a (hora · altura do áudio · arrastar na vertical) ═════
    O Mês responde "em que dia"; o Dia responde "a que horas, e por quanto
@@ -7106,7 +7126,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.07.5';
+const VOX_VERSION='2026.09.07.6';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7151,6 +7171,8 @@ let I18N_EN={
 "{n} notas":"{n} notes",
 "Arrastar para mudar de hora":"Drag to change the time",
 "Excluir esta nota":"Delete this note",
+"Solte aqui para abrir como janela":"Drop here to open as a window",
+"Arrastar para abrir como janela":"Drag to open as a window",
 // ── ARMAZENAMENTO DURÁVEL — Etapa 1: convite de instalar (06/09/2026) ──
 "Guarde o Vox na tela de início":"Save Vox to your home screen",
 "No iPhone e no iPad, o Safari apaga os dados de sites que ficam uma semana sem ser abertos. Na tela de início, o Vox deixa de ser \"um site\" e suas transcrições param de correr esse risco.":"On iPhone and iPad, Safari erases the data of sites that go a week without being opened. On the home screen, Vox stops being \"a website\" and your transcripts stop running that risk.",
@@ -11457,6 +11479,11 @@ function _flFecharJanela(id){
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
   _orbMuralAtualizar();
   _orbFiosDasNotas();
+  // Etapa 4 do plano de 07/09: se a nota estava marcada como "aberta em outro
+  // lugar" (ver _calAbertaEmOutroLugar), fechar a janela é o que tira essa
+  // marca — sem repintar, a ficha continuaria com o contorno pontilhado pra
+  // sempre, mesmo sem janela nenhuma aberta pra justificar.
+  if(_calAberto())_calPintar();
   // Fechou a ÚLTIMA janela: desativa a camada da frente sozinho, DEPOIS da
   // transição de saída (senão #floatLayer some com display:none no meio do
   // encolher, cortando a animação pela metade). Sem isso, a camada (cheio
@@ -11484,10 +11511,14 @@ function _flFecharJanelaViajando(id,pousoEl){
   _orbMuralAtualizar();
   _orbFiosDasNotas();
   const desligarCamada=()=>{if(!_flAbertas.length&&_flAtiva)_flAlternarCamada()};
-  if(!win){if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}desligarCamada();return}
+  // Etapa 4 do plano de 07/09: se a nota estava "aberta em outro lugar" (ver
+  // _calAbertaEmOutroLugar), fechar é o que tira essa marca — mas SÓ DEPOIS
+  // do voo: `pousoEl` é um nó vivo desta mesma pintura, e repintar agora o
+  // arrancaria do DOM antes de destRect ser medido, quebrando o pouso.
+  if(!win){if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}desligarCamada();if(_calAberto())_calPintar();return}
   if(!pousoEl||_voxReduzMov()){
     win.classList.add('float-window-fechando');
-    setTimeout(()=>{if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}win.remove();desligarCamada()},180);
+    setTimeout(()=>{if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}win.remove();desligarCamada();if(_calAberto())_calPintar()},180);
     return;
   }
   const origRect=win.getBoundingClientRect();
@@ -11503,7 +11534,7 @@ function _flFecharJanelaViajando(id,pousoEl){
     win.style.transform=`translate(${dx}px,${dy}px) scale(${sx},${sy})`;
     win.style.opacity='0';
   });
-  setTimeout(()=>{if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}win.remove();desligarCamada()},300);
+  setTimeout(()=>{if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}win.remove();desligarCamada();if(_calAberto())_calPintar()},300);
 }
 // Desfaz um agendamento feito por arrasto (Etapa 0): devolve o card ao
 // dia/hora de antes e reabre a janela flutuante exatamente onde ela estava —
@@ -13525,6 +13556,7 @@ function abrirCalendario(){
         <div class="cal-mini" id="calMini"></div>
         <div class="cal-legenda" id="calLegenda"></div>
         <div class="cal-dica" id="calDica">${escHtml(t('arraste uma nota de um dia pro outro'))}</div>
+        <div class="cal-doca" id="calDoca"><span class="svgi">${ICO.download}</span><span id="calDocaTxt"></span></div>
       </div>
     </div>`;
     document.body.appendChild(ov);
@@ -13771,7 +13803,9 @@ function _calPintarMes(){
 }
 function _calFazFita(c){
   const f=document.createElement('div');
-  f.className='cal-fita';
+  // Etapa 4 do plano de 07/09: sinal visual de "esta nota está aberta em
+  // outro lugar agora" — a ficha continua marcada, só fala mais baixo.
+  f.className='cal-fita'+(_calAbertaEmOutroLugar(c.id)?' aberta-fora':'');
   f.dataset.cid=c.id;
   const nome=_calNomeDoCard(c);
   f.textContent=nome;          // textContent: dado do usuário nunca vira HTML
@@ -14375,7 +14409,10 @@ function _calFazEvento(it,hp){
   // .aconteceu: mesma ideia da bolinha de sempre, só que agora dentro da
   // grade — mais discreta que um bloco marcado de propósito, porque a
   // pessoa não decidiu nada aqui (ver comentário grande acima de _calPintarDia).
-  el.className='cal-ev'+(it.marcado?'':' aconteceu');
+  // Etapa 4 do plano de 07/09: mesma marca de "aberta em outro lugar" que a
+  // fita do Mês ganhou — a nota continua marcada aqui, só está sendo
+  // trabalhada numa janela flutuante agora.
+  el.className='cal-ev'+(it.marcado?'':' aconteceu')+(_calAbertaEmOutroLugar(c.id)?' aberta-fora':'');
   el.dataset.cid=c.id;
   el.dataset.min=String(it.min0);
   el.dataset.dur=String(it.dur);
@@ -14836,6 +14873,52 @@ function _calLimparAlvo(){
   _calAlvoAtual=null;
   _calFantasmaFora();
 }
+// ── Etapa 4 do plano de 07/09/2026: puxar uma ficha do calendário pra fora ──
+// Na visão Mês a grade ocupa o palco inteiro — não existe "fora da grade"
+// geometricamente. A doca é a saída: uma faixa que só aparece durante ESTE
+// arrasto específico (uma ficha/bloco na mão, nunca uma janela flutuante —
+// isso já usa outra linguagem, o brilho fraco da Etapa 1), com o rótulo
+// "solte aqui para abrir como janela". Reaproveitada tal e qual nas duas
+// visões (Dia e Mês), porque testar no mockup aprovado mostrou que a MESMA
+// ficha, arrastada pelo corpo inteiro (sem alça nova — ver nota abaixo),
+// já resolve os dois casos.
+function _calDocaMostrar(){
+  const d=document.getElementById('calDoca');
+  if(!d)return;
+  document.getElementById('calDocaTxt').textContent=t('Solte aqui para abrir como janela');
+  d.classList.add('visivel');
+}
+function _calDocaEsconder(){
+  const d=document.getElementById('calDoca');
+  if(!d)return;
+  d.classList.remove('visivel','mira');
+}
+function _calDocaContemPonto(x,y){
+  const d=document.getElementById('calDoca');
+  if(!d||!d.classList.contains('visivel'))return false;
+  const r=d.getBoundingClientRect();
+  return r.width>0&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
+}
+function _calDocaMira(on){
+  document.getElementById('calDoca')?.classList.toggle('mira',!!on);
+}
+// A ficha/bloco cuja nota está aberta em outra janela flutuante agora — sinal
+// visual de "isto está aberto ali em cima", não de "isto foi desmarcado".
+// `quando`/`quandoHora` continuam intactos (decisão do Rafa: puxar pra fora é
+// abrir pra trabalhar, não desmarcar).
+function _calAbertaEmOutroLugar(cid){
+  return _flAbertas.some(j=>j.id===cid);
+}
+// Puxar a ficha pra fora: a janela nasce do RETRATO atual do nó (onde ele
+// está NO MOMENTO do solte, ainda "voando" sob o dedo — não da posição
+// original na grade), exatamente como o FLIP de _flAbrirCard já espera.
+// A ficha em si NÃO é tocada aqui: ela continua com o mesmo `quando`, e o
+// próximo _calPintar() já pinta ela como "aberta em outro lugar" sozinho
+// (_calAbertaEmOutroLugar lê _flAbertas, não precisa de estado à parte).
+function _calPuxarParaFlutuante(cid,origemRect){
+  if(!cid||!document.getElementById(cid))return;
+  _flAbrirCard(cid,origemRect);
+}
 // Soltar num alvo do calendário quer dizer QUANDO — nunca ONDE. `folder` não é
 // tocado aqui, e `durAudio` também não: um é a pasta em que a nota mora, o
 // outro é quanto a gravação durou de verdade. Esta função só escreve `quando`,
@@ -14924,6 +15007,9 @@ function _calDiaPointerMove(e){
       a.el.style.position='fixed';
       a.el.style.width=a.larg+'px';
       a.el.style.left='0';a.el.style.top='0';
+      // Etapa 4 do plano de 07/09: a doca nasce junto — só pra blocos de
+      // verdade (a alça nova só existe neles desde a Etapa 3).
+      _calDocaMostrar();
     }else if(a.ehPonto){a.dx=14;a.dy=9}
     const dEl=document.getElementById('calDia');
     // A virada de dia não pode continuar dona do transform enquanto o dedo
@@ -14941,11 +15027,21 @@ function _calQuadroArrastoDia(){
   const a=_calArrDia;
   if(!a||!a.moveu)return;
   a.el.style.transform='translate3d('+Math.round(a.x-a.dx)+'px,'+Math.round(a.y-a.dy)+'px,0) scale(1.03)';
-  a.alvo=_calAlvoEmPonto(a.x,a.y,true,a.y-a.dy+1);
-  _calMostrarAlvo(a.alvo,document.getElementById(a.cid));
+  // Etapa 4 do plano de 07/09: a doca (só existe pra .cal-ev, nunca pra fita
+  // solta) vence o alvo de calendário — ou se agenda, ou se puxa pra fora,
+  // nunca as duas ao mesmo tempo.
+  a.naDoca=a.ehEv&&_calDocaContemPonto(a.x,a.y);
+  _calDocaMira(a.naDoca);
+  if(a.naDoca){
+    a.alvo=null;
+    _calLimparAlvo();
+  }else{
+    a.alvo=_calAlvoEmPonto(a.x,a.y,true,a.y-a.dy+1);
+    _calMostrarAlvo(a.alvo,document.getElementById(a.cid));
+  }
   // O bloco na mão vai dizendo a hora em que ele cairia. É a confirmação que
   // falta em todo calendário que só mostra a vaga: o olho está no bloco.
-  if(a.ehEv&&a.alvo&&a.alvo.hora!==undefined){
+  if(a.ehEv&&!a.naDoca&&a.alvo&&a.alvo.hora!==undefined){
     const card=document.getElementById(a.cid);
     _calEvRotulo(a.el,a.alvo.min,parseInt(a.el.dataset.dur||'30',10),card);
   }
@@ -14965,6 +15061,7 @@ function _calDiaPointerUp(){
   document.removeEventListener('pointercancel',_calCancelarArrastoDia);
   const a=_calArrDia;_calArrDia=null;
   document.getElementById('calDia')?.classList.remove('cal-arrastando');
+  _calDocaEsconder();
   if(!a)return;
   const el=a.el,alvo=a.alvo;
   _calLimparAlvo();
@@ -14973,6 +15070,17 @@ function _calDiaPointerUp(){
   // a ação final, abrir a nota. Antes disto só o menu de botão direito/toque
   // longo abria, e ninguém achava.
   if(!a.moveu){_calSoltarNoLugar(el);if(a.cid)_flAbrirCard(a.cid,el);return}
+  // Etapa 4 do plano de 07/09: soltou na doca — puxa a nota pra fora. A
+  // janela nasce do retrato ATUAL do bloco (ainda voando sob o dedo), e a
+  // ficha continua marcada (quando/quandoHora intocados) — só ganha o
+  // contorno de "aberta em outro lugar" no repaint logo abaixo.
+  if(a.naDoca){
+    const origemRect=el.getBoundingClientRect();
+    _calSoltarNoLugar(el);
+    _calPuxarParaFlutuante(a.cid,origemRect);
+    _calPintar();
+    return;
+  }
   const antes=el.getBoundingClientRect();
   _calSoltarNoLugar(el);
   const mudou=alvo?_calAplicarAlvo(a.cid,alvo):false;
@@ -15011,6 +15119,7 @@ function _calCancelarArrastoDia(){
   document.removeEventListener('pointerup',_calDiaPointerUp);
   document.removeEventListener('pointercancel',_calCancelarArrastoDia);
   document.getElementById('calDia')?.classList.remove('cal-arrastando');
+  _calDocaEsconder();
   _calLimparAlvo();
   if(a){_calSoltarNoLugar(a.el);if(_calVisao==='dia')_calPintar()}
 }
@@ -15432,6 +15541,10 @@ function _calPointerMove(e){
     // A bolinha "abre" e vira ficha legível ao voar: o dedo passa a segurar
     // ela perto da beirada esquerda, não no ponto exato de 5px onde apertou.
     if(a.ehPonto){a.dx=14;a.dy=9}
+    // Etapa 4 do plano de 07/09: a doca nasce junto — só pra fichas de
+    // verdade (marcadas), nunca pra bolinha de "aconteceu" (não há nada
+    // marcado ali pra continuar marcado depois de puxar pra fora).
+    if(!a.ehPonto)_calDocaMostrar();
     if(_calDicaEl)_calDicaEl.classList.add('cal-dica-off');
   }
   if(_calQuadro)return;
@@ -15460,6 +15573,14 @@ function _calQuadroArrasto(){
   const a=_calArr;
   if(!a||!a.moveu)return;
   a.el.style.transform='translate3d('+Math.round(a.x-a.dx)+'px,'+Math.round(a.y-a.dy)+'px,0) scale(1.03)';
+  // Etapa 4 do plano de 07/09: a doca vence a célula — a grade ocupa o palco
+  // inteiro na visão Mês, então "fora da grade" só existe como esta faixa.
+  a.naDoca=!a.ehPonto&&_calDocaContemPonto(a.x,a.y);
+  _calDocaMira(a.naDoca);
+  if(a.naDoca){
+    if(a.mira){a.mira.classList.remove('mira');a.mira=null}
+    return;
+  }
   // .voando tem pointer-events:none, então o elementFromPoint enxerga a
   // célula debaixo sem precisar esconder e remostrar o nó a cada quadro.
   const sob=document.elementFromPoint(a.x,a.y);
@@ -15481,6 +15602,7 @@ function _calPointerUp(){
   document.removeEventListener('pointerup',_calPointerUp);
   document.removeEventListener('pointercancel',_calCancelarArrasto);
   const a=_calArr;_calArr=null;
+  _calDocaEsconder();
   if(!a)return;
   // A vaga sai no mesmo passo em que a grade é repintada logo abaixo: nenhum
   // quadro chega a ser desenhado com a célula já fechada e a fita ainda no ar.
@@ -15488,6 +15610,17 @@ function _calPointerUp(){
   if(a.mira)a.mira.classList.remove('mira');
   const el=a.el;
   if(!a.moveu){el.classList.remove('voando');el.style.transform='';return}
+  // Etapa 4 do plano de 07/09: soltou na doca — puxa a ficha pra fora, vira
+  // janela flutuante. `quando` não muda (a ficha continua marcada) — só
+  // ganha o contorno de "aberta em outro lugar" no repaint logo abaixo.
+  if(a.naDoca){
+    _calCliqueBloqueado=Date.now();
+    const origemRect=el.getBoundingClientRect();
+    el.classList.remove('voando');el.style.transform='';
+    _calPuxarParaFlutuante(a.cid,origemRect);
+    _calPintar();
+    return;
+  }
   // Arrastou: o `click` que vem em seguida é o dedo levantando, não um toque.
   // Sem esta marca, soltar uma fita numa célula abriria a visão Dia por cima
   // do pouso que a pessoa acabou de fazer.
@@ -15523,6 +15656,7 @@ function _calPointerUp(){
 }
 function _calCancelarArrasto(){
   const a=_calArr;_calArr=null;
+  _calDocaEsconder();
   if(!a)return;
   document.removeEventListener('pointermove',_calPointerMove);
   document.removeEventListener('pointerup',_calPointerUp);
