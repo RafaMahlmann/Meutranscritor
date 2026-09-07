@@ -7001,7 +7001,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.07.1';
+const VOX_VERSION='2026.09.07.2';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -10998,7 +10998,7 @@ function _flWheel(e){
 // Abre uma janela flutuante pro card `id` — ou, se já tiver uma aberta,
 // só traz ela pra frente. `origemEl` (o item da lista clicado) é opcional:
 // quando existe, a janela nasce voando de lá até a posição final (FLIP).
-function _flAbrirCard(id,origemEl){
+function _flAbrirCard(id,origemEl,posFixa){
   const card=document.getElementById(id);
   if(!card)return;
   const jaAberta=_flAbertas.find(j=>j.id===id);
@@ -11010,7 +11010,11 @@ function _flAbrirCard(id,origemEl){
   const world=document.getElementById('floatWorld');
   const layer=document.getElementById('floatLayer');
   if(!world||!layer)return;
-  const origemRect=origemEl?origemEl.getBoundingClientRect():null;
+  // origemEl pode ser um elemento de verdade (uso normal, ex.: abrir a partir
+  // de um card na lista) OU um retrato (DOMRect) já tirado antes — é o que o
+  // Desfazer do agendamento (Etapa 0) usa, porque por essa altura a ficha de
+  // origem já pode ter mudado ou sumido do calendário.
+  const origemRect=origemEl?(typeof origemEl.getBoundingClientRect==='function'?origemEl.getBoundingClientRect():origemEl):null;
 
   // No toque (celular/iPad), abrir a partir da lista/Masonry é sempre um
   // fluxo modal — uma miniatura por vez. Sem isso, tocar em card após card
@@ -11066,7 +11070,12 @@ function _flAbrirCard(id,origemEl){
 
   let x,y,w,h;
   const tam=_flTamanhoPadrao();
-  if(salvo){
+  if(posFixa){
+    // Desfazer (Etapa 0): a janela volta com o MESMO tamanho/posição que
+    // tinha antes de viajar pro calendário — não a cascata nem a posição
+    // salva de outra sessão.
+    ({x,y,w,h}=posFixa);
+  }else if(salvo){
     ({x,y,w,h}=salvo);
     // Bug real do Rafa: posição salva de uma sessão/tela antiga (ex.: aberta
     // grande no desktop) nunca era reconferida contra a tela atual — só x/y
@@ -11325,6 +11334,55 @@ function _flFecharJanela(id){
   win.classList.add('float-window-fechando');
   setTimeout(()=>{if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}win.remove();desligarCamada()},180);
 }
+// Etapa 0 do plano de 07/09/2026: variante de _flFecharJanela usada só quando
+// a janela foi agendada no calendário. Em vez de encolher no próprio lugar,
+// ela ENCOLHE E VIAJA até `pousoEl` (a ficha que acabou de nascer/já existia)
+// — FLIP reverso do que _flAbrirCard faz pra abrir. Sem `pousoEl` (alvo não
+// encontrado depois do repintar, caso raro), cai de volta no fechar de sempre.
+function _flFecharJanelaViajando(id,pousoEl){
+  const win=document.getElementById('floatwin-'+id);
+  const card=document.getElementById(id);
+  _flAbertas=_flAbertas.filter(j=>j.id!==id);
+  if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
+  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+  _orbMuralAtualizar();
+  _orbFiosDasNotas();
+  const desligarCamada=()=>{if(!_flAbertas.length&&_flAtiva)_flAlternarCamada()};
+  if(!win){if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}desligarCamada();return}
+  if(!pousoEl||_voxReduzMov()){
+    win.classList.add('float-window-fechando');
+    setTimeout(()=>{if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}win.remove();desligarCamada()},180);
+    return;
+  }
+  const origRect=win.getBoundingClientRect();
+  const destRect=pousoEl.getBoundingClientRect();
+  const dx=(destRect.left+destRect.width/2)-(origRect.left+origRect.width/2);
+  const dy=(destRect.top+destRect.height/2)-(origRect.top+origRect.height/2);
+  const sx=Math.max(.1,destRect.width/origRect.width),sy=Math.max(.1,destRect.height/origRect.height);
+  win.style.transition='none';
+  win.style.pointerEvents='none';
+  void win.offsetWidth;
+  requestAnimationFrame(()=>{
+    win.style.transition='transform .28s cubic-bezier(.4,0,.2,1), opacity .22s linear .05s';
+    win.style.transform=`translate(${dx}px,${dy}px) scale(${sx},${sy})`;
+    win.style.opacity='0';
+  });
+  setTimeout(()=>{if(card){_flReinserirNaLista(card);_flRestaurarFiltro()}win.remove();desligarCamada()},300);
+}
+// Desfaz um agendamento feito por arrasto (Etapa 0): devolve o card ao
+// dia/hora de antes e reabre a janela flutuante exatamente onde ela estava —
+// voando de volta a partir de `origemRect` (o retrato da ficha, tirado ANTES
+// do desfazer poder apagá-la do calendário).
+function _flDesfazerAgendamento(id,antesDados,posAntes,origemRect){
+  const card=document.getElementById(id);
+  if(!card||!antesDados)return;
+  ['quando','quandoHora','quandoDur'].forEach(k=>{
+    if(antesDados[k]===undefined)delete card.dataset[k];else card.dataset[k]=antesDados[k];
+  });
+  saveHistory();
+  _calPintar();
+  _flAbrirCard(id,origemRect,posAntes);
+}
 // Acha o nó de pasta do MAPA DE TRÁS sob um ponto de tela — usado no drop
 // cross-layer (Fase 6). Não dá pra usar elementFromPoint: o mapa congelado
 // é pointer-events:none, e elementFromPoint ignora elementos (e filhos) com
@@ -11419,28 +11477,43 @@ function _flStartWindowDrag(el,e0,isTouch){
     if(achado&&achado.tipo==='cal'){
       const alvoEl=achado.el;
       _calLimparAlvo();
-      const mudou=_calAplicarAlvo(id,achado);
       const card=document.getElementById(id);
+      // Retrato de ANTES, pro Desfazer poder voltar exatamente pro que já era
+      // — inclusive a posição/tamanho da própria janela, que está prestes a
+      // sumir da tela.
+      const antesDados=card?{quando:card.dataset.quando,quandoHora:card.dataset.quandoHora,quandoDur:card.dataset.quandoDur}:null;
+      const posAntes={x:parseFloat(win.style.left)||0,y:parseFloat(win.style.top)||0,
+                      w:parseFloat(win.style.width)||FL_LARG,h:parseFloat(win.style.height)||FL_ALT};
+      const mudou=_calAplicarAlvo(id,achado);
       const luz=card?_calLuzDoCard(card):null;
-      _flFecharJanela(id);
       _calPintar();
+      // O recibo pousa em quem RECEBEU: na visão Dia, o bloco que acabou de
+      // nascer; no Mês, a célula. Reencontrar o nó depois do repintar é o que
+      // faz o anel — e a janela que agora viaja pra lá — pousar no lugar certo
+      // em vez de num nó que já morreu.
+      let pouso=alvoEl;
+      if(achado.hora!==undefined){
+        const evs=document.getElementById('calDiaEventos');
+        pouso=evs?[...evs.children].find(n=>n.dataset.cid===id)||null:null;
+      }else if(achado.semHora){
+        pouso=document.getElementById('calDiaTodo');
+      }else if(_calGradeEl){
+        pouso=[..._calGradeEl.children].find(c=>c.dataset.dia===achado.dia)||null;
+      }
+      // Etapa 0 do plano de 07/09: a janela NUNCA some sem explicação — ela
+      // encolhe e viaja até a ficha que acabou de nascer (FLIP reverso do que
+      // _flAbrirCard faz pra abrir), pra pessoa VER pra onde foi. E o toast de
+      // "marcado" virou um recibo com Desfazer (6s), que restaura o dado E
+      // reabre a janela — sem isso, empurrar sem querer continuava um susto,
+      // só que com uma animação bonita no meio.
+      const pousoRect=pouso?pouso.getBoundingClientRect():null;
+      _flFecharJanelaViajando(id,pouso);
       if(mudou){
-        const rot=_calRotuloDia(achado.dia);
-        toast(achado.hora?t('Marquei pra {d}, às {h}.').replace('{d}',rot).replace('{h}',achado.hora)
-                         :t('Marquei pra {d}.').replace('{d}',rot));
-        // O recibo pousa em quem RECEBEU: na visão Dia, o bloco que acabou de
-        // nascer; no Mês, a célula. Reencontrar o nó depois do repintar é o que
-        // faz o anel aparecer no lugar certo em vez de num nó que já morreu.
-        let pouso=alvoEl;
-        if(achado.hora!==undefined){
-          const evs=document.getElementById('calDiaEventos');
-          pouso=evs?[...evs.children].find(n=>n.dataset.cid===id)||null:null;
-        }else if(achado.semHora){
-          pouso=document.getElementById('calDiaTodo');
-        }else if(_calGradeEl){
-          pouso=[..._calGradeEl.children].find(c=>c.dataset.dia===achado.dia)||null;
-        }
         if(pouso)_calAnel(pouso,luz?luz.ca:'var(--accent)');
+        const rot=_calRotuloDia(achado.dia);
+        const msg=achado.hora?t('Marquei pra {d}, às {h}.').replace('{d}',rot).replace('{h}',achado.hora)
+                             :t('Marquei pra {d}.').replace('{d}',rot);
+        toastDesfazer(msg,()=>_flDesfazerAgendamento(id,antesDados,posAntes,pousoRect));
       }
       return;
     }
