@@ -450,6 +450,11 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
 .hd-more-drop .gbtn span.hdm-sub{display:block!important;font-size:10.5px;font-weight:500;color:var(--text4);line-height:1.35;white-space:normal;letter-spacing:0}
 .hdm-help{flex-shrink:0;width:26px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text4);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;align-self:center;height:26px;line-height:1}
 .hdm-help:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+/* Plano 22 (08/09/2026): "Configurações" sobe pro 1º item do menu ⋯, com fundo
+   verde — é o único item que a pessoa procura por nome, não por tarefa. */
+.hdm-item.chefe .gbtn{background:var(--ok-bg);color:var(--ok-txt)}
+.hdm-item.chefe .gbtn:hover{background:var(--ok-bg)}
+.hdm-item.chefe .gbtn span.hdm-sub{color:color-mix(in srgb,var(--ok-txt) 88%,var(--text))}
 /* No celular o botão ⋯ fica colado no canto direito, então um menu que cresce
    pra DIREITA encosta na borda da tela (medido: chegava exatamente em 423px de
    423px). Ancorado à direita ele cresce pra dentro e sobra folga — e o limite
@@ -5633,10 +5638,15 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <span data-i18n>Mais</span>
         </button>
         <div class="hd-more-drop" id="hdMoreDrop">
-          <button class="gbtn" id="btnSetup" onclick="toggleHdMore();_obOpen()" title="Refazer as configurações iniciais" data-i18n-title>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg>
-            <span data-i18n>Configurações iniciais</span>
-          </button>
+          <!-- Plano 22 (08/09/2026): "Configurações" vira o 1º item — é o único
+               item do menu que a pessoa procura por nome, não por tarefa do dia.
+               Buscar saiu daqui e virou ícone fixo na barra (ver .hd-actions). -->
+          <div class="hdm-item chefe">
+            <button class="gbtn gbtn-ico" id="btnCfg" onclick="toggleHdMore();openModal()" title="Configurações" data-i18n-title>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span class="hdm-txt"><span class="hdm-t" data-i18n>Configurações</span><span class="hdm-sub" data-i18n>Serviço de transcrição, chaves, backup e espaço</span></span>
+            </button>
+          </div>
           <!-- Ferramentas de descoberta: cada uma diz, na própria linha, o que faz
                e de que ela precisa. Sem isso a pessoa só descobria o requisito
                DEPOIS de abrir e esbarrar no aviso — e as três têm exigências
@@ -5644,12 +5654,6 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
                relacionadas precisam de embeddings; o Panorama usa a IA de texto
                comum; o Resgatar funciona sem chave nenhuma. O "?" ao lado abre
                o card que explica o que é embeddings e quais IAs oferecem. -->
-          <div class="hdm-item">
-            <button class="gbtn" id="btnSearch" onclick="toggleHdMore();toggleSearch()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Buscar</span><span class="hdm-sub" data-i18n>Por palavra · não precisa de chave</span></span>
-            </button>
-          </div>
           <div class="hdm-item">
             <button class="gbtn" id="btnDaySummary" onclick="toggleHdMore();openDaySummary()">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -5682,10 +5686,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
               <span class="hdm-txt"><span class="hdm-t" data-i18n>Receber transferência</span><span class="hdm-sub" data-i18n>Cole o link ou leia o QR de outro aparelho · funciona sem instalar nada</span></span>
             </button>
           </div>
-          <button class="gbtn gbtn-ico" id="btnCfg" onclick="toggleHdMore();openModal()" title="Configurações" data-i18n-title>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span data-i18n>Configurações</span>
-          </button>
+          <div class="hdm-item">
+            <button class="gbtn" id="btnSetup" onclick="toggleHdMore();_obOpen()" title="Rever as boas-vindas" data-i18n-title>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg>
+              <span class="hdm-txt"><span class="hdm-t" data-i18n>Rever as boas-vindas</span><span class="hdm-sub" data-i18n>As telas do primeiro dia, de novo. Nada muda no que você já configurou.</span></span>
+            </button>
+          </div>
           <button class="gbtn" id="btnLang" onclick="setLang(currentLang==='pt'?'en':'pt')" title="Language / Idioma"><span class="svgi" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span> <span class="btn-lang-txt">PT</span></button>
           <div class="skin-wrap">
             <button class="gbtn" id="themeBtn" onclick="toggleSkinPop()" title="Aparência" data-i18n-title><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.12a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.55-2.5 5.55-5.55C21.97 6.01 17.46 2 12 2z"/><circle cx="13.5" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg></span> <span data-i18n>Aparência</span></button>
@@ -5706,6 +5712,14 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           </div>
         </div>
       </div>
+      <!-- Plano 22 (08/09/2026): Buscar sai do dropdown "Mais" e vira ícone fixo
+           na barra, logo depois do ⋯ — dois toques viravam um só. Sem subtítulo
+           aqui (isso só fazia sentido dentro de um item de lista); o title cobre
+           o mesmo papel dos outros ícones da barra. -->
+      <button class="gbtn" id="btnSearch" onclick="toggleSearch()" title="Buscar" data-i18n-title>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span data-i18n>Buscar</span>
+      </button>
       <button class="gbtn" id="btnView" onclick="toggleView()" title="Alterna entre Lista, Masonry e Documento" data-i18n-title>
         <span id="viewIcon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></span>
         <span id="viewLabel" data-i18n>Lista</span>
@@ -7126,7 +7140,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.07.6';
+const VOX_VERSION='2026.09.08.1';
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7164,6 +7178,37 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── Menu ⋯ e porta de entrada das Configurações (Plano 22, 08/09/2026) ──
+"Serviço de transcrição, chaves, backup e espaço":"Transcription service, keys, backup and storage",
+"Rever as boas-vindas":"Revisit the welcome screens",
+"As telas do primeiro dia, de novo. Nada muda no que você já configurou.":"The first-day screens, again. Nothing changes in what you already set up.",
+"Groq · já escolhido pelo Vox":"Groq · already chosen by Vox",
+"Falta uma coisa só: a chave do Groq":"Just one thing left: your Groq key",
+"O Vox não transcreve sozinho — ele manda o áudio para o Groq e recebe o texto de volta. A chave é o que diz ao Groq que a conta é sua, e por isso nada aqui passa por nós.":"Vox doesn't transcribe by itself — it sends the audio to Groq and gets the text back. The key is what tells Groq the account is yours, and that's why nothing here passes through us.",
+"Você não precisa comparar nada: o Groq é rápido e no dia a dia não cobra.":"You don't need to compare anything: Groq is fast and doesn't charge for everyday use.",
+"Pegar minha chave no Groq":"Get my Groq key",
+"Como é lá no site do Groq":"What it's like on Groq's site",
+"O Groq roda o <strong>Whisper</strong>, o transcritor que erra menos, em chips próprios que o deixam muito mais rápido. Foi por isso que o Vox escolheu ele.":"Groq runs <strong>Whisper</strong>, the transcriber that makes the fewest mistakes, on its own chips that make it much faster. That's why Vox chose it.",
+"Entrar":"Sign in",
+"Dá para entrar com sua conta do <strong>Google</strong>, do <strong>GitHub</strong> ou por e-mail. É o login do site deles — o Vox continua sem conta e sem senha. E não pede cartão.":"You can sign in with your <strong>Google</strong> or <strong>GitHub</strong> account, or by e-mail. It's their site's login — Vox still has no account and no password. And it doesn't ask for a card.",
+"Criar a chave":"Create the key",
+"Clique em <strong>Create API Key</strong> e dê qualquer nome. Em <strong>Expiration</strong>, escolha <strong>No expiry</strong> — assim ela nunca vence.":"Click <strong>Create API Key</strong> and give it any name. Under <strong>Expiration</strong>, choose <strong>No expiry</strong> — so it never expires.",
+"Copiar e colar aqui":"Copy and paste it here",
+"Ela começa com <strong>gsk_</strong>. Copie assim que aparecer: o site só mostra uma vez.":"It starts with <strong>gsk_</strong>. Copy it as soon as it appears: the site only shows it once.",
+"Pronto. Daí em diante é só gravar: o Vox usa essa chave sozinho, e no dia a dia você não paga nada.":"Done. From here on it's just recording: Vox uses this key by itself, and day-to-day you don't pay anything.",
+"cole aqui a chave do Groq":"paste your Groq key here",
+"Ela começa com <b>gsk_</b> e fica guardada só neste aparelho.":"It starts with <b>gsk_</b> and stays only on this device.",
+"ou":"or",
+"O que já está funcionando":"What's already working",
+"Pelo Groq — sem pagar nada no dia a dia":"Through Groq — no cost for everyday use",
+"Pensar sobre o texto":"Think about the text",
+"Pela mesma chave, sem configurar de novo":"Through the same key, no need to set up again",
+"Configurações avançadas":"Advanced settings",
+"Trocar de serviço, modelo, backup e espaço":"Switch service, model, backup and storage",
+"Abrir sempre nas avançadas":"Always open in advanced settings",
+"Some com esta tela de entrada. Você desliga no fim da aba Geral.":"Removes this entry screen. You can turn it back on at the end of the General tab.",
+"Pula a tela de entrada simples e vai direto pras quatro abas ao abrir Configurações.":"Skips the simple entry screen and goes straight to the four tabs when opening Settings.",
+"voltar ao começo":"back to the start",
 // ── Diário e cards flutuantes no Calendário (07/09/2026) ──
 "Arrastar para marcar no calendário":"Drag to schedule on the calendar",
 "Abrir esta hora ({n} notas)":"Open this hour ({n} notes)",
