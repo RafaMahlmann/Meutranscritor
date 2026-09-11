@@ -7602,7 +7602,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.11.9';
+const VOX_VERSION='2026.09.11.10';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8068,6 +8068,8 @@ function applyStaticI18n(){
 let I18N_EN={
 // ── World / galáxia (11/09/2026) ──
 "Ver todos os mundos":"See all your worlds",
+"Este mundo está trancado. Destranque antes de exportar.":"This world is locked. Unlock it before exporting.",
+"Fechar o cofre agora":"Close the vault now",
 "Mundo trancado":"Locked world",
 "Trancar este mundo":"Lock this world",
 "Tirar o cadeado":"Remove the lock",
@@ -19928,6 +19930,7 @@ function toggleHdMore(){
 }
 function exportAll(fmt,onlyToday=false){
   document.getElementById('expDrop').classList.remove('on');
+  if(_cofreImpedeSaida())return;
   const cards=[...document.querySelectorAll('.card:not(.proc-card)')].reverse();
   if(!cards.length){toast(t('⚠️ Nenhuma transcrição'),true);return}
   let list=onlyToday?cards.filter(c=>(c.dataset.dt||'').startsWith(new Date().toISOString().slice(0,10))):cards;
@@ -19964,6 +19967,17 @@ function dl(content,filename,tipo){
   setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
 function fmtDt(iso){try{return new Date(iso).toLocaleString(getLocale(),{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch{return iso}}
+
+/* Trancado e fechado: nao ha o que exportar, e um arquivo vazio guardado
+   como backup e pior que nenhum backup. A recusa ja acontecia por tabela
+   (a tela esta vazia), mas dizia 'grave algo primeiro', que e mentira. */
+function _cofreImpedeSaida(){
+  if(_mundoTrancado(_mundoAtivo)&&!_cofreChave){
+    toast(t('Este mundo está trancado. Destranque antes de exportar.'),true);
+    return true;
+  }
+  return false;
+}
 
 // ── DAILY SUMMARY ──
 async function openDaySummary(){
@@ -22268,6 +22282,7 @@ async function _pastaBackupSalvarSeConfigurada(json){
   }catch(e){return false}
 }
 async function exportProject(){
+  if(_cofreImpedeSaida())return;
   saveHistory();
   const history=_historyCache||[];
   if(!history.length){toast(t('ℹ️ Nada para salvar ainda — grave algo primeiro'),true);return}
@@ -31265,6 +31280,9 @@ function pintarDet(){
         de enfeite ocupando espaço e não dizendo nada */
      +(w.desc?'<div class="dd">'+esc(w.desc)+'</div>':'')
      +'<div class="dm">'+_linha+'</div>'
+     +(eAtivo&&w.trancado&&_mundoAbertoAgora()
+       ? '<button type="button" class="dbtn sec" onclick="fecharCofreAgora()">'+t('Fechar o cofre agora')+'</button>'
+       : '')
      +(eAtivo
        ? '<button class="dbtn sec" onclick="fecharGalaxia()">'+t('Voltar pra este mundo')+'</button>'
        : '<button class="dbtn" onclick="entrar(\''+esc(w.id)+'\')">'+t('Entrar em')+' '+esc(w.nome)+'</button>');
@@ -31430,6 +31448,13 @@ async function cofreEntrar(){
   var fim=_cUI.fim, id=_cUI.id;
   fecharCofreUI();
   if(fim)fim(id);
+}
+/* Fechar o cofre sem fechar o app: esquece a chave da sessao e recarrega.
+   Serve pra quem vai emprestar o aparelho por cinco minutos e nao quer
+   deixar o mundo aberto atras de si. */
+function fecharCofreAgora(){
+  _cofreEsquecerSessao();
+  location.reload();
 }
 async function tirarCofreUI(){
   if(!await _mundoTirarCofre(_mundoAtivo))return;
