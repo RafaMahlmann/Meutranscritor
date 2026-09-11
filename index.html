@@ -5675,7 +5675,14 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* rótulo do planeta: vive DENTRO do 3D e encolhe com a distância — isso é
    informação (o que está longe parece longe), não descuido. A leitura de
    verdade acontece no painel de baixo, em coordenadas de tela. */
-.pnome{position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%);
+/* --nesc trava o rotulo pra ele nunca ficar MAIOR que o tamanho natural.
+   Ele mora dentro do 3D, entao a perspectiva mexe nele junto com o planeta:
+   encolher com a distancia e informacao e fica; crescer quando a camera
+   chega perto e defeito. Media com 3 mundos: selecionar um planeta levava
+   "Um mundo novo" de 78 pra 164px, escrito por cima do vizinho. Ver
+   iluminar(), que ja tinha a profundidade na mao. */
+.pnome{position:absolute;left:50%;top:calc(100% + 9px);
+  transform:translateX(-50%) scale(var(--nesc,1));
   white-space:nowrap;font-size:13px;font-weight:600;letter-spacing:-.1px;
   color:var(--gx-txt);text-shadow:0 1px 6px rgba(0,0,0,.85);pointer-events:none}
 .pw.sel .pnome{font-weight:700}
@@ -7502,7 +7509,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.11.3';
+const VOX_VERSION='2026.09.11.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -30303,6 +30310,10 @@ function iluminar(){
     var zc=p.z+cam.dolly;
     var d=Math.max(0,Math.min(1,(-zc-40)/620));
     el.style.setProperty('--dim',(d*0.5).toFixed(3));
+    /* k = o quanto a perspectiva amplia este planeta. Acima de 1 ele esta
+       na frente do plano da tela; o rotulo desfaz so essa parte. */
+    var k=PERSP/Math.max(60,PERSP-zc);
+    el.style.setProperty('--nesc',(k>1?1/k:1).toFixed(3));
   }
 }
 
