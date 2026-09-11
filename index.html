@@ -5744,6 +5744,20 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   opacity:0;transform:translateY(8px);pointer-events:none;
   transition:opacity .18s linear,transform .32s var(--saida)}
 .det.on{opacity:1;transform:none;pointer-events:auto}
+/* lapis e lixeira no alto da ficha, fora do caminho do texto */
+.dacoes{position:absolute;right:11px;top:11px;display:flex;gap:5px}
+.dmini{width:26px;height:26px;border-radius:8px;border:1px solid var(--gx-bord);
+  background:var(--gx-sup);color:var(--gx-txt3);display:flex;align-items:center;
+  justify-content:center;cursor:pointer;transition:color .15s linear,border-color .15s linear}
+.dmini:hover{color:var(--gx-txt);border-color:rgba(255,255,255,.3)}
+.dmini:active{transform:scale(.94)}
+/* o titulo desvia dos botoes pra nao passar por baixo deles */
+.det .dn{padding-right:62px}
+/* Mundo na lixeira: continua no ceu, apagado. A galaxia E a lixeira dos
+   mundos -- nao existe outra tela onde ele pudesse esperar. */
+.pw.morto .pin{opacity:.34;filter:saturate(.2)}
+.pw.morto .pnome{opacity:.72;text-decoration:line-through;text-decoration-thickness:1px}
+.pw.morto .aqui,.pw.morto .anel{display:none}
 .det .dk{font-size:9.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--gx-txt3);margin-bottom:5px}
 .det .dn{font-size:19px;font-weight:700;letter-spacing:-.45px;color:var(--gx-txt);line-height:1.2}
 .det .dd{font-size:12.5px;color:var(--gx-txt2);line-height:1.6;margin-top:7px}
@@ -7509,7 +7523,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.11.4';
+const VOX_VERSION='2026.09.11.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -7571,6 +7585,51 @@ function _mundoTrocar(id){
   // setLang() já usa pra trocar de idioma.
   location.reload();
 }
+function _mundoEditar(id,nome,desc){
+  const l=_mundosLista();
+  const m=l.find(x=>x.id===id); if(!m)return false;
+  const n=(nome||'').trim();
+  if(!n)return false;            // mundo sem nome nao existe
+  m.nome=n; m.desc=(desc||'').trim();
+  _mundosSalvar(l);
+  return true;
+}
+// LIXEIRA DE MUNDO — a mesma regra que pasta ja segue no app: vai pra
+// lixeira com desfazer no aviso, sem perguntar "tem certeza?", e so morre
+// na faxina dos 30 dias. Nenhum botao do dia a dia chega no caminho sem
+// volta. O mundo raiz nunca vai: as chaves dele sao as originais, sem
+// sufixo, entao apagar ele seria um reset de fabrica com outro nome -- e
+// isso ja existe, no lugar certo, nas Configuracoes.
+function _mundoParaLixeira(id){
+  if(id===VOX_MUNDO_RAIZ||id===_mundoAtivo)return false;
+  const l=_mundosLista();
+  const m=l.find(x=>x.id===id); if(!m||m.del)return false;
+  m.del=true; m.delAt=new Date().toISOString();
+  _mundosSalvar(l);
+  return true;
+}
+function _mundoRestaurar(id){
+  const l=_mundosLista();
+  const m=l.find(x=>x.id===id); if(!m||!m.del)return false;
+  delete m.del; delete m.delAt;
+  _mundosSalvar(l);
+  return true;
+}
+function _mundoDiasNaLixeira(m){
+  const q=Date.parse((m&&m.delAt)||'');
+  if(!q)return LIXEIRA_DIAS;     // sem data, o prazo conta cheio
+  return Math.max(0,LIXEIRA_DIAS-Math.floor((Date.now()-q)/86400000));
+}
+// Apagar de vez: so a faxina chega aqui. A remocao e CRUA porque as chaves
+// sao de OUTRO mundo -- passar por localStorage.removeItem mapearia pro
+// mundo ativo e a chave sobreviveria. Mesmo cuidado do reset de fabrica.
+function _mundoApagarDeVez(id){
+  if(id===VOX_MUNDO_RAIZ||id===_mundoAtivo)return;
+  const suf='__'+id;
+  Object.keys(localStorage).forEach(k=>{if(k.slice(-suf.length)===suf)VOX_LS.rem(k)});
+  try{idbDelete('!vox_history'+suf).catch(()=>{})}catch(e){}
+  _mundosSalvar(_mundosLista().filter(m=>m.id!==id));
+}
 function _mundoCriar(nome,desc){
   const l=_mundosLista();
   const id='m'+Date.now().toString(36);
@@ -7617,6 +7676,14 @@ function applyStaticI18n(){
 let I18N_EN={
 // ── World / galáxia (11/09/2026) ──
 "Ver todos os mundos":"See all your worlds",
+"Editando":"Editing",
+"Salvar":"Save",
+"Editar nome e descrição":"Edit name and description",
+"Mover pra lixeira":"Move to trash",
+"Na lixeira":"In the trash",
+"Some em {n} dias":"Gone in {n} days",
+"Mundo na lixeira, com tudo dentro · some em {n} dias":"World in the trash, with everything in it · gone in {n} days",
+"Mundo restaurado":"World restored",
 "O que é um mundo":"What a world is",
 "Cada mundo é um Vox do zero: pastas, notas, etiquetas e calendário próprios. O que você guarda em um não aparece no outro.":"Each world is a Vox from scratch: its own folders, notes, tags and calendar. What you keep in one never shows up in another.",
 "As outras visões — órbita, fluxograma, calendário — mostram as MESMAS notas de jeitos diferentes. Aqui não: aqui você troca o conjunto inteiro.":"The other views — orbit, flowchart, calendar — show the SAME notes in different ways. Not here: here you swap the whole set.",
@@ -28489,7 +28556,15 @@ function _faxinaLixeira(){
     const q=Date.parse(c.dataset.delAt||'');
     if(q&&q<limite){doDelete(c.id);n++}
   });
-  if(n||np)console.info('[Vox] lixeira: '+n+' card(s) e '+np+' pasta(s) passaram de '+LIXEIRA_DIAS+' dias e foram apagados');
+  // Mundos na lixeira: mesma regra de dias. O mundo ATIVO nunca entra aqui
+  // (nem da pra manda-lo pra lixeira), entao a varredura nunca apaga o chao
+  // debaixo de quem esta usando.
+  let nm=0;
+  _mundosLista().filter(m=>m.del&&m.id!==VOX_MUNDO_RAIZ&&m.id!==_mundoAtivo).forEach(m=>{
+    const q=Date.parse(m.delAt||'');
+    if(q&&q<limite){_mundoApagarDeVez(m.id);nm++}
+  });
+  if(n||np||nm)console.info('[Vox] lixeira: '+n+' card(s), '+np+' pasta(s) e '+nm+' mundo(s) passaram de '+LIXEIRA_DIAS+' dias e foram apagados');
 }
 // ── DESLIZAR PARA ARQUIVAR (só toque) ──
 // Padrão do Gmail e do antigo Mailbox: desliza, arquiva, e o toast oferece
@@ -30208,6 +30283,7 @@ function _mundosMontar(){
     var notas=null;
     if(m.id===_mundoAtivo)notas=document.querySelectorAll('#cardsList .card:not(.proc-card)').length;
     return {id:m.id,i:i,nome:m.nome||t('Sem nome'),desc:m.desc||'',
+            del:!!m.del,dias:_mundoDiasNaLixeira(m),
             notas:notas,pastas:pastas,c:_mundoPaleta(i),pos:_mundoPos(i),
             r:m.id===_mundoAtivo?84:68,folders:[],cards:[]};
   });
@@ -30496,13 +30572,16 @@ function pintarMedidor(){
 /* ============================================================
    Montagem dos planetas
    ============================================================ */
+var _edMundo=null;   /* id do mundo com a ficha aberta em edicao */
+var ICO_LAPIS='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+var ICO_LIXO='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
 var ICO_MAIS='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
 function montar(){
   var lista=todos(),h='',i;
   for(i=0;i<lista.length;i++){
     var w=lista[i];
     var R=(w.r*kr).toFixed(1);
-    h+='<div class="pw'+(w.id===selId?' sel':'')+'" data-id="'+esc(w.id)+'" style="'
+    h+='<div class="pw'+(w.id===selId?' sel':'')+(w.del?' morto':'')+'" data-id="'+esc(w.id)+'" style="'
       +'--x:'+(w.pos[0]*kx).toFixed(1)+'px;--y:'+(w.pos[1]*ky).toFixed(1)+'px;--z:'+(w.pos[2]*kz).toFixed(1)+'px">'
       +'<div class="pl">'
       +'<button class="pin'+(w.fantasma?' fantasma':'')+'" style="--r:'+R+'px;--i:'+i+'" '
@@ -30523,7 +30602,10 @@ function montar(){
     w2._el=els[i].querySelector('.pin');
     w2._pw=els[i];
   }
-  document.getElementById('gxCont').textContent=worlds.length+' '+t(worlds.length===1?'mundo':'mundos');
+  /* quem esta na lixeira nao conta como mundo que voce TEM -- ele so
+     continua visivel pra poder ser restaurado. */
+  var nVivos=worlds.filter(function(x){return !x.del}).length;
+  document.getElementById('gxCont').textContent=nVivos+' '+t(nVivos===1?'mundo':'mundos');
   var ne=document.getElementById('nEstrelas');if(ne)ne.textContent=Math.min(NEST,STARS.length);
   camSuja=true;
 }
@@ -30542,6 +30624,19 @@ function pintarDet(){
      +'<input class="dinp" id="inDesc" maxlength="70" aria-label="'+t('Descrição do mundo (opcional)')+'" placeholder="'+t('Uma linha sobre ele (opcional)')+'">'
      +'<button class="dbtn" id="btCriar" onclick="criar()" disabled>'+t('Criar e entrar')+'</button>'
      +'<div class="dnota">'+t('Suas chaves e configurações vêm junto. Só as pastas e notas começam vazias.')+'</div>';
+  }else if(_edMundo===w.id){
+    h='<div class="dk">'+t('Editando')+'</div>'
+     +'<input class="dinp" id="edNome" maxlength="28" aria-label="'+t('Nome do mundo')+'" value="'+esc(w.nome)+'">'
+     +'<input class="dinp" id="edDesc" maxlength="70" aria-label="'+t('Descrição do mundo (opcional)')+'" placeholder="'+t('Uma linha sobre ele (opcional)')+'" value="'+esc(w.desc||'')+'">'
+     +'<button type="button" class="dbtn" onclick="salvarMundo()">'+t('Salvar')+'</button>'
+     +'<button type="button" class="dbtn sec" onclick="cancelarEdicaoMundo()">'+t('Cancelar')+'</button>';
+  }else if(w.del){
+    /* A galaxia E a lixeira dos mundos: o planeta continua no ceu, apagado,
+       em vez de sumir pra uma tela que nao existe. */
+    h='<div class="dk">'+t('Na lixeira')+'</div>'
+     +'<div class="dn">'+esc(w.nome)+'</div>'
+     +'<div class="dm">'+t('Some em {n} dias').replace('{n}',w.dias)+'</div>'
+     +'<button type="button" class="dbtn" onclick="restaurarMundo(\''+esc(w.id)+'\')">'+t('Restaurar')+'</button>';
   }else{
     var eAtivo=(w.id===ativoId);
     /* notas === null = a contagem ainda está vindo do banco (ver
@@ -30549,7 +30644,16 @@ function pintarDet(){
        seria mentira. */
     var _cn=(w.notas===null)?'…':(w.notas+' '+t(w.notas===1?'nota':'notas'));
     var _cp=w.pastas+' '+t(w.pastas===1?'pasta':'pastas');
-    h='<div class="dk">'+t(eAtivo?'Você está aqui':'Mundo')+'</div>'
+    /* Uma ficha por estado. O lapis e a lixeira vivem no alto, fora do
+       caminho do texto; a lixeira so aparece onde ela FUNCIONA -- num mundo
+       que nao e o raiz e onde a pessoa nao esta. Assim nao existe "nao da,
+       sai de la primeiro": a opcao simplesmente nao e oferecida. */
+    var podeLixeira=(w.id!==VOX_MUNDO_RAIZ&&w.id!==ativoId);
+    h='<div class="dacoes">'
+     +'<button type="button" class="dmini" onclick="editarMundo(\''+esc(w.id)+'\')" title="'+t('Editar nome e descrição')+'" aria-label="'+t('Editar nome e descrição')+'">'+ICO_LAPIS+'</button>'
+     +(podeLixeira?'<button type="button" class="dmini" onclick="lixeiraMundo(\''+esc(w.id)+'\')" title="'+t('Mover pra lixeira')+'" aria-label="'+t('Mover pra lixeira')+'">'+ICO_LIXO+'</button>':'')
+     +'</div>'
+     +'<div class="dk">'+t(eAtivo?'Você está aqui':'Mundo')+'</div>'
      +'<div class="dn">'+esc(w.nome)+'</div>'
      /* sem descrição, a linha não existe — melhor do que um "sem descrição"
         de enfeite ocupando espaço e não dizendo nada */
@@ -30562,6 +30666,49 @@ function pintarDet(){
   det.innerHTML=h;
   det.classList.add('on');
   if(w.fantasma){var el=document.getElementById('inNome');if(el&&!mob)setTimeout(function(){el.focus();},80);}
+}
+/* ---------- editar e lixeira, na propria ficha ---------- */
+function editarMundo(id){_edMundo=id;pintarDet();
+  var e=document.getElementById('edNome');
+  if(e&&!mob)setTimeout(function(){e.focus();e.select();},80);
+}
+function cancelarEdicaoMundo(){_edMundo=null;pintarDet();}
+function salvarMundo(){
+  var id=_edMundo; if(!id)return;
+  var n=document.getElementById('edNome'), d=document.getElementById('edDesc');
+  var nome=(n?n.value:'').trim(), desc=(d?d.value:'').trim();
+  if(!nome)return;               // sem nome nao salva; a ficha fica aberta
+  if(!_mundoEditar(id,nome,desc))return;
+  var w=W(id);
+  if(w){
+    w.nome=nome;w.desc=desc;
+    /* troca o nome no planeta sem remontar o ceu: remontar faria tudo
+       piscar por causa de duas palavras. */
+    if(w._el){
+      var pn=w._el.querySelector('.pnome'); if(pn)pn.textContent=nome;
+      w._el.setAttribute('aria-label',nome);
+    }
+  }
+  /* o chip do cabecalho e a unica coisa fora da galaxia que mostra o nome */
+  if(id===_mundoAtivo){var c=document.getElementById('wcNome'); if(c)c.textContent=nome;}
+  _edMundo=null;pintarDet();
+}
+function lixeiraMundo(id){
+  var w=W(id); if(!w)return;
+  if(!_mundoParaLixeira(id))return;
+  w.del=true;w.dias=LIXEIRA_DIAS;
+  if(w._pw)w._pw.classList.add('morto');
+  _edMundo=null;pintarDet();
+  toastDesfazer(t('Mundo na lixeira, com tudo dentro · some em {n} dias').replace('{n}',LIXEIRA_DIAS),
+    function(){restaurarMundo(id);});
+}
+function restaurarMundo(id){
+  var w=W(id); if(!w)return;
+  if(!_mundoRestaurar(id))return;
+  w.del=false;w.dias=LIXEIRA_DIAS;
+  if(w._pw)w._pw.classList.remove('morto');
+  pintarDet();
+  toast(t('Mundo restaurado'));
 }
 function checaNome(){
   var v=document.getElementById('inNome').value.trim();
@@ -30588,6 +30735,7 @@ function selecionar(id,mover){
     if(id==='__novo__')return;
     entrar(id);return;
   }
+  if(_edMundo&&_edMundo!==id)_edMundo=null;   /* trocou de planeta: a edicao nao vai junto */
   selId=id;
   var els=orbe.querySelectorAll('.pw');
   for(var i=0;i<els.length;i++)els[i].classList.toggle('sel',els[i].getAttribute('data-id')===id);
@@ -30624,6 +30772,7 @@ function criar(){
 function entrar(id){
   var w=W(id);
   if(!w)return;
+  if(w.del)return;   // na lixeira nao se entra; a ficha so oferece restaurar
   if(id===_mundoAtivo){fecharGalaxia();return;}
   /* Trocar de World recarrega a página: pastas, cards, calendário e
      estatística nascem todos do carregamento. É o mesmo caminho que
@@ -30715,6 +30864,7 @@ function fecharGalaxia(semVeu){
   galaxia.classList.remove('abrindo');
   galaxia.setAttribute('aria-hidden','true');
   det.classList.remove('on');
+  _edMundo=null;
   fecharAjudaMundos();
   if(rafId){cancelAnimationFrame(rafId);rafId=null;}
   if(jaEstavaFechada)return;
