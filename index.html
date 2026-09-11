@@ -7602,7 +7602,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.11.8';
+const VOX_VERSION='2026.09.11.9';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -7801,6 +7801,56 @@ function _cofreNovoCodigo(){
 }
 function _cofreNormalizar(c){return String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
 
+// Trancar (ou destrancar) tem que levar as fotos que JA existiam: elas
+// foram gravadas em claro antes do cadeado existir. Le em claro, grava do
+// outro jeito, uma a uma -- nunca as duas versoes ao mesmo tempo na memoria.
+async function _cofreChavesDeFoto(id){
+  const h=await _idbGetBruto('vox_history'+(id===VOX_MUNDO_RAIZ?'':'__'+id));
+  const claro=await _cofreDestampar(_mundoChave('vox_history'),h);
+  const chaves=[];
+  (Array.isArray(claro)?claro:[]).forEach(function(it){
+    (it.images||[]).forEach(function(im){if(im&&im.k)chaves.push(im.k)});
+  });
+  return chaves;
+}
+async function _cofreMetaDaFoto(k){
+  if(k.startsWith('opfs_')){
+    const m=await idbGet('opfsmeta_'+k).catch(function(){return null});
+    return m||{w:0,h:0};
+  }
+  const r=await new Promise(function(res){
+    _openIDB().then(function(db){
+      const req=db.transaction(IDB_IMG_STORE,'readonly').objectStore(IDB_IMG_STORE).get(k);
+      req.onsuccess=function(){res(req.result)};req.onerror=function(){res(null)};
+    });
+  });
+  return r||{w:0,h:0};
+}
+async function _imgGravarCru(k,buf,mime,w,h){
+  if(k.startsWith('opfs_')&&_temOpfs()){
+    try{
+      await _opfsEscrever(k,buf);
+      await idbSet('opfsmeta_'+k,{mime:mime,w:w||0,h:h||0,criadoEm:Date.now()}).catch(function(){});
+      return;
+    }catch(e){}
+  }
+  return _imgSalvarIndexedDB(k,buf,mime,w||0,h||0);
+}
+async function _cofreVirarFotos(id,cifrar){
+  const chaves=await _cofreChavesDeFoto(id);
+  for(var i=0;i<chaves.length;i++){
+    const k=chaves[i];
+    const blob=await imgCarregar(k).catch(function(){return null});
+    if(!blob)continue;                       // ja ilegivel: nao piora
+    const meta=await _cofreMetaDaFoto(k);
+    let buf=await blob.arrayBuffer();
+    if(cifrar)buf=await _cofreCifrarBuf(buf);
+    await _imgGravarCru(k,buf,blob.type||meta.mime||'image/jpeg',meta.w,meta.h);
+    _imgRevoke&&_imgRevoke(k);              // o Object URL antigo aponta pros bytes velhos
+  }
+  return chaves.length;
+}
+
 // ---- trancar, destrancar, tirar o cadeado ----
 // So da pra trancar o mundo em que voce ESTA. E uma escolha, nao uma
 // limitacao: pra cifrar o historico e preciso le-lo em texto puro, e ler o
@@ -7835,6 +7885,7 @@ async function _mundoTrancar(id,senha){
   }
   _cofreGravar(id,cofre);
   _cofreGuardarSessao(dek);
+  await _cofreVirarFotos(id,true).catch(function(){});
   return codigo;
 }
 // Aceita senha OU codigo de recuperacao, sem a pessoa precisar dizer qual e.
@@ -7853,6 +7904,9 @@ async function _mundoDestrancar(id,segredo){
 async function _mundoTirarCofre(id){
   if(id!==_mundoAtivo||!_cofreChave)return false;
   const cru=_mundoChave('vox_history');
+  /* As fotos voltam a claro ANTES de a chave ser esquecida -- depois nao
+     haveria como abrir nenhuma delas. */
+  await _cofreVirarFotos(id,false).catch(function(){});
   const claro=await _cofreDestampar(cru,await _idbGetBruto(cru));
   await _idbSetBruto(cru,claro||[]);
   _cofreRemover(id);
@@ -7870,6 +7924,37 @@ async function _mundoTrocarSenha(id,segredoAtual,senhaNova){
   cofre.pass=await _cofreEnvelopar(dek,senhaNova,COFRE_ITER);
   _cofreGravar(id,cofre);
   return true;
+}
+
+// ---- fotos dentro do cofre ----
+// Os bytes da foto sao cifrados com um cabecalho proprio: VOXC + versao +
+// IV. Assim o arquivo diz sozinho se esta cifrado, sem precisar mudar o
+// formato do registro nem guardar essa informacao em outro lugar -- o que
+// importa porque a mesma foto pode estar no IndexedDB ou num arquivo do
+// OPFS, e os dois caminhos passam por aqui.
+const COFRE_MAGICA=[86,79,88,67,1];   // V O X C 1
+function _cofreTemMagica(u8){
+  if(!u8||u8.length<COFRE_MAGICA.length+12)return false;
+  for(var i=0;i<COFRE_MAGICA.length;i++)if(u8[i]!==COFRE_MAGICA[i])return false;
+  return true;
+}
+async function _cofreCifrarBuf(buf){
+  if(!_cofreChave)return buf;
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},_cofreChave,buf));
+  const out=new Uint8Array(COFRE_MAGICA.length+12+ct.length);
+  out.set(COFRE_MAGICA,0);out.set(iv,COFRE_MAGICA.length);out.set(ct,COFRE_MAGICA.length+12);
+  return out.buffer;
+}
+// Devolve null quando a foto esta cifrada e esta sessao nao tem a chave --
+// e o chamador mostra o espaco vazio em vez de um borrao quebrado.
+async function _cofreDecifrarBuf(buf){
+  const u8=new Uint8Array(buf);
+  if(!_cofreTemMagica(u8))return buf;
+  if(!_cofreChave)return null;
+  const iv=u8.subarray(COFRE_MAGICA.length,COFRE_MAGICA.length+12);
+  const ct=u8.subarray(COFRE_MAGICA.length+12);
+  try{return await crypto.subtle.decrypt({name:'AES-GCM',iv},_cofreChave,ct)}catch(e){return null}
 }
 
 function _mundoEditar(id,nome,desc){
@@ -7996,7 +8081,7 @@ let I18N_EN={
 "Continuar":"Continue",
 "Use pelo menos 6 caracteres.":"Use at least 6 characters.",
 "As duas não batem.":"The two do not match.",
-"Fica trancado: o texto das notas, os nomes e as etiquetas. Não fica: o nome do mundo, quantas notas ele tem, e as fotos anexadas.":"Locked: the text of your notes, their names and tags. Not locked: the world's name, how many notes it has, and attached photos.",
+"Fica trancado: o texto das notas, os nomes, as etiquetas e as fotos anexadas. Não fica: o nome do mundo e quantas notas ele tem.":"Locked: the text of your notes, their names, tags and attached photos. Not locked: the world's name and how many notes it has.",
 "Guarde isto antes de continuar":"Save this before you continue",
 "Código de recuperação":"Recovery code",
 "Se você esquecer a senha, este código é a única forma de abrir este mundo. Ninguém pode recuperar por você — nem eu, nem o Vox.":"If you forget the password, this code is the only way to open this world. Nobody can recover it for you, not me, not Vox.",
@@ -21700,7 +21785,10 @@ function _imgSalvarIndexedDB(id,buf,mime,w,h){
 async function imgSalvar(blob,w=0,h=0,chave){
   const id=chave||_imgNovaChave();
   const mime=blob.type||'application/octet-stream';
-  const buf=await blob.arrayBuffer();
+  /* Cifra ANTES de qualquer caminho de gravacao: o OPFS e o IndexedDB
+     recebem os mesmos bytes, e a conferencia byte a byte logo abaixo
+     continua valendo, so que sobre o conteudo ja fechado. */
+  const buf=await _cofreCifrarBuf(await blob.arrayBuffer());
   if(id.startsWith('opfs_')&&_temOpfs()){
     try{
       await _opfsEscrever(id,buf);
@@ -21740,9 +21828,31 @@ async function _imgCarregarOpfs(chave){
     return _imgCarregarIndexedDB(chave);
   }
 }
-function imgCarregar(chave){
+function _imgCarregarBruto(chave){
   if(chave&&chave.startsWith('opfs_'))return _imgCarregarOpfs(chave);
   return _imgCarregarIndexedDB(chave);
+}
+/* Espia os 5 primeiros bytes: so as fotos cifradas pagam a volta de
+   decifrar, e as antigas seguem exatamente pelo caminho de antes. */
+async function imgCarregar(chave){
+  const blob=await _imgCarregarBruto(chave);
+  if(!blob)return blob;
+  let cabeca;
+  try{cabeca=new Uint8Array(await blob.slice(0,5).arrayBuffer())}catch(e){return blob}
+  var ehCofre=true;
+  for(var i=0;i<COFRE_MAGICA.length;i++)if(cabeca[i]!==COFRE_MAGICA[i])ehCofre=false;
+  if(!ehCofre)return blob;
+  const claro=await _cofreDecifrarBuf(await blob.arrayBuffer());
+  if(!claro)return null;   // cifrada e sem chave: nao ha foto pra mostrar
+  /* Arquivo do OPFS nao carrega tipo: o tipo mora no metadado. E se nem la
+     houver, o Blob sai SEM tipo de proposito -- o navegador fareja e a
+     imagem aparece. Forcar application/octet-stream seria pior que nao
+     dizer nada: com esse tipo a <img> se recusa a desenhar. */
+  var tipo=blob.type||'';
+  if(!tipo&&chave&&chave.startsWith('opfs_')){
+    try{var m=await idbGet('opfsmeta_'+chave);if(m&&m.mime)tipo=m.mime}catch(e){}
+  }
+  return tipo?new Blob([claro],{type:tipo}):new Blob([claro]);
 }
 function _imgApagarIndexedDB(chave){
   return _openIDB().then(db=>new Promise((resolve,reject)=>{
@@ -31233,7 +31343,7 @@ function pintarCofreUI(){
      +'<div class="gxc-erro" id="cofErro">'+esc(_cUI.erro)+'</div>'
      +'<button type="button" class="gxc-bt" id="cofCriar" onclick="cofreCriar()" disabled>'+t('Continuar')+'</button>'
      +'<button type="button" class="gxc-link" onclick="fecharCofreUI()">'+t('Cancelar')+'</button>'
-     +'<div class="gxc-selo">'+t('Fica trancado: o texto das notas, os nomes e as etiquetas. Não fica: o nome do mundo, quantas notas ele tem, e as fotos anexadas.')+'</div>';
+     +'<div class="gxc-selo">'+t('Fica trancado: o texto das notas, os nomes, as etiquetas e as fotos anexadas. Não fica: o nome do mundo e quantas notas ele tem.')+'</div>';
   }else if(_cUI.modo==='codigo'){
     h='<div class="gxc-k">'+t('Guarde isto antes de continuar')+'</div>'
      +'<div class="gxc-t">'+t('Código de recuperação')+'</div>'
