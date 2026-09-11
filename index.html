@@ -5613,7 +5613,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .cena.arrastando{cursor:grabbing}
 .orbe{position:absolute;left:50%;top:50%;width:0;height:0;
   transform-style:preserve-3d;
-  transform:translateZ(var(--dolly,0px)) rotateX(var(--pitch,0deg)) rotateY(var(--yaw,0deg))}
+  /* --fit e --panx/--pany sao o ajuste FINAL, medido na tela (ver
+     _conferirNaTela). Vem antes do 3D na declaracao, o que quer dizer que
+     sao aplicados por ULTIMO: ajustam o resultado ja projetado, e por isso
+     funcionam igual num motor que aplica perspectiva e num que nao aplica. */
+  transform:translate(var(--panx,0px),var(--pany,0px)) scale(var(--fit,1))
+    translateZ(var(--dolly,0px)) rotateX(var(--pitch,0deg)) rotateY(var(--yaw,0deg))}
 
 /* wrapper = posição no espaço. planeta = billboard (contra-rotação). */
 .pw{position:absolute;left:0;top:0;transform-style:preserve-3d;
@@ -5744,6 +5749,37 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   opacity:0;transform:translateY(8px);pointer-events:none;
   transition:opacity .18s linear,transform .32s var(--saida)}
 .det.on{opacity:1;transform:none;pointer-events:auto}
+/* MUNDO VAZIO = MUNDO APAGADO.
+   Nao e "sugestao": um mundo que VOCE criou e nunca usou tambem nasce
+   assim, o que e verdade e nao invencao. Acende quando recebe a primeira
+   nota ou a primeira pasta.
+   "Mais opaco" num ceu quase preto vira sumido. Entao o planeta perde a
+   LUZ, nao a presenca: cor fria, sol desligado, e o contorno MAIS forte
+   que o do aceso -- pra ele se ler como desligado, e nao como faltando. */
+.pw .esfera,.pw .brilho,.pw .limbo{transition:filter .62s var(--saida),opacity .62s linear,box-shadow .62s linear}
+.pw.frio .esfera{filter:saturate(.16) brightness(.5)}
+.pw.frio .brilho{opacity:0}
+.pw.frio .limbo{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.32),inset 0 0 calc(var(--r) * .3) rgba(0,0,0,.5)}
+.pw.frio .pnome{color:var(--gx-txt2);font-weight:500}
+/* o acender: o pulo curto que diz "agora e seu". So transform. */
+@keyframes mundoAcende{0%{transform:scale(1)}38%{transform:scale(1.065)}100%{transform:scale(1)}}
+.pw.acende .pl{animation:mundoAcende .68s var(--saida)}
+
+/* bancada de sugestoes dentro da ficha do "+" */
+.dbanc{margin-top:11px;border-top:1px solid var(--gx-bord);padding-top:10px}
+.dbanc-k{font-size:9.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;
+  color:var(--gx-txt3);margin-bottom:7px}
+.dchip{display:inline-block;margin:0 5px 5px 0;padding:0 11px;height:30px;line-height:28px;
+  border-radius:9px;border:1px solid var(--gx-bord);background:var(--gx-sup);
+  color:var(--gx-txt2);font-size:12.5px;font-weight:600;cursor:pointer;
+  transition:color .15s linear,border-color .15s linear}
+.dchip:hover{color:var(--gx-txt);border-color:rgba(255,255,255,.3)}
+.dchip:active{transform:scale(.96)}
+/* "nao vou usar este": presente, mas sem competir com o botao principal */
+.dfora{display:block;width:100%;margin-top:8px;padding:6px 0;border:none;background:none;
+  color:var(--gx-txt3);font-size:12px;font-weight:600;cursor:pointer}
+.dfora:hover{color:var(--gx-txt2);text-decoration:underline}
+
 /* lapis e lixeira no alto da ficha, fora do caminho do texto */
 .dacoes{position:absolute;right:11px;top:11px;display:flex;gap:5px}
 .dmini{width:26px;height:26px;border-radius:8px;border:1px solid var(--gx-bord);
@@ -7523,7 +7559,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.11.5';
+const VOX_VERSION='2026.09.11.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -7584,6 +7620,43 @@ function _mundoTrocar(id){
   // calendário, estatística) nasce do carregamento. Mesmo caminho que
   // setLang() já usa pra trocar de idioma.
   location.reload();
+}
+// ── SUGESTOES DE MUNDO ────────────────────────────────────────────────────
+// Tres no ceu, o resto na bancada do "+". Tres porque foi medido: com seis,
+// num celular de 390px, o botao de criar mundo virava alvo de 27px (o minimo
+// pro dedo e 44) e o mundo da pessoa encolhia pra dar lugar a sugestao que
+// ela nao pediu. Tres ensina o que e um mundo tao bem quanto seis.
+//
+// As tres do ceu sao as que o app JA sabe fazer: Consulta e Reuniao sao
+// botoes da barra de gravacao, e Diario e uma visao inteira.
+//
+// Sugestao NAO e mundo: nao ocupa chave nenhuma enquanto ninguem entra. Ela
+// so vira registro em vox_mundos no momento em que a pessoa adota.
+const VOX_SUGESTOES=[
+  {sid:'reunioes',  ceu:1, nome:'Reuniões',   desc:'O que foi combinado, com quem, e o que sobrou pra você fazer.'},
+  {sid:'consultas', ceu:1, nome:'Consultas',  desc:'Cada atendimento no seu lugar, longe do resto.'},
+  {sid:'diario',    ceu:1, nome:'Diário',     desc:'O dia falado antes de virar lembrança.'},
+  {sid:'aulas',     ceu:0, nome:'Aulas',      desc:'Aula, leitura, estudo — o que você quer reler depois.'},
+  {sid:'entrevistas',ceu:0,nome:'Entrevistas',desc:'Quem falou o quê, com o nome de cada voz.'},
+  {sid:'brainstorm',ceu:0, nome:'Brainstorm', desc:'Ideia solta, sem juízo nenhum, pra escolher depois.'},
+  {sid:'prompts',   ceu:0, nome:'Prompts',    desc:'O que funcionou pra pedir, guardado pra repetir.'}
+];
+function _sugDispensadas(){
+  try{return JSON.parse(VOX_LS.get('vox_sug_fora')||'[]')||[]}catch(e){return []}
+}
+function _sugDispensar(sid){
+  const f=_sugDispensadas(); if(f.indexOf(sid)<0)f.push(sid);
+  try{VOX_LS.set('vox_sug_fora',JSON.stringify(f))}catch(e){}
+}
+function _sugVoltar(sid){
+  try{VOX_LS.set('vox_sug_fora',JSON.stringify(_sugDispensadas().filter(x=>x!==sid)))}catch(e){}
+}
+// As sugestoes sao andaime: existem pra ensinar o que e um mundo pra quem
+// nunca fez um. Quando um SEGUNDO mundo ganha conteudo de verdade, a pessoa
+// ja entendeu -- e ai as que sobraram recuam pra bancada do "+", sem aviso
+// e sem ritual. Continuam a um toque de distancia pra sempre.
+function _sugAposentadas(vivos){
+  return vivos>=2;
 }
 function _mundoEditar(id,nome,desc){
   const l=_mundosLista();
@@ -7676,6 +7749,25 @@ function applyStaticI18n(){
 let I18N_EN={
 // ── World / galáxia (11/09/2026) ──
 "Ver todos os mundos":"See all your worlds",
+"Sugestão":"Suggestion",
+"Usar este":"Use this one",
+"Não vou usar este":"I won’t use this one",
+"Ou comece de um destes":"Or start from one of these",
+"{n} saiu do céu":"{n} left the sky",
+"Reuniões":"Meetings",
+"O que foi combinado, com quem, e o que sobrou pra você fazer.":"What was agreed, with whom, and what is left for you to do.",
+"Consultas":"Consultations",
+"Cada atendimento no seu lugar, longe do resto.":"Each appointment in its place, away from everything else.",
+"Diário":"Journal",
+"O dia falado antes de virar lembrança.":"The day spoken out loud before it turns into memory.",
+"Aulas":"Classes",
+"Aula, leitura, estudo — o que você quer reler depois.":"Class, reading, study — whatever you want to read back later.",
+"Entrevistas":"Interviews",
+"Quem falou o quê, com o nome de cada voz.":"Who said what, with a name on every voice.",
+"Brainstorm":"Brainstorm",
+"Ideia solta, sem juízo nenhum, pra escolher depois.":"Loose ideas, no judgement, to pick from later.",
+"Prompts":"Prompts",
+"O que funcionou pra pedir, guardado pra repetir.":"What worked when you asked, kept so you can ask again.",
 "Editando":"Editing",
 "Salvar":"Save",
 "Editar nome e descrição":"Edit name and description",
@@ -30275,15 +30367,29 @@ function _mundoSufixo(id){return id===VOX_MUNDO_RAIZ?'':'__'+id;}
 // Monta a lista na hora de abrir. As pastas saem do localStorage (síncrono);
 // as notas do World ATIVO saem da tela; as dos outros moram no IndexedDB e
 // chegam depois, pelo _mundosContar() logo abaixo.
+/* O apagado depende de saber se o mundo tem conteudo, e as notas moram no
+   IndexedDB, que responde depois. Sem esta lembranca todo planeta nasceria
+   num estado e mudaria 200ms depois, toda vez que a galaxia abrisse: uma
+   pisca-pisca de menu. Aqui a galaxia abre ja sabendo, e corrige quando o
+   banco responde -- se tiver mudado, o que e justamente o acender. */
+function _vaziosLembrados(){
+  try{return JSON.parse(VOX_LS.get('vox_mundos_vazios')||'{}')||{}}catch(e){return {}}
+}
+function _vaziosGravar(m){try{VOX_LS.set('vox_mundos_vazios',JSON.stringify(m))}catch(e){}}
 function _mundosMontar(){
   var reg=_mundosLista();
+  var lembrados=_vaziosLembrados(), mudou=false;
   worlds=reg.map(function(m,i){
     var suf=_mundoSufixo(m.id),pastas=0;
     try{pastas=(JSON.parse(VOX_LS.get('vox_folders'+suf)||'[]')||[]).length}catch(e){}
     var notas=null;
     if(m.id===_mundoAtivo)notas=document.querySelectorAll('#cardsList .card:not(.proc-card)').length;
+    /* vazio = sem nota E sem pasta. Do mundo ativo da pra saber na hora;
+       dos outros vale a lembranca ate o banco responder. */
+    var vazio=(notas===null)?(!!lembrados[m.id]&&pastas===0):(notas===0&&pastas===0);
+    if(notas!==null){lembrados[m.id]=vazio;mudou=true;}
     return {id:m.id,i:i,nome:m.nome||t('Sem nome'),desc:m.desc||'',
-            del:!!m.del,dias:_mundoDiasNaLixeira(m),
+            del:!!m.del,dias:_mundoDiasNaLixeira(m),vazio:vazio,
             notas:notas,pastas:pastas,c:_mundoPaleta(i),pos:_mundoPos(i),
             r:m.id===_mundoAtivo?84:68,folders:[],cards:[]};
   });
@@ -30291,6 +30397,23 @@ function _mundosMontar(){
      próximo mundo vai nascer. Antes ele tinha um ponto fixo, e com um mundo
      só ele caía ATRÁS da esfera do mundo ativo: dava pra ver o "+", mas o
      clique batia na esfera da frente e ninguém conseguia criar o segundo. */
+  if(mudou)_vaziosGravar(lembrados);
+  /* As sugestoes entram DEPOIS dos mundos, nas vagas seguintes da espiral,
+     e saem do ceu quando um segundo mundo ganha conteudo (ver
+     _sugAposentadas). Elas nao sao mundos: nao tem chave, nao contam no
+     cabecalho e nao vao pro cadastro ate alguem adotar. */
+  var vivos=worlds.filter(function(x){return !x.del&&!x.vazio}).length;
+  var fora=_sugDispensadas();
+  var jaTem={};worlds.forEach(function(x){jaTem[(x.nome||'').toLowerCase()]=1});
+  sugestoes=_sugAposentadas(vivos)?[]:VOX_SUGESTOES.filter(function(g){
+    return g.ceu&&fora.indexOf(g.sid)<0&&!jaTem[t(g.nome).toLowerCase()];
+  }).map(function(g,k){
+    var i=worlds.length+k;
+    return {id:'sug:'+g.sid,sid:g.sid,i:i,sug:true,vazio:true,del:false,
+            nome:t(g.nome),desc:t(g.desc),notas:0,pastas:0,
+            c:_mundoPaleta(i),pos:_mundoPos(i),r:62,folders:[],cards:[]};
+  });
+  worlds=worlds.concat(sugestoes);
   NOVO.i=worlds.length;
   NOVO.pos=_mundoPos(NOVO.i);
   ativoId=_mundoAtivo;
@@ -30300,11 +30423,22 @@ function _mundosMontar(){
 // quando chega. Se falhar, a ficha simplesmente não mostra o número — melhor
 // que mostrar um número errado.
 function _mundosContar(){
+  var lembrados=_vaziosLembrados(), mudou=false;
   worlds.forEach(function(w){
+    if(w.sug){w.notas=0;return;}
     if(w.notas!==null)return;
     // '!' na frente = chave crua, sem o desvio por World (ver _mundoChave).
     idbGet('!vox_history'+_mundoSufixo(w.id)).then(function(h){
       w.notas=(h&&h.length)||0;
+      var v=(w.notas===0&&w.pastas===0);
+      if(v!==w.vazio){
+        w.vazio=v;
+        /* saiu de vazio com a galaxia aberta: acende na cara da pessoa */
+        if(w._pw)w._pw.classList.toggle('frio',v);
+        if(!v&&w._pw){w._pw.classList.add('acende');
+          setTimeout(function(){if(w._pw)w._pw.classList.remove('acende');},900);}
+      }
+      if(lembrados[w.id]!==v){lembrados[w.id]=v;mudou=true;_vaziosGravar(lembrados);}
       if(typeof pintarDet==='function'&&aberta)pintarDet();
     }).catch(function(){});
   });
@@ -30435,10 +30569,69 @@ function _caixaProjetada(lista,dolly){
   return {cx:(x0+x1)/2,cy:(y0+y1)/2,w:x1-x0,h:y1-y0,
           kbx:(kx0+kx1)/2,kby:(ky0+ky1)/2};
 }
+/* ---------- a conferencia final, medida na tela ----------
+   O _enquadrarConjunto acima PREVE onde os planetas vao cair, usando a
+   formula da perspectiva do CSS. A previsao esta certa no Chromium e errada
+   no WebKit: la os planetas saem do mesmo tamanho que teriam sem projecao
+   nenhuma (medido: dois planetas de profundidades diferentes deram 83px e
+   83px, contra 80 e 71 no Chromium). Com poucos mundos ninguem nota; com
+   cinco, num celular, o botao de criar mundo saia da tela.
+   Entao aqui a gente para de prever e mede: se o conjunto nao couber de
+   verdade, o ARRANJO encolhe -- nao a camera, porque afastar a camera nao
+   faz nada num motor que ignora a profundidade. Roda uma vez ao montar,
+   nunca por quadro, e so faz alguma coisa quando precisa. */
+function _caixaMedida(){
+  var lista=todos(),x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,achou=false,i,r;
+  for(i=0;i<lista.length;i++){
+    if(!lista[i]._el)continue;
+    r=lista[i]._el.getBoundingClientRect();
+    if(!r.width)continue;
+    achou=true;
+    if(r.left<x0)x0=r.left; if(r.right>x1)x1=r.right;
+    if(r.top<y0)y0=r.top; if(r.bottom>y1)y1=r.bottom;
+  }
+  if(!achou)return null;
+  return {x0:x0,y0:y0,x1:x1,y1:y1,cx:(x0+x1)/2,cy:(y0+y1)/2,w:x1-x0,h:y1-y0};
+}
+function _conferirNaTela(){
+  /* Comeca sempre do zero: o ajuste e recalculado inteiro a cada montagem,
+     em vez de somar em cima do anterior. Foi o que me mordeu na primeira
+     versao -- ela encolhia o arranjo de verdade, e o "+" (que e o mesmo
+     objeto entre uma abertura e outra) ia encolhendo sem parar. */
+  var fit=1,panX=0,panY=0,i;
+  function aplicar(){
+    orbe.style.setProperty('--fit',fit.toFixed(4));
+    orbe.style.setProperty('--panx',panX.toFixed(1)+'px');
+    orbe.style.setProperty('--pany',panY.toFixed(1)+'px');
+  }
+  aplicar();
+  var p=galaxia.getBoundingClientRect(), f=_faixaLivre();
+  var alvoX=p.left+p.width/2, alvoY=p.top+p.height/2+f.desvioY;
+  for(i=0;i<3;i++){
+    var c=_caixaMedida(); if(!c)return;
+    /* 0.94 de folga: o rotulo do planeta fica FORA do retangulo do botao e e
+       ele quem encosta na borda primeiro. */
+    var sobra=Math.max(c.w/(f.larg*0.94),c.h/(f.alt*0.94));
+    var cabe=(sobra<=1.005), centrado=(Math.abs(alvoX-c.cx)<2&&Math.abs(alvoY-c.cy)<2);
+    if(cabe&&centrado)return;
+    if(!cabe){
+      fit=Math.max(0.35,fit/sobra);
+      panX*=1/sobra; panY*=1/sobra;
+      aplicar();
+      c=_caixaMedida(); if(!c)return;
+    }
+    panX+=alvoX-c.cx; panY+=alvoY-c.cy;
+    aplicar();
+  }
+}
 function _enquadrarConjunto(){
   var lista=todos(),f=_faixaLivre(),i,j;
-  /* sempre parte das posições limpas: assim chamar de novo (ao girar o
-     aparelho) dá o mesmo resultado, em vez de empilhar deslocamento. */
+  /* Sempre parte do arranjo LIMPO: assim chamar de novo (ao girar o
+     aparelho, ao dispensar uma sugestão) dá o mesmo resultado, em vez de
+     empilhar deslocamento. O raio também volta ao original: o _conferirNaTela
+     encolhe o arranjo quando não cabe, e o "+" é o mesmo objeto entre uma
+     abertura e outra -- sem restaurar, o encolhimento se acumulava nele até
+     o botão sumir atrás da ficha. */
   for(i=0;i<lista.length;i++)lista[i].pos=_mundoPos(lista[i].i);
   dollyBase=0;
   for(j=0;j<6;j++){
@@ -30573,6 +30766,7 @@ function pintarMedidor(){
    Montagem dos planetas
    ============================================================ */
 var _edMundo=null;   /* id do mundo com a ficha aberta em edicao */
+var sugestoes=[];    /* as sugestoes que estao no ceu agora */
 var ICO_LAPIS='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
 var ICO_LIXO='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
 var ICO_MAIS='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
@@ -30581,7 +30775,7 @@ function montar(){
   for(i=0;i<lista.length;i++){
     var w=lista[i];
     var R=(w.r*kr).toFixed(1);
-    h+='<div class="pw'+(w.id===selId?' sel':'')+(w.del?' morto':'')+'" data-id="'+esc(w.id)+'" style="'
+    h+='<div class="pw'+(w.id===selId?' sel':'')+(w.del?' morto':'')+(w.vazio?' frio':'')+'" data-id="'+esc(w.id)+'" style="'
       +'--x:'+(w.pos[0]*kx).toFixed(1)+'px;--y:'+(w.pos[1]*ky).toFixed(1)+'px;--z:'+(w.pos[2]*kz).toFixed(1)+'px">'
       +'<div class="pl">'
       +'<button class="pin'+(w.fantasma?' fantasma':'')+'" style="--r:'+R+'px;--i:'+i+'" '
@@ -30604,7 +30798,7 @@ function montar(){
   }
   /* quem esta na lixeira nao conta como mundo que voce TEM -- ele so
      continua visivel pra poder ser restaurado. */
-  var nVivos=worlds.filter(function(x){return !x.del}).length;
+  var nVivos=worlds.filter(function(x){return !x.del&&!x.sug}).length;
   document.getElementById('gxCont').textContent=nVivos+' '+t(nVivos===1?'mundo':'mundos');
   var ne=document.getElementById('nEstrelas');if(ne)ne.textContent=Math.min(NEST,STARS.length);
   camSuja=true;
@@ -30623,7 +30817,16 @@ function pintarDet(){
      +'<input class="dinp" id="inNome" maxlength="28" aria-label="'+t('Nome do mundo')+'" placeholder="'+t('Como você quer chamar?')+'" oninput="checaNome()">'
      +'<input class="dinp" id="inDesc" maxlength="70" aria-label="'+t('Descrição do mundo (opcional)')+'" placeholder="'+t('Uma linha sobre ele (opcional)')+'">'
      +'<button class="dbtn" id="btCriar" onclick="criar()" disabled>'+t('Criar e entrar')+'</button>'
-     +'<div class="dnota">'+t('Suas chaves e configurações vêm junto. Só as pastas e notas começam vazias.')+'</div>';
+     +'<div class="dnota">'+t('Suas chaves e configurações vêm junto. Só as pastas e notas começam vazias.')+'</div>'
+     +_bancadaHtml();
+  }else if(w.sug){
+    /* Sugestao nao e mundo: nao tem contagem pra mostrar porque nao tem
+       nada dentro. Tem o que ela serve e dois caminhos. */
+    h='<div class="dk">'+t('Sugestão')+'</div>'
+     +'<div class="dn">'+esc(w.nome)+'</div>'
+     +'<div class="dd">'+esc(w.desc)+'</div>'
+     +'<button type="button" class="dbtn" onclick="adotarSugestao(\''+esc(w.sid)+'\')">'+t('Usar este')+'</button>'
+     +'<button type="button" class="dfora" onclick="dispensarSugestao(\''+esc(w.sid)+'\')">'+t('Não vou usar este')+'</button>';
   }else if(_edMundo===w.id){
     h='<div class="dk">'+t('Editando')+'</div>'
      +'<input class="dinp" id="edNome" maxlength="28" aria-label="'+t('Nome do mundo')+'" value="'+esc(w.nome)+'">'
@@ -30667,6 +30870,38 @@ function pintarDet(){
   det.classList.add('on');
   if(w.fantasma){var el=document.getElementById('inNome');if(el&&!mob)setTimeout(function(){el.focus();},80);}
 }
+/* Remontar o ceu e SEMPRE por aqui. _mundosMontar() devolve as posicoes
+   cruas da espiral; quem centra o conjunto na faixa livre e o
+   _enquadrarConjunto(). Chamar um sem o outro joga os planetas pra fora do
+   lugar -- e foi assim que o "+" foi parar atras da ficha. */
+function _remontarCeu(){
+  _mundosMontar();
+  medirCeu();escalar();_enquadrarConjunto();montar();_conferirNaTela();
+  _mundosContar();
+  cam.dolly=dollyBase;
+  pintarDet();camSuja=true;acordar();
+}
+
+/* ---------- sugestoes ---------- */
+function _sugAchar(sid){for(var i=0;i<VOX_SUGESTOES.length;i++)if(VOX_SUGESTOES[i].sid===sid)return VOX_SUGESTOES[i];return null;}
+function adotarSugestao(sid){
+  var g=_sugAchar(sid); if(!g)return;
+  /* O nome vai pro cadastro JA TRADUZIDO no idioma deste momento. Dali em
+     diante e nome de pessoa e nao se traduz mais -- trocar o idioma nao
+     renomeia o mundo de ninguem. */
+  _sugDispensar(sid);
+  _mundoCriar(t(g.nome),t(g.desc));   /* ja entra no mundo novo */
+}
+function dispensarSugestao(sid){
+  var g=_sugAchar(sid); if(!g)return;
+  _sugDispensar(sid);
+  var nome=t(g.nome);
+  selId=ativoId;
+  _remontarCeu();
+  toastDesfazer(t('{n} saiu do céu').replace('{n}',nome),
+    function(){_sugVoltar(sid);selId=ativoId;_remontarCeu();});
+}
+
 /* ---------- editar e lixeira, na propria ficha ---------- */
 function editarMundo(id){_edMundo=id;pintarDet();
   var e=document.getElementById('edNome');
@@ -30709,6 +30944,30 @@ function restaurarMundo(id){
   if(w._pw)w._pw.classList.remove('morto');
   pintarDet();
   toast(t('Mundo restaurado'));
+}
+/* A bancada: as sugestoes que nao estao no ceu. Um toque preenche os dois
+   campos acima -- nao cria nada sozinho, quem cria e o botao de sempre. */
+function _bancadaHtml(){
+  var noCeu={};sugestoes.forEach(function(x){noCeu[x.sid]=1});
+  var fora=_sugDispensadas();
+  var jaTem={};worlds.forEach(function(x){if(!x.sug)jaTem[(x.nome||'').toLowerCase()]=1});
+  var lista=VOX_SUGESTOES.filter(function(g){
+    return !noCeu[g.sid]&&fora.indexOf(g.sid)<0&&!jaTem[t(g.nome).toLowerCase()];
+  });
+  if(!lista.length)return '';
+  var h='<div class="dbanc"><div class="dbanc-k">'+t('Ou comece de um destes')+'</div>';
+  lista.forEach(function(g){
+    h+='<button type="button" class="dchip" onclick="usarSugestao(\''+esc(g.sid)+'\')">'+esc(t(g.nome))+'</button>';
+  });
+  return h+'</div>';
+}
+function usarSugestao(sid){
+  var g=_sugAchar(sid); if(!g)return;
+  var n=document.getElementById('inNome'), d=document.getElementById('inDesc');
+  if(n){n.value=t(g.nome);}
+  if(d){d.value=t(g.desc);}
+  checaNome();
+  if(n&&!mob)n.focus();
 }
 function checaNome(){
   var v=document.getElementById('inNome').value.trim();
@@ -30818,7 +31077,7 @@ window.addEventListener('resize',function(){
   _gxRedim=setTimeout(function(){
     if(!aberta)return;
     medirCeu();escalar();_enquadrarConjunto();
-    cam.dolly=dollyBase;reposicionar();camSuja=true;acordar();
+    cam.dolly=dollyBase;reposicionar();_conferirNaTela();camSuja=true;acordar();
   },140);
 });
 function abrirGalaxia(e){
@@ -30834,7 +31093,7 @@ function abrirGalaxia(e){
 
   _mundosMontar();
   selId=ativoId;
-  medirCeu();escalar();_enquadrarConjunto();montar();
+  medirCeu();escalar();_enquadrarConjunto();montar();_conferirNaTela();
   _mundosContar();
   cam.yaw=0;cam.pitch=0;cam.dolly=dollyBase;vel.yaw=0;vel.pitch=0;alvo=null;camSuja=true;
   galaxia.setAttribute('aria-hidden','false');
