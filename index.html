@@ -5552,6 +5552,231 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   .vintro-skip{bottom:34px;right:14px;padding:7px 13px;font-size:11px}
   .vintro-sound{bottom:34px;left:14px;width:44px;height:44px;font-size:19px}
 }
+
+/* ── WORLD / GALÁXIA — tokens próprios (os demais vêm do app) ────────── */
+:root{
+  --saida:cubic-bezier(.22,1,.36,1);
+  --ceu:#0e1421;--ceu2:#161f31;
+  --gx-txt:#f0f0f4;--gx-txt2:#a8b0c2;--gx-txt3:#7c8499;
+  --gx-sup:rgba(255,255,255,.07);--gx-bord:rgba(255,255,255,.14);
+}
+[data-theme="dark"]{--ceu:#06070d;--ceu2:#0b0d16}
+
+/* ==========================================================================
+   1 · O CHIP (ponto de entrada — o mesmo da proposta anterior)
+   ========================================================================== */
+.world-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  background:none;border:none;padding:1px 6px 1px 1px;border-radius:9px;cursor:pointer;
+  font-family:var(--font);max-width:190px;
+  transition:background .15s linear,transform .12s var(--saida);
+}
+.world-chip:hover{background:var(--bg-input)}
+.world-chip:active,.world-chip.afunda{transform:scale(.955)}
+.wc-globo{width:19px;height:19px;flex-shrink:0;border-radius:6.5px;
+  border:1px solid var(--border2);background:var(--bg-input);
+  display:flex;align-items:center;justify-content:center;color:var(--text2);
+  transition:border-color .15s linear,color .15s linear}
+.world-chip:hover .wc-globo{border-color:var(--accent);color:var(--accent)}
+.wc-nome{font-size:11.5px;font-weight:700;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wc-mais{color:var(--text4);flex-shrink:0}
+
+/* ==========================================================================
+   2 · A GALÁXIA
+   ========================================================================== */
+.galaxia{
+  /* fixed (no mockup era absolute, dentro do palco): aqui o painel mora no
+     fim do body e precisa cobrir a janela inteira por conta própria. */
+  position:fixed;inset:0;z-index:100;overflow:hidden;
+  background:var(--ceu);
+  opacity:0;pointer-events:none;
+  /* visibility:hidden é o que tira o painel fechado do caminho de VERDADE:
+     sem ele, os filhos que reativam pointer-events (o título e os botões do
+     topo) continuam recebendo clique por cima do cabeçalho do app, e os 8
+     botões de dentro continuam no caminho do Tab mesmo com aria-hidden.
+     O atraso na transição segura a saída até o fim do esmaecimento. */
+  visibility:hidden;
+  transform:scale(.965);
+  transform-origin:var(--ox,50%) var(--oy,10%);   /* nasce no chip, não no centro */
+  transition:opacity .2s linear,transform .38s var(--saida),visibility 0s linear .38s;
+}
+.galaxia.on{opacity:1;pointer-events:auto;transform:none;visibility:visible;
+  transition:opacity .2s linear,transform .38s var(--saida),visibility 0s}
+#ceu{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* vinheta: profundidade em REPOUSO, custo zero (é só um gradiente parado) */
+.vinheta{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 78% 68% at 50% 46%,rgba(0,0,0,0) 40%,rgba(0,0,0,.55) 100%)}
+
+/* ---- palco 3D ---- */
+.cena{position:absolute;inset:0;perspective:var(--persp,900px);perspective-origin:50% 50%;
+  touch-action:none;cursor:grab}
+.cena.arrastando{cursor:grabbing}
+.orbe{position:absolute;left:50%;top:50%;width:0;height:0;
+  transform-style:preserve-3d;
+  transform:translateZ(var(--dolly,0px)) rotateX(var(--pitch,0deg)) rotateY(var(--yaw,0deg))}
+
+/* wrapper = posição no espaço. planeta = billboard (contra-rotação). */
+.pw{position:absolute;left:0;top:0;transform-style:preserve-3d;
+  transform:translate3d(var(--x),var(--y),var(--z))}
+.pl{position:absolute;transform-style:preserve-3d;
+  transform:rotateY(calc(var(--yaw,0deg) * -1)) rotateX(calc(var(--pitch,0deg) * -1))}
+.pin{position:absolute;left:calc(var(--r) * -1);top:calc(var(--r) * -1);
+  width:calc(var(--r) * 2);height:calc(var(--r) * 2);
+  border:none;padding:0;background:none;border-radius:50%;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:transform .13s var(--saida)}
+.pin:active{transform:scale(.965)}
+.pin:focus-visible{outline:none}
+
+/* QUEM RECEBE O TOQUE É SÓ O BOTÃO .pin, que é redondo e do tamanho do
+   planeta. Tudo o que vem abaixo é pintura — e pintura que transborda: a
+   noite é um disco de 2,2× e o brilho de 1,5×. Sem o pointer-events:none,
+   um planeta de 184px roubava o toque num círculo de 406px e engolia o
+   vizinho de trás; a pessoa mirava num planeta e outro respondia. */
+.esfera,.noite,.brilho{pointer-events:none}
+.esfera{position:absolute;inset:0;border-radius:50%;overflow:hidden;
+  background:radial-gradient(circle at 34% 30%,var(--c1),var(--c2) 62%,var(--c3) 100%)}
+/* manchas: dão caráter de corpo rochoso e separam da bolha CHAPADA da Órbita */
+.esfera::after{content:'';position:absolute;inset:0;opacity:.5;
+  background:
+    radial-gradient(ellipse 40% 22% at 26% 62%,rgba(255,255,255,.16),transparent 70%),
+    radial-gradient(ellipse 30% 16% at 68% 34%,rgba(0,0,0,.22),transparent 72%),
+    radial-gradient(ellipse 52% 20% at 55% 78%,rgba(0,0,0,.18),transparent 74%)}
+/* A NOITE: disco 2,2× com o claro no meio. Deslocar por transform = o
+   terminador varre a face SEM repaint. Só transform, roda na GPU. */
+.noite{position:absolute;left:-60%;top:-60%;width:220%;height:220%;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,
+    rgba(2,3,8,0) 0 20%,rgba(2,3,8,.42) 33%,rgba(2,3,8,.88) 47%,rgba(2,3,8,.96) 100%);
+  opacity:var(--noite,.7);
+  transform:translate3d(var(--lx,0px),var(--ly,0px),0)}
+.brilho{position:absolute;left:-25%;top:-25%;width:150%;height:150%;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,rgba(255,247,232,.30),rgba(255,247,232,.07) 32%,transparent 56%);
+  opacity:var(--esp,.5);mix-blend-mode:screen;
+  transform:translate3d(var(--sx,0px),var(--sy,0px),0)}
+/* limbo: a borda que faz o disco virar esfera. Parado, custo zero. */
+.limbo{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  box-shadow:inset 0 0 calc(var(--r) * .38) rgba(0,0,0,.55),
+             inset 0 0 0 1px rgba(255,255,255,.10)}
+/* névoa por distância: o que estiver longe fica mais azul e mais apagado */
+.nevoa{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:#121a2c;opacity:var(--dim,0)}
+
+/* o World em que a pessoa ESTÁ: presença em repouso, sem depender de hover */
+.aqui{position:absolute;inset:-9%;border-radius:50%;pointer-events:none;
+  border:1.5px solid rgba(52,216,160,.55);
+  box-shadow:0 0 18px rgba(52,216,160,.22),inset 0 0 12px rgba(52,216,160,.10)}
+.anel{position:absolute;inset:-16%;border-radius:50%;pointer-events:none;
+  border:1.5px solid rgba(255,255,255,.62);
+  opacity:0;transform:scale(.9);
+  transition:opacity .18s linear,transform .3s var(--saida)}
+.pw.sel .anel{opacity:1;transform:none}
+.pin:focus-visible .anel{opacity:1;transform:none;border-color:#7fe3c0;border-style:dashed}
+
+/* rótulo do planeta: vive DENTRO do 3D e encolhe com a distância — isso é
+   informação (o que está longe parece longe), não descuido. A leitura de
+   verdade acontece no painel de baixo, em coordenadas de tela. */
+.pnome{position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%);
+  white-space:nowrap;font-size:13px;font-weight:600;letter-spacing:-.1px;
+  color:var(--gx-txt);text-shadow:0 1px 6px rgba(0,0,0,.85);pointer-events:none}
+.pw.sel .pnome{font-weight:700}
+
+/* planeta em formação = criar World. Tracejado, sem terminador: não é mundo ainda. */
+.fantasma .esfera{background:none;border:1.5px dashed rgba(255,255,255,.34)}
+.fantasma .noite,.fantasma .brilho,.fantasma .limbo{display:none}
+.fantasma .mais{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.62)}
+
+/* ---- topo do painel ---- */
+.gx-top{position:absolute;left:0;right:0;top:0;z-index:6;display:flex;align-items:center;
+  justify-content:space-between;gap:10px;padding:12px 14px;pointer-events:none}
+.gx-tit{display:flex;align-items:center;gap:9px}
+.gx-tit .k{font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--gx-txt3);display:block}
+.gx-tit .n{font-size:14px;font-weight:700;color:var(--gx-txt);letter-spacing:-.2px;display:block;margin-top:1px}
+.gx-acoes{display:flex;gap:7px}
+/* A RAIZ do bug do clique: estes dois filhos religavam pointer-events por
+   cima do pai desligado. Enquanto o painel não está aceso, eles não existem
+   pro ponteiro — nem durante os 380ms do esmaecimento de saída. */
+.galaxia.on .gx-tit,.galaxia.on .gx-acoes{pointer-events:auto}
+.gxb{width:34px;height:34px;border-radius:11px;border:1px solid var(--gx-bord);
+  background:var(--gx-sup);color:var(--gx-txt2);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  transition:transform .13s var(--saida),color .15s linear,border-color .15s linear,opacity .2s linear}
+.gxb:hover{color:var(--gx-txt);border-color:rgba(255,255,255,.3)}
+.gxb:active{transform:scale(.94)}
+/* o botão de enquadrar APAGA quando já está enquadrado e ACENDE quando a
+   pessoa se afastou — é o sinal de "dá pra voltar", em repouso */
+.gxb.enq{opacity:.34}
+.gxb.enq.viva{opacity:1;color:#7fe3c0;border-color:rgba(127,227,192,.45)}
+
+/* ---- painel do selecionado (coordenadas de TELA: fonte não encolhe) ---- */
+.det{position:absolute;left:14px;bottom:14px;z-index:6;width:296px;
+  background:rgba(12,15,24,.72);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  border:1px solid var(--gx-bord);border-radius:16px;padding:14px 15px 13px;
+  opacity:0;transform:translateY(8px);pointer-events:none;
+  transition:opacity .18s linear,transform .32s var(--saida)}
+.det.on{opacity:1;transform:none;pointer-events:auto}
+.det .dk{font-size:9.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--gx-txt3);margin-bottom:5px}
+.det .dn{font-size:19px;font-weight:700;letter-spacing:-.45px;color:var(--gx-txt);line-height:1.2}
+.det .dd{font-size:12.5px;color:var(--gx-txt2);line-height:1.6;margin-top:7px}
+.det .dm{font-size:11px;color:var(--gx-txt3);font-weight:600;margin-top:9px;font-variant-numeric:tabular-nums}
+.det .dbtn{width:100%;margin-top:12px;background:#12c78d;color:#04140e;border:none;border-radius:12px;
+  padding:11px;font-size:13.5px;font-weight:700;font-family:var(--font);cursor:pointer;
+  transition:transform .12s var(--saida),background .15s linear}
+.det .dbtn:hover{background:#2ad3a0}
+.det .dbtn:active{transform:scale(.97)}
+.det .dbtn.sec{background:transparent;color:var(--gx-txt2);border:1px solid var(--gx-bord)}
+.det .dinp{width:100%;margin-top:10px;background:rgba(255,255,255,.08);border:1.5px solid transparent;
+  border-radius:11px;padding:10px 12px;font-size:14px;font-family:var(--font);color:var(--gx-txt);outline:none;
+  transition:border-color .15s linear,background .15s linear}
+.det .dinp::placeholder{color:var(--gx-txt3)}
+.det .dinp:focus{border-color:#12c78d;background:rgba(255,255,255,.12)}
+.det .dnota{font-size:11px;color:var(--gx-txt3);line-height:1.55;margin-top:9px}
+
+/* ---- dica + medidor ---- */
+/* a dica ficava centrada na largura toda e passava POR BAIXO do painel do
+   mundo selecionado — as primeiras palavras sumiam. Agora ela mora no espaço
+   que sobra à direita do painel. */
+.gx-dica{position:absolute;left:auto;right:16px;bottom:14px;z-index:5;text-align:right;
+  max-width:min(440px,calc(100% - 340px));line-height:1.5;
+  font-size:11.5px;color:var(--gx-txt3);pointer-events:none;
+  transition:opacity .3s linear}
+.gx-medidor{position:absolute;right:14px;top:56px;z-index:7;
+  font-size:10.5px;font-weight:600;color:var(--gx-txt3);font-variant-numeric:tabular-nums;
+  background:rgba(12,15,24,.6);border:1px solid var(--gx-bord);border-radius:9px;padding:6px 9px;
+  line-height:1.65;text-align:right;pointer-events:none}
+
+/* celular: o painel vira faixa na base.
+   No mockup estas regras pendiam de .palco.mob, uma classe que o palco da
+   proposta ligava por botão. No app de verdade quem manda é a largura real
+   da janela — então viram media query. Sem isso a dica vazava pela lateral. */
+@media (max-width:640px){
+  .det{left:10px;right:10px;bottom:10px;width:auto}
+  .gx-dica{left:10px;right:10px;bottom:auto;top:52px;font-size:11px;padding:0 12px;
+    max-width:none;text-align:center}
+  /* o medidor pousava EM CIMA dos botões de enquadrar e fechar no celular
+     (z-index maior). Some o X, some a saída. Desce pra baixo da dica. */
+  .gx-medidor{top:96px;bottom:auto;right:10px}
+  .pnome{font-size:12px}
+}
+
+/* entrada escalonada dos planetas: 30ms entre eles = lê como "abriu" */
+@keyframes entraPl{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
+.galaxia.abrindo .pin{animation:entraPl .5s var(--saida) both;animation-delay:calc(var(--i,0)*30ms)}
+
+/* SEM MOVIMENTO: nada de transição, nada de cintilação (o JS desliga),
+   nada de inércia. Navegar continua funcionando — resposta direta ao dedo
+   não é "movimento não pedido". */
+.palco.quieto .galaxia{transition:opacity .12s linear,visibility 0s linear .12s!important;transform:none!important}
+.palco.quieto .galaxia.on{transition:opacity .12s linear,visibility 0s!important}
+.palco.quieto .galaxia.abrindo .pin{animation:none!important}
+.palco.quieto .det,.palco.quieto .anel,.palco.quieto .gxb{transition:none!important}
+
+/* ---- vitrine: o painel de verdade, parado, dentro do documento ----
+   Reaproveita as MESMAS classes do painel vivo (.det/.dn/.dd/.dinp) pra não
+   existir uma segunda verdade que possa envelhecer sozinha. */
+.vitrine{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin:18px 0 0}
+.vitrine-col{max-width:330px}
+.vitrine-cel{background:#0b0f18;border:1px solid #232a3c;border-radius:18px;padding:17px;display:inline-block}
+
 </style>
 <style>
 /* ── CCHAT: modo conversar universal ── */
@@ -5662,7 +5887,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div class="brand-icon" id="brandIcon">Abertura</div>
       <div class="brand-text">
         <div class="brand-name" id="appTitle">Vox · My Transcriber</div>
-        <div class="brand-sub-row"><div class="brand-sub" id="brandSub" data-i18n>Transcription</div><span class="ver-badge" id="verBadge"></span></div>
+        <div class="brand-sub-row"><button type="button" class="world-chip" id="worldChip" onclick="abrirGalaxia(event)" title="Ver todos os mundos" data-i18n-title aria-label="Ver todos os mundos"><span class="wc-globo" id="wcGlobo"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><g transform="rotate(-18 12 12)"><circle cx="12" cy="12" r="8.6"/><path d="M12 3.4c3.1 2.3 3.1 14.9 0 17.2"/><path d="M12 3.4c-3.1 2.3-3.1 14.9 0 17.2"/><path d="M3.9 9.1c5 2 11.2 2 16.2 0"/></g></svg></span><span class="wc-nome" id="wcNome"></span><svg class="wc-mais" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button><span class="ver-badge" id="verBadge"></span></div>
         <div class="brand-stats" id="brandStats"><span id="bsc">0 gravações</span><span id="bstime">0 min</span></div>
         <div class="brand-share-hint" data-i18n>Compartilhe</div>
       </div>
@@ -7173,6 +7398,37 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
      ver _ptcTouchMove()/_showPtcIndicator() no script principal -->
 <div class="ptc-indicator" id="ptcIndicator" style="display:none"></div>
 
+<!-- ══ WORLD / GALÁXIA — o painel dos espaços de trabalho ══════════════════
+     Fica no fim do <body> e é position:fixed: cobre a tela inteira sem
+     depender de quem é o pai. Nasce fechado (visibility:hidden), o que tira
+     os botões de dentro do caminho do Tab e do clique. -->
+<div class="galaxia" id="galaxia" aria-hidden="true">
+  <canvas id="ceu"></canvas>
+  <div class="vinheta"></div>
+  <div class="cena" id="cena">
+    <div class="orbe" id="orbe"></div>
+  </div>
+  <div class="gx-top">
+    <div class="gx-tit">
+      <div>
+        <span class="k" data-i18n>Seus mundos</span>
+        <span class="n" id="gxCont"></span>
+      </div>
+    </div>
+    <div class="gx-acoes">
+      <button type="button" class="gxb enq" id="btEnq" onclick="enquadrar()" title="Voltar pro centro" data-i18n-title aria-label="Voltar pro centro">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+      </button>
+      <button type="button" class="gxb" onclick="fecharGalaxia()" title="Fechar" data-i18n-title aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="gx-medidor" id="medidor"></div>
+  <div class="gx-dica" id="gxDica"></div>
+  <div class="det" id="det"></div>
+</div>
+
 <script>
 // ── QR CODE GENERATOR — qrcode-generator v1.4.4 (c) Kazuhiko Arase, MIT License ──
 // https://github.com/kazuhikoarase/qrcode-generator — embutido para uso offline (Vox Transfer)
@@ -7203,7 +7459,75 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.08.2';
+const VOX_VERSION='2026.09.11.1';
+
+// ── WORLDS — espaços de trabalho separados ────────────────────────────────
+// Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
+// NÃO entra nisso, de propósito: chaves de API, tema, idioma, dicionário
+// pessoal e regras aprendidas — isso é configuração, mora num lugar só e
+// vale em todos os Worlds (senão a pessoa recolheria a chave da Groq a cada
+// espaço novo).
+//
+// A regra que torna isto seguro: **o primeiro World usa as chaves originais,
+// sem sufixo nenhum.** Quem já usava o app continua com os dados exatamente
+// onde sempre estiveram — esta atualização não move, não copia e não
+// reescreve nada. Só World criado depois ganha sufixo (`vox_folders__m<id>`).
+// Se toda a feature for removida um dia, o World original continua abrindo.
+const VOX_MUNDO_KEYS=new Set(['vox_history','vox_folders','vox_folders_expanded',
+  'vox_active_folder','vox_tag_nomes','vox_tags_collapsed','vox_cal',
+  'vox_float_cards','vox_stats','vox_speed_stats','vox_rec_count','vox_ressurgidas']);
+const VOX_MUNDO_RAIZ='m1';
+// Acesso CRU ao localStorage — sem o desvio por World. Usado pelo cadastro de
+// Worlds (que é global) e por quem precisa varrer as chaves de verdade.
+let VOX_LS;
+let _mundoAtivo=VOX_MUNDO_RAIZ;
+(function(){
+  const LS=window.localStorage, SP=Storage.prototype;
+  const _get=SP.getItem, _set=SP.setItem, _rem=SP.removeItem;
+  VOX_LS={get:_get.bind(LS), set:_set.bind(LS), rem:_rem.bind(LS)};
+  try{_mundoAtivo=VOX_LS.get('vox_mundo_ativo')||VOX_MUNDO_RAIZ}catch(e){}
+  // O desvio tem que ser no PROTÓTIPO Storage, não no objeto localStorage.
+  // Escrever LS.setItem=... parece funcionar e funciona no Chrome, mas o
+  // Safari trata o localStorage como um objeto de propriedades nomeadas: a
+  // atribuição não troca o método, ela GUARDA UM ITEM chamado "setItem" com
+  // o código da função como texto. O desvio simplesmente não existia lá — e
+  // no iPhone todos os mundos escreviam nas mesmas chaves, um vazando no
+  // outro. A guarda this===LS mantém o sessionStorage intocado, que era a
+  // única razão de não mexer no protótipo.
+  SP.getItem=function(k){return _get.call(this,this===LS?_mundoChave(k):k);};
+  SP.setItem=function(k,v){return _set.call(this,this===LS?_mundoChave(k):k,v);};
+  SP.removeItem=function(k){return _rem.call(this,this===LS?_mundoChave(k):k);};
+})();
+function _mundoChave(k){
+  // '!' na frente = "esta chave já vem pronta, não desvie" — é como a galáxia
+  // lê o histórico de OUTRO World sem que o desvio do World ativo atrapalhe.
+  if(k&&k.charAt(0)==='!')return k.slice(1);
+  return (_mundoAtivo!==VOX_MUNDO_RAIZ&&VOX_MUNDO_KEYS.has(k))?k+'__'+_mundoAtivo:k;
+}
+function _mundosLista(){
+  try{
+    const l=JSON.parse(VOX_LS.get('vox_mundos')||'null');
+    if(Array.isArray(l)&&l.length)return l;
+  }catch(e){}
+  return [{id:VOX_MUNDO_RAIZ,nome:t('Meu espaço'),desc:''}];
+}
+function _mundosSalvar(l){try{VOX_LS.set('vox_mundos',JSON.stringify(l))}catch(e){}}
+function _mundoAtual(){const l=_mundosLista();return l.find(m=>m.id===_mundoAtivo)||l[0]}
+function _mundoTrocar(id){
+  if(id===_mundoAtivo)return;
+  try{VOX_LS.set('vox_mundo_ativo',id)}catch(e){}
+  // Recarrega em vez de trocar em memória: o app inteiro (pastas, cards,
+  // calendário, estatística) nasce do carregamento. Mesmo caminho que
+  // setLang() já usa pra trocar de idioma.
+  location.reload();
+}
+function _mundoCriar(nome,desc){
+  const l=_mundosLista();
+  const id='m'+Date.now().toString(36);
+  l.push({id,nome:(nome||'').trim()||t('Novo mundo'),desc:(desc||'').trim(),criado:Date.now()});
+  _mundosSalvar(l);
+  _mundoTrocar(id);
+}
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -7241,6 +7565,32 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── World / galáxia (11/09/2026) ──
+"Ver todos os mundos":"See all your worlds",
+"{a} de {b} estrelas":"{a} of {b} stars",
+"Seus mundos":"Your worlds",
+"Voltar pro centro":"Back to center",
+"Meu espaço":"My space",
+"Novo mundo":"New world",
+"Sem nome":"Untitled",
+"mundo":"world",
+"mundos":"worlds",
+"notas":"notes",
+"pasta":"folder",
+"Mundo":"World",
+"Você está aqui":"You are here",
+"Voltar pra este mundo":"Back to this world",
+"Entrar em":"Go to",
+"Um mundo novo":"A new world",
+"Do zero":"From scratch",
+"Nome do mundo":"World name",
+"Como você quer chamar?":"What do you want to call it?",
+"Descrição do mundo (opcional)":"World description (optional)",
+"Uma linha sobre ele (opcional)":"One line about it (optional)",
+"Criar e entrar":"Create and go in",
+"Suas chaves e configurações vêm junto. Só as pastas e notas começam vazias.":"Your keys and settings come along. Only the folders and notes start out empty.",
+"arraste pra girar · belisque pra aproximar · toque duas vezes pra entrar":"drag to spin · pinch to zoom · double-tap to go in",
+"arraste pra girar · role pra aproximar · as pastas são o mapa de dentro de um mundo — aqui é o mapa dos mundos":"drag to spin · scroll to zoom · folders map the inside of a world — this is the map of the worlds",
 // ── Menu ⋯ e porta de entrada das Configurações (Plano 22, 08/09/2026) ──
 "Serviço de transcrição, chaves, backup e espaço":"Transcription service, keys, backup and storage",
 "Rever as boas-vindas":"Revisit the welcome screens",
@@ -7442,6 +7792,7 @@ let I18N_EN={
 "Tudo (fora de pasta)":"Everything (outside folders)",
 "pastas":"folders",
 "Nova pasta…":"New folder…",
+"Nova pasta":"New folder",
 "mover este card de {cor} para":"move this {cor} card to",
 "mover {n} cards de {cor} para":"move {n} {cor} cards to",
 "📁 1 card de {cor} foi para \"{pasta}\"":"📁 1 {cor} card moved to \"{pasta}\"",
@@ -9391,6 +9742,9 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(saved)setTheme(saved,false);
   _updateThemeColor();_syncSkinUI();
   document.getElementById('verBadge').textContent='v'+VOX_VERSION;
+  // Nome do World ativo no chip do cabeçalho (onde antes só dizia "Transcription")
+  const _wcn=document.getElementById('wcNome');
+  if(_wcn)_wcn.textContent=_mundoAtual().nome;
   const vs=document.getElementById('verSettings');if(vs)vs.textContent='v'+VOX_VERSION;
   // Vox Transfer: recebe #vox= e #voxk= na abertura e também com o app já aberto
   handleTransferHash();
@@ -9914,7 +10268,7 @@ function renderFolders(){
   // combina com "nascer".
   html+=`<button type="button" class="folder-new-btn folder-fantasma" onclick="_folderNascePasta(this)">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-    <span data-i18n>Nova pasta</span>
+    <span>${t('Nova pasta')}</span>
   </button>`;
   // ── RODAPÉ FIXO: Arquivados e Lixeira ──
   // Não são pastas: não aceitam arrastar card pra dentro, não renomeiam, não
@@ -20562,9 +20916,18 @@ function factoryResetStart(){
 function factoryResetConfirm(){
   const keepCards=document.getElementById('frKeepCards')?.checked;
   const keep=keepCards?['vox_history','vox_folders']:[];
-  // enumera tudo que é nosso e apaga (exceto o que o usuário pediu pra manter)
-  Object.keys(localStorage).filter(k=>k.startsWith('vox_')&&!keep.includes(k)).forEach(k=>localStorage.removeItem(k));
+  // Worlds: a varredura abaixo enumera as chaves DE VERDADE (inclusive as com
+  // sufixo, tipo vox_folders__m2), então a remoção também precisa ser crua —
+  // passar por localStorage.removeItem aqui mapearia a chave de novo e o
+  // registro sobreviveria. Zerar o World ativo antes garante isso e também
+  // faz o idbDelete lá embaixo mirar a raiz.
+  const _mundosAntes=_mundosLista();
+  _mundoAtivo=VOX_MUNDO_RAIZ;
+  Object.keys(localStorage).filter(k=>k.startsWith('vox_')&&!keep.includes(k)).forEach(k=>VOX_LS.rem(k));
   if(keepCards){location.reload();return}
+  // Um histórico por World — some todos, senão "apagar tudo" deixaria as
+  // transcrições dos outros espaços intactas no banco.
+  _mundosAntes.filter(m=>m.id!==VOX_MUNDO_RAIZ).forEach(m=>idbDelete('vox_history__'+m.id).catch(()=>{}));
   // O histórico de verdade mora no IndexedDB agora — sem isso, "apagar tudo"
   // limparia só a cópia órfã do localStorage e deixaria as transcrições
   // reais intactas no banco.
@@ -20682,7 +21045,12 @@ function _openIDB(){
   });
   return _idbPromise;
 }
+// As três funções abaixo passam a chave por _mundoChave(): o histórico
+// ('vox_history') é conteúdo, então é separado por World. As outras chaves
+// daqui (pasta_backup_handle, share_target_pending, opfsmeta_…) não estão na
+// lista de conteúdo e atravessam sem mudança nenhuma.
 function idbGet(key){
+  key=_mundoChave(key);
   return _openIDB().then(db=>new Promise((resolve,reject)=>{
     const req=db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get(key);
     req.onsuccess=()=>resolve(req.result);
@@ -20690,6 +21058,7 @@ function idbGet(key){
   }));
 }
 function idbSet(key,value){
+  key=_mundoChave(key);
   return _openIDB().then(db=>new Promise((resolve,reject)=>{
     const tx=db.transaction(IDB_STORE,'readwrite');
     tx.objectStore(IDB_STORE).put(value,key);
@@ -20698,6 +21067,7 @@ function idbSet(key,value){
   }));
 }
 function idbDelete(key){
+  key=_mundoChave(key);
   return _openIDB().then(db=>new Promise((resolve,reject)=>{
     const tx=db.transaction(IDB_STORE,'readwrite');
     tx.objectStore(IDB_STORE).delete(key);
@@ -29645,6 +30015,709 @@ function exportObsidian(){
   dl(out,`vox_obsidian_${slug}.md`);
   toast(`📗 ${cards.length} `+t('notas com frontmatter YAML!'));
 }
+
+/* ══ WORLD / GALÁXIA ══════════════════════════════════════════════════
+   Painel que mostra os Worlds como planetas. O motor (câmera, gestos,
+   céu, esferas) veio da proposta aprovada em scratchpad/PROPOSTA_WORLD_GALAXIA.html.
+   A camada de dados (quem são os Worlds, trocar, criar) está lá em cima,
+   junto do VOX_VERSION. ══════════════════════════════════════════════ */
+/* ============================================================
+   CATÁLOGO DE ESTRELAS
+   Origem declarada: Bright Star Catalogue, 5th Revised Ed.
+   (Hoffleit & Warren, 1991 / Yale University Observatory),
+   distribuído publicamente pelo Astronomical Data Center da NASA
+   e pelo CDS (VizieR V/50). Dado científico, sem texto de licença
+   anexo; a praxe da área é citar a fonte — a citação está no
+   rodapé desta página e deve entrar no "Sobre" do app.
+
+   CONFERIDO (decodificando o vetor por fora e comparando com
+   coordenadas conhecidas): erro máximo de 0,04 grau nas 20 mais
+   brilhantes; 26,9% das estrelas a menos de 10 graus do plano
+   galáctico (acaso daria 17,4%); Plêiades, Híades e Coma Berenices
+   nas posições e densidades certas; contagem por magnitude na
+   proporção do céu real; nada abaixo do corte de magnitude 5,0.
+
+   NÃO CONFERIDO: de qual catálogo, exatamente, estes números foram
+   extraídos — não sobrou o arquivo baixado nem o script gerador.
+   Refazer a conversão a partir do BSC5 e guardar o gerador no
+   repositório ANTES de isso entrar no index.html.
+
+   Filtro: magnitude visual <= 5,0 (a mais fraca do vetor é 4,94).
+   Ordenado da mais brilhante pra mais fraca — o celular usa só o
+   começo do vetor (520 estrelas = magnitude <= 4,06).
+   6 caracteres por estrela: RA(12 bits) DEC(12 bits) MAG(6) B-V(6).
+   ============================================================ */
+var STAR_AL="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+var STAR_RAW="SAaDAKRENRHNmBm0NnnFKXNbxotyOKOFwWOdN-dFPJUah2RUEWLpSGPyioS3lgKiTE06jJUPMRl3Vvr-WmW2jycCWEUrp9Yi9OVeYMiHKyZE3KwGZMhLJkZEnFKXZfbCkQaHSmVsbFhYLscwu0SzcEOdiQcEOgqKcHYlHNdKO8fkdFhLJkdD7BPTdHiZz5dJVwPLeEJFxueVdf18ekTCWneaxETxeJWVK2epkxxheFu_QteTP-v-fKs0HdftRrl1fK2dL1fFXUMjfLRAZnfEUNrVfKZOc7ftFqoVgmqppNgMGw_ugYycWpgEB8ZmgiPJfTgFAYqVgHDGsqgwPdckgGloTEginl6Xgtu4kdgN8jPVgwIXujhIfglLhMh2OmhJ2UuThaYWQjhyBz0GimOwf5iEpipfiJv2yTivVfRxiDYwK7iOFgvDirAa1BiSjuzhiKs5TzimkcM_iEnMPJiFm6RAiFqrX9iHda0CjJBLQ9jk59jgjvvNSIjE9fp-jytyaajLfuzFjK402PjPTvVlkI3YsEkjCh1lkG9ilZkJY_MckFIGhdkxlIPMkEd9nSlNsUcPlKOyZqlPgsZwlHgXN-lHyxVYlMbjnDlmowcqlHP_tOlIq5Y9lIFGnZlNPGT4lHhhXrlfp9iSlmD01amNlGmimYn7QqmENNrymvcvObmghpHbmFusSvmETbS0mxnVpnmhw7VZmr0tjxmvrTermwru13mgjlS8mLnlaTmNckJHmEO6d5mEsAnomgvQhnmmpjRXnFNreMnNurylnhBJEinZgrLHnEVqXXnUsfrOnZxPW9njsQV-nEAmlZnEiwj5ngOlYnneKarVnNqcJcnRudMQntFSKHnQ7eKlnrKHoknI0qwCnJ6FaRnRRBoAnxUNrVnLKkuOoFo1HloKqnWtoFrmW5oNzGYhoST4i8oIiftnoH5ZeBoeIOzBobSOOAon8kqvofKlbMowhUaIoIuvORoG66f4ohR9o7osaCocodNbvkoXwQVLoiy5k7oKFwsboNPAngoFgcX9oqjgXwogJ6w_pHaGI3pQdwv0pl6YStpHQ6VUpFSzXhpImwtnpOvcRvpWGMe8psk3Q5pGbquwpwiDHypFo65ipLzO4Dpis-SepF0Bp8pl2QavpdXziHpic3aPpowxS7pv2_PMpiPmTSqmY8sOqvZYLuqve7JmqJn9RCqFtRMGqwX9xEqOt_o1qMt_tFqtNouqqFRrQpqHZdyXqVtu3XqHyBWZqHM4ieqVNlYDqtnOI5qQtOjVqm4kqvqiviS1qm_E7mqjo8RjqE11ftrI5R5FrEH7RrrNKGFnrxreeVrhynrnrIT9Qmruw8e-rgBwq-rpMLMbrHSJJ-rPlnWgrluTXHrE9FaYrLQqoArwoLXArzpG09rmC8PZrfN6aPrHgr0RrMbRHGrIcFKErIy-WKrnt3QorUU3XKsod9lfsJudL9sHv8chsiLUJysg7J0sswObfJsGSBklsUWr1lsezyhGsRkNfysMpAQHsFFF2osGXaiSsaiehNswIPtzsyL8lpsObbKMsv8gj2sID7QmswFCqgsWk3RLsEoiNesgqqSWsEvZp2sc3UIdsO3V1-sgCM0jsYYfLCsFbaoUsRy8eQsIDDcYtmbbvQtKyOr3tKHQhJtMKskctHSvWEt0VMNKtForr1th1Rm7tweJrwtst-lHtt84ovtg80NwtMEoaVtboFuWthxMPqtGyjYftmWEjQtuZ1jhtWa_l9tJ833itjL8m0tiTkn0tSqMextJskt1tg7HiMtMJ7chtgO5jitFahMmtIezUrtgvAahtQPbautMmMPotFA3c3unGENsuHLdT_uHeMavulo9THuv1tIeucEXxSupUporugs_SfuFw752uW2IbiugTel4uMmvqyupppV_urg8KhusDvdFujJGjNufOHdkuHPUYBuVSWsEuMYKwwuKZXRnuSUrSgu0bIbmuiflgouXEElduhXINMuFixGkumtFQ8urutKbuHvXI_un9avCuIHjpsuHKMojuI2_lMuUfXIRuOLjljuih2ffuSlh24uI3wLOuoBpzKuFptVauGwSOMuI9vYeunZZ2avSqDlevLXRUNvFh2ffvSpPqWvQ5xaEvRI3YRvxM8h_vGaAJxvn-FhKvgFKNpveJ_okvHv5qZvgP2a9vSfYw-vmqQhlvN1HiRvfNFg3vFP-zSvinYgrvJ4Nvnvy4pthvTE9cUvlJecovfU_RkvjwUjZvNJNjdvI5LYCvi8_dTvxNcumvnYLPQvnromzvQvdg9vLvt0Nvm790wvYHlz3vyLsmPvhO1Jyves4LAvw51Efvi6-pAvUKAvIvUWeIfvly3YRvizby-vh3FlpvI3ccnvK8Dx3vKTDG8wjdCLFwhS2nTwdT0p4wjz-yYwN17wnwpIbv8whaR0_wRbjnDwSpijvwQpijvwQvFwWwFPDfEwEPnYkwib0aAwuMQVIwhY1tFwLb6LHwRsCgtwK0xmlws-_wgwiJ-rewLdCsKwjlQRCwFndD5wswVqOwJ0z4-wfL8lrwhXJPawbXyKcwHcUO2wReu4pwxp5pWwKxDnvwm7nfgwIJ-I9wlPcN2wOQ_UHwfTUWewGbURBwLcIjTwGqglkwVrWJXwlxjdEwqLSQ9wkhrOvwLv1tPwqwmYgwPChtrwNIiVswWKCoqwIMXa6wkOuTZwlSaXZw0hcGWwGhf4zwHlRQEwFohOrwIAbPvwjYog0wIaWpPwnkCR_wmnPd_wTqhVnwFH2c1xleRMoxGg4fwxKriwdxGsJD9xg1KsexiWeenxJ0_gWxf9yP6xiKziIxKXYPoxKZxfmxqdtLCxnhPOJxFpkavxiDCMXxItVq_xJ4sh3xXMSezxFUgcmxizoZpxPBLQexOXUmdxkeZjvxU33uoxKEDOjxiHwywxcRoZJxjUhGMxjjuzhxNqQUCxJ8uoYxkLvT6xuP9QxxlSNUcxEUnVtxOghNYxGq9YpxJ1WGFxJPot6xlXHTcxgYBu2xUYgJ2xFwBhCxKzuRjxH79Qixj-WY2xkFf5vxJQqdxxqTaH1xd2Aw9xv-GLTxTFVYgywHuOQy9YHIZyNbwFrySnMSkyGGGsCyKXlWJyojyziyOqv00yWrMZFyLx6GnylzqQMyH2oqyyT83bKyw_9icyUMse1yGXaqOyigXXNyRriOKykyplWykyvd9yk5gwNyf8Of9yINf1fygfXiUyuibLryGwPg4yf2zkByHKosuyKLDw9yJLMdkySg0JPyGydvnywIaxoyYeRiJyImPSiyJmcybyWnAObyGnRTfyqoZP5yFCHooylURpjyvtTNGytEnyByJHGgHyENLkzymSabuysWKEqyTXTQ1yfk3lnyvoxLGyM4QZ3yJZiK8yKdUZfykecZtyPmCd3yW4-nCyl5705y_ETutyXGTHlyKIHXmyOO-jTyhqKmcyxHGHuyIHJR1yiJYkmylU2PhyFcPEDywfZKQyggxH1ywpoIbymzFShyLzGSAyn3oWbyx7-QcywHTxfzWQHjbzOS1aczHaSauzggOjGzh9XNPzhxROjzi1HRHzk5-pHzU7Xtazt_GiAzWLVxNzhOZdOzhXAQtzMpdrJzH3YXBzU_HvwzIRSnLzHTMf0zJgTJCzSqYaDziqjpjzn8tDEzPBe2XzNQLoRzeXAiBzKsRTdzw7adOzhKNTIzhugXazQ8dWYzHKEogzIT9rTzRmDwYzMk3Twzul5cWzqyBnTzV7V0RzQ8vkUzWOtiHzGVMX3zbsLvFzJJT1TzUPJfTzSb6tDzg9JUbzh-CcxzlLzn7zNw65WzHyFeTzkyUJ5zG2p2ZzP3Wq6zj5KIwzW99d2zvA5I80YHltn0SJoxI0IKFXv0UksUQ0Tq9S60GsDTq0Gst9K0f06rs024xuA0N6Exh0HVCO50GskEc0j2Hbj0kDD-q0nDGwy0IGiPC0GHTbE0GLYNs0RMQjn0OMTuq0nWWvW0vX7kN0Nb3U90tmj660tEsjQ0hQAwV0zg0Dz0Hhfus0YjMp60YlZgj0MrDv-0IvKbb0MHVjm0RI5Qs0bJgYT0HMXkc0NNvc40FVwPK0EiXRt0Pi-OQ0Fo0O-0I3Zlu0j68bE0ICziz0hGljA0IJpgJ0YL1oH0QMjoK0HUmqR0lcaMP0jfrT80HsDaG0g4-aB0g9oQh0U-kiR0kK9x50KLXjK0ILzmX0LNE3l0KONbU0DZp860uuiVY0Tu9SR0kzsQE0S6A1u0W612-0S7Gry0V8DUg0K_BvY0HKAos0HXQhN0Fe-ft0iyatH0y170G0MCnVk0GZaoK0vhbaP0TpFtS0RMeZA0xT6jL0sXZbL0gfiJU0GmhCQ0pnoQg0Gp97p0Lq_Yl0e3Cfm0hDKzm0OFbg-0KRaXr0EXJKw0HgIJf0QiXOm0rmPL90NpsQ30suQbb0Kw4s00mVte81hYuLi1xlaPy1YoyVS1kughe1u5-mK1m5_UQ1IH7Rr1MIhnA1jPUIo1PQrqf1iSj0x1eVsHm1HWQEd1mZoOd1OmfP31UwYJX1PBpr_1GB7Lk1KJXxD1qK4n21kM6jK1KN7bZ1HP5Td1FXfiE1JhMqD1llmRX1Fuw-x1KwYnZ1GxBKJ1ux_tX1OyFmd1NzYtj1o0Sfi1I7-w91yBaJn1IBuqa1fF6jJ1fQvTg1iSfZ81IbBjj1t0cmZ1d0fmN1j1UTd1G-ySj1IOxmn18jGeB1JtEjn1INBeD1QRjNK1JVbg11odVQ_1MuQYf1TzRt61G1u7n1I44NA1O-Hcv1G-eYq1tSOM81gTgXI1GVvZK1GoIgv1j6kMc1Q-doU1YAGd31xFDPi1wO4jX1GPwnN1YTKqw1oVQOf1GeJrN1YnkWD1suspS1tv7qu1T9r6z1d-KUb1lCjoU1gKDbs1xQVlP1GdcnL1LmWR91FmxOE1Fr3Zc1Q3ceN1y78f_1TCKis1uLWdR1eRrZh1mnKk41LqDin1Y2Yrc1q3QlW1R4ysZ1H7tyk1iAqZR1yEgh81rLZK61kRDho1OV9Rq1mXDhM1nyhIG1bz8ox1uMeRH2SN4bx2HULYE2WV1R62xWKS92PYARV2ZcPLi2xcsDX2FsFYX2NwEgd2KzW6E2o0Lin2mHhUe2iN7hB2nZGpT2nfmP82pm3qk2S67R82r8dvv2q8_UU2JHWZZ2VI6qU2vKN3S23NNzG2JNRgm2sSIg22leEes2PgWN_2Gr3PG2I9nXj2gQilD2FQ40-2KRQUa2GYOGM2YYZyW2Qa_sh2Od2X42K0Sx22T73I62JL1lj2QR9ks2mTOPY2RVASL2FXaL02GbBf32Jn3ed2R4ojj2W7RuH2r_Oa12JRdim2KUZWe2GUzWx2IZjyg2KbmMF2HdIoz2KkxmN2VrvY42i4TXH2x7CUR2L_Mgo2P__Is2IDMqs2kHdqZ2lKtJ52yMKVa2hPjMC2kZTTO2tpCK62O1d4I2q3SNi2Q3V0d2X4ab92g5RYP2g8AvV2IA0tE2LGo392NPht72gZwKM2ImLbP2Np2m_2LuYtN2J1MWV2t2Bp42o9ojW2w94xj2RCOum2GHosd2vQAe62nUVTk2IfdnL2XjqKU2HjuJD2ewfPq2i3bs-2H9fhW2HBaJn2NB_xK2IFb5N2OJV072XOJr32oRjX12IT_kR2pl7ya2PoMpl2ooiY92IpBS52GplQB2FugeM2TvcWG2d_v0c2nALZ12INiTY2nSr7X2rZhs82gnnmy2crlXa2e4Sw72w-nki2gKnKL3xYStq3jZi403ck-UR3HmfP73G525W3kPFhd3HZbfl3MbiMc3xcmKe3zryk_3KwWV43g5UoZ3x7mwi3H7vxl3M_gWA3KJpRr3jPtp03JYXWz3waTPd3nvM5p3U1Coj3I1cWJ3yB2Pn3hJ6Sv3nOhhG3FO6eR3FUmV53xaUzN3KqYW_3IrNWE3Gu6Pd3JyboD3dzCRm3kzl3X3K3ppo3e78f_3SRSdg3HXH233mZTfB3Va5bW3IdMSz3jd5Kj3XjNKs3InVmB3hn53b3wpHSO3K0SXJ3I-Poc3OAPd-3jAxtw3LLex43LVVZd3MdnJz3jzoaV3M21sh3wFDhI3gOwdZ3DUZWe3SXRdb3eYsSs3Ve4Mt3IibK-3Gphcb3iqVvF3XvAdH3MwBes3Tyfhf3OCh1C3hH-nl3LH-nl3LIguF3lKP5W3KQLnK3QVBOX3Edjim3SeAoN3yqMpR3dq0Ld3Qr5dB3O8UyU3QNenr3OTaWF3wT2xf3JUPV63HhxRy3Ip1QH3TqQW23IwAhj3JwUjG3hxYJ33HxfQ93i1Yp33ODSov3jKZXQ3HMLlR3QNHjm3MPvJk3jSbkr3RUCU_3giDL63GkvNt3hk83A3wqzOg3gs4cK3VuHtQ3LwzWY3y9gxy3jDLne3jHRp23HKqXd3HR0jh3ETTWo3FTeS83HXQno3Kb4Lg3WcYK93ugCiW3NhvdK3nh5Op3kkezc3xyR1H3nz1gH3Y7ygf3J_5o73wE4cM4SJTxm4IQRas4LYf2k4SpwTx4iv_l94o4DUi4f53yM4HNile4ISeY14TVYfg4uZthp4qrkEB4zxDc04h0G4w4d25lN4M5pZF4GFHH94hFiVl4GL2lO4hMalq4NX1NQ4HZCVw4gZNYD4liBKU4jkFdx4xwOVf4d0aqt4h4djm4Q5qdN4O6zfO4I6zL04j8mZT4r9xYB4ZH8uG4LH_jK4HUXW-4Hari34we9cg4IfHTp4IkMxb4NxSa04L1JWp4cEL1D4iGex34vLVuZ4iOMuQ4ZOPYc4IOqfn4wU0PQ4jYQG74GcYrX4ddEvW4Ii8Ox4GlOJX4l1EjA4j4yUk4L9E9-4s-zYk4K-4Q24MJTJo4TNlLk4WV1bZ4hY9Wx4xfeIP4vgMJi4IoOPR4Gq8P84Px3cy4SBazY4HJXeM4IKKSo4JOTf34GfUZe4hjcub4RlBUp4GtEQ84WuEf14l3qcz4R5r2E4R54ZS4f59qN4VD04N4jNAlE42PmtQ4xb0sA4QcBGa4LdafH4xg6mU4ijeZf4bk9sP4yp3ZA4w0EsP4G3_w54I8x9j4o_AP14MFDm24JGwal4VHGQw4LHlFU4qHmYi4gV2Qu4OcJuX4PlxNA4gmDyQ4Pp5Tq4GyzRC4J-J4N4eB-cO4iDips4KIQ0K4iOyrc4STUO14HVvKN4UYH4C4vj4aU4koKw84ZqRnd4vqywX4HrEs-4iv_Xi4J2Pbd4I26Kd4Q9ppD4qBZOp4KCXfl4wSGi24sXKPL4NZ1Xn4Here74vmQP74RmWWI4pq2b94VvHOb4Txc0R4YzYnm4I1fSg4sAFEm5oMBlw5ONAtC5sO5d35EPqgq5rV7TP5HeLtk5NinmM5vreV15KuTH65n2ApG5F2nZq5T3svx5GFPoY5QKae85gNVbi5QRwvG5nTaXt5zVOVN5NY4bv5gZ9WI5Wbim65Viacm5wsAXE5HyAI85P7G5t5g7WRT5d75hq5j8gqa5JAqnL5wB4x95HItc35PKD2h5dLvmM5NPEdb5NQ14p5KYd335WY6cm5ghEyV5fi_p05ujVH35Ijch85yu-4c5U_6yR52BPUR5xNZdc5FQdMd5EY7J05gZjuF5ig_pL5WhjoC5KmIsn5jmlfN5bnQpb5yoFo45uuuXe5KvjRv5QxHYs5p2Hth5U7mqE5K8IJ95xCX1u5XFttd5NI1sK5uNxli5RP6pO5IRva-5uVWJZ5GWVOw5GcVbP5_ciJF5GcoJQ5HhLNt5GkVs55Plu7k5roOPR5SokQL5GqRsr5irpgX5Ss2wW5MtYef5uuGrx5GxJ3T5nya5W5m3Cni5J46Rf5K8BcN5I_LZq5eCc095nD5wJ5UFDm25SFNPJ5fF7vu5uI3hM5aN8IH5pOHTm5iSYYz5FTER55FWSUQ5tYuzM5ObqRM5lebcI5vlyo65XnKk45SqxoG5Lse295nvgUu5JyCpe5nyZX65syid75k1SWs5g16wp5MEAiL5rFgvD5KHGbx5VHXH95LI53V5GLSjS5dUbSY5FVtyT5LcBz55WcO665hdWhS5msHkF5u3gwZ5U4MY85O66hz5tFMX_5sLowh5JT_X05PcvJH5GfWi75Oi0OZ5KjMSj5brpq-5hsr0L5TzWXB5X8lRR5j8sM-5m9n1H5J-Hxb5yDXHh5VG7h_5fN7tr5OPLl45HPhou5iW5LY5iXONH5GbENl5HhLJj5HmNly5nnLi55ioyJY5ov2QP5nw7hM5g0uY-5g_7ev5gGGsK5YIi6c5KLTcW5mPsT_5GSD1I5MeJrN5SjbIQ5utiT35Quwzn5QvQYS5Vx9TV5FymNL5IymSz5U_a025lDqwL5kI0X_5gM4tU5tOknz5GUuml5tXMaV5jaaWy5nh3jo5Mqla75Huwzn5Qv5RK5y2_KI5U8Zt45F_8z05IAgag6WCLyH6HGfbo6JIqne6JTQP86JXGVf6gXzWK6McDM56WcUWQ6xq0SR6GtJ3J6V0otR6h29fF6w3hPk6vDzaz6nG1V96IQ5e96wSkwB6KTMt-6tUasS6TfoI06HiXnj6girq86msYxZ6vx7dD6l0OO56k3jT_6i5its6k9HjI6KHNuS6YMFf_6qNZY36IPOgh6mPikf6IRHxh65cYaA6gfZRm6af-EM6IiQT66Jk3nj6sl0aN6zmJDN6QopUy6Tr7HF6Xtkkh6N2pe-6m3Uo-6m6g2n61-q0z6HTHef6jX3K86FjRuR6jjTK_6VmVLO6fnVTf6KoCc-6Kq5Y96JyXyB6g1Iyo6N3bsO6q7HUb6VH9sg6nLJRE6SLlsS6gQOaI6QRuO26fS1OX6NVUes6nXjP56LcDF-6yh3Ky6Jis0C6SoUo16Uyqrb6ty8S06W1vtG6H_Rqb6hANcQ6xB8wt6OEeub6IF4qx6dLcnU6QNTte6LOMn26gUQNU6sUdak6vVfp46lYsSS6lZ4Xf6XacZP6wdkWT6SfJJ76mhi446piTpy6akLhT6KnJl16JnYW96SnmfL6hpEcV6UrMcb6MrQMl6jsLQV6L1Jtr6I1qNM6x8-vZ6v-hgc6KEhvJ6ZI9vZ6LLkpu6mObgq6FPJfm6FQFcO6HQilu6GSgOr6zekhA6iguog6hhLps6QhV4m6xjEXy6jqkzd6Qrc676Tw5nz6w0Tdg6K07oC6G19lZ6M2qxZ6I9Kxr61_Xwg6lDWP06YTqZP6JUD9S6yg5hL6mpZ7f6wpyXi6qsgZs6lwEnr6NxaPr6HzcZQ6i1J066wJ4sE6JKuKS6sL7l06lPzSz6lUKa16sVDpg6MYRhz6nZakB6jbv3T6IfjHC6sj_Xu6wk4Zj6jmlVh6IwhrK6yzuqh6H1-tF6NDk0s6aEbvx6fFwpO6SJQxc6IQz1362TfXR6GXHbk6sj7k56bkNtN6TtelA6wwhXk6jxD056Myfhf6P-Kcl6J-b2I6y-1rI6rEkes6rFK4a6HH8JO6NObmL6XObtS6sPxzz6LSQTy6rSzef6FTzjT6iUl036MV7aY6kWpQG6GbsIN6HdXiK6OeWvd6iiAwJ6_qpRK6iquqn6IraOM6dycX86qy8S06WzR0g6m0ur_6V1hUm6n7CT56uJ4Up6GKi1u6tNoyV6SNqmo6ZOWhQ6GSfbA6mTQlv6yYfQD6PZpib6jcl4j6reXTJ6tgurw6lg2MZ6whMpi6Mo-O96Wq0Wz6nrBmD6hr64c6IuOma6xwVvc6g0MnB6I01mz6M40vn6J9V0P6s_Ga86Q_4JJ6L";
+
+var STARS=(function(){
+  var idx={},i;
+  for(i=0;i<64;i++)idx[STAR_AL.charAt(i)]=i;
+  var n=STAR_RAW.length/6,out=new Array(n);
+  for(i=0;i<n;i++){
+    var p=i*6;
+    var ra=(idx[STAR_RAW.charAt(p)]*64+idx[STAR_RAW.charAt(p+1)])/4095*360;
+    var de=(idx[STAR_RAW.charAt(p+2)]*64+idx[STAR_RAW.charAt(p+3)])/4095*180-90;
+    var mg=idx[STAR_RAW.charAt(p+4)]/63*7-1.5;
+    var bv=idx[STAR_RAW.charAt(p+5)]/63*2.6-0.4;
+    var rr=ra*Math.PI/180, dd=de*Math.PI/180, cd=Math.cos(dd);
+    /* vetor unitário na convenção do CSS: y cresce pra BAIXO,
+       por isso o seno da declinação entra negativo. */
+    var r=1.0,g=1.0,b=1.0;
+    if(bv<0.0){r=0.78+bv*0.18;g=0.86;b=1.0;}
+    else if(bv<0.7){r=0.94+bv*0.09;g=0.96;b=1.0-bv*0.16;}
+    else{r=1.0;g=0.96-Math.min(bv,1.9)*0.13;b=0.90-Math.min(bv,1.9)*0.26;}
+    out[i]={
+      x:cd*Math.cos(rr), y:-Math.sin(dd), z:cd*Math.sin(rr),
+      m:mg,
+      /* raio e alfa saem da magnitude — a escala é logarítmica de verdade,
+         mas pra ponto de 1 a 3 px o linear lê melhor. */
+      rr:Math.max(0.45,0.52+(5.0-mg)*0.285),
+      al:Math.min(1,0.40+(5.0-mg)*0.108),
+      cor:'rgba('+Math.round(255*Math.min(1,r))+','+Math.round(255*Math.min(1,g))+','+Math.round(255*Math.min(1,b))+',',
+      /* cintilação: amplitude e período próprios de cada estrela, pra
+         nenhuma piscar junto com a vizinha */
+      ta:Math.min(0.20,Math.max(0.055,0.115+(2.0-mg)*0.028)),
+      tf:0.9+((i*37)%23)*0.10,
+      tp:((i*61)%100)/100*6.283
+    };
+  }
+  return out;
+})();
+
+/* ============================================================
+   Os mundos de verdade (no lugar dos dados de exemplo do mockup)
+   ============================================================ */
+function esc(s){return escHtml(String(s==null?'':s));}
+
+// Cor e posição são derivadas do ÍNDICE, não sorteadas: o mesmo World cai
+// sempre no mesmo lugar e na mesma cor, em qualquer aparelho. Ângulo áureo
+// pra nada nascer alinhado com nada.
+function _mundoPaleta(i){
+  var pal=[['#8fb0c9','#5a7e9a','#1e3346'],['#c9a07a','#93694a','#3b2718'],
+           ['#8fc2b4','#548a7e','#1b3b36'],['#b0a3c6','#75688f','#272038'],
+           ['#c9948f','#94605c','#3a201e']];
+  return pal[i%pal.length];
+}
+/* A espiral: ângulo áureo pra nada nascer alinhado com nada, raio abrindo a
+   cada mundo e Z recuando. Os números NÃO são gosto — foram medidos: com o
+   raio abrindo de 44 e o plano achatado em 0.40, o mundo ativo (que é a maior
+   esfera e a mais perto da câmera) cobria o centro do 4º, do 6º e às vezes do
+   "+", e o clique batia nele em vez do planeta que a pessoa via atrás. Com 86
+   e 0.55 a pior sobreposição de 1 a 7 mundos cai a zero, no computador e no
+   celular, sem ninguém sair do quadro. */
+function _mundoPos(i){
+  var ang=i*2.399963,raio=170+i*86;
+  return [Math.round(Math.cos(ang)*raio),
+          Math.round(Math.sin(ang)*raio*0.55)-8,
+          Math.round(-i*116+80)];
+}
+function _mundoSufixo(id){return id===VOX_MUNDO_RAIZ?'':'__'+id;}
+
+// Monta a lista na hora de abrir. As pastas saem do localStorage (síncrono);
+// as notas do World ATIVO saem da tela; as dos outros moram no IndexedDB e
+// chegam depois, pelo _mundosContar() logo abaixo.
+function _mundosMontar(){
+  var reg=_mundosLista();
+  worlds=reg.map(function(m,i){
+    var suf=_mundoSufixo(m.id),pastas=0;
+    try{pastas=(JSON.parse(VOX_LS.get('vox_folders'+suf)||'[]')||[]).length}catch(e){}
+    var notas=null;
+    if(m.id===_mundoAtivo)notas=document.querySelectorAll('#cardsList .card:not(.proc-card)').length;
+    return {id:m.id,i:i,nome:m.nome||t('Sem nome'),desc:m.desc||'',
+            notas:notas,pastas:pastas,c:_mundoPaleta(i),pos:_mundoPos(i),
+            r:m.id===_mundoAtivo?84:68,folders:[],cards:[]};
+  });
+  /* O "+" mora na PRÓXIMA vaga da espiral — é literalmente o lugar onde o
+     próximo mundo vai nascer. Antes ele tinha um ponto fixo, e com um mundo
+     só ele caía ATRÁS da esfera do mundo ativo: dava pra ver o "+", mas o
+     clique batia na esfera da frente e ninguém conseguia criar o segundo. */
+  NOVO.i=worlds.length;
+  NOVO.pos=_mundoPos(NOVO.i);
+  ativoId=_mundoAtivo;
+  return worlds;
+}
+// A contagem de notas dos outros Worlds: uma leitura por World, e repinta
+// quando chega. Se falhar, a ficha simplesmente não mostra o número — melhor
+// que mostrar um número errado.
+function _mundosContar(){
+  worlds.forEach(function(w){
+    if(w.notas!==null)return;
+    // '!' na frente = chave crua, sem o desvio por World (ver _mundoChave).
+    idbGet('!vox_history'+_mundoSufixo(w.id)).then(function(h){
+      w.notas=(h&&h.length)||0;
+      if(typeof pintarDet==='function'&&aberta)pintarDet();
+    }).catch(function(){});
+  });
+}
+
+var NOVO={id:'__novo__',nome:'Um mundo novo',fantasma:true,pos:[296,-118,-520],r:44};
+
+var ativoId='w1', selId='w1', criando=false;
+
+var palco=document.getElementById('galaxia'),
+    galaxia=document.getElementById('galaxia'),
+    cena=document.getElementById('cena'),
+    orbe=document.getElementById('orbe'),
+    det=document.getElementById('det'),
+    ceu=document.getElementById('ceu'),
+    ctx=ceu.getContext('2d'),
+    medidor=document.getElementById('medidor'),
+    btEnq=document.getElementById('btEnq'),
+    gxDica=document.getElementById('gxDica');
+
+var aberta=false;
+// No app de verdade estes dois não vêm de botão de palco: vêm do aparelho.
+var mob=window.matchMedia('(max-width:640px)').matches;
+var quieto=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+window.matchMedia('(max-width:640px)').addEventListener('change',function(ev){mob=ev.matches});
+var PERSP=900, kx=1, ky=1, kz=1, kr=1;
+var NEST=1630;
+
+function W(id){for(var i=0;i<worlds.length;i++)if(worlds[i].id===id)return worlds[i];return worlds[0];}
+function todos(){return worlds.concat([NOVO]);}
+
+/* ============================================================
+   Câmera — mesma ideia da Órbita (_orbCamX/_orbCamS/_orbEnquadrar),
+   com uma dimensão a mais: em vez de arrastar o plano, gira a câmera.
+   ============================================================ */
+var cam={yaw:0,pitch:0,dolly:0};
+var alvo=null;            // {yaw,pitch,dolly,t0,dur,de:{...}} enquanto anima
+var vel={yaw:0,pitch:0};  // inércia
+var camSuja=true;
+var LUZ={x:-1150,y:-820,z:640};
+
+function grausLimpos(a){return a}
+function aplicarCam(){
+  orbe.style.setProperty('--yaw',cam.yaw.toFixed(2)+'deg');
+  orbe.style.setProperty('--pitch',cam.pitch.toFixed(2)+'deg');
+  orbe.style.setProperty('--dolly',cam.dolly.toFixed(1)+'px');
+  var longe=(Math.abs(cam.yaw)>14||Math.abs(cam.pitch)>9||Math.abs(cam.dolly-dollyBase)>60);
+  btEnq.classList.toggle('viva',longe);
+}
+function rotY(v,a){var c=Math.cos(a),s=Math.sin(a);return {x:v.x*c+v.z*s,y:v.y,z:-v.x*s+v.z*c};}
+function rotX(v,a){var c=Math.cos(a),s=Math.sin(a);return {x:v.x,y:v.y*c-v.z*s,z:v.y*s+v.z*c};}
+function paraCamera(v){
+  return rotX(rotY(v,cam.yaw*Math.PI/180),cam.pitch*Math.PI/180);
+}
+
+/* luz + névoa por planeta: 3 escritas de variável CSS por planeta por quadro.
+   Nenhuma delas causa recálculo de layout — só transform e opacidade. */
+function iluminar(){
+  var lista=todos(),i;
+  for(i=0;i<lista.length;i++){
+    var w=lista[i], el=w._el; if(!el)continue;
+    var R=w.r*kr;
+    if(!w.fantasma){
+      var lx=LUZ.x-w.pos[0]*kx, ly=LUZ.y-w.pos[1]*ky, lz=LUZ.z-w.pos[2]*kz;
+      var n=Math.sqrt(lx*lx+ly*ly+lz*lz);
+      var L=paraCamera({x:lx/n,y:ly/n,z:lz/n});
+      /* a sombra vai pro lado OPOSTO ao da luz */
+      el.style.setProperty('--lx',(-L.x*R*1.22).toFixed(1)+'px');
+      el.style.setProperty('--ly',(-L.y*R*1.22).toFixed(1)+'px');
+      el.style.setProperty('--sx',(L.x*R*0.42).toFixed(1)+'px');
+      el.style.setProperty('--sy',(L.y*R*0.42).toFixed(1)+'px');
+      /* luz vindo de trás da tela = fase cheia; de trás do planeta = crescente */
+      var fase=(1-L.z)/2;
+      el.style.setProperty('--noite',(0.16+fase*0.80).toFixed(3));
+      el.style.setProperty('--esp',(0.16+(1-fase)*0.75).toFixed(3));
+    }
+    /* névoa por distância: quanto mais fundo, mais azul e mais apagado */
+    var p=paraCamera({x:w.pos[0]*kx,y:w.pos[1]*ky,z:w.pos[2]*kz});
+    var zc=p.z+cam.dolly;
+    var d=Math.max(0,Math.min(1,(-zc-40)/620));
+    el.style.setProperty('--dim',(d*0.5).toFixed(3));
+  }
+}
+
+/* ---------- enquadramento do conjunto ----------
+   A câmera só gira e aproxima: não tem deslocamento lateral. Então quem se
+   ajeita é o arranjo. Os mundos são deslocados no ESPAÇO até o conjunto
+   cair no meio da faixa livre — o cabeçalho come o topo, e no celular a
+   ficha come o pé — e a câmera recua se ainda não couber. Deslocar no
+   espaço, e não na tela, tem um efeito colateral bom: girar passa a orbitar
+   o CENTRO do conjunto, que é o que a mão espera. Roda ao abrir e ao
+   redimensionar, nunca por quadro. */
+var dollyBase=0;
+/* A faixa livre é o que sobra depois de tirar o que já tem dono: o título e
+   os botões no topo, e a ficha do selecionado. Tira-se a ALTURA da ficha, e
+   não a coluna dela: reservar a coluna inteira sobrava 414px de largura num
+   tablet de 768 e o conjunto não cabia nem no afastamento máximo. E sem
+   reservar nada, um planeta nascia ATRÁS da ficha — dava pra ver a esfera
+   por baixo do vidro, mas o toque ia pro botão da ficha. */
+function _faixaLivre(){
+  var p=galaxia.getBoundingClientRect();
+  var topo=(mob?94:70), pe=p.height-(mob?232:222);
+  return {larg:Math.max(140,p.width-(mob?26:56)),
+          alt:Math.max(140,pe-topo),
+          desvioX:0,
+          desvioY:(topo+pe)/2-p.height/2};
+}
+/* Onde o conjunto cai na tela, calculado — não medido. Medir aqui daria
+   número errado: no instante em que isto roda o painel ainda está no
+   scale(.965) da abertura, e a caixa viria 3,5% menor.
+   Devolve também o k dos DOIS planetas que definem cada ponta: é o que
+   converte "quero descer 50px na tela" em "quanto ando no espaço". Usar o k
+   médio de todos parecia natural e estava errado — a borda da caixa é feita
+   por dois planetas só, e o conjunto assentava uns 50px acima do lugar. */
+function _caixaProjetada(lista,dolly){
+  var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,kx0=1,kx1=1,ky0=1,ky1=1,i;
+  for(i=0;i<lista.length;i++){
+    var w=lista[i];
+    var z=w.pos[2]*kz+dolly, k=PERSP/Math.max(60,PERSP-z);
+    var sx=w.pos[0]*kx*k, sy=w.pos[1]*ky*k, r=w.r*kr*k;
+    if(sx-r<x0){x0=sx-r;kx0=k;} if(sx+r>x1){x1=sx+r;kx1=k;}
+    if(sy-r<y0){y0=sy-r;ky0=k;} if(sy+r>y1){y1=sy+r;ky1=k;}
+  }
+  return {cx:(x0+x1)/2,cy:(y0+y1)/2,w:x1-x0,h:y1-y0,
+          kbx:(kx0+kx1)/2,kby:(ky0+ky1)/2};
+}
+function _enquadrarConjunto(){
+  var lista=todos(),f=_faixaLivre(),i,j;
+  /* sempre parte das posições limpas: assim chamar de novo (ao girar o
+     aparelho) dá o mesmo resultado, em vez de empilhar deslocamento. */
+  for(i=0;i<lista.length;i++)lista[i].pos=_mundoPos(lista[i].i);
+  dollyBase=0;
+  for(j=0;j<6;j++){
+    var c=_caixaProjetada(lista,dollyBase);
+    var sobra=Math.max(c.w/f.larg,c.h/f.alt);
+    if(sobra>1.01)dollyBase=Math.max(-900,dollyBase+PERSP*(1/sobra-1)*0.9);
+    c=_caixaProjetada(lista,dollyBase);
+    var dx=(f.desvioX-c.cx)/(kx*c.kbx), dy=(f.desvioY-c.cy)/(ky*c.kby);
+    for(i=0;i<lista.length;i++){lista[i].pos[0]+=dx;lista[i].pos[1]+=dy;}
+    if(sobra<=1.01&&Math.abs(f.desvioX-c.cx)<1.5&&Math.abs(f.desvioY-c.cy)<1.5)break;
+  }
+}
+
+/* ---------- escala do campo ----------
+   O arranjo dos mundos era fixo em pixels, com um único degrau entre
+   "computador" e "celular". Numa janela de 700px o mundo da frente saía
+   pela borda esquerda. Aqui a escala é contínua: 360px de largura dá
+   exatamente os números do celular, 980px dá exatamente os do computador,
+   e o meio é interpolado. Nada de novo foi inventado — só ligado. */
+function escalar(){
+  var w=galaxia.getBoundingClientRect().width||980;
+  var u=Math.max(0,Math.min(1,(w-360)/620));
+  kx=0.50+u*0.50; ky=0.62+u*0.38; kz=0.80+u*0.20; kr=0.60+u*0.40;
+  PERSP=Math.round(720+u*180);
+  cena.style.setProperty('--persp',PERSP+'px');
+}
+/* muda a posição dos planetas SEM recriar os nós: o que continua existindo
+   desliza, não pisca. Só acontece ao redimensionar, nunca por quadro. */
+function reposicionar(){
+  var lista=todos(),i,w;
+  for(i=0;i<lista.length;i++){
+    w=lista[i]; if(!w._pw)continue;
+    w._pw.style.setProperty('--x',(w.pos[0]*kx).toFixed(1)+'px');
+    w._pw.style.setProperty('--y',(w.pos[1]*ky).toFixed(1)+'px');
+    w._pw.style.setProperty('--z',(w.pos[2]*kz).toFixed(1)+'px');
+    if(w._el)w._el.style.setProperty('--r',(w.r*kr).toFixed(1)+'px');
+  }
+  camSuja=true;
+}
+
+/* ---------- céu ---------- */
+var ceuW=0,ceuH=0,dpr=1;
+function medirCeu(){
+  var r=galaxia.getBoundingClientRect();
+  ceuW=Math.round(r.width);ceuH=Math.round(r.height);
+  dpr=Math.min(2,window.devicePixelRatio||1);
+  ceu.width=Math.round(ceuW*dpr);ceu.height=Math.round(ceuH*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+/* o repouso olha pra Órion e pro Cão Maior — Sirius, Rigel e Betelgeuse
+   entram no quadro. YAW0 = 270 - RA(alvo em graus). */
+var YAW0=182, PITCH0=-6;
+function desenharCeu(t){
+  var w=ceuW,h=ceuH;
+  var fundo=getComputedStyle(document.documentElement).getPropertyValue('--ceu').trim()||'#06070d';
+  ctx.fillStyle=fundo;ctx.fillRect(0,0,w,h);
+  var cx=w/2, cy=h/2, f=PERSP;
+  var ya=(cam.yaw+YAW0)*Math.PI/180, pa=(cam.pitch+PITCH0)*Math.PI/180;
+  var cyw=Math.cos(ya),syw=Math.sin(ya),cpt=Math.cos(pa),spt=Math.sin(pa);
+  var n=Math.min(NEST,STARS.length), i, s, x,y,z, x2,y2,z2, sx,sy, a, r, np=0;
+  var cintila=!quieto;
+  for(i=0;i<n;i++){
+    s=STARS[i];
+    x=s.x*cyw+s.z*syw; z=-s.x*syw+s.z*cyw; y=s.y;
+    y2=y*cpt-z*spt; z2=y*spt+z*cpt; x2=x;
+    if(z2>-0.12)continue;              /* atrás da câmera ou raspando: fora */
+    sx=cx+f*(x2/-z2); sy=cy+f*(y2/-z2);
+    if(sx<-6||sx>w+6||sy<-6||sy>h+6)continue;
+    a=s.al;
+    if(cintila)a*=1+s.ta*Math.sin(t*s.tf+s.tp);
+    if(a<=0.02)continue;
+    np++;
+    r=s.rr;
+    ctx.fillStyle=s.cor+a.toFixed(3)+')';
+    if(r<0.95){ctx.fillRect(sx-0.5,sy-0.5,1.3,1.3);}
+    else{
+      ctx.beginPath();ctx.arc(sx,sy,r,0,6.2832);ctx.fill();
+      if(s.m<1.7){                       /* halo só nas mais brilhantes */
+        ctx.fillStyle=s.cor+(a*0.11).toFixed(3)+')';
+        ctx.beginPath();ctx.arc(sx,sy,r*3.6,0,6.2832);ctx.fill();
+      }
+    }
+  }
+  pintadas=np;
+}
+
+/* ---------- laço ---------- */
+var rafId=null, ultimoCeu=0, fpsT=0, fpsN=0, fps=0, arrastando=false, pintadas=0;
+function laco(now){
+  rafId=null;
+  var t=now/1000;
+  var mexeu=false;
+
+  /* animação de câmera até um alvo (selecionar, enquadrar, entrar) */
+  if(alvo){
+    var k=Math.min(1,(now-alvo.t0)/alvo.dur);
+    var e=quieto?1:1-Math.pow(1-k,3);       /* saída forte, nunca ease-in */
+    cam.yaw=alvo.de.yaw+(alvo.yaw-alvo.de.yaw)*e;
+    cam.pitch=alvo.de.pitch+(alvo.pitch-alvo.de.pitch)*e;
+    cam.dolly=alvo.de.dolly+(alvo.dolly-alvo.de.dolly)*e;
+    mexeu=true;
+    if(k>=1){var fim=alvo.fim;alvo=null;if(fim)fim();}
+  }else if(!arrastando&&(Math.abs(vel.yaw)>0.012||Math.abs(vel.pitch)>0.012)){
+    cam.yaw+=vel.yaw;cam.pitch+=vel.pitch;
+    cam.pitch=Math.max(-34,Math.min(34,cam.pitch));
+    vel.yaw*=0.93;vel.pitch*=0.93;
+    mexeu=true;
+  }
+  if(camSuja){mexeu=true;camSuja=false;}
+  if(mexeu){aplicarCam();iluminar();}
+
+  /* céu: 30 quadros por segundo bastam pra cintilação. Se a câmera não
+     mexeu e não há cintilação, não redesenha nada. */
+  var precisaCeu=mexeu||(!quieto&&now-ultimoCeu>32);
+  if(precisaCeu){desenharCeu(t);ultimoCeu=now;}
+
+  fpsN++;
+  if(now-fpsT>500){fps=Math.round(fpsN*1000/(now-fpsT));fpsN=0;fpsT=now;pintarMedidor();}
+
+  var precisaSeguir=aberta&&(!quieto||alvo||mexeu||arrastando||Math.abs(vel.yaw)>0.012);
+  if(precisaSeguir)rafId=requestAnimationFrame(laco);
+}
+function acordar(){if(aberta&&rafId===null)rafId=requestAnimationFrame(laco);}
+function pintarMedidor(){
+  /* o medidor diz as DUAS coisas: quantas estrelas o arquivo carrega e
+     quantas de fato entram no quadro. Só o total seria meia verdade. */
+  medidor.innerHTML=fps+' q/s<br>'+t('{a} de {b} estrelas').replace('{a}',pintadas).replace('{b}',Math.min(NEST,STARS.length));
+  var mf=document.getElementById('mFps');if(mf&&fps)mf.textContent=fps+' q/s';
+}
+
+/* ============================================================
+   Montagem dos planetas
+   ============================================================ */
+var ICO_MAIS='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+function montar(){
+  var lista=todos(),h='',i;
+  for(i=0;i<lista.length;i++){
+    var w=lista[i];
+    var R=(w.r*kr).toFixed(1);
+    h+='<div class="pw'+(w.id===selId?' sel':'')+'" data-id="'+esc(w.id)+'" style="'
+      +'--x:'+(w.pos[0]*kx).toFixed(1)+'px;--y:'+(w.pos[1]*ky).toFixed(1)+'px;--z:'+(w.pos[2]*kz).toFixed(1)+'px">'
+      +'<div class="pl">'
+      +'<button class="pin'+(w.fantasma?' fantasma':'')+'" style="--r:'+R+'px;--i:'+i+'" '
+      +'aria-label="'+esc(w.fantasma?t(w.nome):w.nome)+'">'
+      +'<span class="esfera" style="'+(w.fantasma?'':'--c1:'+w.c[0]+';--c2:'+w.c[1]+';--c3:'+w.c[2])+'"></span>'
+      +(w.fantasma?'<span class="mais">'+ICO_MAIS+'</span>':'<span class="noite"></span><span class="brilho"></span><span class="limbo"></span>')
+      +'<span class="nevoa"></span>'
+      +(w.id===ativoId?'<span class="aqui"></span>':'')
+      +'<span class="anel"></span>'
+      +'<span class="pnome">'+esc(w.fantasma?t(w.nome):w.nome)+'</span>'
+      +'</button></div></div>';
+  }
+  orbe.innerHTML=h;
+  var els=orbe.querySelectorAll('.pw');
+  for(i=0;i<els.length;i++){
+    var id=els[i].getAttribute('data-id');
+    var w2=(id==='__novo__')?NOVO:W(id);
+    w2._el=els[i].querySelector('.pin');
+    w2._pw=els[i];
+  }
+  document.getElementById('gxCont').textContent=worlds.length+' '+t(worlds.length===1?'mundo':'mundos');
+  var ne=document.getElementById('nEstrelas');if(ne)ne.textContent=Math.min(NEST,STARS.length);
+  camSuja=true;
+}
+
+/* ---------- painel do selecionado ---------- */
+function pintarDet(){
+  var w=(selId==='__novo__')?NOVO:W(selId);
+  if(!w){det.classList.remove('on');return;}
+  var h='';
+  if(w.fantasma){
+    h='<div class="dk">'+t('Um mundo novo')+'</div>'
+     +'<div class="dn">'+t('Do zero')+'</div>'
+     /* placeholder some quando a pessoa digita — quem usa leitor de tela
+        ficaria sem saber o que é cada campo. Daí o aria-label. */
+     +'<input class="dinp" id="inNome" maxlength="28" aria-label="'+t('Nome do mundo')+'" placeholder="'+t('Como você quer chamar?')+'" oninput="checaNome()">'
+     +'<input class="dinp" id="inDesc" maxlength="70" aria-label="'+t('Descrição do mundo (opcional)')+'" placeholder="'+t('Uma linha sobre ele (opcional)')+'">'
+     +'<button class="dbtn" id="btCriar" onclick="criar()" disabled>'+t('Criar e entrar')+'</button>'
+     +'<div class="dnota">'+t('Suas chaves e configurações vêm junto. Só as pastas e notas começam vazias.')+'</div>';
+  }else{
+    var eAtivo=(w.id===ativoId);
+    /* notas === null = a contagem ainda está vindo do banco (ver
+       _mundosContar). Mostra reticência em vez de "null" ou de um zero que
+       seria mentira. */
+    var _cn=(w.notas===null)?'…':(w.notas+' '+t(w.notas===1?'nota':'notas'));
+    var _cp=w.pastas+' '+t(w.pastas===1?'pasta':'pastas');
+    h='<div class="dk">'+t(eAtivo?'Você está aqui':'Mundo')+'</div>'
+     +'<div class="dn">'+esc(w.nome)+'</div>'
+     /* sem descrição, a linha não existe — melhor do que um "sem descrição"
+        de enfeite ocupando espaço e não dizendo nada */
+     +(w.desc?'<div class="dd">'+esc(w.desc)+'</div>':'')
+     +'<div class="dm">'+_cn+' · '+_cp+'</div>'
+     +(eAtivo
+       ? '<button class="dbtn sec" onclick="fecharGalaxia()">'+t('Voltar pra este mundo')+'</button>'
+       : '<button class="dbtn" onclick="entrar(\''+esc(w.id)+'\')">'+t('Entrar em')+' '+esc(w.nome)+'</button>');
+  }
+  det.innerHTML=h;
+  det.classList.add('on');
+  if(w.fantasma){var el=document.getElementById('inNome');if(el&&!mob)setTimeout(function(){el.focus();},80);}
+}
+function checaNome(){
+  var v=document.getElementById('inNome').value.trim();
+  document.getElementById('btCriar').disabled=(v.length===0);
+}
+
+/* ---------- selecionar / enquadrar / entrar ---------- */
+function irPara(y,p,d,dur,fim){
+  alvo={yaw:y,pitch:p,dolly:d,t0:performance.now(),dur:quieto?1:dur,
+        de:{yaw:cam.yaw,pitch:cam.pitch,dolly:cam.dolly},fim:fim};
+  vel.yaw=0;vel.pitch=0;
+  acordar();
+}
+function enquadrarNo(w,dist,dur,fim){
+  var x=w.pos[0]*kx, y=w.pos[1]*ky, z=w.pos[2]*kz;
+  var yy=Math.atan2(-x,z)*180/Math.PI;
+  var r=Math.sqrt(x*x+z*z);
+  var pp=Math.atan2(-y,Math.max(40,r))*180/Math.PI;
+  pp=Math.max(-34,Math.min(34,pp));
+  irPara(yy,pp,dist-r,dur,fim);
+}
+function selecionar(id,mover){
+  if(selId===id&&mover){ /* segundo toque no mesmo planeta = entrar */
+    if(id==='__novo__')return;
+    entrar(id);return;
+  }
+  selId=id;
+  var els=orbe.querySelectorAll('.pw');
+  for(var i=0;i<els.length;i++)els[i].classList.toggle('sel',els[i].getAttribute('data-id')===id);
+  pintarDet();
+  if(mover){
+    var w=(id==='__novo__')?NOVO:W(id);
+    enquadrarNo(w,mob?150:190,480);
+  }
+  camSuja=true;acordar();
+}
+function enquadrar(){irPara(0,0,dollyBase,520);}
+function criar(){
+  var nome=document.getElementById('inNome').value.trim();
+  if(!nome)return;
+  var d=document.getElementById('inDesc').value.trim();
+  /* _mundoCriar grava no cadastro e já recarrega dentro do World novo —
+     que nasce vazio, porque as chaves dele ainda não existem. */
+  _mundoCriar(nome,d);
+}
+function entrar(id){
+  var w=W(id);
+  if(!w)return;
+  if(id===_mundoAtivo){fecharGalaxia();return;}
+  /* Trocar de World recarrega a página: pastas, cards, calendário e
+     estatística nascem todos do carregamento. É o mesmo caminho que
+     setLang() já usa pra trocar de idioma. */
+  if(quieto){_mundoTrocar(id);return;}
+  enquadrarNo(w,PERSP*0.76,620,function(){_mundoTrocar(id);});
+  det.classList.remove('on');
+}
+
+/* ============================================================
+   Abrir / fechar
+   ============================================================ */
+/* Enquanto a galáxia está aberta, o RESTO da página fica inerte. Sem isso o
+   Tab saía do painel e ia parar nos botões do app lá atrás — invisíveis,
+   debaixo do vidro, e mesmo assim recebendo o foco. Mexe só nos irmãos da
+   galáxia (ela mora direto no <body>), então não depende de saber como o
+   app está montado por dentro. */
+var _gxInertes=[];
+function _gxIsolar(ligar){
+  var i;
+  if(ligar){
+    _gxInertes=[];
+    var f=document.body.children;
+    for(i=0;i<f.length;i++){
+      if(f[i]===galaxia||f[i].tagName==='SCRIPT'||f[i].inert)continue;
+      f[i].inert=true;_gxInertes.push(f[i]);
+    }
+  }else{
+    for(i=0;i<_gxInertes.length;i++)_gxInertes[i].inert=false;
+    _gxInertes=[];
+  }
+}
+var _gxRedim=null;
+window.addEventListener('resize',function(){
+  if(!aberta)return;
+  clearTimeout(_gxRedim);
+  _gxRedim=setTimeout(function(){
+    if(!aberta)return;
+    medirCeu();escalar();_enquadrarConjunto();
+    cam.dolly=dollyBase;reposicionar();camSuja=true;acordar();
+  },140);
+});
+function abrirGalaxia(e){
+  if(e)e.stopPropagation();
+  if(aberta)return;
+  aberta=true;
+  var chip=document.getElementById('wcGlobo').getBoundingClientRect();
+  var p=palco.getBoundingClientRect();
+  galaxia.style.setProperty('--ox',(chip.left-p.left+chip.width/2)+'px');
+  galaxia.style.setProperty('--oy',(chip.top-p.top+chip.height/2)+'px');
+  document.getElementById('worldChip').classList.add('afunda');
+  setTimeout(function(){document.getElementById('worldChip').classList.remove('afunda');},130);
+
+  _gxIsolar(true);
+  _mundosMontar();
+  selId=ativoId;
+  medirCeu();escalar();_enquadrarConjunto();montar();
+  _mundosContar();
+  cam.yaw=0;cam.pitch=0;cam.dolly=dollyBase;vel.yaw=0;vel.pitch=0;alvo=null;camSuja=true;
+  galaxia.setAttribute('aria-hidden','false');
+  galaxia.classList.add('abrindo');
+  requestAnimationFrame(function(){
+    /* se fechou antes deste quadro chegar, não acende: senão o painel ficava
+       aceso com a lógica achando que estava fechado, e daí ninguém mais
+       conseguia clicar em nada do app por baixo. */
+    if(!aberta)return;
+    galaxia.classList.add('on');
+    pintarDet();
+  });
+  setTimeout(function(){galaxia.classList.remove('abrindo');},quieto?0:900);
+  gxDica.textContent=mob
+    ? t('arraste pra girar · belisque pra aproximar · toque duas vezes pra entrar')
+    : t('arraste pra girar · role pra aproximar · as pastas são o mapa de dentro de um mundo — aqui é o mapa dos mundos');
+  gxDica.style.opacity='1';
+  acordar();
+}
+function fecharGalaxia(semVeu){
+  /* a limpeza acontece SEMPRE, mesmo se o estado já dizia "fechado".
+     Antes isso saía pela porta dos fundos logo na primeira linha, e bastava
+     uma corrida entre abrir e fechar pra deixar o painel aceso e órfão. */
+  var jaEstavaFechada=!aberta;
+  aberta=false;
+  galaxia.classList.remove('on');
+  galaxia.classList.remove('abrindo');
+  galaxia.setAttribute('aria-hidden','true');
+  det.classList.remove('on');
+  _gxIsolar(false);
+  if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+  if(jaEstavaFechada)return;
+  /* devolve o foco pra onde ele estava: o chip que abriu o painel */
+  try{document.getElementById('worldChip').focus({preventScroll:true});}catch(err){}
+  if(semVeu){
+    palco.classList.add('entrando');
+    setTimeout(function(){palco.classList.remove('entrando');},900);
+  }
+}
+
+/* ============================================================
+   Gestos — a mesma anatomia do motor da Órbita (Map de ponteiros,
+   pinça com escala travada no início do gesto), com uma dimensão a mais.
+   ============================================================ */
+var pts=new Map(), pan=false, pX=0, pY=0, pinch=null, pinchD=0, alvoDown=null, mexeuPx=0;
+cena.addEventListener('pointerdown',function(e){
+  var pin=e.target.closest('.pin');
+  alvoDown=pin?pin.closest('.pw').getAttribute('data-id'):null;
+  mexeuPx=0;
+  alvo=null;                                  /* o dedo sempre vence a câmera automática */
+  try{cena.setPointerCapture(e.pointerId);}catch(err){}
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===1){pan=true;pX=e.clientX;pY=e.clientY;vel.yaw=0;vel.pitch=0;arrastando=true;cena.classList.add('arrastando');}
+  else if(pts.size===2){
+    pan=false;
+    var a=Array.from(pts.values());
+    pinch=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);pinchD=cam.dolly;
+  }
+  gxDica.style.opacity='0';
+  acordar();
+});
+cena.addEventListener('pointermove',function(e){
+  if(!pts.has(e.pointerId))return;
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size>=2&&pinch){
+    var a=Array.from(pts.values());
+    var d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    cam.dolly=Math.max(dollyBase-420,Math.min(dollyBase+430,pinchD+(d-pinch)*1.5));
+    mexeuPx=99;camSuja=true;acordar();return;
+  }
+  if(pan){
+    var dx=e.clientX-pX, dy=e.clientY-pY;
+    mexeuPx+=Math.abs(dx)+Math.abs(dy);
+    vel.yaw=dx*0.26;vel.pitch=-dy*0.20;
+    cam.yaw+=vel.yaw;
+    cam.pitch=Math.max(-34,Math.min(34,cam.pitch+vel.pitch));
+    pX=e.clientX;pY=e.clientY;
+    camSuja=true;acordar();
+  }
+});
+function soltar(e){
+  pts.delete(e.pointerId);
+  if(pts.size<2)pinch=null;
+  if(!pts.size){
+    pan=false;arrastando=false;cena.classList.remove('arrastando');
+    if(quieto){vel.yaw=0;vel.pitch=0;}
+    if(mexeuPx<7&&alvoDown)selecionar(alvoDown,true);
+    alvoDown=null;
+    acordar();
+  }else{
+    var p=Array.from(pts.values())[0];pan=true;pX=p.x;pY=p.y;
+  }
+}
+cena.addEventListener('pointerup',soltar);
+cena.addEventListener('pointercancel',soltar);
+cena.addEventListener('wheel',function(e){
+  e.preventDefault();
+  cam.dolly=Math.max(dollyBase-420,Math.min(dollyBase+430,cam.dolly-e.deltaY*0.6));
+  alvo=null;camSuja=true;acordar();
+},{passive:false});
+cena.addEventListener('dblclick',function(e){
+  if(!e.target.closest('.pin'))enquadrar();
+});
+
+document.addEventListener('keydown',function(e){
+  if(!aberta)return;
+  var k=e.key;
+  if(k==='Escape'){fecharGalaxia();return;}
+  if(k==='Home'){e.preventDefault();enquadrar();return;}
+  if(k==='Enter'||k===' '){
+    var f=document.activeElement&&document.activeElement.closest?document.activeElement.closest('.pw'):null;
+    if(f){e.preventDefault();selecionar(f.getAttribute('data-id'),true);}
+    return;
+  }
+  var pas=e.shiftKey?12:5;
+  if(k==='ArrowLeft'){cam.yaw-=pas;}
+  else if(k==='ArrowRight'){cam.yaw+=pas;}
+  else if(k==='ArrowUp'){cam.pitch=Math.max(-34,cam.pitch-pas*0.7);}
+  else if(k==='ArrowDown'){cam.pitch=Math.min(34,cam.pitch+pas*0.7);}
+  else if(k==='+'||k==='='){cam.dolly=Math.min(dollyBase+430,cam.dolly+46);}
+  else if(k==='-'||k==='_'){cam.dolly=Math.max(dollyBase-420,cam.dolly-46);}
+  else return;
+  e.preventDefault();alvo=null;camSuja=true;acordar();
+});
+/* Tab entre planetas: o foco do TECLADO também seleciona — e só ele.
+   Clicar num <button> também dá foco, e o focusin chega ANTES do pointerup.
+   Com isso o planeta já vinha selecionado quando o dedo levantava, o
+   "segundo toque = entrar" disparava no PRIMEIRO clique, e um clique só
+   jogava a pessoa dentro de outro mundo sem ela nem ter lido a ficha. */
+orbe.addEventListener('focusin',function(e){
+  var pw=e.target.closest('.pw');
+  if(!pw||pw.getAttribute('data-id')===selId)return;
+  var teclado=true;
+  try{teclado=e.target.matches(':focus-visible');}catch(err){}
+  if(teclado)selecionar(pw.getAttribute('data-id'),false);
+});
+
+
 </script>
 <script>
 if('serviceWorker' in navigator){
@@ -29681,5 +30754,7 @@ async function _checkUpdate(){
 window.addEventListener('load',()=>{_checkUpdate();setInterval(_checkUpdate,30*60*1000)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)_checkUpdate()});
 </script>
+
+
 </body>
 </html>
