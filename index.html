@@ -7502,7 +7502,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.11.2';
+const VOX_VERSION='2026.09.11.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -7983,6 +7983,8 @@ let I18N_EN={
 // FASE 4 — pulos do gato (mobile)
 "💡 Segure o botão de gravar pra escolher a fonte: microfone, som interno ou os dois":"💡 Hold the record button to choose the source: microphone, system audio, or both",
 "↓ Solte pra criar um card novo":"↓ Release to create a new card",
+"↓ Puxe pra criar um card":"↓ Pull to create a card",
+"↓ Puxe mais uma vez pra criar":"↓ Pull once more to create",
 "Parar gravação":"Stop recording",
 "Mais opções":"More options",
 "Cancelar gravação":"Cancel recording",
@@ -18400,8 +18402,15 @@ function _recBtnClick(e){
 // de cor); soltar o dedo já armado cria um card vazio (newEmptyCard(), igual
 // ao botão "+ Novo card") + vibrate(20). overscroll-behavior-y:contain no
 // body (CSS, FASE 4) evita conflito com o pull-to-refresh nativo.
-let _ptcStartY=null,_ptcArmed=false;
+// DUAS puxadas, nao uma. Criar na primeira enchia a lista de cards vazios
+// sem querer: rolar ate o topo e continuar o dedo e' o MESMO movimento. Agora
+// a primeira so avisa, e a segunda dentro da janela e' que cria. O aviso troca
+// de texto entre uma e outra, entao o gesto se explica sozinho -- em vez de
+// virar um atalho mais dificil e igualmente secreto.
+let _ptcStartY=null,_ptcArmed=false,_ptcPrimeiro=0,_ptcAvisoTimer=null;
 const PTC_THRESHOLD=80;
+const PTC_JANELA=2500;   // tempo pra segunda puxada valer como "seguida"
+function _ptcEsperando(){return _ptcPrimeiro>0&&(Date.now()-_ptcPrimeiro)<PTC_JANELA;}
 function _ptcTouchStart(e){
   if(!_isSheetViewport())return;
   if(viewMode==='doc')return; // só Lista/Masonry — Documento tem seu próprio gesto (4a)
@@ -18420,14 +18429,32 @@ function _ptcTouchEnd(){
   if(_ptcStartY===null)return;
   const armed=_ptcArmed;
   _ptcStartY=null;_ptcArmed=false;
-  _hidePtcIndicator();
-  if(armed){newEmptyCard();navigator.vibrate?.(20)}
+  if(!armed){_hidePtcIndicator();return}
+  if(_ptcEsperando()){
+    _ptcPrimeiro=0;_hidePtcIndicator();
+    newEmptyCard();navigator.vibrate?.(20);
+    return;
+  }
+  // Primeira puxada: nao cria nada, so guarda a vez e diz o que falta.
+  // O aviso vem ANTES de marcar a vez, de proposito: _showPtcIndicator le
+  // _ptcEsperando() pra escolher o texto, e marcando antes ele ja diria
+  // "solte pra criar" -- a frase da segunda puxada, no fim da primeira.
+  _showPtcIndicator(true);
+  _ptcPrimeiro=Date.now();
+  navigator.vibrate?.(12);
+  if(_ptcAvisoTimer)clearTimeout(_ptcAvisoTimer);
+  _ptcAvisoTimer=setTimeout(function(){_ptcAvisoTimer=null;_hidePtcIndicator();},PTC_JANELA);
 }
-function _ptcTouchCancel(){_ptcStartY=null;_ptcArmed=false;_hidePtcIndicator()}
+// Cancelar o toque nao perde a primeira puxada: a pessoa pode ter so tirado
+// o dedo torto. Quem apaga a vez e' o relogio.
+function _ptcTouchCancel(){_ptcStartY=null;_ptcArmed=false;if(!_ptcEsperando())_hidePtcIndicator()}
 function _showPtcIndicator(armed){
   const el=document.getElementById('ptcIndicator');if(!el)return;
-  el.textContent=t('↓ Solte pra criar um card novo');
-  el.classList.toggle('armed',armed);
+  if(_ptcAvisoTimer){clearTimeout(_ptcAvisoTimer);_ptcAvisoTimer=null}
+  el.textContent = !armed ? t('↓ Puxe pra criar um card')
+    : (_ptcEsperando() ? t('↓ Solte pra criar um card novo')
+                       : t('↓ Puxe mais uma vez pra criar'));
+  el.classList.toggle('armed',armed&&_ptcEsperando());
   el.style.display='block';
 }
 function _hidePtcIndicator(){
