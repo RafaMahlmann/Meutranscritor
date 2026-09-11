@@ -7559,7 +7559,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.11.6';
+const VOX_VERSION='2026.09.11.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -7696,12 +7696,32 @@ function _mundoDiasNaLixeira(m){
 // Apagar de vez: so a faxina chega aqui. A remocao e CRUA porque as chaves
 // sao de OUTRO mundo -- passar por localStorage.removeItem mapearia pro
 // mundo ativo e a chave sobreviveria. Mesmo cuidado do reset de fabrica.
+// As fotos de um mundo NAO moram nas chaves dele: o card guarda so a
+// referencia ({k,w,h} em dataset.images), e o Blob vive numa store
+// compartilhada ('imgs') e, quando o aparelho tem, em arquivo no OPFS.
+// Entao apagar o mundo sem esta varredura deixava as fotos orfas no disco
+// pra sempre, sem nenhum card apontando pra elas. Roda ANTES de apagar o
+// historico, que e de onde saem as referencias.
+function _mundoApagarFotos(id){
+  return idbGet('!vox_history__'+id).then(h=>{
+    if(!h||!h.length)return;
+    const chaves=[];
+    h.forEach(it=>{(it.images||[]).forEach(im=>{if(im&&im.k)chaves.push(im.k)})});
+    /* imgApagar cuida dos dois lugares possiveis, e apagar chave que nao
+       existe nao da erro. A chave da foto e um id aleatorio global, nao
+       leva sufixo de mundo -- entao serve de qualquer mundo. */
+    return Promise.all(chaves.map(k=>imgApagar(k).catch(()=>{})));
+  }).catch(()=>{});
+}
 function _mundoApagarDeVez(id){
   if(id===VOX_MUNDO_RAIZ||id===_mundoAtivo)return;
   const suf='__'+id;
-  Object.keys(localStorage).forEach(k=>{if(k.slice(-suf.length)===suf)VOX_LS.rem(k)});
-  try{idbDelete('!vox_history'+suf).catch(()=>{})}catch(e){}
-  _mundosSalvar(_mundosLista().filter(m=>m.id!==id));
+  _mundoApagarFotos(id).then(()=>{
+    Object.keys(localStorage).forEach(k=>{if(k.slice(-suf.length)===suf)VOX_LS.rem(k)});
+    return idbDelete('!vox_history'+suf).catch(()=>{});
+  }).then(()=>{
+    _mundosSalvar(_mundosLista().filter(m=>m.id!==id));
+  }).catch(()=>{});
 }
 function _mundoCriar(nome,desc){
   const l=_mundosLista();
