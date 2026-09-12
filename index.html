@@ -1774,7 +1774,16 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    fino de sempre (regra global ::-webkit-scrollbar, linha ~2587). */
 .folders-bar{display:none;width:182px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:9px;position:sticky;top:70px;max-height:calc(100vh - 150px);overflow-y:auto;overflow-anchor:none;scrollbar-width:thin;box-shadow:var(--shadow-card)}
 .folders-bar.open{display:block}
-.folder-head{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 9px}
+/* BUG ANTIGO, nao introduzido por mim: confirmado que o CSS era exatamente
+   este desde pelo menos 06/09/2026, bem antes do World. So nao aparecia
+   porque com poucas pastas o painel nunca chegava a rolar. Com muitas
+   pastas, esta fileira -- que tem TODOS os botoes de topo: baixar,
+   configurar, fluxograma, orbita, calendario, nova pasta, recolher --
+   rola junto com a lista e sai de cena depois de uns 40px de rolagem,
+   num painel que pode rolar centenas de px. Fica sem esses botoes na tela
+   quase o tempo todo. Ela precisa ficar fixa no topo. */
+.folder-head{display:flex;align-items:center;justify-content:space-between;
+  padding:2px 6px 9px;position:sticky;top:0;z-index:3;background:var(--bg-card)}
 .folder-head-title{font-size:12px;font-weight:700;letter-spacing:0.3px;color:var(--text3);text-transform:uppercase}
 .folder-collapse-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px;display:flex;border-radius:7px;transition:all var(--transition)}
 .folder-collapse-btn:hover{background:var(--bg-input);color:var(--text2)}
@@ -7599,7 +7608,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.12.3';
+const VOX_VERSION='2026.09.12.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
