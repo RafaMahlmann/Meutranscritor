@@ -2681,6 +2681,18 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   box-shadow:0 0 18px -1px var(--orb-brilho,transparent),
              inset 0 0 14px -4px var(--orb-brilho,transparent);
 }
+/* O selo: numero de notas soltas direto na pasta, clicavel, abre o Mural
+   sem navegar. So existe quando ha nota (ausencia = resposta "nada aqui").
+   Cantinho superior direito da bolha, por cima de tudo. */
+.orb-selo{
+  position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;
+  border-radius:10px;border:1.5px solid var(--orb-fundo,#0d0e12);
+  background:#34d8a0;color:#04120d;font-size:10.5px;font-weight:800;
+  font-family:var(--font);display:none;align-items:center;justify-content:center;
+  cursor:pointer;z-index:2;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.35);
+  transition:transform .12s var(--saida,ease)}
+.orb-selo:hover{transform:scale(1.12)}
+.orb-selo:active{transform:scale(.94)}
 .orb-pontos{
   position:absolute;bottom:-13px;left:50%;transform:translateX(-50%);
   display:flex;gap:4px;pointer-events:none;
@@ -2779,7 +2791,24 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   transition:opacity 220ms var(--orb-curva),transform 340ms var(--orb-curva);
 }
 .orb-mural.viva{display:flex}
-.orb-mural.on{opacity:1;transform:none}
+.orb-mural.on{opacity:1;transform:scale(var(--painel-esc,1))}
+/* Alca de arrastar: 6 pontinhos (mesmo desenho do ICO.grip que ja existe
+   pra mesclar card). --painel-k contra-escala pra ela nunca encolher junto
+   com o painel -- ver _painelAplicarEscala. */
+.orb-mural-alca{
+  flex-shrink:0;width:24px;height:24px;border-radius:8px;border:none;
+  background:rgba(255,255,255,.07);color:var(--orb-texto3);
+  display:flex;align-items:center;justify-content:center;cursor:grab;
+  transform:scale(var(--painel-k,1));touch-action:none}
+.orb-mural-alca:active{cursor:grabbing;background:rgba(255,255,255,.13)}
+.orb-mural-alca svg{width:14px;height:14px}
+/* Na gaveta (celular/tablet retrato) o cartao vira uma folha de baixo pra
+   cima, do tamanho da tela -- arrastar isso nao faz sentido nenhum. Mesma
+   quebra de _orbMuralEhGaveta(), so que em CSS: esconde a alca e o clique
+   nela some, sem precisar de JS coordenando os dois lados. */
+@media (max-width:599px),(min-width:600px) and (max-width:1023px) and (orientation:portrait){
+  .orb-mural-alca{display:none}
+}
 .orb-mural-hd{
   display:flex;align-items:center;gap:8px;padding:11px 13px 9px;flex-shrink:0;
   border-bottom:1px solid rgba(255,255,255,.08);
@@ -2925,6 +2954,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .orb-mural-rodape{
   padding:8px 13px 10px;border-top:1px solid rgba(255,255,255,.07);
   font-size:10.5px;color:var(--orb-texto4);flex-shrink:0;
+}
+
+/* O balao de instrucao: so aparece na primeira vez que a pessoa abre
+   pelo selo, nesta instalacao (ver _mostrarDica/_fichDicaEsconder).
+   Some sozinho no primeiro arrastar ou girar de verdade. */
+.orb-mural-dica{
+  padding:7px 13px 9px;font-size:10.5px;line-height:1.4;
+  color:var(--orb-texto3);flex-shrink:0;transition:opacity .3s linear;
 }
 /* Celular/tablet retrato: o cartão vira gaveta embaixo, largura toda, e a
    lista usa a altura que sobrou (sem isso ela ficava presa nos 186px do
@@ -7608,7 +7645,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.12.4';
+const VOX_VERSION='2026.09.12.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8074,6 +8111,11 @@ function applyStaticI18n(){
 let I18N_EN={
 // ── World / galáxia (11/09/2026) ──
 "Ver todos os mundos":"See all your worlds",
+"Arrastar pra mover":"Drag to move",
+"nota direto aqui — toque pra ver sem entrar":"note right here — tap to peek without going in",
+"notas direto aqui — toque pra ver sem entrar":"notes right here — tap to peek without going in",
+"toque numa bolinha pra entrar · toque no numero pra ver sem entrar":"tap a bubble to go in · tap the number to peek without going in",
+"arraste a alça pra mover · role a roda (ou belisque) pra aumentar e diminuir":"drag the handle to move it · scroll the wheel (or pinch) to grow and shrink it",
 "Este mundo está trancado. Destranque antes de exportar.":"This world is locked. Unlock it before exporting.",
 "Fechar o cofre agora":"Close the vault now",
 "Mundo trancado":"Locked world",
@@ -13155,7 +13197,11 @@ function _orbNo(id,dados,x,y,ehFoco,ordem,cards,ehVaga){
         '<span class="orb-subir"></span>'+
         '<span class="orb-no-rotulo"></span>'+
         '<span class="orb-no-cont"></span>'+
-        '<span class="orb-pontos"></span>';
+        '<span class="orb-pontos"></span>'+
+        // O selo: so aparece com nota SOLTA na propria pasta (nao conta
+        // subpasta). Ele e o atalho novo -- toca nele e ve o que tem
+        // direto ali, sem entrar na pasta e sem mudar a camera.
+        '<button type="button" class="orb-selo" tabindex="-1"></button>';
       // Lê o id do próprio elemento (não de uma closure): assim a VAGA pode
       // virar uma pasta de verdade sem trocar de elemento nem de listener.
       el.addEventListener('click',()=>{
@@ -13200,6 +13246,28 @@ function _orbNo(id,dados,x,y,ehFoco,ordem,cards,ehVaga){
   el.style.setProperty('--orb-esc',esc);
   el.classList.toggle('orb-no-foco',ehFoco);
   el.classList.toggle('orb-no-sat',!ehFoco);
+  // O selo nao existe pra vaga (ainda nao e pasta) nem fora da grade de
+  // pastas normais. Sem nota direta, ele nem aparece -- a ausencia ja
+  // responde 'nao tem nada solto aqui'.
+  const _selo=el.querySelector('.orb-selo');
+  if(_selo){
+    const _nDireto=ehVaga?0:_orbCardsDiretos(id).length;
+    _selo.style.display=_nDireto?'flex':'none';
+    if(_nDireto){
+      _selo.textContent=String(_nDireto);
+      const _rot=_nDireto+' '+t(_nDireto===1?'nota direto aqui — toque pra ver sem entrar':'notas direto aqui — toque pra ver sem entrar');
+      _selo.title=_rot;_selo.setAttribute('aria-label',_rot);
+      if(!_selo.dataset.orbSeloLigado){
+        _selo.dataset.orbSeloLigado='1';
+        _selo.addEventListener('click',ev=>{
+          ev.stopPropagation();
+          const vid=el.dataset.orbId;
+          if(vid===undefined)return;
+          _orbAbrirMural(vid===''?null:vid,{x:ev.clientX,y:ev.clientY});
+        });
+      }
+    }
+  }
 
   const corBruta=(dados&&dados.color)||ORB_COR_RAIZ;
   const cor=safeColor(corBruta);
@@ -13434,6 +13502,21 @@ function _orbMuralForma(qtd){
   const teto=Math.max(140,Math.min(r.height-70,r.height*0.86)-ORB_MURAL_CHROME);
   return{cols,w,maxa:Math.min(linhas*ORB_MURAL_TILE+6,teto),gaveta:false};
 }
+// Versao compacta da forma, so pro selo (abre sem navegar): NUNCA vira
+// gaveta de tela inteira, mesmo no celular -- o cartao agora e
+// arrastavel e ancorado onde a pessoa tocou, e uma gaveta arrastavel
+// nao faz sentido nenhum. Mesma conta do ramo não-gaveta de
+// _orbMuralForma, só que incondicional.
+function _orbMuralFormaCompacta(qtd){
+  const r=_orbMuralRect||_orbPalco.getBoundingClientRect();
+  const cabe2=r.width-24>=ORB_MURAL_COL*2+16;
+  const cols=(qtd>=5&&cabe2)?2:1;
+  const w=Math.min(cols===1?272:(cols*ORB_MURAL_COL+(cols-1)*4+12),Math.max(200,r.width-24));
+  const linhas=Math.ceil(Math.max(qtd,1)/cols);
+  const teto=Math.max(140,Math.min(r.height-70,r.height*0.86)-ORB_MURAL_CHROME);
+  return{cols,w,maxa:Math.min(linhas*ORB_MURAL_TILE+6,teto),gaveta:false};
+}
+
 // Onde o cartão pousa: ângulo E distância, decididos juntos.
 // Testa o meio de cada vão entre satélites vizinhos e fica com o que
 // consegue acomodar o cartão INTEIRO fora do anel, sem sair do palco.
@@ -13553,29 +13636,57 @@ async function _orbMuralPintarFotos(root){
     el.prepend(img);
   }
 }
-function _orbAbrirMural(id){
+function _orbAbrirMural(id,ancoraTela){
   const wrap=document.getElementById('orbMural');
   if(!wrap)return;
   const pasta=_orbAcha(id);
   const cards=_orbCardsDiretos(id);
   const nSub=getFolderChildrenVisiveis(id).length;
   _orbMuralRect=_orbPalco.getBoundingClientRect();
-  const f=_orbMuralForma(cards.length);
+  // ancoraTela = abriu pelo selo, sem navegar: a busca do "maior vao
+  // entre satelites" nao serve aqui (isso e sobre o foco atual da
+  // camera, nao sobre a pasta que a pessoa tocou) -- usa a forma
+  // compacta e ancora onde o dedo/mouse estava.
+  const f=ancoraTela?_orbMuralFormaCompacta(cards.length):_orbMuralForma(cards.length);
+  // O balao de instrucao: so na primeira vez que ALGUEM abre pelo selo,
+  // nesta instalacao. Some sozinho no primeiro arrastar ou girar de
+  // verdade (_fichDicaEsconder, chamado de dentro do _painelLigar) --
+  // mesma regra que a dica de baixo da orbita ja segue.
+  const _mostrarDica=!!ancoraTela&&!localStorage.getItem('vox_fich_dica_vista');
   wrap._forma=f;
   wrap.style.setProperty('--orb-mural-cols',f.gaveta?2:f.cols);
   if(f.gaveta)wrap.style.removeProperty('--orb-mural-maxa');
   else wrap.style.setProperty('--orb-mural-maxa',f.maxa+'px');
   wrap.innerHTML=`<div class="orb-mural-hd">
+      <button type="button" class="orb-mural-alca" title="${escHtml(t('Arrastar pra mover'))}" aria-label="${escHtml(t('Arrastar pra mover'))}">${ICO.grip}</button>
       <strong>${escHtml((pasta&&pasta.name)||t('Tudo'))}</strong>
       <span class="orb-mural-n">${cards.length} ${escHtml(t(cards.length===1?'nota aqui':'notas aqui'))}</span>
       <button type="button" class="orb-mural-x" onclick="_orbFecharMural()" title="${escHtml(t('Fechar'))}" aria-label="${escHtml(t('Fechar'))}">${ICO.close}</button>
     </div>
     <div class="orb-mural-body" id="orbMuralBody">${_orbMuralFichas(cards,f.gaveta?2:f.cols)}</div>
-    ${nSub?`<div class="orb-mural-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na órbita, atrás deste cartão':'subpastas continuam na órbita, atrás deste cartão'))}</div>`:''}`;
+    ${nSub?`<div class="orb-mural-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na órbita, atrás deste cartão':'subpastas continuam na órbita, atrás deste cartão'))}</div>`:''}
+    ${_mostrarDica?`<div class="orb-mural-dica" id="orbMuralDica">${escHtml(t('arraste a alça pra mover · role a roda (ou belisque) pra aumentar e diminuir'))}</div>`:''}`;
   _orbMuralPintarFotos(document.getElementById('orbMuralBody'));
   wrap.classList.add('viva');
   _orbMuralAberto=true;
-  _orbMuralPosicionar();
+  if(ancoraTela){
+    _painelDestravar(wrap);
+    wrap.style.width=f.w+'px';
+    const pr=_orbPalco.getBoundingClientRect();
+    const largura=wrap.offsetWidth||f.w, altura=wrap.offsetHeight||(f.maxa+ORB_MURAL_CHROME);
+    let x=ancoraTela.x-pr.left-largura/2, y=ancoraTela.y-pr.top-24;
+    x=Math.max(8,Math.min(pr.width-largura-8,x));
+    y=Math.max(8,Math.min(pr.height-altura-8,y));
+    wrap.style.left=x+'px';wrap.style.top=y+'px';wrap.style.right='';wrap.style.bottom='';
+    wrap.dataset.arrastado='1';   // fica assim ate fechar: nao volta a se auto-posicionar
+    // Sem o transform na transicao: sem isso, cada giro da roda tentaria
+    // animar 340ms atras do anterior, e o redimensionar ficaria com um
+    // atraso de borracha em vez de responder junto com o gesto.
+    wrap.style.transition='opacity 220ms var(--orb-curva)';
+    _painelLigar(wrap,'.orb-mural-alca','#orbMuralBody',()=>!!(wrap._forma&&wrap._forma.gaveta));
+  }else{
+    _orbMuralPosicionar();
+  }
   requestAnimationFrame(()=>{
     wrap.classList.add('on');
     // Na gaveta o cartão cobre a parte de baixo do palco, onde mora a bolha.
@@ -13597,6 +13708,7 @@ function _orbAbrirMural(id){
 function _orbMuralPosicionar(){
   const wrap=document.getElementById('orbMural');
   if(!wrap||!_orbMuralAberto)return;
+  if(wrap.dataset.arrastado)return;   // aberto pelo selo, ou ja arrastado a mao
   const f=wrap._forma;if(!f)return;
   const fio=document.getElementById('orbMuralFio');
   if(f.gaveta){
@@ -13640,6 +13752,7 @@ function _orbMuralDesenhaFio(cx,cy,mx,my,de,recuo){
 }
 function _orbFecharMural(){
   const wrap=document.getElementById('orbMural');
+  if(wrap)_painelDestravar(wrap);
   _orbMuralAberto=false;_orbMuralNotaId=null;
   const fio=document.getElementById('orbMuralFio');
   if(fio)fio.style.opacity='0';
@@ -14137,7 +14250,7 @@ function abrirOrbital(){
         <div class="orb-vazio" id="orbVazio">${escHtml(t('nada aqui dentro ainda'))}</div>
         <svg class="orb-mural-fio" id="orbMuralFio"></svg>
         <div class="orb-mural" id="orbMural"></div>
-        <div class="orb-dica-wrap"><span class="orb-dica" id="orbDica">${escHtml(t('toque numa bolinha pra entrar · toque no centro pra ver o que tem dentro'))}</span></div>
+        <div class="orb-dica-wrap"><span class="orb-dica" id="orbDica">${escHtml(t('toque numa bolinha pra entrar · toque no numero pra ver sem entrar'))}</span></div>
       </div>
     </div>`;
     document.body.appendChild(ov);
@@ -22035,6 +22148,131 @@ async function _ocrLerImagem(blob){
   }
 }
 
+// ============================================================
+//   PAINEL ARRASTAVEL + REDIMENSIONAVEL (Mural da Orbita e painel
+//   do Fluxograma) -- 12/09/2026
+//   Generico de proposito: os dois paineis ja existiam e ja
+//   mostravam as notas diretas de uma pasta, cada um com o proprio
+//   jeito de nascer. Isto so acrescenta a alca de mover e o zoom
+//   isolado do painel (roda do mouse ou pinca, sem mexer no zoom
+//   do mapa por tras), igual nos dois -- sem duplicar a logica
+//   duas vezes.
+// ============================================================
+const _painelEscalas=new WeakMap();   // elemento -> escala atual
+const PAINEL_ESC_MIN=0.5, PAINEL_ESC_MAX=2.4;
+function _painelEscala(el){return _painelEscalas.get(el)||1}
+function _painelAplicarEscala(el,s){
+  s=Math.min(PAINEL_ESC_MAX,Math.max(PAINEL_ESC_MIN,s));
+  _painelEscalas.set(el,s);
+  el.style.setProperty('--painel-esc',s.toFixed(3));
+  // A alca NAO encolhe junto: sem isso, quem encolhe o painel fica sem
+  // onde pegar pra aumentar de novo. --k contra-escala no CSS.
+  el.style.setProperty('--painel-k',Math.max(1,1/s).toFixed(3));
+  return s;
+}
+// Liga uma vez so (dataset.painelLigado guarda isso) -- o conteudo de
+// dentro pode ser reconstruido a vontade (innerHTML novo a cada abertura)
+// que os listeners continuam de pe, porque moram no elemento de FORA,
+// que nunca e recriado.
+function _fichDicaEsconder(){
+  const d=document.getElementById('orbMuralDica');
+  if(d)d.style.opacity='0';
+  try{localStorage.setItem('vox_fich_dica_vista','1')}catch(e){}
+}
+function _painelLigar(el,handleSel,corpoSel,ehGavetaAgora){
+  if(el.dataset.painelLigado)return;
+  el.dataset.painelLigado='1';
+  el.style.transformOrigin='top left';
+  const corpo=()=>el.querySelector(corpoSel);
+  const travado=()=>ehGavetaAgora&&ehGavetaAgora();
+
+  // ---- arrastar pela alca (mouse e touch, o mesmo pointer event) ----
+  let arr=null;
+  el.addEventListener('pointerdown',e=>{
+    if(travado())return;
+    const alca=e.target.closest(handleSel);
+    if(!alca)return;
+    e.preventDefault();
+    try{alca.setPointerCapture(e.pointerId)}catch(err){}
+    const r=el.getBoundingClientRect();
+    arr={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};
+    _fichDicaEsconder();
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!arr||arr.id!==e.pointerId)return;
+    const pai=el.offsetParent||el.parentElement;
+    const pr=pai.getBoundingClientRect();
+    let x=e.clientX-pr.left-arr.dx, y=e.clientY-pr.top-arr.dy;
+    // sempre sobra uma faixa de 40px visivel de cada lado -- e o minimo
+    // pra dar pra pegar a alca de novo depois de largar perto da borda.
+    x=Math.max(-el.offsetWidth+40,Math.min(pr.width-40,x));
+    y=Math.max(0,Math.min(pr.height-40,y));
+    el.style.left=x+'px';el.style.top=y+'px';
+    el.style.right='';el.style.bottom='';
+    el.dataset.arrastado='1';
+  });
+  const soltar=e=>{if(arr&&arr.id===e.pointerId)arr=null};
+  el.addEventListener('pointerup',soltar);
+  el.addEventListener('pointercancel',soltar);
+
+  // ---- roda do mouse: redimensiona; nos limites, rola a lista ----
+  // stopPropagation e o que impede a roda de tambem mexer no zoom do
+  // mapa por tras -- sem isso os dois zooms brigam pelo mesmo gesto.
+  el.addEventListener('wheel',e=>{
+    if(travado())return;
+    e.preventDefault();e.stopPropagation();
+    const s=_painelEscala(el);
+    const crescendo=e.deltaY<0;
+    const noTeto=s>=PAINEL_ESC_MAX-0.001, noPiso=s<=PAINEL_ESC_MIN+0.001;
+    if((crescendo&&noTeto)||(!crescendo&&noPiso)){
+      const c=corpo();if(c)c.scrollTop+=e.deltaY;
+      return;
+    }
+    _painelAplicarEscala(el,s*(crescendo?1.08:0.92));
+    _fichDicaEsconder();
+  },{passive:false});
+
+  // ---- pinca: dois dedos em qualquer lugar do painel, fora da alca ----
+  // (um dedo so continua rolando a lista normalmente, sem conflito)
+  const pts=new Map();
+  let dist0=null,esc0=1;
+  el.addEventListener('pointerdown',e=>{
+    if(travado())return;
+    if(e.target.closest(handleSel))return;
+    if(e.pointerType!=='touch')return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2){
+      const a=[...pts.values()];
+      // piso de 48px na distancia: sem ele, dois dedos quase colados
+      // fazem a divisao explodir e um tremor de 1px vira um salto de
+      // tamanho -- bug que o agente game documentou na camada de
+      // janelas flutuantes e que aqui a gente evita de saida.
+      dist0=Math.max(48,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y));
+      esc0=_painelEscala(el);
+      _fichDicaEsconder();
+    }
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!pts.has(e.pointerId))return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2&&dist0){
+      e.preventDefault();
+      const a=[...pts.values()];
+      const d=Math.max(48,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y));
+      _painelAplicarEscala(el,esc0*(d/dist0));
+    }
+  },{passive:false});
+  const soltarPt=e=>{pts.delete(e.pointerId);if(pts.size<2)dist0=null;};
+  el.addEventListener('pointerup',soltarPt);
+  el.addEventListener('pointercancel',soltarPt);
+}
+function _painelDestravar(el){
+  delete el.dataset.arrastado;
+  el.style.transform='';el.style.removeProperty('--painel-esc');
+  el.style.removeProperty('--painel-k');el.style.transition='';
+  el.style.left='';el.style.top='';el.style.right='';el.style.bottom='';
+  _painelEscalas.delete(el);
+}
 // ── HISTORY ──
 let _historyCache=[];
 async function loadHistory(){
