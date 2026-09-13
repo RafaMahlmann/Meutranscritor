@@ -5987,6 +5987,69 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   justify-content:center;cursor:pointer;transition:color .15s linear,border-color .15s linear}
 .dmini:hover{color:var(--gx-txt);border-color:rgba(255,255,255,.3)}
 .dmini:active{transform:scale(.94)}
+/* ---- protecao do mundo: a faixa, nao mais o quadradinho de 26px
+   colado no lapis (achado real: o Rafa achou que a funcao nem existia)
+   -- 13/09/2026. Fica verde e PARADA quando trancado: descobribilidade
+   e' rotulo em texto e lugar de leitura, nao brilho -- brilho sozinho
+   nao funciona no celular, que nao tem hover. */
+.dcofre{display:flex;align-items:center;gap:10px;width:100%;margin-top:11px;
+  padding:8px 9px;border-radius:12px;text-align:left;cursor:pointer;
+  border:1px solid var(--gx-bord);background:var(--gx-sup);font-family:var(--font);
+  transition:transform .13s var(--saida),border-color .3s linear,background .3s linear}
+.dcofre:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.1)}
+.dcofre:active{transform:scale(.97)}
+.dcofre:focus-visible{outline:2px solid #7fe3c0;outline-offset:2px}
+.dcofre .pastilha{flex:0 0 auto;width:30px;height:30px;border-radius:9px;display:flex;
+  align-items:center;justify-content:center;color:var(--gx-txt2);
+  border:1px solid var(--gx-bord);background:rgba(255,255,255,.05);
+  transition:color .34s linear,border-color .34s linear,background .34s linear}
+.dcofre .txts{min-width:0;flex:1 1 auto}
+.dcofre .tt{display:block;font-size:12.5px;font-weight:700;color:var(--gx-txt);
+  letter-spacing:-.1px;line-height:1.25}
+.dcofre .ss{display:block;font-size:10.5px;font-weight:600;color:var(--gx-txt3);
+  line-height:1.35;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dcofre .seta{flex:0 0 auto;color:var(--gx-txt3);opacity:0;transform:translateX(-3px);
+  transition:opacity .28s linear,transform .28s var(--saida)}
+.dcofre.on{border-color:rgba(127,227,192,.3);background:rgba(52,216,160,.075)}
+.dcofre.on:hover{border-color:rgba(127,227,192,.5);background:rgba(52,216,160,.12)}
+.dcofre.on .pastilha{color:#7fe3c0;border-color:rgba(127,227,192,.38);
+  background:rgba(52,216,160,.16)}
+.dcofre.on .ss{color:rgba(127,227,192,.82)}
+.dcofre.on .seta{opacity:1;transform:none}
+/* o cadeado gira o arco -27deg quando ABERTO (nao-trancado) e assenta
+   quando fecha -- e' a unica animacao "cara" daqui de proposito: acao
+   rara (trancar/destrancar), vale gastar. */
+.dcofre .cad .arco{transform-box:view-box;transform-origin:16px 10.5px;
+  transform:rotate(-27deg) translateY(-.6px);transition:transform .42s var(--saida)}
+.dcofre.on .cad .arco{transform:none}
+@keyframes cofreAssenta{0%{transform:scale(1)}34%{transform:scale(1.085)}100%{transform:scale(1)}}
+.dcofre.fechando .pastilha{animation:cofreAssenta .44s var(--saida) .12s}
+@media (prefers-reduced-motion:reduce){
+  .dcofre .cad .arco,.dcofre,.dcofre .pastilha,.dcofre .seta{transition:none!important;animation:none!important}
+}
+/* o "?" do cofre -- mesmo desenho do .dmini, no canto do modal */
+.gxc-cx{position:relative}
+.gxc-ajuda{position:absolute;right:16px;top:17px;width:26px;height:26px;border-radius:8px;
+  border:1px solid var(--gx-bord);background:var(--gx-sup);color:var(--gx-txt3);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
+  transition:color .15s linear,border-color .15s linear,transform .12s var(--saida)}
+.gxc-ajuda:hover{color:var(--gx-txt);border-color:rgba(255,255,255,.3)}
+.gxc-ajuda:active{transform:scale(.94)}
+/* painel "Protecao": uma acao por linha, estilo lista de configuracoes */
+.met{display:flex;align-items:center;gap:11px;width:100%;padding:11px 0;
+  border-bottom:1px solid rgba(255,255,255,.07);background:none;border-left:0;border-right:0;
+  border-top:0;text-align:left;font-family:inherit;color:inherit;cursor:pointer;
+  transition:transform .12s var(--saida)}
+.met:active{transform:scale(.985)}
+.met:last-of-type{border-bottom:0}
+.met .ic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;color:var(--gx-txt2);border:1px solid var(--gx-bord);
+  background:rgba(255,255,255,.05)}
+.met.perigo .ic{color:#ff9d9d;border-color:rgba(255,157,157,.3);background:rgba(255,157,157,.08)}
+.met .cp{flex:1 1 auto;min-width:0}
+.met .cp b{display:block;font-size:13px;font-weight:700;color:var(--gx-txt);line-height:1.3}
+.met .cp span{display:block;font-size:11px;color:var(--gx-txt3);line-height:1.4;margin-top:1px}
+
 /* o titulo desvia dos botoes pra nao passar por baixo deles */
 .det .dn{padding-right:62px}
 /* Mundo na lixeira: continua no ceu, apagado. A galaxia E a lixeira dos
@@ -7762,7 +7825,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.13.2';
+const VOX_VERSION='2026.09.13.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8016,11 +8079,25 @@ async function _cofreVirarFotos(id,cifrar){
 // limitacao: pra cifrar o historico e preciso le-lo em texto puro, e ler o
 // historico de outro mundo em texto puro e exatamente o que o cofre existe
 // pra impedir. Trancar de dentro tambem prova, na hora, que o cofre abriu.
-async function _mundoTrancar(id,senha){
+// BUG REAL, CRITICO, corrigido 13/09/2026: esta funcao gerava o PROPRIO
+// codigo de recuperacao aqui dentro (_cofreNovoCodigo() local), diferente
+// do codigo que cofreCriar() ja tinha gerado e mostrado na tela um passo
+// antes. cofreTrancarAgora() chamava _mundoTrancar() e JOGAVA FORA o
+// valor de retorno -- ninguem em lugar nenhum comparava os dois. A pessoa
+// digitava de volta o codigo CERTO (o que via na tela) pra "confirmar que
+// guardou", a confirmacao passava (porque comparava contra si mesmo), e o
+// mundo trancava com um SEGUNDO codigo, nunca mostrado, que morria junto
+// com a pilha da funcao. Resultado: toda senha esquecida ate agora nesta
+// instalacao ficaria irrecuperavel, com um codigo de recuperacao que
+// parecia certo e nunca funcionaria. Achado testando o fluxo de verdade
+// pela UI (scratchpad/teste_cofre_juice.js) -- os testes anteriores
+// chamavam _mundoTrancar() direto e usavam o retorno dela, nunca expondo
+// a divergencia. Agora quem gera o codigo e' sempre cofreCriar() (o que a
+// pessoa VE), e _mundoTrancar() so recebe e usa esse mesmo codigo.
+async function _mundoTrancar(id,senha,codigo){
   if(id!==_mundoAtivo)throw new Error('so da pra trancar o mundo em que voce esta');
   if(_cofreDe(id))throw new Error('ja esta trancado');
   const dek=crypto.getRandomValues(new Uint8Array(32));
-  const codigo=_cofreNovoCodigo();
   const cofre={v:1,criadoEm:Date.now(),
     pass:await _cofreEnvelopar(dek,senha,COFRE_ITER),
     code:await _cofreEnvelopar(dek,_cofreNormalizar(codigo),COFRE_ITER)};
@@ -8074,14 +8151,30 @@ async function _mundoTirarCofre(id){
   return true;
 }
 // Trocar a senha sem recriptografar nada: refaz o envelope, so isso.
-async function _mundoTrocarSenha(id,segredoAtual,senhaNova){
+// Usa a chave que ja esta ativa na sessao -- a pessoa esta DENTRO do
+// mundo destrancado, entao ja provou que sabe a senha ou o codigo; nao
+// tem por que pedir de novo so pra trocar.
+async function _mundoTrocarSenha(id,senhaNova){
+  if(id!==_mundoAtivo||!_cofreChave)return false;
   const cofre=_cofreDe(id);
   if(!cofre)return false;
-  let dek=null;
-  try{dek=await _cofreDesenvelopar(cofre.pass,segredoAtual)}catch(e){}
-  if(!dek){try{dek=await _cofreDesenvelopar(cofre.code,_cofreNormalizar(segredoAtual))}catch(e){}}
-  if(!dek)return false;
-  cofre.pass=await _cofreEnvelopar(dek,senhaNova,COFRE_ITER);
+  const dekCru=new Uint8Array(await crypto.subtle.exportKey('raw',_cofreChave));
+  cofre.pass=await _cofreEnvelopar(dekCru,senhaNova,COFRE_ITER);
+  _cofreGravar(id,cofre);
+  return true;
+}
+// Mesma ideia, so que pro envelope do CODIGO -- gerar um codigo novo
+// invalida o antigo sem tocar na senha nem recriptografar nada. O
+// codigo em si (`codigo`) ja vem pronto de fora: quem chama mostrou
+// ele na tela e so grava depois que a pessoa digitar de volta (mesma
+// cautela do _mundoTrancar — nunca troca um codigo bom por um que
+// pode se perder no mesmo instante).
+async function _mundoNovoCodigo(id,codigo){
+  if(id!==_mundoAtivo||!_cofreChave)return false;
+  const cofre=_cofreDe(id);
+  if(!cofre)return false;
+  const dekCru=new Uint8Array(await crypto.subtle.exportKey('raw',_cofreChave));
+  cofre.code=await _cofreEnvelopar(dekCru,_cofreNormalizar(codigo),COFRE_ITER);
   _cofreGravar(id,cofre);
   return true;
 }
@@ -9483,7 +9576,41 @@ let I18N_EN={
 "cards":"cards",
 // EXPORTS CARREGAM A MARCA DO CALENDÁRIO (03/09/2026)
 "marcado: {d}":"marked: {d}",
-"Marcado:":"Marked:"
+"Marcado:":"Marked:",
+// Faixa/painel de protecao do mundo (13/09/2026)
+"Gerenciar a proteção deste mundo":"Manage this world's protection",
+"Protegido com senha":"Protected with a password",
+"Toque pra gerenciar":"Tap to manage",
+"Proteger com senha":"Protect with a password",
+"Criptografa as notas e as fotos":"Encrypts notes and photos",
+"Proteção":"Protection",
+"Trocar a senha":"Change password",
+"O código de recuperação continua o mesmo":"Recovery code stays the same",
+"Gerar um novo código de recuperação":"Generate a new recovery code",
+"O código antigo para de funcionar":"The old code stops working",
+"Pede a senha de novo nesta aba":"Asks for the password again in this tab",
+"Tirar a proteção":"Remove protection",
+"As notas voltam a ficar sem criptografia":"Notes go back to being unencrypted",
+"O código de recuperação continua sendo o mesmo de antes.":"The recovery code stays the same as before.",
+"Nova senha":"New password",
+"Repita a nova senha":"Repeat the new password",
+"Trocar":"Change",
+"Ao confirmar, o código antigo para de funcionar. Este passa a ser o único jeito de abrir o mundo se você esquecer a senha.":"Once confirmed, the old code stops working. This becomes the only way into the world if you forget the password.",
+"Mandar uma cópia por e-mail":"Send a copy by email",
+"Usar este código":"Use this code",
+"As notas, os nomes, as etiquetas e as fotos deste mundo voltam a ficar sem criptografia no aparelho. A senha e o código de recuperação deixam de servir.":"This world's notes, names, tags and photos go back to being unencrypted on this device. The password and recovery code stop working.",
+"Como funciona":"How it works",
+"Senha e código de recuperação":"Password and recovery code",
+"A senha embrulha uma chave só sua. Ela nunca sai deste aparelho, nem em texto puro nem cifrada — não existe servidor guardando nada disso.":"The password wraps a key that's only yours. It never leaves this device, plain or encrypted — there's no server storing any of it.",
+"Por isso não existe 'esqueci minha senha' por e-mail: ninguém, nem quem fez o Vox, consegue abrir o mundo sem a senha ou o código de recuperação.":"That's why there's no email 'forgot password': nobody, not even whoever built Vox, can open the world without the password or the recovery code.",
+"O código de 24 caracteres é a única rede de segurança. Guarde ele fora deste aparelho — impresso, num gerenciador de senhas, ou mande uma cópia pra você mesmo por e-mail.":"The 24-character code is the only safety net. Keep it outside this device — printed, in a password manager, or email yourself a copy.",
+"Entendi":"Got it",
+"Código de recuperação do Vox — ":"Vox recovery code — ",
+"Este código abre este mundo no Vox mesmo que você esqueça a senha. Guarde este e-mail — ninguém mais, nem o Vox, pode recuperar por você sem ele.":"This code opens this world in Vox even if you forget the password. Keep this email — nobody else, not even Vox, can recover it for you without it.",
+"Não consegui trocar a senha.":"Couldn't change the password.",
+"Não consegui trocar o código.":"Couldn't change the code.",
+"Código de recuperação trocado":"Recovery code changed",
+"Senha trocada":"Password changed"
 };
 
 // ── STATE ──
@@ -32126,6 +32253,13 @@ function pintarMedidor(){
 var _edMundo=null;   /* id do mundo com a ficha aberta em edicao */
 var sugestoes=[];    /* as sugestoes que estao no ceu agora */
 var ICO_CADEADO='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>';
+// Cadeado ANIMADO -- o arco tem a classe 'arco' pra o CSS girar (ver
+// .dcofre .cad .arco), em vez de trocar de SVG aberto/fechado. Usado na
+// faixa da galaxia (proposta 13/09/2026, PROPOSTA_COFRE_JUICE.html).
+var ICO_CADEADO_ANIM='<svg class="cad" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="2"/><path class="arco" d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>';
+var ICO_SETA_DIR='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
+var ICO_AJUDA_COFRE='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.2.9c0 1.8-2.6 2.2-2.6 4"/><line x1="12" y1="17.6" x2="12" y2="17.7"/></svg>';
+var ICO_REFAZER='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/></svg>';
 var ICO_CADEADO_ABERTO='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 7.6-1.7"/></svg>';
 var ICO_LAPIS='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
 var ICO_LIXO='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
@@ -32220,7 +32354,6 @@ function pintarDet(){
     var noAtivo=(w.id===ativoId);
     h='<div class="dacoes">'
      +'<button type="button" class="dmini" onclick="editarMundo(\''+esc(w.id)+'\')" title="'+t('Editar nome e descrição')+'" aria-label="'+t('Editar nome e descrição')+'">'+ICO_LAPIS+'</button>'
-     +(noAtivo?'<button type="button" class="dmini" onclick="'+(w.trancado?'tirarCofreUI()':'trancarMundoUI()')+'" title="'+(w.trancado?t('Tirar o cadeado'):t('Trancar este mundo'))+'" aria-label="'+(w.trancado?t('Tirar o cadeado'):t('Trancar este mundo'))+'">'+(w.trancado?ICO_CADEADO_ABERTO:ICO_CADEADO)+'</button>':'')
      +(podeLixeira?'<button type="button" class="dmini" onclick="lixeiraMundo(\''+esc(w.id)+'\')" title="'+t('Mover pra lixeira')+'" aria-label="'+t('Mover pra lixeira')+'">'+ICO_LIXO+'</button>':'')
      +'</div>'
      +'<div class="dk">'+t(eAtivo?'Você está aqui':'Mundo')+'</div>'
@@ -32229,9 +32362,7 @@ function pintarDet(){
         de enfeite ocupando espaço e não dizendo nada */
      +(w.desc?'<div class="dd">'+esc(w.desc)+'</div>':'')
      +'<div class="dm">'+_linha+'</div>'
-     +(eAtivo&&w.trancado&&_mundoAbertoAgora()
-       ? '<button type="button" class="dbtn sec" onclick="fecharCofreAgora()">'+t('Fechar o cofre agora')+'</button>'
-       : '')
+     +(noAtivo?_faixaProtecao(w):'')
      +(eAtivo
        ? '<button class="dbtn sec" onclick="fecharGalaxia()">'+t('Voltar pra este mundo')+'</button>'
        : '<button class="dbtn" onclick="entrar(\''+esc(w.id)+'\')">'+t('Entrar em')+' '+esc(w.nome)+'</button>');
@@ -32294,7 +32425,8 @@ function _cofreLigarEnter(idCampo,fn){
 function pintarCofreUI(){
   var h='',nome=esc(_cofreNomeDe(_cUI.id));
   if(_cUI.modo==='senha'){
-    h='<div class="gxc-k">'+t('Mundo trancado')+'</div>'
+    h=_gxcAjudaBtn('senha')
+     +'<div class="gxc-k">'+t('Mundo trancado')+'</div>'
      +'<div class="gxc-t">'+nome+'</div>'
      +'<p class="gxc-p">'+t('Digite a senha deste mundo. Se você perdeu a senha, o código de recuperação serve no mesmo campo.')+'</p>'
      +'<input type="password" class="gxc-inp" id="cofSenha" autocomplete="current-password" aria-label="'+t('Senha ou código de recuperação')+'" placeholder="'+t('Senha ou código de recuperação')+'">'
@@ -32302,7 +32434,8 @@ function pintarCofreUI(){
      +'<button type="button" class="gxc-bt" onclick="cofreEntrar()">'+t('Destrancar e entrar')+'</button>'
      +'<button type="button" class="gxc-link" onclick="fecharCofreUI()">'+t('Agora não')+'</button>';
   }else if(_cUI.modo==='criar'){
-    h='<div class="gxc-k">'+t('Trancar este mundo')+'</div>'
+    h=_gxcAjudaBtn('criar')
+     +'<div class="gxc-k">'+t('Trancar este mundo')+'</div>'
      +'<div class="gxc-t">'+nome+'</div>'
      +'<p class="gxc-p">'+t('Crie uma senha. Ela vai ser pedida toda vez que você entrar neste mundo numa nova sessão.')+'</p>'
      +'<input type="password" class="gxc-inp" id="cofNova" autocomplete="new-password" aria-label="'+t('Senha')+'" placeholder="'+t('Senha')+'" oninput="cofreConfere()">'
@@ -32312,16 +32445,64 @@ function pintarCofreUI(){
      +'<button type="button" class="gxc-link" onclick="fecharCofreUI()">'+t('Cancelar')+'</button>'
      +'<div class="gxc-selo">'+t('Fica trancado: o texto das notas, os nomes, as etiquetas e as fotos anexadas. Não fica: o nome do mundo e quantas notas ele tem.')+'</div>';
   }else if(_cUI.modo==='codigo'){
-    h='<div class="gxc-k">'+t('Guarde isto antes de continuar')+'</div>'
+    h=_gxcAjudaBtn('codigo')
+     +'<div class="gxc-k">'+t('Guarde isto antes de continuar')+'</div>'
      +'<div class="gxc-t">'+t('Código de recuperação')+'</div>'
      +'<p class="gxc-p aviso">'+t('Se você esquecer a senha, este código é a única forma de abrir este mundo. Ninguém pode recuperar por você — nem eu, nem o Vox.')+'</p>'
      +'<div class="gxc-codigo">'+esc(_cUI.codigo||'')+'</div>'
      +'<button type="button" class="gxc-bt sec" onclick="cofreBaixarKit()">'+t('Baixar o arquivo de recuperação')+'</button>'
+     +_cofreBotaoEmail()
      +'<p class="gxc-p" style="margin-top:13px">'+t('Agora digite o código de volta, pra eu ter certeza de que ele foi guardado:')+'</p>'
      +'<input type="text" class="gxc-inp" id="cofConf" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="'+t('Código de recuperação')+'" placeholder="'+t('Cole ou digite o código')+'" oninput="cofreConfereCodigo()">'
      +'<div class="gxc-erro" id="cofErro">'+esc(_cUI.erro)+'</div>'
      +'<button type="button" class="gxc-bt" id="cofTrancar" onclick="cofreTrancarAgora()" disabled>'+t('Trancar o mundo')+'</button>'
      +'<button type="button" class="gxc-link" onclick="fecharCofreUI()">'+t('Desistir de trancar')+'</button>';
+  }else if(_cUI.modo==='painel'){
+    h=_gxcAjudaBtn('painel')
+     +'<div class="gxc-k">'+t('Proteção')+'</div>'
+     +'<div class="gxc-t">'+nome+'</div>'
+     +'<button type="button" class="met" onclick="cofreIrTrocar()"><span class="ic">'+ICO_CADEADO+'</span><span class="cp"><b>'+t('Trocar a senha')+'</b><span>'+t('O código de recuperação continua o mesmo')+'</span></span></button>'
+     +'<button type="button" class="met" onclick="cofreIrNovoCodigo()"><span class="ic">'+ICO_REFAZER+'</span><span class="cp"><b>'+t('Gerar um novo código de recuperação')+'</b><span>'+t('O código antigo para de funcionar')+'</span></span></button>'
+     +(_mundoAbertoAgora()?'<button type="button" class="met" onclick="fecharCofreAgoraUI()"><span class="ic">'+ICO_CADEADO+'</span><span class="cp"><b>'+t('Fechar o cofre agora')+'</b><span>'+t('Pede a senha de novo nesta aba')+'</span></span></button>':'')
+     +'<button type="button" class="met perigo" onclick="cofreIrTirar()"><span class="ic">'+ICO_CADEADO_ABERTO+'</span><span class="cp"><b>'+t('Tirar a proteção')+'</b><span>'+t('As notas voltam a ficar sem criptografia')+'</span></span></button>'
+     +'<button type="button" class="gxc-link" onclick="fecharCofreUI()">'+t('Fechar')+'</button>';
+  }else if(_cUI.modo==='trocar'){
+    h=_gxcAjudaBtn('trocar')
+     +'<div class="gxc-k">'+t('Trocar a senha')+'</div>'
+     +'<div class="gxc-t">'+nome+'</div>'
+     +'<p class="gxc-p">'+t('O código de recuperação continua sendo o mesmo de antes.')+'</p>'
+     +'<input type="password" class="gxc-inp" id="cofTrocaNova" autocomplete="new-password" aria-label="'+t('Nova senha')+'" placeholder="'+t('Nova senha')+'" oninput="cofreConfereTroca()">'
+     +'<input type="password" class="gxc-inp" id="cofTrocaNova2" autocomplete="new-password" aria-label="'+t('Repita a nova senha')+'" placeholder="'+t('Repita a nova senha')+'" oninput="cofreConfereTroca()">'
+     +'<div class="gxc-erro" id="cofErroTroca"></div>'
+     +'<button type="button" class="gxc-bt" id="cofTrocaBt" onclick="cofreTrocarConfirmar()" disabled>'+t('Trocar')+'</button>'
+     +'<button type="button" class="gxc-link" onclick="cofreVoltarPainel()">'+t('Voltar')+'</button>';
+  }else if(_cUI.modo==='novoCodigo'){
+    h=_gxcAjudaBtn('novoCodigo')
+     +'<div class="gxc-k">'+t('Guarde isto antes de continuar')+'</div>'
+     +'<div class="gxc-t">'+t('Novo código de recuperação')+'</div>'
+     +'<p class="gxc-p aviso">'+t('Ao confirmar, o código antigo para de funcionar. Este passa a ser o único jeito de abrir o mundo se você esquecer a senha.')+'</p>'
+     +'<div class="gxc-codigo">'+esc(_cUI.codigo||'')+'</div>'
+     +'<button type="button" class="gxc-bt sec" onclick="cofreBaixarKit()">'+t('Baixar o arquivo de recuperação')+'</button>'
+     +_cofreBotaoEmail()
+     +'<p class="gxc-p" style="margin-top:13px">'+t('Agora digite o código de volta, pra eu ter certeza de que ele foi guardado:')+'</p>'
+     +'<input type="text" class="gxc-inp" id="cofConfNovo" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="'+t('Código de recuperação')+'" placeholder="'+t('Cole ou digite o código')+'" oninput="cofreConfereCodigoNovo()">'
+     +'<div class="gxc-erro" id="cofErroNovo"></div>'
+     +'<button type="button" class="gxc-bt" id="cofConfirmaNovoBt" onclick="cofreNovoCodigoConfirmar()" disabled>'+t('Usar este código')+'</button>'
+     +'<button type="button" class="gxc-link" onclick="cofreVoltarPainel()">'+t('Cancelar')+'</button>';
+  }else if(_cUI.modo==='tirar'){
+    h=_gxcAjudaBtn('tirar')
+     +'<div class="gxc-k">'+t('Proteção')+'</div>'
+     +'<div class="gxc-t">'+t('Tirar a proteção')+'</div>'
+     +'<p class="gxc-p aviso">'+t('As notas, os nomes, as etiquetas e as fotos deste mundo voltam a ficar sem criptografia no aparelho. A senha e o código de recuperação deixam de servir.')+'</p>'
+     +'<button type="button" class="gxc-bt perigo" onclick="cofreTirarConfirmar()">'+t('Tirar a proteção')+'</button>'
+     +'<button type="button" class="gxc-link" onclick="cofreVoltarPainel()">'+t('Cancelar')+'</button>';
+  }else if(_cUI.modo==='ajuda'){
+    h='<div class="gxc-k">'+t('Como funciona')+'</div>'
+     +'<div class="gxc-t">'+t('Senha e código de recuperação')+'</div>'
+     +'<p class="gxc-p">'+t('A senha embrulha uma chave só sua. Ela nunca sai deste aparelho, nem em texto puro nem cifrada — não existe servidor guardando nada disso.')+'</p>'
+     +'<p class="gxc-p">'+t('Por isso não existe \'esqueci minha senha\' por e-mail: ninguém, nem quem fez o Vox, consegue abrir o mundo sem a senha ou o código de recuperação.')+'</p>'
+     +'<p class="gxc-p">'+t('O código de 24 caracteres é a única rede de segurança. Guarde ele fora deste aparelho — impresso, num gerenciador de senhas, ou mande uma cópia pra você mesmo por e-mail.')+'</p>'
+     +'<button type="button" class="gxc-bt sec" onclick="cofreAjudaVoltar()">'+t('Entendi')+'</button>';
   }
   _cofreCx().innerHTML=h;
   if(_cUI.modo==='senha')_cofreLigarEnter('cofSenha',cofreEntrar);
@@ -32329,6 +32510,31 @@ function pintarCofreUI(){
     var b=document.getElementById('cofCriar'); if(b&&!b.disabled)cofreCriar();});
   if(_cUI.modo==='codigo')_cofreLigarEnter('cofConf',function(){
     var b=document.getElementById('cofTrancar'); if(b&&!b.disabled)cofreTrancarAgora();});
+  if(_cUI.modo==='trocar')_cofreLigarEnter('cofTrocaNova2',function(){
+    var b=document.getElementById('cofTrocaBt'); if(b&&!b.disabled)cofreTrocarConfirmar();});
+  if(_cUI.modo==='novoCodigo')_cofreLigarEnter('cofConfNovo',function(){
+    var b=document.getElementById('cofConfirmaNovoBt'); if(b&&!b.disabled)cofreNovoCodigoConfirmar();});
+}
+// O "?" de cada tela do cofre -- sempre no mesmo canto, sempre volta
+// pra onde a pessoa estava.
+function _gxcAjudaBtn(modo){
+  return '<button type="button" class="gxc-ajuda" onclick="cofreAjuda(\''+modo+'\')" title="'+t('O que é isso?')+'" aria-label="'+t('O que é isso?')+'">'+ICO_AJUDA_COFRE+'</button>';
+}
+function cofreAjuda(modo){_cUI.modoAntes=modo;_cUI.modo='ajuda';pintarCofreUI();}
+function cofreAjudaVoltar(){_cUI.modo=_cUI.modoAntes||'painel';pintarCofreUI();}
+// Mandar uma copia do codigo por e-mail: nao inventa recuperacao nova,
+// so da mais um lugar pra guardar o MESMO codigo -- a pessoa manda pra
+// si mesma (ou pra alguem de confianca), pelo proprio aplicativo de
+// e-mail dela. Sem servico terceiro, sem custo, sem mudar o CSP.
+function _cofreBotaoEmail(){
+  return '<button type="button" class="gxc-bt sec" onclick="cofreEnviarPorEmail()" style="margin-top:8px">'+t('Mandar uma cópia por e-mail')+'</button>';
+}
+function cofreEnviarPorEmail(){
+  var nome=_cofreNomeDe(_cUI.id);
+  var assunto=t('Código de recuperação do Vox — ')+nome;
+  var corpo=t('Mundo')+': '+nome+'\n\n'+t('Código de recuperação')+': '+(_cUI.codigo||'')+'\n\n'
+    +t('Este código abre este mundo no Vox mesmo que você esqueça a senha. Guarde este e-mail — ninguém mais, nem o Vox, pode recuperar por você sem ele.');
+  window.open('mailto:?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo),'_self');
 }
 function cofreConfere(){
   var a=document.getElementById('cofNova'), b=document.getElementById('cofNova2');
@@ -32359,10 +32565,33 @@ function cofreBaixarKit(){
   toast(t('Arquivo de recuperação baixado. Guarde fora deste aparelho.'));
 }
 
+// A faixa que mora na ficha do mundo ATIVO -- troca o quadradinho
+// cinza de 26px colado no lapis por um rotulo em texto, sempre visivel
+// (achado real do Rafa: ele achava que a funcao nem existia).
+function _faixaProtecao(w){
+  if(w.trancado){
+    return '<button type="button" class="dcofre on" onclick="protecaoMundoUI()" title="'+t('Gerenciar a proteção deste mundo')+'" aria-label="'+t('Gerenciar a proteção deste mundo')+'">'
+      +'<span class="pastilha">'+ICO_CADEADO_ANIM+'</span>'
+      +'<span class="txts"><span class="tt">'+t('Protegido com senha')+'</span><span class="ss">'+t('Toque pra gerenciar')+'</span></span>'
+      +'<span class="seta">'+ICO_SETA_DIR+'</span>'
+      +'</button>';
+  }
+  return '<button type="button" class="dcofre" onclick="trancarMundoUI()" title="'+t('Trancar este mundo')+'" aria-label="'+t('Trancar este mundo')+'">'
+    +'<span class="pastilha">'+ICO_CADEADO_ANIM+'</span>'
+    +'<span class="txts"><span class="tt">'+t('Proteger com senha')+'</span><span class="ss">'+t('Criptografa as notas e as fotos')+'</span></span>'
+    +'</button>';
+}
 function trancarMundoUI(){
   if(ativoId!==_mundoAtivo)return;
   abrirCofreUI('criar',_mundoAtivo);
 }
+// Clicar na faixa ja protegida abre o painel de gerenciar -- nunca tira
+// a protecao direto.
+function protecaoMundoUI(){
+  if(ativoId!==_mundoAtivo)return;
+  abrirCofreUI('painel',_mundoAtivo);
+}
+function cofreVoltarPainel(){_cUI.modo='painel';_cUI.erro='';pintarCofreUI();}
 function cofreCriar(){
   var a=document.getElementById('cofNova');
   if(!a||a.value.length<6)return;
@@ -32371,11 +32600,53 @@ function cofreCriar(){
   _cUI.modo='codigo';_cUI.erro='';
   pintarCofreUI();
 }
+function cofreIrTrocar(){_cUI.modo='trocar';_cUI.erro='';pintarCofreUI();}
+function cofreConfereTroca(){
+  var a=document.getElementById('cofTrocaNova'), b=document.getElementById('cofTrocaNova2');
+  var bt=document.getElementById('cofTrocaBt'), er=document.getElementById('cofErroTroca');
+  if(!a||!b||!bt)return;
+  var v=a.value, v2=b.value;
+  var curta=v.length>0&&v.length<6;
+  var difere=v2.length>0&&v!==v2;
+  er.textContent=curta?t('Use pelo menos 6 caracteres.'):(difere?t('As duas não batem.'):'');
+  bt.disabled=!(v.length>=6&&v===v2);
+}
+async function cofreTrocarConfirmar(){
+  var a=document.getElementById('cofTrocaNova');
+  if(!a||a.value.length<6)return;
+  var bt=document.getElementById('cofTrocaBt'); if(bt)bt.disabled=true;
+  var ok=await _mundoTrocarSenha(_mundoAtivo,a.value);
+  if(!ok){if(bt)bt.disabled=false;toast(t('Não consegui trocar a senha.'),true);return}
+  fecharCofreUI();
+  toast(t('Senha trocada'));
+}
+// Gera o codigo ANTES de gravar nada -- so troca de verdade quando a
+// pessoa digitar ele de volta (cofreNovoCodigoConfirmar), mesma cautela
+// do _mundoTrancar: nunca troca um codigo bom por um que pode se
+// perder no mesmo instante.
+function cofreIrNovoCodigo(){
+  _cUI.modo='novoCodigo';_cUI.codigo=_cofreNovoCodigo();_cUI.erro='';
+  pintarCofreUI();
+}
+function cofreConfereCodigoNovo(){
+  var i=document.getElementById('cofConfNovo'), bt=document.getElementById('cofConfirmaNovoBt');
+  if(!i||!bt)return;
+  bt.disabled=(_cofreNormalizar(i.value)!==_cofreNormalizar(_cUI.codigo));
+}
+async function cofreNovoCodigoConfirmar(){
+  var bt=document.getElementById('cofConfirmaNovoBt'); if(bt)bt.disabled=true;
+  var ok=await _mundoNovoCodigo(_mundoAtivo,_cUI.codigo);
+  if(!ok){toast(t('Não consegui trocar o código.'),true);fecharCofreUI();return}
+  fecharCofreUI();
+  toast(t('Código de recuperação trocado'));
+}
+function cofreIrTirar(){_cUI.modo='tirar';_cUI.erro='';pintarCofreUI();}
+function fecharCofreAgoraUI(){fecharCofreUI();fecharCofreAgora();}
 async function cofreTrancarAgora(){
   var bt=document.getElementById('cofTrancar');
   if(bt)bt.disabled=true;
   try{
-    await _mundoTrancar(_cUI.id,_cUI.senha);
+    await _mundoTrancar(_cUI.id,_cUI.senha,_cUI.codigo);
     var w=W(_cUI.id); if(w){w.trancado=true; if(w._pw)w._pw.classList.add('cofre');}
     fecharCofreUI();pintarDet();
     toast(t('Mundo trancado'));
@@ -32405,11 +32676,16 @@ function fecharCofreAgora(){
   _cofreEsquecerSessao();
   location.reload();
 }
-async function tirarCofreUI(){
-  if(!await _mundoTirarCofre(_mundoAtivo))return;
+// Antes disparava direto do clique no cadeado (26px, sem confirmar
+// nada): um toque errado ja descriptografava o mundo inteiro e
+// reescrevia as fotos em claro, sem desfazer. Agora so roda depois da
+// tela de confirmacao ('tirar' em pintarCofreUI).
+async function cofreTirarConfirmar(){
+  var ok=await _mundoTirarCofre(_mundoAtivo);
+  if(!ok){fecharCofreUI();return}
   var w=W(_mundoAtivo);
   if(w){w.trancado=false; if(w._pw)w._pw.classList.remove('cofre');}
-  pintarDet();
+  fecharCofreUI();pintarDet();
   toast(t('Cadeado removido'));
 }
 
