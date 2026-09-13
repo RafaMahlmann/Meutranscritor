@@ -6929,8 +6929,8 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <div class="frow">
           <label><span data-i18n>Modelo</span></label>
           <select id="txtModelGroq" onchange="saveCfg(false)">
-            <option value="llama-3.3-70b-versatile">Llama 3.3 70B (recomendado)</option>
-            <option value="llama-3.1-8b-instant">Llama 3.1 8B (mais rápido)</option>
+            <option value="openai/gpt-oss-120b">GPT-OSS 120B (recomendado)</option>
+            <option value="openai/gpt-oss-20b">GPT-OSS 20B (mais rápido)</option>
           </select>
         </div>
         <p class="fhint" data-i18n>Usa a mesma Groq Key da aba Transcrição — grátis, sem custo extra.</p>
@@ -7825,7 +7825,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.13.3';
+const VOX_VERSION='2026.09.14.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9610,6 +9610,7 @@ let I18N_EN={
 "Não consegui trocar a senha.":"Couldn't change the password.",
 "Não consegui trocar o código.":"Couldn't change the code.",
 "Código de recuperação trocado":"Recovery code changed",
+"O modelo de IA configurado pra {p} não existe mais nesse provedor — escolha outro em Configurações.":"The AI model set for {p} no longer exists with that provider — pick another one in Settings.",
 "Senha trocada":"Password changed"
 };
 
@@ -9658,7 +9659,7 @@ let cfg={
   provider:'whisper',apiKey:'',apiKeyGrok:'',apiKeyGroq:'',lang:'',
   diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',apiKeyGladia:'',apiKeyPyannote:'',diarLocal:false,
   aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',favLenses:[],lensMenuStyle:'list',recipes:[],
-  txtProvider:'groq',txtModelGroq:'llama-3.3-70b-versatile',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:'',traduzirAlvo:'',
+  txtProvider:'groq',txtModelGroq:'openai/gpt-oss-120b',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:'',traduzirAlvo:'',
   // Busca por sentido: nasce DESLIGADA de propósito. Ligar significa mandar o
   // texto das notas pra uma API montar o índice — num app que promete
   // privacidade, isso é escolha consciente da pessoa, nunca padrão silencioso.
@@ -20600,7 +20601,7 @@ function _txtAITargets(provider='auto'){
   const mk={
     custom:()=>cfg.txtBaseUrl?{pv:'custom',url:cfg.txtBaseUrl.replace(/\/+$/,'')+'/chat/completions',key:cfg.txtKey||'ollama',model:cfg.txtModel||'llama3.2',name:cfg.txtBaseUrl.includes('localhost')||cfg.txtBaseUrl.includes('127.0.0.1')?'IA local':'API custom'}:null,
     openai:()=>cfg.apiKey?{pv:'openai',url:'https://api.openai.com/v1/chat/completions',key:cfg.apiKey,model:cfg.txtModelOpenai||'gpt-4o-mini',name:'OpenAI'}:null,
-    groq:()=>cfg.apiKeyGroq?{pv:'groq',url:'https://api.groq.com/openai/v1/chat/completions',key:cfg.apiKeyGroq,model:cfg.txtModelGroq||'llama-3.3-70b-versatile',name:'Groq'}:null,
+    groq:()=>cfg.apiKeyGroq?{pv:'groq',url:'https://api.groq.com/openai/v1/chat/completions',key:cfg.apiKeyGroq,model:cfg.txtModelGroq||'openai/gpt-oss-120b',name:'Groq'}:null,
     assembly:()=>cfg.apiKeyAssembly?{pv:'assembly',url:'https://llm-gateway.assemblyai.com/v1/chat/completions',key:cfg.apiKeyAssembly,model:'claude-sonnet-4-6',name:'AssemblyAI'}:null,
   };
   if(provider!=='auto'){const t=mk[provider]?.();return t?[t]:[]}
@@ -20625,6 +20626,18 @@ function _friendlyAIError(err,tgt){
     return new Error('🔑 '+t('A chave da {p} não foi aceita — confira em Configurações e toque em "Testar conexão".').replace('{p}',name));
   if(m.includes('credit')||m.includes('quota')||m.includes('insufficient')||m.includes('billing')||m.includes('402'))
     return new Error('💳 '+t('Os créditos da {p} parecem ter acabado — confira sua conta ou troque de provedor em Configurações.').replace('{p}',name));
+  // BUG REAL, achado 14/09/2026: a Groq aposentou llama-3.3-70b-versatile e
+  // llama-3.1-8b-instant em 16/08/2026 (e-mail deles, console.groq.com/docs/
+  // deprecations) e o Vox continuou com os dois como padrão por quase um mês.
+  // O erro que a Groq manda pra modelo aposentado ("model_not_found"/"has
+  // been decommissioned"/"does not exist") não batia em nenhum dos filtros
+  // acima, caía no genérico ("não respondeu corretamente, teste a conexão")
+  // -- que manda a pessoa checar exatamente a coisa que não é o problema.
+  // Trocamos os modelos padrão pros que a Groq recomendou (openai/gpt-oss-
+  // 120b e -20b), mas eles vão aposentar modelo de novo um dia -- agora pelo
+  // menos a mensagem aponta pro lugar certo.
+  if(m.includes('model_not_found')||m.includes('does not exist')||m.includes('decommission')||m.includes('has been deprecated'))
+    return new Error('🧭 '+t('O modelo de IA configurado pra {p} não existe mais nesse provedor — escolha outro em Configurações.').replace('{p}',name));
   return new Error('❌ '+t('{p} não respondeu corretamente agora. Toque em "Testar conexão" nas Configurações.').replace('{p}',name));
 }
 async function callAI(prompt,key,provider='auto',maxTokens=800,opts={}){
@@ -20858,7 +20871,7 @@ const CEREBROS={
     site:'https://groq.com',chaveEm:'https://console.groq.com/keys',
     url:'https://api.groq.com/openai/v1',
     modelos:[
-      {id:'llama-3.3-70b-versatile',nome:'Llama 3.3 70B',selo:t('Quase grátis'),destaque:true,preco:[0,0],
+      {id:'openai/gpt-oss-120b',nome:'GPT-OSS 120B',selo:t('Quase grátis'),destaque:true,preco:[0,0],
        desc:t('A resposta sai quase instantânea — é a mais rápida da lista com folga larga. Tem uso gratuito generoso e reaproveita a mesma chave que você já usa pra transcrever.'),
        curio:t('O chip do Groq não é uma placa de vídeo adaptada: foi desenhado do zero, só pra rodar inteligência artificial. É daí que vem a velocidade.')}
     ]},
@@ -21332,6 +21345,14 @@ function loadCfg(){
   // Modos Constelação (map) e Bolhas (bubbles) foram aposentados — quem os
   // tinha salvos cai na Trilha, o visual mais próximo que permaneceu.
   if(cfg.lensMenuStyle==='map'||cfg.lensMenuStyle==='bubbles')cfg.lensMenuStyle='trilha';
+  // BUG REAL, achado 14/09/2026: a Groq aposentou llama-3.3-70b-versatile e
+  // llama-3.1-8b-instant em 16/08/2026. Trocar só o valor padrão (linha do
+  // `let cfg=`) não bastava — quem já tinha aberto Configurações uma vez
+  // ficou com o nome do modelo morto GRAVADO em vox_cfg, e o spread acima
+  // (`{...cfg,...JSON.parse(s)}`) sobrescreve o padrão novo com o valor
+  // velho salvo. Migra pro substituto que a própria Groq recomendou.
+  if(cfg.txtModelGroq==='llama-3.3-70b-versatile')cfg.txtModelGroq='openai/gpt-oss-120b';
+  if(cfg.txtModelGroq==='llama-3.1-8b-instant')cfg.txtModelGroq='openai/gpt-oss-20b';
   document.getElementById('apiKey').value=cfg.apiKey||'';
   document.getElementById('apiKeyGrok').value=cfg.apiKeyGrok||'';
   document.getElementById('apiKeyGroq').value=cfg.apiKeyGroq||'';
@@ -21348,7 +21369,7 @@ function loadCfg(){
   document.getElementById('langSel').value=cfg.lang||'';
   document.getElementById('assistEnabled').checked=cfg.assist!==false;
   document.getElementById('aiRenameProvider').value=cfg.aiRenameProvider||'openai';
-  document.getElementById('txtModelGroq').value=cfg.txtModelGroq||'llama-3.3-70b-versatile';
+  document.getElementById('txtModelGroq').value=cfg.txtModelGroq||'openai/gpt-oss-120b';
   document.getElementById('txtModelOpenai').value=cfg.txtModelOpenai||'gpt-4o-mini';
   document.getElementById('txtBaseUrl').value=cfg.txtBaseUrl||'';
   document.getElementById('txtModel').value=cfg.txtModel||'';
