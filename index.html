@@ -5229,31 +5229,6 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .tx-eye-btn:hover{color:var(--text2);background:var(--bg-card)}
 .tx-eye-btn svg{width:16px;height:16px}
 .tx-preview{background:var(--bg-input);border-radius:12px;padding:12px;font-size:12.5px;color:var(--text2);line-height:1.6;max-height:150px;overflow-y:auto;white-space:pre-wrap;margin:10px 0}
-/* Tira de progresso da leitura contínua: mora DENTRO da tela do vídeo, e é
-   o que permite avisar "parte 3 de 6" sem trocar a tela (trocar mataria a
-   câmera — foi esse o defeito de origem). Só transform/opacity na animação. */
-.txp-rx-prog{margin:10px 0 0;padding:9px 12px;border-radius:10px;font-size:12.5px;
-  font-weight:600;line-height:1.4;text-align:center;color:var(--text2);
-  background:var(--bg-input);border:1px solid var(--border);
-  transition:color .2s linear,background .2s linear,border-color .2s linear}
-@keyframes txpCaptou{0%{transform:scale(1)}38%{transform:scale(1.045)}100%{transform:scale(1)}}
-.txp-rx-prog.captou{animation:txpCaptou .38s var(--saida,ease);
-  color:#0b6e72;background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.34)}
-[data-theme="dark"] .txp-rx-prog.captou{color:#7fe3c0;background:rgba(52,216,160,.12);border-color:rgba(127,227,192,.3)}
-@media (prefers-reduced-motion:reduce){.txp-rx-prog.captou{animation:none}}
-/* Selo de inteireza — a prévia corta em 600 caracteres, e sem isto a tela
-   parecia estar entregando um pedaço. Verde de confirmação, não de enfeite:
-   ele afirma um fato verificável (o tamanho do texto que VAI virar card). */
-.tx-selo-ok{display:flex;align-items:center;gap:7px;margin:10px 0 0;padding:8px 11px;
-  border-radius:10px;font-size:12px;font-weight:600;line-height:1.35;
-  color:#0b6e72;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3)}
-.tx-selo-ok .svgi{display:flex;flex-shrink:0}
-.tx-selo-ok .svgi svg{width:14px;height:14px}
-[data-theme="dark"] .tx-selo-ok{color:#7fe3c0;background:rgba(52,216,160,.1);border-color:rgba(127,227,192,.28)}
-/* A linha que encerra a prévia cortada — dentro da própria caixa, pra ninguém
-   confundir o corte da PRÉVIA com corte do CONTEÚDO. */
-.tx-preview-corte{background:var(--bg-input);border-radius:0 0 12px 12px;padding:0 12px 10px;
-  margin:-10px 0 10px;font-size:11px;color:var(--text4);font-style:italic}
 .tx-warn{background:var(--warning-glow,rgba(245,158,11,0.12));border-radius:12px;padding:11px 13px;font-size:12px;color:var(--text2);line-height:1.55;margin:10px 0}
 .tx-progress{font-size:13px;font-weight:700;color:var(--accent);text-align:center;margin:8px 0}
 /* ── Sala de Envio (pasta em viagens) ── */
@@ -6845,8 +6820,8 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span> <span data-i18n>Copiar caminho para iniciar o servidor</span>
         </button>
         <div style="margin-top:10px">
-          <div style="font-size:11px;color:var(--text4);margin-bottom:5px" data-i18n>Caminho do iniciar_whisper.bat (para iniciar com 1 clique)</div>
-          <input type="text" id="localBatPathInput" placeholder="C:\whisper-local\iniciar_whisper.bat" oninput="saveCfg(false)" style="width:100%;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font);box-sizing:border-box">
+          <div style="font-size:11px;color:var(--text4);margin-bottom:5px" data-i18n id="localBatPathLabel">Caminho do iniciar_whisper.bat (para iniciar com 1 clique)</div>
+          <input type="text" id="localBatPathInput" placeholder="C:\whisper-local\iniciar_whisper.bat" data-vox-path-example oninput="saveCfg(false)" style="width:100%;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font);box-sizing:border-box">
         </div>
         <!-- Caminho da placa de video: separar vozes sem sair da maquina. -->
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
@@ -6954,8 +6929,8 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <div class="frow">
           <label><span data-i18n>Modelo</span></label>
           <select id="txtModelGroq" onchange="saveCfg(false)">
-            <option value="openai/gpt-oss-120b">GPT-OSS 120B (recomendado)</option>
-            <option value="openai/gpt-oss-20b">GPT-OSS 20B (mais rápido)</option>
+            <option value="llama-3.3-70b-versatile">Llama 3.3 70B (recomendado)</option>
+            <option value="llama-3.1-8b-instant">Llama 3.1 8B (mais rápido)</option>
           </select>
         </div>
         <p class="fhint" data-i18n>Usa a mesma Groq Key da aba Transcrição — grátis, sem custo extra.</p>
@@ -7850,7 +7825,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.14.4';
+const VOX_VERSION='2026.09.13.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9480,6 +9455,7 @@ let I18N_EN={
 "Instale o transcritor no seu computador":"Install the transcriber on your computer",
 "São 5 passos e uns 15 minutos — a maior parte é o computador baixando sozinho. Você não precisa saber programar.":"It's 5 steps and about 15 minutes — most of it is your computer downloading on its own. You don't need to know how to program.",
 "Instale o Python, marcando <strong>\"Add Python to PATH\"</strong>":"Install Python, ticking <strong>\"Add Python to PATH\"</strong>",
+"Instale o Python pelo site python.org — no Mac não tem caixinha pra marcar":"Install Python from python.org — on a Mac there is no box to tick",
 "Baixe a pasta do transcritor":"Download the transcriber folder",
 "Dois cliques no <strong>instalar.bat</strong>, depois no <strong>iniciar_whisper.bat</strong>":"Double-click <strong>instalar.bat</strong>, then <strong>iniciar_whisper.bat</strong>",
 "Não precisa instalar FFmpeg — vários tutoriais mandam, e não precisa.":"You don't need to install FFmpeg — plenty of tutorials say you do, and you don't.",
@@ -9635,25 +9611,6 @@ let I18N_EN={
 "Não consegui trocar a senha.":"Couldn't change the password.",
 "Não consegui trocar o código.":"Couldn't change the code.",
 "Código de recuperação trocado":"Recovery code changed",
-// Vox Transfer — selo de inteireza e falhas honestas (14/09/2026)
-"Texto completo":"Full text",
-"{n} letras":"{n} characters",
-"remontado de {n} partes":"reassembled from {n} parts",
-"(a prévia para aqui — o card vai receber o texto inteiro)":"(the preview stops here — the card gets the whole text)",
-"Não consegui abrir esta transferência":"Couldn't open this transfer",
-"Ou a senha não confere, ou o link chegou incompleto (aplicativo de mensagem às vezes corta link longo no meio).":"Either the password doesn't match, or the link arrived incomplete (messaging apps sometimes cut long links in half).",
-"O link chegou incompleto ou embaralhado — aplicativo de mensagem às vezes corta link longo no meio.":"The link arrived incomplete or scrambled — messaging apps sometimes cut long links in half.",
-"Peça pra reenviar. Nada foi adicionado aqui.":"Ask for it again. Nothing was added here.",
-"Tentar a senha de novo":"Try the password again",
-"Terminar depois":"Finish later",
-"Ler o próximo QR":"Scan the next QR",
-"Descartar o que já chegou":"Discard what arrived",
-"Partes descartadas. Nenhum card foi criado.":"Parts discarded. No card was created.",
-"Aponte pro QR — pode ir passando um atrás do outro, sem tocar em nada.":"Point at the QR — you can go through them one after another, without tapping anything.",
-"Parte {i} de {n} · faltam {k} — continue apontando":"Part {i} of {n} · {k} to go — keep pointing",
-"{f} de {n} viagens · continue apontando":"{f} of {n} trips · keep pointing",
-"❌ Transferência grande demais pra fila de espera. Adicione o que já chegou, ou comece de novo.":"❌ Transfer too big for the waiting queue. Add what already arrived, or start over.",
-"O modelo de IA configurado pra {p} não existe mais nesse provedor — escolha outro em Configurações.":"The AI model set for {p} no longer exists with that provider — pick another one in Settings.",
 "Senha trocada":"Password changed"
 };
 
@@ -9702,7 +9659,7 @@ let cfg={
   provider:'whisper',apiKey:'',apiKeyGrok:'',apiKeyGroq:'',lang:'',
   diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',apiKeyGladia:'',apiKeyPyannote:'',diarLocal:false,
   aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',favLenses:[],lensMenuStyle:'list',recipes:[],
-  txtProvider:'groq',txtModelGroq:'openai/gpt-oss-120b',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:'',traduzirAlvo:'',
+  txtProvider:'groq',txtModelGroq:'llama-3.3-70b-versatile',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:'',traduzirAlvo:'',
   // Busca por sentido: nasce DESLIGADA de propósito. Ligar significa mandar o
   // texto das notas pra uma API montar o índice — num app que promete
   // privacidade, isso é escolha consciente da pessoa, nunca padrão silencioso.
@@ -9937,6 +9894,22 @@ async function startLocalServer(model){
   // servidor offline — mostra instruções claras
   showOfflineInstructions(model);
 }
+// Windows usa .bat; Mac e Linux usam .command (mesmo conteúdo, outro
+// formato de script). As CHAVES de tradução continuam escritas com .bat —
+// mexer nelas invalidaria o dicionário inteiro — então a troca do nome do
+// arquivo acontece aqui, só na hora de mostrar pra pessoa.
+const VOX_WIN = /Win/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || '');
+function arqLocal(txt){
+  if(VOX_WIN) return txt;
+  return String(txt)
+    .replace(/iniciar_whisper\.bat/g, 'iniciar_whisper.command')
+    .replace(/instalar\.bat/g, 'instalar.command');
+}
+// O caminho de exemplo também muda de cara conforme o sistema.
+function exemploCaminhoLocal(){
+  return VOX_WIN ? 'C:\\whisper-local\\iniciar_whisper.bat'
+                 : '/Users/voce/whisper-local/iniciar_whisper.command';
+}
 function showOfflineInstructions(model){
   const labels={'small':t('⚡ Rápido'),'medium':t('⚖️ Médio'),'large-v3':t('🎯 Preciso')};
   let ov=document.getElementById('offlineOverlay');
@@ -9958,22 +9931,22 @@ function showOfflineInstructions(model){
   const corpo=instalado?`
       <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">${t('Ligue o transcritor')}</h2>
       <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:16px">${t('O Vox não encontrou o transcritor. Ele roda numa janela própria, que precisa estar aberta.')}</p>
-      <div style="${passo}"><span style="${num}">1</span><span>${t('Abra o arquivo <strong>iniciar_whisper.bat</strong> — normalmente na pasta onde você baixou/extraiu o transcritor local (algo como <strong>whisper-local</strong> ou <strong>transcritor-local</strong>)')}</span></div>
+      <div style="${passo}"><span style="${num}">1</span><span>${arqLocal(t('Abra o arquivo <strong>iniciar_whisper.bat</strong> — normalmente na pasta onde você baixou/extraiu o transcritor local (algo como <strong>whisper-local</strong> ou <strong>transcritor-local</strong>)'))}</span></div>
       <div style="${passo}"><span style="${num}">2</span><span>${t('Aperte Enter para usar o modelo Rápido')}</span></div>
       <div style="${passo}"><span style="${num}">3</span><span>${t('Espere aparecer <strong>"Modelo carregado! Servidor pronto."</strong>')}</span></div>
       ${cfg.localBatPath?`<button onclick="copiarCaminhoServidor()" style="display:block;width:100%;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:11px 20px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;margin:14px 0 8px"><span class="svgi">${ICO.copy}</span> ${t('Copiar caminho do arquivo')}</button>`:`
       <div style="text-align:left;margin:14px 0 4px">
         <div style="font-size:11px;color:var(--text4);margin-bottom:5px">${t('Achou o arquivo? Cole o caminho aqui pra nunca mais precisar procurar:')}</div>
-        <input type="text" id="offlineBatPathInput" placeholder="C:\\...\\iniciar_whisper.bat" style="width:100%;box-sizing:border-box;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font)">
+        <input type="text" id="offlineBatPathInput" placeholder="${exemploCaminhoLocal()}" style="width:100%;box-sizing:border-box;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font)">
         <button onclick="_salvarCaminhoDoOffline('${escJs(model)}')" style="width:100%;background:var(--bg-input);color:var(--text2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:6px">${t('Salvar caminho')}</button>
       </div>`}
       <p style="font-size:11px;color:var(--text4);line-height:1.6;margin:14px 0 16px">${t('Assim que ele ligar, esta tela fecha sozinha.')}</p>`
   :`
       <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">${t('Instale o transcritor no seu computador')}</h2>
       <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:8px">${t('São 5 passos e uns 15 minutos — a maior parte é o computador baixando sozinho. Você não precisa saber programar.')}</p>
-      <div style="${passo}"><span style="${num}">1</span><span>${t('Instale o Python, marcando <strong>"Add Python to PATH"</strong>')}</span></div>
+      <div style="${passo}"><span style="${num}">1</span><span>${VOX_WIN ? t('Instale o Python, marcando <strong>"Add Python to PATH"</strong>') : t('Instale o Python pelo site python.org — no Mac não tem caixinha pra marcar')}</span></div>
       <div style="${passo}"><span style="${num}">2</span><span>${t('Baixe a pasta do transcritor')}</span></div>
-      <div style="${passo}"><span style="${num}">3</span><span>${t('Dois cliques no <strong>instalar.bat</strong>, depois no <strong>iniciar_whisper.bat</strong>')}</span></div>
+      <div style="${passo}"><span style="${num}">3</span><span>${arqLocal(t('Dois cliques no <strong>instalar.bat</strong>, depois no <strong>iniciar_whisper.bat</strong>'))}</span></div>
       <p style="font-size:11px;color:var(--text4);line-height:1.6;margin:12px 0 14px">${t('Não precisa instalar FFmpeg — vários tutoriais mandam, e não precisa.')}</p>
       <a href="https://github.com/RafaMahlmann/Meutranscritor/tree/main/transcritor-local" target="_blank" rel="noopener noreferrer" style="display:block;width:100%;box-sizing:border-box;background:var(--accent);color:white;text-decoration:none;border-radius:14px;padding:13px 20px;font-size:14px;font-weight:700;font-family:var(--font);margin-bottom:14px">${t('Abrir o guia completo')}</a>`;
   ov.innerHTML=`
@@ -9991,7 +9964,7 @@ function showOfflineInstructions(model){
 // e a pessoa cola no Iniciar do Windows.
 function copiarCaminhoServidor(){
   const path=cfg.localBatPath;
-  if(!path){toast(t('💡 Configure o caminho do iniciar_whisper.bat nas Configurações → Local'),true);return}
+  if(!path){toast(arqLocal(t('💡 Configure o caminho do iniciar_whisper.bat nas Configurações → Local')),true);return}
   navigator.clipboard.writeText(path)
     .then(()=>toast(t('📋 Caminho copiado — cole no Iniciar do Windows e dê Enter.')))
     .catch(()=>toast(t('O caminho é:')+' '+path,true));
@@ -10577,6 +10550,15 @@ function _voxFecharLembrete(){
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',async()=>{
   applyStaticI18n();_syncLangUI();
+  // Mac/Linux: troca .bat por .command nos textos fixos das Configurações → Local.
+  // Roda DEPOIS do applyStaticI18n pra valer nos dois idiomas.
+  if(typeof VOX_WIN!=='undefined' && !VOX_WIN){
+    const _lbl=document.getElementById('localBatPathLabel');
+    if(_lbl)_lbl.textContent=arqLocal(_lbl.textContent);
+    document.querySelectorAll('[data-vox-path-example]').forEach(el=>{
+      el.setAttribute('placeholder', exemploCaminhoLocal());
+    });
+  }
   if(localStorage.getItem('vox_reopen_onboarding')==='1'){
     localStorage.removeItem('vox_reopen_onboarding');
     setTimeout(_obOpen,0);
@@ -20644,7 +20626,7 @@ function _txtAITargets(provider='auto'){
   const mk={
     custom:()=>cfg.txtBaseUrl?{pv:'custom',url:cfg.txtBaseUrl.replace(/\/+$/,'')+'/chat/completions',key:cfg.txtKey||'ollama',model:cfg.txtModel||'llama3.2',name:cfg.txtBaseUrl.includes('localhost')||cfg.txtBaseUrl.includes('127.0.0.1')?'IA local':'API custom'}:null,
     openai:()=>cfg.apiKey?{pv:'openai',url:'https://api.openai.com/v1/chat/completions',key:cfg.apiKey,model:cfg.txtModelOpenai||'gpt-4o-mini',name:'OpenAI'}:null,
-    groq:()=>cfg.apiKeyGroq?{pv:'groq',url:'https://api.groq.com/openai/v1/chat/completions',key:cfg.apiKeyGroq,model:cfg.txtModelGroq||'openai/gpt-oss-120b',name:'Groq'}:null,
+    groq:()=>cfg.apiKeyGroq?{pv:'groq',url:'https://api.groq.com/openai/v1/chat/completions',key:cfg.apiKeyGroq,model:cfg.txtModelGroq||'llama-3.3-70b-versatile',name:'Groq'}:null,
     assembly:()=>cfg.apiKeyAssembly?{pv:'assembly',url:'https://llm-gateway.assemblyai.com/v1/chat/completions',key:cfg.apiKeyAssembly,model:'claude-sonnet-4-6',name:'AssemblyAI'}:null,
   };
   if(provider!=='auto'){const t=mk[provider]?.();return t?[t]:[]}
@@ -20669,18 +20651,6 @@ function _friendlyAIError(err,tgt){
     return new Error('🔑 '+t('A chave da {p} não foi aceita — confira em Configurações e toque em "Testar conexão".').replace('{p}',name));
   if(m.includes('credit')||m.includes('quota')||m.includes('insufficient')||m.includes('billing')||m.includes('402'))
     return new Error('💳 '+t('Os créditos da {p} parecem ter acabado — confira sua conta ou troque de provedor em Configurações.').replace('{p}',name));
-  // BUG REAL, achado 14/09/2026: a Groq aposentou llama-3.3-70b-versatile e
-  // llama-3.1-8b-instant em 16/08/2026 (e-mail deles, console.groq.com/docs/
-  // deprecations) e o Vox continuou com os dois como padrão por quase um mês.
-  // O erro que a Groq manda pra modelo aposentado ("model_not_found"/"has
-  // been decommissioned"/"does not exist") não batia em nenhum dos filtros
-  // acima, caía no genérico ("não respondeu corretamente, teste a conexão")
-  // -- que manda a pessoa checar exatamente a coisa que não é o problema.
-  // Trocamos os modelos padrão pros que a Groq recomendou (openai/gpt-oss-
-  // 120b e -20b), mas eles vão aposentar modelo de novo um dia -- agora pelo
-  // menos a mensagem aponta pro lugar certo.
-  if(m.includes('model_not_found')||m.includes('does not exist')||m.includes('decommission')||m.includes('has been deprecated'))
-    return new Error('🧭 '+t('O modelo de IA configurado pra {p} não existe mais nesse provedor — escolha outro em Configurações.').replace('{p}',name));
   return new Error('❌ '+t('{p} não respondeu corretamente agora. Toque em "Testar conexão" nas Configurações.').replace('{p}',name));
 }
 async function callAI(prompt,key,provider='auto',maxTokens=800,opts={}){
@@ -20914,7 +20884,7 @@ const CEREBROS={
     site:'https://groq.com',chaveEm:'https://console.groq.com/keys',
     url:'https://api.groq.com/openai/v1',
     modelos:[
-      {id:'openai/gpt-oss-120b',nome:'GPT-OSS 120B',selo:t('Quase grátis'),destaque:true,preco:[0,0],
+      {id:'llama-3.3-70b-versatile',nome:'Llama 3.3 70B',selo:t('Quase grátis'),destaque:true,preco:[0,0],
        desc:t('A resposta sai quase instantânea — é a mais rápida da lista com folga larga. Tem uso gratuito generoso e reaproveita a mesma chave que você já usa pra transcrever.'),
        curio:t('O chip do Groq não é uma placa de vídeo adaptada: foi desenhado do zero, só pra rodar inteligência artificial. É daí que vem a velocidade.')}
     ]},
@@ -21388,14 +21358,6 @@ function loadCfg(){
   // Modos Constelação (map) e Bolhas (bubbles) foram aposentados — quem os
   // tinha salvos cai na Trilha, o visual mais próximo que permaneceu.
   if(cfg.lensMenuStyle==='map'||cfg.lensMenuStyle==='bubbles')cfg.lensMenuStyle='trilha';
-  // BUG REAL, achado 14/09/2026: a Groq aposentou llama-3.3-70b-versatile e
-  // llama-3.1-8b-instant em 16/08/2026. Trocar só o valor padrão (linha do
-  // `let cfg=`) não bastava — quem já tinha aberto Configurações uma vez
-  // ficou com o nome do modelo morto GRAVADO em vox_cfg, e o spread acima
-  // (`{...cfg,...JSON.parse(s)}`) sobrescreve o padrão novo com o valor
-  // velho salvo. Migra pro substituto que a própria Groq recomendou.
-  if(cfg.txtModelGroq==='llama-3.3-70b-versatile')cfg.txtModelGroq='openai/gpt-oss-120b';
-  if(cfg.txtModelGroq==='llama-3.1-8b-instant')cfg.txtModelGroq='openai/gpt-oss-20b';
   document.getElementById('apiKey').value=cfg.apiKey||'';
   document.getElementById('apiKeyGrok').value=cfg.apiKeyGrok||'';
   document.getElementById('apiKeyGroq').value=cfg.apiKeyGroq||'';
@@ -21412,7 +21374,7 @@ function loadCfg(){
   document.getElementById('langSel').value=cfg.lang||'';
   document.getElementById('assistEnabled').checked=cfg.assist!==false;
   document.getElementById('aiRenameProvider').value=cfg.aiRenameProvider||'openai';
-  document.getElementById('txtModelGroq').value=cfg.txtModelGroq||'openai/gpt-oss-120b';
+  document.getElementById('txtModelGroq').value=cfg.txtModelGroq||'llama-3.3-70b-versatile';
   document.getElementById('txtModelOpenai').value=cfg.txtModelOpenai||'gpt-4o-mini';
   document.getElementById('txtBaseUrl').value=cfg.txtBaseUrl||'';
   document.getElementById('txtModel').value=cfg.txtModel||'';
@@ -21998,33 +21960,8 @@ function txkApply(){
 // já aceitam um hashStr colado além de location.hash, e devolvem true/false pra
 // saber de quem é o link. Ver PLANO_TRANSFERENCIA_SEM_NOVA_ABA_2026-08-20.md §6.
 let _txpRxCamStream=null,_txpRxCamLoop=null,_txpRxDetector=null;
-// BUG REAL, achado 14/09/2026 (o Rafa mandou print): num texto grande
-// dividido em varias partes, ler o 1o QR pela camera parava a camera de
-// vez -- _txpRxIniciarLeitura chamava _txpRxCameraStop() e nunca rearmava
-// o loop, mesmo a transferencia continuando incompleta. A pessoa via a
-// tela de "faltam 5 partes" mas so tinha um campo de COLAR link, nada de
-// "continuar apontando a camera" -- pra ler os outros 5 QRs tinha que sair,
-// voltar no menu e reabrir a camera manualmente, um QR de cada vez. Esta
-// flag marca "a leitura em andamento veio da camera" pra _txShowProgress
-// saber quando oferecer retomar a camera em vez de so o campo de colar.
-let _txpRxViaCamera=false;
-// LEITURA CONTINUA (14/09/2026). O conserto anterior (botao "Ler o proximo
-// QR") resolvia o travamento mas ainda cobrava um toque por QR. Agora a
-// camera FICA LIGADA: cada parte lida so atualiza uma tira de texto dentro da
-// propria tela do video, e o loop continua. A tela so e' trocada quando a
-// transferencia fecha -- que e' quando a camera deve parar mesmo.
-//   _txpRxCamAtiva: a camera esta viva AGORA (usado por _txShowProgress e
-//   _txpTelaRecepcao pra nao trocarem a tela por baixo dela).
-//   _txpRxVistos: hashes ja lidos nesta sessao de camera -- sem isto, o mesmo
-//   QR parado na frente da lente reentraria dezenas de vezes por segundo.
-let _txpRxCamAtiva=false,_txpRxVistos=new Set();
 function abrirReceberTransferencia(){
   _txpRxCameraStop();
-  _txpRxViaCamera=false;
-  // "Terminar depois" não tinha depois: as partes ficavam guardadas e a pessoa
-  // nunca mais era avisada de que existiam. Se há transferência pela metade,
-  // a tela dela vem primeiro — com o campo de colar ali, que é o que falta.
-  if(_txVoltarProProgresso())return;
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title">📥 ${t('Receber transferência')}</div>
@@ -22083,51 +22020,26 @@ function _txpRxCameraPrompt(){
   ov.classList.add('on');
 }
 async function _txpRxCameraStart(){
-  _txpRxViaCamera=true;
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title"><span class="svgi">${ICO.camera}</span> ${t('Ler QR pela câmera')}</div>
     <div class="tx-qr-wrap"><video id="txpRxVideo" playsinline muted style="width:100%;max-width:280px;border-radius:12px;background:#000"></video></div>
-    <div class="txp-rx-prog" id="txpRxProgresso">${t('Aponte pro QR — pode ir passando um atrás do outro, sem tocar em nada.')}</div>
     <div class="tx-row"><button class="tx-btn ghost" onclick="abrirReceberTransferencia()">${t('Cancelar')}</button></div></div>`;
   ov.classList.add('on');
   try{
     _txpRxCamStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
   }catch(e){
-    // REGRESSAO DO PROPRIO CONSERTO ANTERIOR (commit 008a686), achada pelo
-    // agente antes de virar problema de gente de verdade: com o botao "Ler o
-    // proximo QR" na tela de progresso, esta falha virou ALCANCAVEL no meio
-    // de uma transferencia pela metade -- e cair no abrirReceberTransferencia
-    // generico apagava a tela que mostrava "3 de 6 recebidas". As partes
-    // sobrevivem no localStorage, mas a pessoa perde a VISAO delas e fica sem
-    // caminho de volta. Agora volta pra tela de progresso de onde saiu.
-    _txpRxViaCamera=false;   // camera falhou: nao oferecer o botao de novo
-    if(!_txVoltarProProgresso())abrirReceberTransferencia();
+    abrirReceberTransferencia();
     toast(t('ℹ️ Sem a câmera não dá pra ler o QR — mas colar o link funciona igual. Pode tentar de novo a qualquer hora.'),true);
     return;
   }
   const video=document.getElementById('txpRxVideo');
   if(!video){_txpRxCameraStop();return}
-  _txpRxCamAtiva=true;
-  _txpRxVistos=new Set();
   video.srcObject=_txpRxCamStream;
   await video.play().catch(()=>{});
   _txpRxIniciarLeitura(video);
 }
-// Fala com a pessoa SEM trocar a tela (a tela tem o video vivo dentro dela --
-// trocar mata a camera, que era o defeito de origem). So escreve na tira de
-// progresso e da um pulso curto.
-function _txpRxDizer(txt,pulso){
-  const el=document.getElementById('txpRxProgresso');
-  if(!el)return false;
-  el.textContent=txt;
-  if(pulso&&!_voxReduzMov()){
-    el.classList.remove('captou');void el.offsetWidth;el.classList.add('captou');
-  }
-  return true;
-}
 function _txpRxCameraStop(){
-  _txpRxCamAtiva=false;
   if(_txpRxCamLoop){cancelAnimationFrame(_txpRxCamLoop);_txpRxCamLoop=null}
   if(_txpRxCamStream){_txpRxCamStream.getTracks().forEach(tr=>tr.stop());_txpRxCamStream=null}
 }
@@ -22145,32 +22057,26 @@ async function _txpRxIniciarLeitura(video){
   const passo=async()=>{
     if(!_txpRxCamStream)return;
     if(video.readyState>=2&&video.videoWidth>0){
-      let textos=[];
+      let texto=null;
       try{
         if(usaNativo){
-          // detect() devolve um ARRAY (MDN) e o codigo antigo usava so
-          // codes[0] -- com varios QRs na mesma folha, os outros eram
-          // ignorados quadro a quadro. Agora todos entram.
           const codes=await _txpRxDetector.detect(video);
-          textos=codes.map(c=>c.rawValue).filter(Boolean);
+          if(codes.length)texto=codes[0].rawValue;
         }else if(window.jsQR){
           canvas.width=video.videoWidth;canvas.height=video.videoHeight;
           ctx.drawImage(video,0,0,canvas.width,canvas.height);
           const img=ctx.getImageData(0,0,canvas.width,canvas.height);
           const r=window.jsQR(img.data,img.width,img.height);
-          if(r&&r.data)textos=[r.data];
+          if(r)texto=r.data;
         }
       }catch(e){}
-      for(const texto of textos){
+      if(texto){
         const frag=_txpRxExtrairHash(texto);
-        if(!frag)continue;
-        if(_txpRxVistos.has(frag))continue;   // mesmo QR parado na lente
-        _txpRxVistos.add(frag);
-        if(!handleTransferHash(frag))handleKeysTransferHash(frag);
-        // Se a transferencia fechou, quem fechou ja trocou a tela e parou a
-        // camera (ver _txReceive/_txpAbrirRecebido) -- e ai o loop morre no
-        // topo, na checagem do _txpRxCamStream.
-        if(!_txpRxCamStream)return;
+        if(frag){
+          _txpRxCameraStop();
+          if(!handleTransferHash(frag))handleKeysTransferHash(frag);
+          return;
+        }
       }
     }
     _txpRxCamLoop=requestAnimationFrame(passo);
@@ -27959,7 +27865,6 @@ async function shareCard(id){
 // Pipeline: JSON {t,n,g} → deflate (se o navegador tiver) → AES-GCM (se senha) → base64url.
 const TX_PREFIX='vox=';
 const TX_QR_SLICE=800;    // chars de base64 por QR — mantém o QR escaneável pela câmera
-const TX_RX_MAX_CHARS=1500000; // teto da fila de partes do card único (irmão do TXP_RX_MAX_CHARS da pasta)
 const TX_LINK_MAX=20000;  // base64 máximo pra caber num link único
 function _b64uEnc(bytes){let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function _b64uDec(str){const b=atob(str.replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
@@ -27977,28 +27882,10 @@ async function buildTransferPayload(card,pass){
   if(pass){u8=await _txEncrypt(u8,pass);flags+='e'}else flags+='o';
   return {b64:_b64uEnc(u8),flags};
 }
-// O sid e' a IMPRESSAO DIGITAL DO CONTEUDO, nao um sorteio (14/09/2026).
-// Ideia que o Rafa descreveu com outras palavras ("um marcador dentro do link
-// que a outra ponta reconhece") e que o padrao BC-UR, usado pra mover
-// material sigiloso entre aparelhos desconectados, resolve do mesmo jeito:
-// cada parte carrega a identidade da mensagem INTEIRA.
-// O que isso compra, na pratica:
-//   · Regerar os QRs do mesmo texto agora SOMA no progresso de quem ja
-//     recebeu metade, em vez de abrir uma sessao nova e abandonar a antiga
-//     (com sid sorteado, mandar o link de novo zerava o esforco da pessoa).
-//   · Parte de um texto nunca se mistura com parte de outro: sid diferente.
-// Hash sync e simples de proposito (FNV-1a): isto e' etiqueta de agrupamento,
-// nao controle de seguranca -- quem garante integridade e' o AES-GCM/inflate
-// na hora de abrir, que ja falha alto se vier lixo.
-function _txSidDoConteudo(b64){
-  let h=0x811c9dc5;
-  for(let i=0;i<b64.length;i++){h^=b64.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}
-  return ('000000'+h.toString(36)).slice(-6);
-}
 function _txUrls(b64,flags,prefix){
   const p=prefix||TX_PREFIX;
   const base=location.origin+location.pathname;
-  const sid=_txSidDoConteudo(b64);
+  const sid=Math.random().toString(36).slice(2,6);
   const n=Math.ceil(b64.length/TX_QR_SLICE)||1;
   const urls=[];
   for(let i=1;i<=n;i++)urls.push(`${base}#${p}1.${flags}.${sid}.${i}.${n}.${b64.slice((i-1)*TX_QR_SLICE,i*TX_QR_SLICE)}`);
@@ -28012,7 +27899,6 @@ function _txOverlay(){let ov=document.getElementById('txOverlay');if(!ov){ov=doc
 function closeTxOverlay(){
   const ov=document.getElementById('txOverlay');if(ov){ov.classList.remove('on');ov.innerHTML=''}
   if(typeof _txpRxCameraStop==='function')_txpRxCameraStop();
-  if(typeof _txpRxViaCamera!=='undefined')_txpRxViaCamera=false;
   if(typeof _txpState!=='undefined'&&_txpState)_txpState.pass='';
   if(typeof _txpRx!=='undefined')_txpRx=null;
   if(typeof _txRx!=='undefined')_txRx=null;
@@ -28110,23 +27996,11 @@ function handleTransferHash(hashStr){
   const m=raw.match(/^1\.([cr][eo])\.([a-z0-9]+)\.(\d+)\.(\d+)\.([A-Za-z0-9_-]+)$/);
   if(!m){toast(t('❌ Link de transferência inválido'),true);return true}
   const flags=m[1],sid=m[2],i=+m[3],n=+m[4],slice=m[5];
-  // Mesma conferência de faixa que o formato 2 já fazia (linha do `if(r<1...`)
-  // e que aqui faltava: sem ela, um "parte 9 de 3" entrava na fila e a
-  // remontagem depois concatenava buracos — texto cortado com cara de pronto.
-  if(i<1||i>n||n<1||n>TXP_MAX_VIAGENS){toast(t('❌ Link de transferência inválido'),true);return true}
-  if(n===1){_txReceive(slice,flags,1);return true}
+  if(n===1){_txReceive(slice,flags);return true}
   let store={};try{store=JSON.parse(localStorage.getItem('vox_txrx')||'{}')}catch(e){}
   const now=Date.now();
   Object.keys(store).forEach(k=>{if(now-(store[k].ts||0)>86400000)delete store[k]});
-  // Teto de tamanho, igual ao TXP_RX_MAX_CHARS que a pasta já tinha: sem isto,
-  // links forjados (ou uma transferência esquecida) engordam o localStorage em
-  // silêncio até estourar a cota do navegador e derrubar o que importa.
   const ent=store[sid]||{flags,n,parts:{},ts:now};
-  const jaGuardado=Object.values(store).reduce((soma,e)=>soma+Object.values(e.parts||{}).reduce((s,v)=>s+(v||'').length,0),0);
-  if(jaGuardado+slice.length>TX_RX_MAX_CHARS){
-    toast(t('❌ Transferência grande demais pra fila de espera. Adicione o que já chegou, ou comece de novo.'),true);
-    return true;
-  }
   ent.parts[i]=slice;ent.ts=now;store[sid]=ent;
   const have=Object.keys(ent.parts).length;
   if(have<n){
@@ -28136,65 +28010,18 @@ function handleTransferHash(hashStr){
   }
   delete store[sid];localStorage.setItem('vox_txrx',JSON.stringify(store));
   let b64='';for(let k=1;k<=n;k++)b64+=ent.parts[k]||'';
-  _txReceive(b64,ent.flags||flags,n);
+  _txReceive(b64,ent.flags||flags);
   return true;
 }
 function _txShowProgress(have,n){
-  // Camera viva: NAO troca a tela (trocar mata o video). Só fala na tira.
-  if(_txpRxCamAtiva&&_txpRxDizer(
-      t('Parte {i} de {n} · faltam {k} — continue apontando').replace('{i}',have).replace('{n}',n).replace('{k}',n-have),true))return;
   const ov=_txOverlay();
-  // Veio da camera: o botao principal e' RETOMAR A CAMERA, nao so colar --
-  // antes disto, a camera parava depois do 1o QR e so sobrava o campo de
-  // colar, obrigando a pessoa a sair e reabrir "Ler QR" a mao pra cada
-  // parte seguinte (ver _txpRxViaCamera, onde a flag e' explicada).
-  const continuar=_txpRxViaCamera
-    ?`<div class="tx-row"><button class="tx-btn primary" onclick="_txpRxContinuarCamera()"><span class="svgi">${ICO.camera}</span> ${t('Ler o próximo QR')}</button></div>`
-    :'';
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title">📥 ${t('Recebendo transferência…')}</div>
     <div class="tx-progress">${t('Parte {i} de {n} recebida — faltam {k}.').replace('{i}',have).replace('{n}',n).replace('{k}',n-have)}</div>
     <div class="tx-sub">${t('Continue escaneando os próximos QRs (ou abrindo os links) — em qualquer ordem, o Vox monta tudo sozinho.')}</div>
-    ${continuar}
     ${_txpColarHtml()}
-    <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Terminar depois')}</button></div>
-    <button class="tx-tut-hide" onclick="txDescartarPartes()">${t('Descartar o que já chegou')}</button></div>`;
+    <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">OK</button></div></div>`;
   ov.classList.add('on');
-}
-// Saída pra quem não quer mais retomar: sem isto, com a tela de progresso
-// aparecendo sozinha ao reabrir "Receber transferência", uma transferência
-// abandonada ficaria voltando até expirar (24h).
-function txDescartarPartes(){
-  try{localStorage.removeItem('vox_txrx')}catch(e){}
-  closeTxOverlay();
-  toast(t('Partes descartadas. Nenhum card foi criado.'));
-}
-// Retoma a camera pra ler a proxima parte, sem voltar pro menu "Receber
-// transferencia" -- reabre getUserMedia (silencioso: a permissao ja foi
-// concedida na 1a leitura desta sessao de aba).
-async function _txpRxContinuarCamera(){
-  await _txpRxCameraStart();
-}
-// Existe alguma transferencia pela metade agora? Devolve true se conseguiu
-// mostrar a tela de progresso dela. Usado quando a camera falha no meio (pra
-// nao apagar o progresso da tela) e ao reabrir "Receber transferencia" (antes
-// disto, "Terminar depois" nao tinha depois nenhum: as partes ficavam
-// guardadas e a pessoa nunca mais era avisada de que existiam).
-function _txVoltarProProgresso(){
-  // pasta (formato 2): o estado vivo ja esta na memoria
-  if(typeof _txpRx!=='undefined'&&_txpRx&&_txpRx.ent){_txpTelaRecepcao();return true}
-  // card unico (formato 1): reconstroi do localStorage a mais recente
-  let store={};
-  try{store=JSON.parse(localStorage.getItem('vox_txrx')||'{}')}catch(e){}
-  const sids=Object.keys(store);
-  if(!sids.length)return false;
-  const sid=sids.sort((a,b)=>(store[b].ts||0)-(store[a].ts||0))[0];
-  const ent=store[sid];
-  if(!ent||!ent.n)return false;
-  const have=Object.keys(ent.parts||{}).length;
-  if(have<1||have>=ent.n)return false;
-  _txShowProgress(have,ent.n);
-  return true;
 }
 async function _txDecode(b64,flags,pass){
   let u8=_b64uDec(b64);
@@ -28205,11 +28032,8 @@ async function _txDecode(b64,flags,pass){
   }
   return JSON.parse(new TextDecoder().decode(u8));
 }
-function _txReceive(b64,flags,partes){
-  // Chegou tudo: a tela troca de verdade agora, entao a camera para aqui
-  // (e nao mais a cada QR lido, como era antes da leitura continua).
-  _txpRxCameraStop();
-  _txRx={b64,flags,partes:partes||1};
+function _txReceive(b64,flags){
+  _txRx={b64,flags};
   const locked=flags[1]==='e';
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -28219,22 +28043,6 @@ function _txReceive(b64,flags,partes){
   ov.classList.add('on');
   if(!locked)txUnlock();
   else setTimeout(()=>document.getElementById('txRxPass')?.focus(),100);
-}
-// O SELO DE INTEIREZA (14/09/2026). Achado real do Rafa, e a lição mais cara
-// desta função: a tela de chegada cortava a prévia em 600 caracteres com "…" e
-// não dizia em lugar nenhum que o texto estava COMPLETO. Quem tinha acabado de
-// ler "são 6 QR codes" na tela de envio abria o link (que já leva o texto
-// inteiro, num único endereço) e via um texto cortado — e concluía, com toda a
-// razão aparente, que tinha recebido só a primeira parte e que ia acabar com
-// seis cards picados. O mecanismo estava certo o tempo todo; era a tela que
-// mentia por omissão. Agora ela diz o tamanho, e de quantas partes veio.
-function _txSeloInteireza(texto,partes){
-  const n=(texto||'').length;
-  const letras=n.toLocaleString(getLocale());
-  const de=partes>1
-    ? ' · '+t('remontado de {n} partes').replace('{n}',partes)
-    : '';
-  return `<div class="tx-selo-ok"><span class="svgi">${ICO.check||'✓'}</span>${escHtml(t('Texto completo'))} · ${escHtml(t('{n} letras').replace('{n}',letras))}${escHtml(de)}</div>`;
 }
 async function txUnlock(){
   if(!_txRx)return;
@@ -28247,29 +28055,11 @@ async function txUnlock(){
     ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       <div class="tx-title">📥 ${t('Texto recebido via Vox Transfer')}</div>
       ${obj.n?`<div class="tx-sub"><strong>${escHtml(obj.n)}</strong></div>`:''}
-      ${_txSeloInteireza(obj.t,_txRx.partes)}
-      <div class="tx-preview">${escHtml(obj.t.slice(0,600))}${obj.t.length>600?`…</div><div class="tx-preview-corte">${escHtml(t('(a prévia para aqui — o card vai receber o texto inteiro)'))}`:''}</div>
+      <div class="tx-preview">${escHtml(obj.t.slice(0,600))}${obj.t.length>600?'…':''}</div>
       <div class="tx-sub">${t('Confere? Ele vira um novo card seu — uma cópia independente.')}</div>
       <div class="tx-row"><button class="tx-btn primary" onclick="txAccept()">✓ ${t('Adicionar como card')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Cancelar')}</button></div></div>`;
     ov.classList.add('on');
-  }catch(e){
-    // Antes: só um toast, e a janela ficava na tela com o título "Texto
-    // recebido via Vox Transfer" e o corpo VAZIO (70px de nada) — falha com
-    // cara de sucesso, que é o pior jeito de falhar. Do lado da pasta isso já
-    // era tratado (_txpFalhou); aqui não era.
-    const ov=_txOverlay();
-    const eraSenha=!!(_txRx&&_txRx.flags&&_txRx.flags[1]==='e');
-    ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      <div class="tx-title">${t('Não consegui abrir esta transferência')}</div>
-      <div class="tx-sub">${eraSenha
-        ?t('Ou a senha não confere, ou o link chegou incompleto (aplicativo de mensagem às vezes corta link longo no meio).')
-        :t('O link chegou incompleto ou embaralhado — aplicativo de mensagem às vezes corta link longo no meio.')}</div>
-      <div class="tx-sub">${t('Peça pra reenviar. Nada foi adicionado aqui.')}</div>
-      ${eraSenha
-        ?`<div class="tx-row"><button class="tx-btn primary" onclick="_txReceive(_txRx.b64,_txRx.flags,_txRx.partes)">${t('Tentar a senha de novo')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Fechar')}</button></div>`
-        :`<div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Fechar')}</button></div>`}</div>`;
-    ov.classList.add('on');
-  }
+  }catch(e){toast(t('❌ Senha incorreta ou link corrompido'),true)}
 }
 function txAccept(){
   if(!_txRx||!_txRx.obj)return;
@@ -28787,18 +28577,7 @@ function _txpTelaRecepcao(){
   const {fid,ent}=_txpRx||{};if(!ent)return;
   const prontas=_txpProntas(ent),nr=ent.nr;
   const faltam=nr-prontas.length;
-  // Mesma regra do card único: com a câmera viva, fala na tira em vez de
-  // trocar a tela por baixo do vídeo.
-  if(faltam&&_txpRxCamAtiva&&_txpRxDizer(
-      t('{f} de {n} viagens · continue apontando').replace('{f}',prontas.length).replace('{n}',nr),true))return;
-  if(!faltam)_txpRxCameraStop();   // chegou tudo: a tela troca, a camera para
   const ov=_txOverlay();
-  // Mesmo conserto do card unico (ver _txpRxViaCamera): quem veio da
-  // camera ganha um botao pra RETOMAR a leitura, em vez de so o campo de
-  // colar link.
-  const continuar=(faltam&&_txpRxViaCamera)
-    ?`<div class="tx-row"><button class="tx-btn primary" onclick="_txpRxContinuarCamera()"><span class="svgi">${ICO.camera}</span> ${t('Ler o próximo QR')}</button></div>`
-    :'';
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title">📥 ${t('Recebendo uma pasta')}</div>
     <div class="txp-trilha">${nr>24
@@ -28806,7 +28585,6 @@ function _txpTelaRecepcao(){
       :Array.from({length:nr},(_,k)=>`<span class="txp-chip ${prontas.includes(k+1)?'done':'wait'}">${prontas.includes(k+1)?'✓':k+1}</span>`).join('')}</div>
     <div class="txp-conta">${t('{f} de {n} viagens chegaram').replace('{f}',prontas.length).replace('{n}',nr)}</div>
     <div class="tx-sub">${prontas.length?(faltam?t('Abra os outros links (ou escaneie os outros QRs) — em qualquer ordem. O Vox junta sozinho.'):t('Chegou tudo. É só conferir e adicionar.')):t('Nenhuma viagem chegou ainda aqui. Confira se está abrindo os links no mesmo navegador (ou app) onde você está vendo esta tela, um de cada vez.')}</div>
-    ${continuar}
     ${faltam?_txpColarHtml():''}
     <div class="tx-row">
       <button class="tx-btn primary" onclick="txpAbrirRecebido()"${prontas.length?'':' disabled'}>${faltam?t('Ver o que já chegou'):t('Conferir e adicionar')}</button>
