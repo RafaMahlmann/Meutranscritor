@@ -7825,7 +7825,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.14.1';
+const VOX_VERSION='2026.09.14.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -21955,8 +21955,19 @@ function txkApply(){
 // já aceitam um hashStr colado além de location.hash, e devolvem true/false pra
 // saber de quem é o link. Ver PLANO_TRANSFERENCIA_SEM_NOVA_ABA_2026-08-20.md §6.
 let _txpRxCamStream=null,_txpRxCamLoop=null,_txpRxDetector=null;
+// BUG REAL, achado 14/09/2026 (o Rafa mandou print): num texto grande
+// dividido em varias partes, ler o 1o QR pela camera parava a camera de
+// vez -- _txpRxIniciarLeitura chamava _txpRxCameraStop() e nunca rearmava
+// o loop, mesmo a transferencia continuando incompleta. A pessoa via a
+// tela de "faltam 5 partes" mas so tinha um campo de COLAR link, nada de
+// "continuar apontando a camera" -- pra ler os outros 5 QRs tinha que sair,
+// voltar no menu e reabrir a camera manualmente, um QR de cada vez. Esta
+// flag marca "a leitura em andamento veio da camera" pra _txShowProgress
+// saber quando oferecer retomar a camera em vez de so o campo de colar.
+let _txpRxViaCamera=false;
 function abrirReceberTransferencia(){
   _txpRxCameraStop();
+  _txpRxViaCamera=false;
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title">📥 ${t('Receber transferência')}</div>
@@ -22015,6 +22026,7 @@ function _txpRxCameraPrompt(){
   ov.classList.add('on');
 }
 async function _txpRxCameraStart(){
+  _txpRxViaCamera=true;
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title"><span class="svgi">${ICO.camera}</span> ${t('Ler QR pela câmera')}</div>
@@ -27894,6 +27906,7 @@ function _txOverlay(){let ov=document.getElementById('txOverlay');if(!ov){ov=doc
 function closeTxOverlay(){
   const ov=document.getElementById('txOverlay');if(ov){ov.classList.remove('on');ov.innerHTML=''}
   if(typeof _txpRxCameraStop==='function')_txpRxCameraStop();
+  if(typeof _txpRxViaCamera!=='undefined')_txpRxViaCamera=false;
   if(typeof _txpState!=='undefined'&&_txpState)_txpState.pass='';
   if(typeof _txpRx!=='undefined')_txpRx=null;
   if(typeof _txRx!=='undefined')_txRx=null;
@@ -28010,13 +28023,27 @@ function handleTransferHash(hashStr){
 }
 function _txShowProgress(have,n){
   const ov=_txOverlay();
+  // Veio da camera: o botao principal e' RETOMAR A CAMERA, nao so colar --
+  // antes disto, a camera parava depois do 1o QR e so sobrava o campo de
+  // colar, obrigando a pessoa a sair e reabrir "Ler QR" a mao pra cada
+  // parte seguinte (ver _txpRxViaCamera, onde a flag e' explicada).
+  const continuar=_txpRxViaCamera
+    ?`<div class="tx-row"><button class="tx-btn primary" onclick="_txpRxContinuarCamera()"><span class="svgi">${ICO.camera}</span> ${t('Ler o próximo QR')}</button></div>`
+    :'';
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title">📥 ${t('Recebendo transferência…')}</div>
     <div class="tx-progress">${t('Parte {i} de {n} recebida — faltam {k}.').replace('{i}',have).replace('{n}',n).replace('{k}',n-have)}</div>
     <div class="tx-sub">${t('Continue escaneando os próximos QRs (ou abrindo os links) — em qualquer ordem, o Vox monta tudo sozinho.')}</div>
+    ${continuar}
     ${_txpColarHtml()}
-    <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">OK</button></div></div>`;
+    <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Terminar depois')}</button></div></div>`;
   ov.classList.add('on');
+}
+// Retoma a camera pra ler a proxima parte, sem voltar pro menu "Receber
+// transferencia" -- reabre getUserMedia (silencioso: a permissao ja foi
+// concedida na 1a leitura desta sessao de aba).
+async function _txpRxContinuarCamera(){
+  await _txpRxCameraStart();
 }
 async function _txDecode(b64,flags,pass){
   let u8=_b64uDec(b64);
@@ -28573,6 +28600,12 @@ function _txpTelaRecepcao(){
   const prontas=_txpProntas(ent),nr=ent.nr;
   const faltam=nr-prontas.length;
   const ov=_txOverlay();
+  // Mesmo conserto do card unico (ver _txpRxViaCamera): quem veio da
+  // camera ganha um botao pra RETOMAR a leitura, em vez de so o campo de
+  // colar link.
+  const continuar=(faltam&&_txpRxViaCamera)
+    ?`<div class="tx-row"><button class="tx-btn primary" onclick="_txpRxContinuarCamera()"><span class="svgi">${ICO.camera}</span> ${t('Ler o próximo QR')}</button></div>`
+    :'';
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title">📥 ${t('Recebendo uma pasta')}</div>
     <div class="txp-trilha">${nr>24
@@ -28580,6 +28613,7 @@ function _txpTelaRecepcao(){
       :Array.from({length:nr},(_,k)=>`<span class="txp-chip ${prontas.includes(k+1)?'done':'wait'}">${prontas.includes(k+1)?'✓':k+1}</span>`).join('')}</div>
     <div class="txp-conta">${t('{f} de {n} viagens chegaram').replace('{f}',prontas.length).replace('{n}',nr)}</div>
     <div class="tx-sub">${prontas.length?(faltam?t('Abra os outros links (ou escaneie os outros QRs) — em qualquer ordem. O Vox junta sozinho.'):t('Chegou tudo. É só conferir e adicionar.')):t('Nenhuma viagem chegou ainda aqui. Confira se está abrindo os links no mesmo navegador (ou app) onde você está vendo esta tela, um de cada vez.')}</div>
+    ${continuar}
     ${faltam?_txpColarHtml():''}
     <div class="tx-row">
       <button class="tx-btn primary" onclick="txpAbrirRecebido()"${prontas.length?'':' disabled'}>${faltam?t('Ver o que já chegou'):t('Conferir e adicionar')}</button>
