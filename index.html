@@ -7740,7 +7740,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.12.7';
+const VOX_VERSION='2026.09.12.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -18739,7 +18739,18 @@ function toggleFolders(){
 // (top:70, mais raso) sempre sobra mais espaço, nunca menos.
 function _ajustarAlturaPastas(){
   const bar=document.getElementById('foldersBar');
-  if(!bar||window.innerWidth<=640)return; // celular usa a gaveta (max-height:none)
+  if(!bar)return;
+  if(window.innerWidth<=640){
+    // BUG REAL (achado 12/09/2026): se o max-height do desktop ficasse
+    // gravado inline e a pessoa encolhesse a janela pra largura de celular
+    // com o painel ja aberto, esta funcao so retornava ("celular usa a
+    // gaveta") sem NUNCA limpar aquele valor antigo -- ele ficava grudado
+    // no elemento e atropelava o max-height:none da gaveta (inline sempre
+    // ganha de regra de media query). O painel media a altura errada,
+    // sobrava vao vazio embaixo e cortava a fileira de botoes do topo.
+    bar.style.maxHeight='';
+    return;
+  }
   const topoDeRepouso=bar.getBoundingClientRect().top+window.scrollY;
   const ibar=document.querySelector('.ibar');
   const tetoBarraGravar=ibar?ibar.getBoundingClientRect().top:window.innerHeight;
