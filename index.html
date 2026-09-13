@@ -5229,6 +5229,18 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .tx-eye-btn:hover{color:var(--text2);background:var(--bg-card)}
 .tx-eye-btn svg{width:16px;height:16px}
 .tx-preview{background:var(--bg-input);border-radius:12px;padding:12px;font-size:12.5px;color:var(--text2);line-height:1.6;max-height:150px;overflow-y:auto;white-space:pre-wrap;margin:10px 0}
+/* Tira de progresso da leitura contínua: mora DENTRO da tela do vídeo, e é
+   o que permite avisar "parte 3 de 6" sem trocar a tela (trocar mataria a
+   câmera — foi esse o defeito de origem). Só transform/opacity na animação. */
+.txp-rx-prog{margin:10px 0 0;padding:9px 12px;border-radius:10px;font-size:12.5px;
+  font-weight:600;line-height:1.4;text-align:center;color:var(--text2);
+  background:var(--bg-input);border:1px solid var(--border);
+  transition:color .2s linear,background .2s linear,border-color .2s linear}
+@keyframes txpCaptou{0%{transform:scale(1)}38%{transform:scale(1.045)}100%{transform:scale(1)}}
+.txp-rx-prog.captou{animation:txpCaptou .38s var(--saida,ease);
+  color:#0b6e72;background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.34)}
+[data-theme="dark"] .txp-rx-prog.captou{color:#7fe3c0;background:rgba(52,216,160,.12);border-color:rgba(127,227,192,.3)}
+@media (prefers-reduced-motion:reduce){.txp-rx-prog.captou{animation:none}}
 /* Selo de inteireza — a prévia corta em 600 caracteres, e sem isto a tela
    parecia estar entregando um pedaço. Verde de confirmação, não de enfeite:
    ele afirma um fato verificável (o tamanho do texto que VAI virar card). */
@@ -7838,7 +7850,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.14.3';
+const VOX_VERSION='2026.09.14.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9637,6 +9649,9 @@ let I18N_EN={
 "Ler o próximo QR":"Scan the next QR",
 "Descartar o que já chegou":"Discard what arrived",
 "Partes descartadas. Nenhum card foi criado.":"Parts discarded. No card was created.",
+"Aponte pro QR — pode ir passando um atrás do outro, sem tocar em nada.":"Point at the QR — you can go through them one after another, without tapping anything.",
+"Parte {i} de {n} · faltam {k} — continue apontando":"Part {i} of {n} · {k} to go — keep pointing",
+"{f} de {n} viagens · continue apontando":"{f} of {n} trips · keep pointing",
 "❌ Transferência grande demais pra fila de espera. Adicione o que já chegou, ou comece de novo.":"❌ Transfer too big for the waiting queue. Add what already arrived, or start over.",
 "O modelo de IA configurado pra {p} não existe mais nesse provedor — escolha outro em Configurações.":"The AI model set for {p} no longer exists with that provider — pick another one in Settings.",
 "Senha trocada":"Password changed"
@@ -21993,6 +22008,16 @@ let _txpRxCamStream=null,_txpRxCamLoop=null,_txpRxDetector=null;
 // flag marca "a leitura em andamento veio da camera" pra _txShowProgress
 // saber quando oferecer retomar a camera em vez de so o campo de colar.
 let _txpRxViaCamera=false;
+// LEITURA CONTINUA (14/09/2026). O conserto anterior (botao "Ler o proximo
+// QR") resolvia o travamento mas ainda cobrava um toque por QR. Agora a
+// camera FICA LIGADA: cada parte lida so atualiza uma tira de texto dentro da
+// propria tela do video, e o loop continua. A tela so e' trocada quando a
+// transferencia fecha -- que e' quando a camera deve parar mesmo.
+//   _txpRxCamAtiva: a camera esta viva AGORA (usado por _txShowProgress e
+//   _txpTelaRecepcao pra nao trocarem a tela por baixo dela).
+//   _txpRxVistos: hashes ja lidos nesta sessao de camera -- sem isto, o mesmo
+//   QR parado na frente da lente reentraria dezenas de vezes por segundo.
+let _txpRxCamAtiva=false,_txpRxVistos=new Set();
 function abrirReceberTransferencia(){
   _txpRxCameraStop();
   _txpRxViaCamera=false;
@@ -22063,6 +22088,7 @@ async function _txpRxCameraStart(){
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title"><span class="svgi">${ICO.camera}</span> ${t('Ler QR pela câmera')}</div>
     <div class="tx-qr-wrap"><video id="txpRxVideo" playsinline muted style="width:100%;max-width:280px;border-radius:12px;background:#000"></video></div>
+    <div class="txp-rx-prog" id="txpRxProgresso">${t('Aponte pro QR — pode ir passando um atrás do outro, sem tocar em nada.')}</div>
     <div class="tx-row"><button class="tx-btn ghost" onclick="abrirReceberTransferencia()">${t('Cancelar')}</button></div></div>`;
   ov.classList.add('on');
   try{
@@ -22082,11 +22108,26 @@ async function _txpRxCameraStart(){
   }
   const video=document.getElementById('txpRxVideo');
   if(!video){_txpRxCameraStop();return}
+  _txpRxCamAtiva=true;
+  _txpRxVistos=new Set();
   video.srcObject=_txpRxCamStream;
   await video.play().catch(()=>{});
   _txpRxIniciarLeitura(video);
 }
+// Fala com a pessoa SEM trocar a tela (a tela tem o video vivo dentro dela --
+// trocar mata a camera, que era o defeito de origem). So escreve na tira de
+// progresso e da um pulso curto.
+function _txpRxDizer(txt,pulso){
+  const el=document.getElementById('txpRxProgresso');
+  if(!el)return false;
+  el.textContent=txt;
+  if(pulso&&!_voxReduzMov()){
+    el.classList.remove('captou');void el.offsetWidth;el.classList.add('captou');
+  }
+  return true;
+}
 function _txpRxCameraStop(){
+  _txpRxCamAtiva=false;
   if(_txpRxCamLoop){cancelAnimationFrame(_txpRxCamLoop);_txpRxCamLoop=null}
   if(_txpRxCamStream){_txpRxCamStream.getTracks().forEach(tr=>tr.stop());_txpRxCamStream=null}
 }
@@ -22104,26 +22145,32 @@ async function _txpRxIniciarLeitura(video){
   const passo=async()=>{
     if(!_txpRxCamStream)return;
     if(video.readyState>=2&&video.videoWidth>0){
-      let texto=null;
+      let textos=[];
       try{
         if(usaNativo){
+          // detect() devolve um ARRAY (MDN) e o codigo antigo usava so
+          // codes[0] -- com varios QRs na mesma folha, os outros eram
+          // ignorados quadro a quadro. Agora todos entram.
           const codes=await _txpRxDetector.detect(video);
-          if(codes.length)texto=codes[0].rawValue;
+          textos=codes.map(c=>c.rawValue).filter(Boolean);
         }else if(window.jsQR){
           canvas.width=video.videoWidth;canvas.height=video.videoHeight;
           ctx.drawImage(video,0,0,canvas.width,canvas.height);
           const img=ctx.getImageData(0,0,canvas.width,canvas.height);
           const r=window.jsQR(img.data,img.width,img.height);
-          if(r)texto=r.data;
+          if(r&&r.data)textos=[r.data];
         }
       }catch(e){}
-      if(texto){
+      for(const texto of textos){
         const frag=_txpRxExtrairHash(texto);
-        if(frag){
-          _txpRxCameraStop();
-          if(!handleTransferHash(frag))handleKeysTransferHash(frag);
-          return;
-        }
+        if(!frag)continue;
+        if(_txpRxVistos.has(frag))continue;   // mesmo QR parado na lente
+        _txpRxVistos.add(frag);
+        if(!handleTransferHash(frag))handleKeysTransferHash(frag);
+        // Se a transferencia fechou, quem fechou ja trocou a tela e parou a
+        // camera (ver _txReceive/_txpAbrirRecebido) -- e ai o loop morre no
+        // topo, na checagem do _txpRxCamStream.
+        if(!_txpRxCamStream)return;
       }
     }
     _txpRxCamLoop=requestAnimationFrame(passo);
@@ -27930,10 +27977,28 @@ async function buildTransferPayload(card,pass){
   if(pass){u8=await _txEncrypt(u8,pass);flags+='e'}else flags+='o';
   return {b64:_b64uEnc(u8),flags};
 }
+// O sid e' a IMPRESSAO DIGITAL DO CONTEUDO, nao um sorteio (14/09/2026).
+// Ideia que o Rafa descreveu com outras palavras ("um marcador dentro do link
+// que a outra ponta reconhece") e que o padrao BC-UR, usado pra mover
+// material sigiloso entre aparelhos desconectados, resolve do mesmo jeito:
+// cada parte carrega a identidade da mensagem INTEIRA.
+// O que isso compra, na pratica:
+//   · Regerar os QRs do mesmo texto agora SOMA no progresso de quem ja
+//     recebeu metade, em vez de abrir uma sessao nova e abandonar a antiga
+//     (com sid sorteado, mandar o link de novo zerava o esforco da pessoa).
+//   · Parte de um texto nunca se mistura com parte de outro: sid diferente.
+// Hash sync e simples de proposito (FNV-1a): isto e' etiqueta de agrupamento,
+// nao controle de seguranca -- quem garante integridade e' o AES-GCM/inflate
+// na hora de abrir, que ja falha alto se vier lixo.
+function _txSidDoConteudo(b64){
+  let h=0x811c9dc5;
+  for(let i=0;i<b64.length;i++){h^=b64.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}
+  return ('000000'+h.toString(36)).slice(-6);
+}
 function _txUrls(b64,flags,prefix){
   const p=prefix||TX_PREFIX;
   const base=location.origin+location.pathname;
-  const sid=Math.random().toString(36).slice(2,6);
+  const sid=_txSidDoConteudo(b64);
   const n=Math.ceil(b64.length/TX_QR_SLICE)||1;
   const urls=[];
   for(let i=1;i<=n;i++)urls.push(`${base}#${p}1.${flags}.${sid}.${i}.${n}.${b64.slice((i-1)*TX_QR_SLICE,i*TX_QR_SLICE)}`);
@@ -28075,6 +28140,9 @@ function handleTransferHash(hashStr){
   return true;
 }
 function _txShowProgress(have,n){
+  // Camera viva: NAO troca a tela (trocar mata o video). Só fala na tira.
+  if(_txpRxCamAtiva&&_txpRxDizer(
+      t('Parte {i} de {n} · faltam {k} — continue apontando').replace('{i}',have).replace('{n}',n).replace('{k}',n-have),true))return;
   const ov=_txOverlay();
   // Veio da camera: o botao principal e' RETOMAR A CAMERA, nao so colar --
   // antes disto, a camera parava depois do 1o QR e so sobrava o campo de
@@ -28138,6 +28206,9 @@ async function _txDecode(b64,flags,pass){
   return JSON.parse(new TextDecoder().decode(u8));
 }
 function _txReceive(b64,flags,partes){
+  // Chegou tudo: a tela troca de verdade agora, entao a camera para aqui
+  // (e nao mais a cada QR lido, como era antes da leitura continua).
+  _txpRxCameraStop();
   _txRx={b64,flags,partes:partes||1};
   const locked=flags[1]==='e';
   const ov=_txOverlay();
@@ -28716,6 +28787,11 @@ function _txpTelaRecepcao(){
   const {fid,ent}=_txpRx||{};if(!ent)return;
   const prontas=_txpProntas(ent),nr=ent.nr;
   const faltam=nr-prontas.length;
+  // Mesma regra do card único: com a câmera viva, fala na tira em vez de
+  // trocar a tela por baixo do vídeo.
+  if(faltam&&_txpRxCamAtiva&&_txpRxDizer(
+      t('{f} de {n} viagens · continue apontando').replace('{f}',prontas.length).replace('{n}',nr),true))return;
+  if(!faltam)_txpRxCameraStop();   // chegou tudo: a tela troca, a camera para
   const ov=_txOverlay();
   // Mesmo conserto do card unico (ver _txpRxViaCamera): quem veio da
   // camera ganha um botao pra RETOMAR a leitura, em vez de so o campo de
