@@ -2136,6 +2136,25 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-voltar-btn{background:none;border:none;color:var(--text3);cursor:pointer;padding:0 4px 0 0;
   font-size:16px;line-height:1;flex-shrink:0}
 .fc-voltar-btn:hover{color:var(--text)}
+/* Ficharios multiplos (Orbita + Fluxograma) -- 12/09/2026. Presenca em
+   REPOUSO, nao hover: tem que dar pra ver num print parado e num celular,
+   onde hover nao existe. O em-foco (o de maior z / o que respondeu ao
+   ultimo toque) fica no brilho normal com uma borda mais clara; os de
+   tras ficam um pouco mais escuros -- sem glow no Fluxograma (tema claro,
+   brilho so funciona no escuro). */
+.orb-mural.fich-inst{filter:brightness(.88)}
+.orb-mural.fich-inst.fich-foco{
+  filter:none;
+  box-shadow:0 22px 52px -14px rgba(0,0,0,.95),0 4px 14px -4px rgba(0,0,0,.7),
+    0 0 0 1px rgba(52,216,160,.55),inset 0 1px 0 rgba(255,255,255,.09);
+}
+.fc-card-panel.fich-inst{box-shadow:-4px 0 16px rgba(0,0,0,0.08)}
+.fc-card-panel.fich-inst.fich-foco{box-shadow:-10px 6px 28px rgba(0,0,0,0.16);border-left-color:var(--accent)}
+/* Traz-pra-frente: um pulso de escala bem pequeno (1,5%), so pra confirmar
+   qual fichario respondeu ao clique -- nao e' o "nascer" (seloAcende), que
+   e' bem maior e so acontece na primeira nota de uma pasta vazia. */
+@keyframes fichPulso{0%{transform:scale(var(--painel-esc,1))}40%{transform:scale(calc(var(--painel-esc,1) * 1.015))}100%{transform:scale(var(--painel-esc,1))}}
+.fich-pulso{animation:fichPulso 280ms ease}
 /* A lista de cards da pasta — é ela que segura o conteúdo que antes estourava
    o desenho. Rola, e o texto fica no tamanho de sempre. */
 /* No tema claro o painel é branco E a ficha é branca: sem um chão atrás
@@ -7740,7 +7759,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.12.8';
+const VOX_VERSION='2026.09.13.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11856,7 +11875,64 @@ function _fcCardsDaPasta(id){
 // Estado 1 do painel: a lista de cards da pasta tocada. É aqui que mora o
 // conteúdo que antes explodia o desenho — numa lista que rola, com o texto
 // no tamanho de sempre.
+// Ponto de entrada do Fluxograma (chamado so por _fcNodeClick). No
+// celular/tablet retrato continua a gaveta de sempre -- substitui o
+// que estava aberto, sem drag/resize. No desktop/tablet paisagem, cada
+// pasta ganha o proprio fichario: clicar de novo numa ja aberta nao
+// duplica, so traz pra frente e da um pulso (igual _flAbrirCard ja faz).
 function _fcListarCards(id,nomePasta,manterExpansao){
+  if(_orbMuralEhGaveta()){_fcListarCardsGaveta(id,nomePasta,manterExpansao);return}
+  const existente=_fichDe('fc',id);
+  if(existente){
+    if(!manterExpansao)existente.itemExpandidoId=null;
+    existente.nome=nomePasta;
+    _fichFcAtualizarInst(existente);
+    _fichTrazerFrente(existente);
+    return;
+  }
+  _fichAbrirVaga('fc');
+  const docado=!_fichLista('fc').length;
+  const uid='fc'+(++_fichUidSeq);
+  const painelBase=document.getElementById('fcCardPanel');
+  let el;
+  if(docado){
+    el=painelBase;
+  }else{
+    el=document.createElement('div');
+    el.className='fc-card-panel fich-inst';
+    el.id='fich-'+uid;
+    painelBase.parentElement.appendChild(el);
+  }
+  const inst={uid,tipo:'fc',pastaId:id,nome:nomePasta,el,docado,itemExpandidoId:null,cardAbertoId:null,tAberto:Date.now()};
+  _fichAbertos.push(inst);
+  _fichFcAtualizarInst(inst);
+  el.classList.add('on');
+  if(!docado){
+    // Cascata a partir do encaixe docado -- indice MONOTONICO, nunca
+    // lista.length (com o teto cheio o LRU tira uma instancia e poe
+    // outra a cada abertura, entao length voltaria sempre ao mesmo
+    // numero e todo fichario novo nasceria em cima do anterior --
+    // achado construindo a proposta, ver PROPOSTA_FICHARIOS_MULTIPLOS.html).
+    const rBase=painelBase.getBoundingClientRect();
+    const wrapRect=el.parentElement.getBoundingClientRect();
+    const w=rBase.width||Math.min(340,wrapRect.width*0.32);
+    const h=rBase.height||wrapRect.height;
+    const teto=_fichTeto();
+    const passo=28*(1+(_fichCascataFc++%Math.max(1,teto-1)));
+    el.style.position='absolute';el.style.right='';el.style.bottom='';
+    el.style.width=w+'px';el.style.height=h+'px';
+    el.style.left=Math.max(8,(rBase.left-wrapRect.left)-passo)+'px';
+    el.style.top=Math.max(8,(rBase.top-wrapRect.top)+passo)+'px';
+  }
+  if(!el.dataset.fichTrazerLigado){
+    el.dataset.fichTrazerLigado='1';
+    el.addEventListener('pointerdown',()=>{const i=_fichAbertos.find(f=>f.el===el);if(i)_fichTrazerFrente(i)});
+  }
+  _painelLigar(el,'.fc-panel-alca','.fc-card-panel-body',_orbMuralEhGaveta);
+  _fichTrazerFrente(inst);
+  if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbReenquadrarCam(true);
+}
+function _fcListarCardsGaveta(id,nomePasta,manterExpansao){
   const panel=document.getElementById('fcCardPanel');
   if(!panel)return;
   _fcPastaAberta={id,nome:nomePasta};
@@ -11946,7 +12022,14 @@ function _fcAlternarGaveta(){
 // Clicar no corpo do item alterna a prévia entre 90 e 200 caracteres, ainda
 // dentro da coluna — um item por vez (acordeão), igual ao resto do painel.
 // Não abre nada flutuante sozinho: é só "ver um pouco mais".
-function _fcAlternarExpansao(id){
+function _fcAlternarExpansao(a,b){
+  if(b===undefined){_fcAlternarExpansaoGaveta(a);return}
+  const uid=a,id=b;
+  const inst=_fichPorUid(uid);if(!inst)return;
+  inst.itemExpandidoId=(inst.itemExpandidoId===id)?null:id;
+  _fichFcAtualizarInst(inst);
+}
+function _fcAlternarExpansaoGaveta(id){
   _fcItemExpandidoId=(_fcItemExpandidoId===id)?null:id;
   if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
 }
@@ -11963,7 +12046,21 @@ function _fcAlternarExpansao(id){
 // — é a mesma decisão de 19/08 que vale pro card na lista principal.
 // Se a nota estiver flutuando, limpa a janela ANTES — senão sobra uma moldura
 // vazia (mesma classe de bug do #floatLayer travado).
-function _fcExcluirCard(id){
+function _fcExcluirCard(a,b){
+  if(b===undefined){_fcExcluirCardGaveta(a);return}
+  const uid=a,id=b;
+  if(!document.getElementById(id))return;
+  _fcFecharFlutuanteDe(id);
+  paraLixeira(id,true);
+  const inst=_fichPorUid(uid);
+  if(inst){if(inst.itemExpandidoId===id)inst.itemExpandidoId=null;_fichFcAtualizarInst(inst)}
+  toastDesfazer(t('🗑️ Nota na lixeira · some em 30 dias'),()=>{
+    restaurarDaLixeira(id,true);
+    const i2=_fichPorUid(uid);if(i2)_fichFcAtualizarInst(i2);
+    toast(t('↩ Nota de volta'));
+  });
+}
+function _fcExcluirCardGaveta(id){
   if(!document.getElementById(id))return;
   _fcFecharFlutuanteDe(id);
   paraLixeira(id,true);
@@ -11978,7 +12075,21 @@ function _fcExcluirCard(id){
 // Arquivar pela lista lateral. Chama o arquivarCard que já existe — o mesmo
 // que o menu "⋯" do card usa — só que aqui ele fica à vista, do lado do
 // excluir, como em todo o resto do app.
-function _fcArquivarCard(id){
+function _fcArquivarCard(a,b){
+  if(b===undefined){_fcArquivarCardGaveta(a);return}
+  const uid=a,id=b;
+  if(!document.getElementById(id))return;
+  _fcFecharFlutuanteDe(id);
+  arquivarCard(id,true);
+  const inst=_fichPorUid(uid);
+  if(inst){if(inst.itemExpandidoId===id)inst.itemExpandidoId=null;_fichFcAtualizarInst(inst)}
+  toastDesfazer(t('📦 Nota arquivada'),()=>{
+    desarquivarCard(id,true);
+    const i2=_fichPorUid(uid);if(i2)_fichFcAtualizarInst(i2);
+    toast(t('↩ Nota de volta'));
+  });
+}
+function _fcArquivarCardGaveta(id){
   if(!document.getElementById(id))return;
   _fcFecharFlutuanteDe(id);
   arquivarCard(id,true);
@@ -12000,7 +12111,27 @@ function _fcFecharFlutuanteDe(id){
   if(!_flAbertas.length&&_flAtiva)_flAlternarCamada();
 }
 // Estado 2 do painel: o texto de um card, com volta pra lista de onde veio.
-function _fcAbrirCard(id){
+// Estado 2 do painel (o texto de UM card). Dois argumentos = veio de
+// um fichario multi-instancia; um argumento = a gaveta de sempre.
+function _fcAbrirCard(a,b){
+  if(b===undefined){_fcAbrirCardGaveta(a);return}
+  const uid=a,id=b;
+  const inst=_fichPorUid(uid);if(!inst)return;
+  const card=document.getElementById(id);
+  if(!card)return;
+  inst.cardAbertoId=id;
+  const sn=(card.dataset.sessionName||'').trim();
+  const dt=card.dataset.dt||'';
+  const dtStr=dt?new Date(dt).toLocaleString(getLocale()):'';
+  const texto=card.querySelector('textarea')?.value||'';
+  const voltar=`<button type="button" class="fc-voltar-btn" onclick="_fcVoltarParaLista('${escJs(uid)}')" title="${t('Voltar')}" aria-label="${t('Voltar')}">←</button>`;
+  inst.el.innerHTML=`<button type="button" class="fc-panel-handle" onclick="_fcAlternarGaveta()" title="${t('Redimensionar')}" aria-label="${t('Redimensionar')}"><span class="fc-panel-handle-bar"></span></button>
+    <div class="fc-card-panel-hd"><button type="button" class="fc-panel-alca" title="${escHtml(t('Arrastar pra mover'))}" aria-label="${escHtml(t('Arrastar pra mover'))}">${ICO.grip}</button>${voltar}<strong class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="_fcRenomear('${escJs(uid)}','${escJs(id)}')">${escHtml(sn||t('+ nome'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel('${escJs(uid)}')" title="${t('Fechar')}" aria-label="${t('Fechar')}">${ICO.close}</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
+  inst.el.classList.add('on');
+  _painelLigar(inst.el,'.fc-panel-alca','.fc-card-panel-body',_orbMuralEhGaveta);
+  if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbReenquadrarCam(true);
+}
+function _fcAbrirCardGaveta(id){
   const card=document.getElementById(id);
   if(!card)return;
   _fcCardAbertoId=id;
@@ -12018,7 +12149,15 @@ function _fcAbrirCard(id){
   _painelLigar(panel,'.fc-panel-alca','.fc-card-panel-body',_orbMuralEhGaveta);
   if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbReenquadrarCam(true);
 }
-function _fcFecharPainel(){
+// Sem argumento (o X da gaveta, e as ~16 chamadas externas que
+// significam "sair da Orbita/Fluxograma, trocar de mundo"): fecha
+// tudo -- o singleton de sempre (se houver algo nele) e todo fichario
+// multi-instancia (se houver algum). Um uid: fecha so aquele.
+function _fcFecharPainel(uid){
+  if(uid===undefined){_fcFecharPainelGaveta();_fichFecharTodos('fc');return}
+  _fichFechar(uid);
+}
+function _fcFecharPainelGaveta(){
   const panel=document.getElementById('fcCardPanel');
   if(panel)_painelDestravar(panel);
   if(panel&&panel.classList.contains('on')){
@@ -12037,7 +12176,15 @@ function _fcFecharPainel(){
 }
 // Renomear a partir do painel lateral (lista ou preview) e re-renderizar
 // o mesmo estado em que o painel estava, sem perder o lugar.
-function _fcRenomear(id){
+function _fcRenomear(a,b){
+  if(b===undefined){_fcRenomearGaveta(a);return}
+  const uid=a,id=b;
+  renameSname(id);
+  const inst=_fichPorUid(uid);if(!inst)return;
+  if(inst.cardAbertoId===id)_fcAbrirCard(uid,id);
+  else _fichFcAtualizarInst(inst);
+}
+function _fcRenomearGaveta(id){
   renameSname(id);
   if(_fcCardAbertoId===id)_fcAbrirCard(id);
   else if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
@@ -12453,8 +12600,7 @@ function _flAbrirCard(id,origemEl,posFixa){
   const z=_flZTop++;
   win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';win.style.zIndex=z;
   _flAbertas.push({id,x,y,w,h,z,folder:folderKey});
-  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
-  _orbMuralAtualizar();
+  _fichRepintarTodos();
   _orbFiosDasNotas();
 
   // FLIP: nasce na posição/tamanho do item da lista, anima até o destino.
@@ -12658,8 +12804,7 @@ function _flFecharJanela(id){
   // clicar nele de novo alternaria pra "recolher" (já estava aberto) em vez
   // de expandir, escondendo o botão "Abrir flutuante" sem nenhum aviso.
   if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
-  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
-  _orbMuralAtualizar();
+  _fichRepintarTodos();
   _orbFiosDasNotas();
   // Etapa 4 do plano de 07/09: se a nota estava marcada como "aberta em outro
   // lugar" (ver _calAbertaEmOutroLugar), fechar a janela é o que tira essa
@@ -12689,8 +12834,7 @@ function _flFecharJanelaViajando(id,pousoEl){
   const card=document.getElementById(id);
   _flAbertas=_flAbertas.filter(j=>j.id!==id);
   if(_fcItemExpandidoId===id)_fcItemExpandidoId=null;
-  if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
-  _orbMuralAtualizar();
+  _fichRepintarTodos();
   _orbFiosDasNotas();
   const desligarCamada=()=>{if(!_flAbertas.length&&_flAtiva)_flAlternarCamada()};
   // Etapa 4 do plano de 07/09: se a nota estava "aberta em outro lugar" (ver
@@ -13397,7 +13541,7 @@ function _orbNo(id,dados,x,y,ehFoco,ordem,cards,ehVaga){
           setTimeout(()=>_selo.classList.remove('soltou'),400);
           const vid=el.dataset.orbId;
           if(vid===undefined)return;
-          _orbAbrirMural(vid===''?null:vid,{x:ev.clientX,y:ev.clientY});
+          _fichOrbAbrirOuFoco(vid===''?null:vid,{x:ev.clientX,y:ev.clientY});
         });
       }
     }
@@ -13701,7 +13845,11 @@ function _orbMuralColsAtuais(){
   const w=document.getElementById('orbMural');
   return w?(+w.style.getPropertyValue('--orb-mural-cols')||1):1;
 }
-function _orbMuralFichas(cards,cols){
+function _orbMuralFichas(cards,cols,uidTok,notaAbertaId){
+  // uidTok vem indefinido nas chamadas de sempre (mural do foco -- ver
+  // _orbAbrirMural/_orbMuralAlterna/_orbMuralAtualizar, nenhuma delas
+  // muda) e um uid de verdade quando quem pintou foi um fichario do selo
+  // (_fichOrbPintar/_fichOrbAtualizarInst/_fichOrbAlterna, 12/09/2026).
   if(!cards.length)return `<div class="orb-mural-vazio">${escHtml(t('Nada solto aqui — tudo mora nas subpastas.'))}</div>`;
   // Em duas colunas com quantidade ímpar, a última ficha fica sozinha na
   // linha de baixo — o CSS a estica pra fechar o retângulo (ver .orfa).
@@ -13709,7 +13857,9 @@ function _orbMuralFichas(cards,cols){
   return cards.map((c,i)=>{
     const sn=(c.dataset.sessionName||'').trim();
     const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
-    const aberta=_orbMuralNotaId===c.id;
+    const legado=uidTok===undefined;
+    const aberta=(legado?_orbMuralNotaId:notaAbertaId)===c.id;
+    const argUid=legado?'':("'"+escJs(uidTok)+"',");
     const flutuando=_flAbertas.some(j=>j.id===c.id);
     const limite=aberta?700:120;
     const previa=txt?escHtml(txt.slice(0,limite))+(txt.length>limite?'…':''):escHtml(t('(card vazio)'));
@@ -13725,8 +13875,8 @@ function _orbMuralFichas(cards,cols){
     // .fc-lista-item do painel já usa.
     const acoes=aberta?`<div class="orb-mural-acoes">
       <button type="button" onclick="event.stopPropagation();_flAbrirCard('${escJs(c.id)}',this)">${ICO.expand}${escHtml(t('Abrir flutuante'))}</button>
-      <button type="button" onclick="event.stopPropagation();_orbMuralArquivar('${escJs(c.id)}')" title="${escHtml(t('Arquivar'))}" aria-label="${escHtml(t('Arquivar'))}">${ICO.archive}${escHtml(t('Arquivar'))}</button>
-      <button type="button" class="orb-mural-del" onclick="event.stopPropagation();_orbMuralExcluir('${escJs(c.id)}')" title="${escHtml(t('Excluir'))}" aria-label="${escHtml(t('Excluir'))}">${ICO.trash}</button>
+      <button type="button" onclick="event.stopPropagation();${legado?'_orbMuralArquivar':'_fichOrbArquivar'}(${argUid}'${escJs(c.id)}')" title="${escHtml(t('Arquivar'))}" aria-label="${escHtml(t('Arquivar'))}">${ICO.archive}${escHtml(t('Arquivar'))}</button>
+      <button type="button" class="orb-mural-del" onclick="event.stopPropagation();${legado?'_orbMuralExcluir':'_fichOrbExcluir'}(${argUid}'${escJs(c.id)}')" title="${escHtml(t('Excluir'))}" aria-label="${escHtml(t('Excluir'))}">${ICO.trash}</button>
     </div>`:'';
     const entraClasse=(i<10&&!_voxReduzMov())?' entra':'';
     // Contorno com a cor da etiqueta — mesmo tratamento de .card[data-tc]
@@ -13744,9 +13894,9 @@ function _orbMuralFichas(cards,cols){
     if(luz)estilos.push(`--orb-mural-ca:${safeColor(luz.ca)}`);
     const styleAttr=estilos.length?` style="${estilos.join(';')}"`:'';
     return `<div class="orb-mural-it${aberta?' aberta':''}${flutuando?' flutuando':''}${i===orfa?' orfa':''}${entraClasse}" data-nid="${escHtml(c.id)}"${tcAttr}${styleAttr}>
-      <button type="button" class="orb-mural-corpo${mthumb?' tem-foto':''}" onclick="_orbMuralAlterna('${escJs(c.id)}')">
+      <button type="button" class="orb-mural-corpo${mthumb?' tem-foto':''}" onclick="${legado?'_orbMuralAlterna':'_fichOrbAlterna'}(${argUid}'${escJs(c.id)}')">
         ${mthumb}<span class="orb-mural-txt">
-        <span class="orb-mural-nm${sn?'':' vazia'}" title="${sn?escHtml(sn):escHtml(t('Clique para nomear este card'))}" onclick="event.stopPropagation();_orbMuralRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
+        <span class="orb-mural-nm${sn?'':' vazia'}" title="${sn?escHtml(sn):escHtml(t('Clique para nomear este card'))}" onclick="event.stopPropagation();${legado?'_orbMuralRenomear':'_fichOrbRenomear'}(${argUid}'${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
         <span class="orb-mural-pv">${previa}</span>
         </span>
       </button>${acoes}
@@ -14421,6 +14571,9 @@ function abrirOrbital(){
   _orbVaga=null;_orbGotaAtiva=false;_orbApagarGotaFio();
   _orbMuralAberto=false;_orbMuralNotaId=null;_orbMuralRect=null;
   document.getElementById('orbMural')?.classList.remove('on','viva');
+  _fichAbertos.filter(f=>f.tipo==='orb').forEach(f=>f.el.remove());
+  _fichAbertos=_fichAbertos.filter(f=>f.tipo!=='orb');
+  _fichFocoAtual.orb=null;
   _orbCamX=0;_orbCamY=0;_orbCamS=1;_orbCamSManual=false;
   // A câmera das notas começa igual à do mapa — daqui pra frente elas andam
   // sempre juntas (_flSeguirCameraDaOrbita, chamada por _orbAplicarCam).
@@ -14437,6 +14590,7 @@ function fecharOrbital(){
   _sincIbarSobreMapa();
   _fcFecharPainel();
   _orbFecharMural();
+  _fichFecharTodos('orb');
   _orbPts.clear();_orbPan=false;_orbPinch=null;
   if(_flAtiva)_flAlternarCamada();
   _flPointers.clear();_flPanAtivo=false;_flPinchDist=null;
@@ -22427,6 +22581,395 @@ function _painelDestravar(el){
   el.style.width='';el.style.height='';
   _painelEscalas.delete(el);
 }
+// ============================================================
+//   FICHARIOS MULTIPLOS (Orbita + Fluxograma) -- 12/09/2026
+//   Pedido do Rafa: abrir o fichario de uma pasta nao fecha mais o de
+//   outra. Os dois pontos de entrada que ja mostravam as notas diretas
+//   de uma pasta sem navegar -- o selo da Orbita e o no do Fluxograma --
+//   passam a suportar N paineis abertos ao mesmo tempo, cada um
+//   independente, do mesmo jeito que os cards flutuantes (_flAbertas)
+//   ja funcionam.
+//
+//   No celular/tablet retrato (gaveta) nada disto entra em acao: os
+//   dois pontos de entrada continuam com o comportamento de sempre, um
+//   painel so que o proximo substitui (_orbMuralEhGaveta ja e a
+//   checagem certa) -- sem drag/resize la, varias gavetas empilhadas
+//   nao teriam como ser manipuladas.
+//
+//   O mural da Orbita em modo FOCO (_orbAbrirMural(_orbFoco), sem
+//   ancoraTela -- o painel que mostra as notas da pasta que a camera
+//   esta navegando agora) fica INTOCADO: so existe uma camera, entao so
+//   faz sentido um painel de foco por vez. Isto aqui e' so pro atalho
+//   "toca no selo de qualquer bolha, sem navegar ate ela".
+// ============================================================
+let _fichAbertos=[];      // [{uid,tipo:'orb'|'fc',pastaId,nome,el,docado,notaAbertaId,itemExpandidoId,cardAbertoId,tAberto}]
+let _fichUidSeq=0;
+let _fichZOrb=14;         // mesma base que .orb-mural ja usa no CSS
+let _fichCascataFc=0;     // contador monotonico -- NUNCA lista.length (ver comentario abaixo)
+let _fichFocoAtual={orb:null,fc:null};
+
+function _fichLista(tipo){return _fichAbertos.filter(f=>f.tipo===tipo)}
+function _fichDe(tipo,pastaId){return _fichAbertos.find(f=>f.tipo===tipo&&f.pastaId===pastaId)}
+function _fichPorUid(uid){return _fichAbertos.find(f=>f.uid===uid)}
+// Numero fixo erra nos dois extremos: medido pelo agente que fez a
+// proposta (scratchpad/PROPOSTA_FICHARIOS_MULTIPLOS.html), 6 ficharios
+// de 272x260 cobrem 69% de um palco de 1144x520 e somem com o mapa por
+// tras. clamp(2,...,6) pela area da tela (Orbita/Fluxograma sao
+// overlays de tela cheia, entao a janela e' uma aproximacao boa do palco).
+function _fichTeto(){
+  const area=window.innerWidth*window.innerHeight;
+  return Math.max(2,Math.min(6,Math.floor(area*0.55/(280*260))));
+}
+// LRU: fecha o mais antigo sem foco. Nunca o docado do Fluxograma -- se
+// o LRU fechasse o docado, a cascata dos outros ficaria pendurada numa
+// ancora que nao existe mais (ver _fichFcTornarDocado).
+function _fichAbrirVaga(tipo){
+  const teto=_fichTeto();
+  let l=_fichLista(tipo);
+  while(l.length>=teto){
+    const candidatos=l.filter(f=>!f.docado&&f!==_fichFocoAtual[tipo]).sort((a,b)=>a.tAberto-b.tAberto);
+    if(!candidatos.length)break;
+    _fichFechar(candidatos[0].uid);
+    l=_fichLista(tipo);
+  }
+}
+// Marca visualmente qual fichario esta "em foco" (borda mais clara,
+// sombra mais funda -- ver CSS .fich-foco). Presenca em repouso, nao
+// hover: tem que dar pra ver num print parado e num celular, onde hover
+// nao existe.
+function _fichAtualizarFoco(tipo){
+  const foco=_fichFocoAtual[tipo];
+  _fichLista(tipo).forEach(f=>f.el.classList.toggle('fich-foco',f===foco));
+}
+function _fichPulsar(el){
+  el.classList.remove('fich-pulso');void el.offsetWidth;el.classList.add('fich-pulso');
+  setTimeout(()=>el.classList.remove('fich-pulso'),280);
+}
+// Traz pra frente + pulso -- mesmo padrao que _flAbrirCard ja usa quando
+// a janela clicada ja esta aberta. Na Orbita e' z-index de verdade (o
+// mural sempre fica acima da camada de notas flutuantes, #floatLayer em
+// z-index:3, entao ha folga de sobra a partir de 14). No Fluxograma e'
+// reordenar no DOM: os paineis daqui dividem z-index:2 com #floatLayer
+// em z-index:3 no MESMO pai -- um numero mais alto furaria essa ordem
+// (painel por cima da janela flutuante, que nunca foi o comportamento).
+// Entre irmaos do mesmo z-index quem apareceu por ultimo no DOM pinta
+// por cima, e appendChild MOVE um no que ja existe pro fim, sem duplicar.
+function _fichTrazerFrente(inst){
+  const jaEraFoco=_fichFocoAtual[inst.tipo]===inst;
+  if(inst.tipo==='orb')inst.el.style.zIndex=String(_fichZOrb++);
+  else if(inst.el.parentNode)inst.el.parentNode.appendChild(inst.el);
+  _fichFocoAtual[inst.tipo]=inst;
+  _fichAtualizarFoco(inst.tipo);
+  if(!jaEraFoco)_fichPulsar(inst.el);
+}
+// Fecha um fichario (X proprio, LRU ou fechar-tudo). Mesma logica de
+// saida que o Mural/painel singleton ja usavam: espera a transicao antes
+// de tirar do DOM, com timeout de seguranca se ela nao disparar.
+function _fichFechar(uid){
+  const inst=_fichPorUid(uid);
+  if(!inst)return;
+  _fichAbertos=_fichAbertos.filter(f=>f!==inst);
+  if(_fichFocoAtual[inst.tipo]===inst){
+    const resto=_fichLista(inst.tipo).sort((a,b)=>b.tAberto-a.tAberto);
+    _fichFocoAtual[inst.tipo]=resto[0]||null;
+    _fichAtualizarFoco(inst.tipo);
+  }
+  if(inst.tipo==='fc'){
+    if(inst.docado){
+      // A vaga docada precisa ficar explicita: se sobrar algum fichario
+      // do Fluxograma, o mais antigo assume o encaixe -- senao a cascata
+      // dos que restam fica pendurada numa ancora que nao existe mais.
+      const resto=_fichLista('fc').sort((a,b)=>a.tAberto-b.tAberto);
+      if(resto.length)_fichFcTornarDocado(resto[0]);
+    }
+    if(!_fichLista('fc').length)_fichCascataFc=0;
+  }
+  _painelDestravar(inst.el);
+  inst.el.classList.remove('on');
+  // #fcCardPanel e' o elemento original, permanente -- reaproveitado como
+  // o encaixe docado toda vez que o registro esvazia (ver _fcListarCards).
+  // Ele nunca pode ser removido do DOM: o resto do app (_fcAcoplarPainel e
+  // todo document.getElementById('fcCardPanel')) espera que ele exista pra
+  // sempre. So esvazia, como a gaveta de sempre ja fazia.
+  const singleton=inst.el.id==='fcCardPanel';
+  const limpar=()=>{if(singleton)inst.el.innerHTML='';else inst.el.remove()};
+  inst.el.addEventListener('transitionend',limpar,{once:true});
+  setTimeout(limpar,360);
+}
+function _fichFecharTodos(tipo){
+  [..._fichLista(tipo)].forEach(f=>_fichFechar(f.uid));
+}
+// Repinta o conteudo de todo fichario ja aberto (singleton de sempre em
+// modo gaveta + os N multi-instancia em modo desktop), sem trazer nenhum
+// pra frente nem tocar posicao. Substitui as 17 repeticoes espalhadas de
+// "if(_fcPastaAberta)_fcListarCards(...)" mais o _orbMuralAtualizar()
+// solto: todo ponto que muda uma nota (excluir, arquivar, abrir/fechar
+// janela flutuante...) e quer a lista lateral atualizada chama esta
+// funcao uma vez so, e ela decide sozinha o que existe pra repintar.
+function _fichRepintarTodos(){
+  if(_orbMuralEhGaveta()){
+    if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome,true);
+  }else{
+    _fichLista('fc').forEach(_fichFcAtualizarInst);
+  }
+  if(typeof _orbMuralAberto!=='undefined'&&_orbMuralAberto)_orbMuralAtualizar();
+  _fichLista('orb').forEach(_fichOrbAtualizarInst);
+}
+
+// ── Orbita: fichario do selo, multi-instancia ──
+// Acha um lugar pro fichario novo sem cair em cima de um que ja esta
+// aberto: se cobre mais de 55% da area de outro, desloca +28/+28 e
+// tenta de novo, ate 6 vezes -- exatamente a recomendacao do agente.
+function _fichAcharVaga(inst,x,y,w,h,containerRect){
+  const outros=_fichLista(inst.tipo).filter(f=>f!==inst);
+  const sobrepoe=(cx,cy)=>{
+    for(const o of outros){
+      const r=o.el.getBoundingClientRect();
+      const ox=r.left-containerRect.left,oy=r.top-containerRect.top,ow=r.width,oh=r.height;
+      const ix=Math.max(0,Math.min(cx+w,ox+ow)-Math.max(cx,ox));
+      const iy=Math.max(0,Math.min(cy+h,oy+oh)-Math.max(cy,oy));
+      if(ix*iy>0.55*Math.min(w*h,Math.max(1,ow*oh)))return true;
+    }
+    return false;
+  };
+  let cx=x,cy=y;
+  for(let i=0;i<6&&sobrepoe(cx,cy);i++){cx+=28;cy+=28}
+  cx=Math.max(8,Math.min(containerRect.width-w-8,cx));
+  cy=Math.max(8,Math.min(containerRect.height-h-8,cy));
+  return{x:cx,y:cy};
+}
+// Ponto de entrada do selo (substitui _orbAbrirMural(id,ancoraTela) nas
+// telas onde da pra arrastar). Clicar de novo num selo ja aberto nao
+// duplica: traz pra frente + pulso, igual _flAbrirCard ja faz.
+function _fichOrbAbrirOuFoco(id,ancoraTela){
+  if(_orbMuralEhGaveta()){_orbAbrirMural(id,ancoraTela);return}
+  const existente=_fichDe('orb',id);
+  if(existente){_fichTrazerFrente(existente);return}
+  _fichAbrirVaga('orb');
+  _fichOrbCriar(id,ancoraTela);
+}
+function _fichOrbPintar(inst,mostrarDica){
+  const cards=_orbCardsDiretos(inst.pastaId);
+  const nSub=getFolderChildrenVisiveis(inst.pastaId).length;
+  const cols=+inst.el.style.getPropertyValue('--orb-mural-cols')||1;
+  inst.el.innerHTML=`<div class="orb-mural-hd">
+      <button type="button" class="orb-mural-alca" title="${escHtml(t('Arrastar pra mover'))}" aria-label="${escHtml(t('Arrastar pra mover'))}">${ICO.grip}</button>
+      <strong>${escHtml(inst.nome)}</strong>
+      <span class="orb-mural-n">${cards.length} ${escHtml(t(cards.length===1?'nota aqui':'notas aqui'))}</span>
+      <button type="button" class="orb-mural-x" onclick="_fichFechar('${escJs(inst.uid)}')" title="${escHtml(t('Fechar'))}" aria-label="${escHtml(t('Fechar'))}">${ICO.close}</button>
+    </div>
+    <div class="orb-mural-body">${_orbMuralFichas(cards,cols,inst.uid,inst.notaAbertaId)}</div>
+    ${nSub?`<div class="orb-mural-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na órbita, atrás deste cartão':'subpastas continuam na órbita, atrás deste cartão'))}</div>`:''}
+    ${mostrarDica?`<div class="orb-mural-dica" id="orbMuralDica">${escHtml(t('arraste a alça pra mover · role a roda (ou belisque) pra aumentar e diminuir'))}</div>`:''}`;
+  _orbMuralPintarFotos(inst.el.querySelector('.orb-mural-body'));
+}
+function _fichOrbCriar(id,ancoraTela){
+  const pasta=_orbAcha(id);
+  const cards=_orbCardsDiretos(id);
+  const f=_orbMuralFormaCompacta(cards.length);
+  const uid='orb'+(++_fichUidSeq);
+  const el=document.createElement('div');
+  el.className='orb-mural fich-inst viva';
+  el.id='fich-'+uid;
+  _orbPalco.appendChild(el);
+  const inst={uid,tipo:'orb',pastaId:id,nome:(pasta&&pasta.name)||t('Tudo'),el,docado:false,notaAbertaId:null,tAberto:Date.now()};
+  _fichAbertos.push(inst);
+  el.style.setProperty('--orb-mural-cols',f.cols);
+  el.style.setProperty('--orb-mural-maxa',f.maxa+'px');
+  _fichOrbPintar(inst,!localStorage.getItem('vox_fich_dica_vista'));
+  el.style.width=f.w+'px';
+  const pr=_orbPalco.getBoundingClientRect();
+  const altura=el.offsetHeight||(f.maxa+ORB_MURAL_CHROME);
+  let x=ancoraTela.x-pr.left-f.w/2, y=ancoraTela.y-pr.top-24;
+  const pos=_fichAcharVaga(inst,x,y,f.w,altura,pr);
+  el.style.left=pos.x+'px';el.style.top=pos.y+'px';el.style.right='';el.style.bottom='';
+  el.dataset.arrastado='1';
+  el.style.transition='opacity 220ms var(--orb-curva)';
+  el.addEventListener('pointerdown',()=>_fichTrazerFrente(inst));
+  _painelLigar(el,'.orb-mural-alca','.orb-mural-body',()=>false);
+  // Nasce do ponto tocado: _painelLigar acabou de fixar transform-
+  // origin:'top left' (o que arrasto/roda precisam), mas a entrada ainda
+  // nao rodou, e ela quer crescer do selo, nao do proprio canto. Corrige
+  // so pra esta abertura; ao terminar a transicao de entrada, volta pro
+  // padrao que arrasto/roda esperam. Bug real que o agente achou no
+  // mural do foco (_orbMuralPosicionar nunca roda no fluxo do selo) --
+  // aqui, como e' tudo codigo novo, nasce certo desde o primeiro dia.
+  const ox=ancoraTela.x-pr.left-pos.x, oy=ancoraTela.y-pr.top-pos.y;
+  el.style.transformOrigin=ox+'px '+oy+'px';
+  requestAnimationFrame(()=>{
+    el.classList.add('on');
+    el.addEventListener('transitionend',()=>{el.style.transformOrigin='top left'},{once:true});
+  });
+  _fichTrazerFrente(inst);
+  return inst;
+}
+function _fichOrbAtualizarInst(inst){
+  const body=inst.el.querySelector('.orb-mural-body');
+  if(!body)return;
+  const topo=body.scrollTop;
+  const cols=+inst.el.style.getPropertyValue('--orb-mural-cols')||1;
+  const cards=_orbCardsDiretos(inst.pastaId);
+  body.innerHTML=_orbMuralFichas(cards,cols,inst.uid,inst.notaAbertaId);
+  _orbMuralPintarFotos(body);
+  body.scrollTop=topo;
+  const nEl=inst.el.querySelector('.orb-mural-n');
+  if(nEl)nEl.textContent=cards.length+' '+t(cards.length===1?'nota aqui':'notas aqui');
+}
+// AJUSTE que separa a 3-B da proposta 3 (mesma logica do mural do foco,
+// so que por instancia): abrir uma nota NAO faz as outras sumirem -- FLIP
+// em transform nos mesmos nos, so mudando de lugar.
+function _fichOrbAlterna(uid,id){
+  const inst=_fichPorUid(uid);if(!inst)return;
+  const body=inst.el.querySelector('.orb-mural-body');
+  if(!body)return;
+  const its=[...body.querySelectorAll('.orb-mural-it')];
+  const antes=new Map();its.forEach(e=>antes.set(e,e.getBoundingClientRect()));
+  inst.notaAbertaId=(inst.notaAbertaId===id)?null:id;
+  const cols=+inst.el.style.getPropertyValue('--orb-mural-cols')||1;
+  body.innerHTML=_orbMuralFichas(_orbCardsDiretos(inst.pastaId),cols,inst.uid,inst.notaAbertaId);
+  _orbMuralPintarFotos(body);
+  const depois=[...body.querySelectorAll('.orb-mural-it')];
+  if(!_voxReduzMov()){
+    depois.forEach(e=>{
+      const velho=its.find(v=>v.dataset.nid===e.dataset.nid);
+      if(!velho)return;
+      const a=antes.get(velho),b=e.getBoundingClientRect();
+      const dx=a.left-b.left,dy=a.top-b.top;
+      if(!dx&&!dy)return;
+      e.classList.remove('entra');
+      e.style.transition='none';
+      e.style.transform=`translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`;
+      requestAnimationFrame(()=>{e.classList.add('desliza');e.style.transition='';e.style.transform=''});
+    });
+  }
+  const alvo=depois.find(e=>e.dataset.nid===inst.notaAbertaId);
+  if(alvo){
+    const fim=alvo.offsetTop+alvo.offsetHeight;
+    if(fim>body.scrollTop+body.clientHeight)body.scrollTop=fim-body.clientHeight+6;
+  }
+}
+function _fichOrbRenomear(uid,id){
+  const inst=_fichPorUid(uid);if(!inst)return;
+  renameSname(id);
+  _fichOrbAtualizarInst(inst);
+}
+function _fichOrbExcluir(uid,id){
+  if(!document.getElementById(id))return;
+  _fcFecharFlutuanteDe(id);
+  paraLixeira(id,true);
+  const inst=_fichPorUid(uid);
+  if(inst){if(inst.notaAbertaId===id)inst.notaAbertaId=null;}
+  _orbDesenhar();
+  if(_fichPorUid(uid))_fichOrbAtualizarInst(_fichPorUid(uid));
+  toastDesfazer(t('🗑️ Nota na lixeira · some em 30 dias'),()=>{
+    restaurarDaLixeira(id,true);
+    _orbDesenhar();
+    if(_fichPorUid(uid))_fichOrbAtualizarInst(_fichPorUid(uid));
+    toast(t('↩ Nota de volta'));
+  });
+}
+function _fichOrbArquivar(uid,id){
+  if(!document.getElementById(id))return;
+  _fcFecharFlutuanteDe(id);
+  arquivarCard(id,true);
+  const inst=_fichPorUid(uid);
+  if(inst){if(inst.notaAbertaId===id)inst.notaAbertaId=null;}
+  _orbDesenhar();
+  if(_fichPorUid(uid))_fichOrbAtualizarInst(_fichPorUid(uid));
+  toastDesfazer(t('📦 Nota arquivada'),()=>{
+    desarquivarCard(id,true);
+    _orbDesenhar();
+    if(_fichPorUid(uid))_fichOrbAtualizarInst(_fichPorUid(uid));
+    toast(t('↩ Nota de volta'));
+  });
+}
+
+// ── Fluxograma: painel de pasta, multi-instancia ──
+// Monta o miolo do painel (cabecalho + lista) pra um pastaId qualquer.
+// uidTok e' 'gaveta' no modo celular (singleton de sempre, sem mudar) ou
+// o uid de verdade no modo desktop -- o unico jeito de um clique saber
+// pra qual instancia responder.
+function _fcConstruirHtml(uidTok,id,nomePasta,itemExpandidoId){
+  const cards=_fcCardsDaPasta(id);
+  const uidJs=escJs(uidTok);
+  let corpo='';
+  if(cards.length){
+    const pedacos=[];
+    for(let i=0;i<cards.length;i++){
+      const c=cards[i];
+      const sn=(c.dataset.sessionName||'').trim();
+      const txt=(c.querySelector('textarea')?.value||'').trim().replace(/\s+/g,' ');
+      const jaAberta=_flAbertas.some(j=>j.id===c.id);
+      const expandido=itemExpandidoId===c.id;
+      const limite=expandido?700:90;
+      const previaTxt=txt?escHtml(txt.slice(0,limite))+(txt.length>limite?'…':''):escHtml(t('(card vazio)'));
+      let acoes='';
+      if(expandido){
+        acoes='<div class="fc-lista-acoes">'
+          +'<button type="button" class="fc-lista-float-btn" onclick="event.stopPropagation();_flAbrirCard(\''+escJs(c.id)+'\',this)">'+ICO.expand+' '+t('Abrir flutuante')+'</button>'
+          +'<button type="button" class="fc-lista-arq-btn" onclick="event.stopPropagation();_fcArquivarCard(\''+uidJs+'\',\''+escJs(c.id)+'\')" title="'+t('Arquivar')+'" aria-label="'+t('Arquivar')+'">'+ICO.archive+'</button>'
+          +'<button type="button" class="fc-lista-del-btn" onclick="event.stopPropagation();_fcExcluirCard(\''+uidJs+'\',\''+escJs(c.id)+'\')" title="'+t('Excluir')+'" aria-label="'+t('Excluir')+'">'+ICO.trash+'</button>'
+          +'</div>';
+      }
+      const entraClasse=i<8?' fc-lista-item-entra':'';
+      const luz=_fcLuzDaEtiqueta(c);
+      const tcAttr=luz?(' data-tc="'+escHtml(c.dataset.tc)+'"'):'';
+      const estilos=[];
+      if(i<8)estilos.push('animation-delay:'+(i*20)+'ms');
+      if(luz)estilos.push('--fc-lista-ca:'+safeColor(luz.ca));
+      const styleAttr=estilos.length?(' style="'+estilos.join(';')+'"'):'';
+      const classes='fc-lista-item'+(jaAberta?' fc-lista-item-aberta':'')+(expandido?' fc-lista-item-expandida':'')+entraClasse;
+      pedacos.push(
+        '<div class="'+classes+'"'+tcAttr+styleAttr+'>'
+        +'<button type="button" class="fc-lista-item-corpo" onclick="_fcAlternarExpansao(\''+uidJs+'\',\''+escJs(c.id)+'\')">'
+        +'<span class="fc-lista-nome'+(sn?'':' fc-lista-nome-vazia')+'" title="'+(sn?escHtml(sn):t('Clique para nomear este card'))+'" onclick="event.stopPropagation();_fcRenomear(\''+uidJs+'\',\''+escJs(c.id)+'\')">'+escHtml(sn||t('+ nome'))+'</span>'
+        +'<span class="fc-lista-previa">'+previaTxt+'</span>'
+        +'</button>'
+        +acoes
+        +'</div>'
+      );
+    }
+    corpo=pedacos.join('');
+  }else{
+    corpo='<div class="fc-lista-vazia">'+escHtml(t('Nenhum card direto nesta pasta.'))+'</div>';
+  }
+  const nSub=getFolderChildrenVisiveis(id).length;
+  const rodapeSub=nSub?('<div class="fc-lista-rodape">'+nSub+' '+escHtml(t(nSub===1?'subpasta continua na árvore, atrás deste painel':'subpastas continuam na árvore, atrás deste painel'))+'</div>'):'';
+  return '<button type="button" class="fc-panel-handle" onclick="_fcAlternarGaveta()" title="'+t('Redimensionar')+'" aria-label="'+t('Redimensionar')+'"><span class="fc-panel-handle-bar"></span></button>'
+    +'<div class="fc-card-panel-hd">'
+    +'<button type="button" class="fc-panel-alca" title="'+escHtml(t('Arrastar pra mover'))+'" aria-label="'+escHtml(t('Arrastar pra mover'))+'">'+ICO.grip+'</button>'
+    +'<strong>'+escHtml(nomePasta||t('Pasta'))+'</strong>'
+    +'<span class="fc-card-panel-dt">'+cards.length+' '+escHtml(t(cards.length===1?'card':'cards'))+'</span>'
+    +'<button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel(\''+uidJs+'\')" title="'+t('Fechar')+'" aria-label="'+t('Fechar')+'">'+ICO.close+'</button>'
+    +'</div>'
+    +'<div class="fc-card-panel-body fc-lista">'+corpo+'</div>'
+    +rodapeSub;
+}
+function _fichFcAtualizarInst(inst){
+  if(inst.cardAbertoId){_fcAbrirCard(inst.uid,inst.cardAbertoId);return}
+  inst.el.innerHTML=_fcConstruirHtml(inst.uid,inst.pastaId,inst.nome,inst.itemExpandidoId);
+}
+// Volta pra lista a partir do texto de um card (estado 2 do painel) --
+// mesma pasta, mesma instancia, so troca o que esta pintado dentro.
+function _fcVoltarParaLista(uid){
+  if(uid==='gaveta'){
+    _fcCardAbertoId=null;
+    if(_fcPastaAberta)_fcListarCards(_fcPastaAberta.id,_fcPastaAberta.nome);
+    return;
+  }
+  const inst=_fichPorUid(uid);if(!inst)return;
+  inst.cardAbertoId=null;
+  _fichFcAtualizarInst(inst);
+}
+// Torna uma instancia flutuante do Fluxograma a encaixada de sempre --
+// limpa left/top/width/height/right/bottom inline (_painelDestravar) e a
+// CSS de base (top:0;right:0;bottom:0) assume de novo.
+function _fichFcTornarDocado(inst){
+  inst.docado=true;
+  _painelDestravar(inst.el);
+  inst.el.classList.add('on');
+}
+
 // ── HISTORY ──
 let _historyCache=[];
 async function loadHistory(){
@@ -24802,7 +25345,7 @@ function _lbExcluir(){
   _imgRevoke(im.k);
   _tiraLimparSeVazia(cid);
   saveHistory();
-  if(typeof _orbMuralAberto!=='undefined'&&_orbMuralAberto)_orbMuralAtualizar();
+  _fichRepintarTodos();
   fecharImgLb();
 }
 
@@ -29560,6 +30103,8 @@ function _mapaFolderMudou(){
   const orbOn=document.getElementById('orbOverlay')?.classList.contains('on');
   if(!fcOn&&!orbOn)return;
   if(_fcPastaAberta&&_fcPastaAberta.id!==null&&_mapaPastaSumida(_fcPastaAberta.id))_fcFecharPainel();
+  _fichLista('fc').filter(f=>f.pastaId!==null&&_mapaPastaSumida(f.pastaId)).forEach(f=>_fichFechar(f.uid));
+  _fichLista('orb').filter(f=>f.pastaId!==null&&_mapaPastaSumida(f.pastaId)).forEach(f=>_fichFechar(f.uid));
   if(orbOn){
     if(_orbFoco!==null&&_mapaPastaSumida(_orbFoco)){
       // Sobe de pai em pai até achar alguém que ainda esteja na árvore normal.
