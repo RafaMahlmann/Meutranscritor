@@ -5229,6 +5229,19 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .tx-eye-btn:hover{color:var(--text2);background:var(--bg-card)}
 .tx-eye-btn svg{width:16px;height:16px}
 .tx-preview{background:var(--bg-input);border-radius:12px;padding:12px;font-size:12.5px;color:var(--text2);line-height:1.6;max-height:150px;overflow-y:auto;white-space:pre-wrap;margin:10px 0}
+/* Selo de inteireza — a prévia corta em 600 caracteres, e sem isto a tela
+   parecia estar entregando um pedaço. Verde de confirmação, não de enfeite:
+   ele afirma um fato verificável (o tamanho do texto que VAI virar card). */
+.tx-selo-ok{display:flex;align-items:center;gap:7px;margin:10px 0 0;padding:8px 11px;
+  border-radius:10px;font-size:12px;font-weight:600;line-height:1.35;
+  color:#0b6e72;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3)}
+.tx-selo-ok .svgi{display:flex;flex-shrink:0}
+.tx-selo-ok .svgi svg{width:14px;height:14px}
+[data-theme="dark"] .tx-selo-ok{color:#7fe3c0;background:rgba(52,216,160,.1);border-color:rgba(127,227,192,.28)}
+/* A linha que encerra a prévia cortada — dentro da própria caixa, pra ninguém
+   confundir o corte da PRÉVIA com corte do CONTEÚDO. */
+.tx-preview-corte{background:var(--bg-input);border-radius:0 0 12px 12px;padding:0 12px 10px;
+  margin:-10px 0 10px;font-size:11px;color:var(--text4);font-style:italic}
 .tx-warn{background:var(--warning-glow,rgba(245,158,11,0.12));border-radius:12px;padding:11px 13px;font-size:12px;color:var(--text2);line-height:1.55;margin:10px 0}
 .tx-progress{font-size:13px;font-weight:700;color:var(--accent);text-align:center;margin:8px 0}
 /* ── Sala de Envio (pasta em viagens) ── */
@@ -7825,7 +7838,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.14.2';
+const VOX_VERSION='2026.09.14.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9610,6 +9623,21 @@ let I18N_EN={
 "Não consegui trocar a senha.":"Couldn't change the password.",
 "Não consegui trocar o código.":"Couldn't change the code.",
 "Código de recuperação trocado":"Recovery code changed",
+// Vox Transfer — selo de inteireza e falhas honestas (14/09/2026)
+"Texto completo":"Full text",
+"{n} letras":"{n} characters",
+"remontado de {n} partes":"reassembled from {n} parts",
+"(a prévia para aqui — o card vai receber o texto inteiro)":"(the preview stops here — the card gets the whole text)",
+"Não consegui abrir esta transferência":"Couldn't open this transfer",
+"Ou a senha não confere, ou o link chegou incompleto (aplicativo de mensagem às vezes corta link longo no meio).":"Either the password doesn't match, or the link arrived incomplete (messaging apps sometimes cut long links in half).",
+"O link chegou incompleto ou embaralhado — aplicativo de mensagem às vezes corta link longo no meio.":"The link arrived incomplete or scrambled — messaging apps sometimes cut long links in half.",
+"Peça pra reenviar. Nada foi adicionado aqui.":"Ask for it again. Nothing was added here.",
+"Tentar a senha de novo":"Try the password again",
+"Terminar depois":"Finish later",
+"Ler o próximo QR":"Scan the next QR",
+"Descartar o que já chegou":"Discard what arrived",
+"Partes descartadas. Nenhum card foi criado.":"Parts discarded. No card was created.",
+"❌ Transferência grande demais pra fila de espera. Adicione o que já chegou, ou comece de novo.":"❌ Transfer too big for the waiting queue. Add what already arrived, or start over.",
 "O modelo de IA configurado pra {p} não existe mais nesse provedor — escolha outro em Configurações.":"The AI model set for {p} no longer exists with that provider — pick another one in Settings.",
 "Senha trocada":"Password changed"
 };
@@ -21968,6 +21996,10 @@ let _txpRxViaCamera=false;
 function abrirReceberTransferencia(){
   _txpRxCameraStop();
   _txpRxViaCamera=false;
+  // "Terminar depois" não tinha depois: as partes ficavam guardadas e a pessoa
+  // nunca mais era avisada de que existiam. Se há transferência pela metade,
+  // a tela dela vem primeiro — com o campo de colar ali, que é o que falta.
+  if(_txVoltarProProgresso())return;
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title">📥 ${t('Receber transferência')}</div>
@@ -22036,7 +22068,15 @@ async function _txpRxCameraStart(){
   try{
     _txpRxCamStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
   }catch(e){
-    abrirReceberTransferencia();
+    // REGRESSAO DO PROPRIO CONSERTO ANTERIOR (commit 008a686), achada pelo
+    // agente antes de virar problema de gente de verdade: com o botao "Ler o
+    // proximo QR" na tela de progresso, esta falha virou ALCANCAVEL no meio
+    // de uma transferencia pela metade -- e cair no abrirReceberTransferencia
+    // generico apagava a tela que mostrava "3 de 6 recebidas". As partes
+    // sobrevivem no localStorage, mas a pessoa perde a VISAO delas e fica sem
+    // caminho de volta. Agora volta pra tela de progresso de onde saiu.
+    _txpRxViaCamera=false;   // camera falhou: nao oferecer o botao de novo
+    if(!_txVoltarProProgresso())abrirReceberTransferencia();
     toast(t('ℹ️ Sem a câmera não dá pra ler o QR — mas colar o link funciona igual. Pode tentar de novo a qualquer hora.'),true);
     return;
   }
@@ -27872,6 +27912,7 @@ async function shareCard(id){
 // Pipeline: JSON {t,n,g} → deflate (se o navegador tiver) → AES-GCM (se senha) → base64url.
 const TX_PREFIX='vox=';
 const TX_QR_SLICE=800;    // chars de base64 por QR — mantém o QR escaneável pela câmera
+const TX_RX_MAX_CHARS=1500000; // teto da fila de partes do card único (irmão do TXP_RX_MAX_CHARS da pasta)
 const TX_LINK_MAX=20000;  // base64 máximo pra caber num link único
 function _b64uEnc(bytes){let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function _b64uDec(str){const b=atob(str.replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
@@ -28004,11 +28045,23 @@ function handleTransferHash(hashStr){
   const m=raw.match(/^1\.([cr][eo])\.([a-z0-9]+)\.(\d+)\.(\d+)\.([A-Za-z0-9_-]+)$/);
   if(!m){toast(t('❌ Link de transferência inválido'),true);return true}
   const flags=m[1],sid=m[2],i=+m[3],n=+m[4],slice=m[5];
-  if(n===1){_txReceive(slice,flags);return true}
+  // Mesma conferência de faixa que o formato 2 já fazia (linha do `if(r<1...`)
+  // e que aqui faltava: sem ela, um "parte 9 de 3" entrava na fila e a
+  // remontagem depois concatenava buracos — texto cortado com cara de pronto.
+  if(i<1||i>n||n<1||n>TXP_MAX_VIAGENS){toast(t('❌ Link de transferência inválido'),true);return true}
+  if(n===1){_txReceive(slice,flags,1);return true}
   let store={};try{store=JSON.parse(localStorage.getItem('vox_txrx')||'{}')}catch(e){}
   const now=Date.now();
   Object.keys(store).forEach(k=>{if(now-(store[k].ts||0)>86400000)delete store[k]});
+  // Teto de tamanho, igual ao TXP_RX_MAX_CHARS que a pasta já tinha: sem isto,
+  // links forjados (ou uma transferência esquecida) engordam o localStorage em
+  // silêncio até estourar a cota do navegador e derrubar o que importa.
   const ent=store[sid]||{flags,n,parts:{},ts:now};
+  const jaGuardado=Object.values(store).reduce((soma,e)=>soma+Object.values(e.parts||{}).reduce((s,v)=>s+(v||'').length,0),0);
+  if(jaGuardado+slice.length>TX_RX_MAX_CHARS){
+    toast(t('❌ Transferência grande demais pra fila de espera. Adicione o que já chegou, ou comece de novo.'),true);
+    return true;
+  }
   ent.parts[i]=slice;ent.ts=now;store[sid]=ent;
   const have=Object.keys(ent.parts).length;
   if(have<n){
@@ -28018,7 +28071,7 @@ function handleTransferHash(hashStr){
   }
   delete store[sid];localStorage.setItem('vox_txrx',JSON.stringify(store));
   let b64='';for(let k=1;k<=n;k++)b64+=ent.parts[k]||'';
-  _txReceive(b64,ent.flags||flags);
+  _txReceive(b64,ent.flags||flags,n);
   return true;
 }
 function _txShowProgress(have,n){
@@ -28036,14 +28089,44 @@ function _txShowProgress(have,n){
     <div class="tx-sub">${t('Continue escaneando os próximos QRs (ou abrindo os links) — em qualquer ordem, o Vox monta tudo sozinho.')}</div>
     ${continuar}
     ${_txpColarHtml()}
-    <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Terminar depois')}</button></div></div>`;
+    <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Terminar depois')}</button></div>
+    <button class="tx-tut-hide" onclick="txDescartarPartes()">${t('Descartar o que já chegou')}</button></div>`;
   ov.classList.add('on');
+}
+// Saída pra quem não quer mais retomar: sem isto, com a tela de progresso
+// aparecendo sozinha ao reabrir "Receber transferência", uma transferência
+// abandonada ficaria voltando até expirar (24h).
+function txDescartarPartes(){
+  try{localStorage.removeItem('vox_txrx')}catch(e){}
+  closeTxOverlay();
+  toast(t('Partes descartadas. Nenhum card foi criado.'));
 }
 // Retoma a camera pra ler a proxima parte, sem voltar pro menu "Receber
 // transferencia" -- reabre getUserMedia (silencioso: a permissao ja foi
 // concedida na 1a leitura desta sessao de aba).
 async function _txpRxContinuarCamera(){
   await _txpRxCameraStart();
+}
+// Existe alguma transferencia pela metade agora? Devolve true se conseguiu
+// mostrar a tela de progresso dela. Usado quando a camera falha no meio (pra
+// nao apagar o progresso da tela) e ao reabrir "Receber transferencia" (antes
+// disto, "Terminar depois" nao tinha depois nenhum: as partes ficavam
+// guardadas e a pessoa nunca mais era avisada de que existiam).
+function _txVoltarProProgresso(){
+  // pasta (formato 2): o estado vivo ja esta na memoria
+  if(typeof _txpRx!=='undefined'&&_txpRx&&_txpRx.ent){_txpTelaRecepcao();return true}
+  // card unico (formato 1): reconstroi do localStorage a mais recente
+  let store={};
+  try{store=JSON.parse(localStorage.getItem('vox_txrx')||'{}')}catch(e){}
+  const sids=Object.keys(store);
+  if(!sids.length)return false;
+  const sid=sids.sort((a,b)=>(store[b].ts||0)-(store[a].ts||0))[0];
+  const ent=store[sid];
+  if(!ent||!ent.n)return false;
+  const have=Object.keys(ent.parts||{}).length;
+  if(have<1||have>=ent.n)return false;
+  _txShowProgress(have,ent.n);
+  return true;
 }
 async function _txDecode(b64,flags,pass){
   let u8=_b64uDec(b64);
@@ -28054,8 +28137,8 @@ async function _txDecode(b64,flags,pass){
   }
   return JSON.parse(new TextDecoder().decode(u8));
 }
-function _txReceive(b64,flags){
-  _txRx={b64,flags};
+function _txReceive(b64,flags,partes){
+  _txRx={b64,flags,partes:partes||1};
   const locked=flags[1]==='e';
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -28065,6 +28148,22 @@ function _txReceive(b64,flags){
   ov.classList.add('on');
   if(!locked)txUnlock();
   else setTimeout(()=>document.getElementById('txRxPass')?.focus(),100);
+}
+// O SELO DE INTEIREZA (14/09/2026). Achado real do Rafa, e a lição mais cara
+// desta função: a tela de chegada cortava a prévia em 600 caracteres com "…" e
+// não dizia em lugar nenhum que o texto estava COMPLETO. Quem tinha acabado de
+// ler "são 6 QR codes" na tela de envio abria o link (que já leva o texto
+// inteiro, num único endereço) e via um texto cortado — e concluía, com toda a
+// razão aparente, que tinha recebido só a primeira parte e que ia acabar com
+// seis cards picados. O mecanismo estava certo o tempo todo; era a tela que
+// mentia por omissão. Agora ela diz o tamanho, e de quantas partes veio.
+function _txSeloInteireza(texto,partes){
+  const n=(texto||'').length;
+  const letras=n.toLocaleString(getLocale());
+  const de=partes>1
+    ? ' · '+t('remontado de {n} partes').replace('{n}',partes)
+    : '';
+  return `<div class="tx-selo-ok"><span class="svgi">${ICO.check||'✓'}</span>${escHtml(t('Texto completo'))} · ${escHtml(t('{n} letras').replace('{n}',letras))}${escHtml(de)}</div>`;
 }
 async function txUnlock(){
   if(!_txRx)return;
@@ -28077,11 +28176,29 @@ async function txUnlock(){
     ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       <div class="tx-title">📥 ${t('Texto recebido via Vox Transfer')}</div>
       ${obj.n?`<div class="tx-sub"><strong>${escHtml(obj.n)}</strong></div>`:''}
-      <div class="tx-preview">${escHtml(obj.t.slice(0,600))}${obj.t.length>600?'…':''}</div>
+      ${_txSeloInteireza(obj.t,_txRx.partes)}
+      <div class="tx-preview">${escHtml(obj.t.slice(0,600))}${obj.t.length>600?`…</div><div class="tx-preview-corte">${escHtml(t('(a prévia para aqui — o card vai receber o texto inteiro)'))}`:''}</div>
       <div class="tx-sub">${t('Confere? Ele vira um novo card seu — uma cópia independente.')}</div>
       <div class="tx-row"><button class="tx-btn primary" onclick="txAccept()">✓ ${t('Adicionar como card')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Cancelar')}</button></div></div>`;
     ov.classList.add('on');
-  }catch(e){toast(t('❌ Senha incorreta ou link corrompido'),true)}
+  }catch(e){
+    // Antes: só um toast, e a janela ficava na tela com o título "Texto
+    // recebido via Vox Transfer" e o corpo VAZIO (70px de nada) — falha com
+    // cara de sucesso, que é o pior jeito de falhar. Do lado da pasta isso já
+    // era tratado (_txpFalhou); aqui não era.
+    const ov=_txOverlay();
+    const eraSenha=!!(_txRx&&_txRx.flags&&_txRx.flags[1]==='e');
+    ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="tx-title">${t('Não consegui abrir esta transferência')}</div>
+      <div class="tx-sub">${eraSenha
+        ?t('Ou a senha não confere, ou o link chegou incompleto (aplicativo de mensagem às vezes corta link longo no meio).')
+        :t('O link chegou incompleto ou embaralhado — aplicativo de mensagem às vezes corta link longo no meio.')}</div>
+      <div class="tx-sub">${t('Peça pra reenviar. Nada foi adicionado aqui.')}</div>
+      ${eraSenha
+        ?`<div class="tx-row"><button class="tx-btn primary" onclick="_txReceive(_txRx.b64,_txRx.flags,_txRx.partes)">${t('Tentar a senha de novo')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Fechar')}</button></div>`
+        :`<div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Fechar')}</button></div>`}</div>`;
+    ov.classList.add('on');
+  }
 }
 function txAccept(){
   if(!_txRx||!_txRx.obj)return;
