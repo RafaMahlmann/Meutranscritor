@@ -2102,7 +2102,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   flex-direction:column;z-index:2;pointer-events:none;opacity:0;visibility:hidden;
   transform:translateX(18px);
   transition:opacity .28s cubic-bezier(.22,1,.36,1),transform .28s cubic-bezier(.22,1,.36,1),visibility 0s .28s}
-.fc-card-panel.on{opacity:1;pointer-events:auto;visibility:visible;transform:translateX(0);
+.fc-card-panel.on{opacity:1;pointer-events:auto;visibility:visible;transform:translateX(0) scale(var(--painel-esc,1));
   transition:opacity .28s cubic-bezier(.22,1,.36,1),transform .28s cubic-bezier(.22,1,.36,1)}
 /* Alça da gaveta — só aparece nos breakpoints de gaveta (celular/tablet
    retrato, mais abaixo). Tocar alterna entre os dois degraus de altura
@@ -2113,6 +2113,17 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .fc-panel-handle-bar{width:36px;height:4px;border-radius:2px;background:rgba(127,132,148,.4);
   transition:background .15s ease}
 .fc-panel-handle:hover .fc-panel-handle-bar{background:rgba(127,132,148,.65)}
+/* Alca de arrastar do painel do Fluxograma -- mesmo desenho (ICO.grip)
+   e mesma logica (_painelLigar) do selo da Orbita, so que tema-aware:
+   aqui o painel segue claro/escuro do app, nao e sempre escuro como a
+   Orbita. --painel-k contra-escala ela, igual la. */
+.fc-panel-alca{
+  flex-shrink:0;width:22px;height:22px;border-radius:7px;border:none;
+  background:var(--bg-hover,rgba(127,132,148,.14));color:var(--text3);
+  display:flex;align-items:center;justify-content:center;cursor:grab;
+  transform:scale(var(--painel-k,1));touch-action:none;margin-top:1px}
+.fc-panel-alca:active{cursor:grabbing}
+.fc-panel-alca svg{width:13px;height:13px}
 .fc-card-panel-hd{display:flex;align-items:flex-start;gap:8px;padding:14px 14px 10px;border-bottom:1px solid var(--border)}
 .fc-card-panel-hd strong{flex:1;font-size:13px;color:var(--text);word-break:break-word}
 .fc-card-panel-dt{font-size:11px;color:var(--text4);white-space:nowrap}
@@ -2481,6 +2492,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   .fc-card-panel.on{transform:translateY(0)}
   .fc-lista-item{padding:12px 10px}
   .fc-panel-handle{display:flex}
+  .fc-panel-alca{display:none}
 }
 /* iPad em retrato (e qualquer tela nessa faixa nessa orientação): a única
    regra responsiva era a de celular acima — entre 600 e 1024px de largura o
@@ -2495,6 +2507,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
     transform:translate(-50%,22px)}
   .fc-card-panel.on{transform:translate(-50%,0)}
   .fc-panel-handle{display:flex}
+  .fc-panel-alca{display:none}
 }
 /* ══ ÓRBITA DE PASTAS — Fase 1 ══
    Motor portado de _proto_orbital.html (maquete aprovada, não redesenhar).
@@ -7645,7 +7658,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.12.5';
+const VOX_VERSION='2026.09.12.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11821,6 +11834,7 @@ function _fcListarCards(id,nomePasta,manterExpansao){
   const rodapeSub=nSub?`<div class="fc-lista-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na árvore, atrás deste painel':'subpastas continuam na árvore, atrás deste painel'))}</div>`:'';
   panel.innerHTML=`<button type="button" class="fc-panel-handle" onclick="_fcAlternarGaveta()" title="${t('Redimensionar')}" aria-label="${t('Redimensionar')}"><span class="fc-panel-handle-bar"></span></button>
     <div class="fc-card-panel-hd">
+      <button type="button" class="fc-panel-alca" title="${escHtml(t('Arrastar pra mover'))}" aria-label="${escHtml(t('Arrastar pra mover'))}">${ICO.grip}</button>
       <strong>${escHtml(nomePasta||t('Pasta'))}</strong>
       <span class="fc-card-panel-dt">${cards.length} ${escHtml(t(cards.length===1?'card':'cards'))}</span>
       <button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">${ICO.close}</button>
@@ -11828,6 +11842,12 @@ function _fcListarCards(id,nomePasta,manterExpansao){
     <div class="fc-card-panel-body fc-lista">${corpo}</div>
     ${rodapeSub}`;
   panel.classList.add('on');
+  // Mesmo padrao do selo da Orbita: alca de 6 pontinhos, roda/pinca
+  // redimensiona so o painel, tudo desativado no modo gaveta (celular
+  // e tablet retrato) -- la o painel vira folha de baixo pra cima,
+  // arrastar nao faz sentido. _orbMuralEhGaveta ja e a checagem certa:
+  // mesma faixa de tela que decide o modo gaveta em geral.
+  _painelLigar(panel,'.fc-panel-alca','.fc-card-panel-body',_orbMuralEhGaveta);
   if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbReenquadrarCam(true);
 }
 // Tocar na alça alterna o degrau da gaveta (celular/tablet retrato) —
@@ -11911,12 +11931,14 @@ function _fcAbrirCard(id){
   const p=_fcPastaAberta;
   const voltar=p?`<button type="button" class="fc-voltar-btn" onclick="_fcListarCards(${p.id===null?'null':"'"+escJs(p.id)+"'"},'${escJs(p.nome||'')}')" title="${t('Voltar')}" aria-label="${t('Voltar')}">←</button>`:'';
   panel.innerHTML=`<button type="button" class="fc-panel-handle" onclick="_fcAlternarGaveta()" title="${t('Redimensionar')}" aria-label="${t('Redimensionar')}"><span class="fc-panel-handle-bar"></span></button>
-    <div class="fc-card-panel-hd">${voltar}<strong class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="_fcRenomear('${escJs(id)}')">${escHtml(sn||t('+ nome'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">${ICO.close}</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
+    <div class="fc-card-panel-hd"><button type="button" class="fc-panel-alca" title="${escHtml(t('Arrastar pra mover'))}" aria-label="${escHtml(t('Arrastar pra mover'))}">${ICO.grip}</button>${voltar}<strong class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="_fcRenomear('${escJs(id)}')">${escHtml(sn||t('+ nome'))}</strong><span class="fc-card-panel-dt">${escHtml(dtStr)}</span><button type="button" class="fc-card-panel-close" onclick="_fcFecharPainel()" title="${t('Fechar')}" aria-label="${t('Fechar')}">${ICO.close}</button></div><div class="fc-card-panel-body">${escHtml(texto)}</div><div class="fc-card-panel-actions"><button type="button" class="fc-btn-primary" onclick="_fcVerNaLista('${escJs(id)}')">${t('Ver na lista')}</button></div>`;
   panel.classList.add('on');
+  _painelLigar(panel,'.fc-panel-alca','.fc-card-panel-body',_orbMuralEhGaveta);
   if(document.getElementById('orbOverlay')?.classList.contains('on'))_orbReenquadrarCam(true);
 }
 function _fcFecharPainel(){
   const panel=document.getElementById('fcCardPanel');
+  if(panel)_painelDestravar(panel);
   if(panel&&panel.classList.contains('on')){
     panel.classList.remove('on');
     // Espera a saída (opacity/transform, .28s no CSS) antes de esvaziar —
@@ -22194,6 +22216,14 @@ function _painelLigar(el,handleSel,corpoSel,ehGavetaAgora){
     if(!alca)return;
     e.preventDefault();
     try{alca.setPointerCapture(e.pointerId)}catch(err){}
+    // Congela o tamanho ATUAL antes de soltar left/top/right/bottom --
+    // sem isso, um painel hoje encaixado numa borda (width/height vindo
+    // de top:0;right:0;bottom:0, nao de um tamanho proprio) perderia a
+    // altura assim que 'bottom' deixasse de valer.
+    if(!el.dataset.tamanhoTravado){
+      el.style.width=el.offsetWidth+'px';el.style.height=el.offsetHeight+'px';
+      el.dataset.tamanhoTravado='1';
+    }
     const r=el.getBoundingClientRect();
     arr={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};
     _fichDicaEsconder();
@@ -22267,10 +22297,11 @@ function _painelLigar(el,handleSel,corpoSel,ehGavetaAgora){
   el.addEventListener('pointercancel',soltarPt);
 }
 function _painelDestravar(el){
-  delete el.dataset.arrastado;
+  delete el.dataset.arrastado;delete el.dataset.tamanhoTravado;
   el.style.transform='';el.style.removeProperty('--painel-esc');
   el.style.removeProperty('--painel-k');el.style.transition='';
   el.style.left='';el.style.top='';el.style.right='';el.style.bottom='';
+  el.style.width='';el.style.height='';
   _painelEscalas.delete(el);
 }
 // ── HISTORY ──
