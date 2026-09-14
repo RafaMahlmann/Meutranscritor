@@ -4457,6 +4457,18 @@ body.sel-modo .ch>.drag-handle{display:none}
 .card-cbx:active::before{transform:scale(.9)}
 .card.sel-on .card-cbx::before{background:var(--anel-sel);border-color:var(--anel-sel)}
 .card.sel-on .card-cbx .svgi{opacity:1;transform:scale(1)}
+/* A ordem em que você marca passa a decidir o resultado (juntar empilha nessa
+   ordem), e ordem que decide resultado precisa ser VISTA — senão é promessa
+   invisível, e a pessoa só descobre que errou depois do card pronto. Do 2º
+   card em diante o tique dá lugar ao número. Com um só não há ordem nenhuma
+   a mostrar, e aí fica o tique de sempre.
+   Desmarcar e marcar de novo manda o card pro fim da fila: é assim que se
+   reordena sem precisar de mais nenhum controle na tela. */
+.cbx-n{position:absolute;font-size:11px;font-weight:800;line-height:1;color:#fff;
+  opacity:0;transform:scale(.5);pointer-events:none;font-family:var(--font);
+  transition:opacity .14s linear,transform .26s cubic-bezier(.22,1,.36,1)}
+body.sel-ordem .card.sel-on .card-cbx .svgi{opacity:0;transform:scale(.5)}
+body.sel-ordem .card.sel-on .cbx-n{opacity:1;transform:scale(1)}
 /* entrada escalonada: lê como "abriu", não como "apareceu". Só nos 10
    primeiros — depois disso o atraso acumulado vira lentidão. */
 body.sel-modo .card-cbx{animation:cbxNasce .26s cubic-bezier(.22,1,.36,1) backwards}
@@ -4530,6 +4542,13 @@ body.sel-modo #cardsList .card .card-body{-webkit-user-select:none;user-select:n
   opacity:0;pointer-events:none;transform:translate(-50%,14px);
   transition:opacity .2s linear,transform .34s cubic-bezier(.22,1,.36,1)}
 [data-theme="dark"] .sel-bar{background:#2b2b30;border:1px solid rgba(255,255,255,.13)}
+/* O menu do "Mais" nasce de um botão que mora DENTRO desta barra (z-index
+   9998), e o .mapa-menu vive em 990 — ou seja, ele abria atrás da própria
+   barra que o chamou, com metade dos itens escondidos (visto em 430px).
+   Sobe só no modo seleção: fora daqui o 990 continua valendo e nada mais
+   troca de camada. Fica abaixo do toast (10001), que é quem tem que ficar
+   por cima de tudo — inclusive do desfazer que estas ações oferecem. */
+body.sel-modo .mapa-menu{z-index:9999}
 .sel-bar.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
 .sel-cnt{display:flex;align-items:baseline;gap:5px;font-size:13px;font-weight:700;
   padding-right:3px;white-space:nowrap;order:1}
@@ -4594,7 +4613,7 @@ body.sel-modo .content-area{padding-bottom:var(--sel-chao,86px)}
 }
 @media(prefers-reduced-motion:reduce){
   .card-cbx{animation:none!important}
-  .sel-bar,.card-anel,.sel-num i,.card-cbx::before,.card-cbx .svgi{transition-duration:1ms}
+  .sel-bar,.card-anel,.sel-num i,.card-cbx::before,.card-cbx .svgi,.cbx-n{transition-duration:1ms}
 }
 .folder-esvaziar{width:100%;margin-top:6px;border:1px solid var(--border);background:none;color:var(--danger);font-family:var(--font);font-size:12px;font-weight:700;padding:8px;border-radius:11px;cursor:pointer;transition:background .12s linear}
 .folder-esvaziar:hover{background:rgba(239,68,68,.1)}
@@ -8045,7 +8064,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.14.7';
+const VOX_VERSION='2026.09.14.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8539,6 +8558,29 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── o que dá pra fazer com os cards escolhidos (14/09/2026) ──
+"1 card escolhido":"1 card chosen",
+"{n} cards escolhidos":"{n} cards chosen",
+"Juntar num card só":"Merge into one card",
+"Etiquetar com uma cor…":"Tag with a colour…",
+"Transferir estes…":"Send these…",
+"ℹ️ Os cards escolhidos estão vazios — não há o que juntar":"ℹ️ The chosen cards are empty — there is nothing to merge",
+"Juntado de {n} cards":"Merged from {n} cards",
+"🧵 {n} cards viraram um só — os originais foram pro arquivo":"🧵 {n} cards became one — the originals went to the archive",
+"↩ Desfeito — os cards voltaram":"↩ Undone — the cards are back",
+"mover este card para":"move this card to",
+"mover {n} cards para":"move {n} cards to",
+"📁 1 card foi para \"{p}\"":"📁 1 card went to \"{p}\"",
+"📁 {n} cards foram para \"{p}\"":"📁 {n} cards went to \"{p}\"",
+"↩ Os cards voltaram de onde estavam":"↩ The cards went back where they were",
+"etiquetar este card":"tag this card",
+"etiquetar {n} cards":"tag {n} cards",
+"🎨 1 card ficou {cor}":"🎨 1 card is now {cor}",
+"🎨 {n} cards ficaram {cor}":"🎨 {n} cards are now {cor}",
+"↩ As etiquetas voltaram ao que eram":"↩ The tags are back to what they were",
+"sem etiqueta":"no tag",
+"ℹ️ Nada para transferir nos cards escolhidos":"ℹ️ Nothing to send in the chosen cards",
+"Enviar os cards escolhidos":"Send the chosen cards",
 // ── Transcritor local no Mac (14/09/2026) ──
 "Instale o Python pelo site python.org — no Mac não tem caixinha pra marcar":"Install Python from python.org — on a Mac there is no box to tick",
 // ── Cópias de segurança reguláveis (14/09/2026) ──
@@ -26982,7 +27024,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
     <span class="card-anel" aria-hidden="true"></span>
     <div class="diar-main-col">
       <div class="ch">
-        <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span></button>
+        <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span><span class="cbx-n"></span></button>
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}"><span class="svgi">${ICO.grip}</span></div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar('${id}')" onpointercancel="cdotCancelar('${id}')" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
@@ -28147,7 +28189,10 @@ const ICO={
   // (scratchpad/PROPOSTA_ARMAZENAMENTO_DURAVEL.html).
   instalar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3"/><polyline points="8 7 12 3 16 7"/><path d="M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg>',
   relogioAviso:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>',
-  escudo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+  escudo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  // Juntar cards (14/09/2026): duas trilhas que se encontram e seguem como
+  // uma só. Desenha a AÇÃO, não o objeto — é o mesmo critério do textoFoto.
+  juntar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3c3 0 4 5 7 5"/><path d="M3 17h3c3 0 4-5 7-5"/><line x1="12" y1="12" x2="20" y2="12"/><polyline points="17 9 20 12 17 15"/></svg>'
 };
 // ── MENU DO CÉREBRO — troca rápida de provedor, sem abrir Configurações ──
 // Reaproveita 100% as funções de troca que já existem (setProvider/
@@ -28937,7 +28982,7 @@ function _txpRenderPreparar(){
     (s.feitas.size?`<div class="txp-retoma">${t('Você já tinha enviado {n} {rw} desta pasta. Continuamos de onde parou.').replace('{n}',s.feitas.size).replace('{rw}',t(s.feitas.size===1?'viagem':'viagens'))}</div>`:'');
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div class="tx-title"><span class="lens-ico">${ICO.qr}</span>${t('Enviar a pasta')} "${escHtml(col.nome)}"</div>
+    <div class="tx-title"><span class="lens-ico">${ICO.qr}</span>${col.solta?t('Enviar os cards escolhidos'):t('Enviar a pasta')+' "'+escHtml(col.nome)+'"'}</div>
     <div class="tx-sub">${col.itens.length} ${t(col.itens.length===1?'card':'cards')}${sub} · ${t('só o texto (o áudio não caberia num link)')}</div>
     <div class="tx-tut" style="margin-top:8px">${t('Do outro lado já tem o Vox aberto? Vale mais colar o link do que escanear o QR.')}</div>
     ${aviso}
@@ -30206,7 +30251,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
     <span class="anel-foto" aria-hidden="true"></span>
     <div class="diar-main-col">
       <div class="ch">
-        <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span></button>
+        <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span><span class="cbx-n"></span></button>
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}"><span class="svgi">${ICO.grip}</span></div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar('${id}')" onpointercancel="cdotCancelar('${id}')" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
@@ -30496,8 +30541,20 @@ function selAlterna(id){
 // Pinta o que está marcado + redesenha a barra. Chamada de tudo que mexe na
 // seleção; nunca recria card nenhum, só liga e desliga classe.
 function _selSincroniza(){
+  // selIds é um Set, e Set em JS guarda a ordem de inserção — ou seja, a ordem
+  // dos cliques já estava aqui o tempo todo, só não era dita em lugar nenhum.
+  const ordem=[...selIds];
+  // Só vale a pena mostrar número a partir de DOIS: com um card marcado não
+  // existe ordem, e um "1" sozinho na caixinha só faria perguntar "1 de quê?".
+  document.body.classList.toggle('sel-ordem',ordem.length>1);
   document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
     c.classList.toggle('sel-on',selIds.has(c.id));
+    const n=c.querySelector('.cbx-n');
+    if(n){
+      const pos=ordem.indexOf(c.id);
+      const txt=pos<0?'':String(pos+1);
+      if(n.textContent!==txt)n.textContent=txt;
+    }
   });
   _selDesenhaBarra();
   _selAtualizaBotao();
@@ -30569,7 +30626,8 @@ function _selDesenhaBarra(){
     : v==='arq'
     ? `<button type="button" class="sel-act" data-sa="rest"><span class="svgi">${ICO.restaurar}</span>${escHtml(t('Restaurar'))}</button>`+
       `<button type="button" class="sel-act" data-sa="lix"><span class="svgi">${ICO.trash}</span>${escHtml(t('Excluir'))}</button>`
-    : `<button type="button" class="sel-act" data-sa="arq"><span class="svgi">${ICO.archive}</span>${escHtml(t('Arquivar'))}</button>`+
+    : `<button type="button" class="sel-act" data-sa="mais"><span class="svgi">${ICO.moreV}</span>${escHtml(t('Mais'))}</button>`+
+      `<button type="button" class="sel-act" data-sa="arq"><span class="svgi">${ICO.archive}</span>${escHtml(t('Arquivar'))}</button>`+
       `<button type="button" class="sel-act" data-sa="lix"><span class="svgi">${ICO.trash}</span>${escHtml(t('Excluir'))}</button>`;
   // Contador: se a barra já existe, só o dígito troca (deslizando). Recriar a
   // barra inteira a cada clique mataria a animação e faria tudo piscar.
@@ -30639,6 +30697,165 @@ function _selAcao(a){
   if(a==='rest')return _selRestaurar(ids);
   if(a==='arq')return _selLote(ids,'arq');
   if(a==='lix')return _selLote(ids,'lix');
+  if(a==='mais')return _selMenu();
+}
+// ── o que mais dá pra fazer com o que está marcado (14/09/2026) ──
+// Arquivar e Excluir continuam na barra: são as duas de sempre e precisam de
+// um toque só. O resto mora aqui, no mesmo menu e com a mesma gramática do
+// menu da etiqueta de cor (_mapaAbrirMenu) — a seleção manual e a seleção por
+// cor fazem a mesma coisa, então têm que se parecer.
+function _selMenu(){
+  const ids=[...selIds];
+  if(!ids.length)return;
+  const n=ids.length;
+  const btn=document.querySelector('#selBar [data-sa="mais"]');
+  const r=btn?btn.getBoundingClientRect():{right:innerWidth-20,bottom:innerHeight-80};
+  const px=r.right,py=r.bottom;
+  const itens=[];
+  // Juntar só existe a partir de dois: "juntar 1 card" não quer dizer nada.
+  if(n>1)itens.push({ic:ICO.juntar,rot:t('Juntar num card só'),fn:()=>_selJuntar(ids)});
+  itens.push({ic:ICO.folder,rot:t('Mover para uma pasta…'),fn:()=>_selSeletorDePasta(px,py)});
+  itens.push({ic:ICO.palette,rot:t('Etiquetar com uma cor…'),fn:()=>_selSeletorDeCor(px,py)});
+  itens.push({ic:ICO.share,rot:t('Transferir estes…'),fn:()=>_selTransferir(ids)});
+  _mapaAbrirMenu(px,py,(n===1?t('1 card escolhido'):t('{n} cards escolhidos').replace('{n}',n)),itens);
+}
+// ── juntar ──
+// Empilha na ORDEM EM QUE FORAM MARCADOS (decisão do Rafa, 14/09/2026) — não
+// na ordem da tela. selIds é um Set e guarda essa ordem sozinho; é por isso
+// que a caixinha mostra o número: sem ver a ordem, ninguém conseguiria
+// conferir nem corrigir o resultado antes de apertar.
+// Os originais vão pro ARQUIVO, não pra lixeira: o conteúdo deles agora vive
+// em dois lugares, e some da lista quem já está representado no card novo —
+// mas nada é tratado como lixo, porque não é.
+function _selJuntar(ids){
+  const cards=ids.map(i=>document.getElementById(i)).filter(Boolean);
+  if(cards.length<2)return;
+  const pedacos=[],nomes=[];
+  cards.forEach((c,k)=>{
+    const txt=(c.querySelector('textarea')?.value||'').trim();
+    if(!txt)return;
+    // Um título por pedaço, pra não virar um muro de texto sem costura: o nome
+    // da sessão quando existe, senão a data — que é como o card se identifica
+    // no resto do app.
+    const nome=(c.dataset.sessionName||'').trim()||fmtDt(c.dataset.dt||'');
+    nomes.push(nome);
+    pedacos.push('— '+nome+' —\n'+txt);
+  });
+  if(!pedacos.length){toast(t('ℹ️ Os cards escolhidos estão vazios — não há o que juntar'),true);return}
+  // Herda o contexto do PRIMEIRO da fila: é o que a pessoa marcou primeiro, e
+  // é dele que o card novo é a continuação.
+  const base=cards[0];
+  const pasta=base.dataset.folder||'';
+  const tags=[...new Set(cards.flatMap(c=>(c.dataset.tags||'').split(',').filter(Boolean)))];
+  const cor=base.dataset.tc;
+  const novoId=addCard(pedacos.join('\n\n'),null,0,'texto',base.dataset.prov||'',true,null,null,
+    tags,t('Juntado de {n} cards').replace('{n}',pedacos.length),'livre',false,pasta);
+  if(cor!==undefined&&cor!=='')setCardCor(novoId,parseInt(cor),true);
+  _cfEmLote(()=>ids.forEach(id=>arquivarCard(id,true)));
+  selSair();
+  const n=ids.length;
+  toastDesfazer(t('🧵 {n} cards viraram um só — os originais foram pro arquivo').replace('{n}',n),()=>{
+    paraLixeira(novoId,true);
+    _cfEmLote(()=>ids.forEach(id=>desarquivarCard(id,true)));
+    toast(t('↩ Desfeito — os cards voltaram'));
+  });
+}
+// ── mover para pasta / criar pasta nova ──
+// Mesmo desenho do seletor da etiqueta de cor (_cfSeletorDePasta): "Tudo" no
+// topo pra TIRAR de pasta, a árvore no meio, "Nova pasta…" no fim.
+function _selSeletorDePasta(px,py){
+  const ids=[...selIds];
+  if(!ids.length)return;
+  const counts=getFolderCounts();
+  const itens=[{ic:ICO.inbox,rot:t('Tudo (fora de pasta)'),fn:()=>_selMover(ids,'')}];
+  const empilha=(pai,lvl)=>{
+    getFolderChildrenVisiveis(pai).forEach(f=>{
+      itens.push({ic:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="${safeColor(f.color)}"/></svg>`,
+        rot:f.name,atalho:String(getFolderCount(f.id,counts)),nivel:Math.min(lvl,3),
+        fn:()=>_selMover(ids,f.id)});
+      empilha(f.id,lvl+1);
+    });
+  };
+  if(getFolderChildrenVisiveis(null).length){itens.push({grupo:t('pastas')});empilha(null,0)}
+  itens.push({grupo:' '});
+  itens.push({ic:ICO.folderPlus,rot:t('Nova pasta…'),fn:()=>_selNovaPasta(ids)});
+  const n=ids.length;
+  _mapaAbrirMenu(px,py,(n===1?t('mover este card para'):t('mover {n} cards para').replace('{n}',n)),itens);
+}
+function _selMover(ids,fid){
+  if(!ids.length)return;
+  // A pasta de origem de CADA card, uma a uma: eles podem vir de lugares
+  // diferentes, e um desfazer que jogasse todo mundo na mesma pasta seria
+  // pior que não ter desfazer.
+  const antes=ids.map(id=>({id,f:document.getElementById(id)?.dataset.folder||''}));
+  _cfEmLote(()=>ids.forEach(id=>assignCardToFolder(id,fid,true)));
+  selSair();
+  const nome=fid?(folders.find(f=>f.id===fid)?.name||t('pasta')):t('Tudo');
+  const n=ids.length;
+  toastDesfazer((n===1?t('📁 1 card foi para "{p}"'):t('📁 {n} cards foram para "{p}"')).replace('{n}',n).replace('{p}',nome),()=>{
+    _cfEmLote(()=>antes.forEach(a=>assignCardToFolder(a.id,a.f,true)));
+    toast(t('↩ Os cards voltaram de onde estavam'));
+  });
+}
+function _selNovaPasta(ids){
+  const nome=prompt(t('Nome da nova pasta:'));
+  if(!nome||!nome.trim())return;
+  const nova=_mapaNovaPasta(null,nome);
+  if(!nova)return;
+  _selMover(ids,nova.id);
+}
+// ── etiquetar com cor ──
+function _selSeletorDeCor(px,py){
+  const ids=[...selIds];
+  if(!ids.length)return;
+  const nomes=TAG_NOMES();
+  const itens=TAG_CORES.map((cor,i)=>({
+    ic:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="${safeColor(cor)}"/></svg>`,
+    rot:nomes[i]||'',fn:()=>_selCor(ids,i)}));
+  itens.push({grupo:' '});
+  itens.push({ic:ICO.eraser,rot:t('Sem etiqueta'),fn:()=>_selCor(ids,null)});
+  const n=ids.length;
+  _mapaAbrirMenu(px,py,(n===1?t('etiquetar este card'):t('etiquetar {n} cards').replace('{n}',n)),itens);
+}
+// ── transferir só o que está marcado ──
+// A sala de envio já sabe mandar um monte de card de uma vez — é assim que a
+// pasta viaja. A única diferença aqui é a COLEÇÃO: em vez da árvore de uma
+// pasta, os cards escolhidos a dedo. Eles viajam SEM pasta (folder:'') e com
+// recs vazio de propósito: quem quer levar a pasta junto usa "enviar a
+// pasta", que continua existindo. Misturar as duas criaria, do outro lado,
+// pastas que ninguém pediu.
+function _selTransferir(ids){
+  if(!ids.length)return;
+  if(!window.isSecureContext){toast(t('❌ Só dá pra transferir num endereço https — o do cadeado'),true);return}
+  const itens=ids.map(id=>{
+    const c=document.getElementById(id);
+    if(!c)return null;
+    const it=_txpCardToItem(c);
+    return it?{...it,folder:''}:null;
+  }).filter(Boolean);
+  if(!itens.length){toast(t('ℹ️ Nada para transferir nos cards escolhidos'),true);return}
+  const n=itens.length;
+  const col={id:'__sel__',solta:true,nSub:0,recs:[],itens,
+    nome:(n===1?t('1 card escolhido'):t('{n} cards escolhidos').replace('{n}',n))};
+  selSair();
+  // Sem retomar envio pela metade como a pasta faz: a seleção deixa de
+  // existir quando a barra fecha, então não há a que voltar.
+  _txpState={col,folderId:'__sel__',fase:'preparar',destino:'auto',feitas:new Set(),copiadas:{},mudou:false};
+  _txpRenderPreparar();
+}
+function _selCor(ids,i){
+  if(!ids.length)return;
+  const antes=ids.map(id=>{
+    const v=document.getElementById(id)?.dataset.tc;
+    return {id,c:(v===undefined||v==='')?null:parseInt(v)};
+  });
+  _cfEmLote(()=>ids.forEach(id=>setCardCor(id,i,true)));
+  selSair();
+  const n=ids.length,nome=i===null?t('sem etiqueta'):(TAG_NOMES()[i]||'');
+  toastDesfazer((n===1?t('🎨 1 card ficou {cor}'):t('🎨 {n} cards ficaram {cor}')).replace('{n}',n).replace('{cor}',nome),()=>{
+    _cfEmLote(()=>antes.forEach(a=>setCardCor(a.id,a.c,true)));
+    toast(t('↩ As etiquetas voltaram ao que eram'));
+  });
 }
 // Arquivar / mandar pra lixeira em lote. Sem confirm(): a ação tem volta, e a
 // escolha entre arquivar e excluir já foi feita no botão — o verbo É a
