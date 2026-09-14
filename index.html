@@ -230,17 +230,63 @@
 /* touch-action:none e user-select:none impedem o navegador de sequestrar o
    "segurar" pra rolagem ou pra seleção de texto no celular — sem isso o
    long-press nunca chega até o nosso código no iPhone. */
-.cdot-btn{width:15px;height:15px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid var(--border2);background:transparent;padding:0;transition:transform var(--transition),border-color var(--transition);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.cdot-btn:hover{transform:scale(1.25);border-color:var(--ca,var(--accent))}
-/* Área de toque invisível ao redor da bolinha em QUALQUER aparelho de toque,
-   não só abaixo de 640px como era: o iPad tem 810px de largura e é toque, e
-   ali a bolinha ficava com alvo real de 15x15px — agora que ela virou o
-   controle da ponta direita da linha, isso é acertar no escuro. O desenho
-   continua do mesmo tamanho; só o alvo cresce. */
-@media(pointer:coarse){
-  .cdot-btn{position:relative}
-  .cdot-btn::after{content:'';position:absolute;inset:-14px}
+.cdot-btn{width:15px;height:15px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid var(--border2);background:transparent;padding:0;position:relative;transition:transform var(--transition),border-color var(--transition);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* Crescer no hover é coisa de MOUSE, e agora só acontece com mouse. Em tela
+   de toque o :hover gruda depois do tap (a bolinha ficava inchada até você
+   tocar em outro lugar) e — pior — o transform escala junto o ::after, que
+   aqui não é enfeite: é o alvo de 44px. Mexer no desenho da bolinha no toque
+   é mexer no alvo dela. */
+@media(hover:hover) and (pointer:fine){
+  .cdot-btn:hover{transform:scale(1.25);border-color:var(--ca,var(--accent))}
 }
+/* ── A GEOMETRIA DE TOQUE DESTA PONTA DA LINHA (14/09/2026) ──
+   Bug medido: o ::after de 44px do ✕ era um quadrado CENTRADO no botão, e
+   com apenas 6px de vão entre os dois desenhos ele avançava 7px por cima do
+   desenho da bolinha — 41% da bolinha no celular (390px) e 47% no tablet
+   (810px) respondiam EXCLUIR. A bolinha, que pedia inset:-14px (43px), ficava
+   com 24px reais porque o vizinho pinta depois e ganha o toque.
+   A conta que resolve: à direita do ✕ só existem ~15px até a borda do card
+   (que tem overflow:hidden e corta o alvo), então a divisa entre os dois
+   alvos não pode passar de (borda − 44px). Para essa divisa cair no MEIO do
+   vão, o vão precisa de pelo menos 18px — por isso a bolinha recua 14px
+   (6 do gap + 14 = 20px de vão). Cada alvo ancora na sua ponta e para na
+   divisa: 44px para cada um, encostados, nunca sobrepostos, em qualquer
+   largura de tela. O desenho da bolinha não muda de tamanho — só de lugar. */
+@media(pointer:coarse){
+  .cdot-wrap{margin-right:14px}
+  /* z-index:1 é cinto de segurança: se um dia um arredondamento de meio pixel
+     fizer os dois alvos se encostarem, quem ganha o toque é a bolinha (trocar
+     cor à toa é um susto; excluir à toa é um estrago). Fica no botão e não no
+     .cdot-wrap de propósito: no wrap ele criaria contexto de empilhamento e
+     prenderia o .cdot-pop (z-index 210) dentro do card. */
+  .cdot-btn{width:17px;height:17px;z-index:1}
+  /* -10,5px e não -10: `right` num absoluto conta a partir do PADDING box, e
+     a bolinha tem 1,5px de borda. Com -10 o alvo parava 1,5px antes da divisa
+     e sobrava uma fresta de ninguém entre os dois botões (medido). */
+  .cdot-btn::after{content:'';position:absolute;top:50%;left:auto;right:-10.5px;width:var(--card-tap-min);height:var(--card-tap-min);transform:translateY(-50%)}
+}
+/* O ANEL DE TOQUE (14/09/2026). A bolinha em si não pode crescer nem andar:
+   ela é um alvo de 44px, e mexer no desenho mexe no alvo. Quem se move é este
+   anel — absoluto, fora do fluxo, pointer-events:none. Nada no layout muda,
+   nenhum outro botão anda um pixel. Só transform e opacity.
+   Ele tem DOIS papéis com um gesto só: ao encostar o dedo, nasce largo e
+   fecha sobre a bolinha em 450ms LINEARES — esse é exatamente o tempo do
+   CDOT_SEGURAR, então o anel é a barra de progresso do "segure para
+   escolher": quando ele pousa, a paleta abre. Linear porque progresso
+   precisa ser lido como TEMPO, não como movimento. Se você soltar antes, ele
+   se solta pra fora e some junto com a tinta que varre o card.
+   2× de 17px = 34px de diâmetro, e só isso: o teto é a borda de cima do card,
+   que tem overflow:hidden e fica a 29px do centro da bolinha (medido). Um
+   anel maior seria decepado lá em cima — o palco aqui é pequeno, e quem
+   precisa de palco grande é a tinta, que varre o card inteiro. */
+.cdot-anel{position:absolute;left:50%;top:50%;width:17px;height:17px;margin:-8.5px 0 0 -8.5px;box-sizing:border-box;border-radius:50%;border:2px solid var(--ca,var(--accent));opacity:0;transform:scale(2);pointer-events:none;z-index:2}
+/* Fecha até 1,3× e não até 1×: em 1× o anel coincide pixel a pixel com a
+   bolinha e o clímax do "segurar" simplesmente desaparece. A 1,3× ele pousa
+   como um aro em volta dela — dá pra ver que chegou. */
+.cdot-anel.carga{opacity:.85;transform:scale(1.3);transition:transform 450ms linear,opacity 90ms linear}
+.cdot-anel.solta{opacity:0;transform:scale(1.75);transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s linear}
+/* Quem pediu menos movimento não ganha anel nenhum — a cor troca seca. */
+@media(prefers-reduced-motion:reduce){.cdot-anel{display:none}}
 .card[data-tc] .cdot-btn{background:var(--ca);border-color:var(--ca)}
 .cdot-wrap{position:relative;display:inline-flex;align-items:center}
 /* Excluir vira um "✕" ao lado da bolinha de cor, sempre visível na faixa de
@@ -252,7 +298,22 @@
    todo — e só esquenta no hover/toque. Excluir aqui nunca é definitivo: cai
    direto na lixeira (30 dias), então um toque errado tem volta fácil. */
 .ch-del-btn{position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:none;background:none;border-radius:7px;font-size:12px;line-height:1;color:var(--text4);cursor:pointer;transition:background .13s linear,color .13s linear,transform .12s cubic-bezier(.22,1,.36,1)}
-.ch-del-btn::after{content:'';position:absolute;top:50%;left:50%;width:var(--card-tap-min);height:var(--card-tap-min);transform:translate(-50%,-50%)}
+/* Ancorado À DIREITA e recortado à esquerda. Centrado, como era, o quadrado
+   de 44px passava 6px por cima do desenho da bolinha também no desktop — um
+   clique na beirada direita da bolinha excluía o card. 35px de largura é o
+   que cabe sem cruzar a metade do vão de 6px; a altura continua 44. No toque
+   a regra de @media(pointer:coarse) devolve os 44px de largura, porque lá o
+   vão cresce pra 20px e passa a haver espaço pros dois. */
+.ch-del-btn::after{content:'';position:absolute;top:50%;left:auto;right:-12px;width:35px;height:var(--card-tap-min);transform:translateY(-50%)}
+/* No toque o vão entre os dois desenhos passa a ser 20px (ver .cdot-wrap lá
+   em cima) e aí cabem os 44px inteiros. Esta regra PRECISA vir depois da de
+   cima: mesma especificidade, quem vem por último ganha. O limite da direita
+   é a borda do card, que tem overflow:hidden e corta o alvo — -13px põe a
+   ponta a 1px dela. MEDIDO no cabeçalho EXPANDIDO em 360px, onde sobra menos
+   espaço à direita: ali o alvo do ✕ fica com 38px de largura em vez de 44.
+   Menos que o ideal, e de propósito: a alternativa seria empurrar a divisa
+   pra perto da bolinha, e errar pro lado do EXCLUIR é o erro caro. */
+@media(pointer:coarse){.ch-del-btn::after{right:-13px;width:var(--card-tap-min)}}
 .ch-del-btn:hover{background:rgba(239,68,68,.12);color:var(--danger)}
 /* Ícone SVG inline no lugar de emoji (01/09 — varredura dos emojis-ícone).
    Tamanho em EM pra herdar a fonte de cada contexto (botão, menu, linha de
@@ -373,8 +434,9 @@
    mesmo hit-slop que o app já usa no botão de pastas. As cores do popover, essas,
    crescem de verdade: ali o dedo precisa acertar a cor certa entre oito. */
 @media(max-width:640px){
-  .cdot-btn{position:relative;width:17px;height:17px}
-  .cdot-btn::after{content:'';position:absolute;inset:-14px}
+  /* O tamanho e o alvo da bolinha saíram daqui pra @media(pointer:coarse) —
+     valem pro iPad também, e um inset:-14px aqui embaixo sobrescrevia (por
+     vir depois na cascata) o recorte que impede o alvo de invadir o ✕. */
   .cdot-sw{width:40px;height:40px}
   .cdot-grid{gap:9px}
   .cdot-none{padding:11px;font-size:13px}
@@ -1612,7 +1674,7 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
    só, dois estados legíveis.
    Diferença proposital para o "⋯" da bandeja de ferramentas, que é outro
    botão: este é COLORIDO (cor da etiqueta/acento), o da bandeja é cinza. */
-.ctags-header-chev,.ch-mode-chev{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2.5px;width:14px;height:16px;color:var(--ca,var(--accent));transition:transform .22s cubic-bezier(.22,1,.36,1)}
+.ctags-header-chev,.ch-mode-chev{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2.5px;width:14px;height:16px;color:var(--ca,var(--accent));transition:transform .22s cubic-bezier(.22,1,.36,1),scale .13s cubic-bezier(.22,1,.36,1)}
 .ctags-header-chev>i,.ch-mode-chev>i{display:block;width:3px;height:3px;border-radius:50%;background:currentColor}
 .ctags-header-chev.collapsed{transform:rotate(-90deg)}
 .ctags-header-label{font-size:10.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3)}
@@ -2405,8 +2467,29 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch .drag-handle{padding:2px 2px;font-size:13px;color:var(--text3);opacity:.7}
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch .drag-handle:hover{opacity:1}
 .card:not(.focus-active) .ch-left{cursor:pointer}
-.card:not(.focus-active) .ch-mode-badge:active,
-.card:not(.focus-active) .ch-left:active{transform:scale(.97)}
+.card:not(.focus-active) .ch-mode-badge:active{transform:scale(.97)}
+/* ── O "PUXAR PRO LADO" (achado e corrigido em 14/09/2026) ──
+   Aqui havia também `.ch-left:active{transform:scale(.97)}`. O :active do
+   navegador sobe pelos ancestrais, então apertar a BOLINHA encolhia a linha
+   inteira — 297px no celular, 459px no tablet — e a ponta direita dela vinha
+   4px (390px) / 6px (810px) para a esquerda, com bolinha e ✕ juntos.
+   Medido: o alvo do ✕ ia de 323→366 para 319→362, e o centro exato do
+   desenho da bolinha (320,5) passava a estar DENTRO do excluir. Como o
+   `click` sintetizado pelo toque é posicionado depois do touchend — com o
+   :active ainda aplicado — um toque na bolinha trocava a cor E mandava o
+   card pra lixeira no Chromium; no WebKit ele caía no .ch-left e recolhia o
+   cabeçalho. Dar feedback de pressão movendo um contêiner que GUARDA outros
+   alvos de toque é errado por natureza: o recibo tem que ser local ao alvo.
+   No lugar, quem responde é o símbolo da ação — a setinha que recolhe o
+   cabeçalho afunda um pouco. Ela não é alvo de nada (o alvo de 44px é o
+   ::after do botão, que fica parado), então nada de clicável se desloca.
+   Usa a propriedade `scale` e não `transform` porque a setinha já carrega um
+   rotate(90deg) próprio, e as duas se compõem sem uma apagar a outra.
+   O :not(:has(button:active)) evita que apertar a bolinha (ou o ✕) faça a
+   setinha do outro lado da linha piscar sem motivo; se o navegador não
+   entender :has, a regra inteira cai fora e o pior caso é ficar sem o
+   feedback — nunca voltar a mexer em alvo. */
+.card:not(.focus-active) .ch-left:active:not(:has(button:active)) .ch-mode-chev{scale:.8}
 /* Alvo de toque mínimo (Apple 44pt / Material 48dp) sem engordar o badge
    visualmente — a área clicável estica além do que se vê, o badge continua
    do tamanho de sempre. */
@@ -7962,7 +8045,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.14.6';
+const VOX_VERSION='2026.09.14.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -17950,9 +18033,49 @@ let _selConfirmando=false;      // barra vermelha do "apagar de vez" em cena?
 // duas ações — e quem já sabe qual cor quer não precise ficar ciclando.
 const CDOT_SEGURAR=450; // ms até virar "segurar"
 let _cdotTimer=null,_cdotAbriu=false;
+// Acha (ou cria, no primeiro toque) o anel que mora por cima da bolinha
+// daquele card. Criado sob demanda em vez de nascer no HTML: são dois moldes
+// de card e uma lista que pode ter centenas deles — um <span> a mais em cada
+// um custa memória e não serve pra nada até alguém encostar o dedo.
+function _cdotAnel(id){
+  const c=document.getElementById(id);if(!c)return null;
+  const wrap=c.querySelector('.cdot-wrap');if(!wrap)return null;
+  let a=wrap.querySelector('.cdot-anel');
+  if(!a){a=document.createElement('span');a.className='cdot-anel';a.setAttribute('aria-hidden','true');wrap.appendChild(a);}
+  return a;
+}
+// O anel se solta e some. Chamado tanto no toque rápido (o anel mal saiu do
+// lugar) quanto quando o dedo escorrega pra fora — nos dois casos a história
+// que ele conta é a mesma: acabou.
+function _cdotSolta(id){
+  const c=document.getElementById(id);if(!c)return;
+  const a=c.querySelector('.cdot-anel');if(!a||!a.classList.contains('carga'))return;
+  // trocar as duas classes no MESMO turno de script é o que faz o anel partir
+  // de onde ele estava (meio da carga) em vez de saltar pro tamanho inicial:
+  // o navegador só recalcula estilo uma vez, no fim daqui.
+  a.classList.remove('carga');a.classList.add('solta');
+  setTimeout(()=>a.classList.remove('solta'),330);
+}
 function cdotDown(id){
   _cdotAbriu=false;
   clearTimeout(_cdotTimer);
+  // O anel começa a fechar no mesmo frame do pointerdown — a resposta ao
+  // toque não pode custar nem um milissegundo de espera. Ele é ao mesmo tempo
+  // o recibo de "pegou" e a barra de progresso do "segure para escolher":
+  // os 450ms da transição são os mesmos 450ms do CDOT_SEGURAR, então quando o
+  // aro pousa, a paleta abre. Nada disso mexe em layout: o anel é absoluto,
+  // não tem pointer-events e só anima transform/opacity.
+  if(!_voxReduzMov()){
+    const anel=_cdotAnel(id);
+    if(anel){
+      anel.classList.remove('solta');
+      // reflow de propósito: sem ele o navegador junta "tirar solta" e "pôr
+      // carga" num passo só e a transição nunca chega a partir do aro largo.
+      // Também é o que faz o estilo base valer no primeiro toque de todos.
+      void anel.offsetWidth;
+      anel.classList.add('carga');
+    }
+  }
   _cdotTimer=setTimeout(()=>{
     _cdotAbriu=true;
     // Vibradinha curta: sem ela não dá pra saber que o "segurar" pegou, já que
@@ -17963,10 +18086,13 @@ function cdotDown(id){
 }
 function cdotUp(id){
   clearTimeout(_cdotTimer);
+  _cdotSolta(id);
   if(_cdotAbriu)return; // já resolveu como "segurar" — não cicla também
   ciclarCorCard(id);
 }
-function cdotCancelar(){clearTimeout(_cdotTimer)}
+// Recebe o id agora (antes era sem argumento): o dedo que escorrega pra fora
+// da bolinha cancela o "segurar" E precisa apagar o anel daquele card.
+function cdotCancelar(id){clearTimeout(_cdotTimer);if(id)_cdotSolta(id)}
 // Ordem: sem etiqueta → verde → azul → ... → vermelho → sem etiqueta.
 // Fechar o ciclo de volta no "sem etiqueta" é o que permite DESMARCAR só
 // tocando, sem precisar abrir menu nenhum.
@@ -17998,7 +18124,11 @@ function toggleCdotPop(id){
 function setCardCor(id,i,silencioso){
   const c=document.getElementById(id);
   if(!c)return;
-  if(!silencioso)_corSaiDaBolinha(c,i);
+  // A tinta sai da bolinha quando entra cor, e VOLTA pra ela quando a cor
+  // sai. O ciclo fecha em "sem etiqueta" (é assim que dá pra desmarcar só
+  // tocando) e até aqui esse último passo era o único sem recibo nenhum: o
+  // card despia e ficava a dúvida de se o toque tinha pegado.
+  if(!silencioso){if(i===null)_corVoltaPraBolinha(c);else _corSaiDaBolinha(c,i);}
   if(i===null)delete c.dataset.tc;
   else c.dataset.tc=String(i);
   if(silencioso)return;
@@ -18048,6 +18178,37 @@ function _corSaiDaBolinha(card,i){
     tinta.style.transform='scale('+((alcance*2)/d+.2)+')';
     tinta.style.opacity='1';
   });
+  setTimeout(()=>tinta.remove(),520);
+}
+// O caminho de volta: a cor que está SAINDO cobre o card inteiro e encolhe até
+// desaparecer dentro da bolinha. Mesmo elemento e mesma curva da ida, sentido
+// invertido — o gesto é o mesmo, então a animação precisa ser reconhecível
+// como a mesma coisa ao contrário, não como um efeito novo.
+function _corVoltaPraBolinha(card){
+  if(_voxReduzMov())return;
+  const dot=card.querySelector('.cdot-btn');if(!dot)return;
+  const cr=card.getBoundingClientRect(),dr=dot.getBoundingClientRect();
+  if(!cr.width)return;
+  // A cor tem que ser lida AGORA, antes de o data-tc sair: --luz-b é a ponta
+  // funda do degradê da etiqueta e só existe enquanto o atributo existe.
+  // Vem do nosso próprio CSS, mas passa por safeColor() como toda cor que
+  // vira style inline nesta casa.
+  const cs=getComputedStyle(card);
+  const cor=(cs.getPropertyValue('--luz-b')||cs.getPropertyValue('--ca')||'').trim();
+  if(!cor)return;
+  const tinta=document.createElement('span');
+  tinta.className='cor-tinta';
+  const d=dr.width||15;
+  const cx=dr.left-cr.left+d/2,cy=dr.top-cr.top+d/2;
+  const alcance=Math.hypot(Math.max(cx,cr.width-cx),Math.max(cy,cr.height-cy));
+  tinta.style.width=tinta.style.height=d+'px';
+  tinta.style.left=(dr.left-cr.left)+'px';
+  tinta.style.top=(dr.top-cr.top)+'px';
+  tinta.style.background=safeColor(cor);
+  tinta.style.transform='scale('+((alcance*2)/d+.2)+')'; // já nasce tomando o card
+  tinta.style.opacity='1';
+  card.appendChild(tinta);
+  requestAnimationFrame(()=>{tinta.style.transform='scale(1)';tinta.style.opacity='0'});
   setTimeout(()=>tinta.remove(),520);
 }
 // Fecha o popover ao clicar fora — mesmo comportamento dos outros menus do app.
@@ -26824,7 +26985,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
         <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span></button>
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}"><span class="svgi">${ICO.grip}</span></div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
-          <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
+          <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar('${id}')" onpointercancel="cdotCancelar('${id}')" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <button type="button" class="ch-del-btn" onclick="event.stopPropagation();askDel('${id}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.close}</button>
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar"><span class="svgi">${ICO.msgs}</span> ${t('Diarizado')}</span>
@@ -30048,7 +30209,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
         <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span></button>
         <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}"><span class="svgi">${ICO.grip}</span></div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
-          <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar()" onpointercancel="cdotCancelar()" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
+          <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar('${id}')" onpointercancel="cdotCancelar('${id}')" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <button type="button" class="ch-del-btn" onclick="event.stopPropagation();askDel('${id}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.close}</button>
           <span class="badge${badgeCls}">${provLabel}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${_modeIco(mode)}${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
