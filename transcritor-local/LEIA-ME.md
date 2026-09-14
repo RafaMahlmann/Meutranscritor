@@ -15,7 +15,7 @@ programar.** Se travar em algum passo, o próprio passo diz o que fazer.
 
 Você vai precisar de:
 
-- Um computador com **Windows**
+- Um computador com **Windows** ou **Mac**
 - Cerca de **3 GB de espaço livre**
 - Internet (só na instalação — depois nunca mais)
 
@@ -34,16 +34,21 @@ O Python é o motor que faz o transcritor funcionar. É um programa comum, de
 instalador normal.
 
 1. Vá em **https://www.python.org/downloads/**
-2. Clique no botão amarelo grande de download
+2. Clique no botão amarelo grande de download (o site já oferece a versão do
+   seu sistema)
 3. Abra o arquivo baixado
 
-**Na primeira tela do instalador, marque a caixinha "Add Python to PATH"**, lá
-embaixo, antes de clicar em Install. Ela vem desmarcada, e é o único detalhe
-que importa nessa tela.
+**No Windows**, na primeira tela do instalador, marque a caixinha
+**"Add Python to PATH"**, lá embaixo, antes de clicar em Install. Ela vem
+desmarcada, e é o único detalhe que importa nessa tela.
+
+**No Mac**, é só ir clicando em continuar até o fim — não tem caixinha pra
+marcar.
 
 Depois é só ir clicando em avançar até o fim.
 
-✅ **Deu certo quando:** a última tela do instalador diz *"Setup was successful"*.
+✅ **Deu certo quando:** a última tela do instalador diz *"Setup was successful"*
+(Windows) ou *"A instalação foi concluída"* (Mac).
 
 ---
 
@@ -55,22 +60,33 @@ sincronizadas com nuvem, tipo OneDrive, pra não ficar subindo arquivo grande à
 
 Dentro dela tem três arquivos:
 
-| Arquivo | Pra que serve |
-|---|---|
-| `instalar.bat` | Você roda uma vez, na instalação |
-| `iniciar_whisper.bat` | Você roda toda vez que for usar |
-| `servidor.py` | O transcritor em si — não precisa abrir |
+| Arquivo | Sistema | Pra que serve |
+|---|---|---|
+| `instalar.bat` | Windows | Você roda uma vez, na instalação |
+| `iniciar_whisper.bat` | Windows | Você roda toda vez que for usar |
+| `instalar.command` | Mac | Você roda uma vez, na instalação |
+| `iniciar_whisper.command` | Mac | Você roda toda vez que for usar |
+| `servidor.py` | os dois | O transcritor em si — não precisa abrir |
 
-✅ **Deu certo quando:** você consegue ver os três arquivos na pasta.
+Use só os dois do **seu** sistema e ignore os outros. Daqui pra frente, onde
+estiver escrito `.bat`, no Mac é o `.command` de mesmo nome.
+
+✅ **Deu certo quando:** você consegue ver os arquivos na pasta.
 
 ---
 
 ## Passo 3 — Rode o instalador
 
-Dê **dois cliques** no arquivo `instalar.bat`.
+Dê **dois cliques** no arquivo `instalar.bat` (Windows) ou
+`instalar.command` (Mac).
 
 Vai abrir uma janela preta com letras — é assim mesmo, não é erro. Ela vai
 baixar as ferramentas sozinha. Leva de 2 a 5 minutos, dependendo da sua internet.
+
+> **No Mac, na primeira vez**, o sistema pode dizer que "não é possível abrir
+> porque é de um desenvolvedor não identificado". É o aviso padrão de arquivo
+> baixado da internet. Clique com o botão direito no arquivo → **Abrir** →
+> **Abrir** de novo na caixinha que aparece. Só precisa disso uma vez.
 
 Pode deixar rolando e ir fazer outra coisa.
 
@@ -84,7 +100,8 @@ novo, marcando ela, e rode o `instalar.bat` outra vez.
 
 ## Passo 4 — Ligue o transcritor
 
-Dê **dois cliques** no arquivo `iniciar_whisper.bat`.
+Dê **dois cliques** no arquivo `iniciar_whisper.bat` (Windows) ou
+`iniciar_whisper.command` (Mac).
 
 Ele pergunta qual modelo você quer. **Aperte Enter** pra escolher o Rápido —
 é o recomendado, e você pode trocar depois pelo próprio Vox.
@@ -114,8 +131,8 @@ você escolheu.
 
 ## Usando no dia a dia
 
-**Pra ligar:** dois cliques no `iniciar_whisper.bat`, Enter, e espere aparecer
-"Servidor pronto".
+**Pra ligar:** dois cliques no `iniciar_whisper.bat` (ou `.command`, no Mac),
+Enter, e espere aparecer "Servidor pronto".
 
 **Pra desligar:** feche a janela preta. Nada fica rodando escondido no seu
 computador.
@@ -168,6 +185,16 @@ qual está usando: *"Processando com: placa de vídeo"* ou *"o processador"*.
 Isso vale pra placas NVIDIA, e pode exigir ajustes de driver — é um caminho
 mais técnico, ainda em desenvolvimento.
 
+**E no Mac, usa a GPU?**
+Não — no Mac ele roda no processador, inclusive nos M1/M2/M3/M4. O motor por
+baixo (CTranslate2) só acelera em placa NVIDIA, e Mac não tem. Na prática os
+chips M dão conta bem do modelo Rápido; o Médio e o Preciso ficam pesados.
+O medidor de velocidade do Vox te mostra o número da sua máquina.
+
+**No Mac, ele instala alguma coisa no meu sistema?**
+Não. Tudo vai pra uma pasta `.venv` dentro da própria pasta do transcritor.
+Pra desinstalar, apague a pasta — não fica resto em lugar nenhum.
+
 **Dá pra usar de outro aparelho da casa?**
 Dá — o servidor também entrega o app. De outro computador ou celular na mesma
 rede, abra `http://IP-DO-COMPUTADOR:8000`. Só use isso em rede sua, de casa ou
@@ -185,11 +212,22 @@ configurações do Vox.
 Um ambiente virtual é boa prática, e o `servidor.py` funciona igual dentro de um:
 
 ```
+# Windows
 python -m venv .venv
 .venv\Scripts\activate
+
+# Mac / Linux
+python3 -m venv .venv
+source .venv/bin/activate
+
+# nos dois
 pip install faster-whisper fastapi uvicorn python-multipart
 python servidor.py small
 ```
+
+No Mac o `instalar.command` já faz exatamente isso — o venv não é opcional lá,
+porque o Python do sistema recusa instalar pacotes direto
+("externally-managed-environment").
 
 O `faster-whisper` já traz o `ctranslate2` e o `av` (PyAV) junto — daí não
 precisar de FFmpeg no sistema. Os outros três pacotes são do servidor HTTP.

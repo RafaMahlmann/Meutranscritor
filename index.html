@@ -6875,8 +6875,8 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span> <span data-i18n>Copiar caminho para iniciar o servidor</span>
         </button>
         <div style="margin-top:10px">
-          <div style="font-size:11px;color:var(--text4);margin-bottom:5px" data-i18n>Caminho do iniciar_whisper.bat (para iniciar com 1 clique)</div>
-          <input type="text" id="localBatPathInput" placeholder="C:\whisper-local\iniciar_whisper.bat" oninput="saveCfg(false)" style="width:100%;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font);box-sizing:border-box">
+          <div style="font-size:11px;color:var(--text4);margin-bottom:5px" data-i18n id="localBatPathLabel">Caminho do iniciar_whisper.bat (para iniciar com 1 clique)</div>
+          <input type="text" id="localBatPathInput" placeholder="C:\whisper-local\iniciar_whisper.bat" data-vox-path-example oninput="saveCfg(false)" style="width:100%;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font);box-sizing:border-box">
         </div>
         <!-- Caminho da placa de video: separar vozes sem sair da maquina. -->
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
@@ -7962,7 +7962,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.14.5';
+const VOX_VERSION='2026.09.14.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8456,6 +8456,8 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── Transcritor local no Mac (14/09/2026) ──
+"Instale o Python pelo site python.org — no Mac não tem caixinha pra marcar":"Install Python from python.org — on a Mac there is no box to tick",
 // ── Cópias de segurança reguláveis (14/09/2026) ──
 "Cópias de segurança":"Backups",
 "Tudo o que você grava fica só neste aparelho. Uma cópia guardada fora dele é o que separa um susto de uma perda.":"Everything you record lives on this device only. A copy kept somewhere else is what turns a scare into a non-event.",
@@ -10077,6 +10079,22 @@ async function startLocalServer(model){
   // servidor offline — mostra instruções claras
   showOfflineInstructions(model);
 }
+// Windows usa .bat; Mac e Linux usam .command (mesmo conteúdo, outro
+// formato de script). As CHAVES de tradução continuam escritas com .bat —
+// mexer nelas invalidaria o dicionário inteiro — então a troca do nome do
+// arquivo acontece aqui, só na hora de mostrar pra pessoa.
+const VOX_WIN = /Win/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || '');
+function arqLocal(txt){
+  if(VOX_WIN) return txt;
+  return String(txt)
+    .replace(/iniciar_whisper\.bat/g, 'iniciar_whisper.command')
+    .replace(/instalar\.bat/g, 'instalar.command');
+}
+// O caminho de exemplo também muda de cara conforme o sistema.
+function exemploCaminhoLocal(){
+  return VOX_WIN ? 'C:\\whisper-local\\iniciar_whisper.bat'
+                 : '/Users/voce/whisper-local/iniciar_whisper.command';
+}
 function showOfflineInstructions(model){
   const labels={'small':t('⚡ Rápido'),'medium':t('⚖️ Médio'),'large-v3':t('🎯 Preciso')};
   let ov=document.getElementById('offlineOverlay');
@@ -10098,22 +10116,22 @@ function showOfflineInstructions(model){
   const corpo=instalado?`
       <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">${t('Ligue o transcritor')}</h2>
       <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:16px">${t('O Vox não encontrou o transcritor. Ele roda numa janela própria, que precisa estar aberta.')}</p>
-      <div style="${passo}"><span style="${num}">1</span><span>${t('Abra o arquivo <strong>iniciar_whisper.bat</strong> — normalmente na pasta onde você baixou/extraiu o transcritor local (algo como <strong>whisper-local</strong> ou <strong>transcritor-local</strong>)')}</span></div>
+      <div style="${passo}"><span style="${num}">1</span><span>${arqLocal(t('Abra o arquivo <strong>iniciar_whisper.bat</strong> — normalmente na pasta onde você baixou/extraiu o transcritor local (algo como <strong>whisper-local</strong> ou <strong>transcritor-local</strong>)'))}</span></div>
       <div style="${passo}"><span style="${num}">2</span><span>${t('Aperte Enter para usar o modelo Rápido')}</span></div>
       <div style="${passo}"><span style="${num}">3</span><span>${t('Espere aparecer <strong>"Modelo carregado! Servidor pronto."</strong>')}</span></div>
       ${cfg.localBatPath?`<button onclick="copiarCaminhoServidor()" style="display:block;width:100%;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:11px 20px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;margin:14px 0 8px"><span class="svgi">${ICO.copy}</span> ${t('Copiar caminho do arquivo')}</button>`:`
       <div style="text-align:left;margin:14px 0 4px">
         <div style="font-size:11px;color:var(--text4);margin-bottom:5px">${t('Achou o arquivo? Cole o caminho aqui pra nunca mais precisar procurar:')}</div>
-        <input type="text" id="offlineBatPathInput" placeholder="C:\\...\\iniciar_whisper.bat" style="width:100%;box-sizing:border-box;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font)">
+        <input type="text" id="offlineBatPathInput" placeholder="${exemploCaminhoLocal()}" style="width:100%;box-sizing:border-box;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font)">
         <button onclick="_salvarCaminhoDoOffline('${escJs(model)}')" style="width:100%;background:var(--bg-input);color:var(--text2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:6px">${t('Salvar caminho')}</button>
       </div>`}
       <p style="font-size:11px;color:var(--text4);line-height:1.6;margin:14px 0 16px">${t('Assim que ele ligar, esta tela fecha sozinha.')}</p>`
   :`
       <h2 style="font-size:16px;font-weight:700;margin-bottom:8px">${t('Instale o transcritor no seu computador')}</h2>
       <p style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:8px">${t('São 5 passos e uns 15 minutos — a maior parte é o computador baixando sozinho. Você não precisa saber programar.')}</p>
-      <div style="${passo}"><span style="${num}">1</span><span>${t('Instale o Python, marcando <strong>"Add Python to PATH"</strong>')}</span></div>
+      <div style="${passo}"><span style="${num}">1</span><span>${VOX_WIN ? t('Instale o Python, marcando <strong>"Add Python to PATH"</strong>') : t('Instale o Python pelo site python.org — no Mac não tem caixinha pra marcar')}</span></div>
       <div style="${passo}"><span style="${num}">2</span><span>${t('Baixe a pasta do transcritor')}</span></div>
-      <div style="${passo}"><span style="${num}">3</span><span>${t('Dois cliques no <strong>instalar.bat</strong>, depois no <strong>iniciar_whisper.bat</strong>')}</span></div>
+      <div style="${passo}"><span style="${num}">3</span><span>${arqLocal(t('Dois cliques no <strong>instalar.bat</strong>, depois no <strong>iniciar_whisper.bat</strong>'))}</span></div>
       <p style="font-size:11px;color:var(--text4);line-height:1.6;margin:12px 0 14px">${t('Não precisa instalar FFmpeg — vários tutoriais mandam, e não precisa.')}</p>
       <a href="https://github.com/RafaMahlmann/Meutranscritor/tree/main/transcritor-local" target="_blank" rel="noopener noreferrer" style="display:block;width:100%;box-sizing:border-box;background:var(--accent);color:white;text-decoration:none;border-radius:14px;padding:13px 20px;font-size:14px;font-weight:700;font-family:var(--font);margin-bottom:14px">${t('Abrir o guia completo')}</a>`;
   ov.innerHTML=`
@@ -10131,7 +10149,7 @@ function showOfflineInstructions(model){
 // e a pessoa cola no Iniciar do Windows.
 function copiarCaminhoServidor(){
   const path=cfg.localBatPath;
-  if(!path){toast(t('💡 Configure o caminho do iniciar_whisper.bat nas Configurações → Local'),true);return}
+  if(!path){toast(arqLocal(t('💡 Configure o caminho do iniciar_whisper.bat nas Configurações → Local')),true);return}
   navigator.clipboard.writeText(path)
     .then(()=>toast(t('📋 Caminho copiado — cole no Iniciar do Windows e dê Enter.')))
     .catch(()=>toast(t('O caminho é:')+' '+path,true));
@@ -10879,6 +10897,15 @@ function _voxFecharLembrete(){
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',async()=>{
   applyStaticI18n();_syncLangUI();
+  // Mac/Linux: troca .bat por .command nos textos fixos das Configurações → Local.
+  // Roda DEPOIS do applyStaticI18n pra valer nos dois idiomas.
+  if(typeof VOX_WIN!=='undefined' && !VOX_WIN){
+    const _lbl=document.getElementById('localBatPathLabel');
+    if(_lbl)_lbl.textContent=arqLocal(_lbl.textContent);
+    document.querySelectorAll('[data-vox-path-example]').forEach(el=>{
+      el.setAttribute('placeholder', exemploCaminhoLocal());
+    });
+  }
   if(localStorage.getItem('vox_reopen_onboarding')==='1'){
     localStorage.removeItem('vox_reopen_onboarding');
     setTimeout(_obOpen,0);

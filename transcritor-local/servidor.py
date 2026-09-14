@@ -5,7 +5,8 @@ O áudio nunca sai daqui: nada é enviado pra internet, não existe chave de API
 não existe cadastro. O Vox conversa com este servidor pelo endereço
 http://localhost:8000 e descobre ele sozinho.
 
-Para iniciar, use o iniciar_whisper.bat (Windows) ou:
+Para iniciar: iniciar_whisper.bat (Windows) ou iniciar_whisper.command (Mac),
+ou direto na mão:
     python servidor.py small
 """
 from fastapi import FastAPI, File, UploadFile, Form
