@@ -5200,6 +5200,36 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .conv-s{border:none;background:none;color:var(--text3);font-family:var(--font);font-size:11.5px;
   font-weight:700;padding:8px 10px;border-radius:20px;cursor:pointer}
 .conv-s:hover{color:var(--text2)}
+/* Copias de seguranca reguláveis (14/09/2026) — a mesma secao serve as duas
+   frentes: onde o navegador deixa, o Vox se oferece pra salvar sozinho; onde
+   nao deixa, ele assume o que consegue e a pessoa e' quem regula. O .bkp-acende
+   e' pra quem chega aqui pelo botao "Configurar" do aviso nao ter que cacar a
+   secao na rolagem. */
+.bkp-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;border-radius:12px;background:var(--bg-input);margin-bottom:8px}
+.bkp-linha>div{min-width:0}
+.bkp-linha p{margin:0;font-size:12.5px;font-weight:700;color:var(--text)}
+.bkp-linha small{display:block;margin-top:2px;font-size:11.3px;color:var(--text3);line-height:1.4}
+.bkp-linha select{flex:none;background:var(--bg-card);border:1px solid var(--border2);color:var(--text);
+  font-family:var(--font);font-size:12px;font-weight:700;padding:7px 9px;border-radius:10px;cursor:pointer}
+.bkp-off{opacity:.42;pointer-events:none;filter:saturate(.4)}
+.bkp-selo{display:inline-flex;align-items:center;gap:5px;background:var(--ok-bg);color:var(--ok-txt);
+  font-size:11px;font-weight:800;padding:4px 9px;border-radius:20px;margin-bottom:8px}
+.bkp-selo .svgi svg{width:13px;height:13px}
+@keyframes bkpAcende{
+  0%{box-shadow:0 0 0 0 var(--accent-glow),0 0 0 3px var(--accent-glow)}
+  70%{box-shadow:0 0 0 14px transparent,0 0 0 3px var(--accent-glow)}
+  100%{box-shadow:0 0 0 0 transparent,0 0 0 0 transparent}
+}
+.bkp-acende{animation:bkpAcende 1.4s ease-out 2;border-radius:16px}
+/* .maint-btn e' vermelho de propósito (e' o botao da zona de manutencao), e
+   aqui a acao e' um convite, nao um risco — nao da' pra pedir "baixe o seu
+   lembrete" num botao que o resto do app usa pra "apagar de vez". */
+.bkp-btn{background:none;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;
+  padding:7px 14px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;
+  transition:all var(--transition);white-space:nowrap}
+.bkp-btn:hover{background:var(--accent);color:#fff}
+.bkp-btn:active{transform:scale(.97)}
 .tx-qr-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:12px 0}
 .tx-qr-wrap img{width:230px;height:230px;image-rendering:pixelated;border-radius:12px;background:#fff;padding:6px}
 .tx-part-nav{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:700;color:var(--text2)}
@@ -7185,14 +7215,27 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <div class="tx-tut" id="storagePersistStatus" style="display:none;margin-bottom:16px"></div>
       </div>
 
+      <!-- Cópias de segurança (14/09/2026) — uma seção, dois caminhos, porque
+           os aparelhos não são iguais. Onde o navegador permite (File System
+           Access API) o Vox pede autorização e passa a salvar sozinho; onde
+           não permite, ele assume o que dá: o lembrete — que agora a pessoa
+           regula — e um evento de calendário, que toca até com o app fechado.
+           A porta de entrada disto é o botão "Configurar" do aviso de backup
+           na tela principal (_voxLembreteConfigurar). -->
+      <div id="bkpSecao">
+      <div class="section-title" style="margin-top:16px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> <span data-i18n>Cópias de segurança</span></div>
+      <p class="fhint" style="margin-bottom:10px" data-i18n>Tudo o que você grava fica só neste aparelho. Uma cópia guardada fora dele é o que separa um susto de uma perda.</p>
+
       <!-- Etapa 3 do plano de armazenamento durável (06/09/2026): pasta real
            do computador (File System Access API). Só existe em Chrome/Edge/
            Opera no desktop — _pastaBackupInit() esconde a seção inteira nos
            demais (Firefox, Safari, qualquer celular); quem estiver lá cai
-           só no lembrete da Etapa 2. -->
+           no #bkpManualWrap logo abaixo e nos lembretes. -->
       <div id="pastaBackupSection" style="display:none">
-        <div class="section-title" style="margin-top:16px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span data-i18n>Pasta de backup no computador</span></div>
+        <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span data-i18n>Pasta de backup no computador</span></div>
+        <div class="bkp-selo"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n>Este navegador consegue salvar sozinho</span></div>
         <p class="fhint" style="margin-bottom:8px" data-i18n>Escolha uma pasta uma vez; o Vox mantém um backup atualizado sozinho ali — sobrevive até a limpar os dados do navegador. Apontar pra uma pasta do OneDrive, iCloud Drive, Google Drive ou Dropbox dá backup fora do aparelho sem o Vox precisar de nuvem própria.</p>
+        <div class="tx-tut" style="margin-bottom:8px" data-i18n-html>O que acontece depois que você autoriza: a cada backup o Vox grava <strong>um arquivo do dia</strong> nessa pasta, mantém <strong>os 5 mais recentes</strong> e apaga os antigos sozinho. Ele não lê mais nada ali dentro, e a autorização é sua — dá pra tirar quando quiser, nas configurações do navegador.</div>
         <div class="maint-box" style="margin-bottom:8px">
           <div class="maint-info">
             <div class="maint-title" id="pastaBackupNome" data-i18n>Nenhuma pasta escolhida ainda</div>
@@ -7201,6 +7244,75 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <button class="maint-btn" id="pastaBackupBtn" onclick="_pastaBackupEscolher()" data-i18n>Escolher pasta</button>
         </div>
         <div class="tx-tut" id="pastaBackupPermissaoAviso" style="display:none;margin-bottom:16px"></div>
+      </div>
+
+      <div id="bkpManualWrap" style="display:none">
+        <div class="tx-tut" style="margin-bottom:10px" data-i18n>Neste aparelho o salvamento é manual, e isso não é limitação do Vox: navegadores de celular, o Firefox e o Safari não deixam site nenhum escrever numa pasta sua — é uma trava de segurança deles. Então o Vox faz a parte que cabe a ele: lembrar você na hora certa. E a hora, quem escolhe é você.</div>
+      </div>
+
+      <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></span> <span data-i18n>Quando te lembrar</span></div>
+      <div class="bkp-linha">
+        <div>
+          <p data-i18n>Lembretes de backup</p>
+          <small data-i18n>Um aviso discreto na tela principal — nunca em cima de uma gravação.</small>
+        </div>
+        <label class="toggle-sw">
+          <input type="checkbox" id="bkpLigadoChk" onchange="_bkpSalvar({ligado:this.checked})">
+          <span></span>
+        </label>
+      </div>
+      <div id="bkpGatilhos">
+        <div class="bkp-linha">
+          <div>
+            <p data-i18n>A cada tantas notas novas</p>
+            <small data-i18n>Conta as notas gravadas desde a sua última cópia.</small>
+          </div>
+          <select id="bkpNotasSel" onchange="_bkpSalvar({notas:+this.value})">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="0" data-i18n>nunca</option>
+          </select>
+        </div>
+        <div class="bkp-linha">
+          <div>
+            <p data-i18n>Depois de tantos dias</p>
+            <small data-i18n>Conta o tempo passado desde a sua última cópia.</small>
+          </div>
+          <select id="bkpDiasSel" onchange="_bkpSalvar({dias:+this.value})">
+            <option value="1">1</option>
+            <option value="3">3</option>
+            <option value="7">7</option>
+            <option value="15">15</option>
+            <option value="30">30</option>
+            <option value="0" data-i18n>nunca</option>
+          </select>
+        </div>
+        <!-- Regular um gatilho sem saber onde você está hoje é regular no
+             escuro. Esta linha é preenchida por _bkpPintar() com o estado de
+             agora, usando as MESMAS frases do aviso da tela principal — nada
+             de texto novo pra traduzir, e nada que possa divergir dele. -->
+        <p class="fhint" id="bkpAgoraInfo" style="margin:-2px 0 10px 2px"></p>
+        <div class="tx-tut" id="bkpMudoAviso" style="display:none;margin-bottom:10px" data-i18n>Com os dois gatilhos em "nunca", o Vox não vai te lembrar de nada na tela. O agendamento no calendário, aqui embaixo, continua valendo.</div>
+      </div>
+
+      <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> <span data-i18n>Agendar no seu calendário</span></div>
+      <p class="fhint" style="margin-bottom:8px" data-i18n>O aviso da tela só aparece quando você abre o Vox. Um evento no seu calendário toca mesmo com o app fechado, como um despertador — e é o seu calendário que avisa, não um serviço nosso: nada sai do aparelho. Google Agenda, Calendário da Apple e Outlook abrem o arquivo direto.</p>
+      <div class="bkp-linha">
+        <div><p data-i18n>Com que frequência</p></div>
+        <select id="bkpFreqSel" onchange="_bkpSalvar({freq:this.value})">
+          <option value="semana" data-i18n>Toda semana</option>
+          <option value="quinzena" data-i18n>A cada 15 dias</option>
+          <option value="mes" data-i18n>Todo mês</option>
+        </select>
+      </div>
+      <div class="bkp-linha">
+        <div><p data-i18n>A que horas</p></div>
+        <select id="bkpHoraSel" onchange="_bkpSalvar({hora:+this.value})"></select>
+      </div>
+      <button class="bkp-btn" id="bkpIcsBtn" style="margin-bottom:16px" onclick="_bkpBaixarIcs()" data-i18n>Baixar o lembrete</button>
       </div>
 
       <div class="section-title" style="margin-top:16px" data-i18n>📖 Dicionário e correções aprendidas</div>
@@ -7850,7 +7962,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.14.4';
+const VOX_VERSION='2026.09.14.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8344,6 +8456,34 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── Cópias de segurança reguláveis (14/09/2026) ──
+"Cópias de segurança":"Backups",
+"Tudo o que você grava fica só neste aparelho. Uma cópia guardada fora dele é o que separa um susto de uma perda.":"Everything you record lives on this device only. A copy kept somewhere else is what turns a scare into a non-event.",
+"Este navegador consegue salvar sozinho":"This browser can save on its own",
+"O que acontece depois que você autoriza: a cada backup o Vox grava <strong>um arquivo do dia</strong> nessa pasta, mantém <strong>os 5 mais recentes</strong> e apaga os antigos sozinho. Ele não lê mais nada ali dentro, e a autorização é sua — dá pra tirar quando quiser, nas configurações do navegador.":"What happens once you allow it: on every backup Vox writes <strong>one file for the day</strong> into that folder, keeps <strong>the 5 most recent</strong> ones and deletes the older ones by itself. It reads nothing else in there, and the permission is yours — you can take it back any time, in your browser settings.",
+"Neste aparelho o salvamento é manual, e isso não é limitação do Vox: navegadores de celular, o Firefox e o Safari não deixam site nenhum escrever numa pasta sua — é uma trava de segurança deles. Então o Vox faz a parte que cabe a ele: lembrar você na hora certa. E a hora, quem escolhe é você.":"On this device saving is manual, and that is not a Vox limitation: phone browsers, Firefox and Safari do not let any site write into a folder of yours — it is a safety lock of theirs. So Vox does the part that is up to it: reminding you at the right moment. And you are the one who picks the moment.",
+"Quando te lembrar":"When to remind you",
+"Lembretes de backup":"Backup reminders",
+"Um aviso discreto na tela principal — nunca em cima de uma gravação.":"A quiet notice on the main screen — never on top of a recording.",
+"A cada tantas notas novas":"Every so many new notes",
+"Conta as notas gravadas desde a sua última cópia.":"Counts the notes recorded since your last copy.",
+"Depois de tantos dias":"After so many days",
+"Conta o tempo passado desde a sua última cópia.":"Counts the time passed since your last copy.",
+"nunca":"never",
+"Com os dois gatilhos em \"nunca\", o Vox não vai te lembrar de nada na tela. O agendamento no calendário, aqui embaixo, continua valendo.":"With both triggers set to \"never\", Vox will not remind you of anything on screen. The calendar schedule below still applies.",
+"Agendar no seu calendário":"Schedule it in your calendar",
+"O aviso da tela só aparece quando você abre o Vox. Um evento no seu calendário toca mesmo com o app fechado, como um despertador — e é o seu calendário que avisa, não um serviço nosso: nada sai do aparelho. Google Agenda, Calendário da Apple e Outlook abrem o arquivo direto.":"The on-screen notice only shows up when you open Vox. An event in your calendar rings even with the app closed, like an alarm clock — and it is your calendar doing the reminding, not a service of ours: nothing leaves the device. Google Calendar, Apple Calendar and Outlook open the file directly.",
+"Com que frequência":"How often",
+"Toda semana":"Every week",
+"A cada 15 dias":"Every 15 days",
+"Todo mês":"Every month",
+"A que horas":"At what time",
+"Baixar o lembrete":"Download the reminder",
+"Configurar":"Configure",
+"Fazer sozinho":"Let it do it for me",
+"Salvar uma cópia do Vox":"Save a copy of Vox",
+"Abra o Vox, toque em Exportar e guarde o arquivo do dia. São dois segundos — e é isso que garante que nada se perca.":"Open Vox, tap Export and keep the file for the day. It takes two seconds — and it is what keeps anything from being lost.",
+"📅 Lembrete baixado — abra o arquivo pra ele entrar no seu calendário":"📅 Reminder downloaded — open the file to add it to your calendar",
 // ── World / galáxia (11/09/2026) ──
 "Ver todos os mundos":"See all your worlds",
 "Arrastar pra mover":"Drag to move",
@@ -10506,7 +10646,105 @@ function _voxMomentoDeConfianca(){
 // último backup >= 7 OU notas novas desde o último backup >= 15. Nunca em
 // cima de uma gravação em andamento, nunca antes de a pessoa ter algo a
 // perder (reaproveita _contarNotas(), o mesmo contador da Etapa 1).
+// Estes deixaram de ser lei e viraram só o ponto de partida: desde 14/09/2026
+// cada pessoa regula os dois gatilhos na aba Geral (0 = "nunca" naquele
+// gatilho). Continuam aqui, e não soltos no _bkpCfg(), porque é aqui que o
+// comentário acima explica de onde saíram os números.
 const VOX_LEMBRETE_DIAS=7,VOX_LEMBRETE_NOTAS=15;
+const VOX_BKP_PADRAO={ligado:true,notas:VOX_LEMBRETE_NOTAS,dias:VOX_LEMBRETE_DIAS,freq:'semana',hora:19};
+function _bkpCfg(){
+  let c={};
+  try{c=JSON.parse(localStorage.getItem('vox_bkp_cfg')||'{}')||{}}catch(e){c={}}
+  const r=Object.assign({},VOX_BKP_PADRAO,c);
+  // Quem já tinha desligado o lembrete na versão sem regulagem continua
+  // desligado — não faria sentido o upgrade ressuscitar um aviso que a pessoa
+  // já tinha mandado calar.
+  if(!('ligado' in c)&&localStorage.getItem('vox_lembrete_backup_off')==='1')r.ligado=false;
+  r.notas=Math.max(0,+r.notas||0);
+  r.dias=Math.max(0,+r.dias||0);
+  r.hora=Math.min(23,Math.max(0,+r.hora||0));
+  if(['semana','quinzena','mes'].indexOf(r.freq)<0)r.freq='semana';
+  return r;
+}
+function _bkpSalvar(mudanca){
+  const c=Object.assign(_bkpCfg(),mudanca||{});
+  localStorage.setItem('vox_bkp_cfg',JSON.stringify(c));
+  // Mantém a chave antiga em sincronia: nada mais lê ela aqui, mas os mesmos
+  // dados podem ser abertos por uma versão atrasada do app em outro aparelho.
+  if(c.ligado)localStorage.removeItem('vox_lembrete_backup_off');
+  else{localStorage.setItem('vox_lembrete_backup_off','1');_voxFecharLembrete()}
+  _bkpPintar();
+}
+function _bkpPintar(){
+  const c=_bkpCfg();
+  const g=document.getElementById('bkpGatilhos');
+  if(g)g.classList.toggle('bkp-off',!c.ligado);
+  const mudo=document.getElementById('bkpMudoAviso');
+  if(mudo)mudo.style.display=(c.ligado&&!c.notas&&!c.dias)?'block':'none';
+  const agora=document.getElementById('bkpAgoraInfo');
+  if(agora){
+    const ultimo=localStorage.getItem('vox_last_backup');
+    // As três frases já existem (são as do aviso da tela principal) e já estão
+    // traduzidas — compor com elas custa zero string nova e garante que os
+    // dois lugares nunca contem histórias diferentes.
+    agora.textContent=ultimo
+      ?t('{n} notas novas desde o último backup').replace('{n}',_contarNotas(ultimo))+
+        ' · '+t('Faz {n} dias desde o seu último backup').replace('{n}',Math.floor(_voxDiasDesde(ultimo)))
+      :t('Você ainda não tem nenhuma cópia do seu Vox');
+  }
+}
+// Chamado pelo openModal(), junto do _pastaBackupInit(): decide qual dos dois
+// caminhos esta pessoa vê e devolve os controles ao estado salvo.
+function _bkpInit(){
+  const c=_bkpCfg();
+  const manual=document.getElementById('bkpManualWrap');
+  if(manual)manual.style.display=_temFileSystemAccess()?'none':'block';
+  const sh=document.getElementById('bkpHoraSel');
+  if(sh&&!sh.options.length){
+    for(let h=6;h<=23;h++){
+      const o=document.createElement('option');
+      o.value=String(h);o.textContent=_icsP2(h)+':00';
+      sh.appendChild(o);
+    }
+  }
+  const chk=document.getElementById('bkpLigadoChk');if(chk)chk.checked=c.ligado;
+  const sn=document.getElementById('bkpNotasSel');if(sn)sn.value=String(c.notas);
+  const sd=document.getElementById('bkpDiasSel');if(sd)sd.value=String(c.dias);
+  const sf=document.getElementById('bkpFreqSel');if(sf)sf.value=c.freq;
+  if(sh)sh.value=String(c.hora);
+  _bkpPintar();
+}
+// ── O despertador que toca com o Vox fechado ──
+// O aviso da tela só existe enquanto o app está aberto — quem some por duas
+// semanas nunca vê. Um evento no calendário do próprio aparelho toca de
+// qualquer jeito, e sem serviço nenhum no meio: .ics (RFC 5545) é o formato
+// que Google Agenda, Calendário da Apple e Outlook leem desde sempre. O
+// arquivo é gerado aqui e baixado — nada sai do aparelho.
+// Escapar, dobrar em 74 octetos e carimbar já existe pronto aqui do lado
+// (_icsEsc / _icsDobrar / _icsP2 / _icsCarimbo, na exportação de calendário
+// dos cards). Duas cópias de regra de formato é como se descobre, meses
+// depois, que só uma delas foi corrigida — então este arquivo usa aquelas.
+function _bkpBaixarIcs(){
+  const c=_bkpCfg();
+  const rrule=c.freq==='mes'?'FREQ=MONTHLY':(c.freq==='quinzena'?'FREQ=WEEKLY;INTERVAL=2':'FREQ=WEEKLY');
+  const ini=new Date();
+  ini.setDate(ini.getDate()+1);        // começa amanhã: hoje a hora já pode ter passado
+  ini.setHours(c.hora,0,0,0);
+  // Hora "flutuante" de propósito (sem Z e sem TZID): 19h quer dizer 19h onde
+  // a pessoa estiver, e é o que mais viaja bem entre calendários.
+  const local=d=>''+d.getFullYear()+_icsP2(d.getMonth()+1)+_icsP2(d.getDate())+'T'+_icsP2(d.getHours())+_icsP2(d.getMinutes())+'00';
+  const agora=_icsCarimbo(new Date());
+  const titulo=t('Salvar uma cópia do Vox');
+  const desc=t('Abra o Vox, toque em Exportar e guarde o arquivo do dia. São dois segundos — e é isso que garante que nada se perca.');
+  const linhas=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Vox//My Transcriber//PT','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VEVENT','UID:vox-backup-'+Date.now().toString(36)+'@voxcharmai.com','DTSTAMP:'+agora,
+    'DTSTART:'+local(ini),'DURATION:PT15M','RRULE:'+rrule,
+    'SUMMARY:'+_icsEsc(titulo),'DESCRIPTION:'+_icsEsc(desc),
+    'BEGIN:VALARM','TRIGGER:-PT5M','ACTION:DISPLAY','DESCRIPTION:'+_icsEsc(titulo),'END:VALARM',
+    'END:VEVENT','END:VCALENDAR'];
+  dl(linhas.map(_icsDobrar).join('\r\n')+'\r\n','vox_lembrete_backup.ics','text/calendar;charset=utf-8');
+  toast(t('📅 Lembrete baixado — abra o arquivo pra ele entrar no seu calendário'));
+}
 function _voxDiasDesde(iso){
   if(!iso)return Infinity;
   const d=new Date(iso).getTime();
@@ -10526,7 +10764,9 @@ const VOX_LEMBRETE_TXT={
 };
 function _voxCheckLembreteBackup(){
   if(isRec||isProc)return; // nunca em cima de uma gravação em andamento
-  if(localStorage.getItem('vox_lembrete_backup_off')==='1')return;
+  const c=_bkpCfg();
+  if(!c.ligado)return;
+  if(!c.notas&&!c.dias)return; // os dois gatilhos em "nunca"
   if(document.getElementById('voxConvite')?.style.display==='flex')return; // um cartão de cada vez
   if(document.getElementById('voxLembrete')?.style.display==='flex')return; // já visível
   const adiadoAte=+localStorage.getItem('vox_lembrete_adiado_ate')||0;
@@ -10538,8 +10778,8 @@ function _voxCheckLembreteBackup(){
     return;
   }
   const dias=_voxDiasDesde(ultimo),notasNovas=_contarNotas(ultimo);
-  if(dias>=VOX_LEMBRETE_DIAS){_voxMostrarLembrete('tempo',dias,notasNovas);return}
-  if(notasNovas>=VOX_LEMBRETE_NOTAS){_voxMostrarLembrete('volume',dias,notasNovas);return}
+  if(c.dias&&dias>=c.dias){_voxMostrarLembrete('tempo',dias,notasNovas);return}
+  if(c.notas&&notasNovas>=c.notas){_voxMostrarLembrete('volume',dias,notasNovas);return}
 }
 function _voxMostrarLembrete(tipo,dias,notas){
   const el=document.getElementById('voxLembrete');
@@ -10549,6 +10789,7 @@ function _voxMostrarLembrete(tipo,dias,notas){
     `<span class="txt"><b>${escHtml(c.t)}</b>${escHtml(c.p)}</span>`+
     `<span class="lemb-bts">`+
     `<button type="button" class="conv-p" onclick="_voxLembreteSalvar()">${escHtml(t('Salvar agora'))}</button>`+
+    `<button type="button" class="conv-s" onclick="_voxLembreteConfigurar()">${escHtml(_bkpPodeAutomatizar()?t('Fazer sozinho'):t('Configurar'))}</button>`+
     `<button type="button" class="conv-s" onclick="_voxLembreteAdiar()">${escHtml(t('Agora não'))}</button>`+
     `<button type="button" class="conv-s" onclick="_voxLembreteDesligar()">${escHtml(t('Não lembrar mais'))}</button>`+
     `</span>`;
@@ -10566,8 +10807,69 @@ function _voxLembreteAdiar(){
   _voxFecharLembrete();
 }
 function _voxLembreteDesligar(){
-  localStorage.setItem('vox_lembrete_backup_off','1');
-  _voxFecharLembrete();
+  _bkpSalvar({ligado:false}); // já fecha o aviso sozinho
+}
+// Num aparelho que consegue automatizar e ainda não tem pasta escolhida, o
+// convite é outro: em vez de "vá regular o lembrete", é "deixa que eu faço".
+// Mesmo botão, promessa honesta — os dois levam pro mesmo lugar, que é onde
+// a orientação e o pedido de autorização estão.
+function _bkpPodeAutomatizar(){return _temFileSystemAccess()&&!_pastaBackupHandle}
+// Rolagem calculada, não scrollIntoView: 'center' deixava o título da seção
+// fora da tela (ela é alta) e 'start' encostava ele embaixo da barra de abas,
+// que é sticky. Aqui o alvo já desconta a altura dela — a pessoa cai olhando
+// pro título, que é como ela sabe onde chegou.
+// E é um salto, não uma rolagem suave: uma rolagem suave fica "em voo" por
+// centenas de milissegundos e sobrescreve qualquer correção de mira feita no
+// meio do caminho — foi exatamente assim que esta função errou o alvo por
+// 68px durante meia tarde. O movimento satisfatório aqui é o .bkp-acende,
+// que não depende de corrida nenhuma.
+function _bkpRolarAteSecao(){
+  const sec=document.getElementById('bkpSecao');
+  if(!sec)return;
+  const caixa=sec.closest('.modal'),abas=document.querySelector('.cfg-tabs');
+  if(!caixa){try{sec.scrollIntoView({block:'start'})}catch(e){sec.scrollIntoView()}return}
+  const alvo=Math.max(0,caixa.scrollTop+sec.getBoundingClientRect().top-
+    caixa.getBoundingClientRect().top-((abas?abas.getBoundingClientRect().height:0)+12));
+  if(Math.abs(caixa.scrollTop-alvo)>4)caixa.scrollTop=alvo;
+}
+// O painel de Configurações continua crescendo depois de aberto — medidor de
+// espaço, estado da pasta, avisos que chegam por promessa — e cada pedaço que
+// nasce ACIMA da seção empurra ela pra baixo, deixando a mira velha. Em vez de
+// apostar num tempo pra reposicionar (tentei 500ms, tentei 600ms, sempre
+// chegava mais coisa depois), escuta o tamanho: enquanto o conteúdo se mexer,
+// a mira se corrige sozinha. Para em dois segundos, ou assim que a pessoa
+// rolar com a própria mão — a partir daí quem manda é ela.
+function _bkpMirarEnquantoAssenta(){
+  const sec=document.getElementById('bkpSecao');
+  const caixa=sec&&sec.closest('.modal');
+  if(!caixa)return;
+  // .mb, não firstElementChild: o primeiro filho do modal é o cabeçalho, que
+  // tem altura fixa e nunca dispara nada. Quem cresce é o corpo.
+  const conteudo=caixa.querySelector('.mb')||sec.parentElement||caixa;
+  if(typeof ResizeObserver!=='function'){setTimeout(_bkpRolarAteSecao,700);return}
+  const obs=new ResizeObserver(()=>_bkpRolarAteSecao());
+  const parar=()=>{obs.disconnect();caixa.removeEventListener('wheel',parar);caixa.removeEventListener('touchstart',parar)};
+  obs.observe(conteudo);
+  caixa.addEventListener('wheel',parar,{passive:true});
+  caixa.addEventListener('touchstart',parar,{passive:true});
+  setTimeout(parar,2000);
+}
+async function _voxLembreteConfigurar(){
+  openModal();
+  cfgTab('Geral');
+  // Espera o painel PARAR DE CRESCER antes de mirar. O medidor de espaço e o
+  // estado da pasta chegam por promessa e empurram a seção pra baixo — rolar
+  // antes disso é mirar num lugar que ainda vai se mexer. Chamar as duas de
+  // novo é barato: elas só medem e pintam.
+  try{await Promise.all([updateStorageMeter(),_pastaBackupInit()])}catch(e){}
+  const sec=document.getElementById('bkpSecao');
+  if(!sec)return;
+  _bkpRolarAteSecao();
+  _bkpMirarEnquantoAssenta();
+  sec.classList.remove('bkp-acende');
+  void sec.offsetWidth; // reinicia a animação se clicar duas vezes seguidas
+  sec.classList.add('bkp-acende');
+  setTimeout(()=>sec.classList.remove('bkp-acende'),3000);
 }
 function _voxFecharLembrete(){
   const el=document.getElementById('voxLembrete');
@@ -21659,6 +21961,7 @@ function openModal(){
   renderLearningPanel();
   if(cfg.provider==='local'){updateLocalPanel();checkLocalStatusNow()}
   _pastaBackupInit(); // Etapa 3 do plano de armazenamento durável
+  _bkpInit();         // cópias de segurança reguláveis (14/09/2026)
   // Plano 22 (08/09/2026): decide, a cada abertura, entre a porta simples e as
   // quatro abas de sempre. Quem já ligou "abrir sempre nas avançadas" pula a
   // porta direto — quem chama cfgTab()/openModalToDiar() logo em seguida também
