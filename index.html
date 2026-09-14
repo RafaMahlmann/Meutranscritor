@@ -3028,6 +3028,38 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   gap:4px;align-content:start;padding:5px;overflow-y:auto;
   max-height:var(--orb-mural-maxa,186px);
 }
+/* ── ALÇAS DE REDIMENSIONAR (13/09/2026) ────────────────────────────────
+   Mesmas 8 direções das janelas flutuantes (.fl-rz), com uma diferença que
+   o .orb-mural obriga: ele tem overflow:hidden, então alça pendurada pra
+   fora (-4px, como lá) seria recortada e ficaria sem área de clique. Aqui
+   elas moram PRA DENTRO da borda.
+   A roda/pinça continuam fazendo ZOOM (tudo cresce junto); a alça muda a
+   CAIXA — mais notas por linha, mais linhas à vista. São gestos diferentes
+   de propósito, e é o segundo que faltava. */
+.fich-rz{position:absolute;z-index:6;touch-action:none}
+.fich-rz-n{top:0;left:14px;right:14px;height:6px;cursor:ns-resize}
+.fich-rz-s{bottom:0;left:14px;right:14px;height:6px;cursor:ns-resize}
+.fich-rz-e{right:0;top:14px;bottom:14px;width:6px;cursor:ew-resize}
+.fich-rz-w{left:0;top:14px;bottom:14px;width:6px;cursor:ew-resize}
+.fich-rz-ne{top:0;right:0;width:14px;height:14px;cursor:nesw-resize}
+.fich-rz-nw{top:0;left:0;width:14px;height:14px;cursor:nwse-resize}
+.fich-rz-se{bottom:0;right:0;width:16px;height:16px;cursor:nwse-resize}
+.fich-rz-sw{bottom:0;left:0;width:14px;height:14px;cursor:nesw-resize}
+/* Só o canto de baixo à direita ganha marca visível: sem nenhuma pista, a
+   alça existe e ninguém acha (o cursor só aparece depois de já estar em
+   cima). Duas risquinhas discretas, que somem quando o painel não está em
+   foco pra não virar sujeira na tela. */
+.fich-rz-se::after{
+  content:"";position:absolute;right:3px;bottom:3px;width:8px;height:8px;
+  border-right:1.5px solid var(--orb-texto4,rgba(255,255,255,.34));
+  border-bottom:1.5px solid var(--orb-texto4,rgba(255,255,255,.34));
+  border-bottom-right-radius:3px;opacity:.55;transition:opacity 160ms ease;
+}
+.orb-mural:hover .fich-rz-se::after,.orb-mural.fich-foco .fich-rz-se::after{opacity:.95}
+/* Depois da primeira alça arrastada o painel passa a ter altura própria, e
+   aí o corpo precisa esticar em vez de parar no max-height calculado na
+   abertura. Mesma receita da regra de celular mais abaixo. */
+.orb-mural.fich-redim .orb-mural-body{max-height:none;flex:1;min-height:0}
 /* ── FICHA "ABA DE ARQUIVO" (proposta 2, escolhida pelo Rafa em 03/09/2026)
    A ficha deixou de ser texto encostado em texto e virou OBJETO: superfície
    própria (mais clara que o fundo — regra de elevação no escuro, onde sombra
@@ -9103,6 +9135,7 @@ let I18N_EN={
 "gerada! Ctrl+Z desfaz.":"generated! Ctrl+Z undoes.",
 "🎯 Nota perfeita":"🎯 Perfect note","📬 Reunião resolvida":"📬 Meeting resolved","🎓 Modo estudo":"🎓 Study mode",
 "Transferir (QR / link)":"Transfer (QR / link)","Passa o bastão: outra pessoa recebe uma cópia e continua":"Pass the baton: someone else gets a copy and continues",
+"Receber (link / QR)":"Receive (link / QR)",
 "ℹ️ Card vazio — nada para transferir":"ℹ️ Empty card — nothing to transfer","❌ Só dá pra transferir num endereço https — o do cadeado":"❌ Transfers only work on an https address — the padlock one",
 "Transferir este card":"Transfer this card","Passe o bastão: QR pra quem está perto, link pra quem está longe.":"Pass the baton: QR for someone nearby, link for someone far away.",
 "<strong>Como funciona:</strong> o Vox transforma este texto em um QR code (e um link). A outra pessoa aponta a câmera — ou toca no link — e o texto entra no Vox dela como um novo card, pronto pra continuar o trabalho. <strong>Nada passa por servidores:</strong> o texto viaja dentro do próprio link. Quem recebe fica com uma cópia independente — editar lá não muda o seu texto aqui.":"<strong>How it works:</strong> Vox turns this text into a QR code (and a link). The other person points their camera — or taps the link — and the text lands in their Vox as a new card, ready to continue the work. <strong>Nothing goes through servers:</strong> the text travels inside the link itself. The receiver gets an independent copy — editing there doesn't change your text here.",
@@ -21018,6 +21051,11 @@ function _renderExpCardSection(){
     `<button class="exp-btn" onclick="copyCardObsidian('${id}')">${ICO.obsidian}<span>${t('Copiar para Obsidian')}</span></button>`+
     `<button class="exp-btn" onclick="shareCard('${id}');toggleExp()">${ICO.share}<span>${t('Compartilhar resultado')}</span></button>`+
     `<button class="exp-btn" onclick="toggleExp();openTransferPanel('${id}')">${ICO.qr}<span>${t('Transferir (QR / link)')}</span><span class="txp-help-inline" role="button" tabindex="0" title="${t('Como funciona')}" onclick="event.stopPropagation();abrirAjudaTransferir('card')">?</span></button>`+
+    // O par do "Transferir": quem manda daqui também recebe daqui. Antes,
+    // receber só existia no menu ⋯ Mais — quem estava com o card aberto
+    // tinha que sair da tela pra achar. Mesma tela de sempre; o que muda é
+    // ter a porta de entrada ao lado da porta de saída.
+    `<button class="exp-btn" onclick="toggleExp();abrirReceberTransferencia()">${ICO.receber}<span>${t('Receber (link / QR)')}</span></button>`+
     `<button class="exp-btn" onclick="exportCard('${id}','txt');toggleExp()">${ICO.file}<span>${t('Baixar TXT')}</span></button>`+
     `<button class="exp-btn" onclick="exportCard('${id}','md');toggleExp()">${ICO.file}<span>${t('Baixar Markdown')}</span></button>`+
     `<button class="exp-btn" onclick="exportCard('${id}','html');toggleExp()">${ICO.file}<span>${t('Baixar HTML')}</span></button>`+
@@ -22472,7 +22510,7 @@ function handleKeysTransferHash(hashStr){
     localStorage.setItem('vox_txk_rx',JSON.stringify(store));
     const ov=_txOverlay();
     ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      <div class="tx-title">📥 ${t('Recebendo chaves…')}</div>
+      <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Recebendo chaves…')}</div>
       <div class="tx-progress">${t('Parte {i} de {n} recebida — faltam {k}.').replace('{i}',have).replace('{n}',n).replace('{k}',n-have)}</div>
       <div class="tx-sub">${t('Continue escaneando os próximos QRs (ou abrindo os links) — em qualquer ordem, o Vox monta tudo sozinho.')}</div>
       ${_txpColarHtml()}
@@ -22489,7 +22527,7 @@ function _txkReceive(b64,flags){
   _txkRx={b64,flags};
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div class="tx-title">📥 ${t('Chaves recebidas via Vox Transfer')}</div>
+    <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Chaves recebidas via Vox Transfer')}</div>
     <div class="tx-sub">🔒 ${t('Estas chaves estão protegidas. Digite a senha:')}</div>
     <div class="tx-pass-wrap"><input type="password" class="tx-pass-input" id="txkRxPass" autocomplete="off" onkeydown="if(event.key==='Enter')txkUnlock()"><button type="button" class="tx-eye-btn" title="${t('Mostrar senha')}" onclick="toggleTxEye('txkRxPass',this)">${ICO.eye}</button></div>
     <div class="tx-row"><button class="tx-btn primary" onclick="txkUnlock()">${t('Destrancar')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Cancelar')}</button></div>
@@ -22508,7 +22546,7 @@ async function txkUnlock(){
     const warn=n>0?`<div class="tx-warn">⚠️ ${t('Isso vai substituir {n} chave(s) que você já tinha aqui. Continuar?').replace('{n}',n)}</div>`:'';
     const ov=_txOverlay();
     ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      <div class="tx-title">📥 ${t('Chaves recebidas via Vox Transfer')}</div>
+      <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Chaves recebidas via Vox Transfer')}</div>
       <div class="tx-sub">${t('Substitui todas as configurações de chaves deste aparelho pelas do link.')}</div>
       ${_keysPreviewHtml(obj)}
       ${warn}
@@ -22560,7 +22598,7 @@ function abrirReceberTransferencia(){
   if(_txVoltarProProgresso())return;
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div class="tx-title">📥 ${t('Receber transferência')}</div>
+    <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Receber transferência')}</div>
     <div class="tx-sub">${t('Já gerou o QR, o link ou o arquivo em outro aparelho? Cole aqui, aponte a câmera, ou abra o arquivo.')}</div>
     <label class="tx-lock-row" style="margin:0 0 6px;cursor:default" for="txpRxColar">${t('Cole o link da transferência')}</label>
     <input type="text" class="tx-pass-input" id="txpRxColar" autocomplete="off" placeholder="https://…#vox=…" onkeydown="if(event.key==='Enter')txpReceberColado()">
@@ -23531,6 +23569,86 @@ function _fichOrbAbrirOuFoco(id,ancoraTela){
   _fichAbrirVaga('orb');
   _fichOrbCriar(id,ancoraTela);
 }
+// ── REDIMENSIONAR O PAINEL PELAS BORDAS (13/09/2026) ───────────────────
+// Pedido do Rafa: "faltou a opção de redimensionar que já existe nos cards
+// flutuantes". As janelas flutuantes têm _flStartResize com 8 alças; aqui
+// vale a mesma ideia, mas o código não dá pra reaproveitar — aquele mexe em
+// _flAbertas, no _flLimitePainel e na escala _flS, que são do outro mundo.
+//
+// Duas diferenças que o painel obriga:
+//  · a escala vem de _painelEscala(el) (roda/pinça), então o movimento do
+//    ponteiro é dividido por ela — sem isso, com o painel a 60% o ponteiro
+//    andaria quase o dobro do que a borda;
+//  · a altura nasce do conteúdo (--orb-mural-maxa no corpo). Na primeira
+//    alça arrastada o painel passa a ter altura própria e ganha .fich-redim,
+//    que solta o corpo pra esticar.
+const FICH_MIN_W=180,FICH_MIN_H=120;
+const FICH_RZ_DIRS=['n','s','e','w','ne','nw','se','sw'];
+function _fichAlcasHtml(){
+  return FICH_RZ_DIRS.map(d=>`<div class="fich-rz fich-rz-${d}" data-rz="${d}"></div>`).join('');
+}
+// As alças vivem FORA do innerHTML que _fichOrbPintar reescreve — por isso
+// são recolocadas depois de cada pintura, em vez de fazerem parte dela.
+function _fichGarantirAlcas(el){
+  if(!el||el.querySelector('.fich-rz'))return;
+  el.insertAdjacentHTML('beforeend',_fichAlcasHtml());
+  el.querySelectorAll('.fich-rz').forEach(h=>{
+    h.addEventListener('pointerdown',e=>{
+      // stopPropagation segura os dois gestos do _painelLigar que moram no
+      // elemento de fora: o arrasto pela alça e o rastreio da pinça.
+      e.preventDefault();e.stopPropagation();
+      _fichRedimStart(el,h.dataset.rz,e);
+    });
+  });
+}
+function _fichRedimStart(el,dir,e0){
+  const s=_painelEscala(el)||1;
+  const pai=el.offsetParent||el.parentElement;
+  const pr=pai.getBoundingClientRect();
+  const origW=el.offsetWidth,origH=el.offsetHeight;
+  const origLeft=parseFloat(el.style.left)||0,origTop=parseFloat(el.style.top)||0;
+  const ox=e0.clientX,oy=e0.clientY;
+  // Altura própria a partir de agora: antes disso quem mandava era o
+  // max-height do corpo, e mexer na borda de baixo não teria efeito nenhum.
+  el.classList.add('fich-redim');
+  el.style.height=origH+'px';
+  el.dataset.tamanhoTravado='1';
+  try{el.setPointerCapture(e0.pointerId)}catch(err){}
+  _fichDicaEsconder();
+  function onMove(e){
+    if(e.pointerId!==e0.pointerId)return;
+    const dx=(e.clientX-ox)/s, dy=(e.clientY-oy)/s;
+    let w=origW,h=origH,left=origLeft,top=origTop;
+    if(dir.includes('e'))w=Math.max(FICH_MIN_W,origW+dx);
+    if(dir.includes('s'))h=Math.max(FICH_MIN_H,origH+dy);
+    if(dir.includes('w')){w=Math.max(FICH_MIN_W,origW-dx);left=origLeft+(origW-w)}
+    if(dir.includes('n')){h=Math.max(FICH_MIN_H,origH-dy);top=origTop+(origH-h)}
+    // Teto pelo palco, com a mesma folga de 40px que o arrasto usa: o painel
+    // pode passar da borda, mas nunca a ponto de sumir a alça de voltar.
+    w=Math.min(w,Math.max(FICH_MIN_W,pr.width-left));
+    h=Math.min(h,Math.max(FICH_MIN_H,pr.height-top));
+    el.style.width=w+'px';el.style.height=h+'px';
+    el.style.left=left+'px';el.style.top=top+'px';
+    el.style.right='';el.style.bottom='';
+    el.dataset.arrastado='1';
+    // Mais largura vira mais COLUNA, não ficha esticada — é o que faz
+    // alargar valer a pena. Teto de 4: acima disso a ficha fica estreita
+    // demais pro nome da nota caber.
+    const cols=Math.max(1,Math.min(4,Math.floor((w-14)/ORB_MURAL_COL)));
+    el.style.setProperty('--orb-mural-cols',cols);
+    if(typeof _orbFiosDasNotas==='function')_orbFiosDasNotas();
+  }
+  function fim(e){
+    if(e.pointerId!==e0.pointerId)return;
+    el.removeEventListener('pointermove',onMove);
+    el.removeEventListener('pointerup',fim);
+    el.removeEventListener('pointercancel',fim);
+    try{el.releasePointerCapture(e0.pointerId)}catch(err){}
+  }
+  el.addEventListener('pointermove',onMove);
+  el.addEventListener('pointerup',fim);
+  el.addEventListener('pointercancel',fim);
+}
 function _fichOrbPintar(inst,mostrarDica){
   const cards=_orbCardsDiretos(inst.pastaId);
   const nSub=getFolderChildrenVisiveis(inst.pastaId).length;
@@ -23545,6 +23663,7 @@ function _fichOrbPintar(inst,mostrarDica){
     ${nSub?`<div class="orb-mural-rodape">${nSub} ${escHtml(t(nSub===1?'subpasta continua na órbita, atrás deste cartão':'subpastas continuam na órbita, atrás deste cartão'))}</div>`:''}
     ${mostrarDica?`<div class="orb-mural-dica" id="orbMuralDica">${escHtml(t('arraste a alça pra mover · role a roda (ou belisque) pra aumentar e diminuir'))}</div>`:''}`;
   _orbMuralPintarFotos(inst.el.querySelector('.orb-mural-body'));
+  _fichGarantirAlcas(inst.el);
 }
 function _fichOrbCriar(id,ancoraTela){
   const pasta=_orbAcha(id);
@@ -28081,6 +28200,12 @@ const ICO={
   // onde três pontos deitados não caberiam sem encostar na bolinha vizinha.
   moreV:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>',
   qr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3"/><path d="M14 20h3"/><path d="M20 20h1"/></svg>',
+  // Receber: bandeja com a seta CHEGANDO nela. Par visual do ICO.qr (que
+  // manda) e diferente do ICO.file (que baixa pro disco) — os três moram no
+  // mesmo menu, então precisam se distinguir de relance, em 14px.
+  // NÃO reaproveita o ICO.inbox: aquele já quer dizer "Tudo" na árvore de
+  // pastas, e chave repetida no mesmo objeto é silenciosamente descartada.
+  receber:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h4l1.5 2.5h5L16 13h4"/><path d="M4 13v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M12 3v7"/><path d="M8.5 6.5 12 10l3.5-3.5"/></svg>',
   copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
   textOnly:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
   markdown:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>',
@@ -28688,7 +28813,7 @@ function _txShowProgress(have,n){
     ?`<div class="tx-row"><button class="tx-btn primary" onclick="_txpRxContinuarCamera()"><span class="svgi">${ICO.camera}</span> ${t('Ler o próximo QR')}</button></div>`
     :'';
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div class="tx-title">📥 ${t('Recebendo transferência…')}</div>
+    <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Recebendo transferência…')}</div>
     <div class="tx-progress">${t('Parte {i} de {n} recebida — faltam {k}.').replace('{i}',have).replace('{n}',n).replace('{k}',n-have)}</div>
     <div class="tx-sub">${t('Continue escaneando os próximos QRs (ou abrindo os links) — em qualquer ordem, o Vox monta tudo sozinho.')}</div>
     ${continuar}
@@ -28749,7 +28874,7 @@ function _txReceive(b64,flags,partes){
   const locked=flags[1]==='e';
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div class="tx-title">📥 ${t('Texto recebido via Vox Transfer')}</div>
+    <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Texto recebido via Vox Transfer')}</div>
     ${locked?`<div class="tx-sub">🔒 ${t('Este texto está protegido. Digite a senha combinada:')}</div><div class="tx-pass-wrap"><input type="password" class="tx-pass-input" id="txRxPass" autocomplete="off" onkeydown="if(event.key==='Enter')txUnlock()"><button type="button" class="tx-eye-btn" title="${t('Mostrar senha')}" onclick="toggleTxEye('txRxPass',this)">${ICO.eye}</button></div><div class="tx-row"><button class="tx-btn primary" onclick="txUnlock()">${t('Destrancar')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Cancelar')}</button></div>`:''}
     <div id="txRxBody"></div></div>`;
   ov.classList.add('on');
@@ -28781,7 +28906,7 @@ async function txUnlock(){
     _txRx.obj=obj;
     const ov=_txOverlay();
     ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      <div class="tx-title">📥 ${t('Texto recebido via Vox Transfer')}</div>
+      <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Texto recebido via Vox Transfer')}</div>
       ${obj.n?`<div class="tx-sub"><strong>${escHtml(obj.n)}</strong></div>`:''}
       ${_txSeloInteireza(obj.t,_txRx.partes)}
       <div class="tx-preview">${escHtml(obj.t.slice(0,600))}${obj.t.length>600?`…</div><div class="tx-preview-corte">${escHtml(t('(a prévia para aqui — o card vai receber o texto inteiro)'))}`:''}</div>
@@ -29336,7 +29461,7 @@ function _txpTelaRecepcao(){
     ?`<div class="tx-row"><button class="tx-btn primary" onclick="_txpRxContinuarCamera()"><span class="svgi">${ICO.camera}</span> ${t('Ler o próximo QR')}</button></div>`
     :'';
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div class="tx-title">📥 ${t('Recebendo uma pasta')}</div>
+    <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Recebendo uma pasta')}</div>
     <div class="txp-trilha">${nr>24
       ?`<div class="txp-barra"><div class="txp-barra-in" style="width:${Math.round(prontas.length/nr*100)}%"></div></div>`
       :Array.from({length:nr},(_,k)=>`<span class="txp-chip ${prontas.includes(k+1)?'done':'wait'}">${prontas.includes(k+1)?'✓':k+1}</span>`).join('')}</div>
@@ -29394,7 +29519,7 @@ async function txpDestrancar(){
   const p=_txpRx.pronto;
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div class="tx-title">📥 ${t('Pasta recebida')}</div>
+    <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Pasta recebida')}</div>
     <div class="tx-sub"><strong>${escHtml(p.nome||t('Pasta'))}</strong> · ${t('{n} {cw} · {r} de {t} {rw}').replace('{n}',p.itens.length).replace('{cw}',t(p.itens.length===1?'card':'cards')).replace('{r}',p.prontas).replace('{t}',p.total).replace('{rw}',t(p.total===1?'viagem':'viagens'))}</div>
     ${p.falhas?`<div class="tx-warn">⚠️ ${t('{n} {rw} não abriram (senha diferente ou dado corrompido) e ficaram de fora.').replace('{n}',p.falhas).replace('{rw}',t(p.falhas===1?'viagem':'viagens'))}<br><br>${_txpDicaCortado()}</div>`:''}
     ${p.prontas<p.total?`<div class="tx-warn">${t('Ainda faltam viagens. Você pode adicionar estes cards agora e receber o resto depois — o Vox não vai duplicar o que já entrou.')}</div>`:''}
@@ -29450,7 +29575,7 @@ async function txpArquivoDestrancar(){
     const p=_txpRx.pronto;
     const ov=_txOverlay();
     ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      <div class="tx-title">📥 ${t('Pasta recebida')}</div>
+      <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Pasta recebida')}</div>
       <div class="tx-sub"><strong>${escHtml(p.nome)}</strong> · ${p.itens.length} ${t(p.itens.length===1?'card':'cards')}</div>
       <div class="tx-preview">${p.itens.slice(0,6).map(i=>'• '+escHtml(String(i.sessionName||i.text||'').slice(0,70))).join('\n')}${p.itens.length>6?'\n'+t('…e mais {n}').replace('{n}',p.itens.length-6):''}</div>
       <div class="tx-row"><button class="tx-btn primary" onclick="txpAceitar()">✓ ${t('Adicionar à minha lista')}</button><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Cancelar')}</button></div></div>`;
