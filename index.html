@@ -32549,18 +32549,63 @@ async function _loadFFmpeg(onProgress){
   try{return await _ffmpegLoadingPromise}
   catch(e){_ffmpegLoadingPromise=null;throw e}
 }
+// Entrega um arquivo ao FFmpeg SEM carregar ele inteiro na memoria.
+//
+// ACHADO 14/09/2026 (relato do Rafa: gravacao de tela do iPhone matava a aba —
+// o Safari mostrava "um problema ocorreu repetidamente" com o endereco do site,
+// e nenhum erro chegava no app): o caminho antigo era
+// `writeFile(await fetchFile(file))`, e isso faz DUAS copias inteiras do
+// arquivo — o fetchFile le tudo pra um ArrayBuffer (FileReader) e o MEMFS, que
+// e 100% memoria, copia de novo. Pico de ~2x o tamanho do arquivo ANTES de
+// extrair um unico byte de audio: numa gravacao de 22min/430MB da ~900MB, e o
+// iOS mata o processo da aba. Como morre o processo inteiro, nao existe
+// excecao pra capturar — dai o app nao mostrar erro nenhum, so sumir.
+//
+// Trocar decodeAudioData por FFmpeg (set/2026) tinha resolvido o TEMPO
+// (-c:a copy, ~400ms), nao a memoria: o arquivo continuava sendo carregado
+// inteiro do mesmo jeito.
+//
+// WORKERFS monta o proprio File como se fosse disco: o FFmpeg le em fatias, sob
+// demanda, e nada e copiado. O pico cai de ~2x o arquivo pra alguns MB, e deixa
+// de depender do tamanho do video.
+const FF_MOUNT='/entrada';
+async function _ffAbrirEntrada(ff,file){
+  const ext=_extOf(file)?'.'+_extOf(file):'';
+  try{
+    await ff.unmount(FF_MOUNT).catch(()=>{});   // sobra de uma transcricao anterior
+    await ff.createDir(FF_MOUNT).catch(()=>{}); // da 2a vez em diante ja existe
+    // O nome do arquivo vira caminho dentro do mount. Nome vindo do iOS/Android
+    // pode ter espaco, acento ou vir vazio — so reembrulha quando precisa (o
+    // construtor File referencia os mesmos bytes, nao copia nada pra memoria).
+    const nomeOk=/^[A-Za-z0-9._-]{1,64}$/.test(file.name||'');
+    const nome=nomeOk?file.name:'entrada'+ext;
+    const alvo=nomeOk?file:new File([file],nome,{type:file.type});
+    // ATENCAO: quando o build nao tem WORKERFS, o worker do FFmpeg devolve
+    // `false` em vez de lancar erro — por isso testar o retorno, e nao so
+    // confiar no try/catch.
+    if(await ff.mount('WORKERFS',{files:[alvo]},FF_MOUNT))
+      return{caminho:FF_MOUNT+'/'+nome,fechar:()=>ff.unmount(FF_MOUNT).catch(()=>{})};
+  }catch(e){/* sem WORKERFS nesse navegador — cai pra copia */}
+  // Rede de seguranca: o caminho antigo. Gasta memoria, mas no desktop sobra.
+  const inName='in'+ext;
+  await ff.writeFile(inName,await FFmpegUtil.fetchFile(file));
+  return{caminho:inName,fechar:()=>ff.deleteFile(inName).catch(()=>{})};
+}
 // Converte QUALQUER áudio pra um MP3 limpo — usado antes de enviar um arquivo
 // pequeno num formato arriscado (ex: OGG na OpenAI, AMR, WMA, 3GP de gravadores antigos).
 async function transcodeToMp3(file,pid){
   if(pid)setPL(pid,t('🔧 Preparando suporte a esse áudio (só na primeira vez)…'));
   const ff=await _loadFFmpeg();
-  const inName='in'+(_extOf(file)?'.'+_extOf(file):'');
-  await ff.writeFile(inName,await FFmpegUtil.fetchFile(file));
+  const ent=await _ffAbrirEntrada(ff,file);
   if(pid)setPL(pid,t('🔧 Convertendo áudio…'));
-  await ff.exec(['-i',inName,'-ar','44100','-ac','1','-b:a','128k','out.mp3']);
-  const data=await ff.readFile('out.mp3');
-  await ff.deleteFile(inName).catch(()=>{});await ff.deleteFile('out.mp3').catch(()=>{});
-  return new File([data.buffer],file.name.replace(/\.[a-z0-9]+$/i,'')+'.mp3',{type:'audio/mp3'});
+  try{
+    await ff.exec(['-i',ent.caminho,'-ar','44100','-ac','1','-b:a','128k','out.mp3']);
+    const data=await ff.readFile('out.mp3');
+    return new File([data.buffer],file.name.replace(/\.[a-z0-9]+$/i,'')+'.mp3',{type:'audio/mp3'});
+  }finally{
+    await ent.fechar();
+    await ff.deleteFile('out.mp3').catch(()=>{});
+  }
 }
 
 // Extrai só a trilha de áudio de um vídeo por CÓPIA direta do stream (-c:a copy)
@@ -32572,16 +32617,34 @@ async function transcodeToMp3(file,pid){
 async function extractAudioTrack(file,pid){
   setPL(pid,t('🔧 Preparando suporte a esse áudio (só na primeira vez)…'));
   const ff=await _loadFFmpeg();
-  const inName='in'+(_extOf(file)?'.'+_extOf(file):'');
-  await ff.writeFile(inName,await FFmpegUtil.fetchFile(file));
+  const ent=await _ffAbrirEntrada(ff,file);
   setPL(pid,t('🔧 Extraindo áudio do vídeo…'));
-  await ff.exec(['-i',inName,'-vn','-c:a','copy','out.m4a']);
-  const data=await ff.readFile('out.m4a');
-  await ff.deleteFile(inName).catch(()=>{});await ff.deleteFile('out.m4a').catch(()=>{});
-  return new File([data.buffer],file.name.replace(/\.[a-z0-9]+$/i,'')+'.m4a',{type:'audio/mp4'});
+  try{
+    await ff.exec(['-i',ent.caminho,'-vn','-c:a','copy','out.m4a']);
+    const data=await ff.readFile('out.m4a');
+    return new File([data.buffer],file.name.replace(/\.[a-z0-9]+$/i,'')+'.m4a',{type:'audio/mp4'});
+  }finally{
+    await ent.fechar();
+    await ff.deleteFile('out.m4a').catch(()=>{});
+  }
 }
 // ── CHUNKING ──
+// Teto pro caminho de decodificacao nativa (splitChunks). Acima disso o audio
+// vai pro FFmpeg, que fatia direto pra MP3 no disco virtual.
+//
+// ACHADO 14/09/2026 (mesma investigacao do WORKERFS): decodeAudioData
+// materializa o audio INTEIRO em PCM na memoria — a 16kHz float32 sao ~3,8MB
+// por minuto. Um arquivo de 2h da ~460MB so de PCM, alem do arquivo lido e dos
+// blocos WAV: e o mesmo pico que mata a aba no iPhone, so que um passo depois.
+// O try/catch la embaixo nao salva, porque estouro de memoria no iOS nao lanca
+// excecao — mata o processo. Por isso a guarda vem ANTES, pelo tamanho.
+//
+// 32MB deixa a gravacao de tela tipica (5-30min, que extraidos em AAC dao bem
+// menos que isso) no caminho nativo, que e o rapido. So audio de hora ou mais
+// cai no FFmpeg: mais lento, porem seguro — e com barra de progresso.
+const PCM_NATIVO_MAX=32*1024*1024;
 async function splitChunks(file,pid,key){
+  if(file.size>PCM_NATIVO_MAX)return await splitChunksFFmpeg(file,pid,key);
   setPL(pid,t('Decodificando áudio…'));
   try{
     const ab=await file.arrayBuffer();const ac=new AudioContext({sampleRate:CHUNK_SR});
@@ -32631,13 +32694,12 @@ async function splitChunksFFmpeg(file,pid,key){
   // ff.exec — sem isso, a mensagem fica parada em "Convertendo áudio…" o tempo
   // todo e o detector de travamento acusa falso positivo.
   ff.on('progress',({progress})=>{if(progress>0&&progress<=1)setPL(pid,t('🔧 Convertendo áudio…')+' '+Math.round(progress*100)+'%')});
-  const inName='in'+(_extOf(file)?'.'+_extOf(file):'');
-  await ff.writeFile(inName,await FFmpegUtil.fetchFile(file));
+  const ent=await _ffAbrirEntrada(ff,file);
   setPL(pid,t('🔧 Convertendo áudio…'));
   // MP3 comprimido em vez de WAV cru — um bloco de 10min em WAV pesa ~19MB; em
   // MP3 a 64kbps pesa uma fração disso, o que importa muito num vídeo longo
   // (ex: gravação de tela), onde o pico de memória do navegador é o risco real.
-  await ff.exec(['-i',inName,'-ar',String(CHUNK_SR),'-ac','1','-c:a','libmp3lame','-b:a','64k','-f','segment','-segment_time',String(CHUNK_SEC),'p%03d.mp3']);
+  await ff.exec(['-i',ent.caminho,'-ar',String(CHUNK_SR),'-ac','1','-c:a','libmp3lame','-b:a','64k','-f','segment','-segment_time',String(CHUNK_SEC),'p%03d.mp3']);
   const list=(await ff.listDir('.')).filter(f=>/^p\d+\.mp3$/.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name));
   if(!list.length)throw new Error(t('Não foi possível processar este arquivo de áudio.'));
   const res=[];
@@ -32658,7 +32720,7 @@ async function splitChunksFFmpeg(file,pid,key){
     }
     await ff.deleteFile(list[i].name).catch(()=>{});
   }
-  await ff.deleteFile(inName).catch(()=>{});
+  await ent.fechar();
   // FFmpeg não devolve duração total direto — soma pelo tamanho dos blocos (aprox.)
   const realSec=list.length*CHUNK_SEC;
   return{text:res.join(' '),sec:realSec};
