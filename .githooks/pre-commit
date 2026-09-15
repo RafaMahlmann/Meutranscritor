@@ -1,0 +1,107 @@
+#!/bin/sh
+# ── Bump automático de VOX_VERSION ──────────────────────────────────────────
+#
+# A regra do AGENTS.md (secao 5) sempre foi "bump de VOX_VERSION em mudanca
+# visivel", mas dependia de alguem lembrar -- e em 14/09/2026 um deploy foi
+# publicado sem o bump. O efeito e' pior do que parece: o numero no rodape de
+# Configuracoes > Geral existe justamente pra alguem num celular, sem devtools,
+# conferir se esta' com a correcao. Se ele nao muda, deixa de responder isso.
+#
+# Este hook faz o bump sozinho quando index.html entra num commit.
+#
+# Instalar (uma vez por clone, em qualquer maquina):
+#     git config core.hooksPath .githooks
+#
+# Pular num commit especifico (ex.: mexeu so' num comentario):
+#     VOX_SEM_BUMP=1 git commit ...
+#
+# NOTA 1 -- de proposito NAO usa `set -e`, e todo caminho de duvida sai com 0.
+# Um pre-commit que aborta impede a pessoa de commitar; entre "nao bumpou" e
+# "travou o commit de alguem", o primeiro e' muito menos pior. Nada aqui deve
+# ser capaz de barrar um commit.
+#
+# NOTA 2 -- usa `perl`, nao `sed`. O sed do Git Bash roda em modo texto no
+# Windows e reescreve o arquivo INTEIRO de CRLF pra LF, nao so' a linha trocada.
+# Com core.autocrlf=true isso passa despercebido (o git normaliza na hora de
+# gravar), mas numa maquina com autocrlf=false viraria um diff de 32 mil linhas
+# no index.html -- justamente o tipo de coisa que gera conflito monstro com quem
+# esta' trabalhando em outro micro. O perl preserva os bytes. Testado.
+
+if [ -n "$VOX_SEM_BUMP" ]; then exit 0; fi
+
+# Sao os DIRETORIOS que dizem "tem rebase em curso". Nao testar REBASE_HEAD: o
+# git nao apaga esse arquivo quando o rebase termina, e este repo tem um parado
+# desde 13/09/2026 -- testar ele desligava o hook para sempre, em silencio.
+GITDIR=$(git rev-parse --git-dir 2>/dev/null) || exit 0
+if [ -e "$GITDIR/MERGE_HEAD" ]; then exit 0; fi
+if [ -d "$GITDIR/rebase-merge" ]; then exit 0; fi
+if [ -d "$GITDIR/rebase-apply" ]; then exit 0; fi
+
+# So' age se o index.html estiver de fato neste commit.
+if ! git diff --cached --name-only | grep -qx 'index.html'; then exit 0; fi
+
+ler_versao() {  # le VOX_VERSION de um blob git (ex.: HEAD:index.html, :index.html)
+  git show "$1" 2>/dev/null | grep -m1 -o "VOX_VERSION='[0-9][0-9.]*'" | cut -d"'" -f2
+}
+
+VER_STAGED=$(ler_versao ':index.html')
+VER_HEAD=$(ler_versao 'HEAD:index.html')
+
+if [ -z "$VER_STAGED" ]; then
+  echo "pre-commit: nao achei VOX_VERSION no index.html em stage -- commit segue sem bump." >&2
+  exit 0
+fi
+
+# Ja' foi incrementado a mao neste commit: nao mexe (nada de bump duplo).
+if [ -n "$VER_HEAD" ] && [ "$VER_STAGED" != "$VER_HEAD" ]; then
+  echo "pre-commit: VOX_VERSION ja' veio de $VER_HEAD para $VER_STAGED -- mantido."
+  exit 0
+fi
+
+HOJE=$(date +%Y.%m.%d)
+case "$VER_STAGED" in
+  "$HOJE".*) SEQ=${VER_STAGED##*.}; NOVA="$HOJE.$((SEQ + 1))" ;;
+  *)         NOVA="$HOJE.1" ;;
+esac
+
+ALVO="const VOX_VERSION='$VER_STAGED';"
+TROCA="const VOX_VERSION='$NOVA';"
+
+# Trava: index.html e' o app inteiro (~3,2 MB). Se a constante nao aparecer
+# exatamente uma vez no arquivo em disco, alguma coisa nao e' o que este hook
+# supoe -- melhor sair sem tocar do que reescrever errado. (Cobre tambem o caso
+# de alguem ter editado a versao depois de dar `git add`.)
+N=$(grep -c -F "$ALVO" index.html)
+if [ "$N" != "1" ]; then
+  echo "pre-commit: \"$ALVO\" aparece $N vezes no index.html em disco (esperado 1) -- commit segue sem bump." >&2
+  exit 0
+fi
+
+TMP=$(mktemp "${TMPDIR:-/tmp}/voxver.XXXXXX") || exit 0
+VOLTA=$(mktemp "${TMPDIR:-/tmp}/voxver.XXXXXX") || { rm -f "$TMP"; exit 0; }
+limpar() { rm -f "$TMP" "$VOLTA"; }
+
+if ! ALVO="$ALVO" TROCA="$TROCA" perl -pe 's/\Q$ENV{ALVO}\E/$ENV{TROCA}/' index.html > "$TMP"; then
+  echo "pre-commit: a troca falhou -- commit segue sem bump." >&2
+  limpar; exit 0
+fi
+
+# Guard byte a byte: desfazer a troca no resultado tem que devolver EXATAMENTE
+# o arquivo original. Se qualquer outro byte mudou (fim de linha, acento,
+# codificacao), o cmp acusa e nada e' gravado. Um `git diff --no-index` nao
+# serviria aqui: ele normaliza CRLF dos dois lados e esconderia justamente o
+# estrago que a NOTA 2 descreve.
+if ! ALVO="$ALVO" TROCA="$TROCA" perl -pe 's/\Q$ENV{TROCA}\E/$ENV{ALVO}/' "$TMP" > "$VOLTA"; then
+  echo "pre-commit: conferencia falhou -- commit segue sem bump." >&2
+  limpar; exit 0
+fi
+
+if ! cmp -s index.html "$VOLTA"; then
+  echo "pre-commit: a troca mexeria em mais do que a versao -- abortado, nada alterado." >&2
+  limpar; exit 0
+fi
+
+cat "$TMP" > index.html   # sobrescreve o conteudo, preservando o arquivo original
+limpar
+git add index.html
+echo "pre-commit: VOX_VERSION $VER_STAGED -> $NOVA"

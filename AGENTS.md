@@ -4,6 +4,17 @@ Este repositório é editado por mais de um agente de IA (e pelo mantenedor).
 Estas regras existem para que um agente nunca destrua ou "varra" o trabalho
 de outro. Elas NÃO são opcionais.
 
+## 0. Setup obrigatório (uma vez por clone, em qualquer máquina)
+
+```
+git config core.hooksPath .githooks
+```
+
+Confira com `git config --get core.hooksPath` — tem que responder `.githooks`.
+Sem isso o `.githooks/pre-commit` não roda e o bump de `VOX_VERSION` volta a
+depender de alguém lembrar. Foi assim que o deploy de 14/09/2026 foi publicado
+sem bump, deixando o app corrigido se dizendo com a versão anterior.
+
 ## 1. Branch obrigatório para tarefas delegadas
 
 - Antes de editar qualquer arquivo, crie um branch com seu nome e a tarefa:
@@ -38,7 +49,14 @@ de outro. Elas NÃO são opcionais.
 - Valide os 3 blocos `<script>` com `new Function()` no Node antes de commitar.
 - Dados de usuário no DOM: sempre `escHtml()` / `escJs()` / `safeColor()`.
 - Não adicione scripts de CDN (a CSP bloqueia; bibliotecas são vendorizadas).
-- Bump de `VOX_VERSION` (formato `ano.mês.dia.sequência`) em mudança visível.
+- Bump de `VOX_VERSION` (formato `ano.mês.dia.sequência`): **automático** pelo
+  `.githooks/pre-commit` sempre que o `index.html` entra num commit — desde que
+  o setup da seção 0 tenha sido feito. Se você bumpar à mão, o hook respeita e
+  não incrementa duas vezes. Para pular de propósito (ex.: mexeu só num
+  comentário): `VOX_SEM_BUMP=1 git commit ...`.
+- Depois de publicar, confirme o que está no ar de verdade — o `Cache-Control`
+  é de 10 min, então use um cache-buster:
+  `curl -s 'https://voxcharmai.com/?cb=1' | grep -o "VOX_VERSION='[0-9.]*'"`.
 
 ## 6. Testar o app navegando de verdade (não só ler código)
 
