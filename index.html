@@ -8096,7 +8096,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.22.1';
+const VOX_VERSION='2026.09.22.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8553,6 +8553,144 @@ function _mundoCriar(nome,desc){
   _mundosSalvar(l);
   _mundoTrocar(id);
 }
+// ── Transferir pasta (com subpastas e notas) pra outro mundo ────────────────
+// (22/09/2026, doc 24 do Plano Diretor). A peça central: trocar de mundo (ou
+// criar um) já É um location.reload() — então "mover" não escreve direto na
+// chave de outro mundo (ela pode estar cifrada com uma senha que a gente
+// ainda não tem). A sequência é: 1) tira da origem e guarda um pacote FORA
+// do desvio por World (_idbGetBruto/_idbSetBruto crus, sem passar por
+// _mundoChave — o pacote é transitório, não é conteúdo de mundo nenhum);
+// 2) deixa a Galáxia de sempre escolher ou criar o destino — zero tela
+// nova; 3) no boot do mundo que abrir a seguir, importa o pacote se existir.
+const VOX_TRANSF_CHAVE='vox_transf_pendente';
+async function _mundoColetarPacote(folderId){
+  saveHistory(); // garante que o que está em memória já foi persistido
+  const idsPasta=new Set([folderId,...getFolderDescendants(folderId)]);
+  const pastas=folders.filter(f=>idsPasta.has(f.id)).map(f=>({...f}));
+  const cardsEl=getCardsInFolderTree(folderId);
+  // Janela flutuante de quem vai viajar: fecha antes. O id do DOM é
+  // regenerado a cada load (addCard sempre sorteia um novo) — depois do
+  // reload essa referência ficaria pendurada apontando pra um card morto.
+  cardsEl.forEach(c=>{if(_flAbertas.some(j=>j.id===c.id))_flFecharJanela(c.id)});
+  const dts=new Set(cardsEl.map(c=>c.dataset.dt));
+  const todos=await idbGet('vox_history').catch(()=>[])||[];
+  // `dt` (data de criação) é o único campo estável entre saves/loads — o
+  // `id` do DOM nasce de novo em todo addCard(), load incluso.
+  const itens=todos.filter(it=>dts.has(it.dt));
+  let tagNomes={};
+  try{tagNomes=JSON.parse(localStorage.getItem('vox_tag_nomes')||'{}')}catch(e){}
+  const tagNomesUsados={};
+  new Set(itens.flatMap(it=>it.tags||[])).forEach(id=>{
+    if(tagNomes[id]!==undefined)tagNomesUsados[id]=tagNomes[id];
+  });
+  // Fotos: decifra AGORA, com a chave do mundo de origem (ainda disponível
+  // nesta sessão). Do outro lado, quem importar reencripta com a chave de lá
+  // (ou nenhuma, se aberto) via imgSalvar — reaproveitando a função de
+  // sempre, sem reimplementar cifra nenhuma aqui.
+  const fotos=[];
+  for(const it of itens){
+    for(const img of (it.images||[])){
+      if(!img||!img.k)continue;
+      try{
+        const blob=await imgCarregar(img.k);
+        if(!blob)continue;
+        fotos.push({kAntiga:img.k,buf:await blob.arrayBuffer(),mime:blob.type||'image/jpeg',w:img.w,h:img.h});
+      }catch(e){}
+    }
+  }
+  return {v:1,origem:_mundoAtivo,folderId,pastas,itens,tagNomesUsados,fotos};
+}
+function _mundoRemoverPacoteDaOrigem(pacote){
+  const idsPasta=new Set(pacote.pastas.map(f=>f.id));
+  const dts=new Set(pacote.itens.map(it=>it.dt));
+  document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
+    if(dts.has(c.dataset.dt))c.remove();
+  });
+  folders=folders.filter(f=>!idsPasta.has(f.id));
+  if(idsPasta.has(activeFolderId))activeFolderId=null;
+  saveHistory();saveFolders();renderFolders();applyFolderFilter();
+}
+async function _mundoImportarPacote(pacote){
+  // Id de pasta que colida com uma já existente aqui (raro — o esquema é
+  // timestamp+sorte — mas barato de garantir) ganha um id novo, com as
+  // referências de card remapeadas junto.
+  const remap={};
+  pacote.pastas.forEach(f=>{
+    if(folders.some(x=>x.id===f.id))remap[f.id]='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  });
+  const pastasFinal=pacote.pastas.map(f=>({...f,id:remap[f.id]||f.id,
+    parentId:(f.parentId&&remap[f.parentId])?remap[f.parentId]:f.parentId}));
+  folders=[...folders,...pastasFinal];
+  saveFolders();
+  // Fotos primeiro: precisa da chave NOVA antes de recriar os cards que as
+  // referenciam.
+  const kMap={};
+  for(const foto of pacote.fotos){
+    try{
+      const blob=new Blob([foto.buf],{type:foto.mime});
+      kMap[foto.kAntiga]=await imgSalvar(blob,foto.w||0,foto.h||0);
+    }catch(e){}
+  }
+  pacote.itens.forEach(it=>{
+    const folder=(it.folder&&remap[it.folder])?remap[it.folder]:(it.folder||'');
+    const images=(it.images||[]).map(img=>({...img,k:kMap[img.k]||img.k}));
+    if(it.diarized){
+      addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',folder,it.chatHistory||'[]');
+    }else{
+      addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,folder,it.chatHistory||'[]',images,it.links||[],it.textosImagem||{});
+    }
+  });
+  // Nomes de etiqueta usados pelos cards que chegaram: só entra o que ainda
+  // não existe aqui — nunca sobrescreve nome que já foi escolhido no destino.
+  let tagNomes={};
+  try{tagNomes=JSON.parse(localStorage.getItem('vox_tag_nomes')||'{}')}catch(e){}
+  let mudouTag=false;
+  Object.keys(pacote.tagNomesUsados||{}).forEach(id=>{
+    if(tagNomes[id]===undefined){tagNomes[id]=pacote.tagNomesUsados[id];mudouTag=true}
+  });
+  if(mudouTag)localStorage.setItem('vox_tag_nomes',JSON.stringify(tagNomes));
+  saveHistory();applyFolderFilter();renderFolders();
+  return {notas:pacote.itens.length,subpastas:pacote.pastas.length-1};
+}
+// Confirma, tira da origem, guarda o pacote fora do desvio por World, e
+// deixa a Galáxia de sempre escolher OU criar o destino — zero tela nova.
+async function _mundoIniciarTransferencia(folderId){
+  const f=folders.find(x=>x.id===folderId);
+  const nome=f?f.name:t('Tudo');
+  const nSub=getFolderDescendants(folderId).length;
+  const nCards=getCardsInFolderTree(folderId).length;
+  if(!nCards&&!nSub){toast(t('⚠️ Pasta vazia'),true);return}
+  const msg=nSub
+    ?t('Mover "{p}" — {n} notas, {m} subpastas — para outro mundo?').replace('{p}',nome).replace('{n}',nCards).replace('{m}',nSub)
+    :t('Mover "{p}" — {n} notas — para outro mundo?').replace('{p}',nome).replace('{n}',nCards);
+  if(!confirm(msg))return;
+  const pacote=await _mundoColetarPacote(folderId);
+  await _idbSetBruto(VOX_TRANSF_CHAVE,pacote);
+  _mundoRemoverPacoteDaOrigem(pacote);
+  toast(t('📦 Escolha em qual mundo "{p}" vai morar').replace('{p}',nome));
+  abrirGalaxia();
+}
+// Roda no boot (depois do loadFolders(), já no mundo que ficou ativo) e
+// também ao fechar a Galáxia sem trocar de mundo — rede de segurança: se a
+// pessoa cancelou no meio, o pacote volta pro lugar de onde saiu, sem reload
+// nenhum, porque a gente nunca chegou a sair do mundo de origem.
+async function _mundoChecarPendente(){
+  let pacote;
+  try{pacote=await _idbGetBruto(VOX_TRANSF_CHAVE)}catch(e){return}
+  if(!pacote)return;
+  await _idbSetBruto(VOX_TRANSF_CHAVE,null).catch(()=>{});
+  const mesmoMundo=pacote.origem===_mundoAtivo;
+  const r=await _mundoImportarPacote(pacote);
+  if(mesmoMundo)return; // cancelou a troca — voltou pro mesmo lugar, sem "chegou"
+  toast(t('📦 {n} notas e {m} subpastas agora moram aqui').replace('{n}',r.notas).replace('{m}',r.subpastas));
+  // Juice: o mesmo "afundar e voltar" que o chip do mundo ativo já faz ao
+  // abrir a Galáxia — reaproveitado sozinho, sem precisar abrir nada.
+  const chip=document.getElementById('worldChip');
+  if(chip&&!_voxReduzMov()){
+    chip.classList.add('afunda');
+    setTimeout(()=>chip.classList.remove('afunda'),260);
+  }
+}
 // ── I18N (gettext-style: o texto PT é a própria chave) ──
 // Idioma: escolha salva > idioma do navegador (pt→PT; resto do mundo→EN, padrão de lançamento)
 let currentLang=localStorage.getItem('vox_lang')||((navigator.language||'').toLowerCase().startsWith('pt')?'pt':'en');
@@ -9000,6 +9138,11 @@ let I18N_EN={
 "Ver em Mosaico":"View in Mosaic",
 "Ver em Órbita":"View in Orbit",
 "Ver em Fluxograma":"View in Flowchart",
+"Transferir pra outro mundo…":"Move to another world…",
+"Mover \"{p}\" — {n} notas, {m} subpastas — para outro mundo?":"Move \"{p}\" — {n} notes, {m} subfolders — to another world?",
+"Mover \"{p}\" — {n} notas — para outro mundo?":"Move \"{p}\" — {n} notes — to another world?",
+"📦 Escolha em qual mundo \"{p}\" vai morar":"📦 Choose which world \"{p}\" will live in",
+"📦 {n} notas e {m} subpastas agora moram aqui":"📦 {n} notes and {m} subfolders now live here",
 "Tirar deste dia":"Take it off this day",
 "Tirei do dia.":"Taken off the day.",
 "Nota nova neste dia":"New note on this day",
@@ -11081,7 +11224,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // A faxina desceu pra DEPOIS do loadFolders() (01/09/2026): desde que pasta
   // também tem prazo de 30 dias, ela precisa de folders[] na mão — rodando
   // antes, _pastaNaLixeira respondia "não" pra todo mundo e nada era varrido.
-  loadFolders();_faxinaLixeira();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();initFloatSelHandle();
+  loadFolders();_mundoChecarPendente();_faxinaLixeira();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();initFloatSelHandle();
   initAudioDropzone();
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
   if(!localStorage.getItem('vox_welcomed')&&!document.querySelector('#cardsList .card:not(.proc-card)')){
@@ -17897,7 +18040,8 @@ function _calAbrirNotaSubmenu(card,fita,px,py){
     {ic:ICO.masonry,rot:t('Ver em Mosaico'),fn:()=>irPara(()=>setViewMode('masonry'))},
     {ic:ICO.orbit,rot:t('Ver em Órbita'),fn:()=>irPara(abrirOrbital)},
     {ic:ICO.flowchart,rot:t('Ver em Fluxograma'),fn:()=>irPara(abrirFluxograma)},
-    {ic:ICO.export,rot:t('Exportar pasta'),fn:()=>exportFolder(fid)}
+    {ic:ICO.export,rot:t('Exportar pasta'),fn:()=>exportFolder(fid)},
+    {ic:ICO.mundo,rot:t('Transferir pra outro mundo…'),fn:()=>{fecharCalendario();_mundoIniciarTransferencia(fid)}}
   ];
   _mapaAbrirMenu(px,py,_calNomeDoCard(card),itens);
 }
@@ -19492,6 +19636,7 @@ function folderMenu(id,ev){
     <button onclick="renameFolder('${escJs(id)}')"><span class="svgi">${ICO.pen}</span> ${t('Renomear')}</button>
     <button onclick="abrirSalaEnvio('${escJs(id)}')">${ICO.qr}${t('Transferir (QR / link)')}</button>
     <button onclick="exportFolder('${escJs(id)}')"><span class="svgi">${ICO.export}</span> ${t('Exportar pasta')}</button>
+    <button onclick="closeFolderMenu();_mundoIniciarTransferencia('${escJs(id)}')"><span class="svgi">${ICO.mundo}</span> ${t('Transferir pra outro mundo…')}</button>
     <button onclick="clearFolder('${escJs(id)}')">${ICO.eraser}${t('Limpar pasta')}</button>
     <button onclick="arquivarPasta('${escJs(id)}')"><span class="svgi">${ICO.archive}</span> ${t('Arquivar pasta')}</button>
     <button class="danger" onclick="deleteFolder('${escJs(id)}')"><span class="svgi">${ICO.trash}</span> ${t('Apagar pasta')}</button>`;
@@ -28260,6 +28405,9 @@ const ICO={
   masonry:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="11" rx="2"/><rect x="13" y="3" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><rect x="3" y="17" width="8" height="4" rx="2"/></svg>',
   orbit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><ellipse cx="12" cy="12" rx="9.5" ry="4.2" transform="rotate(-25 12 12)"/><circle cx="20.3" cy="8.5" r="1.4"/></svg>',
   flowchart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="12" r="2.3"/><circle cx="18" cy="5" r="2.3"/><circle cx="18" cy="19" r="2.3"/><path d="M6.1 11.1 15.9 6"/><path d="M6.1 12.9 15.9 18"/></svg>',
+  // Mesmo planeta anelado do botão "Ver todos os mundos" da barra de pastas —
+  // reaproveitado aqui pro item "Transferir pra outro mundo" dos dois menus.
+  mundo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-18 12 12)"><circle cx="12" cy="12" r="8.6"/><path d="M12 3.4c3.1 2.3 3.1 14.9 0 17.2"/><path d="M12 3.4c-3.1 2.3-3.1 14.9 0 17.2"/><path d="M3.9 9.1c5 2 11.2 2 16.2 0"/></g></svg>',
   scale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M9 21h6"/><path d="M5 7h14"/><path d="M5 7l-3 6a3 3 0 0 0 6 0z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0z"/></svg>',
   messageCircle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
   gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
@@ -34116,6 +34264,11 @@ function abrirGalaxia(e){
   acordar();
 }
 function fecharGalaxia(semVeu){
+  // Rede de segurança da transferência entre mundos: se tinha um pacote
+  // pendente pra ESTE mundo (a pessoa abriu a Galáxia pra escolher destino e
+  // desistiu, sem trocar), ele volta pro lugar de onde saiu — silenciosamente,
+  // porque a gente nunca chegou a sair daqui.
+  _mundoChecarPendente();
   /* a limpeza acontece SEMPRE, mesmo se o estado já dizia "fechado".
      Antes isso saía pela porta dos fundos logo na primeira linha, e bastava
      uma corrida entre abrir e fechar pra deixar o painel aceso e órfão. */
