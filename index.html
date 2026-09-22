@@ -5305,6 +5305,26 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .txp-steps{margin:6px 0 0;padding-left:20px}
 .txp-steps li{margin-bottom:2px}
 .tx-tut-hide{display:block;margin-top:10px;background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);padding:0}
+/* ── Modo Avançado de transferir pasta pra outro mundo (22/09/2026) ──
+   Mesma casca de sempre (.tx-overlay/.tx-modal, a mesma da Vox Transfer) —
+   só a lista de dentro é nova. animation:cbxNasce é a MESMA entrada
+   escalonada que a caixinha de seleção de card já usa (definida lá em cima,
+   perto de .cbx-n) — reaproveitada aqui, não recriada. */
+.mundo-sel-modal{max-width:480px}
+.mundo-sel-lista{max-height:44vh;overflow-y:auto;margin:4px -4px 14px;padding:0 4px}
+.mundo-sel-row{display:flex;align-items:center;gap:9px;padding:7px 4px;border-radius:10px;cursor:pointer;
+  animation:cbxNasce .26s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--cbx-i,0) * 22ms)}
+.mundo-sel-row:hover{background:var(--bg-input)}
+.mundo-sel-row input[type=checkbox]{width:17px;height:17px;flex:none;accent-color:var(--accent);cursor:pointer}
+.mundo-sel-dot{width:9px;height:9px;border-radius:50%;flex:none}
+.mundo-sel-nome{flex:1;font-size:13.5px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mundo-sel-pasta .mundo-sel-nome{font-weight:700}
+.mundo-sel-card .mundo-sel-nome{color:var(--text2);font-weight:500}
+.mundo-sel-n{font-size:11px;color:var(--text4);font-weight:700;flex:none}
+.mundo-sel-rodape{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid var(--border)}
+.mundo-sel-contagem{font-size:12.5px;color:var(--text3)}
+.mundo-sel-btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:10px 18px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--font);flex:none}
+.mundo-sel-btn:disabled{opacity:.4;cursor:default}
 /* ── ARMAZENAMENTO DURÁVEL (06/09/2026) — convite de instalar (Etapa 1) e
    lembrete de backup (Etapa 2). Visual copiado quase literal do mockup
    aprovado (scratchpad/PROPOSTA_ARMAZENAMENTO_DURAVEL.html), com os tokens
@@ -8096,7 +8116,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.22.2';
+const VOX_VERSION='2026.09.22.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8564,15 +8584,21 @@ function _mundoCriar(nome,desc){
 // nova; 3) no boot do mundo que abrir a seguir, importa o pacote se existir.
 const VOX_TRANSF_CHAVE='vox_transf_pendente';
 async function _mundoColetarPacote(folderId){
-  saveHistory(); // garante que o que está em memória já foi persistido
   const idsPasta=new Set([folderId,...getFolderDescendants(folderId)]);
+  const dts=new Set(getCardsInFolderTree(folderId).map(c=>c.dataset.dt));
+  return _mundoColetarPacoteComEscopo(idsPasta,dts);
+}
+// Núcleo compartilhado pelo caminho rápido (pasta inteira, escopo calculado
+// ali em cima) e pelo Modo Avançado (escopo escolhido à mão em
+// _mundoAbrirSeletor) — só muda QUEM entra no Set, a coleta é a mesma.
+async function _mundoColetarPacoteComEscopo(idsPasta,dts){
+  saveHistory(); // garante que o que está em memória já foi persistido
   const pastas=folders.filter(f=>idsPasta.has(f.id)).map(f=>({...f}));
-  const cardsEl=getCardsInFolderTree(folderId);
+  const cardsEl=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')].filter(c=>dts.has(c.dataset.dt));
   // Janela flutuante de quem vai viajar: fecha antes. O id do DOM é
   // regenerado a cada load (addCard sempre sorteia um novo) — depois do
   // reload essa referência ficaria pendurada apontando pra um card morto.
   cardsEl.forEach(c=>{if(_flAbertas.some(j=>j.id===c.id))_flFecharJanela(c.id)});
-  const dts=new Set(cardsEl.map(c=>c.dataset.dt));
   const todos=await idbGet('vox_history').catch(()=>[])||[];
   // `dt` (data de criação) é o único campo estável entre saves/loads — o
   // `id` do DOM nasce de novo em todo addCard(), load incluso.
@@ -8598,7 +8624,7 @@ async function _mundoColetarPacote(folderId){
       }catch(e){}
     }
   }
-  return {v:1,origem:_mundoAtivo,folderId,pastas,itens,tagNomesUsados,fotos};
+  return {v:1,origem:_mundoAtivo,pastas,itens,tagNomesUsados,fotos};
 }
 function _mundoRemoverPacoteDaOrigem(pacote){
   const idsPasta=new Set(pacote.pastas.map(f=>f.id));
@@ -8665,6 +8691,107 @@ async function _mundoIniciarTransferencia(folderId){
     :t('Mover "{p}" — {n} notas — para outro mundo?').replace('{p}',nome).replace('{n}',nCards);
   if(!confirm(msg))return;
   const pacote=await _mundoColetarPacote(folderId);
+  await _idbSetBruto(VOX_TRANSF_CHAVE,pacote);
+  _mundoRemoverPacoteDaOrigem(pacote);
+  toast(t('📦 Escolha em qual mundo "{p}" vai morar').replace('{p}',nome));
+  abrirGalaxia();
+}
+// ── Modo Avançado: escolher pasta por pasta, nota por nota ──────────────────
+// Mesma casca .tx-overlay/.tx-modal da Vox Transfer; a lista de dentro é
+// nova, mas o núcleo que de fato empacota e remove (_mundoColetarPacoteCom-
+// Escopo/_mundoRemoverPacoteDaOrigem) é o MESMO da transferência da pasta
+// inteira — só muda quem entra nos dois Sets abaixo.
+let _mundoSelEstado=null;
+function _mundoAbrirSeletor(folderId){
+  const raiz=folders.find(f=>f.id===folderId);
+  if(!raiz){toast(t('⚠️ Pasta não encontrada'),true);return}
+  let ov=document.getElementById('mundoSelOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='mundoSelOverlay';
+    ov.className='tx-overlay';
+    ov.innerHTML=`<div class="tx-modal mundo-sel-modal">
+      <button type="button" class="tx-close" onclick="_mundoFecharSeletor()" aria-label="${t('Fechar')}">${ICO.close}</button>
+      <div class="tx-title"><span class="svgi">${ICO.mundo}</span> ${t('Escolher o que transferir')}</div>
+      <div class="tx-sub">${t('Desmarque o que não quer levar — desmarcar uma pasta some com o que está dentro dela também.')}</div>
+      <div class="mundo-sel-lista" id="mundoSelLista"></div>
+      <div class="mundo-sel-rodape">
+        <span class="mundo-sel-contagem" id="mundoSelContagem"></span>
+        <button type="button" class="mundo-sel-btn" id="mundoSelBtn" onclick="_mundoConfirmarSeletor()">${t('Transferir')}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+  }
+  _mundoSelEstado={folderId,pastasOn:new Set([folderId,...getFolderDescendants(folderId)]),
+    cardsOn:new Set(getCardsInFolderTree(folderId).map(c=>c.dataset.dt))};
+  _mundoPintarSeletor();
+  ov.classList.add('on');
+}
+function _mundoFecharSeletor(){
+  document.getElementById('mundoSelOverlay')?.classList.remove('on');
+  _mundoSelEstado=null;
+}
+function _mundoPintarSeletor(){
+  const est=_mundoSelEstado;if(!est)return;
+  const counts=getFolderCounts();
+  const cardsTodos=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')];
+  let html='',i=0;
+  const linha=(f,lvl)=>{
+    html+=`<label class="mundo-sel-row mundo-sel-pasta" style="--cbx-i:${Math.min(i++,10)};padding-left:${lvl*16}px">`+
+      `<input type="checkbox" ${est.pastasOn.has(f.id)?'checked':''} onchange="_mundoAlternarPasta('${escJs(f.id)}',this.checked)">`+
+      `<span class="mundo-sel-dot" style="background:${safeColor(f.color)}"></span>`+
+      `<span class="mundo-sel-nome">${escHtml(f.name)}</span>`+
+      `<span class="mundo-sel-n">${getFolderCount(f.id,counts)}</span></label>`;
+    cardsTodos.filter(c=>c.dataset.folder===f.id).forEach(c=>{
+      const dt=c.dataset.dt;
+      html+=`<label class="mundo-sel-row mundo-sel-card" style="--cbx-i:${Math.min(i++,10)};padding-left:${lvl*16+22}px">`+
+        `<input type="checkbox" ${est.cardsOn.has(dt)?'checked':''} onchange="_mundoAlternarCard('${escJs(dt)}',this.checked)">`+
+        `<span class="mundo-sel-nome">${escHtml(c.dataset.sessionName||fmtDt(dt))}</span></label>`;
+    });
+    getFolderChildrenVisiveis(f.id).forEach(sub=>linha(sub,lvl+1));
+  };
+  const raiz=folders.find(f=>f.id===est.folderId);
+  if(raiz)linha(raiz,0);
+  document.getElementById('mundoSelLista').innerHTML=html;
+  const nCards=est.cardsOn.size,nPastas=est.pastasOn.size-1;
+  document.getElementById('mundoSelContagem').textContent=nPastas
+    ?t('{n} notas, {m} subpastas').replace('{n}',nCards).replace('{m}',nPastas)
+    :t('{n} notas').replace('{n}',nCards);
+  document.getElementById('mundoSelBtn').disabled=!nCards&&!nPastas;
+}
+function _mundoAlternarPasta(id,on){
+  const est=_mundoSelEstado;if(!est)return;
+  const idsSub=[id,...getFolderDescendants(id)];
+  idsSub.forEach(fid=>{if(on)est.pastasOn.add(fid);else est.pastasOn.delete(fid)});
+  if(on){
+    // Não dá pra levar uma subpasta sem o caminho até ela: marca os pais
+    // também, até chegar na raiz desta tela (não sobe além dela).
+    let f=folders.find(x=>x.id===id);
+    while(f&&f.parentId&&f.id!==est.folderId){est.pastasOn.add(f.parentId);f=folders.find(x=>x.id===f.parentId)}
+  }
+  [...document.querySelectorAll('#cardsList .card:not(.proc-card)')]
+    .filter(c=>idsSub.includes(c.dataset.folder))
+    .forEach(c=>{if(on)est.cardsOn.add(c.dataset.dt);else est.cardsOn.delete(c.dataset.dt)});
+  _mundoPintarSeletor();
+}
+function _mundoAlternarCard(dt,on){
+  const est=_mundoSelEstado;if(!est)return;
+  if(on)est.cardsOn.add(dt);else est.cardsOn.delete(dt);
+  _mundoPintarSeletor();
+}
+async function _mundoConfirmarSeletor(){
+  const est=_mundoSelEstado;if(!est)return;
+  const nCards=est.cardsOn.size,nPastas=est.pastasOn.size-1;
+  if(!nCards&&!nPastas){toast(t('⚠️ Nada marcado'),true);return}
+  const raiz=folders.find(f=>f.id===est.folderId);
+  const nome=raiz?raiz.name:t('Tudo');
+  const msg=nPastas
+    ?t('Mover "{p}" — {n} notas, {m} subpastas — para outro mundo?').replace('{p}',nome).replace('{n}',nCards).replace('{m}',nPastas)
+    :t('Mover "{p}" — {n} notas — para outro mundo?').replace('{p}',nome).replace('{n}',nCards);
+  if(!confirm(msg))return;
+  const pastasOn=est.pastasOn,cardsOn=est.cardsOn;
+  _mundoFecharSeletor();
+  const pacote=await _mundoColetarPacoteComEscopo(pastasOn,cardsOn);
   await _idbSetBruto(VOX_TRANSF_CHAVE,pacote);
   _mundoRemoverPacoteDaOrigem(pacote);
   toast(t('📦 Escolha em qual mundo "{p}" vai morar').replace('{p}',nome));
@@ -9143,6 +9270,13 @@ let I18N_EN={
 "Mover \"{p}\" — {n} notas — para outro mundo?":"Move \"{p}\" — {n} notes — to another world?",
 "📦 Escolha em qual mundo \"{p}\" vai morar":"📦 Choose which world \"{p}\" will live in",
 "📦 {n} notas e {m} subpastas agora moram aqui":"📦 {n} notes and {m} subfolders now live here",
+"Escolher o que transferir…":"Choose what to move…",
+"Escolher o que transferir":"Choose what to move",
+"Desmarque o que não quer levar — desmarcar uma pasta some com o que está dentro dela também.":"Uncheck what you don't want to bring — unchecking a folder also removes what's inside it.",
+"{n} notas, {m} subpastas":"{n} notes, {m} subfolders",
+"{n} notas":"{n} notes",
+"⚠️ Nada marcado":"⚠️ Nothing checked",
+"Transferir":"Move",
 "Tirar deste dia":"Take it off this day",
 "Tirei do dia.":"Taken off the day.",
 "Nota nova neste dia":"New note on this day",
@@ -18041,7 +18175,8 @@ function _calAbrirNotaSubmenu(card,fita,px,py){
     {ic:ICO.orbit,rot:t('Ver em Órbita'),fn:()=>irPara(abrirOrbital)},
     {ic:ICO.flowchart,rot:t('Ver em Fluxograma'),fn:()=>irPara(abrirFluxograma)},
     {ic:ICO.export,rot:t('Exportar pasta'),fn:()=>exportFolder(fid)},
-    {ic:ICO.mundo,rot:t('Transferir pra outro mundo…'),fn:()=>{fecharCalendario();_mundoIniciarTransferencia(fid)}}
+    {ic:ICO.mundo,rot:t('Transferir pra outro mundo…'),fn:()=>{fecharCalendario();_mundoIniciarTransferencia(fid)}},
+    {ic:ICO.checkSquare,rot:t('Escolher o que transferir…'),fn:()=>{fecharCalendario();_mundoAbrirSeletor(fid)}}
   ];
   _mapaAbrirMenu(px,py,_calNomeDoCard(card),itens);
 }
@@ -19637,6 +19772,7 @@ function folderMenu(id,ev){
     <button onclick="abrirSalaEnvio('${escJs(id)}')">${ICO.qr}${t('Transferir (QR / link)')}</button>
     <button onclick="exportFolder('${escJs(id)}')"><span class="svgi">${ICO.export}</span> ${t('Exportar pasta')}</button>
     <button onclick="closeFolderMenu();_mundoIniciarTransferencia('${escJs(id)}')"><span class="svgi">${ICO.mundo}</span> ${t('Transferir pra outro mundo…')}</button>
+    <button onclick="closeFolderMenu();_mundoAbrirSeletor('${escJs(id)}')"><span class="svgi">${ICO.checkSquare}</span> ${t('Escolher o que transferir…')}</button>
     <button onclick="clearFolder('${escJs(id)}')">${ICO.eraser}${t('Limpar pasta')}</button>
     <button onclick="arquivarPasta('${escJs(id)}')"><span class="svgi">${ICO.archive}</span> ${t('Arquivar pasta')}</button>
     <button class="danger" onclick="deleteFolder('${escJs(id)}')"><span class="svgi">${ICO.trash}</span> ${t('Apagar pasta')}</button>`;
