@@ -5347,7 +5347,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .convite .bts{display:flex;gap:14px 7px;flex-wrap:wrap}
 .lembrete .txt{flex:1 1 190px;min-width:0;font-size:12.2px;color:var(--text2);line-height:1.45}
 .lembrete .txt b{color:var(--text);display:block;font-size:12.5px}
-.lembrete .lemb-bts{display:flex;gap:14px 6px;flex-wrap:wrap;flex:none;margin-left:auto}
+/* flex-shrink 1 (era flex:none): com none o grupo media sempre os 4 botões
+   numa fileira só (~404px) e, no celular de 375px, estourava o cartão e
+   alargava a página inteira pra 438px — o rodapé fixo ia junto e parecia o
+   culpado. Encolhendo, os botões quebram linha (o gap de 14px entre linhas
+   já previa isso). No desktop cabe e nada muda: shrink só age se não couber. */
+.lembrete .lemb-bts{display:flex;gap:14px 6px;flex-wrap:wrap;flex:0 1 auto;margin-left:auto}
 .conv-p{border:none;background:var(--accent);color:#fff;font-family:var(--font);font-size:11.5px;
   font-weight:800;padding:8px 13px;border-radius:20px;cursor:pointer}
 .conv-p:active{transform:scale(.965)}
@@ -8116,7 +8121,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.22.3';
+const VOX_VERSION='2026.09.24.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
