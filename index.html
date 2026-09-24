@@ -6483,6 +6483,46 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   .idx-chips.idx-carrossel .idx-chip{scroll-snap-align:start}
 }
 @media(max-width:640px),(pointer:coarse){.idx-chip{min-height:44px}.idx-chip.idx-pill{min-height:36px}}
+
+/* Árvore: construtor de eixos + treeview */
+.idx-arv{margin-top:6px}
+.idx-tr-row{display:flex;align-items:center;gap:6px;min-height:34px;border-radius:9px;padding:0 8px 0 0;outline:none;transition:background .15s}
+.idx-tr-row:hover{background:var(--bg-input)}
+.idx-tr-row:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
+.idx-tr-chev{width:28px;height:28px;flex-shrink:0;border:0;background:none;color:var(--text3);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .26s var(--idx-pop),color .15s}
+.idx-tr-chev svg{width:14px;height:14px}
+.idx-tr-chev.aberto{transform:rotate(90deg);color:var(--accent)}
+.idx-tr-lab{flex:1;min-width:0;border:0;background:none;text-align:left;font:600 13px var(--font);color:var(--text);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:7px 0;display:flex;align-items:center;gap:7px}
+.idx-tr-lab>span:last-child{overflow:hidden;text-overflow:ellipsis}
+.idx-tr-n{font:700 11px var(--font);color:var(--text3);font-variant-numeric:tabular-nums;min-width:18px;text-align:right}
+.idx-tr-sim{display:inline-flex;gap:2px;flex-shrink:0}
+.idx-tr-sim i{width:4px;height:4px;border-radius:50%;background:var(--border2)}
+.idx-tr-sim i.on{background:var(--accent)}
+.idx-ramo{position:relative;margin-left:14px;padding:2px 0 4px 10px}
+.idx-ramo::before{content:'';position:absolute;left:0;top:0;bottom:10px;width:1.5px;border-radius:1px;background:var(--border2);transform-origin:top;animation:idxRamo .24s var(--fc-curva) both}
+@keyframes idxRamo{from{transform:scaleY(0)}}
+.idx-ramo .idx-res{margin:3px 0}
+.idx-tr-vazio{font-size:11.5px;color:var(--text4);padding:6px}
+.idx-aa{font:800 10px var(--font);color:var(--text3);width:16px;text-align:center;flex-shrink:0}
+.idx-eixos{display:grid;gap:8px;margin:10px 0}
+.idx-zona{border:1.5px dashed var(--border2);border-radius:14px;padding:7px 8px 8px;background:var(--bg);transition:border-color .2s,background .2s}
+[data-theme="dark"] .idx-zona{background:rgba(0,0,0,.18)}
+.idx-zona.alvo{border-color:var(--accent);background:var(--accent-glow)}
+.idx-zona-rot{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text4);margin:0 0 6px 2px}
+.idx-zona-in{display:flex;flex-wrap:wrap;gap:8px;min-height:42px;align-items:center;counter-reset:idxnv}
+.idx-zona.idx-fora .idx-zona-in:empty::before{content:'—';color:var(--text4);font-size:12px;padding-left:4px}
+.idx-tok{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:6px 13px 6px 8px;border-radius:12px;border:1px solid var(--border2);background:var(--bg-card);box-shadow:0 1px 2px rgba(0,0,0,.07);font:700 12.5px var(--font);color:var(--text);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;outline:none}
+.idx-tok:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.idx-tok .idx-ic{width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.idx-tok .idx-ic svg{width:15px;height:15px}
+.idx-niveis .idx-tok{counter-increment:idxnv}
+.idx-niveis .idx-tok::before{content:counter(idxnv);width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
+.idx-fora .idx-tok{opacity:.8}
+.idx-tok-lift{position:fixed;z-index:9996;pointer-events:none;cursor:grabbing;transform:scale(1.06) rotate(-2deg);box-shadow:0 22px 44px -12px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.12);opacity:1;margin:0}
+.idx-tok-ph{opacity:.28;border-style:dashed;box-shadow:none}
+.idx-info{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--text3);margin:4px 0 2px}
+.idx-info b{color:var(--text)}
+@media(max-width:640px),(pointer:coarse){.idx-tr-row{min-height:44px}.idx-tok{min-height:44px}}
 @media(prefers-reduced-motion:reduce){.idx-painel *,.idx-painel *::before,.idx-painel *::after{animation-duration:1ms!important;animation-delay:0s!important;transition-duration:1ms!important}}
 
 </style>
@@ -8273,7 +8313,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.24.1';
+const VOX_VERSION='2026.09.24.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9012,6 +9052,25 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+"Árvore":"Tree",
+"Monte níveis com Tag, Cor, Pasta e Título":"Build levels from Tag, Color, Folder and Title",
+"Tag":"Tag",
+"Título":"Title",
+"Sem tag":"No tag",
+"Sem cor":"No color",
+"similaridade":"similarity",
+"Nenhuma outra tag junto":"No other tag alongside",
+"Com os filtros ligados,":"With the filters on,",
+"entram na árvore":"go into the tree",
+"soltar filtros":"release filters",
+"· nota com 3 tags aparece nos 3 ramos":"· a note with 3 tags shows up in all 3 branches",
+"Arraste um eixo para “Níveis” para montar a árvore":"Drag an axis into “Levels” to build the tree",
+"Eixo":"Axis",
+"Setas mudam a ordem, Enter tira ou recoloca":"Arrows change the order, Enter removes or puts back",
+"Atalhos prontos":"Quick layouts",
+"Cada nível mostra as tags que aparecem junto, das mais parecidas para as menos":"Each level shows the tags that appear alongside, most similar first",
+"Níveis da árvore · arraste para mudar a ordem":"Tree levels · drag to reorder",
+"Fora da árvore":"Out of the tree",
 "Índice":"Index",
 "Modos do índice":"Index modes",
 "Arraste para fechar":"Drag to close",
@@ -21498,6 +21557,293 @@ IDX_ACT['tags-todas']=c=>{IDX.tagsTodas=!IDX.tagsTodas;_idxSquash(c);_idxMudou('
 IDX_ACT['vai-arvore']=()=>_idxTrocarModo('arv');
 _idxRegistrar({id:'fac',n:1,grupo:'pri',rotulo:t('Filtrar'),title:t('Tags, cores e pastas com contagem'),ic:_IDX_SV.fac,
   montar:_idxFacMontar,atualizar:_idxFacAtualizar,desmontar(){IDX.fac=null}});
+
+
+// ════════ MODO 2 · ÁRVORE (construtor de eixos) ════════
+// A pessoa arrasta Tag, Cor, Pasta e Título pra decidir a ordem dos níveis:
+// "Pasta › Tag", "Cor › Título" e "Tag › Cor" saem das MESMAS notas. Nota
+// com 3 tags aparece nos 3 ramos (é o TagFolder). "Tag › Tag" é a Árvore que
+// brota: cada nível mostra as tags que aparecem junto, por similaridade —
+// comuns/√(nA·nB), que impede tag onipresente de dominar os ramos.
+const IDX_EIXOS=['tag','cor','pasta','titulo'];
+const _IDX_NOS=new WeakMap();
+IDX.arvAbertos=new Set();
+function _idxEixoNome(k){return k==='tag'?t('Tag'):k==='cor'?t('Cor'):k==='pasta'?t('Pasta'):t('Título')}
+function _idxEixos(){
+  const p=_idxPrefs();
+  if(!Array.isArray(p.eixos))return ['tag','cor'];
+  return p.eixos.filter(x=>IDX_EIXOS.includes(x)).slice(0,4);
+}
+function _idxPrefixo(s){
+  let j=s.indexOf(':');if(j>1&&j<=28)return s.slice(0,j).trim();
+  j=s.search(/\s[—–]\s/);if(j>1&&j<=28)return s.slice(0,j).trim();
+  return null;
+}
+function _idxPrefMapa(){
+  const D=IDX.d;if(D.PREF)return D.PREF;
+  const m=new Map();
+  D.N.forEach(n=>{const p=_idxPrefixo(n.t);if(p){const k=_normSearch(p);m.set(k,(m.get(k)||0)+1)}});
+  D.PREF=m;return m;
+}
+function _idxLetra(s){const c=_normSearch(s).trim().charAt(0).toUpperCase();return /[A-Z]/.test(c)?c:'#'}
+// Título agrupa pelo prefixo antes de ":" ou " — " quando ele se repete
+// (Projeto Vox: …); o resto cai na letra inicial.
+function _idxTituloChave(n){const p=_idxPrefixo(n.t);return p&&(_idxPrefMapa().get(_normSearch(p))||0)>=2?'p:'+p:'l:'+_idxLetra(n.t)}
+function _idxRotulo(ax,v){
+  if(v==='∅')return ax==='tag'?t('Sem tag'):ax==='cor'?t('Sem cor'):t('Sem pasta');
+  if(ax==='tag'){const g=IDX.d.G.get(v);return g?g.label:v}
+  if(ax==='cor')return IDX.d.nomes[+v];
+  if(ax==='pasta'){const f=IDX.d.FM.get(v);return f?f.name:v}
+  return v.startsWith('p:')?v.slice(2)+' …':v.slice(2);
+}
+// Entre as filhas de ctx (null = raízes), a pasta que contém f.
+function _idxFilhaDe(f,ctx){
+  const D=IDX.d;let cur=D.FM.get(f),g=0;
+  while(cur&&g++<60){
+    const pai=cur.parentId&&D.FM.has(cur.parentId)?cur.parentId:null;
+    if(pai===ctx)return D.DESC.has(cur.id)?cur.id:null;
+    cur=pai?D.FM.get(pai):null;
+  }
+  return null;
+}
+// Um nível da árvore. Pasta segue a árvore de pastas de verdade: no nível
+// dela só aparecem as pastas-raiz (contando as filhas); abrir uma mostra as
+// subpastas primeiro e depois o que mora direto nela — como um explorador de
+// arquivos. Assim a contagem bate com a do Filtrar (mãe inclui filhas).
+function _idxNivel(ids,d,chave,path,ctx){
+  const ax=IDX.arv.eixos[d],D=IDX.d,N=D.N,m=new Map();
+  const tagsPath=path.filter(p=>p.ax==='tag'&&p.v!=='∅').map(p=>p.v);
+  ids.forEach(i=>{
+    const n=N[i];let vs;
+    if(ax==='tag'){vs=[...n.tk].filter(k=>!tagsPath.includes(k));if(!vs.length&&!tagsPath.length)vs=['∅']}
+    else if(ax==='cor')vs=[n.tc==null?'∅':String(n.tc)];
+    else if(ax==='pasta'){
+      if(!n.f||!D.DESC.has(n.f))vs=ctx?[]:['∅'];
+      else{const fl=_idxFilhaDe(n.f,ctx||null);vs=fl?[fl]:[]}
+    }
+    else vs=[_idxTituloChave(n)];
+    vs.forEach(x=>{let a=m.get(x);if(!a)m.set(x,a=[]);a.push(i)});
+  });
+  const FI=new Map(D.F.map((x,j)=>[x.f.id,j]));
+  const nos=[...m].map(([x,a])=>{
+    const no={ax,v:x,ids:a,d,key:chave+'/'+ax+':'+x,path:path.concat({ax,v:x})};
+    if(ax==='tag'&&tagsPath.length&&x!=='∅'){const g=D.G.get(x);no.sim=g?a.length/Math.sqrt(ids.length*g.n):0}
+    return no;
+  });
+  const vz=o=>o.v==='∅'?1:0,loc=getLocale();
+  nos.sort((a,b)=>vz(a)-vz(b)
+    ||(a.sim!=null&&b.sim!=null?b.sim-a.sim:0)
+    ||(ax==='pasta'?(FI.get(a.v)??1e9)-(FI.get(b.v)??1e9):0)
+    ||(ax==='tag'?b.ids.length-a.ids.length:ax==='cor'?(+a.v)-(+b.v):0)
+    ||_idxRotulo(ax,a.v).localeCompare(_idxRotulo(ax,b.v),loc));
+  return nos;
+}
+function _idxSimPontos(s){const w=_idxH('span','idx-tr-sim');w.title=t('similaridade')+' '+s.toFixed(2);[.2,.35,.55].forEach(l=>w.appendChild(_idxH('i',s>=l?'on':'')));return w}
+function _idxNo(no){
+  const w=_idxH('div','idx-tr-no');_IDX_NOS.set(w,no);
+  const row=_idxH('div','idx-tr-row');row.tabIndex=-1;
+  row.setAttribute('role','treeitem');row.setAttribute('aria-level',String(no.d+1));row.setAttribute('aria-expanded','false');
+  const ch=_idxH('button','idx-tr-chev');ch.type='button';ch.innerHTML=_IDX_SV.chev;ch.dataset.act='arv-abre';ch.tabIndex=-1;ch.setAttribute('aria-hidden','true');
+  const lab=_idxH('button','idx-tr-lab');lab.type='button';lab.dataset.act='arv-abre';lab.tabIndex=-1;
+  if(no.ax==='tag')lab.appendChild(_idxH('span','idx-hash','#'));
+  else if(no.ax==='cor')lab.appendChild(_idxH('span',no.v==='∅'?'idx-sq idx-vz':'idx-sq idx-tc'+no.v));
+  else if(no.ax==='pasta'){const sq=_idxH('span','idx-sq idx-pq'+(no.v==='∅'?' idx-vz':''));const cor=IDX.d.COR.get(no.v);if(cor)sq.style.setProperty('--ca',cor);lab.appendChild(sq)}
+  else lab.appendChild(_idxH('span','idx-aa','Aa'));
+  const ls=_idxH('span');
+  if(no.ax==='tag'&&no.v!=='∅')_idxLabTag(ls,_idxRotulo(no.ax,no.v));else ls.textContent=_idxRotulo(no.ax,no.v);
+  lab.appendChild(ls);
+  row.append(ch,lab);
+  if(no.sim!=null)row.appendChild(_idxSimPontos(no.sim));
+  row.appendChild(_idxH('span','idx-tr-n',no.ids.length));
+  w.appendChild(row);return w;
+}
+function _idxArvAbre(w,juice){
+  const no=_IDX_NOS.get(w);if(!no)return;
+  const row=w.firstElementChild,ch=row.querySelector('.idx-tr-chev');
+  const velho=w.querySelector(':scope>.idx-ramo:not(.saindo)');
+  if(ch.classList.contains('aberto')){
+    ch.classList.remove('aberto');row.setAttribute('aria-expanded','false');IDX.arvAbertos.delete(no.key);
+    if(velho){velho.classList.add('saindo');if(_idxRM()||!juice)velho.remove();else velho.animate([{opacity:1},{opacity:0,transform:'translateY(-4px)'}],{duration:120,easing:'ease-in'}).onfinish=()=>velho.remove()}
+    return;
+  }
+  ch.classList.add('aberto');row.setAttribute('aria-expanded','true');IDX.arvAbertos.add(no.key);
+  const ramo=_idxH('div','idx-ramo');ramo.setAttribute('role','group');
+  const N=IDX.d.N,eixos=IDX.arv.eixos;let ids=no.ids;
+  if(no.ax==='pasta'&&no.v!=='∅'){
+    _idxNivel(no.ids,no.d,no.key,no.path.slice(0,-1),no.v).forEach(s=>ramo.appendChild(_idxNo(s)));
+    ids=no.ids.filter(i=>N[i].f===no.v);
+  }
+  if(ids.length){
+    if(no.d+1<eixos.length)_idxNivel(ids,no.d+1,no.key,no.path,null).forEach(n2=>ramo.appendChild(_idxNo(n2)));
+    else{
+      const ord=_idxOrdenaData(ids);
+      ord.slice(0,30).forEach(i=>ramo.appendChild(_idxItem(N[i],true)));
+      if(ord.length>30)ramo.appendChild(_idxH('div','idx-tr-vazio','+ '+(ord.length-30)+' '+t('notas')));
+    }
+  }
+  if(!ramo.children.length)ramo.appendChild(_idxH('div','idx-tr-vazio',t('Nenhuma outra tag junto')));
+  // O nível vem do desenho, não do eixo: subpasta é um nível abaixo da mãe
+  // mesmo sendo do mesmo eixo.
+  const nv=String(+row.getAttribute('aria-level')+1);
+  ramo.querySelectorAll(':scope>.idx-tr-no>.idx-tr-row').forEach(r=>r.setAttribute('aria-level',nv));
+  w.appendChild(ramo);
+  if(juice)_idxStagger([...ramo.children],20,'translateX(-6px)');
+  [...ramo.children].forEach(c=>{const n2=_IDX_NOS.get(c);if(n2&&IDX.arvAbertos.has(n2.key))_idxArvAbre(c,false)});
+}
+function _idxArvInfo(){
+  const A=IDX.arv,n=IDX.base.length;A.info.textContent='';
+  if(IDX.est.ordem.length||IDX.qn){
+    A.info.append(_idxH('span',null,t('Com os filtros ligados,')),_idxH('b',null,n+' '+(n===1?t('nota'):t('notas'))),_idxH('span',null,t('entram na árvore')));
+    const l=_idxH('button','idx-lnk',t('soltar filtros'));l.type='button';l.dataset.act='arv-solta';A.info.appendChild(l);
+  }else A.info.append(_idxH('b',null,n+' '+(n===1?t('nota'):t('notas'))),_idxH('span',null,t('· nota com 3 tags aparece nos 3 ramos')));
+}
+function _idxArvArvore(anim){
+  const A=IDX.arv;if(!A)return;
+  _idxArvInfo();
+  const build=()=>{
+    if(!IDX.arv)return;
+    A.tree.textContent='';
+    if(!A.eixos.length){A.tree.appendChild(_idxH('div','idx-vazio',t('Arraste um eixo para “Níveis” para montar a árvore')));return}
+    if(!IDX.base.length){A.tree.appendChild(_idxH('div','idx-vazio',IDX.d.N.length?t('Sem notas com esses filtros'):t('Nenhuma nota por aqui ainda.')));return}
+    const nos=_idxNivel(IDX.base,0,'',[],null),novo=!IDX.arvAbertos.size;
+    nos.forEach((no,j)=>{const w=_idxNo(no);A.tree.appendChild(w);if(IDX.arvAbertos.has(no.key)||(novo&&j<2))_idxArvAbre(w,false)});
+    const r0=A.tree.querySelector('.idx-tr-row');if(r0)r0.tabIndex=0;
+    if(anim)_idxStagger([...A.tree.querySelectorAll('.idx-tr-row,.idx-res')],20,'translateY(6px)');
+  };
+  if(anim&&!_idxRM()&&A.tree.firstChild)A.tree.animate([{opacity:1},{opacity:0}],{duration:120,easing:'ease-in'}).onfinish=build;
+  else build();
+}
+// ── fichas de eixo: arrastar (dedo ou mouse) ou teclado ──
+function _idxTok(k,j){
+  const tk=_idxH('div','idx-tok');tk.tabIndex=0;tk.setAttribute('role','button');
+  tk.setAttribute('aria-label',t('Eixo')+' '+_idxEixoNome(k)+'. '+t('Setas mudam a ordem, Enter tira ou recoloca'));
+  tk.dataset.eixo=k;tk.dataset.k='k'+k+j;
+  const ic=_idxH('span','idx-ic');
+  if(k==='titulo')ic.appendChild(_idxH('span','idx-aa','Aa'));else ic.innerHTML=k==='tag'?_IDX_SV.hash:k==='cor'?_IDX_SV.cor:_IDX_SV.pasta;
+  tk.append(ic,_idxH('span',null,_idxEixoNome(k)));
+  tk.addEventListener('pointerdown',_idxTokDown);tk.addEventListener('keydown',_idxTokTecla);
+  return tk;
+}
+function _idxArvZonas(){
+  const A=IDX.arv;A.zN.textContent='';A.zF.textContent='';
+  A.eixos.forEach((k,j)=>A.zN.appendChild(_idxTok(k,j)));
+  IDX_EIXOS.filter(k=>!A.eixos.includes(k)).forEach((k,j)=>A.zF.appendChild(_idxTok(k,'f'+j)));
+}
+function _idxEixosDoDom(){
+  const A=IDX.arv;
+  const novo=[...A.zN.querySelectorAll('.idx-tok:not(.idx-tok-ph)')].map(x=>x.dataset.eixo);
+  // Ficha repetida na zona de fora (sobra do atalho Tag › Tag) — redesenha.
+  const sobra=[...A.zF.querySelectorAll('.idx-tok')].some(x=>novo.includes(x.dataset.eixo));
+  if(novo.join()===A.eixos.join()&&!sobra)return;
+  A.eixos=novo;_idxSalvaPrefs(p=>{p.eixos=novo.slice()});
+  IDX.arvAbertos.clear();
+  if(sobra)_idxFlip(A.eix,_idxArvZonas);
+  _idxArvArvore(true);
+}
+function _idxTokAlterna(tk){
+  const A=IDX.arv,destino=tk.parentNode===A.zN?A.zF:A.zN;
+  _idxFlip(A.eix,()=>destino.appendChild(tk));
+  _idxSquash(tk);_idxBuzz();_idxTic(1250);_idxEixosDoDom();
+}
+function _idxTokTecla(e){
+  const tk=e.currentTarget;
+  if(e.key==='Enter'||e.key===' '){e.preventDefault();_idxTokAlterna(tk);tk.focus();return}
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'){
+    e.preventDefault();
+    const irmao=e.key==='ArrowLeft'?tk.previousElementSibling:tk.nextElementSibling;if(!irmao)return;
+    _idxFlip(IDX.arv.eix,()=>{if(e.key==='ArrowLeft')tk.parentNode.insertBefore(tk,irmao);else tk.parentNode.insertBefore(irmao,tk)});
+    tk.focus();_idxBuzz();_idxTic(1100);_idxEixosDoDom();
+  }
+}
+let _idxDR=null;
+function _idxTokDown(e){
+  if(e.button>0)return;
+  _idxDR={tok:e.currentTarget,x0:e.clientX,y0:e.clientY,on:false};
+  document.addEventListener('pointermove',_idxTokMove);document.addEventListener('pointerup',_idxTokUp);document.addEventListener('pointercancel',_idxTokUp);
+}
+function _idxTokMove(e){
+  const D=_idxDR;if(!D)return;
+  if(!D.on){if(Math.hypot(e.clientX-D.x0,e.clientY-D.y0)<6)return;_idxTokComeca(e.clientX,e.clientY)}
+  e.preventDefault();
+  D.tok.style.left=(e.clientX-D.dx)+'px';D.tok.style.top=(e.clientY-D.dy)+'px';
+  _idxTokLugar(e.clientX,e.clientY);
+}
+function _idxTokComeca(x,y){
+  const D=_idxDR,tk=D.tok,r=tk.getBoundingClientRect();
+  D.on=true;D.dx=x-r.left;D.dy=y-r.top;
+  const ph=tk.cloneNode(true);ph.classList.add('idx-tok-ph');ph.removeAttribute('tabindex');tk.parentNode.insertBefore(ph,tk);D.ph=ph;
+  tk.style.width=r.width+'px';tk.style.left=r.left+'px';tk.style.top=r.top+'px';
+  tk.classList.add('idx-tok-lift');document.body.appendChild(tk);
+  _idxBuzz();_idxTic(1000);
+  if(!_idxRM())tk.animate([{transform:'scale(1) rotate(0)'},{transform:'scale(1.06) rotate(-2deg)'}],{duration:180,easing:_IDX_POP});
+}
+function _idxTokLugar(x,y){
+  const D=_idxDR,A=IDX.arv;if(!A)return;
+  const el=document.elementFromPoint(x,y),z=el&&el.closest('.idx-zona');
+  A.eix.querySelectorAll('.idx-zona').forEach(q=>q.classList.toggle('alvo',q===z));
+  if(!z||!A.eix.contains(z))return;
+  const inn=z.querySelector('.idx-zona-in');let ref=null;
+  for(const tk of inn.querySelectorAll('.idx-tok:not(.idx-tok-ph)')){const r=tk.getBoundingClientRect();if(y<r.top-4||(y<=r.bottom+4&&x<r.left+r.width/2)){ref=tk;break}}
+  if(D.ph.parentNode===inn&&(ref?D.ph.nextElementSibling===ref:D.ph===inn.lastElementChild))return;
+  _idxFlip(A.eix,()=>{if(ref)inn.insertBefore(D.ph,ref);else inn.appendChild(D.ph)});
+}
+function _idxTokUp(e){
+  document.removeEventListener('pointermove',_idxTokMove);document.removeEventListener('pointerup',_idxTokUp);document.removeEventListener('pointercancel',_idxTokUp);
+  const D=_idxDR;_idxDR=null;if(!D)return;
+  const A=IDX.arv;
+  if(!D.on){if(e.type==='pointerup'&&A)_idxTokAlterna(D.tok);return}
+  const tk=D.tok;
+  if(!A){tk.remove();return}
+  A.eix.querySelectorAll('.idx-zona').forEach(q=>q.classList.remove('alvo'));
+  const r0=tk.getBoundingClientRect(),r1=D.ph.getBoundingClientRect();
+  D.ph.replaceWith(tk);tk.classList.remove('idx-tok-lift');tk.style.left=tk.style.top=tk.style.width='';
+  if(!_idxRM())tk.animate([{transform:'translate('+(r0.left-r1.left)+'px,'+(r0.top-r1.top)+'px) scale(1.06) rotate(-2deg)'},{transform:'none'}],{duration:260,easing:_IDX_FC}).onfinish=()=>_idxSquash(tk);
+  _idxBuzz();_idxTic(1400);_idxEixosDoDom();
+}
+function _idxArvMontar(v){
+  const eixos=_idxEixos();
+  const hd=_idxH('div','idx-sec-hd idx-stg');hd.appendChild(_idxH('span',null,t('Atalhos prontos')));
+  const pres=_idxH('div','idx-chips idx-stg');
+  [['tag','cor'],['pasta','tag'],['cor','titulo'],['titulo'],['tag','tag','tag']].forEach(p=>{
+    const b=_idxChipBase('');b.dataset.act='arv-atalho';b.dataset.v=p.join(',');
+    b.textContent=p.map(_idxEixoNome).join(' › ');
+    if(p.length===3)b.title=t('Cada nível mostra as tags que aparecem junto, das mais parecidas para as menos');
+    pres.appendChild(b);
+  });
+  const eix=_idxH('div','idx-eixos idx-stg');
+  const zona=(rot,cls)=>{const el=_idxH('div','idx-zona '+cls);el.appendChild(_idxH('div','idx-zona-rot',rot));const inn=_idxH('div','idx-zona-in');el.appendChild(inn);return {el,inn}};
+  const zN=zona(t('Níveis da árvore · arraste para mudar a ordem'),'idx-niveis'),zF=zona(t('Fora da árvore'),'idx-fora');
+  eix.append(zN.el,zF.el);
+  const info=_idxH('div','idx-info idx-stg');
+  const tree=_idxH('div','idx-arv idx-stg');tree.setAttribute('role','tree');tree.setAttribute('aria-label',t('Árvore'));
+  v.append(hd,pres,eix,info,tree);
+  IDX.arv={v,eixos,eix,zN:zN.inn,zF:zF.inn,info,tree};
+  _idxArvZonas();
+  _idxArvArvore(false);
+  // Teclado na árvore (padrão treeview): ↑↓ andam, → abre, ← fecha ou sobe.
+  tree.addEventListener('keydown',e=>{
+    const row=e.target.classList&&e.target.classList.contains('idx-tr-row')?e.target:null;if(!row)return;
+    const rows=[...tree.querySelectorAll('.idx-tr-row')].filter(r=>r.offsetParent);const i=rows.indexOf(row);
+    const ch=row.querySelector('.idx-tr-chev'),vai=r=>{if(!r)return;row.tabIndex=-1;r.tabIndex=0;r.focus()};
+    if(e.key==='ArrowDown'){vai(rows[i+1]);e.preventDefault()}
+    else if(e.key==='ArrowUp'){vai(rows[i-1]);e.preventDefault()}
+    else if(e.key==='ArrowRight'){if(ch&&!ch.classList.contains('aberto'))_idxArvAbre(row.parentNode,true);else vai(rows[i+1]);e.preventDefault()}
+    else if(e.key==='ArrowLeft'){if(ch&&ch.classList.contains('aberto'))_idxArvAbre(row.parentNode,true);else{const pai=row.parentNode.parentNode.closest('.idx-tr-no');if(pai)vai(pai.firstElementChild)}e.preventDefault()}
+    else if(e.key==='Enter'){_idxArvAbre(row.parentNode,true);e.preventDefault()}
+  });
+}
+IDX_ACT['arv-abre']=c=>{const w=c.closest('.idx-tr-no');if(!w)return;_idxArvAbre(w,true);_idxBuzz();_idxTic(1100);const ch=w.querySelector(':scope>.idx-tr-row .idx-tr-chev');if(ch&&ch.classList.contains('aberto'))_idxPulso(w.firstElementChild)};
+IDX_ACT['arv-solta']=()=>{_idxLimparFiltros();_idxBuzz();_idxMudou('limpar')};
+IDX_ACT['arv-atalho']=c=>{
+  const A=IDX.arv;if(!A)return;
+  const arr=c.dataset.v.split(',');
+  if(arr.join()===A.eixos.join()){_idxPulso(c,1.06);return}
+  A.eixos=arr;_idxSalvaPrefs(p=>{p.eixos=arr.slice()});IDX.arvAbertos.clear();
+  _idxFlip(A.eix,_idxArvZonas);_idxSquash(c);_idxBuzz();_idxTic(1200);_idxArvArvore(true);
+};
+_idxRegistrar({id:'arv',n:2,grupo:'pri',rotulo:t('Árvore'),title:t('Monte níveis com Tag, Cor, Pasta e Título'),ic:_IDX_SV.arv,
+  montar:_idxArvMontar,atualizar:()=>_idxArvArvore(false),
+  desmontar(){if(_idxDR&&_idxDR.tok&&_idxDR.on)_idxDR.tok.remove();_idxDR=null;IDX.arv=null}});
 
 // ── BUSCA POR SENTIDO ────────────────────────────────────────────────────────
 // Acha nota por SIGNIFICADO, não por letra: "médico" encontra "doutor" sem
