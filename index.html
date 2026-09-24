@@ -8116,7 +8116,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.24.1';
+const VOX_VERSION='2026.09.24.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8603,11 +8603,18 @@ async function _mundoColetarPacoteComEscopo(idsPasta,dts){
   // `dt` (data de criação) é o único campo estável entre saves/loads — o
   // `id` do DOM nasce de novo em todo addCard(), load incluso.
   const itens=todos.filter(it=>dts.has(it.dt));
-  let tagNomes={};
-  try{tagNomes=JSON.parse(localStorage.getItem('vox_tag_nomes')||'{}')}catch(e){}
-  const tagNomesUsados={};
-  new Set(itens.flatMap(it=>it.tags||[])).forEach(id=>{
-    if(tagNomes[id]!==undefined)tagNomesUsados[id]=tagNomes[id];
+  // Nome que a pessoa deu às etiquetas de COR que estes cards usam. O
+  // vox_tag_nomes é um array de 8 posições, uma por cor (ver TAG_NOMES()) —
+  // não um mapa por hashtag: hashtag não tem nome guardado em lugar nenhum,
+  // ela já viaja inteira no `tags` de cada item. Posição vazia = padrão da
+  // cor, e padrão não viaja (o destino tem o dele, no idioma dele).
+  let salvos=[];
+  try{salvos=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){}
+  if(!Array.isArray(salvos))salvos=[];
+  const corNomes={};
+  itens.forEach(it=>{
+    const i=parseInt(it.tc),s=salvos[i];
+    if(i>=0&&i<TAG_CORES.length&&typeof s==='string'&&s.trim())corNomes[i]=s.trim();
   });
   // Fotos: decifra AGORA, com a chave do mundo de origem (ainda disponível
   // nesta sessão). Do outro lado, quem importar reencripta com a chave de lá
@@ -8624,7 +8631,7 @@ async function _mundoColetarPacoteComEscopo(idsPasta,dts){
       }catch(e){}
     }
   }
-  return {v:1,origem:_mundoAtivo,pastas,itens,tagNomesUsados,fotos};
+  return {v:1,origem:_mundoAtivo,pastas,itens,corNomes,fotos};
 }
 function _mundoRemoverPacoteDaOrigem(pacote){
   const idsPasta=new Set(pacote.pastas.map(f=>f.id));
@@ -8671,15 +8678,22 @@ async function _mundoImportarPacote(pacote){
     // Vale também pro "desistiu na Galáxia", que reimporta na própria origem.
     _restaurarEtiqueta(_novoId,it);
   });
-  // Nomes de etiqueta usados pelos cards que chegaram: só entra o que ainda
-  // não existe aqui — nunca sobrescreve nome que já foi escolhido no destino.
-  let tagNomes={};
-  try{tagNomes=JSON.parse(localStorage.getItem('vox_tag_nomes')||'{}')}catch(e){}
-  let mudouTag=false;
-  Object.keys(pacote.tagNomesUsados||{}).forEach(id=>{
-    if(tagNomes[id]===undefined){tagNomes[id]=pacote.tagNomesUsados[id];mudouTag=true}
+  // Nome das etiquetas de cor que chegaram: só preenche a cor que o destino
+  // deixou no padrão — nunca sobrescreve nome que já foi escolhido aqui. Mesmo
+  // molde do renomearEtiqueta(): array completo, uma posição por cor. (Pacote
+  // gravado pela versão anterior traz `tagNomesUsados`, que era lixo: some.)
+  let salvos=[];
+  try{salvos=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){}
+  if(!Array.isArray(salvos))salvos=[];
+  let mudouNome=false;
+  Object.keys(pacote.corNomes||{}).forEach(k=>{
+    const i=+k,nome=pacote.corNomes[k],atual=salvos[i];
+    if(!(i>=0&&i<TAG_CORES.length)||typeof nome!=='string'||!nome.trim())return;
+    if(typeof atual==='string'&&atual.trim())return;
+    while(salvos.length<TAG_CORES.length)salvos.push('');
+    salvos[i]=nome.trim().slice(0,24);mudouNome=true;
   });
-  if(mudouTag)localStorage.setItem('vox_tag_nomes',JSON.stringify(tagNomes));
+  if(mudouNome)localStorage.setItem('vox_tag_nomes',JSON.stringify(salvos));
   saveHistory();applyFolderFilter();renderFolders();
   return {notas:pacote.itens.length,subpastas:pacote.pastas.length-1};
 }
