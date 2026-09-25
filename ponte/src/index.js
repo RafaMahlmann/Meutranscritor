@@ -257,8 +257,9 @@ function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, salv
   const minHoje = Math.round((hojeRow.segundos || 0) / 60);
   const pct = aj.teto_minutos_dia ? Math.min(100, Math.round((minHoje / aj.teto_minutos_dia) * 100)) : 100;
   const p = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—');
+  const br = (d) => String(d).split('-').reverse().join('/');
   const linhasDias = dias.map((x) => `<tr>
-      <td>${esc(x.dia)}</td><td>${x.aparelhos_novos}</td><td>${x.transcricoes}</td><td>${Math.round(x.segundos / 60)}</td>
+      <td>${esc(br(x.dia))}</td><td>${x.aparelhos_novos}</td><td>${x.transcricoes}</td><td>${Math.round(x.segundos / 60)}</td>
       <td>${x.chegaram_ao_fim}</td><td>${x.formaram}</td>
       <td>${x.recusa_teto}</td><td>${x.recusa_esgotada}</td><td>${x.recusa_ip}</td><td>${x.recusa_grande}</td><td>${x.erros}</td>
     </tr>`).join('') || '<tr><td colspan="11" class="vazio">Ainda ninguém usou a cortesia.</td></tr>';
@@ -287,7 +288,7 @@ button{background:var(--ac);color:#fff;border:0;border-radius:10px;padding:10px 
 ul{margin:6px 0 0;padding-left:20px}li{margin-bottom:4px}
 </style></head><body><main>
 <h1>Painel da ponte do Vox</h1>
-<p class="sub">Transcrições por nossa conta · hoje é ${esc(dia)} (horário de Brasília)</p>
+<p class="sub">Transcrições por nossa conta · hoje é ${esc(br(dia))} (horário de Brasília)</p>
 ${salvo ? '<div class="ok">Ajustes salvos. Já estão valendo.</div>' : ''}
 ${temChave ? '' : '<div class="alerta">A chave do Groq ainda não foi colocada na ponte. A cortesia fica desligada até lá.</div>'}
 ${aj.ligada ? '' : '<div class="alerta">A cortesia está desligada. Ninguém novo recebe transcrição por nossa conta.</div>'}
