@@ -8420,7 +8420,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.24.3';
+const VOX_VERSION='2026.09.25.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -21483,10 +21483,14 @@ function _idxTrocarModo(id){
   _idxVisitou(novo);
   _idxBuzz(cruza?12:8);_idxTic(cruza?1320:1000);
   const v=E.body.firstElementChild,tok=++_idxTrocaTok;
-  const monta=()=>{if(tok!==_idxTrocaTok||!IDX.aberto)return;_idxMontar(cruza?'cruza':'grupo',dir)};
+  let feito=false;
+  const monta=()=>{if(feito)return;feito=true;if(tok!==_idxTrocaTok||!IDX.aberto)return;_idxMontar(cruza?'cruza':'grupo',dir)};
   if(!v){monta();return}
   const kf=_idxRM()?[{opacity:1},{opacity:0}]:cruza?[{opacity:1,transform:'none'},{opacity:0,transform:'scale(.98)'}]:[{opacity:1,transform:'none'},{opacity:0,transform:'translateX('+(-16*dir)+'px)'}];
   v.animate(kf,{duration:_idxRM()?120:110,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'}).onfinish=monta;
+  // Aba escondida congela as animações e o onfinish não chega — o relógio
+  // garante que o modo troca de qualquer jeito.
+  setTimeout(monta,220);
 }
 // Primeira visita a uma visão: o ponto de "novo" some com um anel.
 function _idxVisitou(m){
@@ -21552,7 +21556,9 @@ function _idxFechar(focaMais){
   const rm=_idxRM(),sh=_idxSheet(),de=E.pan.style.transform||'translateY(0)';
   const kf=rm?[{opacity:1},{opacity:0}]:sh?[{transform:de},{transform:'translateY(100%)'}]:[{opacity:1,transform:'none'},{opacity:0,transform:'translateY(-4px) scale(.97)'}];
   const a=E.pan.animate(kf,{duration:rm?100:sh?220:170,easing:_IDX_FC,fill:'forwards'});
-  a.onfinish=()=>{
+  let feito=false;
+  const fim=()=>{
+    if(feito)return;feito=true;
     if(!IDX.aberto){
       E.pan.classList.remove('on');E.pan.style.transform='';
       const m=IDX.montado&&IDX_MODOS.find(x=>x.id===IDX.montado);
@@ -21561,6 +21567,7 @@ function _idxFechar(focaMais){
     }
     a.cancel();
   };
+  a.onfinish=fim;setTimeout(fim,320);
 }
 function _idxFora(e){
   const E=IDX.el,alvo=e.target;
@@ -21859,8 +21866,9 @@ function _idxArvInfo(){
 function _idxArvArvore(anim){
   const A=IDX.arv;if(!A)return;
   _idxArvInfo();
+  let feito=false;
   const build=()=>{
-    if(!IDX.arv)return;
+    if(feito||IDX.arv!==A)return;feito=true;
     A.tree.textContent='';
     if(!A.eixos.length){A.tree.appendChild(_idxH('div','idx-vazio',t('Arraste um eixo para “Níveis” para montar a árvore')));return}
     if(!IDX.base.length){A.tree.appendChild(_idxH('div','idx-vazio',IDX.d.N.length?t('Sem notas com esses filtros'):t('Nenhuma nota por aqui ainda.')));return}
@@ -21869,7 +21877,7 @@ function _idxArvArvore(anim){
     const r0=A.tree.querySelector('.idx-tr-row');if(r0)r0.tabIndex=0;
     if(anim)_idxStagger([...A.tree.querySelectorAll('.idx-tr-row,.idx-res')],20,'translateY(6px)');
   };
-  if(anim&&!_idxRM()&&A.tree.firstChild)A.tree.animate([{opacity:1},{opacity:0}],{duration:120,easing:'ease-in'}).onfinish=build;
+  if(anim&&!_idxRM()&&A.tree.firstChild){A.tree.animate([{opacity:1},{opacity:0}],{duration:120,easing:'ease-in'}).onfinish=build;setTimeout(build,220)}
   else build();
 }
 // ── fichas de eixo: arrastar (dedo ou mouse) ou teclado ──
