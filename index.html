@@ -122,6 +122,17 @@
 [data-skin="amber"]{--accent:#d99a2b;--accent2:#b87f1c;--accent-glow:rgba(217,154,43,0.20)}
 [data-skin="indigo"]{--accent:#6366f1;--accent2:#4f46e5;--accent-glow:rgba(99,102,241,0.20)}
 [data-skin="teal"]{--accent:#0e8a8f;--accent2:#0b6e72;--accent-glow:rgba(14,138,143,0.20)}
+/* ── Famílias do menu ⋯ (Central de Ajustes, 28/09/2026) ──
+   Cada família tem a cor do seu balão: Configurações, Idioma e Aparência uma
+   cada (pedido do Carlos); as quatro ferramentas que olham as notas dividem o
+   violeta; cópias e aparelhos, o dourado do cofre; ajuda, a ardósia. Nenhuma
+   usa --accent: com a skin Petróleo, duas famílias ficariam da mesma cor.
+   Medido sobre o --bg-card de cada tema, todas passam de 4,5:1. --hm-sub é o
+   subtítulo do menu — o --text3 dá só 3,3:1 sobre o branco. */
+:root{--hm-cfg:#087a55;--hm-lang:#2a72d4;--hm-look:#bf3485;--hm-notas:#7c3aed;--hm-cofre:#9a6200;--hm-ajuda:#566579;
+  --hm-sub:#6e6e73;--hm-falta-fundo:rgba(255,149,0,.16);--hm-falta-tinta:#8a4b00;--hm-trilho-ind:var(--bg-card)}
+[data-theme="dark"]{--hm-cfg:#34d399;--hm-lang:#6aa8ff;--hm-look:#f27ac0;--hm-notas:#a78bfa;--hm-cofre:#f2bf4a;--hm-ajuda:#a3b1c6;
+  --hm-sub:#a1a1a8;--hm-falta-fundo:rgba(255,170,60,.16);--hm-falta-tinta:#ffc46b;--hm-trilho-ind:#48484c}
 .c0{--ca:#10b981;--cag:rgba(16,185,129,0.12);--cat:rgba(16,185,129,0.06)}
 .c1{--ca:#3b82f6;--cag:rgba(59,130,246,0.12);--cat:rgba(59,130,246,0.06)}
 .c2{--ca:#a78bfa;--cag:rgba(167,139,250,0.12);--cat:rgba(167,139,250,0.06)}
@@ -490,39 +501,116 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
    Exportar ficam fora. Os wrappers sempre são position:relative/block pra o
    dropdown posicionar; o botão ⋯ sempre visível. */
 .hd-more-wrap{display:block;position:relative}
-.hd-more-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;min-width:284px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:6px;flex-direction:column;gap:2px;animation:fadeDown 0.15s ease}
-.hd-more-drop.on{display:flex}
-.hd-more-drop .gbtn span{display:inline!important}
-.hd-more-drop .gbtn{width:100%;justify-content:flex-start;padding:9px 12px;border-radius:10px}
+.hd-more-drop{--hm-cor:var(--hm-cfg);display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;min-width:284px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:6px;flex-direction:column;gap:1px;transform-origin:var(--hm-ox,100%) -8px;overscroll-behavior:contain}
+/* Efeito 1 — Brotar (28/09/2026): o menu nasce do botão ⋯ que você tocou (a
+   origem da escala é medida em toggleHdMore), as famílias chegam em blocos,
+   um degrau por grupo, e os balões estalam. Fechar é mais rápido que abrir —
+   quem fecha já decidiu. A entrada usa a propriedade translate, não
+   transform, pra não roubar o :active das linhas (mesma armadilha do
+   .mapa-menu). */
+.hd-more-drop.on{display:flex;animation:hmBrota 180ms var(--fc-curva) both}
+.hd-more-drop.fechando{display:flex;pointer-events:none;animation:hmRecolhe 120ms var(--fc-curva) both}
+@keyframes hmBrota{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@keyframes hmRecolhe{to{opacity:0;transform:scale(.97)}}
+.hdm-grupo{display:flex;flex-direction:column;gap:1px}
+.hd-more-drop.on .hdm-grupo{animation:hmGrupo 200ms var(--fc-curva) backwards;animation-delay:calc(20ms + var(--i,0) * 18ms)}
+@keyframes hmGrupo{from{opacity:0;translate:0 -5px}}
+.hd-more-drop.on .hdm-bolha{animation:hmBolha 240ms cubic-bezier(.2,1.28,.36,1) backwards;animation-delay:calc(50ms + var(--i,0) * 18ms)}
+@keyframes hmBolha{from{scale:.6;opacity:0}}
 .gbtn.hd-more-btn{display:inline-flex}
-/* ── Itens do menu "Mais" com subtexto ──
-   O rótulo sozinho não dizia do que a ferramenta precisa, e as três exigem
-   coisas diferentes (embeddings / IA de texto / nada). A linha de baixo conta
-   isso ANTES de a pessoa abrir e esbarrar num aviso. */
-.hd-more-item{}
-.hdm-item{display:flex;align-items:stretch;gap:3px;width:100%}
-.hd-more-drop .hdm-item .gbtn{flex:1;align-items:flex-start;text-align:left;min-width:0;padding:8px 10px}
-/* Precisa derrotar ".hd-more-drop .gbtn span{display:inline!important}" — essa
-   regra tem UM SELETOR A MAIS (o elemento "span"), então com !important nos
-   dois lados ela vencia mesmo com !important aqui também: título e subtexto
-   ficavam grudados na mesma linha corrida. Repetir ".gbtn span" no seletor
-   iguala a especificidade e o meu, por vir depois no arquivo, prevalece. */
-.hd-more-drop .gbtn span.hdm-txt{display:flex!important;flex-direction:column;gap:1px;min-width:0;flex:1}
-.hd-more-drop .gbtn span.hdm-t{display:block!important;font-size:12.5px;font-weight:600;line-height:1.3}
-.hd-more-drop .gbtn span.hdm-sub{display:block!important;font-size:10.5px;font-weight:500;color:var(--text4);line-height:1.35;white-space:normal;letter-spacing:0}
-.hdm-help{flex-shrink:0;width:26px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text4);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;align-self:center;height:26px;line-height:1}
-.hdm-help:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
-/* Plano 22 (08/09/2026): "Configurações" sobe pro 1º item do menu ⋯, com fundo
-   verde — é o único item que a pessoa procura por nome, não por tarefa. */
-.hdm-item.chefe .gbtn{background:var(--ok-bg);color:var(--ok-txt)}
-.hdm-item.chefe .gbtn:hover{background:var(--ok-bg)}
-.hdm-item.chefe .gbtn span.hdm-sub{color:color-mix(in srgb,var(--ok-txt) 88%,var(--text))}
+#btnHdMore svg{transition:transform 200ms var(--fc-curva)}
+#btnHdMore[aria-expanded="true"]{background:var(--border2);color:var(--text)}
+#btnHdMore[aria-expanded="true"] svg{transform:rotate(90deg)}
+/* Linhas. Antes todas tinham o mesmo fundo cinza com o título em #8e8e93 —
+   2,8:1 de contraste, o visual de botão desativado. Agora o fundo só aparece
+   no toque, e o título vai em --text. */
+.hdm-item{display:flex;align-items:center;width:100%;min-width:0;transition:transform 110ms var(--fc-curva)}
+.hdm-linha{--hm-tinta:color-mix(in srgb,var(--hm-cor) 13%,transparent);flex:1;min-width:0;display:flex;align-items:center;gap:11px;border:0;background:transparent;color:var(--text);text-align:left;padding:8px 10px;border-radius:12px;font-family:var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color 120ms linear}
+[data-theme="dark"] .hdm-linha{--hm-tinta:color-mix(in srgb,var(--hm-cor) 22%,transparent)}
+.hdm-linha:hover{background:var(--bg-input)}
+.hdm-fixa{cursor:default}
+.hdm-fixa:hover{background:transparent}
+/* Efeito 2 — Tinta: no instante do toque a linha afunda e ganha a cor da
+   família, e o balão afunda um pouco mais. Quem afunda é o .hdm-item (via
+   :has), pra linha e o ⓘ ao lado afundarem juntos sem desalinhar. A onda que
+   sai do balão ao soltar é o _jzOnda, disparado no listener do menu. */
+.hdm-item:has(>.hdm-linha:not(.hdm-fixa):active){transform:scale(.975)}
+.hdm-linha:not(.hdm-fixa):active{background:var(--hm-tinta)}
+.hdm-bolha{width:32px;height:32px;border-radius:10px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,var(--hm-cor) 15%,transparent);color:var(--hm-cor);transition:transform 110ms var(--fc-curva)}
+.hdm-bolha svg{width:17px;height:17px}
+.hdm-linha:not(.hdm-fixa):active .hdm-bolha{transform:scale(.88)}
+.hd-more-drop .hdm-bolha.soco{animation:jzSoco 300ms var(--fc-curva)}
+.hdm-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.hdm-t{font-size:13.5px;font-weight:650;line-height:1.25;color:var(--text)}
+.hdm-sub{font-size:11px;font-weight:500;color:var(--hm-sub);line-height:1.35}
+.hdm-chev{flex:none;display:grid;color:var(--text4)}
+.hdm-chev svg{width:14px;height:14px;transition:transform 220ms var(--fc-curva)}
+#themeBtn[aria-expanded="true"] .hdm-chev svg{transform:rotate(90deg)}
+.hdm-item.chefe .hdm-linha{background:color-mix(in srgb,var(--hm-cfg) 9%,transparent)}
+.hdm-item.chefe .hdm-linha:active{background:var(--hm-tinta)}
+/* Aviso de cópia atrasada embaixo de Configurações e selo "falta 1 chave" nas
+   ferramentas: os dois só aparecem quando falta alguma coisa. */
+.hdm-alerta{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;color:var(--hm-falta-tinta);margin-top:2px}
+.hdm-alerta::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warning);flex:none}
+.hdm-alerta[hidden],.hdm-selo[hidden]{display:none}
+/* o selo mora embaixo do subtítulo: ao lado, ele espremia o título em 3 linhas no celular */
+.hdm-selo{align-self:flex-start;margin-top:3px;font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap;color:var(--hm-falta-tinta);background:var(--hm-falta-fundo)}
+/* O "?" era uma caixinha de 26px solta fora do item, que estreitava a linha.
+   Virou um ⓘ dentro da mesma fileira, sem borda. */
+.hdm-info{width:30px;height:30px;border-radius:50%;border:0;background:transparent;color:var(--hm-sub);display:grid;place-items:center;cursor:pointer;flex:none;margin-left:-2px;transition:transform 110ms var(--fc-curva),background-color .15s}
+.hdm-info:hover{background:var(--bg-input);color:var(--text)}
+.hdm-info:active{transform:scale(.88)}
+.hdm-info svg{width:17px;height:17px}
+.hdm-cab{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--hm-sub);padding:11px 10px 3px}
+.hdm-cab::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--hm-cor);flex:none}
+.hdm-sep{height:1px;background:var(--border);margin:5px 8px}
+/* Efeito 3 — Encaixe: o indicador do trilho (PT|EN, Claro|Escuro) viaja,
+   estica no meio do caminho e assenta. É um nó só, que nunca é recriado —
+   o mesmo desenho do .smode-rail. --jz-i é 0% ou 100% da largura dele. */
+.jz-seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:2px;border-radius:10px;background:var(--bg-input);flex:none}
+.jz-seg-ind{position:absolute;left:2px;top:2px;bottom:2px;width:calc(50% - 2px);border-radius:8px;background:var(--hm-trilho-ind);box-shadow:var(--smode-elev);pointer-events:none;transform:translateX(var(--jz-i,0%));transition:transform 240ms var(--fc-curva)}
+.jz-seg.noanim .jz-seg-ind{transition:none}
+.jz-seg.anda .jz-seg-ind{animation:jzEstica 240ms var(--fc-curva)}
+@keyframes jzEstica{40%{scale:1.1 .9}}
+.jz-seg button{position:relative;z-index:1;border:0;background:transparent;font:700 12px/1 var(--font);color:var(--hm-sub);padding:7px 11px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:transform 110ms var(--fc-curva),color 200ms linear}
+.jz-seg button[aria-pressed="true"]{color:var(--text)}
+.jz-seg button:active{transform:scale(.965)}
+/* Gaveta da Aparência: abre dentro do menu, em vez do balão por cima. É o
+   único efeito que mexe em layout, e só dentro do menu. */
+.hdm-gaveta{display:grid;grid-template-rows:0fr;transition:grid-template-rows 220ms var(--fc-curva)}
+.hdm-gaveta.on{grid-template-rows:1fr}
+.hdm-gaveta>div{min-height:0;overflow:hidden;opacity:0;translate:0 -4px;visibility:hidden;transition:opacity 160ms linear,translate 220ms var(--fc-curva),visibility 0s linear 220ms}
+.hdm-gaveta.on>div{opacity:1;translate:0 0;visibility:visible;transition:opacity 160ms linear,translate 220ms var(--fc-curva),visibility 0s}
+.hdm-gaveta-in{display:grid;gap:12px;padding:4px 10px 12px 53px}
+.hdm-gv{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;font-weight:600;color:var(--hm-sub)}
 /* No celular o botão ⋯ fica colado no canto direito, então um menu que cresce
    pra DIREITA encosta na borda da tela (medido: chegava exatamente em 423px de
    423px). Ancorado à direita ele cresce pra dentro e sobra folga — e o limite
    de largura garante que continue cabendo mesmo em telas bem estreitas. */
 @media(max-width:640px){
   .hd-more-drop{left:auto;right:0;max-width:calc(100vw - 24px)}
+}
+/* Onda que sobrevive ao elemento (generaliza a _recOnda): mora no <body>,
+   porque o menu fecha no mesmo clique que a dispara. */
+.jz-onda{position:fixed;pointer-events:none;z-index:10000;border:2px solid var(--jz-cor,var(--accent));animation:jzOnda 420ms var(--fc-curva) forwards}
+@keyframes jzOnda{from{transform:scale(1);opacity:.55}to{transform:scale(2.2);opacity:0}}
+@keyframes jzSoco{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
+/* Trocar de idioma recarrega a página: o recibo chega do lado de cá, com o
+   ⋯ dando um soco e o "Mais" chegando rolando já no idioma novo. */
+#btnHdMore.jz-chegou{animation:jzSoco 320ms var(--fc-curva)}
+#btnHdMore.jz-chegou>span{animation:jzRola 300ms var(--fc-curva)}
+@keyframes jzRola{from{transform:translateY(55%);opacity:0}}
+/* Claro ↔ Escuro: o tema novo se abre em círculo a partir do dedo. É o único
+   efeito grande do pacote, porque trocar de tema é raro. Sem View Transition
+   (Safari < 18, Firefox antigo), a troca é seca como sempre foi. */
+html.jz-tema::view-transition-old(root),html.jz-tema::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.jz-tema::view-transition-new(root){animation:jzRevela 380ms var(--fc-curva) both}
+@keyframes jzRevela{from{clip-path:circle(0 at var(--jz-x) var(--jz-y))}to{clip-path:circle(var(--jz-r) at var(--jz-x) var(--jz-y))}}
+@media(prefers-reduced-motion:reduce){
+  .hd-more-drop.on,.hd-more-drop.fechando,.hd-more-drop.on .hdm-grupo,.hd-more-drop.on .hdm-bolha,.hd-more-drop .hdm-bolha.soco,.jz-seg.anda .jz-seg-ind,#btnHdMore.jz-chegou,#btnHdMore.jz-chegou>span{animation:none}
+  #btnHdMore svg,.hdm-item,.hdm-bolha,.hdm-chev svg,.hdm-gaveta,.hdm-gaveta>div,.jz-seg-ind,.jz-seg button,.hdm-info{transition:none}
+  .hdm-item:has(>.hdm-linha:not(.hdm-fixa):active),.hdm-linha:not(.hdm-fixa):active .hdm-bolha,.jz-seg button:active,.hdm-info:active{transform:none}
+  #btnHdMore[aria-expanded="true"] svg{transform:none}
 }
 .cfg-wrap{display:inline-flex;align-items:center;position:relative;vertical-align:middle}
 #speedBadge{display:none;white-space:nowrap}
@@ -681,17 +769,16 @@ header.has-speed-badge{padding-bottom:18px}
 .ob-lang{background:var(--bg-input);border:1px solid var(--border);color:var(--text3);border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:4px}
 .ob-lang:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 .theme-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--bg-input);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
-.skin-wrap{position:relative}
-.skin-pop{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:11px;min-width:184px;animation:fadeDown .15s ease}
-.skin-pop.on{display:block}
-.skin-hd{font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text4);padding:2px 2px 6px}
-.skin-modes{display:flex;gap:6px;margin-bottom:11px}
-.skin-mode{flex:1;background:var(--bg-input);border:1px solid transparent;color:var(--text2);border-radius:9px;padding:7px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition)}
-.skin-mode.on{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
-.skin-swatches{display:flex;gap:10px;padding:2px}
-.skin-sw{width:30px;height:30px;border-radius:50%;background:var(--sw);border:2px solid transparent;cursor:pointer;transition:transform var(--transition);padding:0}
-.skin-sw:hover{transform:scale(1.12)}
-.skin-sw.on{box-shadow:0 0 0 2px var(--bg-card),0 0 0 4px var(--sw)}
+/* As 4 cores moram na gaveta da Aparência, dentro do menu ⋯. O aro da cor
+   escolhida POUSA em volta (escala 1,35 → 1) e a amostra dá um soco — o acento
+   do app inteiro muda no mesmo quadro, e isso já é a recompensa. */
+.skin-swatches{display:flex;gap:14px;padding:2px 4px}
+.skin-sw{position:relative;width:26px;height:26px;border-radius:50%;background:var(--sw);border:0;cursor:pointer;padding:0;transition:transform 110ms var(--fc-curva)}
+.skin-sw::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--sw);opacity:0;transform:scale(1.35);pointer-events:none;transition:transform 240ms var(--fc-curva),opacity 160ms linear}
+.skin-sw.on::after{opacity:1;transform:none}
+.skin-sw:active{transform:scale(.9)}
+.skin-sw.soco{animation:jzSoco 300ms var(--fc-curva)}
+@media(prefers-reduced-motion:reduce){.skin-sw,.skin-sw::after{transition:none}.skin-sw:active{transform:none}.skin-sw.soco{animation:none}}
 .theme-btn:hover{background:var(--border2)}
 /* padding-top/bottom em vez do shorthand "8px 0" — o shorthand zerava
    esquerda/direita, sobrescrevendo os 20px de .wrap (mesma classe, mas essa
@@ -5587,10 +5674,22 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .diar-toggle-row small{font-size:11px;color:var(--text3);display:block;margin-top:2px}
 .toggle-sw{position:relative;width:44px;height:24px;flex-shrink:0}
 .toggle-sw input{opacity:0;width:0;height:0;position:absolute}
-.toggle-sw span{position:absolute;inset:0;background:var(--border2);border-radius:24px;cursor:pointer;transition:.3s}
+.toggle-sw span{position:absolute;inset:0;background:var(--border2);border-radius:24px;cursor:pointer;transition:background-color 180ms linear}
 .toggle-sw input:checked+span{background:var(--diar)}
-.toggle-sw span:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s}
+.toggle-sw span:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:transform 240ms cubic-bezier(.3,1.35,.6,1)}
 .toggle-sw input:checked+span:before{transform:translateX(20px)}
+/* Efeito 3 — Encaixe (28/09/2026): ao apertar, a bolinha estica e vira pílula;
+   ao soltar, viaja e passa um tiquinho do ponto (~1,7px, dentro do trilho de
+   44px). A origem fica no centro e a compensação vai no translate — trocar
+   transform-origin no meio do gesto faria a bolinha pular. Vale pra todos os
+   interruptores do app, de propósito: um movimento só. */
+.toggle-sw:active span:before{transform:translateX(2.5px) scaleX(1.28);transition-duration:110ms}
+.toggle-sw:active input:checked+span:before{transform:translateX(17.5px) scaleX(1.28)}
+@media(prefers-reduced-motion:reduce){
+  .toggle-sw span,.toggle-sw span:before{transition:none}
+  .toggle-sw:active span:before{transform:none}
+  .toggle-sw:active input:checked+span:before{transform:translateX(20px)}
+}
 .diar-provider-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .diar-prov-btn{padding:10px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg-input);color:var(--text3);font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all var(--transition);text-align:center}
 .diar-prov-btn.on{border-color:var(--diar);color:var(--diar);background:var(--diar-glow)}
@@ -5623,6 +5722,14 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .storage-meter-fill.danger{background:var(--danger)}
 .maint-box{background:var(--bg-input);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px}
 .maint-info{flex:1}
+/* No celular a linha "Chaves de API: backup em arquivo" tem dois botões que
+   não encolhem: o texto virava uma coluna de uma palavra e o segundo botão
+   passava da borda do modal. Com wrap, os botões descem pra linha de baixo
+   quando não cabem ao lado do texto. */
+@media(max-width:640px){
+  .maint-box{flex-wrap:wrap}
+  .maint-info{flex:1 1 170px;min-width:0}
+}
 .maint-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:2px}
 .maint-desc{font-size:11px;color:var(--text3);line-height:1.5}
 .maint-btn{background:none;border:1.5px solid rgba(255,59,48,0.4);color:var(--danger);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);white-space:nowrap;flex-shrink:0}
@@ -5685,6 +5792,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .key-row.active-key label>span:first-child::after{content:'✓ ativo';margin-left:7px;font-size:9px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--accent);background:var(--accent-glow);padding:2px 7px;border-radius:20px;vertical-align:1px}
 /* Abas do modal de configurações */
 .cfg-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:-4px 0 16px;background:var(--bg-input);border-radius:13px;padding:4px;position:sticky;top:0;z-index:5}
+/* A barra gruda no topo ao rolar, mas o fundo dela (--bg-input) é
+   translúcido: o texto das seções passava visível por trás das abas (visto
+   num celular de 375px em 28/09/2026). A camada de --bg-card por baixo deixa
+   a mesma cor de antes e tapa o que rola; a sombra sem desfoque, na cor do
+   modal, cobre a fresta de 4px em volta. */
+.cfg-tabs{background:linear-gradient(var(--bg-input),var(--bg-input)),var(--bg-card);box-shadow:0 -4px 0 4px var(--bg-card)}
 /* min-width:0 é o que permite o flex:1 realmente encolher — sem isso, cada
    aba recusa ficar menor que o texto+ícone dela ("white-space:nowrap"), e
    em tela de celular a fileira toda estourava a largura do modal, cortando
@@ -6455,81 +6568,101 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
            (hdMoreDrop); só Cérebro/View/Buscar/Exportar ficam fora da fileira.
            O CSS base já posiciona o dropdown e mostra o botão ⋯ sempre. -->
       <div class="hd-more-wrap" id="hdMoreWrap">
-        <button class="gbtn hd-more-btn" id="btnHdMore" onclick="toggleHdMore()" title="Mais opções" data-i18n-title>
+        <button class="gbtn hd-more-btn" id="btnHdMore" onclick="toggleHdMore()" title="Mais opções" data-i18n-title aria-haspopup="true" aria-expanded="false" aria-controls="hdMoreDrop">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
           <span data-i18n>Mais</span>
         </button>
         <div class="hd-more-drop" id="hdMoreDrop">
-          <!-- Plano 22 (08/09/2026): "Configurações" vira o 1º item — é o único
-               item do menu que a pessoa procura por nome, não por tarefa do dia.
-               Buscar saiu daqui e virou ícone fixo na barra (ver .hd-actions). -->
-          <div class="hdm-item chefe">
-            <button class="gbtn gbtn-ico" id="btnCfg" onclick="toggleHdMore();openModal()" title="Configurações" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Configurações</span><span class="hdm-sub" data-i18n>Serviço de transcrição, chaves, backup e espaço</span></span>
-            </button>
-          </div>
-          <!-- Ferramentas de descoberta: cada uma diz, na própria linha, o que faz
-               e de que ela precisa. Sem isso a pessoa só descobria o requisito
-               DEPOIS de abrir e esbarrar no aviso — e as três têm exigências
-               diferentes, então um recado único seria mentira: só as Notas
-               relacionadas precisam de embeddings; o Panorama usa a IA de texto
-               comum; o Resgatar funciona sem chave nenhuma. O "?" ao lado abre
-               o card que explica o que é embeddings e quais IAs oferecem. -->
-          <div class="hdm-item">
-            <button class="gbtn" id="btnDaySummary" onclick="toggleHdMore();openDaySummary()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Resumo do dia</span><span class="hdm-sub" data-i18n>Junta o que você gravou hoje · usa sua IA de texto</span></span>
-            </button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnCostura" onclick="toggleHdMore();openCostura()" title="Agrupa notas sobre o mesmo assunto" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9c0 4 12 5 12 9"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Notas relacionadas</span><span class="hdm-sub" data-i18n>Junta notas do mesmo assunto · precisa de chave com embeddings (OpenAI ou Gemini)</span></span>
-            </button>
-            <button class="hdm-help" onclick="toggleHdMore();openSemHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?">?</button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnPanorama" onclick="toggleHdMore();openPanorama()" title="Temas que se repetem, promessas soltas e mudanças de ideia" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>O que você anda repetindo</span><span class="hdm-sub" data-i18n>Temas, promessas e mudanças de ideia · usa sua IA de texto</span></span>
-            </button>
-            <button class="hdm-help" onclick="toggleHdMore();openPanHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?">?</button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnRessurgir" onclick="toggleHdMore();openRessurgir()" title="Traz de volta uma nota antiga esquecida" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Resgatar nota antiga</span><span class="hdm-sub" data-i18n>Traz de volta o que você esqueceu · funciona sem chave</span></span>
-            </button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnTxReceber" onclick="toggleHdMore();abrirReceberTransferencia()" title="Cole um link ou leia um QR de outro aparelho" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Receber transferência</span><span class="hdm-sub" data-i18n>Cole o link ou leia o QR de outro aparelho · funciona sem instalar nada</span></span>
-            </button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnSetup" onclick="toggleHdMore();_obOpen()" title="Rever as boas-vindas" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Rever as boas-vindas</span><span class="hdm-sub" data-i18n>As telas do primeiro dia, de novo. Nada muda no que você já configurou.</span></span>
-            </button>
-          </div>
-          <button class="gbtn" id="btnLang" onclick="setLang(currentLang==='pt'?'en':'pt')" title="Language / Idioma"><span class="svgi" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span> <span class="btn-lang-txt">PT</span></button>
-          <div class="skin-wrap">
-            <button class="gbtn" id="themeBtn" onclick="toggleSkinPop()" title="Aparência" data-i18n-title><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.12a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.55-2.5 5.55-5.55C21.97 6.01 17.46 2 12 2z"/><circle cx="13.5" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg></span> <span data-i18n>Aparência</span></button>
-            <div class="skin-pop" id="skinPop">
-              <div class="skin-hd" data-i18n>Tema</div>
-              <div class="skin-modes">
-                <button class="skin-mode" data-mode="light" onclick="setTheme('light')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span> <span data-i18n>Claro</span></button>
-                <button class="skin-mode" data-mode="dark" onclick="setTheme('dark')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span> <span data-i18n>Escuro</span></button>
+          <!-- Central de Ajustes, Fase 1 (28/09/2026). O menu é dividido em
+               famílias e cada família tem a cor do seu balão (--hm-*). As três
+               primeiras linhas são os ajustes do app, na ordem que o Carlos
+               pediu: Configurações, Idioma, Aparência. As ferramentas das notas
+               dizem o que fazem; o que elas PRECISAM só aparece, num selo,
+               quando falta (_hdmSelos) — quem já tem a chave não lê requisito.
+               Os id dos botões são os de antes. -->
+          <div class="hdm-grupo" style="--i:0">
+            <div class="hdm-item chefe" style="--hm-cor:var(--hm-cfg)">
+              <button class="hdm-linha" id="btnCfg" onclick="_hdMoreFechar();openModal()" title="Configurações" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Configurações</span><span class="hdm-sub" data-i18n>Chaves, cópias de segurança e serviços</span><span class="hdm-alerta" id="hdmAlerta" hidden></span></span>
+                <span class="hdm-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+              </button>
+            </div>
+            <div class="hdm-item" style="--hm-cor:var(--hm-lang)">
+              <div class="hdm-linha hdm-fixa">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Idioma do app</span><span class="hdm-sub" id="hdmLangNome">Português</span></span>
+                <span class="jz-seg" id="btnLang" role="group" title="Language / Idioma" aria-label="Language / Idioma"><span class="jz-seg-ind"></span><button type="button" data-v="pt" onclick="_jzIdioma('pt',this)">PT</button><button type="button" data-v="en" onclick="_jzIdioma('en',this)">EN</button></span>
               </div>
-              <div class="skin-hd" data-i18n>Cor</div>
-              <div class="skin-swatches">
-                <button class="skin-sw" data-skin="emerald" onclick="setSkin('emerald')" title="Esmeralda" data-i18n-title style="--sw:#10b981"></button>
-                <button class="skin-sw" data-skin="amber" onclick="setSkin('amber')" title="Âmbar" data-i18n-title style="--sw:#d99a2b"></button>
-                <button class="skin-sw" data-skin="indigo" onclick="setSkin('indigo')" title="Índigo" data-i18n-title style="--sw:#6366f1"></button>
-                <button class="skin-sw" data-skin="teal" onclick="setSkin('teal')" title="Petróleo" data-i18n-title style="--sw:#0e8a8f"></button>
-              </div>
+            </div>
+            <div class="hdm-item" style="--hm-cor:var(--hm-look)">
+              <button class="hdm-linha" id="themeBtn" data-fica onclick="_hdmAparencia()" aria-expanded="false" aria-controls="hdmGaveta">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.12a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.55-2.5 5.55-5.55C21.97 6.01 17.46 2 12 2z"/><circle cx="13.5" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Aparência</span><span class="hdm-sub" id="hdmLookSub"></span></span>
+                <span class="hdm-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+              </button>
+            </div>
+            <div class="hdm-gaveta" id="hdmGaveta"><div><div class="hdm-gaveta-in">
+              <div class="hdm-gv"><span data-i18n>Tema</span><span class="jz-seg" id="segTema" role="group" aria-label="Tema"><span class="jz-seg-ind"></span><button type="button" data-v="light" onclick="_jzTema('light',this)" data-i18n>Claro</button><button type="button" data-v="dark" onclick="_jzTema('dark',this)" data-i18n>Escuro</button></span></div>
+              <div class="hdm-gv"><span data-i18n>Cor</span><span class="skin-swatches">
+                <button class="skin-sw" data-skin="emerald" onclick="_jzCor(this)" title="Esmeralda" data-i18n-title aria-label="Esmeralda" style="--sw:#10b981"></button>
+                <button class="skin-sw" data-skin="amber" onclick="_jzCor(this)" title="Âmbar" data-i18n-title aria-label="Âmbar" style="--sw:#d99a2b"></button>
+                <button class="skin-sw" data-skin="indigo" onclick="_jzCor(this)" title="Índigo" data-i18n-title aria-label="Índigo" style="--sw:#6366f1"></button>
+                <button class="skin-sw" data-skin="teal" onclick="_jzCor(this)" title="Petróleo" data-i18n-title aria-label="Petróleo" style="--sw:#0e8a8f"></button>
+              </span></div>
+            </div></div></div>
+          </div>
+          <div class="hdm-grupo" style="--i:1;--hm-cor:var(--hm-notas)">
+            <div class="hdm-cab" data-i18n>Olhar suas notas de cima</div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnDaySummary" onclick="_hdMoreFechar();openDaySummary()">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Resumo do dia</span><span class="hdm-sub" data-i18n>Junta o que você gravou hoje</span><span class="hdm-selo" id="hdmSeloResumo" hidden></span></span>
+              </button>
+            </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnCostura" onclick="_hdMoreFechar();openCostura()" title="Agrupa notas sobre o mesmo assunto" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9c0 4 12 5 12 9"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Notas relacionadas</span><span class="hdm-sub" data-i18n>Junta notas do mesmo assunto</span><span class="hdm-selo" id="hdmSeloCostura" hidden></span></span>
+              </button>
+              <button class="hdm-info" onclick="_hdMoreFechar();openSemHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".7" fill="currentColor" stroke="none"/></svg></button>
+            </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnPanorama" onclick="_hdMoreFechar();openPanorama()" title="Temas que se repetem, promessas soltas e mudanças de ideia" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>O que você anda repetindo</span><span class="hdm-sub" data-i18n>Temas, promessas e mudanças de ideia</span><span class="hdm-selo" id="hdmSeloPanorama" hidden></span></span>
+              </button>
+              <button class="hdm-info" onclick="_hdMoreFechar();openPanHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".7" fill="currentColor" stroke="none"/></svg></button>
+            </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnRessurgir" onclick="_hdMoreFechar();openRessurgir()" title="Traz de volta uma nota antiga esquecida" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Resgatar nota antiga</span><span class="hdm-sub" data-i18n>Traz de volta o que você esqueceu</span></span>
+              </button>
+            </div>
+          </div>
+          <div class="hdm-grupo" style="--i:2;--hm-cor:var(--hm-cofre)">
+            <div class="hdm-cab" data-i18n>Cópias e outros aparelhos</div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnHdmCopia" onclick="_hdMoreFechar();exportProject()">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Guardar uma cópia agora</span><span class="hdm-sub" data-i18n>Baixa um arquivo com suas notas</span></span>
+              </button>
+            </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnTxReceber" onclick="_hdMoreFechar();abrirReceberTransferencia()" title="Cole um link ou leia um QR de outro aparelho" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Receber de outro aparelho</span><span class="hdm-sub" data-i18n>Cole o link ou leia o QR</span></span>
+              </button>
+            </div>
+          </div>
+          <div class="hdm-grupo" style="--i:3;--hm-cor:var(--hm-ajuda)">
+            <div class="hdm-sep"></div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnSetup" onclick="_hdMoreFechar();_obOpen()" title="Rever as boas-vindas" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Rever as boas-vindas</span><span class="hdm-sub" data-i18n>As telas do primeiro dia, de novo. Nada muda no que você já configurou.</span></span>
+              </button>
             </div>
           </div>
         </div>
@@ -6978,10 +7111,10 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div id="cfgAvancadasWrap">
       <button type="button" class="cse-voltar" onclick="_mostraPortaEntrada()"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"/></svg></span><span data-i18n>voltar ao começo</span></button>
       <div class="cfg-tabs">
+        <button class="cfg-tab-btn" id="cfgTabBtnGeral" onclick="cfgTab('Geral')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> <span data-i18n>Geral</span></button>
         <button class="cfg-tab-btn on" id="cfgTabBtnTrans" onclick="cfgTab('Trans')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg></span> <span data-i18n>Transcrição</span></button>
         <button class="cfg-tab-btn" id="cfgTabBtnText" onclick="cfgTab('Text')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span> <span data-i18n>IA de texto</span></button>
         <button class="cfg-tab-btn" id="cfgTabBtnDiar" onclick="cfgTab('Diar')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Diarização</span></button>
-        <button class="cfg-tab-btn" id="cfgTabBtnGeral" onclick="cfgTab('Geral')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> <span data-i18n>Geral</span></button>
       </div>
       <div class="cfg-tab-pane" id="cfgPaneTrans">
       <div class="section-title" data-i18n>API de transcrição</div>
@@ -7335,7 +7468,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <div class="maint-title" data-i18n>🔒 Cofre do navegador</div>
           <div class="maint-desc" data-i18n>Guarda junto com suas senhas (Chrome/iCloud Keychain) — sincroniza sozinho entre seus aparelhos.</div>
         </div>
-        <button class="maint-btn" onclick="manualRestoreFromVault()" data-i18n>Restaurar chaves</button>
+        <button class="maint-btn" onclick="manualRestoreFromVault()" data-i18n>Pegar do cofre</button>
       </div>
       <div class="maint-box" style="margin-bottom:8px">
         <div class="maint-info">
@@ -7344,7 +7477,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           <button class="maint-btn" onclick="exportKeysBackup()" data-i18n>Baixar chaves</button>
-          <button class="maint-btn" onclick="triggerImportKeysBackup()" data-i18n>Restaurar chaves</button>
+          <button class="maint-btn" onclick="triggerImportKeysBackup()" data-i18n>Restaurar do arquivo</button>
         </div>
       </div>
       <div class="tx-tut" style="margin-bottom:8px" data-i18n-html>Na hora de restaurar: o arquivo baixado se chama <strong>vox_chaves_backup.json</strong> e fica na pasta <strong>Downloads</strong> do seu computador (ou onde seu navegador costuma salvar downloads). Clique em "Restaurar", escolha esse arquivo na janela que abrir, e digite a senha que você criou quando baixou.</div>
@@ -8139,7 +8272,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.28.1';
+const VOX_VERSION='2026.09.28.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8855,8 +8988,9 @@ function setLang(lang){
   location.reload();
 }
 function _syncLangUI(){
-  const btn=document.getElementById('btnLang');
-  if(btn){const _l=btn.querySelector('.btn-lang-txt');if(_l)_l.textContent=currentLang==='en'?'EN':'PT';}
+  _jzSegPos(document.getElementById('btnLang'),currentLang,false);
+  const nome=document.getElementById('hdmLangNome');
+  if(nome)nome.textContent=currentLang==='en'?'English':'Português';
   const obLbl=document.getElementById('obLangLabel');
   if(obLbl)obLbl.textContent=currentLang==='en'?'EN':'PT';
 }
@@ -8878,6 +9012,24 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── menu ⋯ em famílias (Central de Ajustes, 28/09/2026) ──
+"Chaves, cópias de segurança e serviços":"Keys, backups and services",
+"Idioma do app":"App language",
+"Olhar suas notas de cima":"Your notes from above",
+"Junta o que você gravou hoje":"Gathers what you recorded today",
+"Junta notas do mesmo assunto":"Groups notes on the same topic",
+"Temas, promessas e mudanças de ideia":"Themes, promises and changes of mind",
+"Traz de volta o que você esqueceu":"Brings back what you forgot",
+"Cópias e outros aparelhos":"Backups and other devices",
+"Guardar uma cópia agora":"Back up now",
+"Baixa um arquivo com suas notas":"Downloads a file with your notes",
+"Receber de outro aparelho":"Receive from another device",
+"Cole o link ou leia o QR":"Paste the link or scan the QR code",
+"falta 1 chave":"needs a key",
+"falta ligar":"turn it on",
+"Precisa de uma chave de IA de texto — o Groq serve":"Needs a text AI key — Groq works",
+"A chave já serve: falta ligar a busca por sentido":"Your key already works: just turn on meaning search",
+"Precisa de uma chave com índice de sentido (OpenAI ou Gemini)":"Needs a key that can build the meaning index (OpenAI or Gemini)",
 // ── o que dá pra fazer com os cards escolhidos (14/09/2026) ──
 "1 card escolhido":"1 card chosen",
 "{n} cards escolhidos":"{n} cards chosen",
@@ -9430,7 +9582,7 @@ let I18N_EN={
 "Ganha um crédito único de US$5 ao criar conta; depois disso é pago (pode pedir cartão de crédito pra liberar o uso). Atenção: usa uma camada de compatibilidade que a própria Anthropic descreve como \"só para teste\" — funciona bem para as lentes do Vox, mas não é o caminho 100% oficial deles.":"Get a one-time $5 credit when you sign up; after that it's paid (may require a credit card to unlock usage). Heads up: this uses a compatibility layer that Anthropic itself describes as \"for testing only\" — it works well for Vox's lenses, but it isn't their fully official path.",
 "✨ Grátis, com ressalva":"✨ Free, with a caveat",
 "💳 100% pago (sem nível grátis)":"💳 100% paid (no free tier)",
-"Grátis pra começar":"Free to start","Ganha 5 milhões de tokens grátis ao criar conta; depois disso, um dos mais baratos do mercado.":"Get 5 million free tokens when you sign up; after that, one of the cheapest on the market.","Ganha 1 milhão de tokens grátis ao criar conta. Endereço internacional (fora da China).":"Get 1 million free tokens when you sign up. International address (outside China).","Grátis":"Free","O modelo GLM-4.7-Flash não custa nada, sem limite de tempo — só criar conta.":"The GLM-4.7-Flash model costs nothing, with no time limit — just create an account.","Pago":"Paid","Não tem nível grátis — precisa recarregar ao menos US$1 pra começar. Ainda assim, bem barato.":"No free tier — needs at least a $1 top-up to start. Still very cheap though.","Exemplos prontos — clique pra preencher sozinho":"Ready-made examples — click to fill in automatically","Local · Grátis":"Local · Free","Roda 100% no seu computador — nenhum dado sai da sua máquina nem passa por servidor de terceiros (o cuidado que LGPD/GDPR pedem). Precisa de um PC ou Mac razoável (mín. 16GB de RAM — hoje já é o padrão até fora do Brasil). Não funciona em celular.":"Runs 100% on your own computer — no data leaves your machine or passes through third-party servers (the kind of care LGPD/GDPR call for). Needs a reasonably capable PC or Mac (16GB+ RAM — that's already the norm outside Brazil today). Doesn't work on mobile.","Usar":"Use","Grátis c/ limite":"Free w/ limit","Só o modelo marcado <code>:free</code> não custa nada (até 50 usos/dia). Precisa criar conta grátis.":"Only the model marked <code>:free</code> costs nothing (up to 50 uses/day). Needs a free account.","Sem cartão de crédito. Atenção: no nível grátis, o Google pode usar o texto enviado pra melhorar os produtos dele.":"No credit card. Heads up: on the free tier, Google may use the text you send to improve its products.","Já configurada":"Already set up","Reaproveita a mesma chave que você já usa na aba Transcrição — não precisa digitar de novo. Usa o Grok 4.5, o modelo mais forte da xAI.":"Reuses the same key you already use in the Transcription tab — no need to type it again. Uses Grok 4.5, xAI's strongest model.","🟠 Preenchido com a chave do Grok que você já tem — testando…":"🟠 Filled in with the Grok key you already have — testing…","🖥️ Preenchido! Testando conexão local…":"🖥️ Filled in! Testing local connection…","Cole sua chave nesse campo e clique em \"Testar conexão\"":"Paste your key in this field and click \"Test connection\"","{a} falhou — usamos {b} como alternativa.":"{a} failed — we used {b} instead.","Não conseguimos falar com {p} agora — confira se o serviço está no ar (ou, se for local, se ele está ligado) e sua conexão.":"We couldn't reach {p} right now — check whether the service is up (or, if it's local, whether it's running) and your connection.","A chave da {p} não foi aceita — confira em Configurações e toque em \"Testar conexão\".":"The {p} key wasn't accepted — check it in Settings and tap \"Test connection\".","Os créditos da {p} parecem ter acabado — confira sua conta ou troque de provedor em Configurações.":"{p}'s credits seem to have run out — check your account or switch providers in Settings.","{p} não respondeu corretamente agora. Toque em \"Testar conexão\" nas Configurações.":"{p} didn't respond correctly this time. Tap \"Test connection\" in Settings.","Corretor\nCorrige gramática e clareza, sem mudar o conteúdo":"Corrector\nFixes grammar and clarity, without changing the content","Resumo\nUma frase → parágrafo → tópicos: leia até onde quiser":"Summary\nOne sentence → paragraph → bullet points: read as far as you like","Decisões & Ações\nQuem faz o quê e até quando — pronto pra executar":"Decisions & Actions\nWho does what and by when — ready to execute","Advogado do diabo\nAtaques fundamentados + o que blindaria cada ponto":"Devil's advocate\nGrounded attacks + what would shield each point","Mesa-redonda\nDebate com especialistas escolhidos pelo tema do texto":"Round table\nDebate with experts chosen based on the text's topic","Na hora de restaurar: o arquivo baixado se chama <strong>vox_chaves_backup.json</strong> e fica na pasta <strong>Downloads</strong> do seu computador (ou onde seu navegador costuma salvar downloads). Clique em \"Restaurar\", escolha esse arquivo na janela que abrir, e digite a senha que você criou quando baixou.":"When restoring: the downloaded file is called <strong>vox_chaves_backup.json</strong> and lives in your computer's <strong>Downloads</strong> folder (or wherever your browser usually saves downloads). Click \"Restore\", pick that file in the window that opens, and type the password you created when you downloaded it.","📉 Resumo":"📉 Summary","Corta e condensa o que foi dito":"Cuts and condenses what was said","🗂️ Estrutura":"🗂️ Structure","Reorganiza tudo, sem cortar nada":"Reorganizes everything, without cutting anything","🎯 Extração":"🎯 Extraction","Puxa só um recorte específico, descarta o resto":"Pulls out one specific slice, discards the rest","💡 Gerar & desafiar":"💡 Generate & challenge","Cria algo novo em cima do texto: análise, perguntas, debate":"Creates something new from the text: analysis, questions, debate","Muda o formato para outro público ou uso":"Changes the format for a different audience or use","Nota para Obsidian":"Note for Obsidian","A mesma fala, organizada em títulos, negrito e listas":"The same speech, organized into headings, bold and lists","Ver em Markdown (negrito, títulos, listas)":"View as Markdown (bold, headings, lists)","Isto é uma pré-visualização em <strong>Markdown</strong> — o formato de texto usado por apps como o <strong>Obsidian</strong> pra deixar notas com títulos, negrito e listas de verdade. É um recurso mais avançado, pra quem curte configurar assim. Na prática: <code>**palavra**</code> vira <strong>palavra</strong> (negrito de verdade), <code># Título</code> vira um título grande. Se sua fala não tiver esses sinais, fica parecido com o original — não é erro. Não muda nada do que você escreveu, é só outro jeito de olhar. <strong>Quer ver na prática?</strong> Use ✨ Transformar com IA → Nota para Obsidian, e depois toque neste mesmo 👁 no card que aparecer. Toque no 👁 de novo pra voltar a editar.":"This is a <strong>Markdown</strong> preview — the text format used by apps like <strong>Obsidian</strong> to give notes real headings, bold and lists. It's a more advanced feature, for people who like to set things up this way. In practice: <code>**word**</code> becomes <strong>word</strong> (real bold), <code># Title</code> becomes a big heading. If your speech doesn't have these marks, it'll look like the original — that's not a mistake. It doesn't change what you wrote, it's just a different way to look at it. <strong>Want to see it in action?</strong> Use ✨ Transform with AI → Note for Obsidian, then tap this same 👁 on the card that shows up. Tap 👁 again to go back to editing.","Voltar a editar":"Back to editing","ℹ️ Card vazio — nada para visualizar":"ℹ️ Empty card — nothing to preview","❌ Não foi possível carregar o visualizador.":"❌ Couldn't load the previewer.","Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summary","Exportar":"Export","Backup — guardar e restaurar":"Backup — save and restore","Salvar backup":"Save backup","Restaurar backup":"Restore backup","Traga suas notas de volta com o seu arquivo de backup.":"Bring your notes back with your backup file.","Já usava o Vox?":"Used Vox before?","Este é o backup das suas notas — restaurando as notas.":"This is your notes backup — restoring the notes.","Este é o backup das suas chaves — restaurando as chaves.":"This is your keys backup — restoring the keys.","Este arquivo está vazio (0 KB). Ele não guardou nada — gere o backup de novo.":"This file is empty (0 KB). It saved nothing — make the backup again.","Restaurando o backup… com muitas notas pode levar cerca de um minuto. Não feche esta aba.":"Restoring the backup… with many notes this can take about a minute. Do not close this tab.","As chaves de API não vêm no backup das notas. Restaure o arquivo de chaves em Configurações, na aba Geral.":"API keys are not in the notes backup. Restore the keys file in Settings, on the General tab.","notas adicionadas":"notes added","nota adicionada":"note added","Baixar chaves antes":"Download keys first","O backup das notas não leva as chaves de API. Se for zerar, baixe também as chaves antes.":"The notes backup does not include your API keys. If you are going to reset, download the keys too, first.","Zerar":"Reset","Cópia extra ativa nesta pasta.":"Extra copy active in this folder.","Baixar chaves":"Download keys","Restaurar chaves":"Restore keys","Levar para outros programas":"Take to other apps","Copiar TUDO como Markdown":"Copy ALL as Markdown","Todas as transcrições (.txt)":"All transcriptions (.txt)","Todas (.md)":"All (.md)","Obsidian vault (.md + YAML)":"Obsidian vault (.md + YAML)","Só hoje (.txt)":"Today only (.txt)","Configurações":"Settings","Modelo local":"Local model","⚡ Rápido":"⚡ Fast","~3x mais rápido · boa qualidade":"~3x faster · good quality","⚖️ Médio":"⚖️ Balanced","equilíbrio velocidade/precisão":"speed/accuracy balance","🎯 Preciso":"🎯 Precise","máxima qualidade":"maximum quality","Tema":"Theme","☀️ Claro":"☀️ Light","🌙 Escuro":"🌙 Dark","Cor":"Color","Esmeralda":"Emerald","Âmbar":"Amber","Índigo":"Indigo","Petróleo":"Teal","Pronto":"Ready","itens":"items","economizados":"saved","Tamanho do texto":"Text size","Mostrar/ocultar pastas":"Show/hide folders","Pastas":"Folders","Texto, #tag ou @locutor…":"Text, #tag or @speaker…","Nenhuma transcrição ainda":"No transcription yet","Escolha um modo de sessão, grave ou anexe um arquivo.<br>Use <strong>Espaço</strong> para gravar rapidamente.":"Choose a session mode, record or attach a file.<br>Use <strong>Space</strong> to record quickly.","Corretor":"Proofread","Resumo":"Summary","Pontos":"Key points","Contraponto":"Counterpoint","Diálogo":"Dialogue","Avançado":"Advanced","Copiar texto + tags":"Copy text + tags","Copiar só o texto":"Copy text only","Copiar como Markdown":"Copy as Markdown","Copiar para Obsidian":"Copy for Obsidian","Baixar TXT":"Download TXT","Baixar Markdown":"Download Markdown","Baixar HTML":"Download HTML","Gravar":"Record","Fixar":"Pin","← Anterior":"← Previous","Próximo →":"Next →","✕ Sair do Foco":"✕ Exit Focus","Baixar pastas":"Download folders","Configurar download":"Configure download","Recolher":"Collapse","Formato do download":"Download format","Nova pasta":"New folder","App parece travado. Alguma gravação ou transcrição não finalizou.":"The app seems stuck. Some recording or transcription didn't finish.","Resetar agora":"Reset now","▶ Transcrever":"▶ Transcribe","Cancelar":"Cancel","Ative a diarização para identificar quem fala":"Enable speaker diarization to identify who's talking","Separa automaticamente as vozes: Profissional, Paciente, etc. Gratuito no AssemblyAI (100h/mês, sem cartão).":"Automatically separates voices: Professional, Patient, etc. Free on AssemblyAI (100h/month, no card).","⚙️ Configurar agora":"⚙️ Configure now","Fechar":"Close","🩺 Consulta":"🩺 Consultation","👥 Reunião":"👥 Meeting","🎙️ Entrevista":"🎙️ Interview","📝 Livre":"📝 Free-form","Nome da sessão (opcional)":"Session name (optional)","🔮 Diarização ativa":"🔮 Diarization active","<kbd>Espaço</kbd> gravar / parar":"<kbd>Space</kbd> record / stop","💡 card em foco → insere no cursor":"💡 focused card → inserts at cursor","🏷️ <strong>#tag</strong> na busca filtra":"🏷️ <strong>#tag</strong> in search filters","Digite ou 📎 anexe um áudio…":"Type or 📎 attach audio…","Anexar áudio":"Attach audio","Configurar captura de áudio":"Configure audio capture","🎙️ Fonte de áudio para gravar":"🎙️ Audio source for recording","🎤 Só microfone":"🎤 Microphone only","padrão":"default","🔊 Só áudio interno":"🔊 System audio only","🎙️🔊 Microfone + interno":"🎙️🔊 Microphone + system","Gravar (Espaço)":"Record (Space)","API de transcrição":"Transcription API","Local":"Local","GRÁTIS":"FREE","Verificando servidor…":"Checking server…","↻ Verificar":"↻ Check","Modelo Whisper":"Whisper model","Rápido":"Fast","~3× mais veloz · boa qualidade":"~3× faster · good quality","Médio":"Balanced","Equilíbrio velocidade/precisão":"Speed/accuracy balance","Preciso":"Precise","Máxima qualidade":"Maximum quality","🚀 Iniciar servidor Whisper":"🚀 Start Whisper server","Caminho do iniciar_whisper.bat (para iniciar com 1 clique)":"Path to iniciar_whisper.bat (for 1-click start)","🔑 Chaves":"🔑 Keys","📊 Uso":"📊 Usage","tier grátis":"free tier","🟢 Whisper Large v3 Turbo · $0.04/hr · 2.000 req/dia grátis · chave sem expiração = \"No expiry\"":"🟢 Whisper Large v3 Turbo · $0.04/hr · 2,000 req/day free · key never expires = \"No expiry\"","Taxa USD → BRL":"USD → BRL rate","Idioma padrão":"Default language","Auto-detectar":"Auto-detect","Português":"Portuguese","🔮 Diarização — identificar quem fala":"🔮 Diarization — identify who's speaking","Identificar locutores automaticamente":"Automatically identify speakers","Transcrição segmentada por pessoa — Profissional, Paciente, etc.":"Transcription segmented by person — Professional, Patient, etc.","Escolha o provedor de diarização:":"Choose the diarization provider:","🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">Free tier · mais preciso</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">Free tier · more accurate</small>","🤖 OpenAI<br><small style=\"font-weight:400;opacity:0.8\">Mesma chave Whisper</small>":"🤖 OpenAI<br><small style=\"font-weight:400;opacity:0.8\">Same Whisper key</small>","free tier":"free tier","Usa a mesma OpenAI Key já configurada acima. Modelo: gpt-4o-transcribe com diarização. Mesmo preço: $0.006/min.":"Uses the same OpenAI Key already set above. Model: gpt-4o-transcribe with diarization. Same price: $0.006/min.","Chave IA para renomear locutores":"AI key for renaming speakers","Groq (Llama — grátis)":"Groq (Llama — free)","Usada para identificar automaticamente quem é o profissional e quem é o paciente. Custo: ~$0.001/consulta.":"Used to automatically identify who's the professional and who's the patient. Cost: ~$0.001/session.","Manutenção":"Maintenance","Áudios na RAM":"Audio in RAM","Remove players de áudio e desbloqueia o app caso esteja travado.":"Removes audio players and unlocks the app if it's stuck.","🔄 Liberar + Resetar":"🔄 Free up + Reset","Pré-visualizar onboarding":"Preview onboarding","🎙️ Ver tela de microfone":"🎙️ View microphone screen","🟢 Ver setup do Groq":"🟢 View Groq setup","⚠️ Use o <strong>Safari</strong> no iPhone/iPad":"⚠️ Use <strong>Safari</strong> on iPhone/iPad","O Chrome e o Firefox no iOS não permitem acesso ao microfone por restrição da Apple.":"Chrome and Firefox on iOS can't access the microphone due to Apple's restriction.","🍎 Simular aviso iOS":"🍎 Simulate iOS warning","💡 Recomendamos o <strong>Chrome</strong> no Android":"💡 We recommend <strong>Chrome</strong> on Android","Seu navegador atual pode ter limitações com microfone e áudio.":"Your current browser may have limitations with microphone and audio.","🤖 Simular aviso Android":"🤖 Simulate Android warning","Só visualização — não apaga nenhuma configuração.":"Preview only — doesn't delete any setting.","Apagar transcrições":"Delete transcriptions","Apagar só as de hoje":"Delete only today's","Remove todos os cards do dia atual. Fixados são preservados.":"Removes all cards from today. Pinned ones are preserved.","Apagar hoje":"Delete today","Apagar não fixados":"Delete unpinned","Remove tudo exceto os cards com 📌 pin.":"Removes everything except 📌 pinned cards.","Apagar tudo":"Delete all","Remove todos os cards e zera o histórico completamente.":"Removes all cards and fully resets history.","Salvar":"Save","Gerando resumo com IA…":"Generating summary with AI…","📋 Copiar":"📋 Copy","📗 Exportar Obsidian":"📗 Export Obsidian","Iniciar Whisper Local":"Start Local Whisper","Qual modelo deseja usar?<br><span style=\"font-size:11px;color:var(--text4)\">Modelos menores são mais rápidos.</span>":"Which model do you want to use?<br><span style=\"font-size:11px;color:var(--text4)\">Smaller models are faster.</span>","Mais veloz · boa qualidade":"Faster · good quality","recomendado":"recommended","Cancelar — usar outro provedor":"Cancel — use another provider","Bem-vindo ao Vox!":"Welcome to Vox!","Para transcrever suas gravações, o app precisa acessar o microfone do seu computador.<br><br> Clique no botão abaixo e depois em <strong>\"Permitir\"</strong> quando o Chrome perguntar.<br> <span style=\"font-size:12px;color:var(--text4)\">Isso só acontece uma vez.</span>":"To transcribe your recordings, the app needs access to your computer's microphone.<br><br> Click the button below and then <strong>\"Allow\"</strong> when Chrome asks.<br> <span style=\"font-size:12px;color:var(--text4)\">This only happens once.</span>","<strong>Como configurar em 2 minutos:</strong> <ol> <li>Acesse <a href=\"https://www.assemblyai.com\" target=\"_blank\">assemblyai.com</a> e crie uma conta gratuita</li> <li>No dashboard, copie sua API Key</li> <li>Cole no campo acima e salve</li> </ol> <br> 💰 <strong>Custo:</strong> Free tier inclui 100 horas/mês. Pago: ~$0.006/min com diarização inclusa.<br> 🎯 <strong>Ideal para:</strong> consultas (2 locutores), reuniões (até 32 pessoas), entrevistas.":"<strong>How to set up in 2 minutes:</strong> <ol> <li>Go to <a href=\"https://www.assemblyai.com\" target=\"_blank\">assemblyai.com</a> and create a free account</li> <li>In the dashboard, copy your API Key</li> <li>Paste it in the field above and save</li> </ol> <br> 💰 <strong>Cost:</strong> Free tier includes 100 hours/month. Paid: ~$0.006/min with diarization included.<br> 🎯 <strong>Ideal for:</strong> consultations (2 speakers), meetings (up to 32 people), interviews.","🎙️ Ativar microfone":"🎙️ Enable microphone","Configure a transcrição gratuita":"Set up free transcription","O <strong>Groq</strong> oferece transcrição com Whisper completamente gratuita — 2.000 gravações por dia, sem cobrar nada, para sempre. Leva menos de 2 minutos configurar.":"<strong>Groq</strong> offers completely free Whisper transcription — 2,000 recordings a day, no charge, forever. Takes less than 2 minutes to set up.","Crie sua conta gratuita no Groq":"Create your free Groq account","🔗 Abrir console.groq.com/keys":"🔗 Open console.groq.com/keys","Clique em <strong>\"Create API Key\"</strong>, dê qualquer nome e em <strong>Expiration</strong> escolha <strong>\"No expiry\"</strong> — assim ela nunca vai expirar.":"Click <strong>\"Create API Key\"</strong>, give it any name, and under <strong>Expiration</strong> choose <strong>\"No expiry\"</strong> — so it never expires.","Copie a chave que começa com <strong>gsk_…</strong> e cole aqui:":"Copy the key starting with <strong>gsk_…</strong> and paste it here:","🔒 A chave fica salva só no seu dispositivo — nunca sai daqui.":"🔒 The key is saved only on your device — it never leaves here.","🚀 Começar a transcrever!":"🚀 Start transcribing!","Já tenho chave configurada — pular":"I already have a key set up — skip","Profissional":"Professional","Paciente":"Patient","Facilitador":"Facilitator","Participante":"Participant","Entrevistador":"Interviewer","Entrevistado":"Interviewee","Locutor 1":"Speaker 1","Locutor 2":"Speaker 2","🔑 Configure uma chave de IA!":"🔑 Set up an AI key!","✨ Gerando resumo…":"✨ Generating summary…","Resumo IA — ":"AI Summary —","✅ Resumo gerado! Ctrl+Z para desfazer.":"✅ Summary generated! Ctrl+Z to undo.","ℹ️ Esse modelo já está ativo":"ℹ️ This model is already active","✅ Modelo trocado para ":"✅ Model switched to","❌ Servidor não respondeu. Ele está rodando?":"❌ Server didn't respond. Is it running?","💡 Configure o caminho do .bat nas configurações → aba Local":"💡 Set the .bat path in settings → Local tab","Iniciar servidor Whisper":"Start Whisper server","Modelo selecionado:":"Selected model:","Para usar o modo Local, abra o servidor clicando no botão abaixo:":"To use Local mode, open the server by clicking the button below:","🚀 Abrir servidor Whisper":"🚀 Open Whisper server","Após abrir, aguarde aparecer":"After opening, wait for","\"Modelo carregado! Servidor pronto.\"":"\"Model loaded! Server ready.\"","✅ Servidor Whisper pronto!":"✅ Whisper server ready!","✅ Microfone ativado! Pode gravar à vontade.":"✅ Microphone enabled! You can record freely.","❌ Permissão negada. Clique no 🔒 cadeado na barra do navegador → Microfone → Permitir, depois recarregue a página.":"❌ Permission denied. Click the 🔒 lock icon in the browser bar → Microphone → Allow, then reload the page.","🟢 Groq configurado! Pronto para transcrever.":"🟢 Groq configured! Ready to transcribe.","✅ Microfone ativado! Configure um provedor nas ⚙️ Configurações.":"✅ Microphone enabled! Set up a provider in ⚙️ Settings.","O Chrome e o Firefox no iOS não permitem acesso ao microfone por restrição da Apple. Abra este endereço no Safari para gravar.":"Chrome and Firefox on iOS can't access the microphone due to Apple's restriction. Open this address in Safari to record.","Seu navegador atual pode ter limitações com microfone e áudio. O Chrome para Android oferece a melhor experiência.":"Your current browser may have limitations with microphone and audio. Chrome for Android offers the best experience.","OK, entendi":"OK, got it","Nome da nova pasta:":"New folder name:","📁 Pasta \"":"📁 Folder \"","\" criada":"\" created","✏️ Renomear":"✏️ Rename","📄 Exportar pasta":"📄 Export folder","🗑️ Excluir pasta":"🗑️ Delete folder","Limpar pasta":"Clear folder","Limpar a pasta \"":"Clear folder \"","As {n} transcrições voltam para \"Tudo\" (não são apagadas). A pasta continua existindo.":"The {n} transcriptions go back to \"All\" (they're not deleted). The folder itself stays.","ℹ️ Pasta já está vazia":"ℹ️ Folder is already empty","🧹 Pasta \"":"🧹 Folder \"","\" limpa":"\" cleared","Arrastar para mover ou aninhar a pasta":"Drag to move or nest the folder","📁 Pasta movida":"📁 Folder moved","⚠️ Não é possível mover uma pasta para dentro dela mesma":"⚠️ Can't move a folder into itself","Renomear pasta:":"Rename folder:","✏️ Pasta renomeada":"✏️ Folder renamed","Excluir a pasta \"":"Delete folder \"","\"?":"\"?","As {n} transcrições voltam para \"Tudo\" (não são apagadas).":"The {n} transcriptions go back to \"All\" (they're not deleted).","A pasta está vazia.":"The folder is empty.","🗑️ Pasta \"":"🗑️ Folder \"","\" excluída":"\" deleted","⚠️ Selecione ao menos uma pasta":"⚠️ Select at least one folder","⚠️ \"{name}\" está vazia, pulada":"⚠️ \"{name}\" is empty, skipped","Exportado:":"Exported:","Total:":"Total:","Modo:":"Mode:","transcrições":"transcriptions","pasta baixada":"folder downloaded","pastas baixadas":"folders downloaded","⚠️ Pasta vazia":"⚠️ Empty folder","📄 Pasta \"":"📄 Folder \"","\" exportada":"\" exported","📁 Movido para \"":"📁 Moved to \"","pasta":"folder","Tudo":"All","Nenhuma pasta criada":"No folder created","Baixar":"Download","Opções":"Options","resultados":"results","resultado":"result","Histórico":"History","Sessão:":"Session:","itens salvos":"items saved","HISTÓRICO":"HISTORY","notas exportadas!":"notes exported!","Gerando com IA…":"Generating with AI…","Nenhuma transcrição de hoje ainda.":"No transcription today yet.","Sessão":"Session","Configure uma chave de IA nas configurações para gerar resumos.":"Set up an AI key in settings to generate summaries.","Erro:":"Error:","📋 Resumo copiado!":"📋 Summary copied!","📗 Resumo exportado para Obsidian!":"📗 Summary exported to Obsidian!","Grok Key (ativa)":"Grok Key (active)","Groq Key (ativa)":"Groq Key (active)","(sem chave necessária)":"(no key needed)","Verificando…":"Checking…","Servidor online — modelo:":"Server online — model:","Servidor offline.":"Server offline.","Inicie o servidor Whisper local":"Start the local Whisper server","✅ Configurações salvas":"✅ Settings saved","Gravando…":"Recording…","Transcrevendo parte {n}…":"Transcribing part {n}…","Transcrevendo…":"Transcribing…","Erro":"Error","Diarizando…":"Diarizing…","Transcrevendo com diarização…":"Transcribing with diarization…","na RAM":"in RAM","✅ App resetado — pronto para gravar!":"✅ App reset — ready to record!","ℹ️ Nenhuma transcrição para apagar":"ℹ️ No transcription to delete","ℹ️ Nenhum card para apagar neste filtro":"ℹ️ No card to delete in this filter","TUDO ({n} cards)":"ALL ({n} cards)","os {n} cards de hoje":"the {n} cards from today","os {n} cards não fixados":"the {n} unpinned cards","⚠️ Apagar {label}?\n\nEsta ação não pode ser desfeita.":"⚠️ Delete {label}?\n\nThis action cannot be undone.","cards apagados":"cards deleted","card apagado":"card deleted","Gravação/nota mais recente":"Most recent recording/note","{n}ª mais recente":"{n}th most recent","ℹ️ Nada para salvar ainda — grave algo primeiro":"ℹ️ Nothing to save yet — record something first","Backup salvo ({n} {itemword}). Guarde o arquivo .json num lugar seguro.":"Backup saved ({n} {itemword}). Keep the .json file somewhere safe.","item":"item","não é um backup do Vox":"not a Vox backup","Não consegui abrir este arquivo:":"Could not open this file:","ℹ️ Arquivo vazio":"ℹ️ Empty file","📂 Texto importado como novo card!":"📂 Text imported as new card!","Backup restaurado: {n} {itemword}{skipmsg}":"Backup restored: {n} {itemword}{skipmsg}","item adicionado":"item added","itens adicionados":"items added"," ({n} já existiam)":" ({n} already existed)","ℹ️ Tudo desse backup já estava aqui — nada novo a adicionar":"ℹ️ Everything from this backup was already here — nothing new to add","Sugerir tags com IA":"Suggest tags with AI","+ tag IA":"+ AI tag","Extrair todos os termos do texto":"Extract all terms from text","⚙ extrair":"⚙ extract","Falar tags":"Speak tags","🎤 falar":"🎤 speak","tag manual":"manual tag","ℹ️ Card vazio — nada para analisar":"ℹ️ Empty card — nothing to analyze","🔑 Configure uma chave de IA (Groq é grátis) para sugerir tags":"🔑 Set up an AI key (Groq is free) to suggest tags","✨ pensando…":"✨ thinking…","✨ sugestões:":"✨ suggestions:","Dispensar sugestões":"Dismiss suggestions","🔑 Configure uma chave de IA para usar esta função":"🔑 Set up an AI key to use this feature","⚙ analisando texto…":"⚙ analyzing text…","Nenhum termo encontrado.":"No terms found.","todos":"all","nomes":"names","temas":"themes","ações":"actions","siglas":"acronyms","⚙ EXTRAIR TERMOS — {n} encontrados":"⚙ EXTRACT TERMS — {n} found","limpar":"clear","0 selecionados":"0 selected","+ adicionar":"+ add","selecionados":"selected","selecionado":"selected","adicionar":"add","tags":"tags","tag":"tag","✅ Tags adicionadas!":"✅ Tags added!","↩ Desfeito":"↩ Undone","↪ Refeito":"↪ Redone","ℹ️ Aguarde a gravação atual terminar":"ℹ️ Wait for the current recording to finish","⏹ parar":"⏹ stop","gravando — fale as tags que quer adicionar":"recording — say the tags you want to add","parar":"stop","❌ Microfone não disponível.":"❌ Microphone not available.","✨ transcrevendo e extraindo tags…":"✨ transcribing and extracting tags…","ℹ️ Nenhuma tag identificada na fala":"ℹ️ No tag identified in speech","ℹ️ Todas as tags já existem no card":"ℹ️ All tags already exist on the card","🎤 ouvi:":"🎤 heard:","Dispensar":"Dismiss","Desafixar":"Unpin","Fixar no topo":"Pin to top","📌 Card fixado no topo":"📌 Card pinned to top","📌 Card desafixado":"📌 Card unpinned","divisão automática":"automatic split","⚡ Será dividido em partes de ~10 min.":"⚡ It will be split into ~10 min parts.","Clique em <strong>Transcrever</strong> para enviar à API.":"Click <strong>Transcribe</strong> to send to the API.","📎 Arquivo pronto":"📎 File ready","🖥️ Áudio interno só funciona no computador (Chrome/Edge). iPhone/iPad não suportam.":"🖥️ System audio only works on computer (Chrome/Edge). iPhone/iPad don't support it.","Fonte:":"Source:","Só microfone":"Microphone only","Só áudio interno":"System audio only","Microfone + interno":"Microphone + system","O áudio interno (som do sistema/aba) é ótimo para gravar reuniões online — captura sua voz e a dos outros. Ao gravar, o navegador pede o que compartilhar; marque \"compartilhar áudio\".":"System audio (system/tab sound) is great for recording online meetings — captures your voice and others'. When recording, the browser asks what to share; check \"share audio\".","⚠️ Áudio interno indisponível neste aparelho (iPhone, iPad e a maioria dos celulares não suportam). Aqui só funciona o microfone.":"⚠️ System audio unavailable on this device (iPhone, iPad and most phones don't support it). Only the microphone works here.","Nenhum áudio interno capturado. Marque a opção \"compartilhar áudio\" na janela do navegador.":"No system audio captured. Check the \"share audio\" option in the browser window.","🎙️ Gravando…":"🎙️ Recording…","❌ Captura de áudio cancelada ou não permitida.":"❌ Audio capture cancelled or not allowed.","❌ Parte {n} falhou:":"❌ Part {n} failed:","sem custo":"no cost","🔴 gravando ao vivo":"🔴 recording live","🚫 Gravação cancelada.":"🚫 Recording cancelled.","🔑 Configure a chave API!":"🔑 Set up the API key!","✅ Inserido + copiado!":"✅ Inserted + copied!","📋 Copiado para a área de transferência!":"📋 Copied to clipboard!","🔑 Configure a chave AssemblyAI!":"🔑 Set up the AssemblyAI key!","Enviando áudio…":"Sending audio…","Upload falhou:":"Upload failed:","Submit falhou:":"Submit failed:","Processando ({status})…":"Processing ({status})…","Timeout na diarização":"Diarization timeout","Identificando locutores…":"Identifying speakers…","✅ Diarização concluída!":"✅ Diarization complete!","🔑 Configure a chave OpenAI!":"🔑 Set up the OpenAI key!","✅ Transcrição concluída (sem diarização no retorno)":"✅ Transcription complete (no diarization in response)","Locutor 3":"Speaker 3","Locutor 4":"Speaker 4","Locutor {n}":"Speaker {n}","Renomear locutor":"Rename speaker","🗑️ Excluir esta transcrição?":"🗑️ Delete this transcription?","Excluir":"Delete","Arrastar para mesclar com outro card":"Drag to merge with another card","🔮 Diarizado":"🔮 Diarized","📌 Fixado":"📌 Pinned","Alternar roteiro / bolhas":"Toggle script / bubbles","✨ Transformar com IA":"✨ Transform with AI","Gravar aqui":"Record here","Copiar para a área de transferência":"Copy to clipboard","Exportar (copiar / baixar / Markdown)":"Export (copy / download / Markdown)","Modo Foco / Colapsar":"Focus Mode / Collapse","turnos":"turns","pal.":"words","Corretor mínimo":"Minimal proofread","Corrige gramática e clareza, sem mudar o conteúdo":"Fixes grammar and clarity, without changing the content","Visão geral + pontos principais (novo card)":"Overview + main points (new card)","Pontos-chave":"Key points","Lista objetiva de tópicos (novo card)":"Objective list of topics (new card)","Análise crítica e perguntas em aberto (novo card)":"Critical analysis and open questions (new card)","Dois comentando":"Two commenting","Dois comentaristas discutem o texto (novo card)":"Two commentators discuss the text (new card)","Compare original x IA lado a lado, edite antes de salvar":"Compare original vs AI side by side, edit before saving","⤴ Exportar este card":"⤴ Export this card","Cola tudo junto (tags viram #hashtags)":"Pastes everything together (tags become #hashtags)","Sem as tags":"Without the tags","Cópia fiel e crua — cole e pronto":"Faithful, raw copy — paste and done","Relatório formatado com IA (títulos, listas, callouts)":"AI-formatted report (headings, lists, callouts)","📥 Baixar arquivo":"📥 Download file","Texto simples, universal":"Plain, universal text","Para Obsidian, Notion, etc.":"For Obsidian, Notion, etc.","Página formatada":"Formatted page","ℹ️ Card vazio — nada para transformar":"ℹ️ Empty card — nothing to transform","aplicado! Ctrl+Z desfaz.":"applied! Ctrl+Z undoes.","gerado! Ctrl+Z desfaz.":"generated! Ctrl+Z undoes.","✨ Polindo texto…":"✨ Polishing text…","✅ Texto polido!":"✅ Text polished!","Renomear \"{name}\" para:":"Rename \"{name}\" to:","✏️ Renomeado para \"{name}\"":"✏️ Renamed to \"{name}\"","📋 Falas de \"{name}\" copiadas!":"📋 \"{name}\"'s lines copied!","Gravação":"Recording","Arquivo":"File","Texto":"Text","🗑️ Excluir?":"🗑️ Delete?","Edite aqui…":"Edit here…","car.":"chars","🔮 Diarizando":"🔮 Diarizing","Processando":"Processing","Aguardando ~{n} min":"Waiting ~{n} min","📋 Copiado com tags!":"📋 Copied with tags!","📋 Copiado!":"📋 Copied!","📋 Texto copiado!":"📋 Text copied!","ℹ️ Card vazio":"ℹ️ Empty card","📝 Markdown copiado! Cole no Obsidian.":"📝 Markdown copied! Paste in Obsidian.","⚠️ Nenhuma transcrição":"⚠️ No transcription","notas copiadas como Markdown!":"notes copied as Markdown!","🔮 Relatório para o Obsidian":"🔮 Report for Obsidian","A IA está formatando o texto…":"The AI is formatting the text…","🔮 Relatório pronto!":"🔮 Report ready!","⬇ Baixar .md":"⬇ Download .md","Cole no Obsidian (Ctrl/⌘+V) — ou arraste o arquivo baixado pro seu vault.":"Paste in Obsidian (Ctrl/⌘+V) — or drag the downloaded file to your vault.","✓ Copiado!":"✓ Copied!","📋 Copiado! Cole no Obsidian.":"📋 Copied! Paste in Obsidian.","⬇ Cópia bloqueada — baixei o .md pra você":"⬇ Copy blocked — downloaded the .md for you","⬇ Baixado! Arraste pro seu vault do Obsidian.":"⬇ Downloaded! Drag it to your Obsidian vault.","ℹ️ Card vazio — nada para exportar":"ℹ️ Empty card — nothing to export","Tags:":"Tags:","📥 Baixado (.{ext})":"📥 Downloaded (.{ext})","ℹ️ Nenhum card em foco":"ℹ️ No card in focus","ℹ️ Avançado ainda não funciona em cards diarizados":"ℹ️ Advanced doesn't work yet on diarized cards","↪ Voltou pro modo Avançado":"↪ Back in Advanced mode","Desfazer (Ctrl+Z)":"Undo (Ctrl+Z)","Refazer (Ctrl+Shift+Z)":"Redo (Ctrl+Shift+Z)","Esconder teclado":"Hide keyboard","Original":"Original","Editado pela IA":"Edited by AI","Ou digite uma instrução (ex: deixe mais formal)…":"Or type an instruction (e.g. make it more formal)…","Gerar":"Generate","original":"original","editado":"edited","Sair":"Exit","+ Novo card":"+ New card","Substituir original":"Replace original","pronto!":"ready!","ℹ️ Digite uma instrução":"ℹ️ Type an instruction","✨ Aplicando instrução…":"✨ Applying instruction…","✅ Pronto!":"✅ Ready!","✅ Card atualizado! Ctrl+Z desfaz.":"✅ Card updated! Ctrl+Z undoes.","✅ Novo card criado! Ctrl+Z desfaz.":"✅ New card created! Ctrl+Z undoes.","🔗 Cards mesclados e copiados para a área de transferência":"🔗 Cards merged and copied to clipboard","🔗 Cards mesclados!":"🔗 Cards merged!","📗 Nota Obsidian baixada!":"📗 Obsidian note downloaded!","min":"min","⏳ Processando…":"⏳ Processing…","Decodificando áudio…":"Decoding audio…","Transcrevendo {i}/{n}…":"Transcribing {i}/{n}…","notas com frontmatter YAML!":"notes with YAML frontmatter!","Lista":"List","Mostrar/ocultar pastas":"Show/hide folders","Recolher pastas":"Collapse folders","Aparência":"Appearance","🔄 Converter":"🔄 Convert","Resumo pirâmide":"Pyramid summary","Uma frase → parágrafo → tópicos: leia até onde quiser":"One sentence → paragraph → bullets: read as far as you want","Decisões & Ações":"Decisions & Actions","Quem faz o quê e até quando — pronto pra executar":"Who does what by when — ready to execute","Advogado do diabo":"Devil's advocate","Ataques fundamentados + o que blindaria cada ponto":"Grounded attacks + what would shield each point","Mesa-redonda":"Round table","Debate com especialistas escolhidos pelo tema do texto":"A debate with experts cast for this text's topic","Perguntas socráticas":"Socratic questions","As perguntas que o texto levanta e não responde":"The questions the text raises but doesn't answer","O que faltou":"What's missing","Dados sem fonte, pontas soltas e riscos ignorados":"Unsourced data, loose ends and ignored risks","Espelho":"Mirror","Como você pensa: padrões, contradições e convicções":"How you think: patterns, contradictions and convictions","Virar e-mail":"Turn into email","Sua fala vira um e-mail pronto pra enviar":"Your speech becomes a ready-to-send email","Explicar simples":"Explain simply","Sem jargão, com analogias — pra qualquer pessoa entender":"No jargon, with analogies — anyone can understand","Virar publicação":"Turn into a post","Post ou artigo curto com a sua voz preservada":"A post or short article keeping your voice","Pitch de 30s":"30-second pitch","A ideia em 30 segundos + as perguntas difíceis":"The idea in 30 seconds + the tough questions","Flashcards":"Flashcards","Perguntas e respostas pra estudar o conteúdo":"Q&A cards to study the content","Nota SOAP":"SOAP note","Consulta organizada no padrão clínico S/O/A/P":"Visit organized in the clinical S/O/A/P standard","✨ Transformar:":"✨ Transform:","mais":"more","Usar como padrão":"Set as default","agora é sua lente padrão":"is now your default lens","⭐ Lente padrão removida":"⭐ Default lens removed","Compartilhar resultado":"Share result","WhatsApp, e-mail… com a assinatura do Vox":"WhatsApp, email… with the Vox signature","feito com Vox":"made with Vox","📋 Copiado com assinatura do Vox!":"📋 Copied with Vox signature!","demo":"demo","👋 Bem-vindo ao Vox":"👋 Welcome to Vox","Falar é mais rápido que digitar — a maioria das pessoas fala três vezes mais palavras por minuto do que digita. Mas a fala se perde no ar. A ideia deste app é simples: você fala, o texto aparece, e aí começa a mágica — este mesmo texto pode virar um resumo, uma mesa-redonda entre especialistas, um e-mail pronto, flashcards de estudo. Toque nos botões coloridos aqui embaixo e veja com seus próprios olhos.":"Speaking is faster than typing — most people speak three times more words per minute than they type. But speech vanishes into thin air. The idea of this app is simple: you speak, the text appears, and then the magic starts — this very text can become a summary, a round table between experts, a ready-to-send email, study flashcards. Tap the colored buttons below and see it with your own eyes.",
+"Grátis pra começar":"Free to start","Ganha 5 milhões de tokens grátis ao criar conta; depois disso, um dos mais baratos do mercado.":"Get 5 million free tokens when you sign up; after that, one of the cheapest on the market.","Ganha 1 milhão de tokens grátis ao criar conta. Endereço internacional (fora da China).":"Get 1 million free tokens when you sign up. International address (outside China).","Grátis":"Free","O modelo GLM-4.7-Flash não custa nada, sem limite de tempo — só criar conta.":"The GLM-4.7-Flash model costs nothing, with no time limit — just create an account.","Pago":"Paid","Não tem nível grátis — precisa recarregar ao menos US$1 pra começar. Ainda assim, bem barato.":"No free tier — needs at least a $1 top-up to start. Still very cheap though.","Exemplos prontos — clique pra preencher sozinho":"Ready-made examples — click to fill in automatically","Local · Grátis":"Local · Free","Roda 100% no seu computador — nenhum dado sai da sua máquina nem passa por servidor de terceiros (o cuidado que LGPD/GDPR pedem). Precisa de um PC ou Mac razoável (mín. 16GB de RAM — hoje já é o padrão até fora do Brasil). Não funciona em celular.":"Runs 100% on your own computer — no data leaves your machine or passes through third-party servers (the kind of care LGPD/GDPR call for). Needs a reasonably capable PC or Mac (16GB+ RAM — that's already the norm outside Brazil today). Doesn't work on mobile.","Usar":"Use","Grátis c/ limite":"Free w/ limit","Só o modelo marcado <code>:free</code> não custa nada (até 50 usos/dia). Precisa criar conta grátis.":"Only the model marked <code>:free</code> costs nothing (up to 50 uses/day). Needs a free account.","Sem cartão de crédito. Atenção: no nível grátis, o Google pode usar o texto enviado pra melhorar os produtos dele.":"No credit card. Heads up: on the free tier, Google may use the text you send to improve its products.","Já configurada":"Already set up","Reaproveita a mesma chave que você já usa na aba Transcrição — não precisa digitar de novo. Usa o Grok 4.5, o modelo mais forte da xAI.":"Reuses the same key you already use in the Transcription tab — no need to type it again. Uses Grok 4.5, xAI's strongest model.","🟠 Preenchido com a chave do Grok que você já tem — testando…":"🟠 Filled in with the Grok key you already have — testing…","🖥️ Preenchido! Testando conexão local…":"🖥️ Filled in! Testing local connection…","Cole sua chave nesse campo e clique em \"Testar conexão\"":"Paste your key in this field and click \"Test connection\"","{a} falhou — usamos {b} como alternativa.":"{a} failed — we used {b} instead.","Não conseguimos falar com {p} agora — confira se o serviço está no ar (ou, se for local, se ele está ligado) e sua conexão.":"We couldn't reach {p} right now — check whether the service is up (or, if it's local, whether it's running) and your connection.","A chave da {p} não foi aceita — confira em Configurações e toque em \"Testar conexão\".":"The {p} key wasn't accepted — check it in Settings and tap \"Test connection\".","Os créditos da {p} parecem ter acabado — confira sua conta ou troque de provedor em Configurações.":"{p}'s credits seem to have run out — check your account or switch providers in Settings.","{p} não respondeu corretamente agora. Toque em \"Testar conexão\" nas Configurações.":"{p} didn't respond correctly this time. Tap \"Test connection\" in Settings.","Corretor\nCorrige gramática e clareza, sem mudar o conteúdo":"Corrector\nFixes grammar and clarity, without changing the content","Resumo\nUma frase → parágrafo → tópicos: leia até onde quiser":"Summary\nOne sentence → paragraph → bullet points: read as far as you like","Decisões & Ações\nQuem faz o quê e até quando — pronto pra executar":"Decisions & Actions\nWho does what and by when — ready to execute","Advogado do diabo\nAtaques fundamentados + o que blindaria cada ponto":"Devil's advocate\nGrounded attacks + what would shield each point","Mesa-redonda\nDebate com especialistas escolhidos pelo tema do texto":"Round table\nDebate with experts chosen based on the text's topic","Na hora de restaurar: o arquivo baixado se chama <strong>vox_chaves_backup.json</strong> e fica na pasta <strong>Downloads</strong> do seu computador (ou onde seu navegador costuma salvar downloads). Clique em \"Restaurar\", escolha esse arquivo na janela que abrir, e digite a senha que você criou quando baixou.":"When restoring: the downloaded file is called <strong>vox_chaves_backup.json</strong> and lives in your computer's <strong>Downloads</strong> folder (or wherever your browser usually saves downloads). Click \"Restore\", pick that file in the window that opens, and type the password you created when you downloaded it.","📉 Resumo":"📉 Summary","Corta e condensa o que foi dito":"Cuts and condenses what was said","🗂️ Estrutura":"🗂️ Structure","Reorganiza tudo, sem cortar nada":"Reorganizes everything, without cutting anything","🎯 Extração":"🎯 Extraction","Puxa só um recorte específico, descarta o resto":"Pulls out one specific slice, discards the rest","💡 Gerar & desafiar":"💡 Generate & challenge","Cria algo novo em cima do texto: análise, perguntas, debate":"Creates something new from the text: analysis, questions, debate","Muda o formato para outro público ou uso":"Changes the format for a different audience or use","Nota para Obsidian":"Note for Obsidian","A mesma fala, organizada em títulos, negrito e listas":"The same speech, organized into headings, bold and lists","Ver em Markdown (negrito, títulos, listas)":"View as Markdown (bold, headings, lists)","Isto é uma pré-visualização em <strong>Markdown</strong> — o formato de texto usado por apps como o <strong>Obsidian</strong> pra deixar notas com títulos, negrito e listas de verdade. É um recurso mais avançado, pra quem curte configurar assim. Na prática: <code>**palavra**</code> vira <strong>palavra</strong> (negrito de verdade), <code># Título</code> vira um título grande. Se sua fala não tiver esses sinais, fica parecido com o original — não é erro. Não muda nada do que você escreveu, é só outro jeito de olhar. <strong>Quer ver na prática?</strong> Use ✨ Transformar com IA → Nota para Obsidian, e depois toque neste mesmo 👁 no card que aparecer. Toque no 👁 de novo pra voltar a editar.":"This is a <strong>Markdown</strong> preview — the text format used by apps like <strong>Obsidian</strong> to give notes real headings, bold and lists. It's a more advanced feature, for people who like to set things up this way. In practice: <code>**word**</code> becomes <strong>word</strong> (real bold), <code># Title</code> becomes a big heading. If your speech doesn't have these marks, it'll look like the original — that's not a mistake. It doesn't change what you wrote, it's just a different way to look at it. <strong>Want to see it in action?</strong> Use ✨ Transform with AI → Note for Obsidian, then tap this same 👁 on the card that shows up. Tap 👁 again to go back to editing.","Voltar a editar":"Back to editing","ℹ️ Card vazio — nada para visualizar":"ℹ️ Empty card — nothing to preview","❌ Não foi possível carregar o visualizador.":"❌ Couldn't load the previewer.","Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summary","Exportar":"Export","Backup — guardar e restaurar":"Backup — save and restore","Salvar backup":"Save backup","Restaurar backup":"Restore backup","Traga suas notas de volta com o seu arquivo de backup.":"Bring your notes back with your backup file.","Já usava o Vox?":"Used Vox before?","Este é o backup das suas notas — restaurando as notas.":"This is your notes backup — restoring the notes.","Este é o backup das suas chaves — restaurando as chaves.":"This is your keys backup — restoring the keys.","Este arquivo está vazio (0 KB). Ele não guardou nada — gere o backup de novo.":"This file is empty (0 KB). It saved nothing — make the backup again.","Restaurando o backup… com muitas notas pode levar cerca de um minuto. Não feche esta aba.":"Restoring the backup… with many notes this can take about a minute. Do not close this tab.","As chaves de API não vêm no backup das notas. Restaure o arquivo de chaves em Configurações, na aba Geral.":"API keys are not in the notes backup. Restore the keys file in Settings, on the General tab.","notas adicionadas":"notes added","nota adicionada":"note added","Baixar chaves antes":"Download keys first","O backup das notas não leva as chaves de API. Se for zerar, baixe também as chaves antes.":"The notes backup does not include your API keys. If you are going to reset, download the keys too, first.","Zerar":"Reset","Cópia extra ativa nesta pasta.":"Extra copy active in this folder.","Baixar chaves":"Download keys","Restaurar chaves":"Restore keys","Pegar do cofre":"Get from the vault","Restaurar do arquivo":"Restore from file","Levar para outros programas":"Take to other apps","Copiar TUDO como Markdown":"Copy ALL as Markdown","Todas as transcrições (.txt)":"All transcriptions (.txt)","Todas (.md)":"All (.md)","Obsidian vault (.md + YAML)":"Obsidian vault (.md + YAML)","Só hoje (.txt)":"Today only (.txt)","Configurações":"Settings","Modelo local":"Local model","⚡ Rápido":"⚡ Fast","~3x mais rápido · boa qualidade":"~3x faster · good quality","⚖️ Médio":"⚖️ Balanced","equilíbrio velocidade/precisão":"speed/accuracy balance","🎯 Preciso":"🎯 Precise","máxima qualidade":"maximum quality","Tema":"Theme","☀️ Claro":"☀️ Light","🌙 Escuro":"🌙 Dark","Cor":"Color","Esmeralda":"Emerald","Âmbar":"Amber","Índigo":"Indigo","Petróleo":"Teal","Pronto":"Ready","itens":"items","economizados":"saved","Tamanho do texto":"Text size","Mostrar/ocultar pastas":"Show/hide folders","Pastas":"Folders","Texto, #tag ou @locutor…":"Text, #tag or @speaker…","Nenhuma transcrição ainda":"No transcription yet","Escolha um modo de sessão, grave ou anexe um arquivo.<br>Use <strong>Espaço</strong> para gravar rapidamente.":"Choose a session mode, record or attach a file.<br>Use <strong>Space</strong> to record quickly.","Corretor":"Proofread","Resumo":"Summary","Pontos":"Key points","Contraponto":"Counterpoint","Diálogo":"Dialogue","Avançado":"Advanced","Copiar texto + tags":"Copy text + tags","Copiar só o texto":"Copy text only","Copiar como Markdown":"Copy as Markdown","Copiar para Obsidian":"Copy for Obsidian","Baixar TXT":"Download TXT","Baixar Markdown":"Download Markdown","Baixar HTML":"Download HTML","Gravar":"Record","Fixar":"Pin","← Anterior":"← Previous","Próximo →":"Next →","✕ Sair do Foco":"✕ Exit Focus","Baixar pastas":"Download folders","Configurar download":"Configure download","Recolher":"Collapse","Formato do download":"Download format","Nova pasta":"New folder","App parece travado. Alguma gravação ou transcrição não finalizou.":"The app seems stuck. Some recording or transcription didn't finish.","Resetar agora":"Reset now","▶ Transcrever":"▶ Transcribe","Cancelar":"Cancel","Ative a diarização para identificar quem fala":"Enable speaker diarization to identify who's talking","Separa automaticamente as vozes: Profissional, Paciente, etc. Gratuito no AssemblyAI (100h/mês, sem cartão).":"Automatically separates voices: Professional, Patient, etc. Free on AssemblyAI (100h/month, no card).","⚙️ Configurar agora":"⚙️ Configure now","Fechar":"Close","🩺 Consulta":"🩺 Consultation","👥 Reunião":"👥 Meeting","🎙️ Entrevista":"🎙️ Interview","📝 Livre":"📝 Free-form","Nome da sessão (opcional)":"Session name (optional)","🔮 Diarização ativa":"🔮 Diarization active","<kbd>Espaço</kbd> gravar / parar":"<kbd>Space</kbd> record / stop","💡 card em foco → insere no cursor":"💡 focused card → inserts at cursor","🏷️ <strong>#tag</strong> na busca filtra":"🏷️ <strong>#tag</strong> in search filters","Digite ou 📎 anexe um áudio…":"Type or 📎 attach audio…","Anexar áudio":"Attach audio","Configurar captura de áudio":"Configure audio capture","🎙️ Fonte de áudio para gravar":"🎙️ Audio source for recording","🎤 Só microfone":"🎤 Microphone only","padrão":"default","🔊 Só áudio interno":"🔊 System audio only","🎙️🔊 Microfone + interno":"🎙️🔊 Microphone + system","Gravar (Espaço)":"Record (Space)","API de transcrição":"Transcription API","Local":"Local","GRÁTIS":"FREE","Verificando servidor…":"Checking server…","↻ Verificar":"↻ Check","Modelo Whisper":"Whisper model","Rápido":"Fast","~3× mais veloz · boa qualidade":"~3× faster · good quality","Médio":"Balanced","Equilíbrio velocidade/precisão":"Speed/accuracy balance","Preciso":"Precise","Máxima qualidade":"Maximum quality","🚀 Iniciar servidor Whisper":"🚀 Start Whisper server","Caminho do iniciar_whisper.bat (para iniciar com 1 clique)":"Path to iniciar_whisper.bat (for 1-click start)","🔑 Chaves":"🔑 Keys","📊 Uso":"📊 Usage","tier grátis":"free tier","🟢 Whisper Large v3 Turbo · $0.04/hr · 2.000 req/dia grátis · chave sem expiração = \"No expiry\"":"🟢 Whisper Large v3 Turbo · $0.04/hr · 2,000 req/day free · key never expires = \"No expiry\"","Taxa USD → BRL":"USD → BRL rate","Idioma padrão":"Default language","Auto-detectar":"Auto-detect","Português":"Portuguese","🔮 Diarização — identificar quem fala":"🔮 Diarization — identify who's speaking","Identificar locutores automaticamente":"Automatically identify speakers","Transcrição segmentada por pessoa — Profissional, Paciente, etc.":"Transcription segmented by person — Professional, Patient, etc.","Escolha o provedor de diarização:":"Choose the diarization provider:","🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">Free tier · mais preciso</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">Free tier · more accurate</small>","🤖 OpenAI<br><small style=\"font-weight:400;opacity:0.8\">Mesma chave Whisper</small>":"🤖 OpenAI<br><small style=\"font-weight:400;opacity:0.8\">Same Whisper key</small>","free tier":"free tier","Usa a mesma OpenAI Key já configurada acima. Modelo: gpt-4o-transcribe com diarização. Mesmo preço: $0.006/min.":"Uses the same OpenAI Key already set above. Model: gpt-4o-transcribe with diarization. Same price: $0.006/min.","Chave IA para renomear locutores":"AI key for renaming speakers","Groq (Llama — grátis)":"Groq (Llama — free)","Usada para identificar automaticamente quem é o profissional e quem é o paciente. Custo: ~$0.001/consulta.":"Used to automatically identify who's the professional and who's the patient. Cost: ~$0.001/session.","Manutenção":"Maintenance","Áudios na RAM":"Audio in RAM","Remove players de áudio e desbloqueia o app caso esteja travado.":"Removes audio players and unlocks the app if it's stuck.","🔄 Liberar + Resetar":"🔄 Free up + Reset","Pré-visualizar onboarding":"Preview onboarding","🎙️ Ver tela de microfone":"🎙️ View microphone screen","🟢 Ver setup do Groq":"🟢 View Groq setup","⚠️ Use o <strong>Safari</strong> no iPhone/iPad":"⚠️ Use <strong>Safari</strong> on iPhone/iPad","O Chrome e o Firefox no iOS não permitem acesso ao microfone por restrição da Apple.":"Chrome and Firefox on iOS can't access the microphone due to Apple's restriction.","🍎 Simular aviso iOS":"🍎 Simulate iOS warning","💡 Recomendamos o <strong>Chrome</strong> no Android":"💡 We recommend <strong>Chrome</strong> on Android","Seu navegador atual pode ter limitações com microfone e áudio.":"Your current browser may have limitations with microphone and audio.","🤖 Simular aviso Android":"🤖 Simulate Android warning","Só visualização — não apaga nenhuma configuração.":"Preview only — doesn't delete any setting.","Apagar transcrições":"Delete transcriptions","Apagar só as de hoje":"Delete only today's","Remove todos os cards do dia atual. Fixados são preservados.":"Removes all cards from today. Pinned ones are preserved.","Apagar hoje":"Delete today","Apagar não fixados":"Delete unpinned","Remove tudo exceto os cards com 📌 pin.":"Removes everything except 📌 pinned cards.","Apagar tudo":"Delete all","Remove todos os cards e zera o histórico completamente.":"Removes all cards and fully resets history.","Salvar":"Save","Gerando resumo com IA…":"Generating summary with AI…","📋 Copiar":"📋 Copy","📗 Exportar Obsidian":"📗 Export Obsidian","Iniciar Whisper Local":"Start Local Whisper","Qual modelo deseja usar?<br><span style=\"font-size:11px;color:var(--text4)\">Modelos menores são mais rápidos.</span>":"Which model do you want to use?<br><span style=\"font-size:11px;color:var(--text4)\">Smaller models are faster.</span>","Mais veloz · boa qualidade":"Faster · good quality","recomendado":"recommended","Cancelar — usar outro provedor":"Cancel — use another provider","Bem-vindo ao Vox!":"Welcome to Vox!","Para transcrever suas gravações, o app precisa acessar o microfone do seu computador.<br><br> Clique no botão abaixo e depois em <strong>\"Permitir\"</strong> quando o Chrome perguntar.<br> <span style=\"font-size:12px;color:var(--text4)\">Isso só acontece uma vez.</span>":"To transcribe your recordings, the app needs access to your computer's microphone.<br><br> Click the button below and then <strong>\"Allow\"</strong> when Chrome asks.<br> <span style=\"font-size:12px;color:var(--text4)\">This only happens once.</span>","<strong>Como configurar em 2 minutos:</strong> <ol> <li>Acesse <a href=\"https://www.assemblyai.com\" target=\"_blank\">assemblyai.com</a> e crie uma conta gratuita</li> <li>No dashboard, copie sua API Key</li> <li>Cole no campo acima e salve</li> </ol> <br> 💰 <strong>Custo:</strong> Free tier inclui 100 horas/mês. Pago: ~$0.006/min com diarização inclusa.<br> 🎯 <strong>Ideal para:</strong> consultas (2 locutores), reuniões (até 32 pessoas), entrevistas.":"<strong>How to set up in 2 minutes:</strong> <ol> <li>Go to <a href=\"https://www.assemblyai.com\" target=\"_blank\">assemblyai.com</a> and create a free account</li> <li>In the dashboard, copy your API Key</li> <li>Paste it in the field above and save</li> </ol> <br> 💰 <strong>Cost:</strong> Free tier includes 100 hours/month. Paid: ~$0.006/min with diarization included.<br> 🎯 <strong>Ideal for:</strong> consultations (2 speakers), meetings (up to 32 people), interviews.","🎙️ Ativar microfone":"🎙️ Enable microphone","Configure a transcrição gratuita":"Set up free transcription","O <strong>Groq</strong> oferece transcrição com Whisper completamente gratuita — 2.000 gravações por dia, sem cobrar nada, para sempre. Leva menos de 2 minutos configurar.":"<strong>Groq</strong> offers completely free Whisper transcription — 2,000 recordings a day, no charge, forever. Takes less than 2 minutes to set up.","Crie sua conta gratuita no Groq":"Create your free Groq account","🔗 Abrir console.groq.com/keys":"🔗 Open console.groq.com/keys","Clique em <strong>\"Create API Key\"</strong>, dê qualquer nome e em <strong>Expiration</strong> escolha <strong>\"No expiry\"</strong> — assim ela nunca vai expirar.":"Click <strong>\"Create API Key\"</strong>, give it any name, and under <strong>Expiration</strong> choose <strong>\"No expiry\"</strong> — so it never expires.","Copie a chave que começa com <strong>gsk_…</strong> e cole aqui:":"Copy the key starting with <strong>gsk_…</strong> and paste it here:","🔒 A chave fica salva só no seu dispositivo — nunca sai daqui.":"🔒 The key is saved only on your device — it never leaves here.","🚀 Começar a transcrever!":"🚀 Start transcribing!","Já tenho chave configurada — pular":"I already have a key set up — skip","Profissional":"Professional","Paciente":"Patient","Facilitador":"Facilitator","Participante":"Participant","Entrevistador":"Interviewer","Entrevistado":"Interviewee","Locutor 1":"Speaker 1","Locutor 2":"Speaker 2","🔑 Configure uma chave de IA!":"🔑 Set up an AI key!","✨ Gerando resumo…":"✨ Generating summary…","Resumo IA — ":"AI Summary —","✅ Resumo gerado! Ctrl+Z para desfazer.":"✅ Summary generated! Ctrl+Z to undo.","ℹ️ Esse modelo já está ativo":"ℹ️ This model is already active","✅ Modelo trocado para ":"✅ Model switched to","❌ Servidor não respondeu. Ele está rodando?":"❌ Server didn't respond. Is it running?","💡 Configure o caminho do .bat nas configurações → aba Local":"💡 Set the .bat path in settings → Local tab","Iniciar servidor Whisper":"Start Whisper server","Modelo selecionado:":"Selected model:","Para usar o modo Local, abra o servidor clicando no botão abaixo:":"To use Local mode, open the server by clicking the button below:","🚀 Abrir servidor Whisper":"🚀 Open Whisper server","Após abrir, aguarde aparecer":"After opening, wait for","\"Modelo carregado! Servidor pronto.\"":"\"Model loaded! Server ready.\"","✅ Servidor Whisper pronto!":"✅ Whisper server ready!","✅ Microfone ativado! Pode gravar à vontade.":"✅ Microphone enabled! You can record freely.","❌ Permissão negada. Clique no 🔒 cadeado na barra do navegador → Microfone → Permitir, depois recarregue a página.":"❌ Permission denied. Click the 🔒 lock icon in the browser bar → Microphone → Allow, then reload the page.","🟢 Groq configurado! Pronto para transcrever.":"🟢 Groq configured! Ready to transcribe.","✅ Microfone ativado! Configure um provedor nas ⚙️ Configurações.":"✅ Microphone enabled! Set up a provider in ⚙️ Settings.","O Chrome e o Firefox no iOS não permitem acesso ao microfone por restrição da Apple. Abra este endereço no Safari para gravar.":"Chrome and Firefox on iOS can't access the microphone due to Apple's restriction. Open this address in Safari to record.","Seu navegador atual pode ter limitações com microfone e áudio. O Chrome para Android oferece a melhor experiência.":"Your current browser may have limitations with microphone and audio. Chrome for Android offers the best experience.","OK, entendi":"OK, got it","Nome da nova pasta:":"New folder name:","📁 Pasta \"":"📁 Folder \"","\" criada":"\" created","✏️ Renomear":"✏️ Rename","📄 Exportar pasta":"📄 Export folder","🗑️ Excluir pasta":"🗑️ Delete folder","Limpar pasta":"Clear folder","Limpar a pasta \"":"Clear folder \"","As {n} transcrições voltam para \"Tudo\" (não são apagadas). A pasta continua existindo.":"The {n} transcriptions go back to \"All\" (they're not deleted). The folder itself stays.","ℹ️ Pasta já está vazia":"ℹ️ Folder is already empty","🧹 Pasta \"":"🧹 Folder \"","\" limpa":"\" cleared","Arrastar para mover ou aninhar a pasta":"Drag to move or nest the folder","📁 Pasta movida":"📁 Folder moved","⚠️ Não é possível mover uma pasta para dentro dela mesma":"⚠️ Can't move a folder into itself","Renomear pasta:":"Rename folder:","✏️ Pasta renomeada":"✏️ Folder renamed","Excluir a pasta \"":"Delete folder \"","\"?":"\"?","As {n} transcrições voltam para \"Tudo\" (não são apagadas).":"The {n} transcriptions go back to \"All\" (they're not deleted).","A pasta está vazia.":"The folder is empty.","🗑️ Pasta \"":"🗑️ Folder \"","\" excluída":"\" deleted","⚠️ Selecione ao menos uma pasta":"⚠️ Select at least one folder","⚠️ \"{name}\" está vazia, pulada":"⚠️ \"{name}\" is empty, skipped","Exportado:":"Exported:","Total:":"Total:","Modo:":"Mode:","transcrições":"transcriptions","pasta baixada":"folder downloaded","pastas baixadas":"folders downloaded","⚠️ Pasta vazia":"⚠️ Empty folder","📄 Pasta \"":"📄 Folder \"","\" exportada":"\" exported","📁 Movido para \"":"📁 Moved to \"","pasta":"folder","Tudo":"All","Nenhuma pasta criada":"No folder created","Baixar":"Download","Opções":"Options","resultados":"results","resultado":"result","Histórico":"History","Sessão:":"Session:","itens salvos":"items saved","HISTÓRICO":"HISTORY","notas exportadas!":"notes exported!","Gerando com IA…":"Generating with AI…","Nenhuma transcrição de hoje ainda.":"No transcription today yet.","Sessão":"Session","Configure uma chave de IA nas configurações para gerar resumos.":"Set up an AI key in settings to generate summaries.","Erro:":"Error:","📋 Resumo copiado!":"📋 Summary copied!","📗 Resumo exportado para Obsidian!":"📗 Summary exported to Obsidian!","Grok Key (ativa)":"Grok Key (active)","Groq Key (ativa)":"Groq Key (active)","(sem chave necessária)":"(no key needed)","Verificando…":"Checking…","Servidor online — modelo:":"Server online — model:","Servidor offline.":"Server offline.","Inicie o servidor Whisper local":"Start the local Whisper server","✅ Configurações salvas":"✅ Settings saved","Gravando…":"Recording…","Transcrevendo parte {n}…":"Transcribing part {n}…","Transcrevendo…":"Transcribing…","Erro":"Error","Diarizando…":"Diarizing…","Transcrevendo com diarização…":"Transcribing with diarization…","na RAM":"in RAM","✅ App resetado — pronto para gravar!":"✅ App reset — ready to record!","ℹ️ Nenhuma transcrição para apagar":"ℹ️ No transcription to delete","ℹ️ Nenhum card para apagar neste filtro":"ℹ️ No card to delete in this filter","TUDO ({n} cards)":"ALL ({n} cards)","os {n} cards de hoje":"the {n} cards from today","os {n} cards não fixados":"the {n} unpinned cards","⚠️ Apagar {label}?\n\nEsta ação não pode ser desfeita.":"⚠️ Delete {label}?\n\nThis action cannot be undone.","cards apagados":"cards deleted","card apagado":"card deleted","Gravação/nota mais recente":"Most recent recording/note","{n}ª mais recente":"{n}th most recent","ℹ️ Nada para salvar ainda — grave algo primeiro":"ℹ️ Nothing to save yet — record something first","Backup salvo ({n} {itemword}). Guarde o arquivo .json num lugar seguro.":"Backup saved ({n} {itemword}). Keep the .json file somewhere safe.","item":"item","não é um backup do Vox":"not a Vox backup","Não consegui abrir este arquivo:":"Could not open this file:","ℹ️ Arquivo vazio":"ℹ️ Empty file","📂 Texto importado como novo card!":"📂 Text imported as new card!","Backup restaurado: {n} {itemword}{skipmsg}":"Backup restored: {n} {itemword}{skipmsg}","item adicionado":"item added","itens adicionados":"items added"," ({n} já existiam)":" ({n} already existed)","ℹ️ Tudo desse backup já estava aqui — nada novo a adicionar":"ℹ️ Everything from this backup was already here — nothing new to add","Sugerir tags com IA":"Suggest tags with AI","+ tag IA":"+ AI tag","Extrair todos os termos do texto":"Extract all terms from text","⚙ extrair":"⚙ extract","Falar tags":"Speak tags","🎤 falar":"🎤 speak","tag manual":"manual tag","ℹ️ Card vazio — nada para analisar":"ℹ️ Empty card — nothing to analyze","🔑 Configure uma chave de IA (Groq é grátis) para sugerir tags":"🔑 Set up an AI key (Groq is free) to suggest tags","✨ pensando…":"✨ thinking…","✨ sugestões:":"✨ suggestions:","Dispensar sugestões":"Dismiss suggestions","🔑 Configure uma chave de IA para usar esta função":"🔑 Set up an AI key to use this feature","⚙ analisando texto…":"⚙ analyzing text…","Nenhum termo encontrado.":"No terms found.","todos":"all","nomes":"names","temas":"themes","ações":"actions","siglas":"acronyms","⚙ EXTRAIR TERMOS — {n} encontrados":"⚙ EXTRACT TERMS — {n} found","limpar":"clear","0 selecionados":"0 selected","+ adicionar":"+ add","selecionados":"selected","selecionado":"selected","adicionar":"add","tags":"tags","tag":"tag","✅ Tags adicionadas!":"✅ Tags added!","↩ Desfeito":"↩ Undone","↪ Refeito":"↪ Redone","ℹ️ Aguarde a gravação atual terminar":"ℹ️ Wait for the current recording to finish","⏹ parar":"⏹ stop","gravando — fale as tags que quer adicionar":"recording — say the tags you want to add","parar":"stop","❌ Microfone não disponível.":"❌ Microphone not available.","✨ transcrevendo e extraindo tags…":"✨ transcribing and extracting tags…","ℹ️ Nenhuma tag identificada na fala":"ℹ️ No tag identified in speech","ℹ️ Todas as tags já existem no card":"ℹ️ All tags already exist on the card","🎤 ouvi:":"🎤 heard:","Dispensar":"Dismiss","Desafixar":"Unpin","Fixar no topo":"Pin to top","📌 Card fixado no topo":"📌 Card pinned to top","📌 Card desafixado":"📌 Card unpinned","divisão automática":"automatic split","⚡ Será dividido em partes de ~10 min.":"⚡ It will be split into ~10 min parts.","Clique em <strong>Transcrever</strong> para enviar à API.":"Click <strong>Transcribe</strong> to send to the API.","📎 Arquivo pronto":"📎 File ready","🖥️ Áudio interno só funciona no computador (Chrome/Edge). iPhone/iPad não suportam.":"🖥️ System audio only works on computer (Chrome/Edge). iPhone/iPad don't support it.","Fonte:":"Source:","Só microfone":"Microphone only","Só áudio interno":"System audio only","Microfone + interno":"Microphone + system","O áudio interno (som do sistema/aba) é ótimo para gravar reuniões online — captura sua voz e a dos outros. Ao gravar, o navegador pede o que compartilhar; marque \"compartilhar áudio\".":"System audio (system/tab sound) is great for recording online meetings — captures your voice and others'. When recording, the browser asks what to share; check \"share audio\".","⚠️ Áudio interno indisponível neste aparelho (iPhone, iPad e a maioria dos celulares não suportam). Aqui só funciona o microfone.":"⚠️ System audio unavailable on this device (iPhone, iPad and most phones don't support it). Only the microphone works here.","Nenhum áudio interno capturado. Marque a opção \"compartilhar áudio\" na janela do navegador.":"No system audio captured. Check the \"share audio\" option in the browser window.","🎙️ Gravando…":"🎙️ Recording…","❌ Captura de áudio cancelada ou não permitida.":"❌ Audio capture cancelled or not allowed.","❌ Parte {n} falhou:":"❌ Part {n} failed:","sem custo":"no cost","🔴 gravando ao vivo":"🔴 recording live","🚫 Gravação cancelada.":"🚫 Recording cancelled.","🔑 Configure a chave API!":"🔑 Set up the API key!","✅ Inserido + copiado!":"✅ Inserted + copied!","📋 Copiado para a área de transferência!":"📋 Copied to clipboard!","🔑 Configure a chave AssemblyAI!":"🔑 Set up the AssemblyAI key!","Enviando áudio…":"Sending audio…","Upload falhou:":"Upload failed:","Submit falhou:":"Submit failed:","Processando ({status})…":"Processing ({status})…","Timeout na diarização":"Diarization timeout","Identificando locutores…":"Identifying speakers…","✅ Diarização concluída!":"✅ Diarization complete!","🔑 Configure a chave OpenAI!":"🔑 Set up the OpenAI key!","✅ Transcrição concluída (sem diarização no retorno)":"✅ Transcription complete (no diarization in response)","Locutor 3":"Speaker 3","Locutor 4":"Speaker 4","Locutor {n}":"Speaker {n}","Renomear locutor":"Rename speaker","🗑️ Excluir esta transcrição?":"🗑️ Delete this transcription?","Excluir":"Delete","Arrastar para mesclar com outro card":"Drag to merge with another card","🔮 Diarizado":"🔮 Diarized","📌 Fixado":"📌 Pinned","Alternar roteiro / bolhas":"Toggle script / bubbles","✨ Transformar com IA":"✨ Transform with AI","Gravar aqui":"Record here","Copiar para a área de transferência":"Copy to clipboard","Exportar (copiar / baixar / Markdown)":"Export (copy / download / Markdown)","Modo Foco / Colapsar":"Focus Mode / Collapse","turnos":"turns","pal.":"words","Corretor mínimo":"Minimal proofread","Corrige gramática e clareza, sem mudar o conteúdo":"Fixes grammar and clarity, without changing the content","Visão geral + pontos principais (novo card)":"Overview + main points (new card)","Pontos-chave":"Key points","Lista objetiva de tópicos (novo card)":"Objective list of topics (new card)","Análise crítica e perguntas em aberto (novo card)":"Critical analysis and open questions (new card)","Dois comentando":"Two commenting","Dois comentaristas discutem o texto (novo card)":"Two commentators discuss the text (new card)","Compare original x IA lado a lado, edite antes de salvar":"Compare original vs AI side by side, edit before saving","⤴ Exportar este card":"⤴ Export this card","Cola tudo junto (tags viram #hashtags)":"Pastes everything together (tags become #hashtags)","Sem as tags":"Without the tags","Cópia fiel e crua — cole e pronto":"Faithful, raw copy — paste and done","Relatório formatado com IA (títulos, listas, callouts)":"AI-formatted report (headings, lists, callouts)","📥 Baixar arquivo":"📥 Download file","Texto simples, universal":"Plain, universal text","Para Obsidian, Notion, etc.":"For Obsidian, Notion, etc.","Página formatada":"Formatted page","ℹ️ Card vazio — nada para transformar":"ℹ️ Empty card — nothing to transform","aplicado! Ctrl+Z desfaz.":"applied! Ctrl+Z undoes.","gerado! Ctrl+Z desfaz.":"generated! Ctrl+Z undoes.","✨ Polindo texto…":"✨ Polishing text…","✅ Texto polido!":"✅ Text polished!","Renomear \"{name}\" para:":"Rename \"{name}\" to:","✏️ Renomeado para \"{name}\"":"✏️ Renamed to \"{name}\"","📋 Falas de \"{name}\" copiadas!":"📋 \"{name}\"'s lines copied!","Gravação":"Recording","Arquivo":"File","Texto":"Text","🗑️ Excluir?":"🗑️ Delete?","Edite aqui…":"Edit here…","car.":"chars","🔮 Diarizando":"🔮 Diarizing","Processando":"Processing","Aguardando ~{n} min":"Waiting ~{n} min","📋 Copiado com tags!":"📋 Copied with tags!","📋 Copiado!":"📋 Copied!","📋 Texto copiado!":"📋 Text copied!","ℹ️ Card vazio":"ℹ️ Empty card","📝 Markdown copiado! Cole no Obsidian.":"📝 Markdown copied! Paste in Obsidian.","⚠️ Nenhuma transcrição":"⚠️ No transcription","notas copiadas como Markdown!":"notes copied as Markdown!","🔮 Relatório para o Obsidian":"🔮 Report for Obsidian","A IA está formatando o texto…":"The AI is formatting the text…","🔮 Relatório pronto!":"🔮 Report ready!","⬇ Baixar .md":"⬇ Download .md","Cole no Obsidian (Ctrl/⌘+V) — ou arraste o arquivo baixado pro seu vault.":"Paste in Obsidian (Ctrl/⌘+V) — or drag the downloaded file to your vault.","✓ Copiado!":"✓ Copied!","📋 Copiado! Cole no Obsidian.":"📋 Copied! Paste in Obsidian.","⬇ Cópia bloqueada — baixei o .md pra você":"⬇ Copy blocked — downloaded the .md for you","⬇ Baixado! Arraste pro seu vault do Obsidian.":"⬇ Downloaded! Drag it to your Obsidian vault.","ℹ️ Card vazio — nada para exportar":"ℹ️ Empty card — nothing to export","Tags:":"Tags:","📥 Baixado (.{ext})":"📥 Downloaded (.{ext})","ℹ️ Nenhum card em foco":"ℹ️ No card in focus","ℹ️ Avançado ainda não funciona em cards diarizados":"ℹ️ Advanced doesn't work yet on diarized cards","↪ Voltou pro modo Avançado":"↪ Back in Advanced mode","Desfazer (Ctrl+Z)":"Undo (Ctrl+Z)","Refazer (Ctrl+Shift+Z)":"Redo (Ctrl+Shift+Z)","Esconder teclado":"Hide keyboard","Original":"Original","Editado pela IA":"Edited by AI","Ou digite uma instrução (ex: deixe mais formal)…":"Or type an instruction (e.g. make it more formal)…","Gerar":"Generate","original":"original","editado":"edited","Sair":"Exit","+ Novo card":"+ New card","Substituir original":"Replace original","pronto!":"ready!","ℹ️ Digite uma instrução":"ℹ️ Type an instruction","✨ Aplicando instrução…":"✨ Applying instruction…","✅ Pronto!":"✅ Ready!","✅ Card atualizado! Ctrl+Z desfaz.":"✅ Card updated! Ctrl+Z undoes.","✅ Novo card criado! Ctrl+Z desfaz.":"✅ New card created! Ctrl+Z undoes.","🔗 Cards mesclados e copiados para a área de transferência":"🔗 Cards merged and copied to clipboard","🔗 Cards mesclados!":"🔗 Cards merged!","📗 Nota Obsidian baixada!":"📗 Obsidian note downloaded!","min":"min","⏳ Processando…":"⏳ Processing…","Decodificando áudio…":"Decoding audio…","Transcrevendo {i}/{n}…":"Transcribing {i}/{n}…","notas com frontmatter YAML!":"notes with YAML frontmatter!","Lista":"List","Mostrar/ocultar pastas":"Show/hide folders","Recolher pastas":"Collapse folders","Aparência":"Appearance","🔄 Converter":"🔄 Convert","Resumo pirâmide":"Pyramid summary","Uma frase → parágrafo → tópicos: leia até onde quiser":"One sentence → paragraph → bullets: read as far as you want","Decisões & Ações":"Decisions & Actions","Quem faz o quê e até quando — pronto pra executar":"Who does what by when — ready to execute","Advogado do diabo":"Devil's advocate","Ataques fundamentados + o que blindaria cada ponto":"Grounded attacks + what would shield each point","Mesa-redonda":"Round table","Debate com especialistas escolhidos pelo tema do texto":"A debate with experts cast for this text's topic","Perguntas socráticas":"Socratic questions","As perguntas que o texto levanta e não responde":"The questions the text raises but doesn't answer","O que faltou":"What's missing","Dados sem fonte, pontas soltas e riscos ignorados":"Unsourced data, loose ends and ignored risks","Espelho":"Mirror","Como você pensa: padrões, contradições e convicções":"How you think: patterns, contradictions and convictions","Virar e-mail":"Turn into email","Sua fala vira um e-mail pronto pra enviar":"Your speech becomes a ready-to-send email","Explicar simples":"Explain simply","Sem jargão, com analogias — pra qualquer pessoa entender":"No jargon, with analogies — anyone can understand","Virar publicação":"Turn into a post","Post ou artigo curto com a sua voz preservada":"A post or short article keeping your voice","Pitch de 30s":"30-second pitch","A ideia em 30 segundos + as perguntas difíceis":"The idea in 30 seconds + the tough questions","Flashcards":"Flashcards","Perguntas e respostas pra estudar o conteúdo":"Q&A cards to study the content","Nota SOAP":"SOAP note","Consulta organizada no padrão clínico S/O/A/P":"Visit organized in the clinical S/O/A/P standard","✨ Transformar:":"✨ Transform:","mais":"more","Usar como padrão":"Set as default","agora é sua lente padrão":"is now your default lens","⭐ Lente padrão removida":"⭐ Default lens removed","Compartilhar resultado":"Share result","WhatsApp, e-mail… com a assinatura do Vox":"WhatsApp, email… with the Vox signature","feito com Vox":"made with Vox","📋 Copiado com assinatura do Vox!":"📋 Copied with Vox signature!","demo":"demo","👋 Bem-vindo ao Vox":"👋 Welcome to Vox","Falar é mais rápido que digitar — a maioria das pessoas fala três vezes mais palavras por minuto do que digita. Mas a fala se perde no ar. A ideia deste app é simples: você fala, o texto aparece, e aí começa a mágica — este mesmo texto pode virar um resumo, uma mesa-redonda entre especialistas, um e-mail pronto, flashcards de estudo. Toque nos botões coloridos aqui embaixo e veja com seus próprios olhos.":"Speaking is faster than typing — most people speak three times more words per minute than they type. But speech vanishes into thin air. The idea of this app is simple: you speak, the text appears, and then the magic starts — this very text can become a summary, a round table between experts, a ready-to-send email, study flashcards. Tap the colored buttons below and see it with your own eyes.",
 "Todas as lentes e receitas":"All lenses and recipes","⚡ Receitas":"⚡ Recipes","🗑️ Receita excluída":"🗑️ Recipe deleted","Excluir receita":"Delete recipe",
 "+ criar receita":"+ create recipe","Encadeie lentes: a saída de uma vira a entrada da próxima":"Chain lenses: one's output becomes the next one's input",
 "⚡ Criar receita":"⚡ Create recipe","Nenhuma etapa ainda — clique nas lentes abaixo":"No steps yet — click the lenses below","Nome da receita":"Recipe name",
@@ -11614,6 +11766,9 @@ function _voxFecharLembrete(){
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',async()=>{
   applyStaticI18n();_syncLangUI();
+  // Recibo da troca de idioma (efeito Encaixe): a página acabou de recarregar
+  // por causa dela, então o ⋯ dá um soco e o "Mais" chega já no idioma novo.
+  try{if(sessionStorage.getItem('vox_jz_lang')){sessionStorage.removeItem('vox_jz_lang');requestAnimationFrame(()=>_jz(document.getElementById('btnHdMore'),'jz-chegou',340))}}catch(e){}
   // Mac/Linux: troca .bat por .command nos textos fixos das Configurações → Local.
   // Roda DEPOIS do applyStaticI18n pra valer nos dois idiomas.
   if(typeof VOX_WIN!=='undefined' && !VOX_WIN){
@@ -11681,8 +11836,24 @@ document.addEventListener('DOMContentLoaded',async()=>{
   });
   document.addEventListener('click',e=>{
     if(!document.getElementById('hdMoreWrap').contains(e.target))
-      document.getElementById('hdMoreDrop').classList.remove('on');
+      _hdMoreFechar();
   });
+  // Efeito Tinta: ao soltar, sai do balão uma onda na cor da família. Em
+  // captura, pra rodar antes do onclick do item fechar o menu. A Aparência
+  // (data-fica) não fecha o menu: ali o balão dá um soco em vez da onda.
+  document.getElementById('hdMoreDrop').addEventListener('click',e=>{
+    const l=e.target.closest('.hdm-linha');if(!l||l.classList.contains('hdm-fixa'))return;
+    const b=l.querySelector('.hdm-bolha');if(!b)return;
+    if(l.hasAttribute('data-fica'))_jz(b,'soco',320);
+    else _jzOnda(b,getComputedStyle(b).color,'10px');
+  },true);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&document.getElementById('hdMoreDrop')?.classList.contains('on')){
+      _hdMoreFechar();document.getElementById('btnHdMore')?.focus();
+    }
+  });
+  // Encaixe: interruptor que muda de estado dá um toque curto (Android)
+  document.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('.toggle-sw'))_jzTato(8)},true);
   // FASE 1 — bottom sheet (mobile): tocar fora do .ibar com o sheet aberto fecha.
   document.addEventListener('click',e=>{
     const ibar=document.querySelector('.ibar');
@@ -13938,6 +14109,67 @@ function _recOrigemVisual(){
 // position:fixed (ver .rec-onda no CSS): o botão vira display:none logo em
 // seguida e levaria um ::after junto. Nasce no ponto exato do botão — não no
 // centro da tela.
+// ── Efeitos de toque do menu ⋯ (Central de Ajustes, Fase 1 — 28/09/2026) ──
+// Três efeitos do mesmo vocabulário que o app já tem (curva --fc-curva, o
+// "soco" das bolinhas de pasta, a onda que sobrevive ao elemento da
+// _recOnda): Brotar (abrir o menu), Tinta (tocar num item) e Encaixe (PT|EN,
+// tema, cores e interruptores). Nenhum atrasa a ação, nenhum roda em loop,
+// nenhum faz som (o Vox grava o microfone) e todos respeitam "reduzir
+// movimento". No iPhone o navegador não vibra: o retorno lá é só visual.
+function _jz(el,cls,ms){
+  if(!el||_voxReduzMov())return;
+  el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);
+  clearTimeout(el['_jz_'+cls]);el['_jz_'+cls]=setTimeout(()=>el.classList.remove(cls),ms);
+}
+function _jzOnda(el,cor,raio){
+  if(!el||_voxReduzMov())return;
+  const r=el.getBoundingClientRect();if(!r.width)return;
+  const o=document.createElement('span');o.className='jz-onda';
+  o.style.cssText='left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;border-radius:'+(raio||'50%')+';--jz-cor:'+cor;
+  document.body.appendChild(o);setTimeout(()=>o.remove(),480);
+}
+function _jzTato(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+// Trilho segmentado: marca o botão do valor e manda o indicador pra lá. Sem
+// animação quando é só sincronizar (abrir o menu, carregar a página) — senão o
+// indicador nasceria em PT e deslizaria sozinho até EN, como o _smodeSync
+// evita. Se já está no lugar, não mexe: não mata um deslize em andamento.
+function _jzSegPos(seg,valor,anim){
+  if(!seg)return;
+  const bs=[...seg.querySelectorAll('button')],i=bs.findIndex(b=>b.dataset.v===valor);
+  if(i<0)return;
+  const pos=(i*100)+'%';
+  bs.forEach((b,k)=>b.setAttribute('aria-pressed',String(k===i)));
+  if(seg.style.getPropertyValue('--jz-i')===pos)return;
+  if(!anim||_voxReduzMov()){seg.classList.add('noanim');seg.style.setProperty('--jz-i',pos);void seg.offsetWidth;seg.classList.remove('noanim')}
+  else{seg.style.setProperty('--jz-i',pos);_jz(seg,'anda',260)}
+}
+// PT ↔ EN: o setLang() recarrega a página, então o indicador desliza antes e
+// o recibo chega depois (ver "vox_jz_lang" no DOMContentLoaded).
+function _jzIdioma(lang,btn){
+  if(lang===currentLang)return;
+  _jzSegPos(btn&&btn.closest('.jz-seg'),lang,true);_jzTato(8);
+  try{sessionStorage.setItem('vox_jz_lang','1')}catch(e){}
+  setTimeout(()=>setLang(lang),_voxReduzMov()?0:170);
+}
+// Claro ↔ Escuro: o tema novo se abre em círculo a partir do botão tocado.
+function _jzTema(modo,btn){
+  if((document.documentElement.getAttribute('data-theme')||'light')===modo)return;
+  _jzTato(8);
+  _jzSegPos(document.getElementById('segTema'),modo,true);
+  const troca=()=>setTheme(modo);
+  if(!document.startViewTransition||_voxReduzMov()||!btn){troca();return}
+  const r=btn.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,h=document.documentElement;
+  h.style.setProperty('--jz-x',x+'px');h.style.setProperty('--jz-y',y+'px');
+  h.style.setProperty('--jz-r',Math.hypot(Math.max(x,innerWidth-x),Math.max(y,innerHeight-y))+'px');
+  h.classList.add('jz-tema');
+  try{document.startViewTransition(troca).finished.finally(()=>h.classList.remove('jz-tema'))}
+  catch(e){h.classList.remove('jz-tema');troca()}
+}
+function _jzCor(btn){
+  const s=btn.dataset.skin;
+  if((localStorage.getItem('vox_skin')||'teal')===s)return;
+  setSkin(s);_jz(btn,'soco',320);_jzTato(8);
+}
 function _recOnda(el){
   if(!el||_voxReduzMov())return;
   const r=el.getBoundingClientRect();
@@ -20272,12 +20504,6 @@ function toggleTheme(){const t=document.documentElement.getAttribute('data-theme
 // re-renderizar a lista por outro motivo.
 function setTheme(t,save=true){document.documentElement.setAttribute('data-theme',t);if(save)localStorage.setItem('vox_theme',t);_updateThemeColor();_syncSkinUI();
   if(document.getElementById('folderListInner')&&typeof renderFolders==='function'){renderFolders();_folderAtualizaPlaqueta(true)}}
-function toggleSkinPop(){
-  const p=document.getElementById('skinPop');const open=!p.classList.contains('on');
-  if(open){_syncSkinUI();p.classList.add('on');setTimeout(()=>document.addEventListener('click',_skinAway),0)}
-  else{p.classList.remove('on');document.removeEventListener('click',_skinAway)}
-}
-function _skinAway(e){const w=document.getElementById('themeBtn')?.closest('.skin-wrap');if(w&&!w.contains(e.target)){document.getElementById('skinPop')?.classList.remove('on');document.removeEventListener('click',_skinAway)}}
 function setSkin(name){
   if(name==='emerald')document.documentElement.removeAttribute('data-skin');
   else document.documentElement.setAttribute('data-skin',name);
@@ -20287,8 +20513,16 @@ function setSkin(name){
 function _syncSkinUI(){
   const skin=localStorage.getItem('vox_skin')||'teal';
   const mode=document.documentElement.getAttribute('data-theme')||'light';
-  document.querySelectorAll('#skinPop .skin-sw').forEach(b=>b.classList.toggle('on',b.dataset.skin===skin));
-  document.querySelectorAll('#skinPop .skin-mode').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
+  let nomeCor='';
+  document.querySelectorAll('#hdMoreDrop .skin-sw').forEach(b=>{
+    const on=b.dataset.skin===skin;
+    b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));
+    if(on)nomeCor=b.getAttribute('title')||'';
+  });
+  _jzSegPos(document.getElementById('segTema'),mode,false);
+  // a linha "Aparência" diz o que está valendo, sem precisar abrir a gaveta
+  const sub=document.getElementById('hdmLookSub');
+  if(sub)sub.textContent=t(mode==='dark'?'Escuro':'Claro')+(nomeCor?' · '+nomeCor:'');
 }
 function _updateThemeColor(){
   const c=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
@@ -20488,7 +20722,7 @@ function _chromeAutoHideBlocked(){
   if(document.querySelector('.folders-backdrop.on'))return true;
   if(document.querySelector('.overlay.on,.conf-overlay.on,.tx-overlay.on,.vintro-overlay.on'))return true;
   if(document.getElementById('expDrop')?.classList.contains('on'))return true;
-  if(document.getElementById('skinPop')?.classList.contains('on'))return true;
+  if(document.getElementById('hdMoreDrop')?.classList.contains('on'))return true;
   const mp=document.getElementById('modelPicker');
   if(mp&&mp.style.display==='block')return true;
   for(const id of ['micOverlay','onboardOverlay','localStartOverlay']){
@@ -21677,21 +21911,82 @@ function toggleExp(){
 // importa onde o botão termine sentado no layout.
 function toggleHdMore(){
   const d=document.getElementById('hdMoreDrop');
-  const willOpen=!d.classList.contains('on');
-  d.classList.toggle('on',willOpen);
-  if(willOpen){
-    const btn=document.getElementById('btnHdMore');
-    const br=btn.getBoundingClientRect();
-    const w=Math.min(284,window.innerWidth-16);
-    const left=Math.max(8,Math.min(br.right-w,window.innerWidth-w-8));
-    d.style.position='fixed';
-    d.style.top=(br.bottom+8)+'px';
-    d.style.left=left+'px';
-    d.style.right='auto';
-    d.style.width=w+'px';
-    d.style.maxHeight=(window.innerHeight-br.bottom-24)+'px';
-    d.style.overflowY='auto';
+  if(d.classList.contains('on')){_hdMoreFechar();return}
+  clearTimeout(d._fT);d.classList.remove('fechando');
+  const btn=document.getElementById('btnHdMore');
+  const br=btn.getBoundingClientRect();
+  // 312px: o trilho PT|EN e os selos "falta 1 chave" precisam de mais folga
+  // que os 284px de antes; no celular continua limitado à largura da tela.
+  const w=Math.min(312,window.innerWidth-16);
+  const left=Math.max(8,Math.min(br.right-w,window.innerWidth-w-8));
+  d.style.position='fixed';
+  d.style.top=(br.bottom+8)+'px';
+  d.style.left=left+'px';
+  d.style.right='auto';
+  d.style.width=w+'px';
+  d.style.maxHeight=(window.innerHeight-br.bottom-24)+'px';
+  d.style.overflowY='auto';
+  // Brotar: a escala nasce do centro do ⋯, onde quer que ele esteja
+  d.style.setProperty('--hm-ox',(br.left+br.width/2-left)+'px');
+  _hdmAparencia(false);
+  d.classList.add('on');
+  btn.setAttribute('aria-expanded','true');
+  _hdmSelos();_hdmAlerta();_syncLangUI();_syncSkinUI();
+}
+// Um caminho só pra fechar: os itens, o clique fora e o Esc passam por aqui.
+// Antes o menu sumia num quadro; agora recolhe em 120ms.
+function _hdMoreFechar(){
+  const d=document.getElementById('hdMoreDrop');
+  if(!d||!d.classList.contains('on'))return;
+  d.classList.remove('on');
+  document.getElementById('btnHdMore')?.setAttribute('aria-expanded','false');
+  if(_voxReduzMov())return;
+  d.classList.add('fechando');
+  clearTimeout(d._fT);d._fT=setTimeout(()=>d.classList.remove('fechando'),130);
+}
+function _hdmAparencia(abrir){
+  const g=document.getElementById('hdmGaveta'),b=document.getElementById('themeBtn');
+  if(!g||!b)return;
+  const v=typeof abrir==='boolean'?abrir:!g.classList.contains('on');
+  g.classList.toggle('on',v);b.setAttribute('aria-expanded',String(v));
+  if(v&&typeof abrir!=='boolean'){
+    // o menu tem altura máxima: se a gaveta abriu além da borda, rola até ela
+    setTimeout(()=>{
+      const d=document.getElementById('hdMoreDrop'),r=g.getBoundingClientRect(),dr=d.getBoundingClientRect();
+      if(r.bottom>dr.bottom)d.scrollBy({top:r.bottom-dr.bottom+8,behavior:_voxReduzMov()?'auto':'smooth'});
+    },230);
   }
+}
+// Selos das ferramentas das notas: só aparecem quando falta alguma coisa, e
+// dizem o quê. As regras são as mesmas que cada ferramenta usa ao abrir.
+function _hdmSelos(){
+  const pinta=(id,txt,dica)=>{const el=document.getElementById(id);if(!el)return;el.hidden=!txt;el.textContent=txt||'';el.title=txt?dica:''};
+  const ia=!!aiKey();
+  const dicaIA=t('Precisa de uma chave de IA de texto — o Groq serve');
+  pinta('hdmSeloResumo',ia?'':t('falta 1 chave'),dicaIA);
+  pinta('hdmSeloPanorama',ia?'':t('falta 1 chave'),dicaIA);
+  const temSem=!!_semTarget();
+  pinta('hdmSeloCostura',cfg.semSearch?'':(temSem?t('falta ligar'):t('falta 1 chave')),
+    temSem?t('A chave já serve: falta ligar a busca por sentido'):t('Precisa de uma chave com índice de sentido (OpenAI ou Gemini)'));
+}
+// Aviso de cópia atrasada embaixo de Configurações. Mesma regra do cartão de
+// lembrete (_voxCheckLembreteBackup), respeitando o que a pessoa escolheu:
+// lembretes desligados ou os dois gatilhos em "nunca" = nenhum aviso aqui.
+function _hdmAlerta(){
+  const el=document.getElementById('hdmAlerta');if(!el)return;
+  let txt='';
+  try{
+    const c=_bkpCfg(),ultimo=localStorage.getItem('vox_last_backup');
+    if(c.ligado&&(c.notas||c.dias)){
+      if(!ultimo){if(_contarNotas()>=3)txt=t('Você ainda não tem nenhuma cópia do seu Vox')}
+      else{
+        const dias=_voxDiasDesde(ultimo),novas=_contarNotas(ultimo);
+        if(c.dias&&dias>=c.dias)txt=t('Faz {n} dias desde o seu último backup').replace('{n}',Math.floor(dias));
+        else if(c.notas&&novas>=c.notas)txt=t('{n} notas novas desde o último backup').replace('{n}',novas);
+      }
+    }
+  }catch(e){}
+  el.hidden=!txt;el.textContent=txt;
 }
 function exportAll(fmt,onlyToday=false){
   document.getElementById('expDrop').classList.remove('on');
@@ -21946,7 +22241,12 @@ function cfgTab(name){
   if(name==='Text')_updateTxtAIPresetGrok();
   if(name==='Geral')_syncPularPortaCheckboxGeral();
 }
-function abrirConfigAvancadas(){cfgTab('Trans')}
+// Carlos (28/09/2026): quem entra nas avançadas pelo botão, ou já pula a porta
+// simples, cai primeiro na Geral — é onde moram chaves, cópias e espaço, que
+// é o que a pessoa costuma vir procurar. Os atalhos que levam a uma aba certa
+// (toasts de "configure uma chave", openModalToDiar) continuam chamando cfgTab
+// com a aba deles.
+function abrirConfigAvancadas(){cfgTab('Geral')}
 function _temChaveGroq(){return !!(cfg.apiKeyGroq&&cfg.apiKeyGroq.trim())}
 function _mostraPortaEntrada(){
   document.getElementById('cfgAvancadasWrap').style.display='none';
@@ -22270,6 +22570,11 @@ function _renderCardsCerebro(cat,containerId){
   // caminho próprio traz o seu em prov.usar.
   const acaoDe=c=>c.prov.usar||(cat==='texto'?`applyTxtAIPreset('${c.pid}','${escJs(c.modelo.id)}')`:'');
   const abertos=lista.filter(c=>c.modelo.destaque),resto=lista.filter(c=>!c.modelo.destaque);
+  // Na Transcrição o primeiro cartão era o Transcritor local — o caminho que
+  // pede instalar um servidor — acima do Groq que a própria aba recomenda
+  // (Carlos, 28/09/2026). Só aqui o recomendado sobe; nas outras abas a ordem
+  // do cadastro é decisão do Rafa (sigilo primeiro) e fica como está.
+  if(cat==='transcricao')abertos.sort((a,b)=>(/⭐/.test(b.modelo.selo||'')?1:0)-(/⭐/.test(a.modelo.selo||'')?1:0));
   el.innerHTML=[...abertos,...resto].map(c=>_cardCerebroHtml(c,acaoDe(c))).join('');
 }
 
@@ -22838,7 +23143,7 @@ function openModal(){
   // porta direto — quem chama cfgTab()/openModalToDiar() logo em seguida também
   // acaba nas avançadas, porque cfgTab() força essa visão sozinho.
   if(localStorage.getItem('vox_pular_porta_simples')==='1'){
-    cfgTab('Trans');
+    abrirConfigAvancadas();
   }else{
     _mostraPortaEntrada();
   }
