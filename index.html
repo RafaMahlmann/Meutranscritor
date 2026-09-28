@@ -5674,10 +5674,22 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .diar-toggle-row small{font-size:11px;color:var(--text3);display:block;margin-top:2px}
 .toggle-sw{position:relative;width:44px;height:24px;flex-shrink:0}
 .toggle-sw input{opacity:0;width:0;height:0;position:absolute}
-.toggle-sw span{position:absolute;inset:0;background:var(--border2);border-radius:24px;cursor:pointer;transition:.3s}
+.toggle-sw span{position:absolute;inset:0;background:var(--border2);border-radius:24px;cursor:pointer;transition:background-color 180ms linear}
 .toggle-sw input:checked+span{background:var(--diar)}
-.toggle-sw span:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s}
+.toggle-sw span:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:transform 240ms cubic-bezier(.3,1.35,.6,1)}
 .toggle-sw input:checked+span:before{transform:translateX(20px)}
+/* Efeito 3 — Encaixe (28/09/2026): ao apertar, a bolinha estica e vira pílula;
+   ao soltar, viaja e passa um tiquinho do ponto (~1,7px, dentro do trilho de
+   44px). A origem fica no centro e a compensação vai no translate — trocar
+   transform-origin no meio do gesto faria a bolinha pular. Vale pra todos os
+   interruptores do app, de propósito: um movimento só. */
+.toggle-sw:active span:before{transform:translateX(2.5px) scaleX(1.28);transition-duration:110ms}
+.toggle-sw:active input:checked+span:before{transform:translateX(17.5px) scaleX(1.28)}
+@media(prefers-reduced-motion:reduce){
+  .toggle-sw span,.toggle-sw span:before{transition:none}
+  .toggle-sw:active span:before{transform:none}
+  .toggle-sw:active input:checked+span:before{transform:translateX(20px)}
+}
 .diar-provider-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .diar-prov-btn{padding:10px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg-input);color:var(--text3);font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all var(--transition);text-align:center}
 .diar-prov-btn.on{border-color:var(--diar);color:var(--diar);background:var(--diar-glow)}
@@ -8260,7 +8272,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.28.3';
+const VOX_VERSION='2026.09.28.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11840,6 +11852,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
       _hdMoreFechar();document.getElementById('btnHdMore')?.focus();
     }
   });
+  // Encaixe: interruptor que muda de estado dá um toque curto (Android)
+  document.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('.toggle-sw'))_jzTato(8)},true);
   // FASE 1 — bottom sheet (mobile): tocar fora do .ibar com o sheet aberto fecha.
   document.addEventListener('click',e=>{
     const ibar=document.querySelector('.ibar');
