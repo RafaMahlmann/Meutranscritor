@@ -8307,7 +8307,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.28.6';
+const VOX_VERSION='2026.09.28.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10523,7 +10523,10 @@ let I18N_EN={
 "No plano grátis, a seleção vai até {n} cards de cada vez.":"On the free plan, selection goes up to {n} cards at a time.",
 "No plano grátis, a seleção vai até {n} cards de cada vez. O Pro não tem limite.":"On the free plan, selection goes up to {n} cards at a time. Pro has no limit.",
 "Marquei os {n} primeiros: no plano grátis, a seleção vai até {n} de cada vez.":"I marked the first {n}: on the free plan, selection goes up to {n} at a time.",
-"Exportar o calendário pro Google ou Apple é do Vox Pro. As notas continuam marcadas nos dias, aqui dentro.":"Exporting the calendar to Google or Apple is part of Vox Pro. Your notes stay marked on their days, right here."
+"Exportar o calendário pro Google ou Apple é do Vox Pro. As notas continuam marcadas nos dias, aqui dentro.":"Exporting the calendar to Google or Apple is part of Vox Pro. Your notes stay marked on their days, right here.",
+"Faltam 15 segundos neste bloco de 1 minuto. Depois é só tocar em gravar de novo.":"15 seconds left in this 1-minute block. Then just tap record again.",
+"Hoje você já fez {n} gravações. Daqui em diante, o plano grátis grava em blocos de 1 minuto — é só tocar de novo pra continuar.":"You've already made {n} recordings today. From now on, the free plan records in 1-minute blocks — just tap again to keep going.",
+"No plano grátis, da {n}ª gravação do dia em diante a gravação vai em blocos de 1 minuto. O Pro grava sem limite.":"On the free plan, from recording #{n} of the day onward, recording goes in 1-minute blocks. Pro records with no limit."
 };
 
 // ── STATE ──
@@ -11210,20 +11213,53 @@ function _cortesiaNotaUltima(cardId){
   const alvo=el.querySelector('.card-audio');
   if(alvo)alvo.after(n);else el.appendChild(n);
 }
-// Gravação por nossa conta tem duração máxima (ajustada no painel da ponte).
-// Nunca corta de surpresa: avisa 15 segundos antes, para, e vira texto normal.
-let _cortesiaTimers=[];
-function _cortesiaLimiteDesarmar(){_cortesiaTimers.forEach(clearTimeout);_cortesiaTimers=[]}
-function _cortesiaLimiteArmar(){
-  _cortesiaLimiteDesarmar();
-  if(!isRec||!recStart||_temChaveTranscricao()||!_cortesiaLigada())return;
-  if(!_cortesiaEst){_cortesiaEstado().then(()=>_cortesiaLimiteArmar());return}
-  // Acabou a cortesia: grava inteira, sem limite — ela fica guardada pra sua chave.
-  if(!_cortesiaEst.disponivel)return;
-  const max=(_cortesiaEst.max_segundos||120)*1000,passou=Date.now()-recStart;
-  const min=String(Math.round(max/6000)/10).replace('.',currentLang==='pt'?',':'.');
-  _cortesiaTimers.push(setTimeout(()=>{if(isRec)toast(t('Esta gravação por nossa conta vai até {n} min. Faltam 15 segundos.').replace('{n}',min))},Math.max(0,max-15000-passou)));
-  _cortesiaTimers.push(setTimeout(()=>{if(isRec)stopRec()},Math.max(0,max-passou)));
+// ── DURAÇÃO MÁXIMA DE UMA GRAVAÇÃO ──
+// Duas regras podem limitar uma gravação, e vale a mais curta:
+// - por nossa conta (cortesia): a duração ajustada no painel da ponte;
+// - plano grátis: da 11ª gravação do dia em diante, blocos de 1 minuto
+//   (landing: "10 gravações por dia — da 11ª, em blocos de 1 minuto").
+// Nunca corta de surpresa: avisa 15 segundos antes, para, e vira texto
+// normal. Pra continuar, é só tocar em gravar de novo — nada se perde.
+const LIM_GRAV_DIA=10,LIM_GRAV_BLOCO_SEG=60;
+function _diaLocal(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function _gravHoje(){
+  try{const g=JSON.parse(localStorage.getItem('vox_grav_dia')||'null');return g&&g.dia===_diaLocal()?g.n:0}catch(e){return 0}
+}
+// Conta quando a gravação termina (stopRec). Cancelada não conta.
+function _gravContar(){localStorage.setItem('vox_grav_dia',JSON.stringify({dia:_diaLocal(),n:_gravHoje()+1}))}
+function _gravEmBlocos(){return !voxPro()&&_gravHoje()>=LIM_GRAV_DIA}
+let _gravTimers=[];
+function _gravLimiteDesarmar(){_gravTimers.forEach(clearTimeout);_gravTimers=[]}
+function _gravLimiteArmar(){
+  _gravLimiteDesarmar();
+  if(!isRec||!recStart)return;
+  const regras=[];
+  if(_gravEmBlocos())regras.push({seg:LIM_GRAV_BLOCO_SEG,aviso:t('Faltam 15 segundos neste bloco de 1 minuto. Depois é só tocar em gravar de novo.')});
+  if(!_temChaveTranscricao()&&_cortesiaLigada()){
+    // Ainda sem resposta da ponte: pergunta e arma de novo quando ela chegar.
+    if(!_cortesiaEst)_cortesiaEstado().then(()=>{if(isRec)_gravLimiteArmar()});
+    // Acabou a cortesia: grava inteira — ela fica guardada pra sua chave.
+    else if(_cortesiaEst.disponivel){
+      const seg=_cortesiaEst.max_segundos||120;
+      const min=String(Math.round(seg/6)/10).replace('.',currentLang==='pt'?',':'.');
+      regras.push({seg,aviso:t('Esta gravação por nossa conta vai até {n} min. Faltam 15 segundos.').replace('{n}',min)});
+    }
+  }
+  if(!regras.length)return;
+  const r=regras.sort((a,b)=>a.seg-b.seg)[0],max=r.seg*1000,passou=Date.now()-recStart;
+  _gravTimers.push(setTimeout(()=>{if(isRec)toast(r.aviso)},Math.max(0,max-15000-passou)));
+  _gravTimers.push(setTimeout(()=>{if(isRec)stopRec()},Math.max(0,max-passou)));
+}
+// Na primeira gravação em blocos do dia, avisa ANTES de começar — a pessoa
+// não pode descobrir o limite no meio de uma ideia. Só conta como visto
+// quando um bloco termina de verdade (stopRec): quem cancelou logo em
+// seguida pode nem ter lido, e vê de novo na próxima.
+let _gravBlocoNesta=false;
+function _gravAvisoDoDia(){
+  _gravBlocoNesta=_gravEmBlocos();
+  if(!_gravBlocoNesta||localStorage.getItem('vox_grav_aviso_dia')===_diaLocal())return;
+  _toastPro(t('Hoje você já fez {n} gravações. Daqui em diante, o plano grátis grava em blocos de 1 minuto — é só tocar de novo pra continuar.').replace('{n}',LIM_GRAV_DIA),
+    t('No plano grátis, da {n}ª gravação do dia em diante a gravação vai em blocos de 1 minuto. O Pro grava sem limite.').replace('{n}',LIM_GRAV_DIA+1));
 }
 // Guarda os BYTES do áudio, não o File: o WebKit testado aqui recusa
 // guardar File/Blob no IndexedDB (erro vazio), mas aceita ArrayBuffer.
@@ -27842,7 +27878,7 @@ async function startRec(targetCardId=null,targetTA=null){
     document.getElementById('btnSend').style.display='none';document.getElementById('btnStop').style.display='none';document.getElementById('btnCancel').style.display='none';
     recTimer=setInterval(()=>{const el=Math.floor((Date.now()-recStart)/1000);const s=String(Math.floor(el/60)).padStart(2,'0')+':'+String(el%60).padStart(2,'0');document.getElementById('recTimer').textContent=s;const dt=document.getElementById('docRecTimer');if(dt)dt.textContent=s},1000);
     initVU(stream);setStatus('Gravando…','rec');
-    _cortesiaLimiteArmar();
+    _gravLimiteArmar();_gravAvisoDoDia();
   }catch(err){
     stopCapture();
     _flAbrirNoProximoCard=false; // gravação não chegou a existir: nenhum card nasce dela
@@ -27854,6 +27890,8 @@ async function startRec(targetCardId=null,targetTA=null){
 }
 function stopRec(){
   if(!isRec||!MR)return;
+  _gravContar();
+  if(_gravBlocoNesta)localStorage.setItem('vox_grav_aviso_dia',_diaLocal());
   navigator.vibrate?.([20,40,20]); // FASE 4b: feedback tátil ao parar (Android; iOS/desktop ignoram silenciosamente)
   // FASE 4d: conta gravações da vida (independente de sucesso na transcrição — o que importa aqui
   // é o hábito de gravar) pra decidir quando mostrar a dica contextual do long-press.
@@ -27948,7 +27986,7 @@ function cancelRec(){
   resetUI();activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;toast(t('🚫 Gravação cancelada.'));
 }
 function resetUI(){
-  _cortesiaLimiteDesarmar();
+  _gravLimiteDesarmar();_gravBlocoNesta=false;
   isRec=false;MR=null;curStream=null;chunks=[];recStart=null;
   _ibarDragDepth=0;_showAudioDrop(false);
   document.querySelector('.ibar')?.classList.remove('rec-on');
