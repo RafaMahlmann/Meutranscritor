@@ -7841,20 +7841,23 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
      Os IDs dos inputs (#onboardGroqKey etc.) são os MESMOS de antes de
      propósito: finishOnboard() lê por ID, então continua funcionando sem
      mudança, não importa em qual tela o campo está. -->
-<!-- VOX PRO — plano, assinatura e licença. Conteúdo montado em JS (_proRender). -->
-<div class="overlay" id="proOverlay" style="display:none;z-index:612" onclick="if(event.target===this)fecharVoxPro()">
+<!-- VOX PRO — plano, assinatura e licença. Conteúdo montado em JS (_proRender).
+     Camadas: Pro 1060, cortesia 1065 e boas-vindas 1055 ficam ACIMA dos mapas
+     (Órbita/Fluxograma 900–940) — o limite de pasta e a gravação sem chave
+     acontecem de dentro deles — e abaixo dos toasts (10001). -->
+<div class="overlay" id="proOverlay" style="display:none;z-index:1060" onclick="if(event.target===this)fecharVoxPro()">
   <div class="modal ob-modal">
     <div class="mb ob-body"></div>
   </div>
 </div>
 <!-- CORTESIA — as primeiras transcrições por nossa conta. O conteúdo é
      montado em JS (_cortesiaAviso / _cortesiaGuardadaModal). -->
-<div class="overlay" id="cortesiaOverlay" style="display:none;z-index:615">
+<div class="overlay" id="cortesiaOverlay" style="display:none;z-index:1065">
   <div class="modal ob-modal">
     <div class="mb ob-body"></div>
   </div>
 </div>
-<div class="overlay" id="onboardOverlay" style="display:none;z-index:610">
+<div class="overlay" id="onboardOverlay" style="display:none;z-index:1055">
   <div class="modal ob-modal">
     <div class="ob-prog"><div class="ob-prog-fill" id="obProgFill"></div></div>
     <div class="ob-top">
@@ -8304,7 +8307,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.28.5';
+const VOX_VERSION='2026.09.28.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10512,7 +10515,15 @@ let I18N_EN={
 "Essa chave está maior que uma chave do Freemius (até 32 caracteres). Confira se não veio texto junto na cópia.":"That key is longer than a Freemius key (up to 32 characters). Check that no extra text came along when you copied it.",
 "Sua licença venceu em {d}. Se você já renovou, confira de novo.":"Your license expired on {d}. If you already renewed, check again.",
 "Conferir de novo":"Check again",
-"Seu plano":"Your plan"
+"Seu plano":"Your plan",
+"O plano grátis vai até {n} pastas, e você já tem {n}. Nenhuma some — o Pro libera pastas sem teto.":"The free plan goes up to {n} folders, and you already have {n}. None of them go away — Pro unlocks folders with no cap.",
+"O plano grátis vai até {n} subpastas, e você já tem {n}. Nenhuma some — o Pro libera subpastas sem teto.":"The free plan goes up to {n} subfolders, and you already have {n}. None of them go away — Pro unlocks subfolders with no cap.",
+"Ver o Pro":"See Pro",
+"O plano grátis tranca 1 mundo com senha, e “{m}” já está trancado. O Pro tranca quantos você quiser.":"The free plan locks 1 world with a password, and “{m}” is already locked. Pro locks as many as you want.",
+"No plano grátis, a seleção vai até {n} cards de cada vez.":"On the free plan, selection goes up to {n} cards at a time.",
+"No plano grátis, a seleção vai até {n} cards de cada vez. O Pro não tem limite.":"On the free plan, selection goes up to {n} cards at a time. Pro has no limit.",
+"Marquei os {n} primeiros: no plano grátis, a seleção vai até {n} de cada vez.":"I marked the first {n}: on the free plan, selection goes up to {n} at a time.",
+"Exportar o calendário pro Google ou Apple é do Vox Pro. As notas continuam marcadas nos dias, aqui dentro.":"Exporting the calendar to Google or Apple is part of Vox Pro. Your notes stay marked on their days, right here."
 };
 
 // ── STATE ──
@@ -11455,6 +11466,38 @@ function _proDesativarPerguntar(){
 async function _proDesativar(){
   try{await desativarLicenca();_proRender('',t('Desativado. A licença está livre pra outro aparelho.'))}
   catch(e){_proRender('',_proErroTexto(e),true)}
+}
+// ── LIMITES DO PLANO GRÁTIS ──
+// Só o que a landing promete (seção "VOX Free") e o doc 16 do Plano Diretor.
+// Regra da casa: limite NUNCA apaga nem tranca o que já existe — só impede
+// criar mais um, diz por quê, e mostra o caminho. Importar, restaurar backup,
+// receber transferência e desarquivar não passam por aqui de propósito: quem
+// já tem, não perde, mesmo que passe do número.
+const LIM_PASTAS_RAIZ=20,LIM_SUBPASTAS=30,LIM_MUNDOS_TRANCADOS=1,LIM_SELECAO=5;
+// Pasta arquivada ou na lixeira (ela ou a raiz da família) não conta.
+function _pastaEmUso(f){
+  if(!f||f.arch||f.del)return false;
+  const r=f.parentId?_folderRaizDe(f.parentId):null;
+  return !(r&&(r.arch||r.del));
+}
+function _pastasContagem(){
+  let raiz=0,sub=0;
+  for(const f of folders){if(_pastaEmUso(f)){if(f.parentId)sub++;else raiz++}}
+  return {raiz,sub};
+}
+// Devolve o motivo (texto pronto pra tela do Pro) ou '' quando pode criar.
+function _limitePasta(parentId){
+  if(voxPro())return '';
+  const c=_pastasContagem();
+  if(!parentId&&c.raiz>=LIM_PASTAS_RAIZ)return t('O plano grátis vai até {n} pastas, e você já tem {n}. Nenhuma some — o Pro libera pastas sem teto.').replace(/\{n\}/g,LIM_PASTAS_RAIZ);
+  if(parentId&&c.sub>=LIM_SUBPASTAS)return t('O plano grátis vai até {n} subpastas, e você já tem {n}. Nenhuma some — o Pro libera subpastas sem teto.').replace(/\{n\}/g,LIM_SUBPASTAS);
+  return '';
+}
+// Toast com "Ver o Pro" no lugar do "Desfazer": pra limite que aparece no meio
+// de um gesto rápido (marcar cards), onde abrir uma tela inteira atrapalharia.
+function _toastPro(msg,contexto){
+  toastDesfazer(msg,()=>abrirVoxPro(contexto||msg),t('Ver o Pro'));
+  const i=document.getElementById('toastIco');if(i)i.textContent='';
 }
 function _precisaConfigurar(gravacao){
   const temChave=cfg.apiKeyGroq||cfg.apiKey||cfg.apiKeyGrok||cfg.provider==='local';
@@ -19105,6 +19148,7 @@ function _calMontarIcs(cards){
   return L.join('\r\n')+'\r\n';
 }
 function _calExportarIcs(){
+  if(!voxPro()){abrirVoxPro(t('Exportar o calendário pro Google ou Apple é do Vox Pro. As notas continuam marcadas nos dias, aqui dentro.'));return}
   const cards=_calCardsDoCalendario()
     .filter(c=>c.dataset.quando&&_calValida(c.dataset.quando))
     .sort((a,b)=>a.dataset.quando.localeCompare(b.dataset.quando));
@@ -19713,6 +19757,8 @@ function _cfMover(i,fid){
 // trocar a vista no mesmo instante em que 12 cards mudam de lugar seria duas
 // surpresas de uma vez.
 function _cfNovaPastaComACor(i){
+  const lim=_limitePasta(null);
+  if(lim){abrirVoxPro(lim);return}
   const nome=prompt(t('Nome da nova pasta:'));
   if(!nome||!nome.trim())return;
   const nova=_mapaNovaPasta(null,nome);
@@ -20462,6 +20508,8 @@ function _folderDescendentes(id){
 function _mapaNovaPasta(parentId,nome){
   const name=(nome||'').trim();
   if(!name)return null;
+  const lim=_limitePasta(parentId);
+  if(lim){abrirVoxPro(lim);return null}
   const id='f_'+Date.now().toString(36);
   // Subpasta nasce com a MESMA cor da raiz da família — só a pasta de
   // primeiro nível sorteia cor nova. Sem raiz achável (não devia acontecer),
@@ -20532,6 +20580,8 @@ function _mapaCorDaVaga(parentId,naOrbita){
   return safeColor(_mapaCorVisivel(bruta,_mapaFundoDoPalco(naOrbita)));
 }
 function createFolder(parentId=null){
+  const lim=_limitePasta(parentId);
+  if(lim){closeFolderMenu();abrirVoxPro(lim);return}
   const name=prompt(t('Nome da nova pasta:'));
   if(!name||!name.trim())return;
   const nova=_mapaNovaPasta(parentId,name);
@@ -31888,6 +31938,11 @@ function selSair(){
 function selAlterna(id){
   if(!_selPodeSelecionar())return;
   if(!selModo)selEntrar();
+  if(!selIds.has(id)&&!voxPro()&&selIds.size>=LIM_SELECAO){
+    _toastPro(t('No plano grátis, a seleção vai até {n} cards de cada vez.').replace('{n}',LIM_SELECAO),
+      t('No plano grátis, a seleção vai até {n} cards de cada vez. O Pro não tem limite.').replace('{n}',LIM_SELECAO));
+    return;
+  }
   selIds.has(id)?selIds.delete(id):selIds.add(id);
   _selConfirmando=false;
   _selSincroniza();
@@ -32042,8 +32097,14 @@ function _selAcao(a){
   if(a==='devezNao'){_selConfirmando=false;return _selDesenhaBarra()}
   if(a==='tudo'){
     const vis=_selVisiveis().map(c=>c.id);
-    vis.every(i=>selIds.has(i))?selIds.clear():vis.forEach(i=>selIds.add(i));
-    return _selSincroniza();
+    if(vis.every(i=>selIds.has(i))){selIds.clear();return _selSincroniza()}
+    if(voxPro()){vis.forEach(i=>selIds.add(i));return _selSincroniza()}
+    // Grátis: marca até o limite, na ordem da tela, e diz que parou ali.
+    for(const i of vis){if(selIds.size>=LIM_SELECAO)break;selIds.add(i)}
+    _selSincroniza();
+    if(vis.some(i=>!selIds.has(i)))_toastPro(t('Marquei os {n} primeiros: no plano grátis, a seleção vai até {n} de cada vez.').replace(/\{n\}/g,LIM_SELECAO),
+      t('No plano grátis, a seleção vai até {n} cards de cada vez. O Pro não tem limite.').replace('{n}',LIM_SELECAO));
+    return;
   }
   if(!ids.length)return;
   if(a==='devez'){_selConfirmando=true;return _selDesenhaBarra()}
@@ -32152,6 +32213,8 @@ function _selMover(ids,fid){
   });
 }
 function _selNovaPasta(ids){
+  const lim=_limitePasta(null);
+  if(lim){abrirVoxPro(lim);return}
   const nome=prompt(t('Nome da nova pasta:'));
   if(!nome||!nome.trim())return;
   const nova=_mapaNovaPasta(null,nome);
@@ -34955,6 +35018,13 @@ function _faixaProtecao(w){
 }
 function trancarMundoUI(){
   if(ativoId!==_mundoAtivo)return;
+  if(!voxPro()){
+    const outro=_mundosLista().find(m=>m.id!==_mundoAtivo&&_mundoTrancado(m.id));
+    if(outro&&LIM_MUNDOS_TRANCADOS<=1){
+      abrirVoxPro(t('O plano grátis tranca 1 mundo com senha, e “{m}” já está trancado. O Pro tranca quantos você quiser.').replace('{m}',outro.nome||t('Meu espaço')));
+      return;
+    }
+  }
   abrirCofreUI('criar',_mundoAtivo);
 }
 // Clicar na faixa ja protegida abre o painel de gerenciar -- nunca tira
