@@ -732,6 +732,21 @@ header.has-speed-badge{padding-bottom:18px}
 .cortesia-nota span{flex:1 1 220px}
 .cortesia-nota button{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap}
 .cortesia-nota button:hover{filter:brightness(1.08)}
+.pro-lista{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:7px}
+.pro-lista li{font-size:13.5px;color:var(--text2);line-height:1.5;padding-left:22px;position:relative}
+.pro-lista li::before{content:'';position:absolute;left:3px;top:6px;width:9px;height:5px;border-left:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(-45deg)}
+.pro-preco{font-size:13px;font-weight:600;color:var(--text);margin:0 0 4px;text-align:center}
+.pro-assinar{display:block;text-align:center;text-decoration:none;box-sizing:border-box}
+.pro-sep{height:1px;background:var(--border2);margin:20px 0 16px}
+.pro-h3{font-size:15px;font-weight:700;color:var(--text);margin:0 0 6px}
+.pro-contexto{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--text2);line-height:1.5;margin:0 0 14px}
+.pro-aviso{font-size:13px;line-height:1.5;border-radius:10px;padding:9px 11px;margin:0 0 12px;background:var(--bg2);color:var(--text2);border:1px solid var(--accent)}
+.pro-aviso.erro{border-color:var(--danger);color:var(--danger)}
+.pro-ficha{border:1px solid var(--border2);border-radius:12px;padding:4px 12px;margin:0 0 14px}
+.pro-ficha div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;font-size:13px;border-bottom:1px solid var(--border2)}
+.pro-ficha div:last-child{border-bottom:none}
+.pro-ficha span{color:var(--text3)}
+.pro-ficha b{color:var(--text);font-weight:600;text-align:right}
 .ob-opt{width:100%;text-align:left;background:var(--bg-input);border:1.5px solid var(--border);border-radius:13px;padding:14px 16px;font-size:14px;font-weight:600;color:var(--text2);font-family:var(--font);cursor:pointer;margin-bottom:9px;transition:all var(--transition);display:flex;justify-content:space-between;align-items:center;gap:12px}
 .ob-opt:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 .ob-opt-sub{font-size:11.5px;font-weight:700;color:var(--text4);flex-shrink:0}
@@ -6656,7 +6671,18 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
               </button>
             </div>
           </div>
-          <div class="hdm-grupo" style="--i:3;--hm-cor:var(--hm-ajuda)">
+          <!-- Vox Pro (28/09/2026): o plano tem família própria, na cor da marca —
+               não entra no meio dos ajustes do app, que têm ordem pedida. -->
+          <div class="hdm-grupo" style="--i:3;--hm-cor:var(--accent)">
+            <div class="hdm-cab" data-i18n>Seu plano</div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnVoxPro" onclick="_hdMoreFechar();abrirVoxPro()" title="Vox Pro">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t">Vox Pro</span><span class="hdm-sub" id="proMenuSub"></span></span>
+              </button>
+            </div>
+          </div>
+          <div class="hdm-grupo" style="--i:4;--hm-cor:var(--hm-ajuda)">
             <div class="hdm-sep"></div>
             <div class="hdm-item">
               <button class="hdm-linha" id="btnSetup" onclick="_hdMoreFechar();_obOpen()" title="Rever as boas-vindas" data-i18n-title>
@@ -7815,6 +7841,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
      Os IDs dos inputs (#onboardGroqKey etc.) são os MESMOS de antes de
      propósito: finishOnboard() lê por ID, então continua funcionando sem
      mudança, não importa em qual tela o campo está. -->
+<!-- VOX PRO — plano, assinatura e licença. Conteúdo montado em JS (_proRender). -->
+<div class="overlay" id="proOverlay" style="display:none;z-index:612" onclick="if(event.target===this)fecharVoxPro()">
+  <div class="modal ob-modal">
+    <div class="mb ob-body"></div>
+  </div>
+</div>
 <!-- CORTESIA — as primeiras transcrições por nossa conta. O conteúdo é
      montado em JS (_cortesiaAviso / _cortesiaGuardadaModal). -->
 <div class="overlay" id="cortesiaOverlay" style="display:none;z-index:615">
@@ -8272,7 +8304,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.28.4';
+const VOX_VERSION='2026.09.28.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10434,7 +10466,53 @@ let I18N_EN={
 "Deixar minha chave pronta":"Set up my key",
 "Esta gravação por nossa conta vai até {n} min. Faltam 15 segundos.":"This recording on us goes up to {n} min. 15 seconds left.",
 "Transformando em texto a gravação que estava guardada…":"Turning the saved recording into text…",
-"Você tem uma gravação guardada esperando a sua chave.":"You have a saved recording waiting for your key."
+"Você tem uma gravação guardada esperando a sua chave.":"You have a saved recording waiting for your key.",
+"A chave vai do seu aparelho direto para o Freemius, a loja que vende o Vox. Não passa por nós.":"The key goes from your device straight to Freemius, the store that sells Vox. It doesn't pass through us.",
+"A licença fica livre pra ativar em outro aparelho. Aqui, o Vox volta pro plano grátis — suas notas, pastas e mundos continuam todos aqui.":"The license becomes free to activate on another device. Here, Vox goes back to the free plan — your notes, folders and worlds all stay here.",
+"A licença que estava neste aparelho não está mais ativa. Se você renovou, cole a chave de novo.":"The license that was on this device is no longer active. If you renewed, paste the key again.",
+"Arquivos quantos quiser, sempre inteiros":"As many files as you want, always in full",
+"Assinar o Pro":"Get Pro",
+"Ativando…":"Activating…",
+"Ativar neste aparelho":"Activate on this device",
+"Cole a chave de licença que chegou no seu e-mail.":"Paste the license key that arrived in your email.",
+"Conferido agora: está tudo certo.":"Checked just now: all good.",
+"Conferir agora":"Check now",
+"Desativado. A licença está livre pra outro aparelho.":"Deactivated. The license is free for another device.",
+"Desativar libera a licença pra usar em outro aparelho. Suas notas não mudam.":"Deactivating frees the license to use on another device. Your notes don't change.",
+"Desativar neste aparelho":"Deactivate on this device",
+"Desativar o Pro neste aparelho?":"Deactivate Pro on this device?",
+"Diarização sem limite no mês":"Unlimited speaker separation every month",
+"Essa chave não foi reconhecida. Confira se copiou inteira, começando por sk_.":"That key wasn't recognized. Check that you copied all of it, starting with sk_.",
+"Essa licença foi cancelada.":"That license was cancelled.",
+"Essa licença já está no número máximo de aparelhos. Desative em um deles (Vox Pro → Desativar neste aparelho) e tente de novo.":"That license is already on its maximum number of devices. Deactivate it on one of them (Vox Pro → Deactivate on this device) and try again.",
+"Essa licença venceu. Renove pelo link do e-mail do Freemius e tente de novo.":"That license has expired. Renew it through the link in the Freemius email and try again.",
+"Exportar o calendário pro Google ou Apple (.ics)":"Export the calendar to Google or Apple (.ics)",
+"Gravação sem limite diário, que nunca encolhe":"Recording with no daily limit, never shrinks",
+"Já assinou?":"Already subscribed?",
+"Neste aparelho desde":"On this device since",
+"Não deu para falar com o Freemius agora. Confira a internet e tente de novo.":"Couldn't reach Freemius right now. Check your internet and try again.",
+"O Freemius recusou a ativação: {m}":"Freemius refused the activation: {m}",
+"O Vox Pro não está mais ativo neste aparelho. Tudo o que você criou continua aqui.":"Vox Pro is no longer active on this device. Everything you created is still here.",
+"Obrigado por apoiar o Vox. Tudo o que o Pro libera já vale neste aparelho.":"Thank you for supporting Vox. Everything Pro unlocks already works on this device.",
+"Pastas e subpastas sem teto":"Folders and subfolders with no cap",
+"Plano":"Plan",
+"Pro ativo neste aparelho":"Pro active on this device",
+"Pronto: o Vox Pro está ativo neste aparelho.":"Done: Vox Pro is active on this device.",
+"Quantos mundos trancados com senha quiser":"As many password-locked worlds as you want",
+"Seleção em massa sem limite":"Unlimited bulk selection",
+"Seu plano: grátis · veja o que o Pro libera":"Your plan: free · see what Pro unlocks",
+"Sim, desativar aqui":"Yes, deactivate here",
+"US$ 6 por mês · US$ 59 por ano · US$ 149 uma vez só":"US$ 6 a month · US$ 59 a year · US$ 149 once",
+"Validade":"Valid",
+"Você está no plano grátis, e ele continua grátis pra sempre. O Pro é pra quando o Vox já faz parte do seu dia.":"You're on the free plan, and it stays free forever. Pro is for when Vox is already part of your day.",
+"Vox Pro ativo":"Vox Pro active",
+"Vox Pro ativo. Obrigado!":"Vox Pro active. Thank you!",
+"até {d}":"until {d}",
+"vitalício, não vence":"lifetime, never expires",
+"Essa chave está maior que uma chave do Freemius (até 32 caracteres). Confira se não veio texto junto na cópia.":"That key is longer than a Freemius key (up to 32 characters). Check that no extra text came along when you copied it.",
+"Sua licença venceu em {d}. Se você já renovou, confira de novo.":"Your license expired on {d}. If you already renewed, check again.",
+"Conferir de novo":"Check again",
+"Seu plano":"Your plan"
 };
 
 // ── STATE ──
@@ -11195,6 +11273,189 @@ async function _primeiroPasso(){
   if(!est.disponivel){_obOpen();return}
   if((await _cortesiaAviso(false))==='chave')_obOpen();
 }
+// ── VOX PRO: a licença do Freemius ──
+// A licença vai do aparelho DIRETO pro Freemius: a API de licença deles aceita
+// chamada do navegador (CORS conferido em 28/09/2026). Nada passa pela ponte
+// nem por nós. Endpoints no doc 12 §3 do Plano Diretor. Sem conta, sem login:
+// a chave que chega por e-mail É a prova de compra.
+// O código é aberto, então um Pro "forçado" no localStorage é possível — e
+// aceito (doc 06): quem paga, paga porque quer apoiar e ter o que é seu.
+const FS_PRODUTO='37066';
+const FS_API='https://api.freemius.com/v1/products/'+FS_PRODUTO;
+const VOX_CHECKOUT='https://checkout.freemius.com/app/37066/plan/65930/';
+const _PRO_FOLGA_DIAS=7; // depois do vencimento, espera a renovação chegar antes de voltar pro grátis
+function _licenca(){try{return JSON.parse(localStorage.getItem('vox_licenca')||'null')}catch(e){return null}}
+function _licencaSalvar(l){
+  if(l)localStorage.setItem('vox_licenca',JSON.stringify(l));else localStorage.removeItem('vox_licenca');
+  _proAtualizarMenu();
+}
+// O Freemius manda datas como "Y-m-d H:i:s", em UTC.
+function _dataFs(s){if(!s)return null;const d=new Date(String(s).replace(' ','T')+'Z');return isNaN(d)?null:d}
+function voxPro(){
+  const l=_licenca();if(!l||l.cancelada)return false;
+  const e=_dataFs(l.expira);if(!e)return true; // vitalício: não vence
+  return Date.now()<e.getTime()+_PRO_FOLGA_DIAS*864e5;
+}
+// Identidade desta instalação pro Freemius (32 caracteres, sorteada aqui). É
+// ela que conta como "um aparelho" no limite de ativações da licença.
+function _licencaUid(){
+  let u=localStorage.getItem('vox_licenca_uid')||'';
+  if(!/^[a-f0-9]{32}$/.test(u)){const b=new Uint8Array(16);crypto.getRandomValues(b);u=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem('vox_licenca_uid',u)}
+  return u;
+}
+function _nomeAparelho(){
+  const ua=navigator.userAgent;
+  const so=/iPad/.test(ua)?'iPad':/iPhone/.test(ua)?'iPhone':/Android/.test(ua)?'Android':/Mac/.test(ua)?'Mac':/Windows/.test(ua)?'Windows':/Linux/.test(ua)?'Linux':'';
+  const nav=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)?'Safari':'';
+  return ['Vox',so,nav].filter(Boolean).join(' · ');
+}
+async function _fs(caminho,opts={}){
+  const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch(FS_API+caminho,{...opts,signal:ctl.signal});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||j.error){const e=new Error(j.error?.message||('HTTP '+r.status));e.codigo=j.error?.code||'';e.http=r.status;throw e}
+    return j;
+  }catch(e){if(!e.http)e.codigo='rede';throw e}
+  finally{clearTimeout(tm)}
+}
+async function ativarLicenca(chave){
+  // Copiada do e-mail, a chave às vezes vem com espaço ou quebra de linha no meio.
+  chave=String(chave||'').replace(/\s+/g,'');
+  if(chave.length>32){const e=new Error('');e.codigo='license_key_too_long';throw e}
+  const uid=_licencaUid();
+  const j=await _fs('/licenses/activate.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({license_key:chave,uid,title:_nomeAparelho()})});
+  _licencaSalvar({chave,uid,install_id:String(j.install_id||''),plano:j.license_plan_name||'',plano_id:String(j.license_plan_id||''),pricing_id:String(j.license_pricing_id||''),expira:null,cancelada:false,ativada_em:new Date().toISOString(),conferida_em:null});
+  // A ativação não diz quando vence — a conferência diz. Se ela falhar agora,
+  // o Pro já vale (a ativação deu certo) e a próxima conferência completa.
+  await conferirLicenca().catch(()=>{});
+  return _licenca();
+}
+async function conferirLicenca(){
+  const l=_licenca();if(!l||!l.install_id)return l;
+  const q='?uid='+encodeURIComponent(l.uid)+'&license_key='+encodeURIComponent(l.chave);
+  try{
+    const j=await _fs('/installs/'+encodeURIComponent(l.install_id)+'/license.json'+q);
+    l.expira=j.expiration||null;l.cancelada=!!j.is_cancelled;l.conferida_em=new Date().toISOString();delete l.motivo;
+    if(j.plan_id)l.plano_id=String(j.plan_id);
+    _licencaSalvar(l);
+  }catch(e){
+    // O Freemius respondeu que esta licença não vale mais aqui (reembolso,
+    // chave apagada, aparelho desativado noutro lugar): volta pro grátis.
+    // Sem internet, ou o Freemius sobrecarregado: fica como estava.
+    if(e.http>=400&&e.http<500&&e.http!==408&&e.http!==429){
+      l.cancelada=true;l.motivo=e.codigo||'invalida';l.conferida_em=new Date().toISOString();_licencaSalvar(l);
+    }else throw e;
+  }
+  return _licenca();
+}
+async function desativarLicenca(){
+  const l=_licenca();if(!l)return;
+  try{
+    await _fs('/licenses/deactivate.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid:l.uid,uuid:l.uid,install_id:l.install_id,license_key:l.chave})});
+  }catch(e){
+    // Licença que o Freemius já não reconhece: some daqui também. Sem
+    // internet, NÃO apaga — senão o lugar dela continuaria ocupado lá.
+    if(!(e.http>=400&&e.http<500))throw e;
+  }
+  _licencaSalvar(null);
+}
+// Na abertura: confere de 3 em 3 dias, ou quando o vencimento está perto.
+function _licencaTalvezConferir(){
+  const l=_licenca();if(!l||!l.install_id||l.cancelada)return;
+  const ult=l.conferida_em?Date.parse(l.conferida_em):0,e=_dataFs(l.expira);
+  if(Date.now()-ult<3*864e5&&!(e&&e.getTime()-Date.now()<2*864e5))return;
+  const antes=voxPro();
+  conferirLicenca().then(()=>{if(antes&&!voxPro())toast(t('O Vox Pro não está mais ativo neste aparelho. Tudo o que você criou continua aqui.'),true)}).catch(()=>{});
+}
+function _fmtDataCurta(d){try{return d.toLocaleDateString(getLocale(),{day:'numeric',month:'long',year:'numeric'})}catch(e){return d.toISOString().slice(0,10)}}
+function _proAtualizarMenu(){
+  const s=document.getElementById('proMenuSub');
+  if(s)s.textContent=voxPro()?t('Pro ativo neste aparelho'):t('Seu plano: grátis · veja o que o Pro libera');
+}
+const _PRO_LIBERA=['Gravação sem limite diário, que nunca encolhe','Arquivos quantos quiser, sempre inteiros','Diarização sem limite no mês','Pastas e subpastas sem teto','Quantos mundos trancados com senha quiser','Seleção em massa sem limite','Exportar o calendário pro Google ou Apple (.ics)'];
+function abrirVoxPro(contexto){_proRender(contexto||'');document.getElementById('proOverlay').style.display='flex'}
+function fecharVoxPro(){document.getElementById('proOverlay').style.display='none'}
+function _proRender(contexto,aviso,avisoErro){
+  const c=document.querySelector('#proOverlay .ob-body');if(!c)return;
+  _proContexto=contexto||'';
+  const l=_licenca(),msg=aviso?`<p class="pro-aviso${avisoErro?' erro':''}">${escHtml(aviso)}</p>`:'';
+  if(voxPro()){
+    const e=_dataFs(l.expira),ativ=l.ativada_em?new Date(l.ativada_em):null,conf=l.conferida_em?new Date(l.conferida_em):null;
+    c.innerHTML=`<h2 class="ob-h">${t('Vox Pro ativo')}</h2>
+      <p class="ob-p">${t('Obrigado por apoiar o Vox. Tudo o que o Pro libera já vale neste aparelho.')}</p>${msg}
+      <div class="pro-ficha">
+        <div><span>${t('Plano')}</span><b>${escHtml(l.plano&&l.plano.toLowerCase()!=='pro'?('Pro · '+l.plano):'Pro')}</b></div>
+        <div><span>${t('Validade')}</span><b>${e?escHtml(t('até {d}').replace('{d}',_fmtDataCurta(e))):t('vitalício, não vence')}</b></div>
+        ${ativ?`<div><span>${t('Neste aparelho desde')}</span><b>${escHtml(_fmtDataCurta(ativ))}</b></div>`:''}
+        ${conf?`<div><span>${t('Conferido em')}</span><b>${escHtml(_fmtDataCurta(conf))}</b></div>`:''}
+      </div>
+      <button class="ob-btn" onclick="fecharVoxPro()">${t('Fechar')}</button>
+      <button class="ob-btn-ghost" onclick="_proConferir()">${t('Conferir agora')}</button>
+      <button class="ob-btn-ghost" onclick="_proDesativarPerguntar()">${t('Desativar neste aparelho')}</button>
+      <p class="ob-note">${t('Desativar libera a licença pra usar em outro aparelho. Suas notas não mudam.')}</p>`;
+    return;
+  }
+  const lista=_PRO_LIBERA.map(x=>`<li>${t(x)}</li>`).join('');
+  // Licença que venceu (assinatura não renovou) ou que o Freemius não aceita mais.
+  const venceu=l&&!l.cancelada&&_dataFs(l.expira);
+  const antiga=l&&l.cancelada?`<p class="pro-aviso erro">${t('A licença que estava neste aparelho não está mais ativa. Se você renovou, cole a chave de novo.')}</p>`
+    :venceu?`<p class="pro-aviso erro">${escHtml(t('Sua licença venceu em {d}. Se você já renovou, confira de novo.').replace('{d}',_fmtDataCurta(venceu)))}</p><button class="ob-btn-ghost" onclick="_proConferir()">${t('Conferir de novo')}</button>`:'';
+  c.innerHTML=`${contexto?`<p class="pro-contexto">${escHtml(contexto)}</p>`:''}
+    <h2 class="ob-h">Vox Pro</h2>
+    <p class="ob-p">${t('Você está no plano grátis, e ele continua grátis pra sempre. O Pro é pra quando o Vox já faz parte do seu dia.')}</p>
+    <ul class="pro-lista">${lista}</ul>
+    <p class="pro-preco">${t('US$ 6 por mês · US$ 59 por ano · US$ 149 uma vez só')}</p>
+    <a class="ob-btn pro-assinar" href="${VOX_CHECKOUT}" target="_blank" rel="noopener noreferrer">${t('Assinar o Pro')}</a>
+    <div class="pro-sep"></div>
+    <h3 class="pro-h3">${t('Já assinou?')}</h3>
+    <p class="ob-p">${t('Cole a chave de licença que chegou no seu e-mail.')}</p>${antiga}${msg}
+    <input type="text" class="ob-key" id="proChave" placeholder="sk_…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button class="ob-btn" id="proAtivarBtn" onclick="_proAtivar()">${t('Ativar neste aparelho')}</button>
+    <p class="ob-note">${t('A chave vai do seu aparelho direto para o Freemius, a loja que vende o Vox. Não passa por nós.')}</p>
+    <button class="ob-btn-ghost" onclick="fecharVoxPro()">${t('Fechar')}</button>`;
+}
+let _proContexto='';
+// Cada recusa do Freemius vira uma frase que diz o que fazer, não o código.
+function _proErroTexto(e){
+  const c=String(e.codigo||'').toLowerCase();
+  if(c==='rede')return t('Não deu para falar com o Freemius agora. Confira a internet e tente de novo.');
+  if(c==='license_key_too_long')return t('Essa chave está maior que uma chave do Freemius (até 32 caracteres). Confira se não veio texto junto na cópia.');
+  if(c==='invalid_license_key')return t('Essa chave não foi reconhecida. Confira se copiou inteira, começando por sk_.');
+  if(/limit|quota|activations/.test(c))return t('Essa licença já está no número máximo de aparelhos. Desative em um deles (Vox Pro → Desativar neste aparelho) e tente de novo.');
+  if(/expired/.test(c))return t('Essa licença venceu. Renove pelo link do e-mail do Freemius e tente de novo.');
+  if(/cancel/.test(c))return t('Essa licença foi cancelada.');
+  return t('O Freemius recusou a ativação: {m}').replace('{m}',e.message||c);
+}
+async function _proAtivar(){
+  const inp=document.getElementById('proChave'),btn=document.getElementById('proAtivarBtn');
+  const chave=(inp?.value||'').trim();
+  if(!chave){_proRender(_proContexto,t('Cole a chave primeiro.'),true);return}
+  if(btn){btn.disabled=true;btn.textContent=t('Ativando…')}
+  try{
+    await ativarLicenca(chave);
+    _proRender('',t('Pronto: o Vox Pro está ativo neste aparelho.'));
+    toast(t('Vox Pro ativo. Obrigado!'));
+  }catch(e){
+    _proRender(_proContexto,_proErroTexto(e),true);
+    const i2=document.getElementById('proChave');if(i2)i2.value=chave;
+  }
+}
+async function _proConferir(){
+  try{await conferirLicenca();_proRender('',voxPro()?t('Conferido agora: está tudo certo.'):'')}
+  catch(e){_proRender('',_proErroTexto(e),true)}
+}
+function _proDesativarPerguntar(){
+  const c=document.querySelector('#proOverlay .ob-body');if(!c)return;
+  c.innerHTML=`<h2 class="ob-h">${t('Desativar o Pro neste aparelho?')}</h2>
+    <p class="ob-p">${t('A licença fica livre pra ativar em outro aparelho. Aqui, o Vox volta pro plano grátis — suas notas, pastas e mundos continuam todos aqui.')}</p>
+    <button class="ob-btn" onclick="_proDesativar()">${t('Sim, desativar aqui')}</button>
+    <button class="ob-btn-ghost" onclick="_proRender('')">${t('Voltar')}</button>`;
+}
+async function _proDesativar(){
+  try{await desativarLicenca();_proRender('',t('Desativado. A licença está livre pra outro aparelho.'))}
+  catch(e){_proRender('',_proErroTexto(e),true)}
+}
 function _precisaConfigurar(gravacao){
   const temChave=cfg.apiKeyGroq||cfg.apiKey||cfg.apiKeyGrok||cfg.provider==='local';
   // Gravar sem chave é permitido enquanto a cortesia existe: vira texto pela
@@ -11829,6 +12090,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // Chave que chegou por outro caminho (cofre do navegador, backup de chaves)
   // também libera o que estava guardado esperando.
   setTimeout(_chaveTalvezChegou,1500);
+  _proAtualizarMenu();setTimeout(_licencaTalvezConferir,2500);
   document.getElementById('snameInput').addEventListener('input',e=>syncSessionName(e.target.value));
   document.addEventListener('click',e=>{
     if(!document.getElementById('expDrop').contains(e.target)&&!document.getElementById('btnExport').contains(e.target))
