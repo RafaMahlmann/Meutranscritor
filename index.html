@@ -122,6 +122,17 @@
 [data-skin="amber"]{--accent:#d99a2b;--accent2:#b87f1c;--accent-glow:rgba(217,154,43,0.20)}
 [data-skin="indigo"]{--accent:#6366f1;--accent2:#4f46e5;--accent-glow:rgba(99,102,241,0.20)}
 [data-skin="teal"]{--accent:#0e8a8f;--accent2:#0b6e72;--accent-glow:rgba(14,138,143,0.20)}
+/* ── Famílias do menu ⋯ (Central de Ajustes, 28/09/2026) ──
+   Cada família tem a cor do seu balão: Configurações, Idioma e Aparência uma
+   cada (pedido do Carlos); as quatro ferramentas que olham as notas dividem o
+   violeta; cópias e aparelhos, o dourado do cofre; ajuda, a ardósia. Nenhuma
+   usa --accent: com a skin Petróleo, duas famílias ficariam da mesma cor.
+   Medido sobre o --bg-card de cada tema, todas passam de 4,5:1. --hm-sub é o
+   subtítulo do menu — o --text3 dá só 3,3:1 sobre o branco. */
+:root{--hm-cfg:#087a55;--hm-lang:#2a72d4;--hm-look:#bf3485;--hm-notas:#7c3aed;--hm-cofre:#9a6200;--hm-ajuda:#566579;
+  --hm-sub:#6e6e73;--hm-falta-fundo:rgba(255,149,0,.16);--hm-falta-tinta:#8a4b00;--hm-trilho-ind:var(--bg-card)}
+[data-theme="dark"]{--hm-cfg:#34d399;--hm-lang:#6aa8ff;--hm-look:#f27ac0;--hm-notas:#a78bfa;--hm-cofre:#f2bf4a;--hm-ajuda:#a3b1c6;
+  --hm-sub:#a1a1a8;--hm-falta-fundo:rgba(255,170,60,.16);--hm-falta-tinta:#ffc46b;--hm-trilho-ind:#48484c}
 .c0{--ca:#10b981;--cag:rgba(16,185,129,0.12);--cat:rgba(16,185,129,0.06)}
 .c1{--ca:#3b82f6;--cag:rgba(59,130,246,0.12);--cat:rgba(59,130,246,0.06)}
 .c2{--ca:#a78bfa;--cag:rgba(167,139,250,0.12);--cat:rgba(167,139,250,0.06)}
@@ -490,39 +501,116 @@ header{background:var(--bg-header);backdrop-filter:blur(24px) saturate(180%);-we
    Exportar ficam fora. Os wrappers sempre são position:relative/block pra o
    dropdown posicionar; o botão ⋯ sempre visível. */
 .hd-more-wrap{display:block;position:relative}
-.hd-more-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;min-width:284px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:6px;flex-direction:column;gap:2px;animation:fadeDown 0.15s ease}
-.hd-more-drop.on{display:flex}
-.hd-more-drop .gbtn span{display:inline!important}
-.hd-more-drop .gbtn{width:100%;justify-content:flex-start;padding:9px 12px;border-radius:10px}
+.hd-more-drop{--hm-cor:var(--hm-cfg);display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;min-width:284px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:6px;flex-direction:column;gap:1px;transform-origin:var(--hm-ox,100%) -8px;overscroll-behavior:contain}
+/* Efeito 1 — Brotar (28/09/2026): o menu nasce do botão ⋯ que você tocou (a
+   origem da escala é medida em toggleHdMore), as famílias chegam em blocos,
+   um degrau por grupo, e os balões estalam. Fechar é mais rápido que abrir —
+   quem fecha já decidiu. A entrada usa a propriedade translate, não
+   transform, pra não roubar o :active das linhas (mesma armadilha do
+   .mapa-menu). */
+.hd-more-drop.on{display:flex;animation:hmBrota 180ms var(--fc-curva) both}
+.hd-more-drop.fechando{display:flex;pointer-events:none;animation:hmRecolhe 120ms var(--fc-curva) both}
+@keyframes hmBrota{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@keyframes hmRecolhe{to{opacity:0;transform:scale(.97)}}
+.hdm-grupo{display:flex;flex-direction:column;gap:1px}
+.hd-more-drop.on .hdm-grupo{animation:hmGrupo 200ms var(--fc-curva) backwards;animation-delay:calc(20ms + var(--i,0) * 18ms)}
+@keyframes hmGrupo{from{opacity:0;translate:0 -5px}}
+.hd-more-drop.on .hdm-bolha{animation:hmBolha 240ms cubic-bezier(.2,1.28,.36,1) backwards;animation-delay:calc(50ms + var(--i,0) * 18ms)}
+@keyframes hmBolha{from{scale:.6;opacity:0}}
 .gbtn.hd-more-btn{display:inline-flex}
-/* ── Itens do menu "Mais" com subtexto ──
-   O rótulo sozinho não dizia do que a ferramenta precisa, e as três exigem
-   coisas diferentes (embeddings / IA de texto / nada). A linha de baixo conta
-   isso ANTES de a pessoa abrir e esbarrar num aviso. */
-.hd-more-item{}
-.hdm-item{display:flex;align-items:stretch;gap:3px;width:100%}
-.hd-more-drop .hdm-item .gbtn{flex:1;align-items:flex-start;text-align:left;min-width:0;padding:8px 10px}
-/* Precisa derrotar ".hd-more-drop .gbtn span{display:inline!important}" — essa
-   regra tem UM SELETOR A MAIS (o elemento "span"), então com !important nos
-   dois lados ela vencia mesmo com !important aqui também: título e subtexto
-   ficavam grudados na mesma linha corrida. Repetir ".gbtn span" no seletor
-   iguala a especificidade e o meu, por vir depois no arquivo, prevalece. */
-.hd-more-drop .gbtn span.hdm-txt{display:flex!important;flex-direction:column;gap:1px;min-width:0;flex:1}
-.hd-more-drop .gbtn span.hdm-t{display:block!important;font-size:12.5px;font-weight:600;line-height:1.3}
-.hd-more-drop .gbtn span.hdm-sub{display:block!important;font-size:10.5px;font-weight:500;color:var(--text4);line-height:1.35;white-space:normal;letter-spacing:0}
-.hdm-help{flex-shrink:0;width:26px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text4);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;align-self:center;height:26px;line-height:1}
-.hdm-help:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
-/* Plano 22 (08/09/2026): "Configurações" sobe pro 1º item do menu ⋯, com fundo
-   verde — é o único item que a pessoa procura por nome, não por tarefa. */
-.hdm-item.chefe .gbtn{background:var(--ok-bg);color:var(--ok-txt)}
-.hdm-item.chefe .gbtn:hover{background:var(--ok-bg)}
-.hdm-item.chefe .gbtn span.hdm-sub{color:color-mix(in srgb,var(--ok-txt) 88%,var(--text))}
+#btnHdMore svg{transition:transform 200ms var(--fc-curva)}
+#btnHdMore[aria-expanded="true"]{background:var(--border2);color:var(--text)}
+#btnHdMore[aria-expanded="true"] svg{transform:rotate(90deg)}
+/* Linhas. Antes todas tinham o mesmo fundo cinza com o título em #8e8e93 —
+   2,8:1 de contraste, o visual de botão desativado. Agora o fundo só aparece
+   no toque, e o título vai em --text. */
+.hdm-item{display:flex;align-items:center;width:100%;min-width:0;transition:transform 110ms var(--fc-curva)}
+.hdm-linha{--hm-tinta:color-mix(in srgb,var(--hm-cor) 13%,transparent);flex:1;min-width:0;display:flex;align-items:center;gap:11px;border:0;background:transparent;color:var(--text);text-align:left;padding:8px 10px;border-radius:12px;font-family:var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color 120ms linear}
+[data-theme="dark"] .hdm-linha{--hm-tinta:color-mix(in srgb,var(--hm-cor) 22%,transparent)}
+.hdm-linha:hover{background:var(--bg-input)}
+.hdm-fixa{cursor:default}
+.hdm-fixa:hover{background:transparent}
+/* Efeito 2 — Tinta: no instante do toque a linha afunda e ganha a cor da
+   família, e o balão afunda um pouco mais. Quem afunda é o .hdm-item (via
+   :has), pra linha e o ⓘ ao lado afundarem juntos sem desalinhar. A onda que
+   sai do balão ao soltar é o _jzOnda, disparado no listener do menu. */
+.hdm-item:has(>.hdm-linha:not(.hdm-fixa):active){transform:scale(.975)}
+.hdm-linha:not(.hdm-fixa):active{background:var(--hm-tinta)}
+.hdm-bolha{width:32px;height:32px;border-radius:10px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,var(--hm-cor) 15%,transparent);color:var(--hm-cor);transition:transform 110ms var(--fc-curva)}
+.hdm-bolha svg{width:17px;height:17px}
+.hdm-linha:not(.hdm-fixa):active .hdm-bolha{transform:scale(.88)}
+.hd-more-drop .hdm-bolha.soco{animation:jzSoco 300ms var(--fc-curva)}
+.hdm-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.hdm-t{font-size:13.5px;font-weight:650;line-height:1.25;color:var(--text)}
+.hdm-sub{font-size:11px;font-weight:500;color:var(--hm-sub);line-height:1.35}
+.hdm-chev{flex:none;display:grid;color:var(--text4)}
+.hdm-chev svg{width:14px;height:14px;transition:transform 220ms var(--fc-curva)}
+#themeBtn[aria-expanded="true"] .hdm-chev svg{transform:rotate(90deg)}
+.hdm-item.chefe .hdm-linha{background:color-mix(in srgb,var(--hm-cfg) 9%,transparent)}
+.hdm-item.chefe .hdm-linha:active{background:var(--hm-tinta)}
+/* Aviso de cópia atrasada embaixo de Configurações e selo "falta 1 chave" nas
+   ferramentas: os dois só aparecem quando falta alguma coisa. */
+.hdm-alerta{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;color:var(--hm-falta-tinta);margin-top:2px}
+.hdm-alerta::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warning);flex:none}
+.hdm-alerta[hidden],.hdm-selo[hidden]{display:none}
+/* o selo mora embaixo do subtítulo: ao lado, ele espremia o título em 3 linhas no celular */
+.hdm-selo{align-self:flex-start;margin-top:3px;font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap;color:var(--hm-falta-tinta);background:var(--hm-falta-fundo)}
+/* O "?" era uma caixinha de 26px solta fora do item, que estreitava a linha.
+   Virou um ⓘ dentro da mesma fileira, sem borda. */
+.hdm-info{width:30px;height:30px;border-radius:50%;border:0;background:transparent;color:var(--hm-sub);display:grid;place-items:center;cursor:pointer;flex:none;margin-left:-2px;transition:transform 110ms var(--fc-curva),background-color .15s}
+.hdm-info:hover{background:var(--bg-input);color:var(--text)}
+.hdm-info:active{transform:scale(.88)}
+.hdm-info svg{width:17px;height:17px}
+.hdm-cab{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--hm-sub);padding:11px 10px 3px}
+.hdm-cab::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--hm-cor);flex:none}
+.hdm-sep{height:1px;background:var(--border);margin:5px 8px}
+/* Efeito 3 — Encaixe: o indicador do trilho (PT|EN, Claro|Escuro) viaja,
+   estica no meio do caminho e assenta. É um nó só, que nunca é recriado —
+   o mesmo desenho do .smode-rail. --jz-i é 0% ou 100% da largura dele. */
+.jz-seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:2px;border-radius:10px;background:var(--bg-input);flex:none}
+.jz-seg-ind{position:absolute;left:2px;top:2px;bottom:2px;width:calc(50% - 2px);border-radius:8px;background:var(--hm-trilho-ind);box-shadow:var(--smode-elev);pointer-events:none;transform:translateX(var(--jz-i,0%));transition:transform 240ms var(--fc-curva)}
+.jz-seg.noanim .jz-seg-ind{transition:none}
+.jz-seg.anda .jz-seg-ind{animation:jzEstica 240ms var(--fc-curva)}
+@keyframes jzEstica{40%{scale:1.1 .9}}
+.jz-seg button{position:relative;z-index:1;border:0;background:transparent;font:700 12px/1 var(--font);color:var(--hm-sub);padding:7px 11px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:transform 110ms var(--fc-curva),color 200ms linear}
+.jz-seg button[aria-pressed="true"]{color:var(--text)}
+.jz-seg button:active{transform:scale(.965)}
+/* Gaveta da Aparência: abre dentro do menu, em vez do balão por cima. É o
+   único efeito que mexe em layout, e só dentro do menu. */
+.hdm-gaveta{display:grid;grid-template-rows:0fr;transition:grid-template-rows 220ms var(--fc-curva)}
+.hdm-gaveta.on{grid-template-rows:1fr}
+.hdm-gaveta>div{min-height:0;overflow:hidden;opacity:0;translate:0 -4px;visibility:hidden;transition:opacity 160ms linear,translate 220ms var(--fc-curva),visibility 0s linear 220ms}
+.hdm-gaveta.on>div{opacity:1;translate:0 0;visibility:visible;transition:opacity 160ms linear,translate 220ms var(--fc-curva),visibility 0s}
+.hdm-gaveta-in{display:grid;gap:12px;padding:4px 10px 12px 53px}
+.hdm-gv{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;font-weight:600;color:var(--hm-sub)}
 /* No celular o botão ⋯ fica colado no canto direito, então um menu que cresce
    pra DIREITA encosta na borda da tela (medido: chegava exatamente em 423px de
    423px). Ancorado à direita ele cresce pra dentro e sobra folga — e o limite
    de largura garante que continue cabendo mesmo em telas bem estreitas. */
 @media(max-width:640px){
   .hd-more-drop{left:auto;right:0;max-width:calc(100vw - 24px)}
+}
+/* Onda que sobrevive ao elemento (generaliza a _recOnda): mora no <body>,
+   porque o menu fecha no mesmo clique que a dispara. */
+.jz-onda{position:fixed;pointer-events:none;z-index:10000;border:2px solid var(--jz-cor,var(--accent));animation:jzOnda 420ms var(--fc-curva) forwards}
+@keyframes jzOnda{from{transform:scale(1);opacity:.55}to{transform:scale(2.2);opacity:0}}
+@keyframes jzSoco{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
+/* Trocar de idioma recarrega a página: o recibo chega do lado de cá, com o
+   ⋯ dando um soco e o "Mais" chegando rolando já no idioma novo. */
+#btnHdMore.jz-chegou{animation:jzSoco 320ms var(--fc-curva)}
+#btnHdMore.jz-chegou>span{animation:jzRola 300ms var(--fc-curva)}
+@keyframes jzRola{from{transform:translateY(55%);opacity:0}}
+/* Claro ↔ Escuro: o tema novo se abre em círculo a partir do dedo. É o único
+   efeito grande do pacote, porque trocar de tema é raro. Sem View Transition
+   (Safari < 18, Firefox antigo), a troca é seca como sempre foi. */
+html.jz-tema::view-transition-old(root),html.jz-tema::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.jz-tema::view-transition-new(root){animation:jzRevela 380ms var(--fc-curva) both}
+@keyframes jzRevela{from{clip-path:circle(0 at var(--jz-x) var(--jz-y))}to{clip-path:circle(var(--jz-r) at var(--jz-x) var(--jz-y))}}
+@media(prefers-reduced-motion:reduce){
+  .hd-more-drop.on,.hd-more-drop.fechando,.hd-more-drop.on .hdm-grupo,.hd-more-drop.on .hdm-bolha,.hd-more-drop .hdm-bolha.soco,.jz-seg.anda .jz-seg-ind,#btnHdMore.jz-chegou,#btnHdMore.jz-chegou>span{animation:none}
+  #btnHdMore svg,.hdm-item,.hdm-bolha,.hdm-chev svg,.hdm-gaveta,.hdm-gaveta>div,.jz-seg-ind,.jz-seg button,.hdm-info{transition:none}
+  .hdm-item:has(>.hdm-linha:not(.hdm-fixa):active),.hdm-linha:not(.hdm-fixa):active .hdm-bolha,.jz-seg button:active,.hdm-info:active{transform:none}
+  #btnHdMore[aria-expanded="true"] svg{transform:none}
 }
 .cfg-wrap{display:inline-flex;align-items:center;position:relative;vertical-align:middle}
 #speedBadge{display:none;white-space:nowrap}
@@ -681,17 +769,16 @@ header.has-speed-badge{padding-bottom:18px}
 .ob-lang{background:var(--bg-input);border:1px solid var(--border);color:var(--text3);border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:4px}
 .ob-lang:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
 .theme-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--bg-input);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
-.skin-wrap{position:relative}
-.skin-pop{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:200;padding:11px;min-width:184px;animation:fadeDown .15s ease}
-.skin-pop.on{display:block}
-.skin-hd{font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text4);padding:2px 2px 6px}
-.skin-modes{display:flex;gap:6px;margin-bottom:11px}
-.skin-mode{flex:1;background:var(--bg-input);border:1px solid transparent;color:var(--text2);border-radius:9px;padding:7px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition)}
-.skin-mode.on{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
-.skin-swatches{display:flex;gap:10px;padding:2px}
-.skin-sw{width:30px;height:30px;border-radius:50%;background:var(--sw);border:2px solid transparent;cursor:pointer;transition:transform var(--transition);padding:0}
-.skin-sw:hover{transform:scale(1.12)}
-.skin-sw.on{box-shadow:0 0 0 2px var(--bg-card),0 0 0 4px var(--sw)}
+/* As 4 cores moram na gaveta da Aparência, dentro do menu ⋯. O aro da cor
+   escolhida POUSA em volta (escala 1,35 → 1) e a amostra dá um soco — o acento
+   do app inteiro muda no mesmo quadro, e isso já é a recompensa. */
+.skin-swatches{display:flex;gap:14px;padding:2px 4px}
+.skin-sw{position:relative;width:26px;height:26px;border-radius:50%;background:var(--sw);border:0;cursor:pointer;padding:0;transition:transform 110ms var(--fc-curva)}
+.skin-sw::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--sw);opacity:0;transform:scale(1.35);pointer-events:none;transition:transform 240ms var(--fc-curva),opacity 160ms linear}
+.skin-sw.on::after{opacity:1;transform:none}
+.skin-sw:active{transform:scale(.9)}
+.skin-sw.soco{animation:jzSoco 300ms var(--fc-curva)}
+@media(prefers-reduced-motion:reduce){.skin-sw,.skin-sw::after{transition:none}.skin-sw:active{transform:none}.skin-sw.soco{animation:none}}
 .theme-btn:hover{background:var(--border2)}
 /* padding-top/bottom em vez do shorthand "8px 0" — o shorthand zerava
    esquerda/direita, sobrescrevendo os 20px de .wrap (mesma classe, mas essa
@@ -6469,81 +6556,101 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
            (hdMoreDrop); só Cérebro/View/Buscar/Exportar ficam fora da fileira.
            O CSS base já posiciona o dropdown e mostra o botão ⋯ sempre. -->
       <div class="hd-more-wrap" id="hdMoreWrap">
-        <button class="gbtn hd-more-btn" id="btnHdMore" onclick="toggleHdMore()" title="Mais opções" data-i18n-title>
+        <button class="gbtn hd-more-btn" id="btnHdMore" onclick="toggleHdMore()" title="Mais opções" data-i18n-title aria-haspopup="true" aria-expanded="false" aria-controls="hdMoreDrop">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
           <span data-i18n>Mais</span>
         </button>
         <div class="hd-more-drop" id="hdMoreDrop">
-          <!-- Plano 22 (08/09/2026): "Configurações" vira o 1º item — é o único
-               item do menu que a pessoa procura por nome, não por tarefa do dia.
-               Buscar saiu daqui e virou ícone fixo na barra (ver .hd-actions). -->
-          <div class="hdm-item chefe">
-            <button class="gbtn gbtn-ico" id="btnCfg" onclick="toggleHdMore();openModal()" title="Configurações" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Configurações</span><span class="hdm-sub" data-i18n>Serviço de transcrição, chaves, backup e espaço</span></span>
-            </button>
-          </div>
-          <!-- Ferramentas de descoberta: cada uma diz, na própria linha, o que faz
-               e de que ela precisa. Sem isso a pessoa só descobria o requisito
-               DEPOIS de abrir e esbarrar no aviso — e as três têm exigências
-               diferentes, então um recado único seria mentira: só as Notas
-               relacionadas precisam de embeddings; o Panorama usa a IA de texto
-               comum; o Resgatar funciona sem chave nenhuma. O "?" ao lado abre
-               o card que explica o que é embeddings e quais IAs oferecem. -->
-          <div class="hdm-item">
-            <button class="gbtn" id="btnDaySummary" onclick="toggleHdMore();openDaySummary()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Resumo do dia</span><span class="hdm-sub" data-i18n>Junta o que você gravou hoje · usa sua IA de texto</span></span>
-            </button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnCostura" onclick="toggleHdMore();openCostura()" title="Agrupa notas sobre o mesmo assunto" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9c0 4 12 5 12 9"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Notas relacionadas</span><span class="hdm-sub" data-i18n>Junta notas do mesmo assunto · precisa de chave com embeddings (OpenAI ou Gemini)</span></span>
-            </button>
-            <button class="hdm-help" onclick="toggleHdMore();openSemHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?">?</button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnPanorama" onclick="toggleHdMore();openPanorama()" title="Temas que se repetem, promessas soltas e mudanças de ideia" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>O que você anda repetindo</span><span class="hdm-sub" data-i18n>Temas, promessas e mudanças de ideia · usa sua IA de texto</span></span>
-            </button>
-            <button class="hdm-help" onclick="toggleHdMore();openPanHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?">?</button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnRessurgir" onclick="toggleHdMore();openRessurgir()" title="Traz de volta uma nota antiga esquecida" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Resgatar nota antiga</span><span class="hdm-sub" data-i18n>Traz de volta o que você esqueceu · funciona sem chave</span></span>
-            </button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnTxReceber" onclick="toggleHdMore();abrirReceberTransferencia()" title="Cole um link ou leia um QR de outro aparelho" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Receber transferência</span><span class="hdm-sub" data-i18n>Cole o link ou leia o QR de outro aparelho · funciona sem instalar nada</span></span>
-            </button>
-          </div>
-          <div class="hdm-item">
-            <button class="gbtn" id="btnSetup" onclick="toggleHdMore();_obOpen()" title="Rever as boas-vindas" data-i18n-title>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg>
-              <span class="hdm-txt"><span class="hdm-t" data-i18n>Rever as boas-vindas</span><span class="hdm-sub" data-i18n>As telas do primeiro dia, de novo. Nada muda no que você já configurou.</span></span>
-            </button>
-          </div>
-          <button class="gbtn" id="btnLang" onclick="setLang(currentLang==='pt'?'en':'pt')" title="Language / Idioma"><span class="svgi" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span> <span class="btn-lang-txt">PT</span></button>
-          <div class="skin-wrap">
-            <button class="gbtn" id="themeBtn" onclick="toggleSkinPop()" title="Aparência" data-i18n-title><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.12a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.55-2.5 5.55-5.55C21.97 6.01 17.46 2 12 2z"/><circle cx="13.5" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg></span> <span data-i18n>Aparência</span></button>
-            <div class="skin-pop" id="skinPop">
-              <div class="skin-hd" data-i18n>Tema</div>
-              <div class="skin-modes">
-                <button class="skin-mode" data-mode="light" onclick="setTheme('light')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span> <span data-i18n>Claro</span></button>
-                <button class="skin-mode" data-mode="dark" onclick="setTheme('dark')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span> <span data-i18n>Escuro</span></button>
+          <!-- Central de Ajustes, Fase 1 (28/09/2026). O menu é dividido em
+               famílias e cada família tem a cor do seu balão (--hm-*). As três
+               primeiras linhas são os ajustes do app, na ordem que o Carlos
+               pediu: Configurações, Idioma, Aparência. As ferramentas das notas
+               dizem o que fazem; o que elas PRECISAM só aparece, num selo,
+               quando falta (_hdmSelos) — quem já tem a chave não lê requisito.
+               Os id dos botões são os de antes. -->
+          <div class="hdm-grupo" style="--i:0">
+            <div class="hdm-item chefe" style="--hm-cor:var(--hm-cfg)">
+              <button class="hdm-linha" id="btnCfg" onclick="_hdMoreFechar();openModal()" title="Configurações" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Configurações</span><span class="hdm-sub" data-i18n>Chaves, cópias de segurança e serviços</span><span class="hdm-alerta" id="hdmAlerta" hidden></span></span>
+                <span class="hdm-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+              </button>
+            </div>
+            <div class="hdm-item" style="--hm-cor:var(--hm-lang)">
+              <div class="hdm-linha hdm-fixa">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Idioma do app</span><span class="hdm-sub" id="hdmLangNome">Português</span></span>
+                <span class="jz-seg" id="btnLang" role="group" title="Language / Idioma" aria-label="Language / Idioma"><span class="jz-seg-ind"></span><button type="button" data-v="pt" onclick="_jzIdioma('pt',this)">PT</button><button type="button" data-v="en" onclick="_jzIdioma('en',this)">EN</button></span>
               </div>
-              <div class="skin-hd" data-i18n>Cor</div>
-              <div class="skin-swatches">
-                <button class="skin-sw" data-skin="emerald" onclick="setSkin('emerald')" title="Esmeralda" data-i18n-title style="--sw:#10b981"></button>
-                <button class="skin-sw" data-skin="amber" onclick="setSkin('amber')" title="Âmbar" data-i18n-title style="--sw:#d99a2b"></button>
-                <button class="skin-sw" data-skin="indigo" onclick="setSkin('indigo')" title="Índigo" data-i18n-title style="--sw:#6366f1"></button>
-                <button class="skin-sw" data-skin="teal" onclick="setSkin('teal')" title="Petróleo" data-i18n-title style="--sw:#0e8a8f"></button>
-              </div>
+            </div>
+            <div class="hdm-item" style="--hm-cor:var(--hm-look)">
+              <button class="hdm-linha" id="themeBtn" data-fica onclick="_hdmAparencia()" aria-expanded="false" aria-controls="hdmGaveta">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.12a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.55-2.5 5.55-5.55C21.97 6.01 17.46 2 12 2z"/><circle cx="13.5" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Aparência</span><span class="hdm-sub" id="hdmLookSub"></span></span>
+                <span class="hdm-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+              </button>
+            </div>
+            <div class="hdm-gaveta" id="hdmGaveta"><div><div class="hdm-gaveta-in">
+              <div class="hdm-gv"><span data-i18n>Tema</span><span class="jz-seg" id="segTema" role="group" aria-label="Tema"><span class="jz-seg-ind"></span><button type="button" data-v="light" onclick="_jzTema('light',this)" data-i18n>Claro</button><button type="button" data-v="dark" onclick="_jzTema('dark',this)" data-i18n>Escuro</button></span></div>
+              <div class="hdm-gv"><span data-i18n>Cor</span><span class="skin-swatches">
+                <button class="skin-sw" data-skin="emerald" onclick="_jzCor(this)" title="Esmeralda" data-i18n-title aria-label="Esmeralda" style="--sw:#10b981"></button>
+                <button class="skin-sw" data-skin="amber" onclick="_jzCor(this)" title="Âmbar" data-i18n-title aria-label="Âmbar" style="--sw:#d99a2b"></button>
+                <button class="skin-sw" data-skin="indigo" onclick="_jzCor(this)" title="Índigo" data-i18n-title aria-label="Índigo" style="--sw:#6366f1"></button>
+                <button class="skin-sw" data-skin="teal" onclick="_jzCor(this)" title="Petróleo" data-i18n-title aria-label="Petróleo" style="--sw:#0e8a8f"></button>
+              </span></div>
+            </div></div></div>
+          </div>
+          <div class="hdm-grupo" style="--i:1;--hm-cor:var(--hm-notas)">
+            <div class="hdm-cab" data-i18n>Olhar suas notas de cima</div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnDaySummary" onclick="_hdMoreFechar();openDaySummary()">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Resumo do dia</span><span class="hdm-sub" data-i18n>Junta o que você gravou hoje</span><span class="hdm-selo" id="hdmSeloResumo" hidden></span></span>
+              </button>
+            </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnCostura" onclick="_hdMoreFechar();openCostura()" title="Agrupa notas sobre o mesmo assunto" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9c0 4 12 5 12 9"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Notas relacionadas</span><span class="hdm-sub" data-i18n>Junta notas do mesmo assunto</span><span class="hdm-selo" id="hdmSeloCostura" hidden></span></span>
+              </button>
+              <button class="hdm-info" onclick="_hdMoreFechar();openSemHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".7" fill="currentColor" stroke="none"/></svg></button>
+            </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnPanorama" onclick="_hdMoreFechar();openPanorama()" title="Temas que se repetem, promessas soltas e mudanças de ideia" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>O que você anda repetindo</span><span class="hdm-sub" data-i18n>Temas, promessas e mudanças de ideia</span><span class="hdm-selo" id="hdmSeloPanorama" hidden></span></span>
+              </button>
+              <button class="hdm-info" onclick="_hdMoreFechar();openPanHelp()" title="O que é isso?" data-i18n-title aria-label="O que é isso?"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".7" fill="currentColor" stroke="none"/></svg></button>
+            </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnRessurgir" onclick="_hdMoreFechar();openRessurgir()" title="Traz de volta uma nota antiga esquecida" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Resgatar nota antiga</span><span class="hdm-sub" data-i18n>Traz de volta o que você esqueceu</span></span>
+              </button>
+            </div>
+          </div>
+          <div class="hdm-grupo" style="--i:2;--hm-cor:var(--hm-cofre)">
+            <div class="hdm-cab" data-i18n>Cópias e outros aparelhos</div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnHdmCopia" onclick="_hdMoreFechar();exportProject()">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Guardar uma cópia agora</span><span class="hdm-sub" data-i18n>Baixa um arquivo com suas notas</span></span>
+              </button>
+            </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnTxReceber" onclick="_hdMoreFechar();abrirReceberTransferencia()" title="Cole um link ou leia um QR de outro aparelho" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Receber de outro aparelho</span><span class="hdm-sub" data-i18n>Cole o link ou leia o QR</span></span>
+              </button>
+            </div>
+          </div>
+          <div class="hdm-grupo" style="--i:3;--hm-cor:var(--hm-ajuda)">
+            <div class="hdm-sep"></div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnSetup" onclick="_hdMoreFechar();_obOpen()" title="Rever as boas-vindas" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Rever as boas-vindas</span><span class="hdm-sub" data-i18n>As telas do primeiro dia, de novo. Nada muda no que você já configurou.</span></span>
+              </button>
             </div>
           </div>
         </div>
@@ -8153,7 +8260,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.28.2';
+const VOX_VERSION='2026.09.28.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8869,8 +8976,9 @@ function setLang(lang){
   location.reload();
 }
 function _syncLangUI(){
-  const btn=document.getElementById('btnLang');
-  if(btn){const _l=btn.querySelector('.btn-lang-txt');if(_l)_l.textContent=currentLang==='en'?'EN':'PT';}
+  _jzSegPos(document.getElementById('btnLang'),currentLang,false);
+  const nome=document.getElementById('hdmLangNome');
+  if(nome)nome.textContent=currentLang==='en'?'English':'Português';
   const obLbl=document.getElementById('obLangLabel');
   if(obLbl)obLbl.textContent=currentLang==='en'?'EN':'PT';
 }
@@ -8892,6 +9000,24 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── menu ⋯ em famílias (Central de Ajustes, 28/09/2026) ──
+"Chaves, cópias de segurança e serviços":"Keys, backups and services",
+"Idioma do app":"App language",
+"Olhar suas notas de cima":"Your notes from above",
+"Junta o que você gravou hoje":"Gathers what you recorded today",
+"Junta notas do mesmo assunto":"Groups notes on the same topic",
+"Temas, promessas e mudanças de ideia":"Themes, promises and changes of mind",
+"Traz de volta o que você esqueceu":"Brings back what you forgot",
+"Cópias e outros aparelhos":"Backups and other devices",
+"Guardar uma cópia agora":"Back up now",
+"Baixa um arquivo com suas notas":"Downloads a file with your notes",
+"Receber de outro aparelho":"Receive from another device",
+"Cole o link ou leia o QR":"Paste the link or scan the QR code",
+"falta 1 chave":"needs a key",
+"falta ligar":"turn it on",
+"Precisa de uma chave de IA de texto — o Groq serve":"Needs a text AI key — Groq works",
+"A chave já serve: falta ligar a busca por sentido":"Your key already works: just turn on meaning search",
+"Precisa de uma chave com índice de sentido (OpenAI ou Gemini)":"Needs a key that can build the meaning index (OpenAI or Gemini)",
 // ── o que dá pra fazer com os cards escolhidos (14/09/2026) ──
 "1 card escolhido":"1 card chosen",
 "{n} cards escolhidos":"{n} cards chosen",
@@ -11628,6 +11754,9 @@ function _voxFecharLembrete(){
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',async()=>{
   applyStaticI18n();_syncLangUI();
+  // Recibo da troca de idioma (efeito Encaixe): a página acabou de recarregar
+  // por causa dela, então o ⋯ dá um soco e o "Mais" chega já no idioma novo.
+  try{if(sessionStorage.getItem('vox_jz_lang')){sessionStorage.removeItem('vox_jz_lang');requestAnimationFrame(()=>_jz(document.getElementById('btnHdMore'),'jz-chegou',340))}}catch(e){}
   // Mac/Linux: troca .bat por .command nos textos fixos das Configurações → Local.
   // Roda DEPOIS do applyStaticI18n pra valer nos dois idiomas.
   if(typeof VOX_WIN!=='undefined' && !VOX_WIN){
@@ -11695,7 +11824,21 @@ document.addEventListener('DOMContentLoaded',async()=>{
   });
   document.addEventListener('click',e=>{
     if(!document.getElementById('hdMoreWrap').contains(e.target))
-      document.getElementById('hdMoreDrop').classList.remove('on');
+      _hdMoreFechar();
+  });
+  // Efeito Tinta: ao soltar, sai do balão uma onda na cor da família. Em
+  // captura, pra rodar antes do onclick do item fechar o menu. A Aparência
+  // (data-fica) não fecha o menu: ali o balão dá um soco em vez da onda.
+  document.getElementById('hdMoreDrop').addEventListener('click',e=>{
+    const l=e.target.closest('.hdm-linha');if(!l||l.classList.contains('hdm-fixa'))return;
+    const b=l.querySelector('.hdm-bolha');if(!b)return;
+    if(l.hasAttribute('data-fica'))_jz(b,'soco',320);
+    else _jzOnda(b,getComputedStyle(b).color,'10px');
+  },true);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&document.getElementById('hdMoreDrop')?.classList.contains('on')){
+      _hdMoreFechar();document.getElementById('btnHdMore')?.focus();
+    }
   });
   // FASE 1 — bottom sheet (mobile): tocar fora do .ibar com o sheet aberto fecha.
   document.addEventListener('click',e=>{
@@ -13952,6 +14095,67 @@ function _recOrigemVisual(){
 // position:fixed (ver .rec-onda no CSS): o botão vira display:none logo em
 // seguida e levaria um ::after junto. Nasce no ponto exato do botão — não no
 // centro da tela.
+// ── Efeitos de toque do menu ⋯ (Central de Ajustes, Fase 1 — 28/09/2026) ──
+// Três efeitos do mesmo vocabulário que o app já tem (curva --fc-curva, o
+// "soco" das bolinhas de pasta, a onda que sobrevive ao elemento da
+// _recOnda): Brotar (abrir o menu), Tinta (tocar num item) e Encaixe (PT|EN,
+// tema, cores e interruptores). Nenhum atrasa a ação, nenhum roda em loop,
+// nenhum faz som (o Vox grava o microfone) e todos respeitam "reduzir
+// movimento". No iPhone o navegador não vibra: o retorno lá é só visual.
+function _jz(el,cls,ms){
+  if(!el||_voxReduzMov())return;
+  el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);
+  clearTimeout(el['_jz_'+cls]);el['_jz_'+cls]=setTimeout(()=>el.classList.remove(cls),ms);
+}
+function _jzOnda(el,cor,raio){
+  if(!el||_voxReduzMov())return;
+  const r=el.getBoundingClientRect();if(!r.width)return;
+  const o=document.createElement('span');o.className='jz-onda';
+  o.style.cssText='left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;border-radius:'+(raio||'50%')+';--jz-cor:'+cor;
+  document.body.appendChild(o);setTimeout(()=>o.remove(),480);
+}
+function _jzTato(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+// Trilho segmentado: marca o botão do valor e manda o indicador pra lá. Sem
+// animação quando é só sincronizar (abrir o menu, carregar a página) — senão o
+// indicador nasceria em PT e deslizaria sozinho até EN, como o _smodeSync
+// evita. Se já está no lugar, não mexe: não mata um deslize em andamento.
+function _jzSegPos(seg,valor,anim){
+  if(!seg)return;
+  const bs=[...seg.querySelectorAll('button')],i=bs.findIndex(b=>b.dataset.v===valor);
+  if(i<0)return;
+  const pos=(i*100)+'%';
+  bs.forEach((b,k)=>b.setAttribute('aria-pressed',String(k===i)));
+  if(seg.style.getPropertyValue('--jz-i')===pos)return;
+  if(!anim||_voxReduzMov()){seg.classList.add('noanim');seg.style.setProperty('--jz-i',pos);void seg.offsetWidth;seg.classList.remove('noanim')}
+  else{seg.style.setProperty('--jz-i',pos);_jz(seg,'anda',260)}
+}
+// PT ↔ EN: o setLang() recarrega a página, então o indicador desliza antes e
+// o recibo chega depois (ver "vox_jz_lang" no DOMContentLoaded).
+function _jzIdioma(lang,btn){
+  if(lang===currentLang)return;
+  _jzSegPos(btn&&btn.closest('.jz-seg'),lang,true);_jzTato(8);
+  try{sessionStorage.setItem('vox_jz_lang','1')}catch(e){}
+  setTimeout(()=>setLang(lang),_voxReduzMov()?0:170);
+}
+// Claro ↔ Escuro: o tema novo se abre em círculo a partir do botão tocado.
+function _jzTema(modo,btn){
+  if((document.documentElement.getAttribute('data-theme')||'light')===modo)return;
+  _jzTato(8);
+  _jzSegPos(document.getElementById('segTema'),modo,true);
+  const troca=()=>setTheme(modo);
+  if(!document.startViewTransition||_voxReduzMov()||!btn){troca();return}
+  const r=btn.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,h=document.documentElement;
+  h.style.setProperty('--jz-x',x+'px');h.style.setProperty('--jz-y',y+'px');
+  h.style.setProperty('--jz-r',Math.hypot(Math.max(x,innerWidth-x),Math.max(y,innerHeight-y))+'px');
+  h.classList.add('jz-tema');
+  try{document.startViewTransition(troca).finished.finally(()=>h.classList.remove('jz-tema'))}
+  catch(e){h.classList.remove('jz-tema');troca()}
+}
+function _jzCor(btn){
+  const s=btn.dataset.skin;
+  if((localStorage.getItem('vox_skin')||'teal')===s)return;
+  setSkin(s);_jz(btn,'soco',320);_jzTato(8);
+}
 function _recOnda(el){
   if(!el||_voxReduzMov())return;
   const r=el.getBoundingClientRect();
@@ -20286,12 +20490,6 @@ function toggleTheme(){const t=document.documentElement.getAttribute('data-theme
 // re-renderizar a lista por outro motivo.
 function setTheme(t,save=true){document.documentElement.setAttribute('data-theme',t);if(save)localStorage.setItem('vox_theme',t);_updateThemeColor();_syncSkinUI();
   if(document.getElementById('folderListInner')&&typeof renderFolders==='function'){renderFolders();_folderAtualizaPlaqueta(true)}}
-function toggleSkinPop(){
-  const p=document.getElementById('skinPop');const open=!p.classList.contains('on');
-  if(open){_syncSkinUI();p.classList.add('on');setTimeout(()=>document.addEventListener('click',_skinAway),0)}
-  else{p.classList.remove('on');document.removeEventListener('click',_skinAway)}
-}
-function _skinAway(e){const w=document.getElementById('themeBtn')?.closest('.skin-wrap');if(w&&!w.contains(e.target)){document.getElementById('skinPop')?.classList.remove('on');document.removeEventListener('click',_skinAway)}}
 function setSkin(name){
   if(name==='emerald')document.documentElement.removeAttribute('data-skin');
   else document.documentElement.setAttribute('data-skin',name);
@@ -20301,8 +20499,16 @@ function setSkin(name){
 function _syncSkinUI(){
   const skin=localStorage.getItem('vox_skin')||'teal';
   const mode=document.documentElement.getAttribute('data-theme')||'light';
-  document.querySelectorAll('#skinPop .skin-sw').forEach(b=>b.classList.toggle('on',b.dataset.skin===skin));
-  document.querySelectorAll('#skinPop .skin-mode').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
+  let nomeCor='';
+  document.querySelectorAll('#hdMoreDrop .skin-sw').forEach(b=>{
+    const on=b.dataset.skin===skin;
+    b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));
+    if(on)nomeCor=b.getAttribute('title')||'';
+  });
+  _jzSegPos(document.getElementById('segTema'),mode,false);
+  // a linha "Aparência" diz o que está valendo, sem precisar abrir a gaveta
+  const sub=document.getElementById('hdmLookSub');
+  if(sub)sub.textContent=t(mode==='dark'?'Escuro':'Claro')+(nomeCor?' · '+nomeCor:'');
 }
 function _updateThemeColor(){
   const c=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
@@ -20502,7 +20708,7 @@ function _chromeAutoHideBlocked(){
   if(document.querySelector('.folders-backdrop.on'))return true;
   if(document.querySelector('.overlay.on,.conf-overlay.on,.tx-overlay.on,.vintro-overlay.on'))return true;
   if(document.getElementById('expDrop')?.classList.contains('on'))return true;
-  if(document.getElementById('skinPop')?.classList.contains('on'))return true;
+  if(document.getElementById('hdMoreDrop')?.classList.contains('on'))return true;
   const mp=document.getElementById('modelPicker');
   if(mp&&mp.style.display==='block')return true;
   for(const id of ['micOverlay','onboardOverlay','localStartOverlay']){
@@ -21691,21 +21897,82 @@ function toggleExp(){
 // importa onde o botão termine sentado no layout.
 function toggleHdMore(){
   const d=document.getElementById('hdMoreDrop');
-  const willOpen=!d.classList.contains('on');
-  d.classList.toggle('on',willOpen);
-  if(willOpen){
-    const btn=document.getElementById('btnHdMore');
-    const br=btn.getBoundingClientRect();
-    const w=Math.min(284,window.innerWidth-16);
-    const left=Math.max(8,Math.min(br.right-w,window.innerWidth-w-8));
-    d.style.position='fixed';
-    d.style.top=(br.bottom+8)+'px';
-    d.style.left=left+'px';
-    d.style.right='auto';
-    d.style.width=w+'px';
-    d.style.maxHeight=(window.innerHeight-br.bottom-24)+'px';
-    d.style.overflowY='auto';
+  if(d.classList.contains('on')){_hdMoreFechar();return}
+  clearTimeout(d._fT);d.classList.remove('fechando');
+  const btn=document.getElementById('btnHdMore');
+  const br=btn.getBoundingClientRect();
+  // 312px: o trilho PT|EN e os selos "falta 1 chave" precisam de mais folga
+  // que os 284px de antes; no celular continua limitado à largura da tela.
+  const w=Math.min(312,window.innerWidth-16);
+  const left=Math.max(8,Math.min(br.right-w,window.innerWidth-w-8));
+  d.style.position='fixed';
+  d.style.top=(br.bottom+8)+'px';
+  d.style.left=left+'px';
+  d.style.right='auto';
+  d.style.width=w+'px';
+  d.style.maxHeight=(window.innerHeight-br.bottom-24)+'px';
+  d.style.overflowY='auto';
+  // Brotar: a escala nasce do centro do ⋯, onde quer que ele esteja
+  d.style.setProperty('--hm-ox',(br.left+br.width/2-left)+'px');
+  _hdmAparencia(false);
+  d.classList.add('on');
+  btn.setAttribute('aria-expanded','true');
+  _hdmSelos();_hdmAlerta();_syncLangUI();_syncSkinUI();
+}
+// Um caminho só pra fechar: os itens, o clique fora e o Esc passam por aqui.
+// Antes o menu sumia num quadro; agora recolhe em 120ms.
+function _hdMoreFechar(){
+  const d=document.getElementById('hdMoreDrop');
+  if(!d||!d.classList.contains('on'))return;
+  d.classList.remove('on');
+  document.getElementById('btnHdMore')?.setAttribute('aria-expanded','false');
+  if(_voxReduzMov())return;
+  d.classList.add('fechando');
+  clearTimeout(d._fT);d._fT=setTimeout(()=>d.classList.remove('fechando'),130);
+}
+function _hdmAparencia(abrir){
+  const g=document.getElementById('hdmGaveta'),b=document.getElementById('themeBtn');
+  if(!g||!b)return;
+  const v=typeof abrir==='boolean'?abrir:!g.classList.contains('on');
+  g.classList.toggle('on',v);b.setAttribute('aria-expanded',String(v));
+  if(v&&typeof abrir!=='boolean'){
+    // o menu tem altura máxima: se a gaveta abriu além da borda, rola até ela
+    setTimeout(()=>{
+      const d=document.getElementById('hdMoreDrop'),r=g.getBoundingClientRect(),dr=d.getBoundingClientRect();
+      if(r.bottom>dr.bottom)d.scrollBy({top:r.bottom-dr.bottom+8,behavior:_voxReduzMov()?'auto':'smooth'});
+    },230);
   }
+}
+// Selos das ferramentas das notas: só aparecem quando falta alguma coisa, e
+// dizem o quê. As regras são as mesmas que cada ferramenta usa ao abrir.
+function _hdmSelos(){
+  const pinta=(id,txt,dica)=>{const el=document.getElementById(id);if(!el)return;el.hidden=!txt;el.textContent=txt||'';el.title=txt?dica:''};
+  const ia=!!aiKey();
+  const dicaIA=t('Precisa de uma chave de IA de texto — o Groq serve');
+  pinta('hdmSeloResumo',ia?'':t('falta 1 chave'),dicaIA);
+  pinta('hdmSeloPanorama',ia?'':t('falta 1 chave'),dicaIA);
+  const temSem=!!_semTarget();
+  pinta('hdmSeloCostura',cfg.semSearch?'':(temSem?t('falta ligar'):t('falta 1 chave')),
+    temSem?t('A chave já serve: falta ligar a busca por sentido'):t('Precisa de uma chave com índice de sentido (OpenAI ou Gemini)'));
+}
+// Aviso de cópia atrasada embaixo de Configurações. Mesma regra do cartão de
+// lembrete (_voxCheckLembreteBackup), respeitando o que a pessoa escolheu:
+// lembretes desligados ou os dois gatilhos em "nunca" = nenhum aviso aqui.
+function _hdmAlerta(){
+  const el=document.getElementById('hdmAlerta');if(!el)return;
+  let txt='';
+  try{
+    const c=_bkpCfg(),ultimo=localStorage.getItem('vox_last_backup');
+    if(c.ligado&&(c.notas||c.dias)){
+      if(!ultimo){if(_contarNotas()>=3)txt=t('Você ainda não tem nenhuma cópia do seu Vox')}
+      else{
+        const dias=_voxDiasDesde(ultimo),novas=_contarNotas(ultimo);
+        if(c.dias&&dias>=c.dias)txt=t('Faz {n} dias desde o seu último backup').replace('{n}',Math.floor(dias));
+        else if(c.notas&&novas>=c.notas)txt=t('{n} notas novas desde o último backup').replace('{n}',novas);
+      }
+    }
+  }catch(e){}
+  el.hidden=!txt;el.textContent=txt;
 }
 function exportAll(fmt,onlyToday=false){
   document.getElementById('expDrop').classList.remove('on');
