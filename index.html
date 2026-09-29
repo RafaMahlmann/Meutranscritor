@@ -8448,7 +8448,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.29.6';
+const VOX_VERSION='2026.09.29.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11739,7 +11739,9 @@ function _proErroTexto(e){
   if(c==='rede')return t('Não deu para falar com o Freemius agora. Confira a internet e tente de novo.');
   if(c==='license_key_too_long')return t('Essa chave está maior que uma chave do Freemius (até 32 caracteres). Confira se não veio texto junto na cópia.');
   if(c==='invalid_license_key')return t('Essa chave não foi reconhecida. Confira se copiou inteira, começando por sk_.');
-  if(/limit|quota|activations/.test(c))return t('Essa licença já está no número máximo de aparelhos. Desative em um deles (Vox Pro → Desativar neste aparelho) e tente de novo.');
+  // license_utilized: o código que o Freemius manda de verdade quando a cota
+  // de aparelhos acabou (visto no teste real de 29/09/2026 — não é "limit").
+  if(/limit|quota|activations|utilized/.test(c))return t('Essa licença já está no número máximo de aparelhos. Desative em um deles (Vox Pro → Desativar neste aparelho) e tente de novo.');
   if(/expired/.test(c))return t('Essa licença venceu. Renove pelo link do e-mail do Freemius e tente de novo.');
   if(/cancel/.test(c))return t('Essa licença foi cancelada.');
   return t('O Freemius recusou a ativação: {m}').replace('{m}',e.message||c);
