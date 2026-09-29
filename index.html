@@ -5807,6 +5807,53 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   .jz-carimbo.on polyline,.jz-ok.nasce,.jz-ok.nasce polyline,.key-eye-wrap.nega{animation:none}
   .jz-conf .aro{animation-duration:1.6s}
 }
+/* ── Gavetas de serviço (Fase C, 28/09/2026) ── */
+.srv-rotulo{display:inline-block;font:750 10.5px/1 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--ok-txt);margin:2px 2px 8px}
+.srv-rotulo.soco{animation:jzSoco 300ms var(--fc-curva)}
+.srv-slot{position:relative;border-radius:16px}
+.srv-slot.pousou::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 0 0 2px var(--ok-txt);opacity:0;animation:srvBrilho 520ms var(--fc-curva)}
+@keyframes srvBrilho{25%{opacity:1}100%{opacity:0}}
+.srv-slot.fixo{outline:2px solid var(--ok-txt);outline-offset:2px}
+.srv-alt-t{font:700 11px/1 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin:18px 2px 8px}
+.srv-alt{display:grid;gap:8px}
+.srv-card{position:relative;background:var(--bg-input);border-radius:14px;padding:12px 14px;display:grid;gap:6px}
+.srv-card.emuso{background:var(--bg-card);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ok-txt) 55%,transparent)}
+.srv-hd{display:flex;align-items:center;gap:8px;min-width:0}
+.srv-ico{font-size:16px;flex:none}
+.srv-nome{flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--text)}
+.srv-nome b{font-weight:700}
+.srv-desc{font-size:11.5px;color:var(--text2);line-height:1.5}
+.srv-curio{font-style:italic;opacity:.85}
+.srv-pe{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:11px;color:var(--text3)}
+.srv-pe a{color:var(--accent);text-decoration:none;font-weight:600}
+.srv-est{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap;flex:none;background:var(--bg-input);color:var(--text2)}
+.srv-est.ok{background:var(--ok-bg);color:var(--ok-txt)}
+.srv-est.falta{background:var(--hm-falta-fundo);color:var(--hm-falta-tinta)}
+.srv-usar{flex:none;background:none;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;padding:5px 12px;font:700 12px var(--font);cursor:pointer;transition:transform 110ms var(--fc-curva),background-color .15s}
+.srv-usar:hover{background:var(--accent-glow)}
+.srv-usar:active{transform:scale(.95)}
+.srv-chave{display:grid;grid-template-rows:0fr;transition:grid-template-rows 220ms var(--fc-curva)}
+.srv-chave.on{grid-template-rows:1fr}
+.srv-chave>div{min-height:0;overflow:hidden;padding:0 3px;margin:0 -3px;visibility:hidden;transition:visibility 0s linear 220ms}
+.srv-chave.on>div{visibility:visible;transition:visibility 0s}
+.srv-chave .frow,.srv-chave #localPanel,.srv-chave>div>div{margin-top:4px}
+/* Com a chave já colocada, o passo a passo de como conseguir uma sai do posto:
+   era o que deixava o cartão em uso com 655px no celular. */
+.srv-card.emuso.tem-chave .key-guide{display:none}
+.srv-fala{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Posse: o cartão escolhido sobe ao posto e o antigo cede por baixo. Objeto
+   grande não quica: o cartão pousa seco; o aro do posto confirma. FLIP pela
+   propriedade translate, pra não brigar com o scale do toque. */
+.srv-card.voa{transition:translate 320ms var(--fc-curva);z-index:2}
+.srv-card.voa::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 10px 28px rgba(0,0,0,.18);opacity:0;animation:srvLevanta 320ms var(--fc-curva)}
+@keyframes srvLevanta{40%{opacity:1}}
+.srv-card.cede{transition:translate 360ms var(--fc-curva);z-index:1;animation:srvCede 360ms linear}
+@keyframes srvCede{50%{opacity:.6}}
+.srv-card.anda{transition:translate 240ms var(--fc-curva)}
+@media(prefers-reduced-motion:reduce){
+  .srv-chave,.srv-chave>div,.srv-card.voa,.srv-card.cede,.srv-card.anda,.srv-usar{transition:none}
+  .srv-card.voa::before,.srv-card.cede,.srv-slot.pousou::after,.srv-rotulo.soco{animation:none}
+}
 .preset-em-uso{flex-shrink:0;align-self:center;font-size:12px;font-weight:700;color:var(--ok-txt);background:var(--ok-bg);border-radius:10px;padding:6px 12px;white-space:nowrap}
 .mf{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
 .btn-save{background:var(--accent);color:white;border:none;border-radius:12px;padding:10px 22px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition)}
@@ -7171,26 +7218,25 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
            renderPortaEntrada(). -->
       <div id="cfgEntradaWrap" style="display:none"></div>
       <div id="cfgAvancadasWrap">
+      <div id="srvParque" hidden></div>
       <button type="button" class="cse-voltar" onclick="_mostraPortaEntrada()"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"/></svg></span><span data-i18n>voltar ao começo</span></button>
       <div class="cfg-tabs">
         <button class="cfg-tab-btn" id="cfgTabBtnGeral" onclick="cfgTab('Geral')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> <span data-i18n>Geral</span></button>
         <button class="cfg-tab-btn on" id="cfgTabBtnTrans" onclick="cfgTab('Trans')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg></span> <span data-i18n>Transcrição</span></button>
         <button class="cfg-tab-btn" id="cfgTabBtnText" onclick="cfgTab('Text')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span> <span data-i18n>IA de texto</span></button>
-        <button class="cfg-tab-btn" id="cfgTabBtnDiar" onclick="cfgTab('Diar')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Diarização</span></button>
+        <button class="cfg-tab-btn" id="cfgTabBtnDiar" onclick="cfgTab('Diar')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Separar vozes</span></button>
       </div>
       <div class="cfg-tab-pane" id="cfgPaneTrans">
-      <div class="section-title" data-i18n>API de transcrição</div>
+      <div class="section-title" data-i18n>Transcrição</div>
       <p class="fhint" style="margin-bottom:10px" data-i18n>Quem transforma o áudio em texto. Comece pelo Groq: são 2.000 transcrições por dia sem pagar nada.</p>
-      <!-- Cartões desenhados a partir do cadastro CEREBROS, no mesmo padrão da
-           aba de diarização. Antes daqui só existiam os quatro botões abaixo,
-           sem uma linha explicando quem era quem. -->
-      <div id="cardsTranscricao"></div>
-      <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr 1fr">
-        <button class="api-tog-btn on" id="togW" onclick="setProvider('whisper',true,true)"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><line x1="12" y1="8" x2="12" y2="4"/><circle cx="12" cy="3" r="1"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span> Whisper</button>
-        <button class="api-tog-btn" id="togG" onclick="setProvider('grok',true,true)">🟠 Grok STT</button>
-        <button class="api-tog-btn" id="togGQ" onclick="setProvider('groqwhisper',true,true)">🟢 Groq <span class="free-badge" style="font-size:9px">FREE</span></button>
-        <button class="api-tog-btn" id="togL" onclick="setProvider('local')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span> <span data-i18n>Local</span> <span class="free-badge" style="font-size:9px" data-i18n>GRÁTIS</span></button>
-      </div>
+      <!-- Gaveta de serviço (Configurações avançadas, Fase C — 28/09/2026). Em
+           cima, o que está em uso, com a sua chave; embaixo, as outras
+           opções, e cada uma só abre o campo de chave quando é escolhida. Saíram
+           os quatro botões que repetiam os cartões: eram o único lugar que dizia
+           qual serviço estava valendo. Montada por _srvRender(); os campos de
+           chave e o painel do Local (mais abaixo no HTML) são MOVIDOS para dentro
+           dos cartões, com o mesmo id, porque o saveCfg() lê por id. -->
+      <div class="srv-gaveta" id="gv-transcricao"></div>
       <!-- PAINEL LOCAL (visível só quando local está ativo) -->
       <div id="localPanel" style="display:none;margin-top:10px">
         <!-- Status do servidor -->
@@ -7407,26 +7453,20 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 
       <!-- DIARIZAÇÃO -->
       <div class="cfg-tab-pane" id="cfgPaneDiar" style="display:none">
-      <div class="section-title"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Diarização</span></div>
+      <div class="section-title"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Separar vozes (diarização)</span></div>
       <p class="fhint" style="margin-bottom:4px" data-i18n>A diarização separa automaticamente quem fala cada parte da conversa.</p>
       <p class="fhint" style="margin-bottom:12px" data-i18n>Em vez de um texto corrido, você recebe a conversa organizada por pessoa — como se cada participante tivesse sua própria fala. Funciona bem para reuniões, entrevistas, consultas e atendimentos.</p>
 
-      <div class="maint-box" style="margin-bottom:12px">
-        <div class="maint-info">
-          <div class="maint-title" data-i18n>ℹ️ O que você precisa saber</div>
-          <div class="maint-desc" data-i18n>Mesmo as inteligências artificiais mais avançadas ainda podem se confundir quando duas ou mais pessoas falam ao mesmo tempo ou têm vozes parecidas.</div>
-          <div class="maint-desc" data-i18n style="margin-top:4px">Por isso você pode escolher entre os provedores que hoje entregam os melhores resultados. Cada um usa a sua própria chave: seus dados continuam sob o seu controle.</div>
-        </div>
-      </div>
+      <!-- (Fase C, 28/09/2026) Dobrado: é leitura de uma vez só, e na frente
+           empurrava a escolha do serviço pra segunda tela do celular. -->
+      <details class="cfg-avancado" style="margin-bottom:12px">
+        <summary data-i18n>O que você precisa saber</summary>
+        <div class="maint-desc" data-i18n>Mesmo as inteligências artificiais mais avançadas ainda podem se confundir quando duas ou mais pessoas falam ao mesmo tempo ou têm vozes parecidas.</div>
+        <div class="maint-desc" data-i18n style="margin-top:4px">Por isso você pode escolher entre os provedores que hoje entregam os melhores resultados. Cada um usa a sua própria chave: seus dados continuam sob o seu controle.</div>
+      </details>
 
-      <div class="section-title" data-i18n>Provedores de diarização</div>
-      <div id="cardsDiarizacao"></div>
-      <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr 1fr">
-        <button class="api-tog-btn" id="dpAssembly" onclick="setDiarProvider('assemblyai',true,true)">🟣 AssemblyAI</button>
-        <button class="api-tog-btn" id="dpGladia" onclick="setDiarProvider('gladia',true,true)">💠 Gladia</button>
-        <button class="api-tog-btn" id="dpPyannote" onclick="setDiarProvider('pyannote',true,true)">🎯 pyannote</button>
-        <button class="api-tog-btn" id="dpOpenAI" onclick="setDiarProvider('openai',true,true)"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><line x1="12" y1="8" x2="12" y2="4"/><circle cx="12" cy="3" r="1"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span> OpenAI</button>
-      </div>
+      <!-- Gaveta de serviço (Fase C, 28/09/2026): mesmo desenho da Transcrição. -->
+      <div class="srv-gaveta" id="gv-diarizacao"></div>
 
       <div id="assemblySection">
         <div class="frow">
@@ -8345,7 +8385,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.29.2';
+const VOX_VERSION='2026.09.29.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9086,6 +9126,17 @@ function applyStaticI18n(){
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
 // ── Configurações avançadas, Fase A (28/09/2026) ──
+"Em uso agora":"In use now",
+"pronto":"ready",
+"O que você precisa saber":"What you need to know",
+"Outras opções":"Other options",
+"sem chave":"no key",
+"falta a chave":"missing key",
+"chave conferida":"key checked",
+"{p} agora transcreve.":"{p} now transcribes.",
+"{p} agora separa as vozes.":"{p} now separates the voices.",
+"Separar vozes":"Separate voices",
+"Separar vozes (diarização)":"Separate voices (diarization)",
 "salvo":"saved",
 "salvo — aqui tudo salva sozinho":"saved — everything here saves by itself",
 "Isso parece uma chave de outro serviço: {q}.":"That looks like a key from another service: {q}.",
@@ -12282,6 +12333,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
       const c=e.target;if(!_CAMPO_PROV[c.id])return;
       clearTimeout(c._ct);
       if(c.closest('.key-eye-wrap')?.dataset.e)_jzConfPinta(c,'','');
+      _srvChips();
       if(e.inputType==='insertFromPaste'||e.inputType==='insertReplacementText'){_jzConfere(c);return}
       c._ct=setTimeout(()=>{if(_chaveCompleta(_CAMPO_PROV[c.id],c.value))_jzConfere(c)},800);
     });
@@ -14668,6 +14720,7 @@ function _jzConfRestaura(){
     if(v&&r&&r.e==='aceita'&&r.fim===v.slice(-4)){c._conf=v;_jzConfPinta(c,'aceita',t('Chave aceita ({p})').replace('{p}',_CONF[_CAMPO_PROV[id]].nome))}
     else if(c.closest('.key-eye-wrap')?.dataset.e)_jzConfPinta(c,'','');
   });
+  _srvChips();
 }
 function _jzMoveChave(campo,prov){
   const alvo=document.getElementById(_CAMPO_DO_PROV[prov]);if(!alvo)return;
@@ -14692,7 +14745,7 @@ async function _jzConfere(campo,forca){
   }
   if(!_chaveCompleta(prov,v)){if(forca)_jzConfPinta(campo,'recusada',t('Essa chave parece incompleta. Copie de novo, inteira.'));return}
   campo._conf=v;campo._ab?.abort();
-  if(!c.url){_jzConfPinta(campo,'salva',t('Chave salva. {p} não deixa conferir daqui; o Vox confere na primeira gravação.').replace('{p}',c.nome));_posChaveJa();return}
+  if(!c.url){_jzConfPinta(campo,'salva',t('Chave salva. {p} não deixa conferir daqui; o Vox confere na primeira gravação.').replace('{p}',c.nome));_posChaveJa();_srvChips();_srvDepoisDaChave(campo.id);return}
   const ab=campo._ab=new AbortController();
   _jzConfPinta(campo,'conferindo',t('Salva. Conferindo com {p}…').replace('{p}',c.nome));
   const {lin}=_jzConfUI(campo);
@@ -14710,6 +14763,7 @@ async function _jzConfere(campo,forca){
     _jz(_jzConfUI(campo).ok,'nasce',520);_jzTato([8,40,12]);
     _jzGuardaConf(campo.id,v,'aceita');
     _posChaveJa(); // cofre do navegador e gravação guardada: a chave é boa, pode ir já
+    _srvChips();_srvDepoisDaChave(campo.id);
   }else if(st===401||st===403||(st===400&&/api key/i.test(corpo))){
     campo._conf=null;
     _jzConfPinta(campo,'recusada',t('{p} não aceitou essa chave. Confira se copiou inteira.').replace('{p}',c.nome));
@@ -14719,6 +14773,112 @@ async function _jzConfere(campo,forca){
     campo._conf=null;
     _jzConfPinta(campo,'sem-resposta',t('Não deu pra conferir agora. A chave ficou salva e o Vox confere de novo quando for usar.'),{txt:t('tentar de novo'),fn:()=>_jzConfere(campo,true)});
   }
+}
+// ── Gavetas de serviço (Configurações avançadas, Fase C — 28/09/2026) ──
+// Em cima, "Em uso agora" com a sua chave; embaixo, as outras opções. "Usar"
+// num serviço com chave (ou no Local) troca na hora, com a Posse. Num serviço
+// sem chave, abre o campo dentro do cartão, e a troca só acontece quando a
+// chave é aceita (Acende): quem está gravando nunca fica sem serviço no meio.
+const _SRV={
+  transcricao:{atual:()=>cfg.provider,
+    pv:{tr_groq:'groqwhisper',tr_local:'local',tr_openai:'whisper',tr_xai:'grok'},
+    no:{groqwhisper:'keyRowGroq',whisper:'keyRowWhisper',grok:'keyRowGrok',local:'localPanel'},
+    campo:{groqwhisper:'apiKeyGroq',whisper:'apiKey',grok:'apiKeyGrok'},
+    aplica:p=>setProvider(p,true,false),
+    fala:n=>t('{p} agora transcreve.').replace('{p}',n)},
+  diarizacao:{atual:()=>cfg.diarProvider,
+    pv:{di_assembly:'assemblyai',di_gladia:'gladia',di_pyannote:'pyannote',di_openai:'openai'},
+    no:{assemblyai:'assemblySection',gladia:'gladiaSection',pyannote:'pyannoteSection',openai:'openaiDiarSection'},
+    campo:{assemblyai:'apiKeyAssembly',gladia:'apiKeyGladia',pyannote:'apiKeyPyannote',openai:'apiKey'},
+    aplica:p=>setDiarProvider(p,true,true),
+    fala:n=>t('{p} agora separa as vozes.').replace('{p}',n)}
+};
+const _srvAberto={},_srvPedido={};
+var _srvNaGaveta=false;
+function _srvTemChave(cat,p){
+  if(p==='local')return true;
+  const id=_SRV[cat].campo[p];
+  return !!(id&&(document.getElementById(id)?.value||'').trim());
+}
+function _srvChip(cat,p){
+  if(p==='local')return `<span class="srv-est">${t('sem chave')}</span>`;
+  if(!_srvTemChave(cat,p))return `<span class="srv-est falta">${t('falta a chave')}</span>`;
+  const w=document.getElementById(_SRV[cat].campo[p])?.closest('.key-eye-wrap');
+  return `<span class="srv-est ok">✓ ${w&&w.dataset.e==='aceita'?t('chave conferida'):t('pronto')}</span>`;
+}
+function _srvChips(){
+  Object.keys(_SRV).forEach(cat=>{
+    const est=document.querySelector('#gv-'+cat+' .srv-slot .srv-est');
+    if(est)est.outerHTML=_srvChip(cat,_SRV[cat].atual());
+  });
+}
+function _srvCardHtml(cat,c,p,emUso){
+  const m=c.modelo,pr=c.prov,aberto=!emUso&&_srvAberto[cat]===p;
+  const temChave=p!=='local'&&_srvTemChave(cat,p);
+  return `<div class="srv-card${emUso?' emuso':''}${temChave?' tem-chave':''}" data-k="${escHtml(p)}" data-pid="${escHtml(c.pid)}" data-mid="${escHtml(m.id)}">`+
+    `<div class="srv-hd"><span class="srv-ico" aria-hidden="true">${pr.ico}</span>`+
+    `<span class="srv-nome"><b>${escHtml(pr.nome)}</b>${m.selo?` <span class="free-badge">${escHtml(m.selo)}</span>`:''}</span>`+
+    (emUso?_srvChip(cat,p):`<button type="button" class="srv-usar" onclick="_srvEscolhe('${cat}','${escJs(p)}')" aria-expanded="${aberto}">${aberto?t('Fechar'):t('Usar')}</button>`)+
+    `</div><div class="srv-desc">${escHtml(m.desc||'')}</div>`+
+    (m.curio?`<div class="srv-desc srv-curio">${escHtml(m.curio)}</div>`:'')+
+    `<div class="srv-pe">${_seloSigiloHtml(pr.sigilo)}${pr.site?`<a href="${escHtml(pr.site)}" target="_blank" rel="noopener noreferrer">${t('site oficial')}</a>`:''}<span>${_precoTxt(m)}</span></div>`+
+    `<div class="srv-chave${emUso||aberto?' on':''}"><div data-slot="${escHtml(p)}"></div></div></div>`;
+}
+function _srvRender(cat){
+  const g=document.getElementById('gv-'+cat),parque=document.getElementById('srvParque');
+  if(!g||!parque)return;
+  const d=_SRV[cat],atual=d.atual();
+  // Estaciona os nós de verdade antes de redesenhar: o innerHTML os apagaria.
+  Object.values(d.no).forEach(id=>{const n=document.getElementById(id);if(n)parque.appendChild(n)});
+  let lista=_cerebrosLista(cat).map(c=>({c,p:d.pv[c.pid]})).filter(x=>x.p);
+  if(cat==='transcricao')lista.sort((a,b)=>(/⭐/.test(b.c.modelo.selo||'')?1:0)-(/⭐/.test(a.c.modelo.selo||'')?1:0));
+  const emUso=lista.find(x=>x.p===atual)||lista[0],resto=lista.filter(x=>x!==emUso);
+  g.innerHTML=`<div class="srv-rotulo">${t('Em uso agora')}</div><div class="srv-slot">${_srvCardHtml(cat,emUso.c,emUso.p,true)}</div>`+
+    (resto.length?`<div class="srv-alt-t">${t('Outras opções')}</div><div class="srv-alt">${resto.map(x=>_srvCardHtml(cat,x.c,x.p,false)).join('')}</div>`:'')+
+    `<div class="srv-fala" aria-live="polite"></div>`;
+  Object.entries(d.no).forEach(([p,id])=>{
+    const n=document.getElementById(id),slot=g.querySelector('[data-slot="'+p+'"]');
+    if(n&&slot){n.style.display='';n.classList.remove('inactive','active-key');slot.appendChild(n)}
+  });
+}
+function _srvEscolhe(cat,p,forca){
+  const d=_SRV[cat],g=document.getElementById('gv-'+cat);if(!g)return;
+  if(d.atual()===p){_jz(g.querySelector('.srv-rotulo'),'soco',320);return}
+  if(!forca&&!_srvTemChave(cat,p)){
+    _srvAberto[cat]=_srvAberto[cat]===p?null:p;_srvPedido[cat]=_srvAberto[cat];
+    _srvRender(cat);
+    const inp=_srvAberto[cat]&&document.getElementById(d.campo[p]);
+    // Foco automático só com mouse: no celular o teclado abriria no meio da gaveta.
+    if(inp&&matchMedia('(pointer:fine)').matches&&!_voxReduzMov())setTimeout(()=>inp.focus({preventScroll:true}),240);
+    return;
+  }
+  _srvAberto[cat]=null;_srvPedido[cat]=null;
+  const modal=g.closest('.modal'),antes=new Map(),velho=d.atual();
+  g.querySelectorAll('[data-k]').forEach(n=>antes.set(n.dataset.k,n.getBoundingClientRect()));
+  _srvNaGaveta=true;try{d.aplica(p)}finally{_srvNaGaveta=false}
+  const slot=g.querySelector('.srv-slot');
+  // O posto fica à vista: quem escolheu lá embaixo vê o cartão subir até ele.
+  if(modal&&slot){const mr=modal.getBoundingClientRect(),sr=slot.getBoundingClientRect();if(sr.top<mr.top+50||sr.top>mr.bottom-120)modal.scrollTop+=sr.top-mr.top-60}
+  _jzTato(8);
+  const fala=g.querySelector('.srv-fala');if(fala)fala.textContent=d.fala(_NOME_PROV[p]||p);
+  if(_voxReduzMov()){slot?.classList.add('fixo');setTimeout(()=>slot?.classList.remove('fixo'),1200);return}
+  g.querySelectorAll('[data-k]').forEach(n=>{
+    const a=antes.get(n.dataset.k);if(!a)return;
+    const b=n.getBoundingClientRect(),dx=a.left-b.left,dy=a.top-b.top;
+    if(Math.abs(dx)+Math.abs(dy)<1||Math.min(a.top,b.top)>innerHeight||Math.max(a.bottom,b.bottom)<0)return;
+    const cl=n.dataset.k===p?'voa':n.dataset.k===velho?'cede':'anda';
+    n.style.translate=dx+'px '+dy+'px';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{n.classList.add(cl);n.style.translate='';setTimeout(()=>n.classList.remove(cl),420)}));
+  });
+  setTimeout(()=>_jz(slot,'pousou',560),280);
+}
+// A chave aceita (Acende) no serviço que a pessoa pediu completa a troca.
+function _srvDepoisDaChave(id){
+  Object.keys(_SRV).forEach(cat=>{
+    const p=_srvPedido[cat];if(!p||_SRV[cat].campo[p]!==id)return;
+    _srvPedido[cat]=null;
+    setTimeout(()=>_srvEscolhe(cat,p,true),_voxReduzMov()?0:450);
+  });
 }
 function _jzCor(btn){
   const s=btn.dataset.skin;
@@ -23135,6 +23295,7 @@ function _cardEmUso(c){
   return c.prov.cat==='transcricao'?cfg.provider===v:cfg.diarProvider===v;
 }
 function _renderCardsCerebro(cat,containerId){
+  if(cat==='transcricao'||cat==='diarizacao'){_srvRender(cat);return} // Fase C: essas duas viraram gaveta
   const el=document.getElementById(containerId);if(!el)return;
   const lista=_cerebrosLista(cat);
   // Na aba de texto o botão preenche endereço+modelo pelo preset (o id do
@@ -23226,12 +23387,12 @@ function abrirRankingSigilo(){
 function irParaCardCerebro(cat,pid,mid){
   closeTxOverlay();
   const abaDe={texto:'Text',transcricao:'Trans',diarizacao:'Diar'};
-  const containerDe={texto:'cardsTexto',transcricao:'cardsTranscricao',diarizacao:'cardsDiarizacao'};
+  const containerDe={texto:'cardsTexto',transcricao:'gv-transcricao',diarizacao:'gv-diarizacao'};
   openModal();
   cfgTab(abaDe[cat]);
   setTimeout(()=>{
     const cont=document.getElementById(containerDe[cat]);
-    const card=cont&&[...cont.querySelectorAll('.maint-box')].find(el=>el.dataset.pid===pid&&el.dataset.mid===mid);
+    const card=cont&&[...cont.querySelectorAll('.maint-box,.srv-card')].find(el=>el.dataset.pid===pid&&el.dataset.mid===mid);
     if(!card)return;
     card.scrollIntoView({behavior:'smooth',block:'center'});
     card.classList.add('card-flash');
@@ -23466,6 +23627,7 @@ const _FORMATO_CHAVE={whisper:/^sk-[A-Za-z0-9_-]{20,}$/,grok:/^xai-[A-Za-z0-9_-]
 const _NOME_PROV={whisper:'OpenAI',grok:'xAI (Grok)',groqwhisper:'Groq',local:t('Transcritor local'),assemblyai:'AssemblyAI',gladia:'Gladia',pyannote:'pyannote.ai',openai:'OpenAI'};
 function _chaveCompleta(prov,v){v=(v||'').trim();const re=_FORMATO_CHAVE[prov];return re?re.test(v):(v.length>=20&&!/\s/.test(v))}
 function _chaveDigitada(el,prov){
+  if(_srvPedido.transcricao===prov)return; // escolhida na gaveta: troca quando a chave for aceita
   if(!_chaveCompleta(prov,el.value)||cfg.provider===prov||cfg.provider==='local')return;
   const atual=(_chaveDoProvedorAtual()||'').trim();
   if(prov!=='groqwhisper'&&_chaveCompleta(cfg.provider,atual))return;
@@ -23473,6 +23635,7 @@ function _chaveDigitada(el,prov){
   toast(t('{p} passou a transcrever: a chave que você colou escolheu o serviço.').replace('{p}',_NOME_PROV[prov]));
 }
 function _chaveDigitadaVozes(el,prov){
+  if(_srvPedido.diarizacao===prov)return;
   if(!_chaveCompleta(prov,el.value)||cfg.diarProvider===prov)return;
   const chaveAtual={assemblyai:cfg.apiKeyAssembly,gladia:cfg.apiKeyGladia,pyannote:cfg.apiKeyPyannote,openai:cfg.apiKey}[cfg.diarProvider];
   if(_chaveCompleta(cfg.diarProvider==='openai'?'whisper':cfg.diarProvider,chaveAtual))return;
@@ -23533,18 +23696,17 @@ function loadCfg(){
 }
 function setProvider(p,save=true,activate=false){
   cfg.provider=p;
-  document.getElementById('togW').className='api-tog-btn'+(p==='whisper'?' on':'');
-  document.getElementById('togG').className='api-tog-btn'+(p==='grok'?' on-g':'');
-  document.getElementById('togGQ').className='api-tog-btn'+(p==='groqwhisper'?' on-gq':'');
-  document.getElementById('togL').className='api-tog-btn'+(p==='local'?' on':'');
-  document.getElementById('localPanel').style.display=p==='local'?'block':'none';
+  // (Fase C) Os botões togW/togG/togGQ/togL saíram; quem diz qual serviço está
+  // valendo é o cartão da gaveta, redesenhado no fim desta função.
   setTimeout(updateSpeedBadge,0);
   // (28/09/2026) Aqui havia uma linha que trocava o texto de #keyLabel — o rótulo
   // do campo da OPENAI — por "Groq Key (ativa)" ou "Grok Key (ativa)" conforme o
   // serviço. O campo da OpenAI ficava com o nome de outra empresa. O "✓ ativo"
   // do campo certo já vem do .active-key (_updateKeyRowFocus).
   document.getElementById('brandIcon').textContent=p==='grok'?'🟠':p==='groqwhisper'?'🟢':p==='local'?'🖥️':'🎙️';
-  if(p==='local'){updateLocalPanel();setTimeout(()=>checkAndStartServer(closeModal),300)}
+  // Escolhido na gaveta, o Local não fecha mais as Configurações aos 300ms (no
+  // meio da troca): a luz do servidor, dentro do cartão, é o recibo.
+  if(p==='local'){updateLocalPanel();const fecha=_srvNaGaveta?null:closeModal;setTimeout(()=>checkAndStartServer(fecha),300)}
   _updateKeyRowFocus(p);updateLocal100Badge();updateDiarStatus();
   if(activate){
     // Mesmo destaque "cole aqui" da Diarização (_highlightKeyField) — pedido do
@@ -23556,31 +23718,11 @@ function setProvider(p,save=true,activate=false){
   _renderCardsCerebro('transcricao','cardsTranscricao');
   _refreshBrainPanelIfOpen();
 }
+// (Fase C) Antes esta função esmaecia as linhas de chave dos outros serviços e
+// travava o toque nelas (pointer-events:none). Agora cada linha mora dentro do
+// cartão do seu serviço, que diz o estado; aqui só se limpam as classes antigas.
 function _updateKeyRowFocus(p){
-  // whisper → destaca OpenAI, esmaece Grok e Groq
-  // grok    → destaca Grok, esmaece os outros
-  // groq    → destaca Groq, esmaece os outros
-  // local   → esmaece todos (sem chave)
-  const rows={
-    keyRowWhisper: p==='whisper',
-    keyRowGrok:    p==='grok',
-    keyRowGroq:    p==='groqwhisper'
-  };
-  Object.entries(rows).forEach(([id,isActive])=>{
-    const el=document.getElementById(id);
-    if(!el)return;
-    if(p==='local'){
-      // no modo local todos ficam inativos
-      el.classList.add('inactive');
-      el.classList.remove('active-key');
-    }else if(isActive){
-      el.classList.remove('inactive');
-      el.classList.add('active-key');
-    }else{
-      el.classList.add('inactive');
-      el.classList.remove('active-key');
-    }
-  });
+  ['keyRowWhisper','keyRowGrok','keyRowGroq'].forEach(id=>document.getElementById(id)?.classList.remove('inactive','active-key'));
 }
 function updateLocalPanel(){
   const model=cfg.localModel||'small';
@@ -23671,7 +23813,7 @@ function setDiarProvider(p,save=true,activate=false){
     // Destaca o campo "cole aqui a chave" — pedido do Rafa pra ficar óbvio
     // onde agir, em qualquer dispositivo (mesmo CSS/JS em todos).
     const fieldId={assemblyai:'apiKeyAssembly',gladia:'apiKeyGladia',pyannote:'apiKeyPyannote'}[p];
-    if(fieldId)_highlightKeyField(fieldId);
+    if(fieldId&&!_srvNaGaveta)_highlightKeyField(fieldId);
   }
   if(save)saveCfg(false);
   _renderCardsCerebro('diarizacao','cardsDiarizacao');
