@@ -8448,7 +8448,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.29.8';
+const VOX_VERSION='2026.09.29.9';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -30595,29 +30595,10 @@ const BRAIN_CATS=[
   {key:'diarizacao',cfgField:'diarProvider',setter:'setDiarProvider',icoKey:'users',cls:'cat-diar',
     opts:[['assemblyai','AssemblyAI'],['gladia','Gladia'],['pyannote','Pyannote'],['openai','OpenAI']]}
 ];
-// ── ⚠️ ARTIFÍCIO DE TESTE — PROVISÓRIO, REMOVER ANTES DE COMERCIALIZAR ──
-// Documentado em PLANO_DIRETOR/LEIA_PRIMEIRO_IA.md, seção "Artifícios de
-// teste temporários". Ligado só se localStorage.vox_test_mode==='1' (nunca
-// por padrão, nunca visível pra usuário real). Adiciona 6 opções fictícias
-// por categoria SÓ pra testar a roleta (setas/bolinhas/contador) com mais
-// itens do que as chaves reais do Rafa permitem hoje. Selecionar uma opção
-// fictícia NUNCA chama setProvider/setTxtProvider/setDiarProvider nem toca
-// em cfg — fica isolada em _fakeSelection, então não tem como esse
-// artifício quebrar uma função real do app, mesmo se a flag ficar ligada
-// sem querer.
-const VOX_TEST_MODE=localStorage.getItem('vox_test_mode')==='1';
-const _fakeSelection={};
 // Qual linha acabou de girar e pra que lado, pra molinha animar só ela.
 // Zerado assim que o painel usa (uma animação por giro, não por render).
 let _brainMola=null;
-if(VOX_TEST_MODE){
-  BRAIN_CATS.forEach(cat=>{
-    const _fakeBirds=['Sabiá','Bem-te-vi','Tucano','Arara','João-de-barro','Curió'];
-    _fakeBirds.forEach((nome,i)=>cat.opts.push([`fake${i+1}`,`${nome} (${t('teste')})`]));
-  });
-}
 function _brainCurrentValue(cat){
-  if(VOX_TEST_MODE&&_fakeSelection[cat.key])return _fakeSelection[cat.key];
   return cfg[cat.cfgField];
 }
 // Diz se uma opção REAL (não fictícia) desta categoria já tem chave
@@ -30641,17 +30622,6 @@ function _brainProviderHasKey(catKey,val){
     if(val==='openai')return !!cfg.apiKey;
   }
   return false;
-}
-// Uma "API fictícia" (pássaro) precisa funcionar de verdade quando
-// selecionada — pedido do Rafa, pra poder testar o app inteiro com ela
-// "ativa", não só o visual da roleta. Por trás dos panos ela sempre aponta
-// pra uma opção REAL já configurada (a primeira com chave); se nenhuma
-// tiver chave, cai na primeira opção real mesmo — o app já sabe avisar
-// "configure sua chave" nesse caso, igual avisaria pra qualquer pessoa.
-function _brainPickRealProvider(cat){
-  const realOpts=cat.opts.filter(o=>!o[0].startsWith('fake'));
-  const withKey=realOpts.find(o=>_brainProviderHasKey(cat.key,o[0]));
-  return (withKey||realOpts[0])[0];
 }
 function _brainCatLabel(key){
   return {transcricao:t('Transcrição'),ia_texto:t('IA de texto'),diarizacao:t('Diarização')}[key]||'';
@@ -30723,7 +30693,6 @@ function _brainConfiguredCount(catKey){
 // Uma opção fictícia (modo de teste) roda por trás numa API real, então
 // herda o status dela — senão apareceria apagada mesmo funcionando.
 function _brainValConfigurado(cat,val){
-  if(VOX_TEST_MODE&&val.startsWith('fake'))val=_brainPickRealProvider(cat);
   return _brainProviderHasKey(cat.key,val);
 }
 function _renderBrainPanel(){
@@ -30732,7 +30701,7 @@ function _renderBrainPanel(){
     const idx=Math.max(0,cat.opts.findIndex(o=>o[0]===_brainCurrentValue(cat)));
     const cur=cat.opts[idx];
     const dots=cat.opts.map((_,i)=>`<span class="brain-dot${i===idx?' on':''}"></span>`).join('');
-    const n=_brainConfiguredCount(cat.key)+(VOX_TEST_MODE?6:0);
+    const n=_brainConfiguredCount(cat.key);
     // Sem chave configurada o nome fica apagado — dá pra ver de relance que
     // aquele provedor está selecionado mas não vai funcionar ainda.
     const off=_brainValConfigurado(cat,cur[0])?'':' off';
@@ -30813,16 +30782,6 @@ function _brainMove(ci,dir){
   // logo abaixo, de dentro do setter) lê isso pra dar a molinha só nela.
   // Tem que ser ANTES do setter, senão a renderização acontece primeiro.
   _brainMola={ci,dir};
-  if(VOX_TEST_MODE&&nextVal.startsWith('fake')){
-    // opção fictícia: mostra o nome do pássaro, mas por trás dos panos ativa
-    // de verdade uma opção REAL da MESMA categoria (transcrição->transcrição,
-    // diarização->diarização) — nunca inventa um valor que o resto do app
-    // não reconheça, então tudo continua funcionando de verdade.
-    _fakeSelection[cat.key]=nextVal;
-    window[cat.setter](_brainPickRealProvider(cat));
-    return;
-  }
-  if(VOX_TEST_MODE)delete _fakeSelection[cat.key]; // voltou pra uma opção real — some a simulação
   window[cat.setter](nextVal);
 }
 function mainLensLabel(k){
