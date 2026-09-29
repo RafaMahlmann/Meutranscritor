@@ -5772,6 +5772,93 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .maint-foot a:hover{color:var(--accent)}
 .preset-use-btn{background:none;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);white-space:nowrap;flex-shrink:0}
 .preset-use-btn:hover{background:var(--accent-glow)}
+/* Carimbo (28/09/2026): o salvamento automático passa a avisar, no lugar
+   onde mexeu. Check de 12px ao lado do rótulo, some em 1,4s. Não aparece em
+   chave (lá o Acende é o recibo), nem em interruptor ou cartão. */
+.jz-carimbo{display:inline-flex;align-items:center;gap:4px;margin-left:8px;vertical-align:1px;font:600 11px/1 var(--font);color:var(--text3);letter-spacing:0;text-transform:none;opacity:0;transition:opacity 400ms linear;pointer-events:none}
+.jz-carimbo.on{opacity:1;transition-duration:120ms}
+.jz-carimbo svg,.jz-ok svg{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.jz-carimbo svg{width:12px;height:12px;stroke:var(--ok-txt);stroke-width:2.6}
+.jz-carimbo polyline,.jz-ok polyline{stroke-dasharray:24}
+.jz-carimbo.on polyline{animation:jzTraca 220ms var(--fc-curva) 60ms both}
+@keyframes jzTraca{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+/* Acende: a chave colada é conferida com o serviço. O check é o mesmo do
+   Carimbo, maior, e fica. Espera honesta: o aro só aparece depois de 400ms,
+   e erro de rede não pinta de vermelho. */
+#overlay .key-eye-wrap input{padding-right:66px!important} /* os campos trazem padding-right:38px inline; o check precisa de espaço antes do olho */
+.key-eye-wrap .jz-ok{position:absolute;right:40px;top:50%;margin-top:-11px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--ok-bg);color:var(--ok-txt);pointer-events:none}
+.key-eye-wrap .jz-ok[hidden]{display:none}
+.jz-ok svg{width:13px;height:13px;stroke:currentColor;stroke-width:2.8}
+.jz-ok.nasce{animation:seloAcende 420ms cubic-bezier(.2,1.28,.36,1) both}
+.jz-ok.nasce polyline{animation:jzTraca 280ms var(--fc-curva) 90ms both}
+.key-eye-wrap[data-e="conferindo"]{box-shadow:0 0 0 1.5px var(--accent)}
+.key-eye-wrap[data-e="aceita"]{box-shadow:0 0 0 1.5px var(--ok-txt)}
+.key-eye-wrap[data-e="recusada"]{box-shadow:0 0 0 1.5px var(--danger)}
+.key-eye-wrap.nega{animation:flLimite 240ms var(--fc-curva)}
+.jz-conf{min-height:0;margin-top:5px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font:600 11.5px/1.4 var(--font);color:var(--text3)}
+.jz-conf[data-e=""]{display:none}
+.jz-conf[data-e="aceita"]{color:var(--ok-txt)}
+.jz-conf[data-e="recusada"]{color:var(--danger)}
+.jz-conf .aro{width:12px;height:12px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--accent);flex:none;display:none;animation:jzGiro .8s linear infinite}
+.jz-conf.demora .aro{display:block}
+@keyframes jzGiro{to{transform:rotate(360deg)}}
+.jz-conf button{border:0;background:none;padding:0;font:700 11.5px var(--font);color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+@media(prefers-reduced-motion:reduce){
+  .jz-carimbo.on polyline,.jz-ok.nasce,.jz-ok.nasce polyline,.key-eye-wrap.nega{animation:none}
+  .jz-conf .aro{animation-duration:1.6s}
+}
+/* ── Gavetas de serviço (Fase C, 28/09/2026) ── */
+.srv-rotulo{display:inline-block;font:750 10.5px/1 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--ok-txt);margin:2px 2px 8px}
+.srv-rotulo.soco{animation:jzSoco 300ms var(--fc-curva)}
+.srv-slot{position:relative;border-radius:16px}
+.srv-slot.pousou::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 0 0 2px var(--ok-txt);opacity:0;animation:srvBrilho 520ms var(--fc-curva)}
+@keyframes srvBrilho{25%{opacity:1}100%{opacity:0}}
+.srv-slot.fixo{outline:2px solid var(--ok-txt);outline-offset:2px}
+.srv-alt-t{font:700 11px/1 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin:18px 2px 8px}
+.srv-alt{display:grid;gap:8px}
+.srv-card{position:relative;background:var(--bg-input);border-radius:14px;padding:12px 14px;display:grid;gap:6px}
+.srv-card.emuso{background:var(--bg-card);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ok-txt) 55%,transparent)}
+.srv-hd{display:flex;align-items:center;gap:8px;min-width:0}
+.srv-ico{font-size:16px;flex:none}
+.srv-nome{flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--text)}
+.srv-nome b{font-weight:700}
+.srv-desc{font-size:11.5px;color:var(--text2);line-height:1.5}
+.srv-curio{font-style:italic;opacity:.85}
+.srv-pe{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:11px;color:var(--text3)}
+.srv-pe a{color:var(--accent);text-decoration:none;font-weight:600}
+.srv-est{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap;flex:none;background:var(--bg-input);color:var(--text2)}
+.srv-est.ok{background:var(--ok-bg);color:var(--ok-txt)}
+.srv-est.falta{background:var(--hm-falta-fundo);color:var(--hm-falta-tinta)}
+.srv-usar{flex:none;background:none;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;padding:5px 12px;font:700 12px var(--font);cursor:pointer;transition:transform 110ms var(--fc-curva),background-color .15s}
+.srv-usar:hover{background:var(--accent-glow)}
+.srv-usar:active{transform:scale(.95)}
+.srv-chave{display:grid;grid-template-rows:0fr;transition:grid-template-rows 220ms var(--fc-curva)}
+.srv-chave.on{grid-template-rows:1fr}
+.srv-chave>div{min-height:0;overflow:hidden;padding:0 3px;margin:0 -3px;visibility:hidden;transition:visibility 0s linear 220ms}
+.srv-chave.on>div{visibility:visible;transition:visibility 0s}
+.srv-chave .frow,.srv-chave #localPanel,.srv-chave>div>div{margin-top:4px}
+/* Com a chave já colocada, o passo a passo de como conseguir uma sai do posto:
+   era o que deixava o cartão em uso com 655px no celular. */
+.srv-card.emuso.tem-chave .key-guide{display:none}
+.txt-modelo{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+.txt-modelo-nome{font-size:11px;color:var(--text3)}
+.srv-carteira{margin-top:14px}
+#gv-texto+.txtai-test,.srv-card .txtai-test{margin-top:8px}
+.srv-fala{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Posse: o cartão escolhido sobe ao posto e o antigo cede por baixo. Objeto
+   grande não quica: o cartão pousa seco; o aro do posto confirma. FLIP pela
+   propriedade translate, pra não brigar com o scale do toque. */
+.srv-card.voa{transition:translate 320ms var(--fc-curva);z-index:2}
+.srv-card.voa::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 10px 28px rgba(0,0,0,.18);opacity:0;animation:srvLevanta 320ms var(--fc-curva)}
+@keyframes srvLevanta{40%{opacity:1}}
+.srv-card.cede{transition:translate 360ms var(--fc-curva);z-index:1;animation:srvCede 360ms linear}
+@keyframes srvCede{50%{opacity:.6}}
+.srv-card.anda{transition:translate 240ms var(--fc-curva)}
+@media(prefers-reduced-motion:reduce){
+  .srv-chave,.srv-chave>div,.srv-card.voa,.srv-card.cede,.srv-card.anda,.srv-usar{transition:none}
+  .srv-card.voa::before,.srv-card.cede,.srv-slot.pousou::after,.srv-rotulo.soco{animation:none}
+}
+.preset-em-uso{flex-shrink:0;align-self:center;font-size:12px;font-weight:700;color:var(--ok-txt);background:var(--ok-bg);border-radius:10px;padding:6px 12px;white-space:nowrap}
 .mf{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
 .btn-save{background:var(--accent);color:white;border:none;border-radius:12px;padding:10px 22px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition)}
 .btn-save:hover{background:var(--accent2)}
@@ -7135,26 +7222,25 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
            renderPortaEntrada(). -->
       <div id="cfgEntradaWrap" style="display:none"></div>
       <div id="cfgAvancadasWrap">
+      <div id="srvParque" hidden></div>
       <button type="button" class="cse-voltar" onclick="_mostraPortaEntrada()"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"/></svg></span><span data-i18n>voltar ao começo</span></button>
       <div class="cfg-tabs">
         <button class="cfg-tab-btn" id="cfgTabBtnGeral" onclick="cfgTab('Geral')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> <span data-i18n>Geral</span></button>
         <button class="cfg-tab-btn on" id="cfgTabBtnTrans" onclick="cfgTab('Trans')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg></span> <span data-i18n>Transcrição</span></button>
         <button class="cfg-tab-btn" id="cfgTabBtnText" onclick="cfgTab('Text')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span> <span data-i18n>IA de texto</span></button>
-        <button class="cfg-tab-btn" id="cfgTabBtnDiar" onclick="cfgTab('Diar')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Diarização</span></button>
+        <button class="cfg-tab-btn" id="cfgTabBtnDiar" onclick="cfgTab('Diar')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Separar vozes</span></button>
       </div>
       <div class="cfg-tab-pane" id="cfgPaneTrans">
-      <div class="section-title" data-i18n>API de transcrição</div>
+      <div class="section-title" data-i18n>Transcrição</div>
       <p class="fhint" style="margin-bottom:10px" data-i18n>Quem transforma o áudio em texto. Comece pelo Groq: são 2.000 transcrições por dia sem pagar nada.</p>
-      <!-- Cartões desenhados a partir do cadastro CEREBROS, no mesmo padrão da
-           aba de diarização. Antes daqui só existiam os quatro botões abaixo,
-           sem uma linha explicando quem era quem. -->
-      <div id="cardsTranscricao"></div>
-      <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr 1fr">
-        <button class="api-tog-btn on" id="togW" onclick="setProvider('whisper',true,true)"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><line x1="12" y1="8" x2="12" y2="4"/><circle cx="12" cy="3" r="1"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span> Whisper</button>
-        <button class="api-tog-btn" id="togG" onclick="setProvider('grok',true,true)">🟠 Grok STT</button>
-        <button class="api-tog-btn" id="togGQ" onclick="setProvider('groqwhisper',true,true)">🟢 Groq <span class="free-badge" style="font-size:9px">FREE</span></button>
-        <button class="api-tog-btn" id="togL" onclick="setProvider('local')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span> <span data-i18n>Local</span> <span class="free-badge" style="font-size:9px" data-i18n>GRÁTIS</span></button>
-      </div>
+      <!-- Gaveta de serviço (Configurações avançadas, Fase C — 28/09/2026). Em
+           cima, o que está em uso, com a sua chave; embaixo, as outras
+           opções, e cada uma só abre o campo de chave quando é escolhida. Saíram
+           os quatro botões que repetiam os cartões: eram o único lugar que dizia
+           qual serviço estava valendo. Montada por _srvRender(); os campos de
+           chave e o painel do Local (mais abaixo no HTML) são MOVIDOS para dentro
+           dos cartões, com o mesmo id, porque o saveCfg() lê por id. -->
+      <div class="srv-gaveta" id="gv-transcricao"></div>
       <!-- PAINEL LOCAL (visível só quando local está ativo) -->
       <div id="localPanel" style="display:none;margin-top:10px">
         <!-- Status do servidor -->
@@ -7225,7 +7311,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       </div>
       <div class="frow key-row" id="keyRowWhisper" style="margin-top:12px">
         <label><span id="keyLabel">OpenAI API Key</span><div style="display:flex;gap:5px"><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="alink" data-i18n>🔑 Chaves</a><a href="https://platform.openai.com/usage" target="_blank" rel="noopener noreferrer" class="alink" data-i18n>📊 Uso</a></div></label>
-        <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKey" placeholder="sk-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKey',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+        <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKey" placeholder="sk-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="_chaveDigitada(this,'whisper');saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKey',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
         <div class="key-guide" data-i18n-html>
           <strong>Em poucos minutos:</strong>
           <ol>
@@ -7240,7 +7326,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       </div>
       <div class="frow key-row" id="keyRowGrok">
         <label><span>Grok STT Key (xAI)</span><a href="https://console.x.ai" target="_blank" rel="noopener noreferrer" class="alink">xAI Console</a></label>
-        <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyGrok" placeholder="xai-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="if(this.value.trim())setProvider('grok',false);saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyGrok',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+        <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyGrok" placeholder="xai-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="_chaveDigitada(this,'grok');saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyGrok',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
         <div class="key-guide" data-i18n-html>
           <strong>Em poucos minutos:</strong>
           <ol>
@@ -7255,7 +7341,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       </div>
       <div class="frow key-row" id="keyRowGroq">
         <label><span>Groq Key <span class="free-badge" data-i18n>tier grátis</span></span><a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" class="alink">groq.com</a></label>
-        <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyGroq" placeholder="gsk_…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="if(this.value.trim())setProvider('groqwhisper',false);saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyGroq',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+        <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyGroq" placeholder="gsk_…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="_chaveDigitada(this,'groqwhisper');saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyGroq',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
         <div class="key-guide" data-i18n-html>
           <strong>Em poucos minutos:</strong>
           <ol>
@@ -7284,32 +7370,18 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div class="section-title"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span> <span data-i18n>IA de texto — os cérebros do Vox</span></div>
       <p class="fhint" style="margin-bottom:4px" data-i18n>Transcrever é ouvir. As lentes, receitas e comparações precisam de cérebros de IA para pensar em cima do texto.</p>
       <p class="fhint" style="margin-bottom:12px" data-i18n-html>🔐 O Vox não cobra por uso de IA nem vê seus dados: você conecta suas próprias chaves. Comece com opções grátis ou quase grátis e adicione outros cérebros quando quiser comparar respostas.</p>
-      <div class="section-title" data-i18n>🧠 Comece por estes cérebros</div>
-      <div class="maint-box" style="margin-bottom:8px;border:1.5px solid var(--groq)">
-        <div class="maint-info">
-          <div class="maint-title">🟢 Groq <span class="free-badge" data-i18n>⭐ Recomendado — quase grátis</span></div>
-          <div class="maint-desc" data-i18n>Melhor primeiro passo: não instala nada, é muito rápido e usa a mesma chave Groq da transcrição. O modelo Llama roda na Groq, não no seu computador.</div>
-          <div class="maint-foot"><a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer"><span class="svgi" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span> <span data-i18n>criar chave Groq</span></a></div>
-        </div>
-        <button type="button" class="preset-use-btn" onclick="setTxtProvider('groq')" data-i18n>Usar Groq</button>
-      </div>
-      <div class="maint-box" style="margin-bottom:12px">
-        <div class="maint-info">
-          <div class="maint-title"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> Z.ai (GLM) <span class="free-badge" data-i18n>Grátis real</span></div>
-          <div class="maint-desc" data-i18n>Ótima segunda chave para montar seu futuro conselho de IAs: grátis, sem limite de tempo e compatível com o formato OpenAI.</div>
-          <div class="maint-foot"><a href="https://z.ai" target="_blank" rel="noopener noreferrer"><span class="svgi" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span> <span data-i18n>site oficial</span></a></div>
-        </div>
-        <button type="button" class="preset-use-btn" onclick="applyTxtAIPreset('zai')" data-i18n>Usar</button>
-      </div>
-      <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr">
-        <button class="api-tog-btn on" id="txtaiTogGroq" onclick="setTxtProvider('groq')">🟢 Groq <span class="free-badge" style="font-size:9px">FREE</span></button>
-        <button class="api-tog-btn" id="txtaiTogOpenai" onclick="setTxtProvider('openai')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><line x1="12" y1="8" x2="12" y2="4"/><circle cx="12" cy="3" r="1"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span> OpenAI <span class="paid-badge" style="font-size:9px" data-i18n>Pago</span></button>
-        <button class="api-tog-btn" id="txtaiTogCustom" onclick="setTxtProvider('custom')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span> <span data-i18n>Outras IAs</span></button>
-      </div>
+      <!-- Gaveta da IA de texto (Configurações avançadas, Fase D — 28/09/2026). Saíram
+           os cartões "Comece por estes cérebros" e o trilho Groq | OpenAI | Outras
+           IAs: eram dois jeitos paralelos de escolher a mesma coisa. Em cima fica o
+           cérebro em uso, com o modelo e o teste; embaixo, as outras opções. Os
+           painéis abaixo (Groq, OpenAI, Outra IA) são MOVIDOS pra dentro dos
+           cartões por _srvRender, com os mesmos id. -->
+      <div class="srv-gaveta" id="gv-texto"></div>
       <div id="txtaiGroqPanel" style="margin-top:12px">
         <div class="frow">
           <label><span data-i18n>Modelo</span></label>
-          <select id="txtModelGroq" onchange="saveCfg(false)">
+          <div class="txt-modelo"><span class="jz-seg" data-alvo="txtModelGroq" role="group" aria-label="Modelo"><span class="jz-seg-ind"></span><button type="button" data-v="openai/gpt-oss-120b" data-i18n>Mais capaz</button><button type="button" data-v="openai/gpt-oss-20b" data-i18n>Mais rápido</button></span><span class="txt-modelo-nome"></span></div>
+          <select id="txtModelGroq" onchange="saveCfg(false)" style="display:none">
             <option value="openai/gpt-oss-120b">GPT-OSS 120B (recomendado)</option>
             <option value="openai/gpt-oss-20b">GPT-OSS 20B (mais rápido)</option>
           </select>
@@ -7319,7 +7391,8 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div id="txtaiOpenaiPanel" style="display:none;margin-top:12px">
         <div class="frow">
           <label><span data-i18n>Modelo</span></label>
-          <select id="txtModelOpenai" onchange="saveCfg(false)">
+          <div class="txt-modelo"><span class="jz-seg" data-alvo="txtModelOpenai" role="group" aria-label="Modelo"><span class="jz-seg-ind"></span><button type="button" data-v="gpt-4o" data-i18n>Mais capaz</button><button type="button" data-v="gpt-4o-mini" data-i18n>Mais barato</button></span><span class="txt-modelo-nome"></span></div>
+          <select id="txtModelOpenai" onchange="saveCfg(false)" style="display:none">
             <option value="gpt-4o-mini">GPT-4o mini (barato)</option>
             <option value="gpt-4o">GPT-4o (mais capaz)</option>
           </select>
@@ -7354,48 +7427,42 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
             <div id="modelosAviso" style="font-size:11px;color:var(--text4);margin-top:5px"></div>
           </div>
         </details>
-        <div class="section-title" style="margin-top:14px" data-i18n>Carteira de cérebros — clique pra preencher sozinho</div>
-        <p class="fhint" style="margin-top:-6px;margin-bottom:8px" data-i18n>Comece pelas gratuitas — dá pra montar uma boa coleção sem gastar nada. Toque no selo 🔒 de cada uma pra ver como ela trata os seus dados.</p>
-        <!-- Cartões vindos do cadastro CEREBROS (_renderCardsCerebro). Aqui havia
-             ~90 linhas de HTML escrito à mão, agrupadas por "grátis / ganha bônus /
-             pago". Agora a ordem e o conteúdo saem do dado, e acrescentar um
-             provedor é colar dez linhas no cadastro — sem tocar em tela. -->
-        <div id="cardsTexto"></div>
       </div>
-      <div class="txtai-test">
+      <div class="txtai-test" id="txtaiTestBox">
         <button class="maint-btn" onclick="testTxtAI()" style="display:inline-flex;align-items:center;gap:5px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> <span data-i18n>Testar conexão</span></button>
         <button type="button" class="diar-help-btn" onclick="explicarTesteConexao()" title="O que esse teste faz?" data-i18n-title aria-label="O que esse teste faz?">?</button>
         <span class="txtai-test-result" id="txtaiTestResult"></span>
       </div>
+      <!-- (Fase D) A carteira ficava escondida atrás de "Outras IAs". Agora fica à
+           vista, dobrada, na ordem que o Rafa decidiu (sigilo primeiro). -->
+      <details class="cfg-avancado srv-carteira" id="txtCarteira">
+        <summary><span data-i18n>Ver todos os cérebros</span></summary>
+        <p class="fhint" style="margin:8px 0" data-i18n>Comece pelas gratuitas — dá pra montar uma boa coleção sem gastar nada. Toque no selo 🔒 de cada uma pra ver como ela trata os seus dados.</p>
+        <div id="cardsTexto"></div>
+      </details>
       </div><!-- /cfgPaneText -->
 
       <!-- DIARIZAÇÃO -->
       <div class="cfg-tab-pane" id="cfgPaneDiar" style="display:none">
-      <div class="section-title"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Diarização</span></div>
+      <div class="section-title"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Separar vozes (diarização)</span></div>
       <p class="fhint" style="margin-bottom:4px" data-i18n>A diarização separa automaticamente quem fala cada parte da conversa.</p>
       <p class="fhint" style="margin-bottom:12px" data-i18n>Em vez de um texto corrido, você recebe a conversa organizada por pessoa — como se cada participante tivesse sua própria fala. Funciona bem para reuniões, entrevistas, consultas e atendimentos.</p>
 
-      <div class="maint-box" style="margin-bottom:12px">
-        <div class="maint-info">
-          <div class="maint-title" data-i18n>ℹ️ O que você precisa saber</div>
-          <div class="maint-desc" data-i18n>Mesmo as inteligências artificiais mais avançadas ainda podem se confundir quando duas ou mais pessoas falam ao mesmo tempo ou têm vozes parecidas.</div>
-          <div class="maint-desc" data-i18n style="margin-top:4px">Por isso você pode escolher entre os provedores que hoje entregam os melhores resultados. Cada um usa a sua própria chave: seus dados continuam sob o seu controle.</div>
-        </div>
-      </div>
+      <!-- (Fase C, 28/09/2026) Dobrado: é leitura de uma vez só, e na frente
+           empurrava a escolha do serviço pra segunda tela do celular. -->
+      <details class="cfg-avancado" style="margin-bottom:12px">
+        <summary data-i18n>O que você precisa saber</summary>
+        <div class="maint-desc" data-i18n>Mesmo as inteligências artificiais mais avançadas ainda podem se confundir quando duas ou mais pessoas falam ao mesmo tempo ou têm vozes parecidas.</div>
+        <div class="maint-desc" data-i18n style="margin-top:4px">Por isso você pode escolher entre os provedores que hoje entregam os melhores resultados. Cada um usa a sua própria chave: seus dados continuam sob o seu controle.</div>
+      </details>
 
-      <div class="section-title" data-i18n>Provedores de diarização</div>
-      <div id="cardsDiarizacao"></div>
-      <div class="api-toggle" style="grid-template-columns:1fr 1fr 1fr 1fr">
-        <button class="api-tog-btn" id="dpAssembly" onclick="setDiarProvider('assemblyai',true,true)">🟣 AssemblyAI</button>
-        <button class="api-tog-btn" id="dpGladia" onclick="setDiarProvider('gladia',true,true)">💠 Gladia</button>
-        <button class="api-tog-btn" id="dpPyannote" onclick="setDiarProvider('pyannote',true,true)">🎯 pyannote</button>
-        <button class="api-tog-btn" id="dpOpenAI" onclick="setDiarProvider('openai',true,true)"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><line x1="12" y1="8" x2="12" y2="4"/><circle cx="12" cy="3" r="1"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span> OpenAI</button>
-      </div>
+      <!-- Gaveta de serviço (Fase C, 28/09/2026): mesmo desenho da Transcrição. -->
+      <div class="srv-gaveta" id="gv-diarizacao"></div>
 
       <div id="assemblySection">
         <div class="frow">
           <label><span>AssemblyAI API Key <span class="free-badge" data-i18n>US$50 grátis</span></span><a href="https://www.assemblyai.com/dashboard" target="_blank" rel="noopener noreferrer" class="alink">Console</a></label>
-          <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyAssembly" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyAssembly',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+          <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyAssembly" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="_chaveDigitadaVozes(this,'assemblyai');saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyAssembly',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
         </div>
         <div class="diar-guide" data-i18n-html>
           <strong>Em poucos minutos:</strong>
@@ -7413,7 +7480,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div id="gladiaSection" style="display:none">
         <div class="frow">
           <label><span>Gladia API Key <span class="free-badge" data-i18n>10 h/mês grátis</span></span><a href="https://app.gladia.io" target="_blank" rel="noopener noreferrer" class="alink">app.gladia.io</a></label>
-          <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyGladia" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyGladia',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+          <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyGladia" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="_chaveDigitadaVozes(this,'gladia');saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyGladia',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
         </div>
         <div class="diar-guide" data-i18n-html>
           <strong>Em poucos minutos:</strong>
@@ -7431,7 +7498,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div id="pyannoteSection" style="display:none">
         <div class="frow">
           <label><span>pyannote.ai API Key</span><a href="https://www.pyannote.ai" target="_blank" rel="noopener noreferrer" class="alink">Console</a></label>
-          <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyPyannote" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyPyannote',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
+          <form class="key-eye-wrap" autocomplete="off" onsubmit="return false"><input type="password" id="apiKeyPyannote" placeholder="…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:38px" oninput="_chaveDigitadaVozes(this,'pyannote');saveCfg(false)"><button type="button" class="tx-eye-btn" title="Mostrar senha" data-i18n-title onclick="toggleTxEye('apiKeyPyannote',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></form>
         </div>
         <div class="diar-guide" data-i18n-html>
           <strong>Em poucos minutos:</strong>
@@ -7451,12 +7518,14 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       </div>
 
       <div class="frow" style="margin-top:12px">
-        <label><span data-i18n>IA para tentar identificar quem é quem na conversa</span></label>
+        <label><span data-i18n>Dar nome a quem fala</span></label>
         <select id="aiRenameProvider" onchange="saveCfg(false)">
+          <option value="texto" data-i18n>A IA de texto que já funciona</option>
           <option value="openai">OpenAI (GPT-4o-mini)</option>
-          <option value="groq" data-i18n>Groq (Llama — grátis)</option>
+          <option value="groq" data-i18n>Groq (grátis)</option>
+          <option value="nao" data-i18n>Não dar nome</option>
         </select>
-        <p class="fhint" data-i18n>Depois de separar as falas, o Vox pode tentar descobrir automaticamente quem é o profissional e quem é o paciente (ou outro papel). Usa a IA de texto que você já configurou.</p>
+        <p class="fhint" data-i18n>Depois de separar as falas, uma IA tenta descobrir quem é o profissional e quem é o paciente (ou o papel de cada um). Se a escolhida não tiver chave, o Vox usa a IA de texto que já funciona.</p>
       </div>
       </div><!-- /cfgPaneDiar -->
 
@@ -8307,7 +8376,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.29.1';
+const VOX_VERSION='2026.09.29.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9047,6 +9116,66 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── Configurações avançadas, Fase A (28/09/2026) ──
+"Em uso agora":"In use now",
+"Mais capaz":"More capable",
+"Mais rápido":"Faster",
+"Mais barato":"Cheaper",
+"Ver todos os cérebros":"See all brains",
+"{p} agora pensa sobre o texto.":"{p} now thinks about the text.",
+"Colocar a chave na Transcrição":"Add the key in Transcription",
+"⭐ Recomendado — quase grátis":"⭐ Recommended — almost free",
+"Não instala nada, é muito rápido e usa a mesma chave do Groq da transcrição.":"Nothing to install, very fast, and it uses the same Groq key as transcription.",
+"Usa a mesma chave da OpenAI da transcrição.":"Uses the same OpenAI key as transcription.",
+"quase grátis":"almost free",
+"pago por uso":"pay per use",
+"IA na sua máquina":"AI on your machine",
+"Outra IA compatível":"Another compatible AI",
+"Endereço: {u}":"Address: {u}",
+"Escolha um cérebro em \"Ver todos os cérebros\", ou preencha o endereço e o modelo de qualquer serviço compatível com o formato OpenAI.":"Pick a brain in \"See all brains\", or fill in the address and model of any service compatible with the OpenAI format.",
+"Usando a chave que você já tinha guardado pra {p} — testando…":"Using the key you had already saved for {p} — testing…",
+"pronto":"ready",
+"O que você precisa saber":"What you need to know",
+"Outras opções":"Other options",
+"sem chave":"no key",
+"falta a chave":"missing key",
+"chave conferida":"key checked",
+"{p} agora transcreve.":"{p} now transcribes.",
+"{p} agora separa as vozes.":"{p} now separates the voices.",
+"Separar vozes":"Separate voices",
+"Separar vozes (diarização)":"Separate voices (diarization)",
+"salvo":"saved",
+"salvo — aqui tudo salva sozinho":"saved — everything here saves by itself",
+"Isso parece uma chave de outro serviço: {q}.":"That looks like a key from another service: {q}.",
+"Mover para {q}":"Move it to {q}",
+"Essa chave parece incompleta. Copie de novo, inteira.":"That key looks incomplete. Copy it again, in full.",
+"Chave salva. {p} não deixa conferir daqui; o Vox confere na primeira gravação.":"Key saved. {p} doesn't allow checking from here; Vox checks it on the first recording.",
+"Salva. Conferindo com {p}…":"Saved. Checking with {p}…",
+"{p} está demorando pra responder…":"{p} is taking a while to answer…",
+"Chave aceita ({p})":"Key accepted ({p})",
+"Chave aceita ({p}). O serviço pediu uma pausa de alguns segundos.":"Key accepted ({p}). The service asked for a few seconds' pause.",
+"{p} não aceitou essa chave. Confira se copiou inteira.":"{p} didn't accept that key. Check that you copied all of it.",
+"Não deu pra conferir agora. A chave ficou salva e o Vox confere de novo quando for usar.":"Couldn't check it right now. The key is saved and Vox will check again when it's used.",
+"tentar de novo":"try again",
+"Conferindo a chave…":"Checking the key…",
+"{p} não aceitou a chave.":"{p} didn't accept the key.",
+"Chave aceita. Perguntando ao modelo {m}…":"Key accepted. Asking the model {m}…",
+"Chave aceita e o modelo {m} respondeu. Está funcionando.":"Key accepted and the model {m} answered. It's working.",
+"Dar nome a quem fala":"Name the speakers",
+"A IA de texto que já funciona":"The text AI that already works",
+"Groq (grátis)":"Groq (free)",
+"Não dar nome":"Don't name speakers",
+"Depois de separar as falas, uma IA tenta descobrir quem é o profissional e quem é o paciente (ou o papel de cada um). Se a escolhida não tiver chave, o Vox usa a IA de texto que já funciona.":"After separating the voices, an AI tries to work out who is the professional and who is the patient (or each person's role). If the one you chose has no key, Vox uses the text AI that already works.",
+"{p} passou a transcrever: a chave que você colou escolheu o serviço.":"{p} now transcribes: the key you pasted chose the service.",
+"{p} passou a separar as vozes: a chave que você colou escolheu o serviço.":"{p} now separates the voices: the key you pasted chose the service.",
+"Separação de vozes ligada, pela {p}. Dá pra desligar na barra de gravação.":"Voice separation turned on, through {p}. You can turn it off in the recording bar.",
+"Falta a chave desse cérebro.":"This brain has no key yet.",
+"Perguntando ao {p}…":"Asking {p}…",
+"{p} demorou demais pra responder. Confira a internet e tente de novo.":"{p} took too long to answer. Check your internet and try again.",
+"{p} · {m} respondeu. Está funcionando.":"{p} · {m} answered. It's working.",
+"Em uso":"In use",
+"Nível {n} de 4 · toque pra ver o ranking":"Level {n} of 4 · tap to see the ranking",
+"Ele manda uma pergunta bem curta e barata — \"responda apenas: ok\" — pro cérebro que você configurou aqui em cima, só pra confirmar que o endereço, o modelo e a chave estão certos. Tudo isso antes de você usar de verdade numa transformação, e sem gastar quase nada: a pergunta é minúscula, custa uma fração de centavo.<br><br>Ele testa <strong>só o cérebro escolhido aqui</strong>. Se ele não responder, o teste diz qual falhou e por quê. No uso normal é diferente: se o escolhido falhar, o Vox tenta em silêncio outro que você já tenha configurado.":"It sends a very short, cheap question — \"just answer: ok\" — to the brain you set up above, just to confirm the address, model and key are right. All before you actually use it in a real transformation, and at almost no cost: the question is tiny, a fraction of a cent.<br><br>It tests <strong>only the brain chosen here</strong>. If it doesn't answer, the test says which one failed and why. Normal use is different: if the chosen one fails, Vox quietly tries another one you've already set up.",
 // ── menu ⋯ em famílias (Central de Ajustes, 28/09/2026) ──
 "Chaves, cópias de segurança e serviços":"Keys, backups and services",
 "Idioma do app":"App language",
@@ -10584,7 +10713,7 @@ let stats={count:0,sec:0,words:0};
 let cfg={
   provider:'whisper',apiKey:'',apiKeyGrok:'',apiKeyGroq:'',lang:'',
   diarEnabled:false,diarProvider:'assemblyai',apiKeyAssembly:'',apiKeyGladia:'',apiKeyPyannote:'',diarLocal:false,
-  aiRenameProvider:'openai',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',favLenses:[],lensMenuStyle:'list',recipes:[],
+  aiRenameProvider:'texto',localBatPath:'',folderDlFormat:'txt',audioSource:'mic',mainLens:'',favLenses:[],lensMenuStyle:'list',recipes:[],
   txtProvider:'groq',txtModelGroq:'openai/gpt-oss-120b',txtModelOpenai:'gpt-4o-mini',txtBaseUrl:'',txtModel:'',txtKey:'',traduzirAlvo:'',
   // Busca por sentido: nasce DESLIGADA de propósito. Ligar significa mandar o
   // texto das notas pra uma API montar o índice — num app que promete
@@ -12010,6 +12139,7 @@ function _bkpCfg(){
 function _bkpSalvar(mudanca){
   const c=Object.assign(_bkpCfg(),mudanca||{});
   localStorage.setItem('vox_bkp_cfg',JSON.stringify(c));
+  _jzGravou=1;
   // Mantém a chave antiga em sincronia: nada mais lê ela aqui, mas os mesmos
   // dados podem ser abertos por uma versão atrasada do app em outro aparelho.
   if(c.ligado)localStorage.removeItem('vox_lembrete_backup_off');
@@ -12306,6 +12436,36 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(e.key==='Escape'&&document.getElementById('hdMoreDrop')?.classList.contains('on')){
       _hdMoreFechar();document.getElementById('btnHdMore')?.focus();
     }
+  });
+  // Carimbo: captura zera a marca, o handler do campo grava e marca, a bolha lê.
+  (function(){
+    const ov=document.getElementById('overlay');if(!ov)return;
+    const era=new WeakMap();let tm=0,pend=null;
+    const ok=e=>e.target.matches&&e.target.matches('select,input[type=text]')&&!e.target.closest('.key-eye-wrap');
+    const firma=el=>{if(el.value!==era.get(el)){era.set(el,el.value);_jzCarimbo(el)}};
+    ov.addEventListener('focusin',e=>{if(ok(e))era.set(e.target,e.target.value)});
+    ['input','change'].forEach(ev=>ov.addEventListener(ev,()=>{_jzGravou=0},true));
+    ov.addEventListener('change',e=>{if(ok(e)&&e.target.tagName==='SELECT'&&_jzGravou)firma(e.target)});
+    ov.addEventListener('input',e=>{if(!ok(e)||e.target.tagName==='SELECT'||!_jzGravou)return;pend=e.target;clearTimeout(tm);tm=setTimeout(()=>{if(pend){firma(pend);pend=null}},700)});
+    ov.addEventListener('focusout',e=>{if(pend===e.target){clearTimeout(tm);firma(pend);pend=null}});
+    // Acende: confere ao colar, ao sair do campo, ou depois de 800ms parado com
+    // o formato certo. Digitar apaga o estado velho.
+    ov.addEventListener('input',e=>{
+      const c=e.target;if(!_CAMPO_PROV[c.id])return;
+      clearTimeout(c._ct);
+      if(c.closest('.key-eye-wrap')?.dataset.e)_jzConfPinta(c,'','');
+      _srvChips();
+      if(e.inputType==='insertFromPaste'||e.inputType==='insertReplacementText'){_jzConfere(c);return}
+      c._ct=setTimeout(()=>{if(_chaveCompleta(_CAMPO_PROV[c.id],c.value))_jzConfere(c)},800);
+    });
+    ov.addEventListener('focusout',e=>{const c=e.target;if(_CAMPO_PROV[c.id]&&c.value.trim()){clearTimeout(c._ct);_jzConfere(c)}});
+  })();
+  // Fase D: trilho do modelo da IA de texto (grava no select escondido; o Encaixe é o recibo)
+  document.getElementById('overlay')?.addEventListener('click',e=>{
+    const b=e.target.closest('.txt-modelo .jz-seg button');if(!b)return;
+    const seg=b.closest('.jz-seg'),sel=document.getElementById(seg.dataset.alvo);if(!sel||sel.value===b.dataset.v)return;
+    sel.value=b.dataset.v;_jzSegPos(seg,b.dataset.v,true);_jzTato(8);saveCfg(false);
+    const nome=seg.parentNode.querySelector('.txt-modelo-nome');if(nome)nome.textContent=sel.options[sel.selectedIndex]?.textContent||'';
   });
   // Encaixe: interruptor que muda de estado dá um toque curto (Android)
   document.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('.toggle-sw'))_jzTato(8)},true);
@@ -14619,6 +14779,306 @@ function _jzTema(modo,btn){
   h.classList.add('jz-tema');
   try{document.startViewTransition(troca).finished.finally(()=>h.classList.remove('jz-tema'))}
   catch(e){h.classList.remove('jz-tema');troca()}
+}
+// ── Carimbo e Acende (Configurações avançadas, Fase B — 28/09/2026) ──
+// Carimbo: o que salva sozinho passa a dizer que salvou, no lugar onde mexeu,
+// só quando o campo assenta (lista: na hora; texto: 700ms parado ou ao sair).
+// Acende: a chave colada é conferida com o próprio serviço, direto do aparelho,
+// uma vez por chave e nunca por tecla. Os dois usam o mesmo check.
+var _jzGravou=0,_jzCarimbou=false; // var: o saveCfg mora em outro bloco e pode rodar antes
+function _jzRotuloDe(campo){
+  const fr=campo.closest('.frow');
+  if(fr){const l=fr.querySelector('label>span:first-child')||fr.querySelector('label');if(l)return l}
+  const bk=campo.closest('.bkp-linha');if(bk)return bk.querySelector('p');
+  if(campo.id==='localBatPathInput')return document.getElementById('localBatPathLabel');
+  return null;
+}
+function _jzCarimbo(campo){
+  const lb=_jzRotuloDe(campo);if(!lb)return;
+  const casa=lb.tagName==='SPAN'?lb.parentNode:lb;
+  let c=casa.querySelector('.jz-carimbo');
+  if(!c){
+    c=document.createElement('span');c.className='jz-carimbo';c.setAttribute('aria-hidden','true');
+    c.innerHTML='<svg viewBox="0 0 24 24"><polyline points="4 12 9 17 20 6"/></svg><span></span>';
+    if(lb.tagName==='SPAN')lb.after(c);else lb.appendChild(c);
+  }
+  // A primeira vez ensina o modelo mental; depois, só "salvo".
+  c.lastChild.textContent=_jzCarimbou?t('salvo'):t('salvo — aqui tudo salva sozinho');_jzCarimbou=true;
+  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');
+  clearTimeout(c._t);c._t=setTimeout(()=>c.classList.remove('on'),_voxReduzMov()?1800:1400);
+}
+// Consulta leve e sem custo para saber se a chave existe. Testado em 29/09/2026
+// com chave falsa: OpenAI, Groq, AssemblyAI e Gladia respondem 401 e deixam o
+// navegador ler; o xAI responde 400 "Incorrect API key"; o pyannote não deixa o
+// navegador consultar (CORS) — nele a chave só é salva.
+const _CONF={
+  whisper:{nome:'OpenAI',url:'https://api.openai.com/v1/models',h:k=>({Authorization:'Bearer '+k})},
+  grok:{nome:'xAI',url:'https://api.x.ai/v1/models',h:k=>({Authorization:'Bearer '+k})},
+  groqwhisper:{nome:'Groq',url:'https://api.groq.com/openai/v1/models',h:k=>({Authorization:'Bearer '+k})},
+  assemblyai:{nome:'AssemblyAI',url:'https://api.assemblyai.com/v2/transcript?limit=1',h:k=>({authorization:k})},
+  gladia:{nome:'Gladia',url:'https://api.gladia.io/v2/pre-recorded?limit=1',h:k=>({'x-gladia-key':k})},
+  pyannote:{nome:'pyannote.ai'}
+};
+const _CAMPO_PROV={apiKey:'whisper',apiKeyGrok:'grok',apiKeyGroq:'groqwhisper',apiKeyAssembly:'assemblyai',apiKeyGladia:'gladia',apiKeyPyannote:'pyannote'};
+const _PREFIXO={'gsk_':'groqwhisper','xai-':'grok','sk-':'whisper'};
+const _CAMPO_DO_PROV={whisper:'apiKey',grok:'apiKeyGrok',groqwhisper:'apiKeyGroq'};
+function _jzConfUI(campo){
+  const w=campo.closest('.key-eye-wrap');
+  let ok=w.querySelector('.jz-ok');
+  if(!ok){ok=document.createElement('span');ok.className='jz-ok';ok.hidden=true;ok.setAttribute('aria-hidden','true');ok.innerHTML='<svg viewBox="0 0 24 24"><polyline points="4 12 9 17 20 6"/></svg>';w.appendChild(ok)}
+  let lin=w.nextElementSibling;
+  if(!lin||!lin.classList.contains('jz-conf')){lin=document.createElement('div');lin.className='jz-conf';lin.dataset.e='';lin.setAttribute('aria-live','polite');lin.innerHTML='<span class="aro"></span><span class="tx"></span>';w.after(lin)}
+  return {w,ok,lin};
+}
+function _jzConfPinta(campo,e,txt,botao){
+  const {w,ok,lin}=_jzConfUI(campo);
+  w.dataset.e=e;lin.dataset.e=e;lin.classList.remove('demora');
+  lin.querySelector('.tx').textContent=txt||'';
+  lin.querySelector('button')?.remove();
+  if(botao){const b=document.createElement('button');b.type='button';b.textContent=botao.txt;b.onclick=botao.fn;lin.appendChild(b)}
+  ok.hidden=e!=='aceita';
+}
+function _jzGuardaConf(id,v,e){try{const m=JSON.parse(localStorage.getItem('vox_conf')||'{}');m[id]={fim:v.slice(-4),e};localStorage.setItem('vox_conf',JSON.stringify(m))}catch(_){}}
+// Ao abrir as Configurações, a chave já aceita aparece com o check parado —
+// sem ir à rede de novo, se os 4 últimos caracteres ainda batem.
+function _jzConfRestaura(){
+  let m={};try{m=JSON.parse(localStorage.getItem('vox_conf')||'{}')}catch(_){}
+  Object.keys(_CAMPO_PROV).forEach(id=>{
+    const c=document.getElementById(id);if(!c)return;const v=c.value.trim(),r=m[id];
+    if(v&&r&&r.e==='aceita'&&r.fim===v.slice(-4)){c._conf=v;_jzConfPinta(c,'aceita',t('Chave aceita ({p})').replace('{p}',_CONF[_CAMPO_PROV[id]].nome))}
+    else if(c.closest('.key-eye-wrap')?.dataset.e)_jzConfPinta(c,'','');
+  });
+  _srvChips();
+}
+function _jzMoveChave(campo,prov){
+  const alvo=document.getElementById(_CAMPO_DO_PROV[prov]);if(!alvo)return;
+  alvo.value=campo.value.trim();campo.value='';
+  _jzConfPinta(campo,'','');
+  campo.dispatchEvent(new Event('input',{bubbles:true}));
+  alvo.dispatchEvent(new Event('input',{bubbles:true}));
+  _jzConfere(alvo,true);
+  alvo.closest('.key-eye-wrap')?.scrollIntoView({block:'nearest',behavior:_voxReduzMov()?'auto':'smooth'});
+}
+async function _jzConfere(campo,forca){
+  const prov=_CAMPO_PROV[campo.id];if(!prov)return;
+  const v=campo.value.trim(),c=_CONF[prov];
+  if(!v){_jzConfPinta(campo,'','');return}
+  if(!forca&&campo._conf===v)return;
+  for(const pre in _PREFIXO){
+    const q=_PREFIXO[pre];
+    if(v.startsWith(pre)&&q!==prov){
+      _jzConfPinta(campo,'outro',t('Isso parece uma chave de outro serviço: {q}.').replace('{q}',_NOME_PROV[q]),{txt:t('Mover para {q}').replace('{q}',_NOME_PROV[q]),fn:()=>_jzMoveChave(campo,q)});
+      return;
+    }
+  }
+  if(!_chaveCompleta(prov,v)){if(forca)_jzConfPinta(campo,'recusada',t('Essa chave parece incompleta. Copie de novo, inteira.'));return}
+  campo._conf=v;campo._ab?.abort();
+  if(!c.url){_jzConfPinta(campo,'salva',t('Chave salva. {p} não deixa conferir daqui; o Vox confere na primeira gravação.').replace('{p}',c.nome));_posChaveJa();_srvChips();_srvDepoisDaChave(campo.id);return}
+  const ab=campo._ab=new AbortController();
+  _jzConfPinta(campo,'conferindo',t('Salva. Conferindo com {p}…').replace('{p}',c.nome));
+  const {lin}=_jzConfUI(campo);
+  const t1=setTimeout(()=>lin.classList.add('demora'),400);
+  const t2=setTimeout(()=>{if(campo._ab===ab)lin.querySelector('.tx').textContent=t('{p} está demorando pra responder…').replace('{p}',c.nome)},6000);
+  const t3=setTimeout(()=>ab.abort(),15000);
+  let st=0,corpo='';
+  try{const r=await fetch(c.url,{headers:c.h(v),signal:ab.signal});st=r.status;if(st===400)corpo=await r.text().catch(()=>'')}catch(_){}
+  clearTimeout(t1);clearTimeout(t2);clearTimeout(t3);
+  if(campo.value.trim()!==v||campo._ab!==ab)return; // mudou no meio: o resultado velho não vale
+  campo._ab=null;
+  if(st===200||st===429){
+    // 429 também prova que a chave existe: o serviço só pediu calma.
+    _jzConfPinta(campo,'aceita',st===429?t('Chave aceita ({p}). O serviço pediu uma pausa de alguns segundos.').replace('{p}',c.nome):t('Chave aceita ({p})').replace('{p}',c.nome));
+    _jz(_jzConfUI(campo).ok,'nasce',520);_jzTato([8,40,12]);
+    _jzGuardaConf(campo.id,v,'aceita');
+    _posChaveJa(); // cofre do navegador e gravação guardada: a chave é boa, pode ir já
+    _srvChips();_srvDepoisDaChave(campo.id);
+  }else if(st===401||st===403||(st===400&&/api key/i.test(corpo))){
+    campo._conf=null;
+    _jzConfPinta(campo,'recusada',t('{p} não aceitou essa chave. Confira se copiou inteira.').replace('{p}',c.nome));
+    _jz(_jzConfUI(campo).w,'nega',260);
+  }else{
+    // Rede, CORS, 5xx ou demora: ninguém tem culpa, então nada fica vermelho.
+    campo._conf=null;
+    _jzConfPinta(campo,'sem-resposta',t('Não deu pra conferir agora. A chave ficou salva e o Vox confere de novo quando for usar.'),{txt:t('tentar de novo'),fn:()=>_jzConfere(campo,true)});
+  }
+}
+// ── Gavetas de serviço (Configurações avançadas, Fase C — 28/09/2026) ──
+// Em cima, "Em uso agora" com a sua chave; embaixo, as outras opções. "Usar"
+// num serviço com chave (ou no Local) troca na hora, com a Posse. Num serviço
+// sem chave, abre o campo dentro do cartão, e a troca só acontece quando a
+// chave é aceita (Acende): quem está gravando nunca fica sem serviço no meio.
+const _SRV={
+  transcricao:{atual:()=>cfg.provider,
+    pv:{tr_groq:'groqwhisper',tr_local:'local',tr_openai:'whisper',tr_xai:'grok'},
+    no:{groqwhisper:'keyRowGroq',whisper:'keyRowWhisper',grok:'keyRowGrok',local:'localPanel'},
+    campo:{groqwhisper:'apiKeyGroq',whisper:'apiKey',grok:'apiKeyGrok'},
+    aplica:p=>setProvider(p,true,false),
+    fala:n=>t('{p} agora transcreve.').replace('{p}',n)},
+  diarizacao:{atual:()=>cfg.diarProvider,
+    pv:{di_assembly:'assemblyai',di_gladia:'gladia',di_pyannote:'pyannote',di_openai:'openai'},
+    no:{assemblyai:'assemblySection',gladia:'gladiaSection',pyannote:'pyannoteSection',openai:'openaiDiarSection'},
+    campo:{assemblyai:'apiKeyAssembly',gladia:'apiKeyGladia',pyannote:'apiKeyPyannote',openai:'apiKey'},
+    aplica:p=>setDiarProvider(p,true,true),
+    fala:n=>t('{p} agora separa as vozes.').replace('{p}',n)},
+  // A IA de texto não tem cadastro próprio de "provedor em uso": Groq e OpenAI
+  // reaproveitam a chave da Transcrição, e "Outra IA" é qualquer endereço
+  // compatível (os presets da carteira preenchem ele).
+  texto:{atual:()=>cfg.txtProvider||'groq',
+    lista:()=>_txtLista(),
+    no:{groq:'txtaiGroqPanel',openai:'txtaiOpenaiPanel',custom:'txtaiCustomPanel'},
+    noPosto:['txtaiTestBox'],
+    campo:{groq:'apiKeyGroq',openai:'apiKey',custom:'txtKey'},
+    aplica:p=>setTxtProvider(p),
+    fala:n=>t('{p} agora pensa sobre o texto.').replace('{p}',n),
+    depois:g=>{
+      _txtModeloSync();
+      // Groq e OpenAI usam a chave da Transcrição: sem ela, o cartão aberto aponta pra lá.
+      ['groq','openai'].forEach(p=>{
+        const slot=g.querySelector('.srv-alt [data-slot="'+p+'"]');
+        if(slot&&!_srvTemChave('texto',p)){
+          const b=document.createElement('button');b.type='button';b.className='srv-usar';b.style.marginTop='8px';
+          b.textContent=t('Colocar a chave na Transcrição');
+          b.onclick=()=>_txtPedeChave(p);slot.appendChild(b);
+        }
+      });
+    }}
+};
+function _txtPresetAtual(){
+  const u=(cfg.txtBaseUrl||'').replace(/\/+$/,'');if(!u)return null;
+  if(/api\.x\.ai/.test(u))return 'grok';
+  return Object.keys(TXTAI_PRESETS).find(k=>TXTAI_PRESETS[k].url.replace(/\/+$/,'')===u)||null;
+}
+function _txtLista(){
+  const g=CEREBROS.groq||{},o=CEREBROS.openai||{},pr=_txtPresetAtual(),cp=pr?CEREBROS[pr==='grok'?'xai':pr]:null;
+  const local=/localhost|127\.0\.0\.1/.test(cfg.txtBaseUrl||'');
+  return [
+    {p:'groq',c:{pid:'txt_groq',prov:{ico:g.ico||'⚡',nome:'Groq',sigilo:g.sigilo??2,site:'https://console.groq.com/keys'},
+      modelo:{id:'groq',selo:t('⭐ Recomendado — quase grátis'),desc:t('Não instala nada, é muito rápido e usa a mesma chave do Groq da transcrição.'),precoTxt:t('quase grátis')}}},
+    {p:'openai',c:{pid:'txt_openai',prov:{ico:o.ico||'🤖',nome:'OpenAI',sigilo:o.sigilo??2,site:'https://platform.openai.com/api-keys'},
+      modelo:{id:'openai',selo:t('Pago'),desc:t('Usa a mesma chave da OpenAI da transcrição.'),precoTxt:t('pago por uso')}}},
+    {p:'custom',c:{pid:'txt_custom',prov:{ico:cp?.ico||(local?'🖥️':'🧠'),nome:cp?.nome||(local?t('IA na sua máquina'):t('Outra IA compatível')),sigilo:cp?.sigilo??(local?4:0),site:''},
+      modelo:{id:'custom',selo:cfg.txtBaseUrl?(cfg.txtModel||''):'',desc:cfg.txtBaseUrl?t('Endereço: {u}').replace('{u}',cfg.txtBaseUrl):t('Escolha um cérebro em "Ver todos os cérebros", ou preencha o endereço e o modelo de qualquer serviço compatível com o formato OpenAI.'),precoTxt:''}}}
+  ];
+}
+// O trilho "Mais capaz | Mais rápido" espelha o select escondido, que é o que o saveCfg lê.
+function _txtModeloSync(){
+  document.querySelectorAll('.txt-modelo .jz-seg').forEach(seg=>{
+    const sel=document.getElementById(seg.dataset.alvo);if(!sel)return;
+    _jzSegPos(seg,sel.value,false);
+    const nome=seg.parentNode.querySelector('.txt-modelo-nome');
+    if(nome)nome.textContent=sel.options[sel.selectedIndex]?.textContent||'';
+  });
+}
+// Groq e OpenAI da IA de texto usam a chave da Transcrição: leva até lá, com o
+// cartão certo aberto, e a IA de texto troca quando a chave for aceita.
+function _txtPedeChave(p){
+  const prov={groq:'groqwhisper',openai:'whisper'}[p];
+  _srvPedido.texto=p;
+  cfgTab('Trans');
+  if(cfg.provider!==prov){_srvAberto.transcricao=prov;_srvRender('transcricao')}
+  const inp=document.getElementById(_SRV.transcricao.campo[prov]);
+  setTimeout(()=>{inp?.closest('.srv-card')?.scrollIntoView({block:'center',behavior:_voxReduzMov()?'auto':'smooth'});if(matchMedia('(pointer:fine)').matches)inp?.focus({preventScroll:true})},120);
+}
+// Depois de escolher na carteira, o posto pisca pra mostrar onde o cérebro foi parar.
+function _srvPousa(cat){
+  const g=document.getElementById('gv-'+cat),slot=g?.querySelector('.srv-slot'),modal=g?.closest('.modal');
+  if(!slot)return;
+  if(modal){const mr=modal.getBoundingClientRect(),sr=slot.getBoundingClientRect();if(sr.top<mr.top+50||sr.top>mr.bottom-120)modal.scrollTo({top:modal.scrollTop+sr.top-mr.top-60,behavior:_voxReduzMov()?'auto':'smooth'})}
+  setTimeout(()=>_jz(slot,'pousou',560),_voxReduzMov()?0:260);
+}
+const _srvAberto={},_srvPedido={};
+var _srvNaGaveta=false;
+function _srvTemChave(cat,p){
+  if(p==='local')return true;
+  if(cat==='texto'&&p==='custom')return !!cfg.txtBaseUrl&&(!!(document.getElementById('txtKey')?.value||'').trim()||/localhost|127\.0\.0\.1/.test(cfg.txtBaseUrl));
+  const id=_SRV[cat].campo[p];
+  return !!(id&&(document.getElementById(id)?.value||'').trim());
+}
+function _srvChip(cat,p){
+  if(p==='local')return `<span class="srv-est">${t('sem chave')}</span>`;
+  if(!_srvTemChave(cat,p))return `<span class="srv-est falta">${t('falta a chave')}</span>`;
+  const w=document.getElementById(_SRV[cat].campo[p])?.closest('.key-eye-wrap');
+  return `<span class="srv-est ok">✓ ${w&&w.dataset.e==='aceita'?t('chave conferida'):t('pronto')}</span>`;
+}
+function _srvChips(){
+  Object.keys(_SRV).forEach(cat=>{
+    const est=document.querySelector('#gv-'+cat+' .srv-slot .srv-est');
+    if(est)est.outerHTML=_srvChip(cat,_SRV[cat].atual());
+  });
+}
+function _srvCardHtml(cat,c,p,emUso){
+  const m=c.modelo,pr=c.prov,aberto=!emUso&&_srvAberto[cat]===p;
+  const temChave=p!=='local'&&_srvTemChave(cat,p);
+  return `<div class="srv-card${emUso?' emuso':''}${temChave?' tem-chave':''}" data-k="${escHtml(p)}" data-pid="${escHtml(c.pid)}" data-mid="${escHtml(m.id)}">`+
+    `<div class="srv-hd"><span class="srv-ico" aria-hidden="true">${pr.ico}</span>`+
+    `<span class="srv-nome"><b>${escHtml(pr.nome)}</b>${m.selo?` <span class="free-badge">${escHtml(m.selo)}</span>`:''}</span>`+
+    (emUso?_srvChip(cat,p):`<button type="button" class="srv-usar" onclick="_srvEscolhe('${cat}','${escJs(p)}')" aria-expanded="${aberto}">${aberto?t('Fechar'):t('Usar')}</button>`)+
+    `</div><div class="srv-desc">${escHtml(m.desc||'')}</div>`+
+    (m.curio?`<div class="srv-desc srv-curio">${escHtml(m.curio)}</div>`:'')+
+    `<div class="srv-pe">${_seloSigiloHtml(pr.sigilo)}${pr.site?`<a href="${escHtml(pr.site)}" target="_blank" rel="noopener noreferrer">${t('site oficial')}</a>`:''}<span>${m.precoTxt!==undefined?escHtml(m.precoTxt):_precoTxt(m)}</span></div>`+
+    `<div class="srv-chave${emUso||aberto?' on':''}"><div data-slot="${escHtml(p)}"></div></div></div>`;
+}
+function _srvRender(cat){
+  const g=document.getElementById('gv-'+cat),parque=document.getElementById('srvParque');
+  if(!g||!parque)return;
+  const d=_SRV[cat],atual=d.atual();
+  // Estaciona os nós de verdade antes de redesenhar: o innerHTML os apagaria.
+  Object.values(d.no).concat(d.noPosto||[]).forEach(id=>{const n=document.getElementById(id);if(n)parque.appendChild(n)});
+  let lista=d.lista?d.lista():_cerebrosLista(cat).map(c=>({c,p:d.pv[c.pid]})).filter(x=>x.p);
+  if(cat==='transcricao')lista.sort((a,b)=>(/⭐/.test(b.c.modelo.selo||'')?1:0)-(/⭐/.test(a.c.modelo.selo||'')?1:0));
+  const emUso=lista.find(x=>x.p===atual)||lista[0],resto=lista.filter(x=>x!==emUso);
+  g.innerHTML=`<div class="srv-rotulo">${t('Em uso agora')}</div><div class="srv-slot">${_srvCardHtml(cat,emUso.c,emUso.p,true)}</div>`+
+    (resto.length?`<div class="srv-alt-t">${t('Outras opções')}</div><div class="srv-alt">${resto.map(x=>_srvCardHtml(cat,x.c,x.p,false)).join('')}</div>`:'')+
+    `<div class="srv-fala" aria-live="polite"></div>`;
+  Object.entries(d.no).forEach(([p,id])=>{
+    const n=document.getElementById(id),slot=g.querySelector('[data-slot="'+p+'"]');
+    if(n&&slot){n.style.display='';n.classList.remove('inactive','active-key');slot.appendChild(n)}
+  });
+  (d.noPosto||[]).forEach(id=>{const n=document.getElementById(id),slot=g.querySelector('.srv-slot [data-slot]');if(n&&slot)slot.appendChild(n)});
+  if(d.depois)d.depois(g);
+}
+function _srvEscolhe(cat,p,forca){
+  const d=_SRV[cat],g=document.getElementById('gv-'+cat);if(!g)return;
+  if(d.atual()===p){_jz(g.querySelector('.srv-rotulo'),'soco',320);return}
+  if(!forca&&!_srvTemChave(cat,p)&&!(cat==='texto'&&p==='custom')){
+    _srvAberto[cat]=_srvAberto[cat]===p?null:p;_srvPedido[cat]=_srvAberto[cat];
+    _srvRender(cat);
+    const inp=_srvAberto[cat]&&document.getElementById(d.campo[p]);
+    // Foco automático só com mouse: no celular o teclado abriria no meio da gaveta.
+    if(inp&&matchMedia('(pointer:fine)').matches&&!_voxReduzMov())setTimeout(()=>inp.focus({preventScroll:true}),240);
+    return;
+  }
+  _srvAberto[cat]=null;_srvPedido[cat]=null;
+  const modal=g.closest('.modal'),antes=new Map(),velho=d.atual();
+  g.querySelectorAll('[data-k]').forEach(n=>antes.set(n.dataset.k,n.getBoundingClientRect()));
+  _srvNaGaveta=true;try{d.aplica(p)}finally{_srvNaGaveta=false}
+  const slot=g.querySelector('.srv-slot');
+  // O posto fica à vista: quem escolheu lá embaixo vê o cartão subir até ele.
+  if(modal&&slot){const mr=modal.getBoundingClientRect(),sr=slot.getBoundingClientRect();if(sr.top<mr.top+50||sr.top>mr.bottom-120)modal.scrollTop+=sr.top-mr.top-60}
+  _jzTato(8);
+  const fala=g.querySelector('.srv-fala');if(fala)fala.textContent=d.fala(_NOME_PROV[p]||p);
+  if(_voxReduzMov()){slot?.classList.add('fixo');setTimeout(()=>slot?.classList.remove('fixo'),1200);return}
+  g.querySelectorAll('[data-k]').forEach(n=>{
+    const a=antes.get(n.dataset.k);if(!a)return;
+    const b=n.getBoundingClientRect(),dx=a.left-b.left,dy=a.top-b.top;
+    if(Math.abs(dx)+Math.abs(dy)<1||Math.min(a.top,b.top)>innerHeight||Math.max(a.bottom,b.bottom)<0)return;
+    const cl=n.dataset.k===p?'voa':n.dataset.k===velho?'cede':'anda';
+    n.style.translate=dx+'px '+dy+'px';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{n.classList.add(cl);n.style.translate='';setTimeout(()=>n.classList.remove(cl),420)}));
+  });
+  setTimeout(()=>_jz(slot,'pousou',560),280);
+}
+// A chave aceita (Acende) no serviço que a pessoa pediu completa a troca.
+function _srvDepoisDaChave(id){
+  if(_srvPedido.texto&&_SRV.texto.campo[_srvPedido.texto]===id){
+    const p=_srvPedido.texto;_srvPedido.texto=null;
+    setTimeout(()=>{setTxtProvider(p);toast(t('{p} agora pensa sobre o texto.').replace('{p}',p==='groq'?'Groq':'OpenAI'))},_voxReduzMov()?0:450);
+  }
+  Object.keys(_SRV).forEach(cat=>{if(cat==='texto')return;
+    const p=_srvPedido[cat];if(!p||_SRV[cat].campo[p]!==id)return;
+    _srvPedido[cat]=null;
+    setTimeout(()=>_srvEscolhe(cat,p,true),_voxReduzMov()?0:450);
+  });
 }
 function _jzCor(btn){
   const s=btn.dataset.skin;
@@ -22643,7 +23103,7 @@ async function callAI(prompt,key,provider='auto',maxTokens=800,opts={}){
           method:'POST',headers:{'Authorization':'Bearer '+tgt.key,'Content-Type':'application/json'},
           body:JSON.stringify(corpo)
         }).catch(()=>{throw new Error(tgt.name+': '+t('sem resposta — a API está no ar?'))});
-        if(res.status===429&&attempt<2){
+        if(res.status===429&&attempt<2&&!opts.semEspera){
           const e=await res.json().catch(()=>({}));
           const m=/try again in (?:(\d+)m)?([\d.]+)s/i.exec(e.error?.message||'');
           const wait=Math.min(90,m?((+m[1]||0)*60+parseFloat(m[2])+1):15);
@@ -23006,11 +23466,14 @@ const CEREBROS={
 // acabou mostrando "US$ 1.40" sem dizer de quê, e também foi assim que modelos
 // PAGOS de diarização (sem porHora definido) caíam no branch errado e apareciam
 // como "grátis". Preço desconhecido nunca vira "grátis" — vira um aviso honesto.
+// Vírgula em português (28/09/2026): o toFixed dava "US$ 0.36" nos cartões,
+// enquanto os textos ao lado diziam "US$ 0,36".
+function _usd(v){return 'US$ '+v.toLocaleString(getLocale(),{minimumFractionDigits:2,maximumFractionDigits:2})}
 function _precoTxt(m){
   if(m.porHora!==undefined)
-    return m.porHora===0?t('grátis'):('US$ '+m.porHora.toFixed(2)+t('/hora de áudio'));
+    return m.porHora===0?t('grátis'):(_usd(m.porHora)+t('/hora de áudio'));
   if(m.preco)
-    return m.preco[0]===0?t('grátis'):('US$ '+m.preco[0].toFixed(2)+t(' por milhão de palavras'));
+    return m.preco[0]===0?t('grátis'):(_usd(m.preco[0])+t(' por milhão de palavras'));
   return t('preço no site do serviço');
 }
 function _cardCerebroHtml(c,acao){
@@ -23025,7 +23488,7 @@ function _cardCerebroHtml(c,acao){
         <span style="color:var(--text3)">${_precoTxt(m)}</span>
       </div>
     </div>
-    <button type="button" class="preset-use-btn" onclick="${acao||p.usar||''}">${t('Usar')}</button>
+    ${_cardEmUso(c)?`<span class="preset-em-uso">✓ ${t('Em uso')}</span>`:`<button type="button" class="preset-use-btn" onclick="${acao||p.usar||''}">${t('Usar')}</button>`}
   </div>`;
 }
 // Todos os cartões aparecem direto — sem "ver todos" pra clicar. O Rafa testou
@@ -23033,7 +23496,15 @@ function _cardCerebroHtml(c,acao){
 // quem entra numa aba de configuração quer ver as opções, não caçar um botão
 // escondido. A hierarquia continua só visualmente (destaque = borda), a lista
 // inteira fica visível.
+// Antes todos os cartões diziam "Usar", inclusive o do serviço que já estava
+// valendo — o único sinal de qual estava ativo era a fileira de botões embaixo.
+const _PROV_DO_CARD={tr_local:'local',tr_groq:'groqwhisper',tr_openai:'whisper',tr_xai:'grok',di_assembly:'assemblyai',di_gladia:'gladia',di_pyannote:'pyannote',di_openai:'openai'};
+function _cardEmUso(c){
+  const v=_PROV_DO_CARD[c.pid];if(!v)return false;
+  return c.prov.cat==='transcricao'?cfg.provider===v:cfg.diarProvider===v;
+}
 function _renderCardsCerebro(cat,containerId){
+  if(cat==='transcricao'||cat==='diarizacao'){_srvRender(cat);return} // Fase C: essas duas viraram gaveta
   const el=document.getElementById(containerId);if(!el)return;
   const lista=_cerebrosLista(cat);
   // Na aba de texto o botão preenche endereço+modelo pelo preset (o id do
@@ -23082,7 +23553,7 @@ function _cerebrosPorSigilo(){
 function _seloSigiloHtml(n,clicavel=true){
   const s=SIGILO[n];if(!s)return '';
   return `<span class="selo-sigilo" ${clicavel?'onclick="event.stopPropagation();abrirRankingSigilo()" role="button" tabindex="0"':''}
-    style="border-color:${s.cor};color:${s.cor}" title="${escHtml(s.nome)}">🔒 ${t('Sigilo')} ${n===0?'?':n}</span>`;
+    style="border-color:${s.cor};color:${s.cor}" title="${escHtml(t('Nível {n} de 4 · toque pra ver o ranking').replace('{n}',n===0?'?':n))}">🔒 ${escHtml(s.nome)}</span>`;
 }
 function abrirRankingSigilo(){
   const linhas=_cerebrosPorSigilo().map((c,i)=>{
@@ -23125,12 +23596,12 @@ function abrirRankingSigilo(){
 function irParaCardCerebro(cat,pid,mid){
   closeTxOverlay();
   const abaDe={texto:'Text',transcricao:'Trans',diarizacao:'Diar'};
-  const containerDe={texto:'cardsTexto',transcricao:'cardsTranscricao',diarizacao:'cardsDiarizacao'};
+  const containerDe={texto:'cardsTexto',transcricao:'gv-transcricao',diarizacao:'gv-diarizacao'};
   openModal();
   cfgTab(abaDe[cat]);
   setTimeout(()=>{
     const cont=document.getElementById(containerDe[cat]);
-    const card=cont&&[...cont.querySelectorAll('.maint-box')].find(el=>el.dataset.pid===pid&&el.dataset.mid===mid);
+    const card=cont&&[...cont.querySelectorAll('.maint-box,.srv-card')].find(el=>el.dataset.pid===pid&&el.dataset.mid===mid);
     if(!card)return;
     card.scrollIntoView({behavior:'smooth',block:'center'});
     card.classList.add('card-flash');
@@ -23211,20 +23682,40 @@ function _showTxtKeyHint(preset){
 function applyTxtAIPreset(preset,modeloId){
   document.getElementById('txtAdvDetails').open=true; // mostra o endereço/modelo preenchidos, em vez de esconder atrás de um clique
   if(preset==='grok'){
-    setTxtProvider('custom');
+    const antesG=_txtPresetAtual(),chaveAntesG=(document.getElementById('txtKey').value||'').trim();
+    cfg.txtKeys=cfg.txtKeys||{};
+    if(antesG&&antesG!=='grok'&&chaveAntesG)cfg.txtKeys[antesG]=chaveAntesG;
     document.getElementById('txtBaseUrl').value='https://api.x.ai/v1';
     document.getElementById('txtModel').value='grok-4.5';
     document.getElementById('txtKey').value=cfg.apiKeyGrok||'';
+    saveCfg(false);
+    setTxtProvider('custom');
+    _srvPousa('texto');
     _hideTxtKeyHint();
     toast(t('🟠 Preenchido com a chave do Grok que você já tem — testando…'));
     testTxtAI();
     return;
   }
   const p=TXTAI_PRESETS[preset];if(!p)return;
-  setTxtProvider('custom');
+  // (Fase D, 28/09/2026) Uma chave por cérebro. Antes, trocar de preset zerava a
+  // txtKey: quem trocava Z.ai por Gemini perdia a chave da Z.ai. Agora a chave
+  // do atual fica guardada em cfg.txtKeys e a do novo volta, se já existia.
+  const antes=_txtPresetAtual(),chaveAntes=(document.getElementById('txtKey').value||'').trim();
+  cfg.txtKeys=cfg.txtKeys||{};
+  if(antes&&antes!=='grok'&&chaveAntes)cfg.txtKeys[antes]=chaveAntes;
+  const guardada=cfg.txtKeys[preset]||'';
   document.getElementById('txtBaseUrl').value=p.url;
   document.getElementById('txtModel').value=modeloId||p.model;
-  document.getElementById('txtKey').value='';
+  document.getElementById('txtKey').value=guardada;
+  saveCfg(false);
+  setTxtProvider('custom');
+  _srvPousa('texto');
+  if(guardada){
+    _hideTxtKeyHint();
+    toast(t('Usando a chave que você já tinha guardado pra {p} — testando…').replace('{p}',CEREBROS[preset]?.nome||preset));
+    testTxtAI();
+    return;
+  }
   if(!p.needsKey){
     _hideTxtKeyHint();
     toast(t('🖥️ Preenchido! Testando conexão local…'));
@@ -23270,14 +23761,13 @@ function _updateTxtAIPresetGrok(){
 }
 function setTxtProvider(p,save=true){
   cfg.txtProvider=p;
-  document.getElementById('txtaiTogGroq').className='api-tog-btn'+(p==='groq'?' on':'');
-  document.getElementById('txtaiTogOpenai').className='api-tog-btn'+(p==='openai'?' on':'');
-  document.getElementById('txtaiTogCustom').className='api-tog-btn'+(p==='custom'?' on':'');
+  // (Fase D) Os botões Groq | OpenAI | Outras IAs saíram; a gaveta diz qual vale.
   document.getElementById('txtaiGroqPanel').style.display=p==='groq'?'block':'none';
   document.getElementById('txtaiOpenaiPanel').style.display=p==='openai'?'block':'none';
   document.getElementById('txtaiCustomPanel').style.display=p==='custom'?'block':'none';
-  if(save)localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+  if(save){localStorage.setItem('vox_cfg',JSON.stringify(cfg));_jzGravou=1}
   updateLocal100Badge();
+  _srvRender('texto');
   _refreshBrainPanelIfOpen();
 }
 // Explica o que "Testar conexão" faz de verdade — o Rafa pediu depois de usar
@@ -23288,22 +23778,45 @@ function explicarTesteConexao(){
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="tx-title">⚡ ${t('O que esse teste faz?')}</div>
-    <div class="tx-sub" style="line-height:1.7">${t('Ele manda uma pergunta bem curta e barata — "responda apenas: ok" — pro cérebro que você configurou aqui em cima, só pra confirmar que o endereço, o modelo e a chave estão certos. Tudo isso antes de você usar de verdade numa transformação, e sem gastar quase nada: a pergunta é minúscula, custa uma fração de centavo.<br><br>Ele testa <strong>um cérebro por vez</strong>, não todos juntos. Se por acaso esse não responder, o Vox tenta em silêncio outro que você já tenha configurado antes — por isso o resultado sempre mostra o nome de qual foi usado. Se aparecer um nome diferente do que você esperava, é porque o primeiro falhou.')}</div>
+    <div class="tx-sub" style="line-height:1.7">${t('Ele manda uma pergunta bem curta e barata — "responda apenas: ok" — pro cérebro que você configurou aqui em cima, só pra confirmar que o endereço, o modelo e a chave estão certos. Tudo isso antes de você usar de verdade numa transformação, e sem gastar quase nada: a pergunta é minúscula, custa uma fração de centavo.<br><br>Ele testa <strong>só o cérebro escolhido aqui</strong>. Se ele não responder, o teste diz qual falhou e por quê. No uso normal é diferente: se o escolhido falhar, o Vox tenta em silêncio outro que você já tenha configurado.')}</div>
     <div class="tx-row"><button class="tx-btn ghost" onclick="closeTxOverlay()">${t('Entendi')}</button></div></div>`;
   ov.classList.add('on');
 }
+// Testa SÓ o cérebro escolhido (28/09/2026). Antes usava callAI('auto'), que
+// cai em silêncio pra outro provedor, e escrevia o nome do primeiro da lista —
+// não de quem respondeu: "Groq — conectado!" podia sair com a Groq quebrada. E o
+// retry de limite por minuto segurava o "testando…" por até ~90s. Agora é um
+// alvo só, sem esperar 429, com teto de 20s.
 async function testTxtAI(){
   const out=document.getElementById('txtaiTestResult');
   // salva os campos atuais antes de testar (sem fechar o modal)
   saveCfg(false);
-  out.style.color='var(--text3)';out.textContent=t('testando…');
-  try{
-    const r=await callAI('Responda apenas: ok','', 'auto',10,{temperature:0});
-    const tgt=_txtAITarget();
-    out.style.color='var(--accent)';out.textContent='✅ '+(tgt?tgt.name+' · '+tgt.model:'')+' — '+t('conectado!');
-  }catch(e){
-    out.style.color='var(--danger)';out.textContent='❌ '+e.message;
+  const pv=cfg.txtProvider||'groq',tgt=_txtAITarget(pv);
+  if(!tgt){out.style.color='var(--danger)';out.textContent='🔑 '+t('Falta a chave desse cérebro.');return}
+  // Passo 1 (Fase B): a chave, pela lista de modelos. Só barra quando o serviço
+  // disse que a chave é ruim; 404 ou rede seguem pro passo 2, que decide.
+  const urlModelos=pv==='groq'?'https://api.groq.com/openai/v1/models':pv==='openai'?'https://api.openai.com/v1/models':(cfg.txtBaseUrl?cfg.txtBaseUrl.replace(/\/+$/,'')+'/models':'');
+  let chaveOk=false;
+  if(urlModelos){
+    out.style.color='var(--text3)';out.textContent=t('Conferindo a chave…');
+    const ab=new AbortController(),t0=setTimeout(()=>ab.abort(),10000);
+    try{
+      const r=await fetch(urlModelos,{headers:{Authorization:'Bearer '+tgt.key},signal:ab.signal});
+      if(r.status===401||r.status===403){out.style.color='var(--danger)';out.textContent='🔑 '+t('{p} não aceitou a chave.').replace('{p}',tgt.name);return}
+      chaveOk=r.ok;
+    }catch(_){}finally{clearTimeout(t0)}
   }
+  out.style.color='var(--text3)';out.textContent=(chaveOk?t('Chave aceita. Perguntando ao modelo {m}…'):t('Perguntando ao {p}…')).replace('{m}',tgt.model).replace('{p}',tgt.name);
+  let tm;
+  try{
+    await Promise.race([
+      callAI('Responda apenas: ok','',cfg.txtProvider||'groq',10,{temperature:0,semEspera:true}),
+      new Promise((_,rej)=>{tm=setTimeout(()=>rej(new Error('⏱️ '+t('{p} demorou demais pra responder. Confira a internet e tente de novo.').replace('{p}',tgt.name))),20000)})
+    ]);
+    out.style.color='var(--accent)';out.textContent='✅ '+(chaveOk?t('Chave aceita e o modelo {m} respondeu. Está funcionando.'):t('{p} · {m} respondeu. Está funcionando.')).replace('{p}',tgt.name).replace('{m}',tgt.model);
+  }catch(e){
+    out.style.color='var(--danger)';out.textContent=e.message; // as mensagens do callAI já dizem quem falhou
+  }finally{clearTimeout(tm)}
 }
 let _lastAutoTestedKey=null;
 // Cola a chave, sai do campo (Tab/clique fora) e o Vox já testa sozinho —
@@ -23325,10 +23838,37 @@ function _pickBestProvider(want){
   if(want==='local')return want; // local não depende de chave — nunca troca sozinho
   const hasKey={whisper:!!cfg.apiKey,grok:!!cfg.apiKeyGrok,groqwhisper:!!cfg.apiKeyGroq};
   if(hasKey[want])return want;
-  if(cfg.apiKeyGrok)return 'grok';
+  // Groq antes do xAI (28/09/2026): é o recomendado e guarda por menos tempo.
   if(cfg.apiKeyGroq)return 'groqwhisper';
+  if(cfg.apiKeyGrok)return 'grok';
   if(cfg.apiKey)return 'whisper';
   return want; // nenhuma chave disponível — mantém, deixa o aviso normal de "configure a chave" aparecer
+}
+// Colar a chave escolhe o serviço (28/09/2026). Antes os campos do Groq e do
+// xAI trocavam o serviço na PRIMEIRA letra e em silêncio, e os outros não
+// trocavam nunca. Agora: só com a chave inteira (formato do provedor), sempre
+// com aviso. O Groq, que é o recomendado, assume quando a chave dele chega; os
+// outros só quando o serviço atual não tem chave — ninguém sai do Groq grátis
+// pra um pago porque colou a chave da OpenAI pra outra coisa. Quem escolheu o
+// transcritor local de propósito continua nele.
+const _FORMATO_CHAVE={whisper:/^sk-[A-Za-z0-9_-]{20,}$/,grok:/^xai-[A-Za-z0-9_-]{20,}$/,groqwhisper:/^gsk_[A-Za-z0-9]{20,}$/};
+const _NOME_PROV={whisper:'OpenAI',grok:'xAI (Grok)',groqwhisper:'Groq',local:t('Transcritor local'),assemblyai:'AssemblyAI',gladia:'Gladia',pyannote:'pyannote.ai',openai:'OpenAI'};
+function _chaveCompleta(prov,v){v=(v||'').trim();const re=_FORMATO_CHAVE[prov];return re?re.test(v):(v.length>=20&&!/\s/.test(v))}
+function _chaveDigitada(el,prov){
+  if(_srvPedido.transcricao===prov)return; // escolhida na gaveta: troca quando a chave for aceita
+  if(!_chaveCompleta(prov,el.value)||cfg.provider===prov||cfg.provider==='local')return;
+  const atual=(_chaveDoProvedorAtual()||'').trim();
+  if(prov!=='groqwhisper'&&_chaveCompleta(cfg.provider,atual))return;
+  setProvider(prov,false);
+  toast(t('{p} passou a transcrever: a chave que você colou escolheu o serviço.').replace('{p}',_NOME_PROV[prov]));
+}
+function _chaveDigitadaVozes(el,prov){
+  if(_srvPedido.diarizacao===prov)return;
+  if(!_chaveCompleta(prov,el.value)||cfg.diarProvider===prov)return;
+  const chaveAtual={assemblyai:cfg.apiKeyAssembly,gladia:cfg.apiKeyGladia,pyannote:cfg.apiKeyPyannote,openai:cfg.apiKey}[cfg.diarProvider];
+  if(_chaveCompleta(cfg.diarProvider==='openai'?'whisper':cfg.diarProvider,chaveAtual))return;
+  setDiarProvider(prov,false);
+  toast(t('{p} passou a separar as vozes: a chave que você colou escolheu o serviço.').replace('{p}',_NOME_PROV[prov]));
 }
 function loadCfg(){
   const s=localStorage.getItem('vox_cfg');
@@ -23360,7 +23900,7 @@ function loadCfg(){
   if(cfg.diarLocal){cfg.diarLocal=false;localStorage.setItem('vox_cfg',JSON.stringify(cfg))}
   document.getElementById('langSel').value=cfg.lang||'';
   document.getElementById('assistEnabled').checked=cfg.assist!==false;
-  document.getElementById('aiRenameProvider').value=cfg.aiRenameProvider||'openai';
+  document.getElementById('aiRenameProvider').value=cfg.aiRenameProvider||'texto';
   document.getElementById('txtModelGroq').value=cfg.txtModelGroq||'openai/gpt-oss-120b';
   document.getElementById('txtModelOpenai').value=cfg.txtModelOpenai||'gpt-4o-mini';
   document.getElementById('txtBaseUrl').value=cfg.txtBaseUrl||'';
@@ -23384,15 +23924,17 @@ function loadCfg(){
 }
 function setProvider(p,save=true,activate=false){
   cfg.provider=p;
-  document.getElementById('togW').className='api-tog-btn'+(p==='whisper'?' on':'');
-  document.getElementById('togG').className='api-tog-btn'+(p==='grok'?' on-g':'');
-  document.getElementById('togGQ').className='api-tog-btn'+(p==='groqwhisper'?' on-gq':'');
-  document.getElementById('togL').className='api-tog-btn'+(p==='local'?' on':'');
-  document.getElementById('localPanel').style.display=p==='local'?'block':'none';
+  // (Fase C) Os botões togW/togG/togGQ/togL saíram; quem diz qual serviço está
+  // valendo é o cartão da gaveta, redesenhado no fim desta função.
   setTimeout(updateSpeedBadge,0);
-  document.getElementById('keyLabel').textContent=p==='grok'?t('Grok Key (ativa)'):p==='groqwhisper'?t('Groq Key (ativa)'):p==='local'?t('(sem chave necessária)'):'OpenAI API Key';
+  // (28/09/2026) Aqui havia uma linha que trocava o texto de #keyLabel — o rótulo
+  // do campo da OPENAI — por "Groq Key (ativa)" ou "Grok Key (ativa)" conforme o
+  // serviço. O campo da OpenAI ficava com o nome de outra empresa. O "✓ ativo"
+  // do campo certo já vem do .active-key (_updateKeyRowFocus).
   document.getElementById('brandIcon').textContent=p==='grok'?'🟠':p==='groqwhisper'?'🟢':p==='local'?'🖥️':'🎙️';
-  if(p==='local'){updateLocalPanel();setTimeout(()=>checkAndStartServer(closeModal),300)}
+  // Escolhido na gaveta, o Local não fecha mais as Configurações aos 300ms (no
+  // meio da troca): a luz do servidor, dentro do cartão, é o recibo.
+  if(p==='local'){updateLocalPanel();const fecha=_srvNaGaveta?null:closeModal;setTimeout(()=>checkAndStartServer(fecha),300)}
   _updateKeyRowFocus(p);updateLocal100Badge();updateDiarStatus();
   if(activate){
     // Mesmo destaque "cole aqui" da Diarização (_highlightKeyField) — pedido do
@@ -23401,33 +23943,14 @@ function setProvider(p,save=true,activate=false){
     if(fieldId)_highlightKeyField(fieldId);
   }
   if(save)saveCfg(false);
+  _renderCardsCerebro('transcricao','cardsTranscricao');
   _refreshBrainPanelIfOpen();
 }
+// (Fase C) Antes esta função esmaecia as linhas de chave dos outros serviços e
+// travava o toque nelas (pointer-events:none). Agora cada linha mora dentro do
+// cartão do seu serviço, que diz o estado; aqui só se limpam as classes antigas.
 function _updateKeyRowFocus(p){
-  // whisper → destaca OpenAI, esmaece Grok e Groq
-  // grok    → destaca Grok, esmaece os outros
-  // groq    → destaca Groq, esmaece os outros
-  // local   → esmaece todos (sem chave)
-  const rows={
-    keyRowWhisper: p==='whisper',
-    keyRowGrok:    p==='grok',
-    keyRowGroq:    p==='groqwhisper'
-  };
-  Object.entries(rows).forEach(([id,isActive])=>{
-    const el=document.getElementById(id);
-    if(!el)return;
-    if(p==='local'){
-      // no modo local todos ficam inativos
-      el.classList.add('inactive');
-      el.classList.remove('active-key');
-    }else if(isActive){
-      el.classList.remove('inactive');
-      el.classList.add('active-key');
-    }else{
-      el.classList.add('inactive');
-      el.classList.remove('active-key');
-    }
-  });
+  ['keyRowWhisper','keyRowGrok','keyRowGroq'].forEach(id=>document.getElementById(id)?.classList.remove('inactive','active-key'));
 }
 function updateLocalPanel(){
   const model=cfg.localModel||'small';
@@ -23511,13 +24034,17 @@ function setDiarProvider(p,save=true,activate=false){
   document.getElementById('pyannoteSection').style.display=p==='pyannote'?'block':'none';
   document.getElementById('openaiDiarSection').style.display=p==='openai'?'block':'none';
   if(activate){
+    // Escolher um serviço de vozes também LIGA a separação. Antes isso acontecia
+    // calado; agora o aviso conta, e diz onde desligar.
+    if(!cfg.diarEnabled)toast(t('Separação de vozes ligada, pela {p}. Dá pra desligar na barra de gravação.').replace('{p}',_NOME_PROV[p]||p));
     cfg.diarEnabled=true;updateDiarStatus();
     // Destaca o campo "cole aqui a chave" — pedido do Rafa pra ficar óbvio
     // onde agir, em qualquer dispositivo (mesmo CSS/JS em todos).
     const fieldId={assemblyai:'apiKeyAssembly',gladia:'apiKeyGladia',pyannote:'apiKeyPyannote'}[p];
-    if(fieldId)_highlightKeyField(fieldId);
+    if(fieldId&&!_srvNaGaveta)_highlightKeyField(fieldId);
   }
   if(save)saveCfg(false);
+  _renderCardsCerebro('diarizacao','cardsDiarizacao');
   _refreshBrainPanelIfOpen();
 }
 function _highlightKeyField(fieldId){
@@ -23603,6 +24130,7 @@ function renderLearningPanel(){
 }
 function openModal(){
   document.getElementById('overlay').classList.add('on');
+  _jzConfRestaura();
   updateRamBadge();
   updateStorageMeter();
   renderLearningPanel();
@@ -23619,7 +24147,7 @@ function openModal(){
     _mostraPortaEntrada();
   }
 }
-function closeModal(){document.getElementById('overlay').classList.remove('on')}
+function closeModal(){document.getElementById('overlay').classList.remove('on');_posChaveJa()}
 function _fmtBytes(n){
   if(n<1024*1024)return(n/1024).toFixed(0)+' KB';
   if(n<1024*1024*1024)return(n/(1024*1024)).toFixed(1)+' MB';
@@ -23688,10 +24216,30 @@ function saveCfg(close=true){
   cfg.txtModel=document.getElementById('txtModel').value.trim();
   cfg.txtKey=document.getElementById('txtKey').value.trim();
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+  _jzGravou=1; // o Carimbo só aparece se esta linha chegou a rodar
   updateDiarStatus();updateLocal100Badge();
-  saveKeysToCredentialVault(); // Camada 1: cofre nativo do navegador/SO, silenciosa
   if(close){closeModal();toast(t('✅ Configurações salvas'))}
+  _posChaveAgendar();
+}
+// O saveCfg roda a cada tecla. Antes, a cada tecla ele também gravava as chaves
+// no cofre do navegador (com a chave pela metade) e chamava _chaveTalvezChegou,
+// que tentava transcrever a gravação guardada com uma chave incompleta. As duas
+// coisas agora esperam a pessoa parar de digitar e só rodam com as chaves
+// inteiras. Fechar as Configurações faz na hora o que estava esperando.
+let _posChaveT=0;
+function _posChaveAgendar(){clearTimeout(_posChaveT);_posChaveT=setTimeout(_posChave,1200)}
+function _posChaveJa(){if(_posChaveT){clearTimeout(_posChaveT);_posChave()}}
+function _posChave(){
+  _posChaveT=0;
+  if(_algumaChavePelaMetade())return;
+  saveKeysToCredentialVault(); // Camada 1: cofre nativo do navegador/SO, silenciosa
   _chaveTalvezChegou();
+}
+// Critério largo de propósito: formato de chave muda, e barrar uma chave boa
+// aqui travaria o cofre e a gravação guardada. Só pega o que é claramente
+// pedaço de chave (curto demais ou com espaço no meio).
+function _algumaChavePelaMetade(){
+  return _KEY_SECRET_FIELDS.some(k=>{const v=(cfg[k]||'').trim();return v&&(v.length<20||/\s/.test(v))});
 }
 
 // ── BLINDAGEM DE CHAVES ──
@@ -23736,13 +24284,14 @@ async function manualRestoreFromVault(){
 const _KEY_CFG_FIELDS=['apiKey','apiKeyGrok','apiKeyGroq','apiKeyAssembly','apiKeyGladia','apiKeyPyannote','txtKey','txtBaseUrl','txtModel','txtModelGroq','txtModelOpenai','txtProvider','provider','diarProvider','aiRenameProvider','localBatPath','localModel'];
 const _KEY_SECRET_FIELDS=['apiKey','apiKeyGrok','apiKeyGroq','apiKeyAssembly','apiKeyGladia','apiKeyPyannote','txtKey'];
 const _KEY_LABELS={'apiKey':t('OpenAI (transcrição)'),'apiKeyGrok':t('Grok (transcrição)'),'apiKeyGroq':t('Groq (transcrição)'),'apiKeyAssembly':t('AssemblyAI (diarização)'),'apiKeyGladia':t('Gladia (diarização)'),'apiKeyPyannote':t('pyannote.ai (diarização)'),'txtKey':t('Minha API (chave)')};
-function _keysPayload(){return{v:2,apiKey:cfg.apiKey||'',apiKeyGrok:cfg.apiKeyGrok||'',apiKeyGroq:cfg.apiKeyGroq||'',apiKeyAssembly:cfg.apiKeyAssembly||'',apiKeyGladia:cfg.apiKeyGladia||'',apiKeyPyannote:cfg.apiKeyPyannote||'',txtKey:cfg.txtKey||'',txtBaseUrl:cfg.txtBaseUrl||'',txtModel:cfg.txtModel||'',txtModelGroq:cfg.txtModelGroq||'',txtModelOpenai:cfg.txtModelOpenai||'',txtProvider:cfg.txtProvider||'',provider:cfg.provider||'',diarProvider:cfg.diarProvider||'',diarEnabled:!!cfg.diarEnabled,aiRenameProvider:cfg.aiRenameProvider||'',assist:cfg.assist!==false,localBatPath:cfg.localBatPath||'',localModel:cfg.localModel||''}}
+function _keysPayload(){return{v:2,txtKeys:Object.assign({},cfg.txtKeys||{}),apiKey:cfg.apiKey||'',apiKeyGrok:cfg.apiKeyGrok||'',apiKeyGroq:cfg.apiKeyGroq||'',apiKeyAssembly:cfg.apiKeyAssembly||'',apiKeyGladia:cfg.apiKeyGladia||'',apiKeyPyannote:cfg.apiKeyPyannote||'',txtKey:cfg.txtKey||'',txtBaseUrl:cfg.txtBaseUrl||'',txtModel:cfg.txtModel||'',txtModelGroq:cfg.txtModelGroq||'',txtModelOpenai:cfg.txtModelOpenai||'',txtProvider:cfg.txtProvider||'',provider:cfg.provider||'',diarProvider:cfg.diarProvider||'',diarEnabled:!!cfg.diarEnabled,aiRenameProvider:cfg.aiRenameProvider||'',assist:cfg.assist!==false,localBatPath:cfg.localBatPath||'',localModel:cfg.localModel||''}}
 function _keysHasAny(){return _KEY_SECRET_FIELDS.some(k=>!!(cfg[k]||'').trim())}
 function _countExistingKeys(){return _KEY_SECRET_FIELDS.filter(k=>!!(cfg[k]||'').trim()).length}
 function _applyKeysPayload(p){
   const fullReplace=p.v>=2;
   if(fullReplace){
     _KEY_CFG_FIELDS.forEach(k=>{cfg[k]=p[k]!=null?String(p[k]):''});
+    cfg.txtKeys=(p.txtKeys&&typeof p.txtKeys==='object')?{...p.txtKeys}:{}; // objeto: fica fora do String() acima
     cfg.diarEnabled=!!p.diarEnabled;
     cfg.assist=p.assist!==false;
   }else Object.assign(cfg,p);
@@ -28525,13 +29074,25 @@ function buildDefaultSpeakers(utterances,mode){
   uniqueSpks.forEach((s,i)=>{map[s]=defaults[i]||t('Locutor {n}').replace('{n}',i+1)});
   return map;
 }
+// Quem dá nome a quem fala (28/09/2026). Antes o padrão era a OpenAI, e quem
+// só tinha a chave do Groq nunca via os nomes: sem cfg.apiKey a função voltava
+// calada com "Locutor 1"/"Locutor 2", enquanto a tela dizia que usava a IA de
+// texto configurada. Agora a escolhida só vale se tiver chave; senão, a IA de
+// texto que funciona. "nao" desliga de propósito.
+function _quemEQuemAlvo(){
+  const p=cfg.aiRenameProvider||'texto';
+  if(p==='nao')return null;
+  if(p==='openai'&&cfg.apiKey)return 'openai';
+  if(p==='groq'&&cfg.apiKeyGroq)return 'groq';
+  return _txtAITarget()?'auto':null;
+}
 async function autoRenameSpeakers(utterances,mode,currentSpeakers){
-  const key=cfg.aiRenameProvider==='groq'?cfg.apiKeyGroq:cfg.apiKey;
-  if(!key)return currentSpeakers;
+  const alvo=_quemEQuemAlvo();
+  if(!alvo)return currentSpeakers;
   const sample=utterances.slice(0,12).map(u=>`${currentSpeakers[u.speaker]||u.speaker}: ${u.text}`).join('\n');
   const modeData=SESSION_MODES[mode]||SESSION_MODES.livre;
   const prompt=`${modeData.prompt}\n\nDiálogo de exemplo:\n${sample}\n\nLocutores encontrados: ${JSON.stringify(currentSpeakers)}\n\nResponda APENAS com JSON válido, nada mais.`;
-  const res=await callAI(prompt,key,cfg.aiRenameProvider);
+  const res=await callAI(prompt,'',alvo);
   const cleaned=res.replace(/```json|```/g,'').trim();
   const parsed=JSON.parse(cleaned);
   const newMap={...currentSpeakers};
