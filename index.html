@@ -5807,6 +5807,43 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   .jz-carimbo.on polyline,.jz-ok.nasce,.jz-ok.nasce polyline,.key-eye-wrap.nega{animation:none}
   .jz-conf .aro{animation-duration:1.6s}
 }
+/* ── Proteger e levar (Central de Ajustes, Fase 2 — 29/09/2026) ──
+   Trilho de três com o mesmo Encaixe do PT|EN; o painel novo chega em 240ms.
+   As luzes dizem onde as chaves estão: verde guardada, âmbar falta ou ficou
+   velha, cinza não existe aqui. A que acende depois de uma ação faz o mesmo
+   "nascer" dos selos (seloAcende), uma vez. */
+.pl-trilho{display:grid;width:100%;margin:0 0 12px}
+.pl-trilho .jz-seg-ind{width:calc((100% - 4px)/3)}
+.pl-trilho button{padding:9px 6px;font-size:12.5px}
+.pl-painel.chega{animation:plChega 240ms var(--fc-curva)}
+@keyframes plChega{from{opacity:0;translate:0 6px}}
+.pl-cx{background:var(--bg-input);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.pl-cx-t{font:700 11px/1.2 var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin:2px 0 8px}
+.pl-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border)}
+.pl-cx-t+.pl-item{border-top:0;padding-top:2px}
+.pl-item[hidden]{display:none}
+.pl-item>div{flex:1;min-width:0}
+.pl-item p{margin:0;font-size:12.5px;font-weight:700;color:var(--text)}
+.pl-item small{display:block;margin-top:2px;font-size:11.3px;color:var(--text3);line-height:1.4}
+.pl-item .bkp-btn{flex:none;padding:6px 12px}
+.pl-luz{width:9px;height:9px;border-radius:50%;flex:none;background:var(--border2)}
+.pl-luz.ok{background:var(--ok-txt)}
+.pl-luz.aviso{background:var(--warning)}
+.pl-luz.acende{animation:seloAcende 420ms cubic-bezier(.2,1.28,.36,1) both}
+.pl-salvar{display:block;width:100%;margin-top:10px}
+.pl-ultima{display:flex;align-items:center;justify-content:center;gap:5px;min-height:16px;margin:8px 0 0;font-size:11.5px;color:var(--text3);text-align:center}
+.pl-ultima svg{width:12px;height:12px;flex:none;fill:none;stroke:var(--ok-txt);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.pl-ultima polyline{stroke-dasharray:24;animation:jzTraca 280ms var(--fc-curva) 60ms both}
+.pl-txt{margin:0;font-size:12.5px;color:var(--text2);line-height:1.55}
+.pl-dois{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pl-dois .pl-cx{margin:0;display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.pl-dois .pl-cx-t{margin-bottom:0}
+.pl-larga{width:100%;white-space:normal}
+.pl-nota{display:block;font-size:11.3px;color:var(--text3);line-height:1.45}
+.bkp-btn:disabled{opacity:.45;cursor:default;background:none;color:var(--accent)}
+.bkp-linha[hidden]{display:none}
+@media(max-width:520px){.pl-dois{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.pl-painel.chega,.pl-luz.acende,.pl-ultima polyline{animation:none}}
 /* ── Gavetas de serviço (Fase C, 28/09/2026) ── */
 .srv-rotulo{display:inline-block;font:750 10.5px/1 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--ok-txt);margin:2px 2px 8px}
 .srv-rotulo.soco{animation:jzSoco 300ms var(--fc-curva)}
@@ -6803,14 +6840,14 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
                card que a pessoa tocou. Sem isso o "Exportar" de cima só sabia fazer
                operações em massa (projeto/tudo/hoje), nunca uma nota só. -->
           <div id="expCardSection"></div>
-          <div class="exp-header" data-i18n>Backup — guardar e restaurar</div>
+          <div class="exp-header" data-i18n>Cópia de segurança (backup)</div>
           <button class="exp-btn" onclick="exportProject()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            <span data-i18n>Salvar backup</span>
+            <span data-i18n>Salvar cópia</span>
           </button>
           <button class="exp-btn" onclick="triggerImportProject()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span data-i18n>Restaurar backup</span>
+            <span data-i18n>Restaurar cópia</span>
           </button>
           <hr class="exp-sep">
           <div class="exp-header" data-i18n>Levar para outros programas</div>
@@ -6921,7 +6958,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <p data-i18n-html>Escolha um modo de sessão, grave ou anexe um arquivo.<br>Use <strong>Espaço</strong> para gravar rapidamente.</p>
         <button class="empty-open-btn" onclick="triggerImportProject()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          <span data-i18n>Restaurar backup</span>
+          <span data-i18n>Restaurar cópia</span>
         </button>
       </div>
       <!-- Tela vazia por FILTRO (pasta e/ou cor deixaram 0 na tela) — diferente
@@ -6989,9 +7026,9 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
            de um sinal real de uso (3ª nota salva), nunca no primeiro acesso. -->
       <div class="lembrete ok" id="voxJaUsava" style="display:none">
         <span class="ic-b"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span></span>
-        <span class="txt"><b data-i18n>Já usava o Vox?</b><span data-i18n>Traga suas notas de volta com o seu arquivo de backup.</span></span>
+        <span class="txt"><b data-i18n>Já usava o Vox?</b><span data-i18n>Traga suas notas de volta com o arquivo da sua cópia.</span></span>
         <span class="lemb-bts">
-          <button type="button" class="conv-p" onclick="triggerImportProject()" data-i18n>Restaurar backup</button>
+          <button type="button" class="conv-p" onclick="triggerImportProject()" data-i18n>Restaurar cópia</button>
           <button type="button" class="conv-s" onclick="_jaUsavaFechar()" data-i18n>Fechar</button>
         </span>
       </div>
@@ -7530,7 +7567,170 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       </div><!-- /cfgPaneDiar -->
 
       <div class="cfg-tab-pane" id="cfgPaneGeral" style="display:none">
-      <div class="section-title" data-i18n>Experiência</div>
+      <!-- Proteger e levar (Central de Ajustes, Fase 2 — 29/09/2026). Carlos: "chaves,
+           transferência de chaves, backup de chave e salvar no micro estão
+           confusos". Eram quatro lugares com quatro nomes pra mesma ideia
+           (Blindagem, Cópias de segurança, Transferir e o Exportar lá em cima).
+           Agora é um lugar só, com três verbos. Os motores são os de sempre
+           (exportProject, exportKeysBackup, _importFile e os painéis de
+           transferência); o que é novo é o Vox saber ONDE as chaves estão —
+           _plPintar() lê as datas que exportKeysBackup e o cofre passaram a guardar. -->
+      <div id="plSecao">
+      <div class="section-title" style="margin-top:4px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> <span data-i18n>Proteger e levar</span></div>
+      <p class="fhint" style="margin:-6px 0 12px" data-i18n>Tudo o que você grava fica só neste aparelho e neste navegador. Se um dos dois mudar, o Vox abre vazio. Aqui você guarda uma cópia e leva pra onde quiser.</p>
+      <span class="jz-seg pl-trilho" id="plTrilho" role="group"><span class="jz-seg-ind"></span><button type="button" data-v="guardar" onclick="_plAba('guardar',this)" data-i18n>Guardar</button><button type="button" data-v="restaurar" onclick="_plAba('restaurar',this)" data-i18n>Restaurar</button><button type="button" data-v="levar" onclick="_plAba('levar',this)" data-i18n>Outro aparelho</button></span>
+
+      <div class="pl-painel" data-p="guardar">
+        <div class="pl-cx">
+          <div class="pl-cx-t" data-i18n>O que vai na cópia</div>
+          <div class="pl-item"><div><p data-i18n>Notas e pastas</p><small id="plNotasInfo"></small></div></div>
+          <div class="pl-item" id="plChavesLinha" hidden>
+            <div><p data-i18n>Suas chaves</p><small id="plChavesInfo"></small></div>
+            <label class="toggle-sw"><input type="checkbox" id="plComChaves" onchange="_plComChavesTocado=true"><span></span></label>
+          </div>
+          <button type="button" class="btn-save pl-salvar" onclick="_plSalvarCopia()" data-i18n>Salvar cópia agora</button>
+          <p class="pl-ultima" id="plUltima" aria-live="polite"></p>
+        </div>
+        <div class="pl-cx" id="plOnde" hidden>
+          <div class="pl-cx-t" data-i18n>Onde suas chaves estão guardadas</div>
+          <div class="pl-item"><span class="pl-luz ok" aria-hidden="true"></span><div><p data-i18n>Neste navegador</p><small id="plOndeNav"></small></div></div>
+          <div class="pl-item"><span class="pl-luz" id="plLuzCofre" aria-hidden="true"></span><div><p data-i18n>Cofre de senhas do navegador</p><small id="plOndeCofre"></small></div></div>
+          <div class="pl-item"><span class="pl-luz" id="plLuzArq" aria-hidden="true"></span><div><p data-i18n>Arquivo com senha</p><small id="plOndeArq"></small></div><button type="button" class="bkp-btn" onclick="_plSoChaves()" data-i18n>Baixar</button></div>
+          <p class="fhint" style="margin:8px 0 0" data-i18n>Limpar os dados do navegador apaga as chaves daqui. O cofre de senhas escapa disso, mas só funciona em navegadores como Chrome e Edge. O arquivo vale em qualquer aparelho.</p>
+        </div>
+        <!-- Cópias de segurança (14/09/2026) — uma seção, dois caminhos, porque
+             os aparelhos não são iguais. Onde o navegador permite (File System
+             Access API) o Vox pede autorização e passa a salvar sozinho; onde
+             não permite, ele assume o que dá: o lembrete — que agora a pessoa
+             regula — e um evento de calendário, que toca até com o app fechado.
+             A porta de entrada disto é o botão "Configurar" do aviso de backup
+             na tela principal (_voxLembreteConfigurar). -->
+        <div id="bkpSecao">
+        <div class="section-title" style="margin-top:18px" data-i18n>Pra não esquecer</div>
+
+        <!-- Etapa 3 do plano de armazenamento durável (06/09/2026): pasta real
+             do computador (File System Access API). Só existe em Chrome/Edge/
+             Opera no desktop — _pastaBackupInit() esconde a seção inteira nos
+             demais (Firefox, Safari, qualquer celular); quem estiver lá cai
+             no #bkpManualWrap logo abaixo e nos lembretes. -->
+        <div id="pastaBackupSection" style="display:none">
+          <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span data-i18n>Pasta no computador</span></div>
+          <div class="bkp-selo"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n>Este navegador consegue guardar uma cópia numa pasta</span></div>
+          <p class="fhint" style="margin-bottom:8px" data-i18n>Escolha uma pasta uma vez; sempre que você salvar uma cópia, o Vox grava outra ali também — ela sobrevive até se você limpar os dados do navegador. O Vox não copia nada por conta própria: a cópia acontece quando você toca em Salvar cópia agora (ou em Salvar agora, no aviso). Apontar pra uma pasta do OneDrive, iCloud Drive, Google Drive ou Dropbox leva a cópia pra fora do aparelho sem o Vox precisar de nuvem própria.</p>
+          <div class="tx-tut" style="margin-bottom:8px" data-i18n-html>O que acontece depois que você autoriza: a cada cópia o Vox grava <strong>um arquivo do dia</strong> nessa pasta, mantém <strong>os 5 mais recentes</strong> e apaga os antigos sozinho. Ele não lê mais nada ali dentro, e a autorização é sua — dá pra tirar quando quiser, nas configurações do navegador.</div>
+          <div class="maint-box" style="margin-bottom:8px">
+            <div class="maint-info">
+              <div class="maint-title" id="pastaBackupNome" data-i18n>Nenhuma pasta escolhida ainda</div>
+              <div class="maint-desc" id="pastaBackupStatus" data-i18n>Um clique, uma vez só.</div>
+            </div>
+            <button class="maint-btn" id="pastaBackupBtn" onclick="_pastaBackupEscolher()" data-i18n>Escolher pasta</button>
+          </div>
+          <div class="tx-tut" id="pastaBackupPermissaoAviso" style="display:none;margin-bottom:16px"></div>
+        </div>
+
+        <div id="bkpManualWrap" style="display:none">
+          <div class="tx-tut" style="margin-bottom:10px" data-i18n>Neste aparelho o salvamento é manual, e isso não é limitação do Vox: navegadores de celular, o Firefox e o Safari não deixam site nenhum escrever numa pasta sua — é uma trava de segurança deles. Então o Vox faz a parte que cabe a ele: lembrar você na hora certa. E a hora, quem escolhe é você.</div>
+        </div>
+
+        <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></span> <span data-i18n>Quando te lembrar</span></div>
+        <div class="bkp-linha">
+          <div>
+            <p data-i18n>Lembretes de cópia de segurança</p>
+            <small data-i18n>Um aviso discreto na tela principal — nunca em cima de uma gravação.</small>
+          </div>
+          <label class="toggle-sw">
+            <input type="checkbox" id="bkpLigadoChk" onchange="_bkpSalvar({ligado:this.checked})">
+            <span></span>
+          </label>
+        </div>
+        <div id="bkpGatilhos">
+          <div class="bkp-linha">
+            <div>
+              <p data-i18n>A cada tantas notas novas</p>
+              <small data-i18n>Conta as notas gravadas desde a sua última cópia.</small>
+            </div>
+            <select id="bkpNotasSel" onchange="_bkpSalvar({notas:+this.value})">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="0" data-i18n>nunca</option>
+            </select>
+          </div>
+          <div class="bkp-linha">
+            <div>
+              <p data-i18n>Depois de tantos dias</p>
+              <small data-i18n>Conta o tempo passado desde a sua última cópia.</small>
+            </div>
+            <select id="bkpDiasSel" onchange="_bkpSalvar({dias:+this.value})">
+              <option value="1">1</option>
+              <option value="3">3</option>
+              <option value="7">7</option>
+              <option value="15">15</option>
+              <option value="30">30</option>
+              <option value="0" data-i18n>nunca</option>
+            </select>
+          </div>
+          <!-- Regular um gatilho sem saber onde você está hoje é regular no
+               escuro. Esta linha é preenchida por _bkpPintar() com o estado de
+               agora, usando as MESMAS frases do aviso da tela principal — nada
+               de texto novo pra traduzir, e nada que possa divergir dele. -->
+          <p class="fhint" id="bkpAgoraInfo" style="margin:-2px 0 10px 2px"></p>
+          <div class="tx-tut" id="bkpMudoAviso" style="display:none;margin-bottom:10px" data-i18n>Com os dois gatilhos em "nunca", o Vox não vai te lembrar de nada na tela. O agendamento no calendário, aqui embaixo, continua valendo.</div>
+        </div>
+
+        <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> <span data-i18n>Agendar no seu calendário</span></div>
+        <p class="fhint" style="margin-bottom:8px" data-i18n>O aviso da tela só aparece quando você abre o Vox. Um evento no seu calendário toca mesmo com o app fechado, como um despertador — e é o seu calendário que avisa, não um serviço nosso: nada sai do aparelho. Google Agenda, Calendário da Apple e Outlook abrem o arquivo direto.</p>
+        <div class="bkp-linha">
+          <div><p data-i18n>Com que frequência</p></div>
+          <select id="bkpFreqSel" onchange="_bkpSalvar({freq:this.value})">
+            <option value="semana" data-i18n>Toda semana</option>
+            <option value="quinzena" data-i18n>A cada 15 dias</option>
+            <option value="mes" data-i18n>Todo mês</option>
+          </select>
+        </div>
+        <div class="bkp-linha">
+          <div><p data-i18n>A que horas</p></div>
+          <select id="bkpHoraSel" onchange="_bkpSalvar({hora:+this.value})"></select>
+        </div>
+        <button class="bkp-btn" id="bkpIcsBtn" style="margin-bottom:16px" onclick="_bkpBaixarIcs()" data-i18n>Baixar o lembrete</button>
+        </div>
+      </div>
+
+      <div class="pl-painel" data-p="restaurar" hidden>
+        <div class="pl-cx">
+          <p class="pl-txt" data-i18n>Escolha o arquivo que você guardou. O Vox descobre sozinho se é a cópia das notas ou a das chaves, e só pede a senha quando precisa.</p>
+          <button type="button" class="btn-save pl-salvar" onclick="document.getElementById('plRestInput').click()" data-i18n>Escolher o arquivo da cópia</button>
+          <input type="file" id="plRestInput" accept=".json,application/json" style="display:none" onchange="_plRestaurar(event)">
+          <input type="file" id="keysBackupInput" accept=".json,application/json" style="display:none" onchange="importKeysBackup(event)">
+          <p class="fhint" style="margin:10px 0 0" data-i18n>As notas se somam às que já estão aqui, sem repetir. As chaves do arquivo tomam o lugar das deste aparelho.</p>
+        </div>
+        <div class="tx-tut" style="margin-bottom:10px" data-i18n-html>Procurando o arquivo? A cópia das notas se chama <strong>vox_projeto_</strong> seguido da data (na pasta do computador, <strong>vox_backup_</strong>), e a das chaves, <strong>vox_chaves_backup.json</strong>. Os dois costumam ficar na pasta <strong>Downloads</strong>.</div>
+        <div class="bkp-linha" id="plCofreLinha" hidden>
+          <div><p data-i18n>Pegar as chaves do cofre do navegador</p><small data-i18n>Se este navegador já guardou as suas chaves, elas voltam sem arquivo nenhum.</small></div>
+          <button type="button" class="bkp-btn" onclick="manualRestoreFromVault()" data-i18n>Pegar do cofre</button>
+        </div>
+      </div>
+
+      <div class="pl-painel" data-p="levar" hidden>
+        <div class="pl-dois">
+          <div class="pl-cx">
+            <div class="pl-cx-t" data-i18n>Enviar daqui</div>
+            <button type="button" class="bkp-btn pl-larga" id="plEnviarChaves" onclick="openKeysTransferPanel()" data-i18n>Minhas chaves</button>
+            <small class="pl-nota" id="plEnviarChavesInfo"></small>
+            <small class="pl-nota" data-i18n>Uma nota ou uma pasta: abra o menu dela e toque em Transferir (QR / link).</small>
+          </div>
+          <div class="pl-cx">
+            <div class="pl-cx-t" data-i18n>Receber aqui</div>
+            <button type="button" class="bkp-btn pl-larga" onclick="abrirReceberTransferencia()" data-i18n>Receber de outro aparelho</button>
+            <small class="pl-nota" data-i18n>Cole o link ou leia o QR que o outro aparelho mostrou.</small>
+          </div>
+        </div>
+        <p class="fhint" style="margin:10px 0 0" data-i18n>QR pra quem está perto, link pra quem está longe. O conteúdo viaja dentro do próprio link, sem passar por um servidor do Vox.</p>
+      </div>
+      </div><!-- /plSecao -->
+      <div class="section-title" style="margin-top:22px" data-i18n>Experiência</div>
       <div class="diar-toggle-row">
         <div>
           <p data-i18n>🤝 Modo assistido</p>
@@ -7556,34 +7756,6 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <span></span>
         </label>
       </div>
-      <div class="section-title" style="margin-top:16px" data-i18n>🔐 Blindagem das chaves de API</div>
-      <p class="fhint" style="margin-bottom:10px" data-i18n>Suas chaves ficam só no seu navegador — se ele "esquecer" (cache limpo, troca de aparelho), você as perde de vez. Pra não digitar tudo de novo: baixe um backup protegido por senha e guarde num lugar seguro (e-mail pra você mesmo, nuvem, pendrive). Se um dia precisar reconfigurar, é só restaurar esse arquivo aqui — sem digitar as chaves de novo.</p>
-      <div class="maint-box" style="margin-bottom:8px">
-        <div class="maint-info">
-          <div class="maint-title" data-i18n>🔒 Cofre do navegador</div>
-          <div class="maint-desc" data-i18n>Guarda junto com suas senhas (Chrome/iCloud Keychain) — sincroniza sozinho entre seus aparelhos.</div>
-        </div>
-        <button class="maint-btn" onclick="manualRestoreFromVault()" data-i18n>Pegar do cofre</button>
-      </div>
-      <div class="maint-box" style="margin-bottom:8px">
-        <div class="maint-info">
-          <div class="maint-title"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span> <span data-i18n>Chaves de API: backup em arquivo</span></div>
-          <div class="maint-desc" data-i18n>Baixa um arquivo protegido por senha — funciona em qualquer aparelho, guarde onde quiser.</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="maint-btn" onclick="exportKeysBackup()" data-i18n>Baixar chaves</button>
-          <button class="maint-btn" onclick="triggerImportKeysBackup()" data-i18n>Restaurar do arquivo</button>
-        </div>
-      </div>
-      <div class="tx-tut" style="margin-bottom:8px" data-i18n-html>Na hora de restaurar: o arquivo baixado se chama <strong>vox_chaves_backup.json</strong> e fica na pasta <strong>Downloads</strong> do seu computador (ou onde seu navegador costuma salvar downloads). Clique em "Restaurar", escolha esse arquivo na janela que abrir, e digite a senha que você criou quando baixou.</div>
-      <input type="file" id="keysBackupInput" accept=".json,application/json" style="display:none" onchange="importKeysBackup(event)">
-      <div class="maint-box" style="margin-bottom:8px">
-        <div class="maint-info">
-          <div class="maint-title" data-i18n>📲 Transferir para outro aparelho</div>
-          <div class="maint-desc" data-i18n>QR ou link com todas as suas chaves — senha obrigatória.</div>
-        </div>
-        <button class="maint-btn" onclick="openKeysTransferPanel()" data-i18n>Gerar QR e link</button>
-      </div>
       <div class="section-title" style="margin-top:16px" data-i18n>Manutenção</div>
       <div class="maint-box" style="margin-bottom:8px">
         <div class="maint-info">
@@ -7608,106 +7780,6 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
              #voxConvite, na tela principal, no momento da 3ª nota salva. Este
              slot virou o sinal honesto de navigator.storage.persist(). -->
         <div class="tx-tut" id="storagePersistStatus" style="display:none;margin-bottom:16px"></div>
-      </div>
-
-      <!-- Cópias de segurança (14/09/2026) — uma seção, dois caminhos, porque
-           os aparelhos não são iguais. Onde o navegador permite (File System
-           Access API) o Vox pede autorização e passa a salvar sozinho; onde
-           não permite, ele assume o que dá: o lembrete — que agora a pessoa
-           regula — e um evento de calendário, que toca até com o app fechado.
-           A porta de entrada disto é o botão "Configurar" do aviso de backup
-           na tela principal (_voxLembreteConfigurar). -->
-      <div id="bkpSecao">
-      <div class="section-title" style="margin-top:16px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> <span data-i18n>Cópias de segurança</span></div>
-      <p class="fhint" style="margin-bottom:10px" data-i18n>Tudo o que você grava fica só neste aparelho, neste navegador e neste endereço do Vox. Se qualquer um dos três mudar, o app abre vazio. Uma cópia guardada fora dele é o que separa um susto de uma perda.</p>
-
-      <!-- Etapa 3 do plano de armazenamento durável (06/09/2026): pasta real
-           do computador (File System Access API). Só existe em Chrome/Edge/
-           Opera no desktop — _pastaBackupInit() esconde a seção inteira nos
-           demais (Firefox, Safari, qualquer celular); quem estiver lá cai
-           no #bkpManualWrap logo abaixo e nos lembretes. -->
-      <div id="pastaBackupSection" style="display:none">
-        <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span data-i18n>Pasta de backup no computador</span></div>
-        <div class="bkp-selo"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n>Este navegador consegue guardar uma cópia numa pasta</span></div>
-        <p class="fhint" style="margin-bottom:8px" data-i18n>Escolha uma pasta uma vez; sempre que você salvar um backup, o Vox guarda uma cópia dele ali também — ela sobrevive até se você limpar os dados do navegador. O Vox não copia nada por conta própria: a cópia acontece quando você toca em Salvar backup (ou em Salvar agora, no aviso). Apontar pra uma pasta do OneDrive, iCloud Drive, Google Drive ou Dropbox dá backup fora do aparelho sem o Vox precisar de nuvem própria.</p>
-        <div class="tx-tut" style="margin-bottom:8px" data-i18n-html>O que acontece depois que você autoriza: a cada backup o Vox grava <strong>um arquivo do dia</strong> nessa pasta, mantém <strong>os 5 mais recentes</strong> e apaga os antigos sozinho. Ele não lê mais nada ali dentro, e a autorização é sua — dá pra tirar quando quiser, nas configurações do navegador.</div>
-        <div class="maint-box" style="margin-bottom:8px">
-          <div class="maint-info">
-            <div class="maint-title" id="pastaBackupNome" data-i18n>Nenhuma pasta escolhida ainda</div>
-            <div class="maint-desc" id="pastaBackupStatus" data-i18n>Um clique, uma vez só.</div>
-          </div>
-          <button class="maint-btn" id="pastaBackupBtn" onclick="_pastaBackupEscolher()" data-i18n>Escolher pasta</button>
-        </div>
-        <div class="tx-tut" id="pastaBackupPermissaoAviso" style="display:none;margin-bottom:16px"></div>
-      </div>
-
-      <div id="bkpManualWrap" style="display:none">
-        <div class="tx-tut" style="margin-bottom:10px" data-i18n>Neste aparelho o salvamento é manual, e isso não é limitação do Vox: navegadores de celular, o Firefox e o Safari não deixam site nenhum escrever numa pasta sua — é uma trava de segurança deles. Então o Vox faz a parte que cabe a ele: lembrar você na hora certa. E a hora, quem escolhe é você.</div>
-      </div>
-
-      <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></span> <span data-i18n>Quando te lembrar</span></div>
-      <div class="bkp-linha">
-        <div>
-          <p data-i18n>Lembretes de backup</p>
-          <small data-i18n>Um aviso discreto na tela principal — nunca em cima de uma gravação.</small>
-        </div>
-        <label class="toggle-sw">
-          <input type="checkbox" id="bkpLigadoChk" onchange="_bkpSalvar({ligado:this.checked})">
-          <span></span>
-        </label>
-      </div>
-      <div id="bkpGatilhos">
-        <div class="bkp-linha">
-          <div>
-            <p data-i18n>A cada tantas notas novas</p>
-            <small data-i18n>Conta as notas gravadas desde a sua última cópia.</small>
-          </div>
-          <select id="bkpNotasSel" onchange="_bkpSalvar({notas:+this.value})">
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="15">15</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="0" data-i18n>nunca</option>
-          </select>
-        </div>
-        <div class="bkp-linha">
-          <div>
-            <p data-i18n>Depois de tantos dias</p>
-            <small data-i18n>Conta o tempo passado desde a sua última cópia.</small>
-          </div>
-          <select id="bkpDiasSel" onchange="_bkpSalvar({dias:+this.value})">
-            <option value="1">1</option>
-            <option value="3">3</option>
-            <option value="7">7</option>
-            <option value="15">15</option>
-            <option value="30">30</option>
-            <option value="0" data-i18n>nunca</option>
-          </select>
-        </div>
-        <!-- Regular um gatilho sem saber onde você está hoje é regular no
-             escuro. Esta linha é preenchida por _bkpPintar() com o estado de
-             agora, usando as MESMAS frases do aviso da tela principal — nada
-             de texto novo pra traduzir, e nada que possa divergir dele. -->
-        <p class="fhint" id="bkpAgoraInfo" style="margin:-2px 0 10px 2px"></p>
-        <div class="tx-tut" id="bkpMudoAviso" style="display:none;margin-bottom:10px" data-i18n>Com os dois gatilhos em "nunca", o Vox não vai te lembrar de nada na tela. O agendamento no calendário, aqui embaixo, continua valendo.</div>
-      </div>
-
-      <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> <span data-i18n>Agendar no seu calendário</span></div>
-      <p class="fhint" style="margin-bottom:8px" data-i18n>O aviso da tela só aparece quando você abre o Vox. Um evento no seu calendário toca mesmo com o app fechado, como um despertador — e é o seu calendário que avisa, não um serviço nosso: nada sai do aparelho. Google Agenda, Calendário da Apple e Outlook abrem o arquivo direto.</p>
-      <div class="bkp-linha">
-        <div><p data-i18n>Com que frequência</p></div>
-        <select id="bkpFreqSel" onchange="_bkpSalvar({freq:this.value})">
-          <option value="semana" data-i18n>Toda semana</option>
-          <option value="quinzena" data-i18n>A cada 15 dias</option>
-          <option value="mes" data-i18n>Todo mês</option>
-        </select>
-      </div>
-      <div class="bkp-linha">
-        <div><p data-i18n>A que horas</p></div>
-        <select id="bkpHoraSel" onchange="_bkpSalvar({hora:+this.value})"></select>
-      </div>
-      <button class="bkp-btn" id="bkpIcsBtn" style="margin-bottom:16px" onclick="_bkpBaixarIcs()" data-i18n>Baixar o lembrete</button>
       </div>
 
       <div class="section-title" style="margin-top:16px" data-i18n>📖 Dicionário e correções aprendidas</div>
@@ -7762,13 +7834,13 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         </div>
         <div id="frConfirm" style="display:none;background:var(--bg-input);border:1px solid rgba(255,59,48,0.35);border-radius:14px;padding:14px">
           <p style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:6px" data-i18n>⚠️ Tem certeza? Isso apaga chaves de API, idioma, tema, receitas e todos os ajustes.</p>
-          <p style="font-size:12.5px;color:var(--text2);margin:0 0 10px" data-i18n>O backup das notas não leva as chaves de API. Se for zerar, baixe também as chaves antes.</p>
+          <p style="font-size:12.5px;color:var(--text2);margin:0 0 10px" data-i18n>A cópia das notas não leva as chaves. Se for zerar, baixe também a cópia das chaves antes.</p>
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin:10px 0;cursor:pointer">
             <input type="checkbox" id="frKeepCards" checked style="width:16px;height:16px;accent-color:var(--accent)">
             <span data-i18n>Manter minhas transcrições e pastas</span>
           </label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="maint-btn" onclick="exportProject()" style="display:inline-flex;align-items:center;gap:5px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span> <span data-i18n>Baixar backup das notas antes</span></button>
+            <button class="maint-btn" onclick="exportProject()" style="display:inline-flex;align-items:center;gap:5px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span> <span data-i18n>Baixar a cópia das notas antes</span></button>
             <button class="maint-btn" onclick="exportKeysBackup()" style="display:inline-flex;align-items:center;gap:5px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span> <span data-i18n>Baixar chaves antes</span></button>
             <button class="maint-btn" style="background:var(--danger);color:#fff" onclick="factoryResetConfirm()" data-i18n>Zerar agora</button>
             <button class="maint-btn" onclick="document.getElementById('frConfirm').style.display='none'" data-i18n>Cancelar</button>
@@ -8376,7 +8448,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.29.5';
+const VOX_VERSION='2026.09.29.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8972,12 +9044,12 @@ function _mundoAbrirSeletor(folderId){
     ov.className='tx-overlay';
     ov.innerHTML=`<div class="tx-modal mundo-sel-modal">
       <button type="button" class="tx-close" onclick="_mundoFecharSeletor()" aria-label="${t('Fechar')}">${ICO.close}</button>
-      <div class="tx-title"><span class="svgi">${ICO.mundo}</span> ${t('Escolher o que transferir')}</div>
+      <div class="tx-title"><span class="svgi">${ICO.mundo}</span> ${t('Escolher o que mover')}</div>
       <div class="tx-sub">${t('Desmarque o que não quer levar — desmarcar uma pasta some com o que está dentro dela também.')}</div>
       <div class="mundo-sel-lista" id="mundoSelLista"></div>
       <div class="mundo-sel-rodape">
         <span class="mundo-sel-contagem" id="mundoSelContagem"></span>
-        <button type="button" class="mundo-sel-btn" id="mundoSelBtn" onclick="_mundoConfirmarSeletor()">${t('Transferir')}</button>
+        <button type="button" class="mundo-sel-btn" id="mundoSelBtn" onclick="_mundoConfirmarSeletor()">${t('Mover')}</button>
       </div>
     </div>`;
     document.body.appendChild(ov);
@@ -9122,6 +9194,63 @@ let I18N_EN={
 "Mais rápido":"Faster",
 "Mais barato":"Cheaper",
 "Ver todos os cérebros":"See all brains",
+"1 nota nova desde a última cópia":"1 new note since the last backup",
+"Proteger e levar":"Keep safe and move",
+"Tudo o que você grava fica só neste aparelho e neste navegador. Se um dos dois mudar, o Vox abre vazio. Aqui você guarda uma cópia e leva pra onde quiser.":"Everything you record stays only on this device and in this browser. If either one changes, Vox opens empty. Here you keep a copy and take it wherever you want.",
+"Guardar":"Save",
+"Outro aparelho":"Another device",
+"O que vai na cópia":"What goes in the copy",
+"Notas e pastas":"Notes and folders",
+"Suas chaves":"Your keys",
+"Salvar cópia agora":"Save a copy now",
+"Onde suas chaves estão guardadas":"Where your keys are kept",
+"Neste navegador":"In this browser",
+"Cofre de senhas do navegador":"Browser password manager",
+"Arquivo com senha":"Password-protected file",
+"Limpar os dados do navegador apaga as chaves daqui. O cofre de senhas escapa disso, mas só funciona em navegadores como Chrome e Edge. O arquivo vale em qualquer aparelho.":"Clearing the browser's data erases the keys here. The password manager survives that, but it only works in browsers like Chrome and Edge. The file works on any device.",
+"Pra não esquecer":"So you don't forget",
+"Escolha o arquivo que você guardou. O Vox descobre sozinho se é a cópia das notas ou a das chaves, e só pede a senha quando precisa.":"Pick the file you saved. Vox figures out by itself whether it's the copy of your notes or of your keys, and only asks for the password when it needs to.",
+"Escolher o arquivo da cópia":"Choose the copy file",
+"As notas se somam às que já estão aqui, sem repetir. As chaves do arquivo tomam o lugar das deste aparelho.":"Notes are added to the ones already here, without duplicates. Keys from the file replace the ones on this device.",
+"Procurando o arquivo? A cópia das notas se chama <strong>vox_projeto_</strong> seguido da data (na pasta do computador, <strong>vox_backup_</strong>), e a das chaves, <strong>vox_chaves_backup.json</strong>. Os dois costumam ficar na pasta <strong>Downloads</strong>.":"Looking for the file? The notes copy is named <strong>vox_projeto_</strong> followed by the date (in the computer folder, <strong>vox_backup_</strong>), and the keys copy, <strong>vox_chaves_backup.json</strong>. Both usually sit in your <strong>Downloads</strong> folder.",
+"Pegar as chaves do cofre do navegador":"Get the keys from the browser's password manager",
+"Se este navegador já guardou as suas chaves, elas voltam sem arquivo nenhum.":"If this browser already saved your keys, they come back without any file.",
+"Enviar daqui":"Send from here",
+"Minhas chaves":"My keys",
+"Uma nota ou uma pasta: abra o menu dela e toque em Transferir (QR / link).":"A note or a folder: open its menu and tap Transfer (QR / link).",
+"Receber aqui":"Receive here",
+"Cole o link ou leia o QR que o outro aparelho mostrou.":"Paste the link or scan the QR the other device showed.",
+"QR pra quem está perto, link pra quem está longe. O conteúdo viaja dentro do próprio link, sem passar por um servidor do Vox.":"QR for someone nearby, link for someone far away. The content travels inside the link itself, without going through a Vox server.",
+"Nenhuma nota ainda":"No notes yet",
+"só do mundo \"{m}\"; cada mundo tem a sua cópia":"only from the \"{m}\" world; each world has its own copy",
+"Você ainda não tem o arquivo delas. Vai separado, com uma senha que você cria.":"You don't have their file yet. It goes separately, with a password you create.",
+"O arquivo de {d} ainda vale. Ligue se quiser um novo.":"The file from {d} is still good. Turn on if you want a new one.",
+"O arquivo que você restaurou ainda vale. Ligue se quiser um novo.":"The file you restored is still good. Turn on if you want a new one.",
+"Mudaram depois do último arquivo. Vai separado, com senha.":"They changed after the last file. It goes separately, with a password.",
+"Cópia salva agora":"Copy saved just now",
+"Última cópia: hoje":"Last copy: today",
+"Última cópia: ontem":"Last copy: yesterday",
+"Última cópia: há {n} dias":"Last copy: {n} days ago",
+"1 nota nova desde então":"1 new note since then",
+"{n} notas novas desde então":"{n} new notes since then",
+"1 chave":"1 key",
+"{n} chaves":"{n} keys",
+"é daqui que o Vox usa":"this is where Vox uses them from",
+"Este navegador não tem um cofre que o Vox consiga usar.":"This browser has no password manager Vox can use.",
+"O Vox atualiza sozinho a cada chave nova · última vez em {d}":"Vox updates it by itself with every new key · last time on {d}",
+"O Vox atualiza sozinho quando uma chave muda.":"Vox updates it by itself whenever a key changes.",
+"Ainda não baixado":"Not downloaded yet",
+"Baixado em {d}, com senha":"Downloaded on {d}, with a password",
+"Baixado em {d}, sem senha":"Downloaded on {d}, without a password",
+"O que você restaurou ainda vale":"The one you restored is still good",
+"O de {d} ficou velho: suas chaves mudaram depois":"The one from {d} is out of date: your keys changed afterwards",
+"O que você restaurou ficou velho: suas chaves mudaram depois":"The one you restored is out of date: your keys changed afterwards",
+"Com uma senha que você cria. No outro aparelho, a mesma senha abre.":"With a password you create. On the other device, the same password opens it.",
+"Você ainda não tem chave pra mandar.":"You don't have any keys to send yet.",
+"Este arquivo não é uma cópia do Vox, ou chegou cortado no download.":"This file isn't a Vox copy, or it got cut off while downloading.",
+"Este arquivo não é uma cópia do Vox. A cópia termina em .json.":"This file isn't a Vox copy. The copy ends in .json.",
+"Mover":"Move",
+"Escolher o que mover":"Choose what to move",
 "{p} agora pensa sobre o texto.":"{p} now thinks about the text.",
 "Colocar a chave na Transcrição":"Add the key in Transcription",
 "⭐ Recomendado — quase grátis":"⭐ Recommended — almost free",
@@ -9223,10 +9352,10 @@ let I18N_EN={
 "Cópias de segurança":"Backups",
 "Tudo o que você grava fica só neste aparelho, neste navegador e neste endereço do Vox. Se qualquer um dos três mudar, o app abre vazio. Uma cópia guardada fora dele é o que separa um susto de uma perda.":"Everything you record lives only on this device, in this browser and at this Vox address. If any of the three changes, the app opens empty. A copy kept somewhere else is what turns a scare into a non-event.",
 "Este navegador consegue guardar uma cópia numa pasta":"This browser can keep a copy in a folder",
-"O que acontece depois que você autoriza: a cada backup o Vox grava <strong>um arquivo do dia</strong> nessa pasta, mantém <strong>os 5 mais recentes</strong> e apaga os antigos sozinho. Ele não lê mais nada ali dentro, e a autorização é sua — dá pra tirar quando quiser, nas configurações do navegador.":"What happens once you allow it: on every backup Vox writes <strong>one file for the day</strong> into that folder, keeps <strong>the 5 most recent</strong> ones and deletes the older ones by itself. It reads nothing else in there, and the permission is yours — you can take it back any time, in your browser settings.",
+"O que acontece depois que você autoriza: a cada cópia o Vox grava <strong>um arquivo do dia</strong> nessa pasta, mantém <strong>os 5 mais recentes</strong> e apaga os antigos sozinho. Ele não lê mais nada ali dentro, e a autorização é sua — dá pra tirar quando quiser, nas configurações do navegador.":"What happens once you allow it: on every backup Vox writes <strong>one file for the day</strong> into that folder, keeps <strong>the 5 most recent</strong> ones and deletes the older ones by itself. It reads nothing else in there, and the permission is yours — you can take it back any time, in your browser settings.",
 "Neste aparelho o salvamento é manual, e isso não é limitação do Vox: navegadores de celular, o Firefox e o Safari não deixam site nenhum escrever numa pasta sua — é uma trava de segurança deles. Então o Vox faz a parte que cabe a ele: lembrar você na hora certa. E a hora, quem escolhe é você.":"On this device saving is manual, and that is not a Vox limitation: phone browsers, Firefox and Safari do not let any site write into a folder of yours — it is a safety lock of theirs. So Vox does the part that is up to it: reminding you at the right moment. And you are the one who picks the moment.",
 "Quando te lembrar":"When to remind you",
-"Lembretes de backup":"Backup reminders",
+"Lembretes de cópia de segurança":"Backup reminders",
 "Um aviso discreto na tela principal — nunca em cima de uma gravação.":"A quiet notice on the main screen — never on top of a recording.",
 "A cada tantas notas novas":"Every so many new notes",
 "Conta as notas gravadas desde a sua última cópia.":"Counts the notes recorded since your last copy.",
@@ -9369,7 +9498,7 @@ let I18N_EN={
 "Pensar sobre o texto":"Think about the text",
 "Pela mesma chave, sem configurar de novo":"Through the same key, no need to set up again",
 "Configurações avançadas":"Advanced settings",
-"Trocar de serviço, modelo, backup e espaço":"Switch service, model, backup and storage",
+"Cópias de segurança, chaves, serviços e espaço":"Backups, keys, services and storage",
 "Abrir sempre nas avançadas":"Always open in advanced settings",
 "Some com esta tela de entrada. Você desliga no fim da aba Geral.":"Removes this entry screen. You can turn it back on at the end of the General tab.",
 "Pula a tela de entrada simples e vai direto pras quatro abas ao abrir Configurações.":"Skips the simple entry screen and goes straight to the four tabs when opening Settings.",
@@ -9396,18 +9525,18 @@ let I18N_EN={
 "🛡️ Este navegador prometeu guardar os dados do Vox — o risco de perda por falta de espaço é bem menor.":"🛡️ This browser promised to keep Vox's data — the risk of losing it to low storage is much lower.",
 "Este navegador ainda não prometeu guardar os dados do Vox — sob pouco espaço, ele pode apagar sozinho.":"This browser hasn't promised to keep Vox's data yet — under low storage, it may erase it on its own.",
 // ── ARMAZENAMENTO DURÁVEL — Etapa 2: lembrete de backup (06/09/2026) ──
-"Faz {n} dias desde o seu último backup":"It's been {n} days since your last backup",
+"Faz {n} dias desde a sua última cópia":"It's been {n} days since your last backup",
 "Foram {n} notas novas desde então. Um arquivo agora leva tudo.":"There have been {n} new notes since then. One file now takes everything with it.",
 "Um arquivo agora leva tudo.":"One file now takes everything with it.",
-"{n} notas novas desde o último backup":"{n} new notes since your last backup",
+"{n} notas novas desde a última cópia":"{n} new notes since your last backup",
 "Foi há {n} dias. Você andou gravando bastante — vale guardar uma cópia.":"That was {n} days ago. You've been recording a lot — worth saving a copy.",
 "Você ainda não tem nenhuma cópia do seu Vox":"You don't have a copy of your Vox yet",
 "Tudo o que está aqui existe só neste aparelho. Um arquivo resolve isso em dois segundos.":"Everything here only exists on this device. One file fixes that in two seconds.",
 "Salvar agora":"Save now",
 "Não lembrar mais":"Don't remind me again",
 // ── ARMAZENAMENTO DURÁVEL — Etapa 3: pasta real no computador (06/09/2026) ──
-"Pasta de backup no computador":"Backup folder on this computer",
-"Escolha uma pasta uma vez; sempre que você salvar um backup, o Vox guarda uma cópia dele ali também — ela sobrevive até se você limpar os dados do navegador. O Vox não copia nada por conta própria: a cópia acontece quando você toca em Salvar backup (ou em Salvar agora, no aviso). Apontar pra uma pasta do OneDrive, iCloud Drive, Google Drive ou Dropbox dá backup fora do aparelho sem o Vox precisar de nuvem própria.":"Choose a folder once; whenever you save a backup, Vox keeps a copy of it there too — it survives even clearing the browser data. Vox does not copy anything on its own: the copy happens when you tap Save backup (or Save now, in the reminder). Pointing it to a OneDrive, iCloud Drive, Google Drive or Dropbox folder gives you an off-device backup without Vox needing its own cloud.",
+"Pasta no computador":"Backup folder on this computer",
+"Escolha uma pasta uma vez; sempre que você salvar uma cópia, o Vox grava outra ali também — ela sobrevive até se você limpar os dados do navegador. O Vox não copia nada por conta própria: a cópia acontece quando você toca em Salvar cópia agora (ou em Salvar agora, no aviso). Apontar pra uma pasta do OneDrive, iCloud Drive, Google Drive ou Dropbox leva a cópia pra fora do aparelho sem o Vox precisar de nuvem própria.":"Choose a folder once; whenever you save a backup, Vox keeps a copy of it there too — it survives even clearing the browser data. Vox does not copy anything on its own: the copy happens when you tap Save backup (or Save now, in the reminder). Pointing it to a OneDrive, iCloud Drive, Google Drive or Dropbox folder gives you an off-device backup without Vox needing its own cloud.",
 "Nenhuma pasta escolhida ainda":"No folder chosen yet",
 "Um clique, uma vez só.":"One click, just once.",
 "Escolher pasta":"Choose folder",
@@ -9417,7 +9546,7 @@ let I18N_EN={
 "Confirmar permissão":"Confirm permission",
 "✅ Permissão confirmada":"✅ Permission confirmed",
 "Trocar pasta":"Change folder",
-"📁 Pasta de backup escolhida!":"📁 Backup folder chosen!",
+"📁 Pasta das cópias escolhida!":"📁 Backup folder chosen!",
 // ── FOTOS NO CARD — PROPOSTA 1, "A TIRA" (Plano 18, 05/09/2026) ──
 "Ver foto {n} em tela cheia":"View photo {n} full screen",
 "Adicionar fotos":"Add photos",
@@ -9604,7 +9733,7 @@ let I18N_EN={
 "Ver em Mosaico":"View in Mosaic",
 "Ver em Órbita":"View in Orbit",
 "Ver em Fluxograma":"View in Flowchart",
-"Transferir pra outro mundo…":"Move to another world…",
+"Mover pra outro mundo…":"Move to another world…",
 "Mover \"{p}\" — {n} notas, {m} subpastas — para outro mundo?":"Move \"{p}\" — {n} notes, {m} subfolders — to another world?",
 "Mover \"{p}\" — {n} notas — para outro mundo?":"Move \"{p}\" — {n} notes — to another world?",
 "📦 Escolha em qual mundo \"{p}\" vai morar":"📦 Choose which world \"{p}\" will live in",
@@ -9680,19 +9809,19 @@ let I18N_EN={
 "subpasta continua na árvore, atrás deste painel":"subfolder is still in the tree, behind this panel",
 "subpastas continuam na árvore, atrás deste painel":"subfolders are still in the tree, behind this panel",
 "Isso aqui baixa só o texto, pra ler. Quer levar tudo — pastas, cards e etiquetas — pra continuar depois em outro lugar?":"This only downloads the text, to read. Want to take everything — folders, cards and tags — to continue later somewhere else?",
-"Salvar backup completo":"Save full backup",
+"Salvar uma cópia completa":"Save full backup",
 "Selecionar tudo":"Select all",
-"Também aceita vídeo, texto (.txt/.md) ou um backup (.json).":"Also accepts video, text (.txt/.md) or a backup (.json).",
-"Solte o backup aqui":"Drop the backup here",
+"Também aceita vídeo, texto (.txt/.md) ou uma cópia de segurança (.json).":"Also accepts video, text (.txt/.md) or a backup (.json).",
+"Solte a cópia aqui":"Drop the backup here",
 "Soma ao que você já tem — nada é apagado":"Adds to what you already have — nothing is erased",
 "Também aceita áudio, vídeo ou texto (.txt/.md).":"Also accepts audio, video or text (.txt/.md).",
 "Solte o texto aqui":"Drop the text here",
 "Vira um card novo":"Becomes a new card",
-"Também aceita áudio, vídeo ou um backup (.json).":"Also accepts audio, video or a backup (.json).",
+"Também aceita áudio, vídeo ou uma cópia de segurança (.json).":"Also accepts audio, video or a backup (.json).",
 "Solte o arquivo aqui":"Drop the file here",
-"Áudio, vídeo, texto ou backup (.json)":"Audio, video, text or backup (.json)",
+"Áudio, vídeo, texto ou cópia de segurança (.json)":"Audio, video, text or backup (.json)",
 "O Vox reconhece o tipo assim que soltar.":"Vox figures out the type as soon as you drop it.",
-"⚠️ Solte um arquivo de áudio, vídeo, texto ou backup (.json).":"⚠️ Drop an audio, video, text, or backup (.json) file.",
+"⚠️ Solte um arquivo de áudio, vídeo, texto ou uma cópia de segurança (.json).":"⚠️ Drop an audio, video, text, or backup (.json) file.",
 "Abrir flutuante":"Open floating",
 "Excluir \"{name}\"?":"Delete \"{name}\"?",
 "🗑️ Nota excluída":"🗑️ Note deleted",
@@ -9746,7 +9875,7 @@ let I18N_EN={
 "Ganha um crédito único de US$5 ao criar conta; depois disso é pago (pode pedir cartão de crédito pra liberar o uso). Atenção: usa uma camada de compatibilidade que a própria Anthropic descreve como \"só para teste\" — funciona bem para as lentes do Vox, mas não é o caminho 100% oficial deles.":"Get a one-time $5 credit when you sign up; after that it's paid (may require a credit card to unlock usage). Heads up: this uses a compatibility layer that Anthropic itself describes as \"for testing only\" — it works well for Vox's lenses, but it isn't their fully official path.",
 "✨ Grátis, com ressalva":"✨ Free, with a caveat",
 "💳 100% pago (sem nível grátis)":"💳 100% paid (no free tier)",
-"Grátis pra começar":"Free to start","Ganha 5 milhões de tokens grátis ao criar conta; depois disso, um dos mais baratos do mercado.":"Get 5 million free tokens when you sign up; after that, one of the cheapest on the market.","Ganha 1 milhão de tokens grátis ao criar conta. Endereço internacional (fora da China).":"Get 1 million free tokens when you sign up. International address (outside China).","Grátis":"Free","O modelo GLM-4.7-Flash não custa nada, sem limite de tempo — só criar conta.":"The GLM-4.7-Flash model costs nothing, with no time limit — just create an account.","Pago":"Paid","Não tem nível grátis — precisa recarregar ao menos US$1 pra começar. Ainda assim, bem barato.":"No free tier — needs at least a $1 top-up to start. Still very cheap though.","Exemplos prontos — clique pra preencher sozinho":"Ready-made examples — click to fill in automatically","Local · Grátis":"Local · Free","Roda 100% no seu computador — nenhum dado sai da sua máquina nem passa por servidor de terceiros (o cuidado que LGPD/GDPR pedem). Precisa de um PC ou Mac razoável (mín. 16GB de RAM — hoje já é o padrão até fora do Brasil). Não funciona em celular.":"Runs 100% on your own computer — no data leaves your machine or passes through third-party servers (the kind of care LGPD/GDPR call for). Needs a reasonably capable PC or Mac (16GB+ RAM — that's already the norm outside Brazil today). Doesn't work on mobile.","Usar":"Use","Grátis c/ limite":"Free w/ limit","Só o modelo marcado <code>:free</code> não custa nada (até 50 usos/dia). Precisa criar conta grátis.":"Only the model marked <code>:free</code> costs nothing (up to 50 uses/day). Needs a free account.","Sem cartão de crédito. Atenção: no nível grátis, o Google pode usar o texto enviado pra melhorar os produtos dele.":"No credit card. Heads up: on the free tier, Google may use the text you send to improve its products.","Já configurada":"Already set up","Reaproveita a mesma chave que você já usa na aba Transcrição — não precisa digitar de novo. Usa o Grok 4.5, o modelo mais forte da xAI.":"Reuses the same key you already use in the Transcription tab — no need to type it again. Uses Grok 4.5, xAI's strongest model.","🟠 Preenchido com a chave do Grok que você já tem — testando…":"🟠 Filled in with the Grok key you already have — testing…","🖥️ Preenchido! Testando conexão local…":"🖥️ Filled in! Testing local connection…","Cole sua chave nesse campo e clique em \"Testar conexão\"":"Paste your key in this field and click \"Test connection\"","{a} falhou — usamos {b} como alternativa.":"{a} failed — we used {b} instead.","Não conseguimos falar com {p} agora — confira se o serviço está no ar (ou, se for local, se ele está ligado) e sua conexão.":"We couldn't reach {p} right now — check whether the service is up (or, if it's local, whether it's running) and your connection.","A chave da {p} não foi aceita — confira em Configurações e toque em \"Testar conexão\".":"The {p} key wasn't accepted — check it in Settings and tap \"Test connection\".","Os créditos da {p} parecem ter acabado — confira sua conta ou troque de provedor em Configurações.":"{p}'s credits seem to have run out — check your account or switch providers in Settings.","{p} não respondeu corretamente agora. Toque em \"Testar conexão\" nas Configurações.":"{p} didn't respond correctly this time. Tap \"Test connection\" in Settings.","Corretor\nCorrige gramática e clareza, sem mudar o conteúdo":"Corrector\nFixes grammar and clarity, without changing the content","Resumo\nUma frase → parágrafo → tópicos: leia até onde quiser":"Summary\nOne sentence → paragraph → bullet points: read as far as you like","Decisões & Ações\nQuem faz o quê e até quando — pronto pra executar":"Decisions & Actions\nWho does what and by when — ready to execute","Advogado do diabo\nAtaques fundamentados + o que blindaria cada ponto":"Devil's advocate\nGrounded attacks + what would shield each point","Mesa-redonda\nDebate com especialistas escolhidos pelo tema do texto":"Round table\nDebate with experts chosen based on the text's topic","Na hora de restaurar: o arquivo baixado se chama <strong>vox_chaves_backup.json</strong> e fica na pasta <strong>Downloads</strong> do seu computador (ou onde seu navegador costuma salvar downloads). Clique em \"Restaurar\", escolha esse arquivo na janela que abrir, e digite a senha que você criou quando baixou.":"When restoring: the downloaded file is called <strong>vox_chaves_backup.json</strong> and lives in your computer's <strong>Downloads</strong> folder (or wherever your browser usually saves downloads). Click \"Restore\", pick that file in the window that opens, and type the password you created when you downloaded it.","📉 Resumo":"📉 Summary","Corta e condensa o que foi dito":"Cuts and condenses what was said","🗂️ Estrutura":"🗂️ Structure","Reorganiza tudo, sem cortar nada":"Reorganizes everything, without cutting anything","🎯 Extração":"🎯 Extraction","Puxa só um recorte específico, descarta o resto":"Pulls out one specific slice, discards the rest","💡 Gerar & desafiar":"💡 Generate & challenge","Cria algo novo em cima do texto: análise, perguntas, debate":"Creates something new from the text: analysis, questions, debate","Muda o formato para outro público ou uso":"Changes the format for a different audience or use","Nota para Obsidian":"Note for Obsidian","A mesma fala, organizada em títulos, negrito e listas":"The same speech, organized into headings, bold and lists","Ver em Markdown (negrito, títulos, listas)":"View as Markdown (bold, headings, lists)","Isto é uma pré-visualização em <strong>Markdown</strong> — o formato de texto usado por apps como o <strong>Obsidian</strong> pra deixar notas com títulos, negrito e listas de verdade. É um recurso mais avançado, pra quem curte configurar assim. Na prática: <code>**palavra**</code> vira <strong>palavra</strong> (negrito de verdade), <code># Título</code> vira um título grande. Se sua fala não tiver esses sinais, fica parecido com o original — não é erro. Não muda nada do que você escreveu, é só outro jeito de olhar. <strong>Quer ver na prática?</strong> Use ✨ Transformar com IA → Nota para Obsidian, e depois toque neste mesmo 👁 no card que aparecer. Toque no 👁 de novo pra voltar a editar.":"This is a <strong>Markdown</strong> preview — the text format used by apps like <strong>Obsidian</strong> to give notes real headings, bold and lists. It's a more advanced feature, for people who like to set things up this way. In practice: <code>**word**</code> becomes <strong>word</strong> (real bold), <code># Title</code> becomes a big heading. If your speech doesn't have these marks, it'll look like the original — that's not a mistake. It doesn't change what you wrote, it's just a different way to look at it. <strong>Want to see it in action?</strong> Use ✨ Transform with AI → Note for Obsidian, then tap this same 👁 on the card that shows up. Tap 👁 again to go back to editing.","Voltar a editar":"Back to editing","ℹ️ Card vazio — nada para visualizar":"ℹ️ Empty card — nothing to preview","❌ Não foi possível carregar o visualizador.":"❌ Couldn't load the previewer.","Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summary","Exportar":"Export","Backup — guardar e restaurar":"Backup — save and restore","Salvar backup":"Save backup","Restaurar backup":"Restore backup","Traga suas notas de volta com o seu arquivo de backup.":"Bring your notes back with your backup file.","Já usava o Vox?":"Used Vox before?","Este é o backup das suas notas — restaurando as notas.":"This is your notes backup — restoring the notes.","Este é o backup das suas chaves — restaurando as chaves.":"This is your keys backup — restoring the keys.","Este arquivo está vazio (0 KB). Ele não guardou nada — gere o backup de novo.":"This file is empty (0 KB). It saved nothing — make the backup again.","Restaurando o backup… com muitas notas pode levar cerca de um minuto. Não feche esta aba.":"Restoring the backup… with many notes this can take about a minute. Do not close this tab.","As chaves de API não vêm no backup das notas. Restaure o arquivo de chaves em Configurações, na aba Geral.":"API keys are not in the notes backup. Restore the keys file in Settings, on the General tab.","notas adicionadas":"notes added","nota adicionada":"note added","Baixar chaves antes":"Download keys first","O backup das notas não leva as chaves de API. Se for zerar, baixe também as chaves antes.":"The notes backup does not include your API keys. If you are going to reset, download the keys too, first.","Zerar":"Reset","Cópia extra ativa nesta pasta.":"Extra copy active in this folder.","Baixar chaves":"Download keys","Restaurar chaves":"Restore keys","Pegar do cofre":"Get from the vault","Restaurar do arquivo":"Restore from file","Levar para outros programas":"Take to other apps","Copiar TUDO como Markdown":"Copy ALL as Markdown","Todas as transcrições (.txt)":"All transcriptions (.txt)","Todas (.md)":"All (.md)","Obsidian vault (.md + YAML)":"Obsidian vault (.md + YAML)","Só hoje (.txt)":"Today only (.txt)","Configurações":"Settings","Modelo local":"Local model","⚡ Rápido":"⚡ Fast","~3x mais rápido · boa qualidade":"~3x faster · good quality","⚖️ Médio":"⚖️ Balanced","equilíbrio velocidade/precisão":"speed/accuracy balance","🎯 Preciso":"🎯 Precise","máxima qualidade":"maximum quality","Tema":"Theme","☀️ Claro":"☀️ Light","🌙 Escuro":"🌙 Dark","Cor":"Color","Esmeralda":"Emerald","Âmbar":"Amber","Índigo":"Indigo","Petróleo":"Teal","Pronto":"Ready","itens":"items","economizados":"saved","Tamanho do texto":"Text size","Mostrar/ocultar pastas":"Show/hide folders","Pastas":"Folders","Texto, #tag ou @locutor…":"Text, #tag or @speaker…","Nenhuma transcrição ainda":"No transcription yet","Escolha um modo de sessão, grave ou anexe um arquivo.<br>Use <strong>Espaço</strong> para gravar rapidamente.":"Choose a session mode, record or attach a file.<br>Use <strong>Space</strong> to record quickly.","Corretor":"Proofread","Resumo":"Summary","Pontos":"Key points","Contraponto":"Counterpoint","Diálogo":"Dialogue","Avançado":"Advanced","Copiar texto + tags":"Copy text + tags","Copiar só o texto":"Copy text only","Copiar como Markdown":"Copy as Markdown","Copiar para Obsidian":"Copy for Obsidian","Baixar TXT":"Download TXT","Baixar Markdown":"Download Markdown","Baixar HTML":"Download HTML","Gravar":"Record","Fixar":"Pin","← Anterior":"← Previous","Próximo →":"Next →","✕ Sair do Foco":"✕ Exit Focus","Baixar pastas":"Download folders","Configurar download":"Configure download","Recolher":"Collapse","Formato do download":"Download format","Nova pasta":"New folder","App parece travado. Alguma gravação ou transcrição não finalizou.":"The app seems stuck. Some recording or transcription didn't finish.","Resetar agora":"Reset now","▶ Transcrever":"▶ Transcribe","Cancelar":"Cancel","Ative a diarização para identificar quem fala":"Enable speaker diarization to identify who's talking","Separa automaticamente as vozes: Profissional, Paciente, etc. Gratuito no AssemblyAI (100h/mês, sem cartão).":"Automatically separates voices: Professional, Patient, etc. Free on AssemblyAI (100h/month, no card).","⚙️ Configurar agora":"⚙️ Configure now","Fechar":"Close","🩺 Consulta":"🩺 Consultation","👥 Reunião":"👥 Meeting","🎙️ Entrevista":"🎙️ Interview","📝 Livre":"📝 Free-form","Nome da sessão (opcional)":"Session name (optional)","🔮 Diarização ativa":"🔮 Diarization active","<kbd>Espaço</kbd> gravar / parar":"<kbd>Space</kbd> record / stop","💡 card em foco → insere no cursor":"💡 focused card → inserts at cursor","🏷️ <strong>#tag</strong> na busca filtra":"🏷️ <strong>#tag</strong> in search filters","Digite ou 📎 anexe um áudio…":"Type or 📎 attach audio…","Anexar áudio":"Attach audio","Configurar captura de áudio":"Configure audio capture","🎙️ Fonte de áudio para gravar":"🎙️ Audio source for recording","🎤 Só microfone":"🎤 Microphone only","padrão":"default","🔊 Só áudio interno":"🔊 System audio only","🎙️🔊 Microfone + interno":"🎙️🔊 Microphone + system","Gravar (Espaço)":"Record (Space)","API de transcrição":"Transcription API","Local":"Local","GRÁTIS":"FREE","Verificando servidor…":"Checking server…","↻ Verificar":"↻ Check","Modelo Whisper":"Whisper model","Rápido":"Fast","~3× mais veloz · boa qualidade":"~3× faster · good quality","Médio":"Balanced","Equilíbrio velocidade/precisão":"Speed/accuracy balance","Preciso":"Precise","Máxima qualidade":"Maximum quality","🚀 Iniciar servidor Whisper":"🚀 Start Whisper server","Caminho do iniciar_whisper.bat (para iniciar com 1 clique)":"Path to iniciar_whisper.bat (for 1-click start)","🔑 Chaves":"🔑 Keys","📊 Uso":"📊 Usage","tier grátis":"free tier","🟢 Whisper Large v3 Turbo · $0.04/hr · 2.000 req/dia grátis · chave sem expiração = \"No expiry\"":"🟢 Whisper Large v3 Turbo · $0.04/hr · 2,000 req/day free · key never expires = \"No expiry\"","Taxa USD → BRL":"USD → BRL rate","Idioma padrão":"Default language","Auto-detectar":"Auto-detect","Português":"Portuguese","🔮 Diarização — identificar quem fala":"🔮 Diarization — identify who's speaking","Identificar locutores automaticamente":"Automatically identify speakers","Transcrição segmentada por pessoa — Profissional, Paciente, etc.":"Transcription segmented by person — Professional, Patient, etc.","Escolha o provedor de diarização:":"Choose the diarization provider:","🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">Free tier · mais preciso</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">Free tier · more accurate</small>","🤖 OpenAI<br><small style=\"font-weight:400;opacity:0.8\">Mesma chave Whisper</small>":"🤖 OpenAI<br><small style=\"font-weight:400;opacity:0.8\">Same Whisper key</small>","free tier":"free tier","Usa a mesma OpenAI Key já configurada acima. Modelo: gpt-4o-transcribe com diarização. Mesmo preço: $0.006/min.":"Uses the same OpenAI Key already set above. Model: gpt-4o-transcribe with diarization. Same price: $0.006/min.","Chave IA para renomear locutores":"AI key for renaming speakers","Groq (Llama — grátis)":"Groq (Llama — free)","Usada para identificar automaticamente quem é o profissional e quem é o paciente. Custo: ~$0.001/consulta.":"Used to automatically identify who's the professional and who's the patient. Cost: ~$0.001/session.","Manutenção":"Maintenance","Áudios na RAM":"Audio in RAM","Remove players de áudio e desbloqueia o app caso esteja travado.":"Removes audio players and unlocks the app if it's stuck.","🔄 Liberar + Resetar":"🔄 Free up + Reset","Pré-visualizar onboarding":"Preview onboarding","🎙️ Ver tela de microfone":"🎙️ View microphone screen","🟢 Ver setup do Groq":"🟢 View Groq setup","⚠️ Use o <strong>Safari</strong> no iPhone/iPad":"⚠️ Use <strong>Safari</strong> on iPhone/iPad","O Chrome e o Firefox no iOS não permitem acesso ao microfone por restrição da Apple.":"Chrome and Firefox on iOS can't access the microphone due to Apple's restriction.","🍎 Simular aviso iOS":"🍎 Simulate iOS warning","💡 Recomendamos o <strong>Chrome</strong> no Android":"💡 We recommend <strong>Chrome</strong> on Android","Seu navegador atual pode ter limitações com microfone e áudio.":"Your current browser may have limitations with microphone and audio.","🤖 Simular aviso Android":"🤖 Simulate Android warning","Só visualização — não apaga nenhuma configuração.":"Preview only — doesn't delete any setting.","Apagar transcrições":"Delete transcriptions","Apagar só as de hoje":"Delete only today's","Remove todos os cards do dia atual. Fixados são preservados.":"Removes all cards from today. Pinned ones are preserved.","Apagar hoje":"Delete today","Apagar não fixados":"Delete unpinned","Remove tudo exceto os cards com 📌 pin.":"Removes everything except 📌 pinned cards.","Apagar tudo":"Delete all","Remove todos os cards e zera o histórico completamente.":"Removes all cards and fully resets history.","Salvar":"Save","Gerando resumo com IA…":"Generating summary with AI…","📋 Copiar":"📋 Copy","📗 Exportar Obsidian":"📗 Export Obsidian","Iniciar Whisper Local":"Start Local Whisper","Qual modelo deseja usar?<br><span style=\"font-size:11px;color:var(--text4)\">Modelos menores são mais rápidos.</span>":"Which model do you want to use?<br><span style=\"font-size:11px;color:var(--text4)\">Smaller models are faster.</span>","Mais veloz · boa qualidade":"Faster · good quality","recomendado":"recommended","Cancelar — usar outro provedor":"Cancel — use another provider","Bem-vindo ao Vox!":"Welcome to Vox!","Para transcrever suas gravações, o app precisa acessar o microfone do seu computador.<br><br> Clique no botão abaixo e depois em <strong>\"Permitir\"</strong> quando o Chrome perguntar.<br> <span style=\"font-size:12px;color:var(--text4)\">Isso só acontece uma vez.</span>":"To transcribe your recordings, the app needs access to your computer's microphone.<br><br> Click the button below and then <strong>\"Allow\"</strong> when Chrome asks.<br> <span style=\"font-size:12px;color:var(--text4)\">This only happens once.</span>","<strong>Como configurar em 2 minutos:</strong> <ol> <li>Acesse <a href=\"https://www.assemblyai.com\" target=\"_blank\">assemblyai.com</a> e crie uma conta gratuita</li> <li>No dashboard, copie sua API Key</li> <li>Cole no campo acima e salve</li> </ol> <br> 💰 <strong>Custo:</strong> Free tier inclui 100 horas/mês. Pago: ~$0.006/min com diarização inclusa.<br> 🎯 <strong>Ideal para:</strong> consultas (2 locutores), reuniões (até 32 pessoas), entrevistas.":"<strong>How to set up in 2 minutes:</strong> <ol> <li>Go to <a href=\"https://www.assemblyai.com\" target=\"_blank\">assemblyai.com</a> and create a free account</li> <li>In the dashboard, copy your API Key</li> <li>Paste it in the field above and save</li> </ol> <br> 💰 <strong>Cost:</strong> Free tier includes 100 hours/month. Paid: ~$0.006/min with diarization included.<br> 🎯 <strong>Ideal for:</strong> consultations (2 speakers), meetings (up to 32 people), interviews.","🎙️ Ativar microfone":"🎙️ Enable microphone","Configure a transcrição gratuita":"Set up free transcription","O <strong>Groq</strong> oferece transcrição com Whisper completamente gratuita — 2.000 gravações por dia, sem cobrar nada, para sempre. Leva menos de 2 minutos configurar.":"<strong>Groq</strong> offers completely free Whisper transcription — 2,000 recordings a day, no charge, forever. Takes less than 2 minutes to set up.","Crie sua conta gratuita no Groq":"Create your free Groq account","🔗 Abrir console.groq.com/keys":"🔗 Open console.groq.com/keys","Clique em <strong>\"Create API Key\"</strong>, dê qualquer nome e em <strong>Expiration</strong> escolha <strong>\"No expiry\"</strong> — assim ela nunca vai expirar.":"Click <strong>\"Create API Key\"</strong>, give it any name, and under <strong>Expiration</strong> choose <strong>\"No expiry\"</strong> — so it never expires.","Copie a chave que começa com <strong>gsk_…</strong> e cole aqui:":"Copy the key starting with <strong>gsk_…</strong> and paste it here:","🔒 A chave fica salva só no seu dispositivo — nunca sai daqui.":"🔒 The key is saved only on your device — it never leaves here.","🚀 Começar a transcrever!":"🚀 Start transcribing!","Já tenho chave configurada — pular":"I already have a key set up — skip","Profissional":"Professional","Paciente":"Patient","Facilitador":"Facilitator","Participante":"Participant","Entrevistador":"Interviewer","Entrevistado":"Interviewee","Locutor 1":"Speaker 1","Locutor 2":"Speaker 2","🔑 Configure uma chave de IA!":"🔑 Set up an AI key!","✨ Gerando resumo…":"✨ Generating summary…","Resumo IA — ":"AI Summary —","✅ Resumo gerado! Ctrl+Z para desfazer.":"✅ Summary generated! Ctrl+Z to undo.","ℹ️ Esse modelo já está ativo":"ℹ️ This model is already active","✅ Modelo trocado para ":"✅ Model switched to","❌ Servidor não respondeu. Ele está rodando?":"❌ Server didn't respond. Is it running?","💡 Configure o caminho do .bat nas configurações → aba Local":"💡 Set the .bat path in settings → Local tab","Iniciar servidor Whisper":"Start Whisper server","Modelo selecionado:":"Selected model:","Para usar o modo Local, abra o servidor clicando no botão abaixo:":"To use Local mode, open the server by clicking the button below:","🚀 Abrir servidor Whisper":"🚀 Open Whisper server","Após abrir, aguarde aparecer":"After opening, wait for","\"Modelo carregado! Servidor pronto.\"":"\"Model loaded! Server ready.\"","✅ Servidor Whisper pronto!":"✅ Whisper server ready!","✅ Microfone ativado! Pode gravar à vontade.":"✅ Microphone enabled! You can record freely.","❌ Permissão negada. Clique no 🔒 cadeado na barra do navegador → Microfone → Permitir, depois recarregue a página.":"❌ Permission denied. Click the 🔒 lock icon in the browser bar → Microphone → Allow, then reload the page.","🟢 Groq configurado! Pronto para transcrever.":"🟢 Groq configured! Ready to transcribe.","✅ Microfone ativado! Configure um provedor nas ⚙️ Configurações.":"✅ Microphone enabled! Set up a provider in ⚙️ Settings.","O Chrome e o Firefox no iOS não permitem acesso ao microfone por restrição da Apple. Abra este endereço no Safari para gravar.":"Chrome and Firefox on iOS can't access the microphone due to Apple's restriction. Open this address in Safari to record.","Seu navegador atual pode ter limitações com microfone e áudio. O Chrome para Android oferece a melhor experiência.":"Your current browser may have limitations with microphone and audio. Chrome for Android offers the best experience.","OK, entendi":"OK, got it","Nome da nova pasta:":"New folder name:","📁 Pasta \"":"📁 Folder \"","\" criada":"\" created","✏️ Renomear":"✏️ Rename","📄 Exportar pasta":"📄 Export folder","🗑️ Excluir pasta":"🗑️ Delete folder","Limpar pasta":"Clear folder","Limpar a pasta \"":"Clear folder \"","As {n} transcrições voltam para \"Tudo\" (não são apagadas). A pasta continua existindo.":"The {n} transcriptions go back to \"All\" (they're not deleted). The folder itself stays.","ℹ️ Pasta já está vazia":"ℹ️ Folder is already empty","🧹 Pasta \"":"🧹 Folder \"","\" limpa":"\" cleared","Arrastar para mover ou aninhar a pasta":"Drag to move or nest the folder","📁 Pasta movida":"📁 Folder moved","⚠️ Não é possível mover uma pasta para dentro dela mesma":"⚠️ Can't move a folder into itself","Renomear pasta:":"Rename folder:","✏️ Pasta renomeada":"✏️ Folder renamed","Excluir a pasta \"":"Delete folder \"","\"?":"\"?","As {n} transcrições voltam para \"Tudo\" (não são apagadas).":"The {n} transcriptions go back to \"All\" (they're not deleted).","A pasta está vazia.":"The folder is empty.","🗑️ Pasta \"":"🗑️ Folder \"","\" excluída":"\" deleted","⚠️ Selecione ao menos uma pasta":"⚠️ Select at least one folder","⚠️ \"{name}\" está vazia, pulada":"⚠️ \"{name}\" is empty, skipped","Exportado:":"Exported:","Total:":"Total:","Modo:":"Mode:","transcrições":"transcriptions","pasta baixada":"folder downloaded","pastas baixadas":"folders downloaded","⚠️ Pasta vazia":"⚠️ Empty folder","📄 Pasta \"":"📄 Folder \"","\" exportada":"\" exported","📁 Movido para \"":"📁 Moved to \"","pasta":"folder","Tudo":"All","Nenhuma pasta criada":"No folder created","Baixar":"Download","Opções":"Options","resultados":"results","resultado":"result","Histórico":"History","Sessão:":"Session:","itens salvos":"items saved","HISTÓRICO":"HISTORY","notas exportadas!":"notes exported!","Gerando com IA…":"Generating with AI…","Nenhuma transcrição de hoje ainda.":"No transcription today yet.","Sessão":"Session","Configure uma chave de IA nas configurações para gerar resumos.":"Set up an AI key in settings to generate summaries.","Erro:":"Error:","📋 Resumo copiado!":"📋 Summary copied!","📗 Resumo exportado para Obsidian!":"📗 Summary exported to Obsidian!","Grok Key (ativa)":"Grok Key (active)","Groq Key (ativa)":"Groq Key (active)","(sem chave necessária)":"(no key needed)","Verificando…":"Checking…","Servidor online — modelo:":"Server online — model:","Servidor offline.":"Server offline.","Inicie o servidor Whisper local":"Start the local Whisper server","✅ Configurações salvas":"✅ Settings saved","Gravando…":"Recording…","Transcrevendo parte {n}…":"Transcribing part {n}…","Transcrevendo…":"Transcribing…","Erro":"Error","Diarizando…":"Diarizing…","Transcrevendo com diarização…":"Transcribing with diarization…","na RAM":"in RAM","✅ App resetado — pronto para gravar!":"✅ App reset — ready to record!","ℹ️ Nenhuma transcrição para apagar":"ℹ️ No transcription to delete","ℹ️ Nenhum card para apagar neste filtro":"ℹ️ No card to delete in this filter","TUDO ({n} cards)":"ALL ({n} cards)","os {n} cards de hoje":"the {n} cards from today","os {n} cards não fixados":"the {n} unpinned cards","⚠️ Apagar {label}?\n\nEsta ação não pode ser desfeita.":"⚠️ Delete {label}?\n\nThis action cannot be undone.","cards apagados":"cards deleted","card apagado":"card deleted","Gravação/nota mais recente":"Most recent recording/note","{n}ª mais recente":"{n}th most recent","ℹ️ Nada para salvar ainda — grave algo primeiro":"ℹ️ Nothing to save yet — record something first","Backup salvo ({n} {itemword}). Guarde o arquivo .json num lugar seguro.":"Backup saved ({n} {itemword}). Keep the .json file somewhere safe.","item":"item","não é um backup do Vox":"not a Vox backup","Não consegui abrir este arquivo:":"Could not open this file:","ℹ️ Arquivo vazio":"ℹ️ Empty file","📂 Texto importado como novo card!":"📂 Text imported as new card!","Backup restaurado: {n} {itemword}{skipmsg}":"Backup restored: {n} {itemword}{skipmsg}","item adicionado":"item added","itens adicionados":"items added"," ({n} já existiam)":" ({n} already existed)","ℹ️ Tudo desse backup já estava aqui — nada novo a adicionar":"ℹ️ Everything from this backup was already here — nothing new to add","Sugerir tags com IA":"Suggest tags with AI","+ tag IA":"+ AI tag","Extrair todos os termos do texto":"Extract all terms from text","⚙ extrair":"⚙ extract","Falar tags":"Speak tags","🎤 falar":"🎤 speak","tag manual":"manual tag","ℹ️ Card vazio — nada para analisar":"ℹ️ Empty card — nothing to analyze","🔑 Configure uma chave de IA (Groq é grátis) para sugerir tags":"🔑 Set up an AI key (Groq is free) to suggest tags","✨ pensando…":"✨ thinking…","✨ sugestões:":"✨ suggestions:","Dispensar sugestões":"Dismiss suggestions","🔑 Configure uma chave de IA para usar esta função":"🔑 Set up an AI key to use this feature","⚙ analisando texto…":"⚙ analyzing text…","Nenhum termo encontrado.":"No terms found.","todos":"all","nomes":"names","temas":"themes","ações":"actions","siglas":"acronyms","⚙ EXTRAIR TERMOS — {n} encontrados":"⚙ EXTRACT TERMS — {n} found","limpar":"clear","0 selecionados":"0 selected","+ adicionar":"+ add","selecionados":"selected","selecionado":"selected","adicionar":"add","tags":"tags","tag":"tag","✅ Tags adicionadas!":"✅ Tags added!","↩ Desfeito":"↩ Undone","↪ Refeito":"↪ Redone","ℹ️ Aguarde a gravação atual terminar":"ℹ️ Wait for the current recording to finish","⏹ parar":"⏹ stop","gravando — fale as tags que quer adicionar":"recording — say the tags you want to add","parar":"stop","❌ Microfone não disponível.":"❌ Microphone not available.","✨ transcrevendo e extraindo tags…":"✨ transcribing and extracting tags…","ℹ️ Nenhuma tag identificada na fala":"ℹ️ No tag identified in speech","ℹ️ Todas as tags já existem no card":"ℹ️ All tags already exist on the card","🎤 ouvi:":"🎤 heard:","Dispensar":"Dismiss","Desafixar":"Unpin","Fixar no topo":"Pin to top","📌 Card fixado no topo":"📌 Card pinned to top","📌 Card desafixado":"📌 Card unpinned","divisão automática":"automatic split","⚡ Será dividido em partes de ~10 min.":"⚡ It will be split into ~10 min parts.","Clique em <strong>Transcrever</strong> para enviar à API.":"Click <strong>Transcribe</strong> to send to the API.","📎 Arquivo pronto":"📎 File ready","🖥️ Áudio interno só funciona no computador (Chrome/Edge). iPhone/iPad não suportam.":"🖥️ System audio only works on computer (Chrome/Edge). iPhone/iPad don't support it.","Fonte:":"Source:","Só microfone":"Microphone only","Só áudio interno":"System audio only","Microfone + interno":"Microphone + system","O áudio interno (som do sistema/aba) é ótimo para gravar reuniões online — captura sua voz e a dos outros. Ao gravar, o navegador pede o que compartilhar; marque \"compartilhar áudio\".":"System audio (system/tab sound) is great for recording online meetings — captures your voice and others'. When recording, the browser asks what to share; check \"share audio\".","⚠️ Áudio interno indisponível neste aparelho (iPhone, iPad e a maioria dos celulares não suportam). Aqui só funciona o microfone.":"⚠️ System audio unavailable on this device (iPhone, iPad and most phones don't support it). Only the microphone works here.","Nenhum áudio interno capturado. Marque a opção \"compartilhar áudio\" na janela do navegador.":"No system audio captured. Check the \"share audio\" option in the browser window.","🎙️ Gravando…":"🎙️ Recording…","❌ Captura de áudio cancelada ou não permitida.":"❌ Audio capture cancelled or not allowed.","❌ Parte {n} falhou:":"❌ Part {n} failed:","sem custo":"no cost","🔴 gravando ao vivo":"🔴 recording live","🚫 Gravação cancelada.":"🚫 Recording cancelled.","🔑 Configure a chave API!":"🔑 Set up the API key!","✅ Inserido + copiado!":"✅ Inserted + copied!","📋 Copiado para a área de transferência!":"📋 Copied to clipboard!","🔑 Configure a chave AssemblyAI!":"🔑 Set up the AssemblyAI key!","Enviando áudio…":"Sending audio…","Upload falhou:":"Upload failed:","Submit falhou:":"Submit failed:","Processando ({status})…":"Processing ({status})…","Timeout na diarização":"Diarization timeout","Identificando locutores…":"Identifying speakers…","✅ Diarização concluída!":"✅ Diarization complete!","🔑 Configure a chave OpenAI!":"🔑 Set up the OpenAI key!","✅ Transcrição concluída (sem diarização no retorno)":"✅ Transcription complete (no diarization in response)","Locutor 3":"Speaker 3","Locutor 4":"Speaker 4","Locutor {n}":"Speaker {n}","Renomear locutor":"Rename speaker","🗑️ Excluir esta transcrição?":"🗑️ Delete this transcription?","Excluir":"Delete","Arrastar para mesclar com outro card":"Drag to merge with another card","🔮 Diarizado":"🔮 Diarized","📌 Fixado":"📌 Pinned","Alternar roteiro / bolhas":"Toggle script / bubbles","✨ Transformar com IA":"✨ Transform with AI","Gravar aqui":"Record here","Copiar para a área de transferência":"Copy to clipboard","Exportar (copiar / baixar / Markdown)":"Export (copy / download / Markdown)","Modo Foco / Colapsar":"Focus Mode / Collapse","turnos":"turns","pal.":"words","Corretor mínimo":"Minimal proofread","Corrige gramática e clareza, sem mudar o conteúdo":"Fixes grammar and clarity, without changing the content","Visão geral + pontos principais (novo card)":"Overview + main points (new card)","Pontos-chave":"Key points","Lista objetiva de tópicos (novo card)":"Objective list of topics (new card)","Análise crítica e perguntas em aberto (novo card)":"Critical analysis and open questions (new card)","Dois comentando":"Two commenting","Dois comentaristas discutem o texto (novo card)":"Two commentators discuss the text (new card)","Compare original x IA lado a lado, edite antes de salvar":"Compare original vs AI side by side, edit before saving","⤴ Exportar este card":"⤴ Export this card","Cola tudo junto (tags viram #hashtags)":"Pastes everything together (tags become #hashtags)","Sem as tags":"Without the tags","Cópia fiel e crua — cole e pronto":"Faithful, raw copy — paste and done","Relatório formatado com IA (títulos, listas, callouts)":"AI-formatted report (headings, lists, callouts)","📥 Baixar arquivo":"📥 Download file","Texto simples, universal":"Plain, universal text","Para Obsidian, Notion, etc.":"For Obsidian, Notion, etc.","Página formatada":"Formatted page","ℹ️ Card vazio — nada para transformar":"ℹ️ Empty card — nothing to transform","aplicado! Ctrl+Z desfaz.":"applied! Ctrl+Z undoes.","gerado! Ctrl+Z desfaz.":"generated! Ctrl+Z undoes.","✨ Polindo texto…":"✨ Polishing text…","✅ Texto polido!":"✅ Text polished!","Renomear \"{name}\" para:":"Rename \"{name}\" to:","✏️ Renomeado para \"{name}\"":"✏️ Renamed to \"{name}\"","📋 Falas de \"{name}\" copiadas!":"📋 \"{name}\"'s lines copied!","Gravação":"Recording","Arquivo":"File","Texto":"Text","🗑️ Excluir?":"🗑️ Delete?","Edite aqui…":"Edit here…","car.":"chars","🔮 Diarizando":"🔮 Diarizing","Processando":"Processing","Aguardando ~{n} min":"Waiting ~{n} min","📋 Copiado com tags!":"📋 Copied with tags!","📋 Copiado!":"📋 Copied!","📋 Texto copiado!":"📋 Text copied!","ℹ️ Card vazio":"ℹ️ Empty card","📝 Markdown copiado! Cole no Obsidian.":"📝 Markdown copied! Paste in Obsidian.","⚠️ Nenhuma transcrição":"⚠️ No transcription","notas copiadas como Markdown!":"notes copied as Markdown!","🔮 Relatório para o Obsidian":"🔮 Report for Obsidian","A IA está formatando o texto…":"The AI is formatting the text…","🔮 Relatório pronto!":"🔮 Report ready!","⬇ Baixar .md":"⬇ Download .md","Cole no Obsidian (Ctrl/⌘+V) — ou arraste o arquivo baixado pro seu vault.":"Paste in Obsidian (Ctrl/⌘+V) — or drag the downloaded file to your vault.","✓ Copiado!":"✓ Copied!","📋 Copiado! Cole no Obsidian.":"📋 Copied! Paste in Obsidian.","⬇ Cópia bloqueada — baixei o .md pra você":"⬇ Copy blocked — downloaded the .md for you","⬇ Baixado! Arraste pro seu vault do Obsidian.":"⬇ Downloaded! Drag it to your Obsidian vault.","ℹ️ Card vazio — nada para exportar":"ℹ️ Empty card — nothing to export","Tags:":"Tags:","📥 Baixado (.{ext})":"📥 Downloaded (.{ext})","ℹ️ Nenhum card em foco":"ℹ️ No card in focus","ℹ️ Avançado ainda não funciona em cards diarizados":"ℹ️ Advanced doesn't work yet on diarized cards","↪ Voltou pro modo Avançado":"↪ Back in Advanced mode","Desfazer (Ctrl+Z)":"Undo (Ctrl+Z)","Refazer (Ctrl+Shift+Z)":"Redo (Ctrl+Shift+Z)","Esconder teclado":"Hide keyboard","Original":"Original","Editado pela IA":"Edited by AI","Ou digite uma instrução (ex: deixe mais formal)…":"Or type an instruction (e.g. make it more formal)…","Gerar":"Generate","original":"original","editado":"edited","Sair":"Exit","+ Novo card":"+ New card","Substituir original":"Replace original","pronto!":"ready!","ℹ️ Digite uma instrução":"ℹ️ Type an instruction","✨ Aplicando instrução…":"✨ Applying instruction…","✅ Pronto!":"✅ Ready!","✅ Card atualizado! Ctrl+Z desfaz.":"✅ Card updated! Ctrl+Z undoes.","✅ Novo card criado! Ctrl+Z desfaz.":"✅ New card created! Ctrl+Z undoes.","🔗 Cards mesclados e copiados para a área de transferência":"🔗 Cards merged and copied to clipboard","🔗 Cards mesclados!":"🔗 Cards merged!","📗 Nota Obsidian baixada!":"📗 Obsidian note downloaded!","min":"min","⏳ Processando…":"⏳ Processing…","Decodificando áudio…":"Decoding audio…","Transcrevendo {i}/{n}…":"Transcribing {i}/{n}…","notas com frontmatter YAML!":"notes with YAML frontmatter!","Lista":"List","Mostrar/ocultar pastas":"Show/hide folders","Recolher pastas":"Collapse folders","Aparência":"Appearance","🔄 Converter":"🔄 Convert","Resumo pirâmide":"Pyramid summary","Uma frase → parágrafo → tópicos: leia até onde quiser":"One sentence → paragraph → bullets: read as far as you want","Decisões & Ações":"Decisions & Actions","Quem faz o quê e até quando — pronto pra executar":"Who does what by when — ready to execute","Advogado do diabo":"Devil's advocate","Ataques fundamentados + o que blindaria cada ponto":"Grounded attacks + what would shield each point","Mesa-redonda":"Round table","Debate com especialistas escolhidos pelo tema do texto":"A debate with experts cast for this text's topic","Perguntas socráticas":"Socratic questions","As perguntas que o texto levanta e não responde":"The questions the text raises but doesn't answer","O que faltou":"What's missing","Dados sem fonte, pontas soltas e riscos ignorados":"Unsourced data, loose ends and ignored risks","Espelho":"Mirror","Como você pensa: padrões, contradições e convicções":"How you think: patterns, contradictions and convictions","Virar e-mail":"Turn into email","Sua fala vira um e-mail pronto pra enviar":"Your speech becomes a ready-to-send email","Explicar simples":"Explain simply","Sem jargão, com analogias — pra qualquer pessoa entender":"No jargon, with analogies — anyone can understand","Virar publicação":"Turn into a post","Post ou artigo curto com a sua voz preservada":"A post or short article keeping your voice","Pitch de 30s":"30-second pitch","A ideia em 30 segundos + as perguntas difíceis":"The idea in 30 seconds + the tough questions","Flashcards":"Flashcards","Perguntas e respostas pra estudar o conteúdo":"Q&A cards to study the content","Nota SOAP":"SOAP note","Consulta organizada no padrão clínico S/O/A/P":"Visit organized in the clinical S/O/A/P standard","✨ Transformar:":"✨ Transform:","mais":"more","Usar como padrão":"Set as default","agora é sua lente padrão":"is now your default lens","⭐ Lente padrão removida":"⭐ Default lens removed","Compartilhar resultado":"Share result","WhatsApp, e-mail… com a assinatura do Vox":"WhatsApp, email… with the Vox signature","feito com Vox":"made with Vox","📋 Copiado com assinatura do Vox!":"📋 Copied with Vox signature!","demo":"demo","👋 Bem-vindo ao Vox":"👋 Welcome to Vox","Falar é mais rápido que digitar — a maioria das pessoas fala três vezes mais palavras por minuto do que digita. Mas a fala se perde no ar. A ideia deste app é simples: você fala, o texto aparece, e aí começa a mágica — este mesmo texto pode virar um resumo, uma mesa-redonda entre especialistas, um e-mail pronto, flashcards de estudo. Toque nos botões coloridos aqui embaixo e veja com seus próprios olhos.":"Speaking is faster than typing — most people speak three times more words per minute than they type. But speech vanishes into thin air. The idea of this app is simple: you speak, the text appears, and then the magic starts — this very text can become a summary, a round table between experts, a ready-to-send email, study flashcards. Tap the colored buttons below and see it with your own eyes.",
+"Grátis pra começar":"Free to start","Ganha 5 milhões de tokens grátis ao criar conta; depois disso, um dos mais baratos do mercado.":"Get 5 million free tokens when you sign up; after that, one of the cheapest on the market.","Ganha 1 milhão de tokens grátis ao criar conta. Endereço internacional (fora da China).":"Get 1 million free tokens when you sign up. International address (outside China).","Grátis":"Free","O modelo GLM-4.7-Flash não custa nada, sem limite de tempo — só criar conta.":"The GLM-4.7-Flash model costs nothing, with no time limit — just create an account.","Pago":"Paid","Não tem nível grátis — precisa recarregar ao menos US$1 pra começar. Ainda assim, bem barato.":"No free tier — needs at least a $1 top-up to start. Still very cheap though.","Exemplos prontos — clique pra preencher sozinho":"Ready-made examples — click to fill in automatically","Local · Grátis":"Local · Free","Roda 100% no seu computador — nenhum dado sai da sua máquina nem passa por servidor de terceiros (o cuidado que LGPD/GDPR pedem). Precisa de um PC ou Mac razoável (mín. 16GB de RAM — hoje já é o padrão até fora do Brasil). Não funciona em celular.":"Runs 100% on your own computer — no data leaves your machine or passes through third-party servers (the kind of care LGPD/GDPR call for). Needs a reasonably capable PC or Mac (16GB+ RAM — that's already the norm outside Brazil today). Doesn't work on mobile.","Usar":"Use","Grátis c/ limite":"Free w/ limit","Só o modelo marcado <code>:free</code> não custa nada (até 50 usos/dia). Precisa criar conta grátis.":"Only the model marked <code>:free</code> costs nothing (up to 50 uses/day). Needs a free account.","Sem cartão de crédito. Atenção: no nível grátis, o Google pode usar o texto enviado pra melhorar os produtos dele.":"No credit card. Heads up: on the free tier, Google may use the text you send to improve its products.","Já configurada":"Already set up","Reaproveita a mesma chave que você já usa na aba Transcrição — não precisa digitar de novo. Usa o Grok 4.5, o modelo mais forte da xAI.":"Reuses the same key you already use in the Transcription tab — no need to type it again. Uses Grok 4.5, xAI's strongest model.","🟠 Preenchido com a chave do Grok que você já tem — testando…":"🟠 Filled in with the Grok key you already have — testing…","🖥️ Preenchido! Testando conexão local…":"🖥️ Filled in! Testing local connection…","Cole sua chave nesse campo e clique em \"Testar conexão\"":"Paste your key in this field and click \"Test connection\"","{a} falhou — usamos {b} como alternativa.":"{a} failed — we used {b} instead.","Não conseguimos falar com {p} agora — confira se o serviço está no ar (ou, se for local, se ele está ligado) e sua conexão.":"We couldn't reach {p} right now — check whether the service is up (or, if it's local, whether it's running) and your connection.","A chave da {p} não foi aceita — confira em Configurações e toque em \"Testar conexão\".":"The {p} key wasn't accepted — check it in Settings and tap \"Test connection\".","Os créditos da {p} parecem ter acabado — confira sua conta ou troque de provedor em Configurações.":"{p}'s credits seem to have run out — check your account or switch providers in Settings.","{p} não respondeu corretamente agora. Toque em \"Testar conexão\" nas Configurações.":"{p} didn't respond correctly this time. Tap \"Test connection\" in Settings.","Corretor\nCorrige gramática e clareza, sem mudar o conteúdo":"Corrector\nFixes grammar and clarity, without changing the content","Resumo\nUma frase → parágrafo → tópicos: leia até onde quiser":"Summary\nOne sentence → paragraph → bullet points: read as far as you like","Decisões & Ações\nQuem faz o quê e até quando — pronto pra executar":"Decisions & Actions\nWho does what and by when — ready to execute","Advogado do diabo\nAtaques fundamentados + o que blindaria cada ponto":"Devil's advocate\nGrounded attacks + what would shield each point","Mesa-redonda\nDebate com especialistas escolhidos pelo tema do texto":"Round table\nDebate with experts chosen based on the text's topic","Na hora de restaurar: o arquivo baixado se chama <strong>vox_chaves_backup.json</strong> e fica na pasta <strong>Downloads</strong> do seu computador (ou onde seu navegador costuma salvar downloads). Clique em \"Restaurar\", escolha esse arquivo na janela que abrir, e digite a senha que você criou quando baixou.":"When restoring: the downloaded file is called <strong>vox_chaves_backup.json</strong> and lives in your computer's <strong>Downloads</strong> folder (or wherever your browser usually saves downloads). Click \"Restore\", pick that file in the window that opens, and type the password you created when you downloaded it.","📉 Resumo":"📉 Summary","Corta e condensa o que foi dito":"Cuts and condenses what was said","🗂️ Estrutura":"🗂️ Structure","Reorganiza tudo, sem cortar nada":"Reorganizes everything, without cutting anything","🎯 Extração":"🎯 Extraction","Puxa só um recorte específico, descarta o resto":"Pulls out one specific slice, discards the rest","💡 Gerar & desafiar":"💡 Generate & challenge","Cria algo novo em cima do texto: análise, perguntas, debate":"Creates something new from the text: analysis, questions, debate","Muda o formato para outro público ou uso":"Changes the format for a different audience or use","Nota para Obsidian":"Note for Obsidian","A mesma fala, organizada em títulos, negrito e listas":"The same speech, organized into headings, bold and lists","Ver em Markdown (negrito, títulos, listas)":"View as Markdown (bold, headings, lists)","Isto é uma pré-visualização em <strong>Markdown</strong> — o formato de texto usado por apps como o <strong>Obsidian</strong> pra deixar notas com títulos, negrito e listas de verdade. É um recurso mais avançado, pra quem curte configurar assim. Na prática: <code>**palavra**</code> vira <strong>palavra</strong> (negrito de verdade), <code># Título</code> vira um título grande. Se sua fala não tiver esses sinais, fica parecido com o original — não é erro. Não muda nada do que você escreveu, é só outro jeito de olhar. <strong>Quer ver na prática?</strong> Use ✨ Transformar com IA → Nota para Obsidian, e depois toque neste mesmo 👁 no card que aparecer. Toque no 👁 de novo pra voltar a editar.":"This is a <strong>Markdown</strong> preview — the text format used by apps like <strong>Obsidian</strong> to give notes real headings, bold and lists. It's a more advanced feature, for people who like to set things up this way. In practice: <code>**word**</code> becomes <strong>word</strong> (real bold), <code># Title</code> becomes a big heading. If your speech doesn't have these marks, it'll look like the original — that's not a mistake. It doesn't change what you wrote, it's just a different way to look at it. <strong>Want to see it in action?</strong> Use ✨ Transform with AI → Note for Obsidian, then tap this same 👁 on the card that shows up. Tap 👁 again to go back to editing.","Voltar a editar":"Back to editing","ℹ️ Card vazio — nada para visualizar":"ℹ️ Empty card — nothing to preview","❌ Não foi possível carregar o visualizador.":"❌ Couldn't load the previewer.","Buscar":"Search","Masonry":"Masonry","Resumo do dia":"Daily Summary","Exportar":"Export","Cópia de segurança (backup)":"Backup","Salvar cópia":"Save backup","Restaurar cópia":"Restore backup","Traga suas notas de volta com o arquivo da sua cópia.":"Bring your notes back with your backup file.","Já usava o Vox?":"Used Vox before?","Esta é a cópia das suas notas — restaurando as notas.":"This is your notes backup — restoring the notes.","Esta é a cópia das suas chaves — restaurando as chaves.":"This is your keys backup — restoring the keys.","Este arquivo está vazio (0 KB). Ele não guardou nada — gere a cópia de novo.":"This file is empty (0 KB). It saved nothing — make the backup again.","Restaurando a cópia… com muitas notas pode levar cerca de um minuto. Não feche esta aba.":"Restoring the backup… with many notes this can take about a minute. Do not close this tab.","As chaves não vêm na cópia das notas. Restaure a cópia das chaves em Configurações › Geral › Proteger e levar.":"Keys don't come in the notes copy. Restore the keys copy in Settings › General › Keep safe and move.","notas adicionadas":"notes added","nota adicionada":"note added","Baixar chaves antes":"Download keys first","A cópia das notas não leva as chaves. Se for zerar, baixe também a cópia das chaves antes.":"The notes copy doesn't include the keys. If you're going to reset, download the keys copy too first.","Zerar":"Reset","Cópia extra ativa nesta pasta.":"Extra copy active in this folder.","Baixar chaves":"Download keys","Restaurar chaves":"Restore keys","Pegar do cofre":"Get from the vault","Restaurar do arquivo":"Restore from file","Levar para outros programas":"Take to other apps","Copiar TUDO como Markdown":"Copy ALL as Markdown","Todas as transcrições (.txt)":"All transcriptions (.txt)","Todas (.md)":"All (.md)","Obsidian vault (.md + YAML)":"Obsidian vault (.md + YAML)","Só hoje (.txt)":"Today only (.txt)","Configurações":"Settings","Modelo local":"Local model","⚡ Rápido":"⚡ Fast","~3x mais rápido · boa qualidade":"~3x faster · good quality","⚖️ Médio":"⚖️ Balanced","equilíbrio velocidade/precisão":"speed/accuracy balance","🎯 Preciso":"🎯 Precise","máxima qualidade":"maximum quality","Tema":"Theme","☀️ Claro":"☀️ Light","🌙 Escuro":"🌙 Dark","Cor":"Color","Esmeralda":"Emerald","Âmbar":"Amber","Índigo":"Indigo","Petróleo":"Teal","Pronto":"Ready","itens":"items","economizados":"saved","Tamanho do texto":"Text size","Mostrar/ocultar pastas":"Show/hide folders","Pastas":"Folders","Texto, #tag ou @locutor…":"Text, #tag or @speaker…","Nenhuma transcrição ainda":"No transcription yet","Escolha um modo de sessão, grave ou anexe um arquivo.<br>Use <strong>Espaço</strong> para gravar rapidamente.":"Choose a session mode, record or attach a file.<br>Use <strong>Space</strong> to record quickly.","Corretor":"Proofread","Resumo":"Summary","Pontos":"Key points","Contraponto":"Counterpoint","Diálogo":"Dialogue","Avançado":"Advanced","Copiar texto + tags":"Copy text + tags","Copiar só o texto":"Copy text only","Copiar como Markdown":"Copy as Markdown","Copiar para Obsidian":"Copy for Obsidian","Baixar TXT":"Download TXT","Baixar Markdown":"Download Markdown","Baixar HTML":"Download HTML","Gravar":"Record","Fixar":"Pin","← Anterior":"← Previous","Próximo →":"Next →","✕ Sair do Foco":"✕ Exit Focus","Baixar pastas":"Download folders","Configurar download":"Configure download","Recolher":"Collapse","Formato do download":"Download format","Nova pasta":"New folder","App parece travado. Alguma gravação ou transcrição não finalizou.":"The app seems stuck. Some recording or transcription didn't finish.","Resetar agora":"Reset now","▶ Transcrever":"▶ Transcribe","Cancelar":"Cancel","Ative a diarização para identificar quem fala":"Enable speaker diarization to identify who's talking","Separa automaticamente as vozes: Profissional, Paciente, etc. Gratuito no AssemblyAI (100h/mês, sem cartão).":"Automatically separates voices: Professional, Patient, etc. Free on AssemblyAI (100h/month, no card).","⚙️ Configurar agora":"⚙️ Configure now","Fechar":"Close","🩺 Consulta":"🩺 Consultation","👥 Reunião":"👥 Meeting","🎙️ Entrevista":"🎙️ Interview","📝 Livre":"📝 Free-form","Nome da sessão (opcional)":"Session name (optional)","🔮 Diarização ativa":"🔮 Diarization active","<kbd>Espaço</kbd> gravar / parar":"<kbd>Space</kbd> record / stop","💡 card em foco → insere no cursor":"💡 focused card → inserts at cursor","🏷️ <strong>#tag</strong> na busca filtra":"🏷️ <strong>#tag</strong> in search filters","Digite ou 📎 anexe um áudio…":"Type or 📎 attach audio…","Anexar áudio":"Attach audio","Configurar captura de áudio":"Configure audio capture","🎙️ Fonte de áudio para gravar":"🎙️ Audio source for recording","🎤 Só microfone":"🎤 Microphone only","padrão":"default","🔊 Só áudio interno":"🔊 System audio only","🎙️🔊 Microfone + interno":"🎙️🔊 Microphone + system","Gravar (Espaço)":"Record (Space)","API de transcrição":"Transcription API","Local":"Local","GRÁTIS":"FREE","Verificando servidor…":"Checking server…","↻ Verificar":"↻ Check","Modelo Whisper":"Whisper model","Rápido":"Fast","~3× mais veloz · boa qualidade":"~3× faster · good quality","Médio":"Balanced","Equilíbrio velocidade/precisão":"Speed/accuracy balance","Preciso":"Precise","Máxima qualidade":"Maximum quality","🚀 Iniciar servidor Whisper":"🚀 Start Whisper server","Caminho do iniciar_whisper.bat (para iniciar com 1 clique)":"Path to iniciar_whisper.bat (for 1-click start)","🔑 Chaves":"🔑 Keys","📊 Uso":"📊 Usage","tier grátis":"free tier","🟢 Whisper Large v3 Turbo · $0.04/hr · 2.000 req/dia grátis · chave sem expiração = \"No expiry\"":"🟢 Whisper Large v3 Turbo · $0.04/hr · 2,000 req/day free · key never expires = \"No expiry\"","Taxa USD → BRL":"USD → BRL rate","Idioma padrão":"Default language","Auto-detectar":"Auto-detect","Português":"Portuguese","🔮 Diarização — identificar quem fala":"🔮 Diarization — identify who's speaking","Identificar locutores automaticamente":"Automatically identify speakers","Transcrição segmentada por pessoa — Profissional, Paciente, etc.":"Transcription segmented by person — Professional, Patient, etc.","Escolha o provedor de diarização:":"Choose the diarization provider:","🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">Free tier · mais preciso</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">Free tier · more accurate</small>","🤖 OpenAI<br><small style=\"font-weight:400;opacity:0.8\">Mesma chave Whisper</small>":"🤖 OpenAI<br><small style=\"font-weight:400;opacity:0.8\">Same Whisper key</small>","free tier":"free tier","Usa a mesma OpenAI Key já configurada acima. Modelo: gpt-4o-transcribe com diarização. Mesmo preço: $0.006/min.":"Uses the same OpenAI Key already set above. Model: gpt-4o-transcribe with diarization. Same price: $0.006/min.","Chave IA para renomear locutores":"AI key for renaming speakers","Groq (Llama — grátis)":"Groq (Llama — free)","Usada para identificar automaticamente quem é o profissional e quem é o paciente. Custo: ~$0.001/consulta.":"Used to automatically identify who's the professional and who's the patient. Cost: ~$0.001/session.","Manutenção":"Maintenance","Áudios na RAM":"Audio in RAM","Remove players de áudio e desbloqueia o app caso esteja travado.":"Removes audio players and unlocks the app if it's stuck.","🔄 Liberar + Resetar":"🔄 Free up + Reset","Pré-visualizar onboarding":"Preview onboarding","🎙️ Ver tela de microfone":"🎙️ View microphone screen","🟢 Ver setup do Groq":"🟢 View Groq setup","⚠️ Use o <strong>Safari</strong> no iPhone/iPad":"⚠️ Use <strong>Safari</strong> on iPhone/iPad","O Chrome e o Firefox no iOS não permitem acesso ao microfone por restrição da Apple.":"Chrome and Firefox on iOS can't access the microphone due to Apple's restriction.","🍎 Simular aviso iOS":"🍎 Simulate iOS warning","💡 Recomendamos o <strong>Chrome</strong> no Android":"💡 We recommend <strong>Chrome</strong> on Android","Seu navegador atual pode ter limitações com microfone e áudio.":"Your current browser may have limitations with microphone and audio.","🤖 Simular aviso Android":"🤖 Simulate Android warning","Só visualização — não apaga nenhuma configuração.":"Preview only — doesn't delete any setting.","Apagar transcrições":"Delete transcriptions","Apagar só as de hoje":"Delete only today's","Remove todos os cards do dia atual. Fixados são preservados.":"Removes all cards from today. Pinned ones are preserved.","Apagar hoje":"Delete today","Apagar não fixados":"Delete unpinned","Remove tudo exceto os cards com 📌 pin.":"Removes everything except 📌 pinned cards.","Apagar tudo":"Delete all","Remove todos os cards e zera o histórico completamente.":"Removes all cards and fully resets history.","Salvar":"Save","Gerando resumo com IA…":"Generating summary with AI…","📋 Copiar":"📋 Copy","📗 Exportar Obsidian":"📗 Export Obsidian","Iniciar Whisper Local":"Start Local Whisper","Qual modelo deseja usar?<br><span style=\"font-size:11px;color:var(--text4)\">Modelos menores são mais rápidos.</span>":"Which model do you want to use?<br><span style=\"font-size:11px;color:var(--text4)\">Smaller models are faster.</span>","Mais veloz · boa qualidade":"Faster · good quality","recomendado":"recommended","Cancelar — usar outro provedor":"Cancel — use another provider","Bem-vindo ao Vox!":"Welcome to Vox!","Para transcrever suas gravações, o app precisa acessar o microfone do seu computador.<br><br> Clique no botão abaixo e depois em <strong>\"Permitir\"</strong> quando o Chrome perguntar.<br> <span style=\"font-size:12px;color:var(--text4)\">Isso só acontece uma vez.</span>":"To transcribe your recordings, the app needs access to your computer's microphone.<br><br> Click the button below and then <strong>\"Allow\"</strong> when Chrome asks.<br> <span style=\"font-size:12px;color:var(--text4)\">This only happens once.</span>","<strong>Como configurar em 2 minutos:</strong> <ol> <li>Acesse <a href=\"https://www.assemblyai.com\" target=\"_blank\">assemblyai.com</a> e crie uma conta gratuita</li> <li>No dashboard, copie sua API Key</li> <li>Cole no campo acima e salve</li> </ol> <br> 💰 <strong>Custo:</strong> Free tier inclui 100 horas/mês. Pago: ~$0.006/min com diarização inclusa.<br> 🎯 <strong>Ideal para:</strong> consultas (2 locutores), reuniões (até 32 pessoas), entrevistas.":"<strong>How to set up in 2 minutes:</strong> <ol> <li>Go to <a href=\"https://www.assemblyai.com\" target=\"_blank\">assemblyai.com</a> and create a free account</li> <li>In the dashboard, copy your API Key</li> <li>Paste it in the field above and save</li> </ol> <br> 💰 <strong>Cost:</strong> Free tier includes 100 hours/month. Paid: ~$0.006/min with diarization included.<br> 🎯 <strong>Ideal for:</strong> consultations (2 speakers), meetings (up to 32 people), interviews.","🎙️ Ativar microfone":"🎙️ Enable microphone","Configure a transcrição gratuita":"Set up free transcription","O <strong>Groq</strong> oferece transcrição com Whisper completamente gratuita — 2.000 gravações por dia, sem cobrar nada, para sempre. Leva menos de 2 minutos configurar.":"<strong>Groq</strong> offers completely free Whisper transcription — 2,000 recordings a day, no charge, forever. Takes less than 2 minutes to set up.","Crie sua conta gratuita no Groq":"Create your free Groq account","🔗 Abrir console.groq.com/keys":"🔗 Open console.groq.com/keys","Clique em <strong>\"Create API Key\"</strong>, dê qualquer nome e em <strong>Expiration</strong> escolha <strong>\"No expiry\"</strong> — assim ela nunca vai expirar.":"Click <strong>\"Create API Key\"</strong>, give it any name, and under <strong>Expiration</strong> choose <strong>\"No expiry\"</strong> — so it never expires.","Copie a chave que começa com <strong>gsk_…</strong> e cole aqui:":"Copy the key starting with <strong>gsk_…</strong> and paste it here:","🔒 A chave fica salva só no seu dispositivo — nunca sai daqui.":"🔒 The key is saved only on your device — it never leaves here.","🚀 Começar a transcrever!":"🚀 Start transcribing!","Já tenho chave configurada — pular":"I already have a key set up — skip","Profissional":"Professional","Paciente":"Patient","Facilitador":"Facilitator","Participante":"Participant","Entrevistador":"Interviewer","Entrevistado":"Interviewee","Locutor 1":"Speaker 1","Locutor 2":"Speaker 2","🔑 Configure uma chave de IA!":"🔑 Set up an AI key!","✨ Gerando resumo…":"✨ Generating summary…","Resumo IA — ":"AI Summary —","✅ Resumo gerado! Ctrl+Z para desfazer.":"✅ Summary generated! Ctrl+Z to undo.","ℹ️ Esse modelo já está ativo":"ℹ️ This model is already active","✅ Modelo trocado para ":"✅ Model switched to","❌ Servidor não respondeu. Ele está rodando?":"❌ Server didn't respond. Is it running?","💡 Configure o caminho do .bat nas configurações → aba Local":"💡 Set the .bat path in settings → Local tab","Iniciar servidor Whisper":"Start Whisper server","Modelo selecionado:":"Selected model:","Para usar o modo Local, abra o servidor clicando no botão abaixo:":"To use Local mode, open the server by clicking the button below:","🚀 Abrir servidor Whisper":"🚀 Open Whisper server","Após abrir, aguarde aparecer":"After opening, wait for","\"Modelo carregado! Servidor pronto.\"":"\"Model loaded! Server ready.\"","✅ Servidor Whisper pronto!":"✅ Whisper server ready!","✅ Microfone ativado! Pode gravar à vontade.":"✅ Microphone enabled! You can record freely.","❌ Permissão negada. Clique no 🔒 cadeado na barra do navegador → Microfone → Permitir, depois recarregue a página.":"❌ Permission denied. Click the 🔒 lock icon in the browser bar → Microphone → Allow, then reload the page.","🟢 Groq configurado! Pronto para transcrever.":"🟢 Groq configured! Ready to transcribe.","✅ Microfone ativado! Configure um provedor nas ⚙️ Configurações.":"✅ Microphone enabled! Set up a provider in ⚙️ Settings.","O Chrome e o Firefox no iOS não permitem acesso ao microfone por restrição da Apple. Abra este endereço no Safari para gravar.":"Chrome and Firefox on iOS can't access the microphone due to Apple's restriction. Open this address in Safari to record.","Seu navegador atual pode ter limitações com microfone e áudio. O Chrome para Android oferece a melhor experiência.":"Your current browser may have limitations with microphone and audio. Chrome for Android offers the best experience.","OK, entendi":"OK, got it","Nome da nova pasta:":"New folder name:","📁 Pasta \"":"📁 Folder \"","\" criada":"\" created","✏️ Renomear":"✏️ Rename","📄 Exportar pasta":"📄 Export folder","🗑️ Excluir pasta":"🗑️ Delete folder","Limpar pasta":"Clear folder","Limpar a pasta \"":"Clear folder \"","As {n} transcrições voltam para \"Tudo\" (não são apagadas). A pasta continua existindo.":"The {n} transcriptions go back to \"All\" (they're not deleted). The folder itself stays.","ℹ️ Pasta já está vazia":"ℹ️ Folder is already empty","🧹 Pasta \"":"🧹 Folder \"","\" limpa":"\" cleared","Arrastar para mover ou aninhar a pasta":"Drag to move or nest the folder","📁 Pasta movida":"📁 Folder moved","⚠️ Não é possível mover uma pasta para dentro dela mesma":"⚠️ Can't move a folder into itself","Renomear pasta:":"Rename folder:","✏️ Pasta renomeada":"✏️ Folder renamed","Excluir a pasta \"":"Delete folder \"","\"?":"\"?","As {n} transcrições voltam para \"Tudo\" (não são apagadas).":"The {n} transcriptions go back to \"All\" (they're not deleted).","A pasta está vazia.":"The folder is empty.","🗑️ Pasta \"":"🗑️ Folder \"","\" excluída":"\" deleted","⚠️ Selecione ao menos uma pasta":"⚠️ Select at least one folder","⚠️ \"{name}\" está vazia, pulada":"⚠️ \"{name}\" is empty, skipped","Exportado:":"Exported:","Total:":"Total:","Modo:":"Mode:","transcrições":"transcriptions","pasta baixada":"folder downloaded","pastas baixadas":"folders downloaded","⚠️ Pasta vazia":"⚠️ Empty folder","📄 Pasta \"":"📄 Folder \"","\" exportada":"\" exported","📁 Movido para \"":"📁 Moved to \"","pasta":"folder","Tudo":"All","Nenhuma pasta criada":"No folder created","Baixar":"Download","Opções":"Options","resultados":"results","resultado":"result","Histórico":"History","Sessão:":"Session:","itens salvos":"items saved","HISTÓRICO":"HISTORY","notas exportadas!":"notes exported!","Gerando com IA…":"Generating with AI…","Nenhuma transcrição de hoje ainda.":"No transcription today yet.","Sessão":"Session","Configure uma chave de IA nas configurações para gerar resumos.":"Set up an AI key in settings to generate summaries.","Erro:":"Error:","📋 Resumo copiado!":"📋 Summary copied!","📗 Resumo exportado para Obsidian!":"📗 Summary exported to Obsidian!","Grok Key (ativa)":"Grok Key (active)","Groq Key (ativa)":"Groq Key (active)","(sem chave necessária)":"(no key needed)","Verificando…":"Checking…","Servidor online — modelo:":"Server online — model:","Servidor offline.":"Server offline.","Inicie o servidor Whisper local":"Start the local Whisper server","✅ Configurações salvas":"✅ Settings saved","Gravando…":"Recording…","Transcrevendo parte {n}…":"Transcribing part {n}…","Transcrevendo…":"Transcribing…","Erro":"Error","Diarizando…":"Diarizing…","Transcrevendo com diarização…":"Transcribing with diarization…","na RAM":"in RAM","✅ App resetado — pronto para gravar!":"✅ App reset — ready to record!","ℹ️ Nenhuma transcrição para apagar":"ℹ️ No transcription to delete","ℹ️ Nenhum card para apagar neste filtro":"ℹ️ No card to delete in this filter","TUDO ({n} cards)":"ALL ({n} cards)","os {n} cards de hoje":"the {n} cards from today","os {n} cards não fixados":"the {n} unpinned cards","⚠️ Apagar {label}?\n\nEsta ação não pode ser desfeita.":"⚠️ Delete {label}?\n\nThis action cannot be undone.","cards apagados":"cards deleted","card apagado":"card deleted","Gravação/nota mais recente":"Most recent recording/note","{n}ª mais recente":"{n}th most recent","ℹ️ Nada para salvar ainda — grave algo primeiro":"ℹ️ Nothing to save yet — record something first","Cópia de segurança salva ({n} {itemword}). Guarde o arquivo .json num lugar seguro.":"Backup saved ({n} {itemword}). Keep the .json file somewhere safe.","item":"item","não é uma cópia do Vox":"not a Vox backup","Não consegui abrir este arquivo:":"Could not open this file:","ℹ️ Arquivo vazio":"ℹ️ Empty file","📂 Texto importado como novo card!":"📂 Text imported as new card!","Cópia restaurada: {n} {itemword}{skipmsg}":"Backup restored: {n} {itemword}{skipmsg}","item adicionado":"item added","itens adicionados":"items added"," ({n} já existiam)":" ({n} already existed)","ℹ️ Tudo dessa cópia já estava aqui — nada novo a adicionar":"ℹ️ Everything from this backup was already here — nothing new to add","Sugerir tags com IA":"Suggest tags with AI","+ tag IA":"+ AI tag","Extrair todos os termos do texto":"Extract all terms from text","⚙ extrair":"⚙ extract","Falar tags":"Speak tags","🎤 falar":"🎤 speak","tag manual":"manual tag","ℹ️ Card vazio — nada para analisar":"ℹ️ Empty card — nothing to analyze","🔑 Configure uma chave de IA (Groq é grátis) para sugerir tags":"🔑 Set up an AI key (Groq is free) to suggest tags","✨ pensando…":"✨ thinking…","✨ sugestões:":"✨ suggestions:","Dispensar sugestões":"Dismiss suggestions","🔑 Configure uma chave de IA para usar esta função":"🔑 Set up an AI key to use this feature","⚙ analisando texto…":"⚙ analyzing text…","Nenhum termo encontrado.":"No terms found.","todos":"all","nomes":"names","temas":"themes","ações":"actions","siglas":"acronyms","⚙ EXTRAIR TERMOS — {n} encontrados":"⚙ EXTRACT TERMS — {n} found","limpar":"clear","0 selecionados":"0 selected","+ adicionar":"+ add","selecionados":"selected","selecionado":"selected","adicionar":"add","tags":"tags","tag":"tag","✅ Tags adicionadas!":"✅ Tags added!","↩ Desfeito":"↩ Undone","↪ Refeito":"↪ Redone","ℹ️ Aguarde a gravação atual terminar":"ℹ️ Wait for the current recording to finish","⏹ parar":"⏹ stop","gravando — fale as tags que quer adicionar":"recording — say the tags you want to add","parar":"stop","❌ Microfone não disponível.":"❌ Microphone not available.","✨ transcrevendo e extraindo tags…":"✨ transcribing and extracting tags…","ℹ️ Nenhuma tag identificada na fala":"ℹ️ No tag identified in speech","ℹ️ Todas as tags já existem no card":"ℹ️ All tags already exist on the card","🎤 ouvi:":"🎤 heard:","Dispensar":"Dismiss","Desafixar":"Unpin","Fixar no topo":"Pin to top","📌 Card fixado no topo":"📌 Card pinned to top","📌 Card desafixado":"📌 Card unpinned","divisão automática":"automatic split","⚡ Será dividido em partes de ~10 min.":"⚡ It will be split into ~10 min parts.","Clique em <strong>Transcrever</strong> para enviar à API.":"Click <strong>Transcribe</strong> to send to the API.","📎 Arquivo pronto":"📎 File ready","🖥️ Áudio interno só funciona no computador (Chrome/Edge). iPhone/iPad não suportam.":"🖥️ System audio only works on computer (Chrome/Edge). iPhone/iPad don't support it.","Fonte:":"Source:","Só microfone":"Microphone only","Só áudio interno":"System audio only","Microfone + interno":"Microphone + system","O áudio interno (som do sistema/aba) é ótimo para gravar reuniões online — captura sua voz e a dos outros. Ao gravar, o navegador pede o que compartilhar; marque \"compartilhar áudio\".":"System audio (system/tab sound) is great for recording online meetings — captures your voice and others'. When recording, the browser asks what to share; check \"share audio\".","⚠️ Áudio interno indisponível neste aparelho (iPhone, iPad e a maioria dos celulares não suportam). Aqui só funciona o microfone.":"⚠️ System audio unavailable on this device (iPhone, iPad and most phones don't support it). Only the microphone works here.","Nenhum áudio interno capturado. Marque a opção \"compartilhar áudio\" na janela do navegador.":"No system audio captured. Check the \"share audio\" option in the browser window.","🎙️ Gravando…":"🎙️ Recording…","❌ Captura de áudio cancelada ou não permitida.":"❌ Audio capture cancelled or not allowed.","❌ Parte {n} falhou:":"❌ Part {n} failed:","sem custo":"no cost","🔴 gravando ao vivo":"🔴 recording live","🚫 Gravação cancelada.":"🚫 Recording cancelled.","🔑 Configure a chave API!":"🔑 Set up the API key!","✅ Inserido + copiado!":"✅ Inserted + copied!","📋 Copiado para a área de transferência!":"📋 Copied to clipboard!","🔑 Configure a chave AssemblyAI!":"🔑 Set up the AssemblyAI key!","Enviando áudio…":"Sending audio…","Upload falhou:":"Upload failed:","Submit falhou:":"Submit failed:","Processando ({status})…":"Processing ({status})…","Timeout na diarização":"Diarization timeout","Identificando locutores…":"Identifying speakers…","✅ Diarização concluída!":"✅ Diarization complete!","🔑 Configure a chave OpenAI!":"🔑 Set up the OpenAI key!","✅ Transcrição concluída (sem diarização no retorno)":"✅ Transcription complete (no diarization in response)","Locutor 3":"Speaker 3","Locutor 4":"Speaker 4","Locutor {n}":"Speaker {n}","Renomear locutor":"Rename speaker","🗑️ Excluir esta transcrição?":"🗑️ Delete this transcription?","Excluir":"Delete","Arrastar para mesclar com outro card":"Drag to merge with another card","🔮 Diarizado":"🔮 Diarized","📌 Fixado":"📌 Pinned","Alternar roteiro / bolhas":"Toggle script / bubbles","✨ Transformar com IA":"✨ Transform with AI","Gravar aqui":"Record here","Copiar para a área de transferência":"Copy to clipboard","Exportar (copiar / baixar / Markdown)":"Export (copy / download / Markdown)","Modo Foco / Colapsar":"Focus Mode / Collapse","turnos":"turns","pal.":"words","Corretor mínimo":"Minimal proofread","Corrige gramática e clareza, sem mudar o conteúdo":"Fixes grammar and clarity, without changing the content","Visão geral + pontos principais (novo card)":"Overview + main points (new card)","Pontos-chave":"Key points","Lista objetiva de tópicos (novo card)":"Objective list of topics (new card)","Análise crítica e perguntas em aberto (novo card)":"Critical analysis and open questions (new card)","Dois comentando":"Two commenting","Dois comentaristas discutem o texto (novo card)":"Two commentators discuss the text (new card)","Compare original x IA lado a lado, edite antes de salvar":"Compare original vs AI side by side, edit before saving","⤴ Exportar este card":"⤴ Export this card","Cola tudo junto (tags viram #hashtags)":"Pastes everything together (tags become #hashtags)","Sem as tags":"Without the tags","Cópia fiel e crua — cole e pronto":"Faithful, raw copy — paste and done","Relatório formatado com IA (títulos, listas, callouts)":"AI-formatted report (headings, lists, callouts)","📥 Baixar arquivo":"📥 Download file","Texto simples, universal":"Plain, universal text","Para Obsidian, Notion, etc.":"For Obsidian, Notion, etc.","Página formatada":"Formatted page","ℹ️ Card vazio — nada para transformar":"ℹ️ Empty card — nothing to transform","aplicado! Ctrl+Z desfaz.":"applied! Ctrl+Z undoes.","gerado! Ctrl+Z desfaz.":"generated! Ctrl+Z undoes.","✨ Polindo texto…":"✨ Polishing text…","✅ Texto polido!":"✅ Text polished!","Renomear \"{name}\" para:":"Rename \"{name}\" to:","✏️ Renomeado para \"{name}\"":"✏️ Renamed to \"{name}\"","📋 Falas de \"{name}\" copiadas!":"📋 \"{name}\"'s lines copied!","Gravação":"Recording","Arquivo":"File","Texto":"Text","🗑️ Excluir?":"🗑️ Delete?","Edite aqui…":"Edit here…","car.":"chars","🔮 Diarizando":"🔮 Diarizing","Processando":"Processing","Aguardando ~{n} min":"Waiting ~{n} min","📋 Copiado com tags!":"📋 Copied with tags!","📋 Copiado!":"📋 Copied!","📋 Texto copiado!":"📋 Text copied!","ℹ️ Card vazio":"ℹ️ Empty card","📝 Markdown copiado! Cole no Obsidian.":"📝 Markdown copied! Paste in Obsidian.","⚠️ Nenhuma transcrição":"⚠️ No transcription","notas copiadas como Markdown!":"notes copied as Markdown!","🔮 Relatório para o Obsidian":"🔮 Report for Obsidian","A IA está formatando o texto…":"The AI is formatting the text…","🔮 Relatório pronto!":"🔮 Report ready!","⬇ Baixar .md":"⬇ Download .md","Cole no Obsidian (Ctrl/⌘+V) — ou arraste o arquivo baixado pro seu vault.":"Paste in Obsidian (Ctrl/⌘+V) — or drag the downloaded file to your vault.","✓ Copiado!":"✓ Copied!","📋 Copiado! Cole no Obsidian.":"📋 Copied! Paste in Obsidian.","⬇ Cópia bloqueada — baixei o .md pra você":"⬇ Copy blocked — downloaded the .md for you","⬇ Baixado! Arraste pro seu vault do Obsidian.":"⬇ Downloaded! Drag it to your Obsidian vault.","ℹ️ Card vazio — nada para exportar":"ℹ️ Empty card — nothing to export","Tags:":"Tags:","📥 Baixado (.{ext})":"📥 Downloaded (.{ext})","ℹ️ Nenhum card em foco":"ℹ️ No card in focus","ℹ️ Avançado ainda não funciona em cards diarizados":"ℹ️ Advanced doesn't work yet on diarized cards","↪ Voltou pro modo Avançado":"↪ Back in Advanced mode","Desfazer (Ctrl+Z)":"Undo (Ctrl+Z)","Refazer (Ctrl+Shift+Z)":"Redo (Ctrl+Shift+Z)","Esconder teclado":"Hide keyboard","Original":"Original","Editado pela IA":"Edited by AI","Ou digite uma instrução (ex: deixe mais formal)…":"Or type an instruction (e.g. make it more formal)…","Gerar":"Generate","original":"original","editado":"edited","Sair":"Exit","+ Novo card":"+ New card","Substituir original":"Replace original","pronto!":"ready!","ℹ️ Digite uma instrução":"ℹ️ Type an instruction","✨ Aplicando instrução…":"✨ Applying instruction…","✅ Pronto!":"✅ Ready!","✅ Card atualizado! Ctrl+Z desfaz.":"✅ Card updated! Ctrl+Z undoes.","✅ Novo card criado! Ctrl+Z desfaz.":"✅ New card created! Ctrl+Z undoes.","🔗 Cards mesclados e copiados para a área de transferência":"🔗 Cards merged and copied to clipboard","🔗 Cards mesclados!":"🔗 Cards merged!","📗 Nota Obsidian baixada!":"📗 Obsidian note downloaded!","min":"min","⏳ Processando…":"⏳ Processing…","Decodificando áudio…":"Decoding audio…","Transcrevendo {i}/{n}…":"Transcribing {i}/{n}…","notas com frontmatter YAML!":"notes with YAML frontmatter!","Lista":"List","Mostrar/ocultar pastas":"Show/hide folders","Recolher pastas":"Collapse folders","Aparência":"Appearance","🔄 Converter":"🔄 Convert","Resumo pirâmide":"Pyramid summary","Uma frase → parágrafo → tópicos: leia até onde quiser":"One sentence → paragraph → bullets: read as far as you want","Decisões & Ações":"Decisions & Actions","Quem faz o quê e até quando — pronto pra executar":"Who does what by when — ready to execute","Advogado do diabo":"Devil's advocate","Ataques fundamentados + o que blindaria cada ponto":"Grounded attacks + what would shield each point","Mesa-redonda":"Round table","Debate com especialistas escolhidos pelo tema do texto":"A debate with experts cast for this text's topic","Perguntas socráticas":"Socratic questions","As perguntas que o texto levanta e não responde":"The questions the text raises but doesn't answer","O que faltou":"What's missing","Dados sem fonte, pontas soltas e riscos ignorados":"Unsourced data, loose ends and ignored risks","Espelho":"Mirror","Como você pensa: padrões, contradições e convicções":"How you think: patterns, contradictions and convictions","Virar e-mail":"Turn into email","Sua fala vira um e-mail pronto pra enviar":"Your speech becomes a ready-to-send email","Explicar simples":"Explain simply","Sem jargão, com analogias — pra qualquer pessoa entender":"No jargon, with analogies — anyone can understand","Virar publicação":"Turn into a post","Post ou artigo curto com a sua voz preservada":"A post or short article keeping your voice","Pitch de 30s":"30-second pitch","A ideia em 30 segundos + as perguntas difíceis":"The idea in 30 seconds + the tough questions","Flashcards":"Flashcards","Perguntas e respostas pra estudar o conteúdo":"Q&A cards to study the content","Nota SOAP":"SOAP note","Consulta organizada no padrão clínico S/O/A/P":"Visit organized in the clinical S/O/A/P standard","✨ Transformar:":"✨ Transform:","mais":"more","Usar como padrão":"Set as default","agora é sua lente padrão":"is now your default lens","⭐ Lente padrão removida":"⭐ Default lens removed","Compartilhar resultado":"Share result","WhatsApp, e-mail… com a assinatura do Vox":"WhatsApp, email… with the Vox signature","feito com Vox":"made with Vox","📋 Copiado com assinatura do Vox!":"📋 Copied with Vox signature!","demo":"demo","👋 Bem-vindo ao Vox":"👋 Welcome to Vox","Falar é mais rápido que digitar — a maioria das pessoas fala três vezes mais palavras por minuto do que digita. Mas a fala se perde no ar. A ideia deste app é simples: você fala, o texto aparece, e aí começa a mágica — este mesmo texto pode virar um resumo, uma mesa-redonda entre especialistas, um e-mail pronto, flashcards de estudo. Toque nos botões coloridos aqui embaixo e veja com seus próprios olhos.":"Speaking is faster than typing — most people speak three times more words per minute than they type. But speech vanishes into thin air. The idea of this app is simple: you speak, the text appears, and then the magic starts — this very text can become a summary, a round table between experts, a ready-to-send email, study flashcards. Tap the colored buttons below and see it with your own eyes.",
 "Todas as lentes e receitas":"All lenses and recipes","⚡ Receitas":"⚡ Recipes","🗑️ Receita excluída":"🗑️ Recipe deleted","Excluir receita":"Delete recipe",
 "+ criar receita":"+ create recipe","Encadeie lentes: a saída de uma vira a entrada da próxima":"Chain lenses: one's output becomes the next one's input",
 "⚡ Criar receita":"⚡ Create recipe","Nenhuma etapa ainda — clique nas lentes abaixo":"No steps yet — click the lenses below","Nome da receita":"Recipe name",
@@ -9788,7 +9917,7 @@ let I18N_EN={
 "Toque em Mais (⋯)":"Tap More (⋯)","Toque em Receber transferência":"Tap Receive transfer","Cole este link ali":"Paste this link there",
 "Ainda não tem? Só tocar no link, ou apontar a câmera pro QR.":"Don't have it yet? Just tap the link, or point the camera at the QR.",
 "Ou cole aqui a próxima parte:":"Or paste the next part here:","Colar":"Paste",
-"Do outro lado já tem o Vox aberto? Vale mais colar o link (ou ler o QR) ali dentro — Mais (⋯) → Receber transferência — do que tocar no link, que abriria mais uma aba à toa.":"Is the other side already looking at Vox? It's better to paste the link (or scan the QR) right there — More (⋯) → Receive transfer — than to tap the link, which would just open another tab.",
+"Do outro lado já tem o Vox aberto? Vale mais colar o link (ou ler o QR) ali dentro — Mais (⋯) → Receber de outro aparelho — do que tocar no link, que abriria mais uma aba à toa.":"Is the other side already looking at Vox? It's better to paste the link (or scan the QR) right there — More (⋯) → Receive from another device — than to tap the link, which would just open another tab.",
 "Transcrição":"Transcription","IA de texto":"Text AI","Diarização":"Diarization","Geral":"General","100% local":"100% local",
 "✨ IA de texto — quem pensa nas lentes e receitas":"✨ Text AI — the brain behind lenses and recipes",
 "Transcrever é ouvir. Já as lentes e receitas (resumo, e-mail, flashcards…) precisam de uma IA que pensa. Escolha quem faz esse trabalho:":"Transcribing is listening. Lenses and recipes (summary, email, flashcards…) need an AI that thinks. Choose who does that job:",
@@ -9822,9 +9951,9 @@ let I18N_EN={
 "💾 Backup em arquivo":"💾 File backup","Baixa um arquivo protegido por senha — funciona em qualquer aparelho, guarde onde quiser.":"Downloads a password-protected file — works on any device, keep it wherever you like.",
 "Crie uma senha para proteger o backup (vai precisar dela para restaurar):":"Create a password to protect the backup (you'll need it to restore):",
 "ℹ️ Nenhuma chave configurada ainda":"ℹ️ No keys configured yet",
-"🔑 Backup baixado! Guarde num lugar seguro (Google Drive, iCloud, e-mail…)":"🔑 Backup downloaded! Keep it somewhere safe (Google Drive, iCloud, email…)",
-"❌ Arquivo inválido":"❌ Invalid file","❌ Este não é um backup de chaves do Vox":"❌ This isn't a Vox keys backup",
-"Digite a senha desse backup:":"Enter this backup's password:","✅ Chaves restauradas do backup!":"✅ Keys restored from backup!",
+"🔑 Cópia das chaves baixada! Guarde num lugar seguro (Google Drive, iCloud, e-mail…)":"🔑 Backup downloaded! Keep it somewhere safe (Google Drive, iCloud, email…)",
+"❌ Arquivo inválido":"❌ Invalid file","❌ Este arquivo não é a cópia das chaves do Vox":"❌ This isn't a Vox keys backup",
+"Digite a senha desse backup:":"Enter this backup's password:","✅ Chaves restauradas da cópia!":"✅ Keys restored from backup!",
 "❌ Senha incorreta ou arquivo corrompido":"❌ Wrong password or corrupted file",
 "🧭 Conselho":"🧭 Counsel","A nota vira conselho: decidir, conversar, clarear":"Your note becomes counsel: decide, talk, clear your head",
 "Me ajuda a decidir":"Help me decide","As opções e os critérios que você revelou falando — pesados, com recomendação":"The options and criteria you revealed while speaking — weighed, with a recommendation",
@@ -9836,11 +9965,11 @@ let I18N_EN={
 "Plano de ação":"Action plan","O despejo de ideias vira plano sequenciado, com o passo de amanhã":"The braindump becomes a sequenced plan, with tomorrow's step",
 "Tempestade de ideias":"Brainstorm","Ideias que decorrem da nota — inclusive as que ninguém teve ainda":"Ideas that flow from the note — including the ones nobody's had yet",
 "Roteiro de vídeo curto":"Short video script","Gancho de 3s, blocos de fala e chamada final — Reels/TikTok/Shorts":"3s hook, speech blocks and final call — Reels/TikTok/Shorts",
-"Confirmar":"Confirm","Proteger o backup":"Protect the backup","Digite a senha do backup":"Enter the backup password",
-"Crie uma senha pra proteger o arquivo. Se preferir, deixe em branco e confirme — o backup é salvo sem senha (mais simples, mas qualquer pessoa com o arquivo consegue ler suas chaves).":"Create a password to protect the file. If you'd rather not, leave it blank and confirm — the backup is saved without a password (simpler, but anyone with the file can read your keys).",
-"Digite a senha que você criou quando baixou esse backup.":"Enter the password you created when you downloaded this backup.",
+"Confirmar":"Confirm","Proteger a cópia das chaves":"Protect the backup","Digite a senha da cópia":"Enter the backup password",
+"Crie uma senha pra proteger o arquivo. Se preferir, deixe em branco e confirme — a cópia é salva sem senha (mais simples, mas qualquer pessoa com o arquivo consegue ler suas chaves).":"Create a password to protect the file. If you'd rather not, leave it blank and confirm — the backup is saved without a password (simpler, but anyone with the file can read your keys).",
+"Digite a senha que você criou quando baixou essa cópia.":"Enter the password you created when you downloaded this backup.",
 "Senha (opcional)":"Password (optional)","Senha":"Password","Deixar em branco = salvar sem senha.":"Leave blank = save without a password.",
-"💾 Backup baixado sem senha — qualquer pessoa com o arquivo pode ler suas chaves.":"💾 Backup downloaded without a password — anyone with the file can read your keys.",
+"💾 Cópia das chaves baixada sem senha — qualquer pessoa com o arquivo pode ler suas chaves.":"💾 Backup downloaded without a password — anyone with the file can read your keys.",
 "📲 Transferir para outro aparelho":"📲 Transfer to another device","QR ou link com todas as suas chaves — senha obrigatória.":"QR or link with all your keys — password required.",
 "Transferir chaves de API":"Transfer API keys","Passe suas chaves pro outro aparelho: QR pra quem está perto, link pra quem está longe.":"Move your keys to another device: QR for someone nearby, link for someone far away.",
 "Senha para proteger as chaves":"Password to protect the keys","ℹ️ Digite uma senha para proteger o link":"ℹ️ Enter a password to protect the link",
@@ -10106,7 +10235,7 @@ let I18N_EN={
 "Consulta":"Consultation","Reunião":"Meeting","Entrevista":"Interview","Livre":"Free",
 "Tipo de sessão":"Session type",
 "Claro":"Light","Escuro":"Dark","Testar conexão":"Test connection","Atualizar lista":"Refresh list",
-"Liberar + Resetar":"Release + Reset","Baixar backup das notas antes":"Download notes backup first","Aplicar sugestão":"Apply suggestion",
+"Liberar + Resetar":"Release + Reset","Baixar a cópia das notas antes":"Download notes backup first","Aplicar sugestão":"Apply suggestion",
 "extrair":"extract","falar":"speak","Revisão":"Review","Perguntar à IA sobre as repetições":"Ask AI about the repetitions",
 "Pastas arquivadas":"Archived folders","Pastas na lixeira":"Folders in the trash",
 "Apagar pasta":"Delete folder","a pasta":"the folder",
@@ -12159,8 +12288,8 @@ function _bkpPintar(){
     // traduzidas — compor com elas custa zero string nova e garante que os
     // dois lugares nunca contem histórias diferentes.
     agora.textContent=ultimo
-      ?t('{n} notas novas desde o último backup').replace('{n}',_contarNotas(ultimo))+
-        ' · '+t('Faz {n} dias desde o seu último backup').replace('{n}',Math.floor(_voxDiasDesde(ultimo)))
+      ?(_contarNotas(ultimo)===1?t('1 nota nova desde a última cópia'):t('{n} notas novas desde a última cópia').replace('{n}',_contarNotas(ultimo)))+
+        ' · '+t('Faz {n} dias desde a sua última cópia').replace('{n}',Math.floor(_voxDiasDesde(ultimo)))
       :t('Você ainda não tem nenhuma cópia do seu Vox');
   }
 }
@@ -12224,10 +12353,10 @@ function _voxDiasDesde(iso){
 }
 const VOX_LEMBRETE_TXT={
   tempo:(dias,notas)=>({ic:'relogioAviso',
-    t:t('Faz {n} dias desde o seu último backup').replace('{n}',Math.floor(dias)),
+    t:t('Faz {n} dias desde a sua última cópia').replace('{n}',Math.floor(dias)),
     p:notas>0?t('Foram {n} notas novas desde então. Um arquivo agora leva tudo.').replace('{n}',notas):t('Um arquivo agora leva tudo.')}),
   volume:(dias,notas)=>({ic:'alerta',
-    t:t('{n} notas novas desde o último backup').replace('{n}',notas),
+    t:t('{n} notas novas desde a última cópia').replace('{n}',notas),
     p:t('Foi há {n} dias. Você andou gravando bastante — vale guardar uma cópia.').replace('{n}',Math.floor(dias))}),
   primeiro:()=>({ic:'escudo',
     t:t('Você ainda não tem nenhuma cópia do seu Vox'),
@@ -12328,6 +12457,7 @@ function _bkpMirarEnquantoAssenta(){
 async function _voxLembreteConfigurar(){
   openModal();
   cfgTab('Geral');
+  _plAba('guardar');
   // Espera o painel PARAR DE CRESCER antes de mirar. O medidor de espaço e o
   // estado da pasta chegam por promessa e empurram a seção pra baixo — rolar
   // antes disso é mirar num lugar que ainda vai se mexer. Chamar as duas de
@@ -12982,7 +13112,7 @@ function renderFolders(){
     });
     html+=`<div class="folder-dl-hint">
       <p>${t('Isso aqui baixa só o texto, pra ler. Quer levar tudo — pastas, cards e etiquetas — pra continuar depois em outro lugar?')}</p>
-      <button type="button" class="folder-dl-hint-link" onclick="exportProject()">${t('Salvar backup completo')}</button>
+      <button type="button" class="folder-dl-hint-link" onclick="exportProject()">${t('Salvar uma cópia completa')}</button>
     </div>
     <div class="folder-dl-footer">
       <button class="folder-dl-confirm" onclick="downloadSelectedFolders()">↓ ${t('Baixar')} (${folderDlSel.size})</button>
@@ -19615,7 +19745,7 @@ function _calAbrirNotaSubmenu(card,fita,px,py){
     {ic:ICO.orbit,rot:t('Ver em Órbita'),fn:()=>irPara(abrirOrbital)},
     {ic:ICO.flowchart,rot:t('Ver em Fluxograma'),fn:()=>irPara(abrirFluxograma)},
     {ic:ICO.export,rot:t('Exportar pasta'),fn:()=>exportFolder(fid)},
-    {ic:ICO.mundo,rot:t('Transferir pra outro mundo…'),fn:()=>{fecharCalendario();_mundoIniciarTransferencia(fid)}},
+    {ic:ICO.mundo,rot:t('Mover pra outro mundo…'),fn:()=>{fecharCalendario();_mundoIniciarTransferencia(fid)}},
     {ic:ICO.checkSquare,rot:t('Escolher o que transferir…'),fn:()=>{fecharCalendario();_mundoAbrirSeletor(fid)}}
   ];
   _mapaAbrirMenu(px,py,_calNomeDoCard(card),itens);
@@ -21218,7 +21348,7 @@ function folderMenu(id,ev){
     <button onclick="renameFolder('${escJs(id)}')"><span class="svgi">${ICO.pen}</span> ${t('Renomear')}</button>
     <button onclick="abrirSalaEnvio('${escJs(id)}')">${ICO.qr}${t('Transferir (QR / link)')}</button>
     <button onclick="exportFolder('${escJs(id)}')"><span class="svgi">${ICO.export}</span> ${t('Exportar pasta')}</button>
-    <button onclick="closeFolderMenu();_mundoIniciarTransferencia('${escJs(id)}')"><span class="svgi">${ICO.mundo}</span> ${t('Transferir pra outro mundo…')}</button>
+    <button onclick="closeFolderMenu();_mundoIniciarTransferencia('${escJs(id)}')"><span class="svgi">${ICO.mundo}</span> ${t('Mover pra outro mundo…')}</button>
     <button onclick="closeFolderMenu();_mundoAbrirSeletor('${escJs(id)}')"><span class="svgi">${ICO.checkSquare}</span> ${t('Escolher o que transferir…')}</button>
     <button onclick="clearFolder('${escJs(id)}')">${ICO.eraser}${t('Limpar pasta')}</button>
     <button onclick="arquivarPasta('${escJs(id)}')"><span class="svgi">${ICO.archive}</span> ${t('Arquivar pasta')}</button>
@@ -22912,8 +23042,8 @@ function _hdmAlerta(){
       if(!ultimo){if(_contarNotas()>=3)txt=t('Você ainda não tem nenhuma cópia do seu Vox')}
       else{
         const dias=_voxDiasDesde(ultimo),novas=_contarNotas(ultimo);
-        if(c.dias&&dias>=c.dias)txt=t('Faz {n} dias desde o seu último backup').replace('{n}',Math.floor(dias));
-        else if(c.notas&&novas>=c.notas)txt=t('{n} notas novas desde o último backup').replace('{n}',novas);
+        if(c.dias&&dias>=c.dias)txt=t('Faz {n} dias desde a sua última cópia').replace('{n}',Math.floor(dias));
+        else if(c.notas&&novas>=c.notas)txt=t('{n} notas novas desde a última cópia').replace('{n}',novas);
       }
     }
   }catch(e){}
@@ -23170,7 +23300,7 @@ function cfgTab(name){
     document.getElementById('cfgTabBtn'+n).classList.toggle('on',n===name);
   });
   if(name==='Text')_updateTxtAIPresetGrok();
-  if(name==='Geral')_syncPularPortaCheckboxGeral();
+  if(name==='Geral'){_syncPularPortaCheckboxGeral();_plPintar()}
 }
 // Carlos (28/09/2026): quem entra nas avançadas pelo botão, ou já pula a porta
 // simples, cai primeiro na Geral — é onde moram chaves, cópias e espaço, que
@@ -23266,7 +23396,7 @@ function renderPortaEntrada(){
   h+='<div class="cse-av">'+
     '<button type="button" class="cse-av-bt" onclick="abrirConfigAvancadas()"><span class="svgi" aria-hidden="true">'+ICO.gear+'</span>'+
     '<span style="flex:1;min-width:0"><span class="cse-av-t">'+t('Configurações avançadas')+'</span>'+
-    '<span class="cse-av-d">'+t('Trocar de serviço, modelo, backup e espaço')+'</span></span>'+
+    '<span class="cse-av-d">'+t('Cópias de segurança, chaves, serviços e espaço')+'</span></span>'+
     '<span class="svgi" aria-hidden="true">'+ICO.chevronRight+'</span></button>';
   if(temChave){
     const sempre=localStorage.getItem('vox_pular_porta_simples')==='1';
@@ -24137,6 +24267,7 @@ function openModal(){
   if(cfg.provider==='local'){updateLocalPanel();checkLocalStatusNow()}
   _pastaBackupInit(); // Etapa 3 do plano de armazenamento durável
   _bkpInit();         // cópias de segurança reguláveis (14/09/2026)
+  _plAbrir();         // Proteger e levar (Fase 2, 29/09/2026)
   // Plano 22 (08/09/2026): decide, a cada abertura, entre a porta simples e as
   // quatro abas de sempre. Quem já ligou "abrir sempre nas avançadas" pula a
   // porta direto — quem chama cfgTab()/openModalToDiar() logo em seguida também
@@ -24257,6 +24388,7 @@ async function saveKeysToCredentialVault(){
   try{
     const cred=new PasswordCredential({id:'vox-api-keys',password:JSON.stringify(payload),name:'Vox · My Transcriber — API keys'});
     await navigator.credentials.store(cred);
+    _plMarcar('vox_keys_vault');_plPintar();
     return true;
   }catch(e){return false}
 }
@@ -24274,7 +24406,7 @@ async function restoreKeysFromCredentialVault(silentOnly){
 
 async function manualRestoreFromVault(){
   const ok=await restoreKeysFromCredentialVault(false);
-  if(ok){loadCfg();toast(t('🔒 Chaves restauradas do cofre do navegador!'))}
+  if(ok){loadCfg();_plMarcar('vox_keys_vault');_plAnimar=true;_plPintar();toast(t('🔒 Chaves restauradas do cofre do navegador!'))}
   else toast(t('ℹ️ Nenhuma chave encontrada no cofre do navegador'),true);
 }
 
@@ -24318,10 +24450,10 @@ function _askBackupPassword(mode){
   return new Promise(resolve=>{
     _backupPassResolve=resolve;
     const isCreate=mode==='create';
-    document.getElementById('keysPassTitle').textContent=isCreate?t('Proteger o backup'):t('Digite a senha do backup');
+    document.getElementById('keysPassTitle').textContent=isCreate?t('Proteger a cópia das chaves'):t('Digite a senha da cópia');
     document.getElementById('keysPassHint').textContent=isCreate
-      ?t('Crie uma senha pra proteger o arquivo. Se preferir, deixe em branco e confirme — o backup é salvo sem senha (mais simples, mas qualquer pessoa com o arquivo consegue ler suas chaves).')
-      :t('Digite a senha que você criou quando baixou esse backup.');
+      ?t('Crie uma senha pra proteger o arquivo. Se preferir, deixe em branco e confirme — a cópia é salva sem senha (mais simples, mas qualquer pessoa com o arquivo consegue ler suas chaves).')
+      :t('Digite a senha que você criou quando baixou essa cópia.');
     const inp=document.getElementById('keysPassInput');
     inp.value='';inp.autocomplete=isCreate?'new-password':'current-password';
     inp.placeholder=isCreate?t('Senha (opcional)'):t('Senha');
@@ -24350,31 +24482,33 @@ async function exportKeysBackup(){
   let out;
   if(res.pass){
     const enc=await _txEncrypt(u8,res.pass);
-    out={app:'vox-keys',v:2,enc:true,data:_b64uEnc(enc)};
+    out={app:'vox-keys',v:2,enc:true,em:new Date().toISOString(),data:_b64uEnc(enc)};
   }else{
-    out={app:'vox-keys',v:2,enc:false,data:_b64uEnc(u8)};
+    out={app:'vox-keys',v:2,enc:false,em:new Date().toISOString(),data:_b64uEnc(u8)};
   }
   dl(JSON.stringify(out,null,2),'vox_chaves_backup.json');
-  toast(res.pass?t('🔑 Backup baixado! Guarde num lugar seguro (Google Drive, iCloud, e-mail…)'):t('💾 Backup baixado sem senha — qualquer pessoa com o arquivo pode ler suas chaves.'));
+  _plMarcar('vox_keys_file',{enc:!!res.pass});
+  toast(res.pass?t('🔑 Cópia das chaves baixada! Guarde num lugar seguro (Google Drive, iCloud, e-mail…)'):t('💾 Cópia das chaves baixada sem senha — qualquer pessoa com o arquivo pode ler suas chaves.'));
+  return true;
 }
 function triggerImportKeysBackup(){document.getElementById('keysBackupInput').click()}
 async function importKeysBackup(e){
   const file=e.target.files[0];e.target.value='';
   if(!file)return;
   const texto=await file.text();
-  if(!texto.trim()){toast(t('Este arquivo está vazio (0 KB). Ele não guardou nada — gere o backup de novo.'),true);return}
+  if(!texto.trim()){toast(t('Este arquivo está vazio (0 KB). Ele não guardou nada — gere a cópia de novo.'),true);return}
   let obj;try{obj=JSON.parse(texto)}catch(err){toast(t('❌ Arquivo inválido'),true);return}
   // Escolheu o arquivo das NOTAS neste botao (que e o das chaves): em vez de errar sem saida,
   // manda pro lugar certo. O contrario esta em _importFile.
   if(obj&&(Array.isArray(obj.history)||obj.app==='vox-pasta')){
-    toast(t('Este é o backup das suas notas — restaurando as notas.'));
+    toast(t('Esta é a cópia das suas notas — restaurando as notas.'));
     if(obj.app==='vox-pasta')_txpArquivoRecebido(obj);else _restoreProject(obj);
     return;
   }
   return _restaurarChavesDoObjeto(obj);
 }
 async function _restaurarChavesDoObjeto(obj){
-  if(!obj||obj.app!=='vox-keys'||!obj.data){toast(t('❌ Este não é um backup de chaves do Vox'),true);return}
+  if(!obj||obj.app!=='vox-keys'||!obj.data){toast(t('❌ Este arquivo não é a cópia das chaves do Vox'),true);return}
   let payloadBytes;
   if(obj.enc===false){
     payloadBytes=_b64uDec(obj.data);
@@ -24387,8 +24521,108 @@ async function _restaurarChavesDoObjeto(obj){
   }
   try{
     _applyKeysPayload(JSON.parse(new TextDecoder().decode(payloadBytes)));
-    toast(t('✅ Chaves restauradas do backup!'));
+    // As chaves daqui agora são as do arquivo — então esse arquivo vale. A data
+    // é a que ele traz (arquivos antigos não trazem: fica "o que você restaurou").
+    _plMarcar('vox_keys_file',{enc:obj.enc!==false,em:obj.em||null});_plAnimar=true;_plPintar();
+    toast(t('✅ Chaves restauradas da cópia!'));
   }catch(err){toast(t('❌ Arquivo corrompido'),true)}
+}
+
+// ── PROTEGER E LEVAR (Central de Ajustes, Fase 2 — 29/09/2026) ──
+// Um lugar só pra cópia das notas, cópia das chaves e outro aparelho. Salvar
+// é o exportProject + exportKeysBackup de sempre; restaurar é o mesmo
+// roteador do soltar arquivo (_importFile), que já sabia separar notas, pasta
+// e chaves; enviar e receber são os painéis que já existiam. Novo é só o
+// registro de quando cada cópia das chaves foi feita (vox_keys_file e
+// vox_keys_vault, fora do desvio por mundo, porque as chaves são do app todo)
+// e a impressão delas, pra saber se o arquivo ainda vale ou ficou velho.
+var _plAbaAtual='guardar',_plComChavesTocado=false,_plRecem=false,_plAnimar=false;
+// Impressão das chaves (djb2): muda quando qualquer chave muda. Não guarda
+// chave nenhuma, e nem precisaria esconder — elas já moram neste aparelho.
+function _plDigital(){
+  const s=_KEY_SECRET_FIELDS.map(k=>(cfg[k]||'').trim()).join('|')+'|'+JSON.stringify(cfg.txtKeys||{});
+  let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
+  return(h>>>0).toString(36);
+}
+function _plLer(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
+function _plMarcar(k,extra){try{localStorage.setItem(k,JSON.stringify(Object.assign({em:new Date().toISOString(),dig:_plDigital()},extra||{})))}catch(e){}}
+function _plData(iso){try{return new Date(iso).toLocaleDateString(getLocale(),{day:'2-digit',month:'2-digit'})}catch(e){return''}}
+// Dias de calendário, não de 24h: a cópia de ontem às 23h é "ontem", não "hoje".
+function _plDiasCal(iso){const a=new Date(iso),b=new Date();a.setHours(0,0,0,0);b.setHours(0,0,0,0);return Math.round((b-a)/864e5)}
+function _plAbrir(){_plAbaAtual='guardar';_plComChavesTocado=false;_plRecem=false;_plPintar()}
+function _plAba(v,btn){
+  const mudou=v!==_plAbaAtual;_plAbaAtual=v;
+  _jzSegPos(document.getElementById('plTrilho'),v,!!btn);
+  if(btn&&mudou)_jzTato(8);
+  document.querySelectorAll('#plSecao .pl-painel').forEach(p=>{const on=p.dataset.p===v;p.hidden=!on;if(on&&btn&&mudou)_jz(p,'chega',260)});
+}
+function _plPintar(){
+  const $=id=>document.getElementById(id);
+  if(!$('plSecao'))return;
+  _plAba(_plAbaAtual);
+  // Guardar › o que vai na cópia
+  const n=_contarNotas(),vivos=_mundosLista().filter(m=>!m.del);
+  let s=n?(n===1?t('1 nota'):t('{n} notas').replace('{n}',n)):t('Nenhuma nota ainda');
+  if(vivos.length>1)s+=' · '+t('só do mundo "{m}"; cada mundo tem a sua cópia').replace('{m}',(_mundoAtual()||{}).nome||'');
+  $('plNotasInfo').textContent=s;
+  const tem=_keysHasAny(),dig=tem?_plDigital():'';
+  const arq=_plLer('vox_keys_file'),cof=_plLer('vox_keys_vault');
+  const arqVale=!!(tem&&arq&&arq.dig===dig);
+  $('plChavesLinha').hidden=!tem;
+  if(tem){
+    // Ligado sozinho quando falta o arquivo ou ele ficou velho; quando ainda
+    // vale, desligado — senão toda cópia das notas pediria uma senha à toa.
+    if(!_plComChavesTocado)$('plComChaves').checked=!arqVale;
+    $('plChavesInfo').textContent=!arq?t('Você ainda não tem o arquivo delas. Vai separado, com uma senha que você cria.')
+      :arqVale?(arq.em?t('O arquivo de {d} ainda vale. Ligue se quiser um novo.').replace('{d}',_plData(arq.em)):t('O arquivo que você restaurou ainda vale. Ligue se quiser um novo.'))
+      :t('Mudaram depois do último arquivo. Vai separado, com senha.');
+  }
+  const u=$('plUltima'),ult=localStorage.getItem('vox_last_backup');
+  if(_plRecem){
+    u.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 12 9 17 20 6"/></svg><span></span>';
+    u.lastChild.textContent=t('Cópia salva agora');_plRecem=false;
+  }else if(!ult)u.textContent=t('Você ainda não tem nenhuma cópia do seu Vox');
+  else{
+    const d=_plDiasCal(ult),nn=_contarNotas(ult);
+    let x=d<1?t('Última cópia: hoje'):d===1?t('Última cópia: ontem'):t('Última cópia: há {n} dias').replace('{n}',d);
+    if(nn)x+=' · '+(nn===1?t('1 nota nova desde então'):t('{n} notas novas desde então').replace('{n}',nn));
+    u.textContent=x;
+  }
+  // Guardar › onde as chaves estão
+  $('plOnde').hidden=!tem;
+  if(tem){
+    const luz=(id,c)=>{const el=$(id),era=el.classList.contains('ok');el.className='pl-luz'+(c?' '+c:'');if(c==='ok'&&!era&&_plAnimar)_jz(el,'acende',460)};
+    const q=_countExistingKeys();
+    $('plOndeNav').textContent=(q===1?t('1 chave'):t('{n} chaves').replace('{n}',q))+' · '+t('é daqui que o Vox usa');
+    if(!_credSupported()){luz('plLuzCofre','');$('plOndeCofre').textContent=t('Este navegador não tem um cofre que o Vox consiga usar.')}
+    else if(cof){luz('plLuzCofre','ok');$('plOndeCofre').textContent=t('O Vox atualiza sozinho a cada chave nova · última vez em {d}').replace('{d}',_plData(cof.em))}
+    else{luz('plLuzCofre','');$('plOndeCofre').textContent=t('O Vox atualiza sozinho quando uma chave muda.')}
+    if(!arq){luz('plLuzArq','aviso');$('plOndeArq').textContent=t('Ainda não baixado')}
+    else if(arqVale){luz('plLuzArq','ok');$('plOndeArq').textContent=arq.em?(arq.enc===false?t('Baixado em {d}, sem senha'):t('Baixado em {d}, com senha')).replace('{d}',_plData(arq.em)):t('O que você restaurou ainda vale')}
+    else{luz('plLuzArq','aviso');$('plOndeArq').textContent=arq.em?t('O de {d} ficou velho: suas chaves mudaram depois').replace('{d}',_plData(arq.em)):t('O que você restaurou ficou velho: suas chaves mudaram depois')}
+  }
+  // Restaurar e Outro aparelho
+  $('plCofreLinha').hidden=!_credSupported();
+  $('plEnviarChaves').disabled=!tem;
+  $('plEnviarChavesInfo').textContent=tem?t('Com uma senha que você cria. No outro aparelho, a mesma senha abre.'):t('Você ainda não tem chave pra mandar.');
+  _plAnimar=false;
+}
+async function _plSalvarCopia(){
+  const comChaves=_keysHasAny()&&document.getElementById('plComChaves').checked;
+  let notas=false,chaves=false;
+  // Sem nota e sem chave marcada, o exportProject é quem explica que não há o que salvar.
+  if(_contarNotas()||!comChaves)notas=!!(await exportProject());
+  if(comChaves)chaves=!!(await exportKeysBackup());
+  if(chaves)_plComChavesTocado=false;
+  _plRecem=notas;_plAnimar=notas||chaves;
+  _plPintar();
+  if(notas||chaves)_jzTato([8,40,12]);
+}
+async function _plSoChaves(){if(await exportKeysBackup()){_plComChavesTocado=false;_plAnimar=true;_plPintar();_jzTato([8,40,12])}}
+function _plRestaurar(e){
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(!/\.json$/i.test(f.name)){toast(t('Este arquivo não é uma cópia do Vox. A cópia termina em .json.'),true);return}
+  _importFile(f);
 }
 
 // ── VOX TRANSFER DE CHAVES — mesmo motor do Transfer de cards (#voxk=) ──
@@ -24539,7 +24773,7 @@ function abrirReceberTransferencia(){
   if(_txVoltarProProgresso())return;
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="closeTxOverlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Receber transferência')}</div>
+    <div class="tx-title"><span class="svgi">${ICO.receber}</span> ${t('Receber de outro aparelho')}</div>
     <div class="tx-sub">${t('Já gerou o QR, o link ou o arquivo em outro aparelho? Cole aqui, aponte a câmera, ou abra o arquivo.')}</div>
     <label class="tx-lock-row" style="margin:0 0 6px;cursor:default" for="txpRxColar">${t('Cole o link da transferência')}</label>
     <input type="text" class="tx-pass-input" id="txpRxColar" autocomplete="off" placeholder="https://…#vox=…" onkeydown="if(event.key==='Enter')txpReceberColado()">
@@ -26025,7 +26259,7 @@ async function _pastaBackupEscolher(){
     await idbSet('pasta_backup_handle',handle);
     _pastaBackupHandle=handle;
     _pastaBackupRenderEscolhida(handle.name,true);
-    toast(t('📁 Pasta de backup escolhida!'));
+    toast(t('📁 Pasta das cópias escolhida!'));
   }catch(e){} // cancelou o seletor — silencioso, não é erro
 }
 // Apara a pasta pros 5 arquivos de backup mais recentes — nome tem a data
@@ -26098,7 +26332,7 @@ async function exportProject(){
   };
   const json=JSON.stringify(data);
   dl(json,`vox_projeto_${new Date().toISOString().slice(0,10)}.json`);
-  toast(t('Backup salvo ({n} {itemword}). Guarde o arquivo .json num lugar seguro.').replace('{n}',history.length).replace('{itemword}',t(history.length===1?'nota':'notas')));
+  toast(t('Cópia de segurança salva ({n} {itemword}). Guarde o arquivo .json num lugar seguro.').replace('{n}',history.length).replace('{itemword}',t(history.length===1?'nota':'notas')));
   document.getElementById('expDrop')?.classList.remove('on');
   // Etapa 2 do plano de armazenamento durável: todo backup gerado com
   // sucesso (manual ou pelo lembrete) atualiza a data — é o que permite o
@@ -26107,6 +26341,7 @@ async function exportProject(){
   // Etapa 3: se existir uma pasta configurada com permissão concedida,
   // grava o MESMO json ali também — reaproveitando, não duplicando.
   _pastaBackupSalvarSeConfigurada(json);
+  return true;
 }
 function triggerImportProject(){document.getElementById('projInput').click()}
 function importProjectFile(e){
@@ -26125,13 +26360,14 @@ function _importFile(file){
     if(name.endsWith('.json')){
       // Arquivo de 0 KB: acontece quando o download do backup e interrompido. Dizer isso claramente
       // poupa a pessoa de achar que o app e que errou.
-      if(!String(content).trim()){toast(t('Este arquivo está vazio (0 KB). Ele não guardou nada — gere o backup de novo.'),true);return}
+      if(!String(content).trim()){toast(t('Este arquivo está vazio (0 KB). Ele não guardou nada — gere a cópia de novo.'),true);return}
+      let data;
+      try{data=JSON.parse(content)}catch(err){toast(t('Este arquivo não é uma cópia do Vox, ou chegou cortado no download.'),true);return}
       try{
-        const data=JSON.parse(content);
         if(data&&data.app==='vox-pasta'){_txpArquivoRecebido(data);return}
         // O backup das CHAVES tem outro caminho (pede senha). Em vez de errar, manda pro lugar certo.
-        if(data&&data.app==='vox-keys'){toast(t('Este é o backup das suas chaves — restaurando as chaves.'));_restaurarChavesDoObjeto(data);return}
-        if(!data||!Array.isArray(data.history))throw new Error(t('não é um backup do Vox'));
+        if(data&&data.app==='vox-keys'){toast(t('Esta é a cópia das suas chaves — restaurando as chaves.'));_restaurarChavesDoObjeto(data);return}
+        if(!data||!Array.isArray(data.history))throw new Error(t('não é uma cópia do Vox'));
         _restoreProject(data);
       }catch(err){toast(t('Não consegui abrir este arquivo:')+' '+err.message,true)}
     }else{
@@ -26148,7 +26384,7 @@ function _importFile(file){
 async function _restoreProject(data){
   // Restaurar centenas de notas trava a tela por dezenas de segundos (cada nota vira um card montado na hora).
   // Sem este aviso a pessoa acha que quebrou e fecha a aba no meio. O toast pinta antes do laco comecar.
-  if((data.history||[]).length>60){toast(t('Restaurando o backup… com muitas notas pode levar cerca de um minuto. Não feche esta aba.'));await new Promise(r=>setTimeout(r,80))}
+  if((data.history||[]).length>60){toast(t('Restaurando a cópia… com muitas notas pode levar cerca de um minuto. Não feche esta aba.'));await new Promise(r=>setTimeout(r,80))}
   const existing=new Set([...document.querySelectorAll('.card:not(.proc-card)')].map(c=>{
     const txt=c.querySelector('textarea')?.value||'';return (c.dataset.dt||'')+'|'+txt.slice(0,60);
   }));
@@ -26209,11 +26445,11 @@ async function _restoreProject(data){
   applyFolderFilter&&applyFolderFilter();
   document.getElementById('expDrop')?.classList.remove('on');
   if(typeof closeTxOverlay==='function')closeTxOverlay();
-  if(added)toast(t('Backup restaurado: {n} {itemword}{skipmsg}').replace('{n}',added).replace('{itemword}',t(added===1?'nota adicionada':'notas adicionadas')).replace('{skipmsg}',skipped?t(' ({n} já existiam)').replace('{n}',skipped):''));
-  else toast(t('ℹ️ Tudo desse backup já estava aqui — nada novo a adicionar'));
+  if(added)toast(t('Cópia restaurada: {n} {itemword}{skipmsg}').replace('{n}',added).replace('{itemword}',t(added===1?'nota adicionada':'notas adicionadas')).replace('{skipmsg}',skipped?t(' ({n} já existiam)').replace('{n}',skipped):''));
+  else toast(t('ℹ️ Tudo dessa cópia já estava aqui — nada novo a adicionar'));
   // O arquivo das notas nao leva as chaves de API (elas tem arquivo proprio). Quem restaura num
   // endereco novo fica sem chave e sem saber por que; avisa depois do resultado principal.
-  if(added&&!_keysHasAny())setTimeout(()=>toast(t('As chaves de API não vêm no backup das notas. Restaure o arquivo de chaves em Configurações, na aba Geral.')),3600);
+  if(added&&!_keysHasAny())setTimeout(()=>toast(t('As chaves não vêm na cópia das notas. Restaure a cópia das chaves em Configurações › Geral › Proteger e levar.')),3600);
 }
 
 // ── TAGS ──
@@ -27323,10 +27559,10 @@ function _showAudioDrop(on,tipo){
   ibar.classList.toggle('file-drag',!!on);
   if(on&&!stagedFile){
     const textos={
-      audio:{ico:'📎',nome:t('Solte o áudio aqui'),meta:t('O Vox vai preparar a transcrição'),hint:t('Também aceita vídeo, texto (.txt/.md) ou um backup (.json).')},
-      json:{ico:'📂',nome:t('Solte o backup aqui'),meta:t('Soma ao que você já tem — nada é apagado'),hint:t('Também aceita áudio, vídeo ou texto (.txt/.md).')},
-      texto:{ico:'📄',nome:t('Solte o texto aqui'),meta:t('Vira um card novo'),hint:t('Também aceita áudio, vídeo ou um backup (.json).')},
-      generico:{ico:'📎',nome:t('Solte o arquivo aqui'),meta:t('Áudio, vídeo, texto ou backup (.json)'),hint:t('O Vox reconhece o tipo assim que soltar.')}
+      audio:{ico:'📎',nome:t('Solte o áudio aqui'),meta:t('O Vox vai preparar a transcrição'),hint:t('Também aceita vídeo, texto (.txt/.md) ou uma cópia de segurança (.json).')},
+      json:{ico:'📂',nome:t('Solte a cópia aqui'),meta:t('Soma ao que você já tem — nada é apagado'),hint:t('Também aceita áudio, vídeo ou texto (.txt/.md).')},
+      texto:{ico:'📄',nome:t('Solte o texto aqui'),meta:t('Vira um card novo'),hint:t('Também aceita áudio, vídeo ou uma cópia de segurança (.json).')},
+      generico:{ico:'📎',nome:t('Solte o arquivo aqui'),meta:t('Áudio, vídeo, texto ou cópia de segurança (.json)'),hint:t('O Vox reconhece o tipo assim que soltar.')}
     };
     const s=textos[tipo]||textos.generico;
     document.getElementById('fsIco').textContent=s.ico;
@@ -27362,7 +27598,7 @@ function initAudioDropzone(){
       return;
     }
     if(_isImportableFile(f)){_importFile(f);return}
-    toast(t('⚠️ Solte um arquivo de áudio, vídeo, texto ou backup (.json).'),true);
+    toast(t('⚠️ Solte um arquivo de áudio, vídeo, texto ou uma cópia de segurança (.json).'),true);
   });
 }
 function stageFile(f){
@@ -31367,7 +31603,7 @@ function abrirAjudaTransferir(origem){
   ov.innerHTML=`<div class="tx-modal"><button class="tx-close" onclick="fecharAjudaTransferir()">${ICO.close}</button>
     <div class="tx-title"><span class="lens-ico">${ICO.qr}</span>${t('Passar o bastão sem passar por ninguém')}</div>
     <p class="txp-help-p">${t('Seu texto vira um QR code — ou um link. A outra pessoa aponta a câmera, ou toca no link, e o material entra no Vox dela como cópia própria, pronta pra continuar.')}</p>
-    <p class="txp-help-p">${t('Do outro lado já tem o Vox aberto? Vale mais colar o link (ou ler o QR) ali dentro — Mais (⋯) → Receber transferência — do que tocar no link, que abriria mais uma aba à toa.')}</p>
+    <p class="txp-help-p">${t('Do outro lado já tem o Vox aberto? Vale mais colar o link (ou ler o QR) ali dentro — Mais (⋯) → Receber de outro aparelho — do que tocar no link, que abriria mais uma aba à toa.')}</p>
     <p class="txp-help-p">${t('O texto viaja <strong>dentro do link</strong>, não num servidor: ninguém no meio do caminho vê o conteúdo, nem nós. E com o cadeado ligado, só abre quem souber a senha combinada.')}</p>
     <div class="section-title" style="margin-top:22px;margin-bottom:12px">${t('Três coisas que isso destrava')}</div>
     <div class="bhelp-item"><span class="bhelp-dot"></span><div>
