@@ -8448,7 +8448,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.29.7';
+const VOX_VERSION='2026.09.29.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10795,7 +10795,8 @@ let I18N_EN={
 "No plano grátis, 1 diarização por mês vai inteira. Deste arquivo, separo as vozes dos primeiros 20 minutos; o resto vira texto comum, noutra nota.":"On the free plan, 1 speaker-separated session a month goes in full. For this file, I'll separate the voices in the first 20 minutes; the rest becomes plain text, in another note.",
 "No plano grátis, a primeira diarização do mês vai inteira; nas seguintes, as vozes são separadas nos primeiros 20 minutos e o resto vira texto comum. O Pro separa as vozes do arquivo inteiro.":"On the free plan, the first speaker-separated session of the month goes in full; after that, voices are separated for the first 20 minutes and the rest becomes plain text. Pro separates voices across the whole file.",
 "Continuação, a partir dos 20 minutos, sem separar as vozes (plano grátis: 1 diarização inteira por mês).":"Continued, from minute 20 on, without separating voices (free plan: 1 full speaker-separated session a month).",
-"Não deu para transcrever o resto do arquivo. As vozes dos primeiros 20 minutos estão na nota.":"Couldn't transcribe the rest of the file. The voices from the first 20 minutes are in the note."
+"Não deu para transcrever o resto do arquivo. As vozes dos primeiros 20 minutos estão na nota.":"Couldn't transcribe the rest of the file. The voices from the first 20 minutes are in the note.",
+"Até 6 aparelhos na mesma assinatura":"Up to 6 devices on the same subscription"
 };
 
 // ── STATE ──
@@ -11599,7 +11600,10 @@ async function _primeiroPasso(){
 // aceito (doc 06): quem paga, paga porque quer apoiar e ter o que é seu.
 const FS_PRODUTO='37066';
 const FS_API='https://api.freemius.com/v1/products/'+FS_PRODUTO;
-const VOX_CHECKOUT='https://checkout.freemius.com/app/37066/plan/65930/';
+// multisite_discount=false: sem isto o Freemius mostra um "preço cheio" de
+// US$ 432 riscado (6 × 12 meses × 6 aparelhos) e um "desconto de 68%" — preço
+// que nunca existiu. O desconto anual continua: ele é real (US$ 72 contra 59).
+const VOX_CHECKOUT='https://checkout.freemius.com/app/37066/plan/65930/?multisite_discount=false';
 const _PRO_FOLGA_DIAS=7; // depois do vencimento, espera a renovação chegar antes de voltar pro grátis
 function _licenca(){try{return JSON.parse(localStorage.getItem('vox_licenca')||'null')}catch(e){return null}}
 function _licencaSalvar(l){
@@ -11690,7 +11694,7 @@ function _proAtualizarMenu(){
   const s=document.getElementById('proMenuSub');
   if(s)s.textContent=voxPro()?t('Pro ativo neste aparelho'):t('Seu plano: grátis · veja o que o Pro libera');
 }
-const _PRO_LIBERA=['Gravação sem limite diário, que nunca encolhe','Arquivos quantos quiser, sempre inteiros','Diarização sem limite no mês','Pastas e subpastas sem teto','Quantos mundos trancados com senha quiser','Seleção em massa sem limite','Exportar o calendário pro Google ou Apple (.ics)'];
+const _PRO_LIBERA=['Até 6 aparelhos na mesma assinatura','Gravação sem limite diário, que nunca encolhe','Arquivos quantos quiser, sempre inteiros','Diarização sem limite no mês','Pastas e subpastas sem teto','Quantos mundos trancados com senha quiser','Seleção em massa sem limite','Exportar o calendário pro Google ou Apple (.ics)'];
 function abrirVoxPro(contexto){_proRender(contexto||'');document.getElementById('proOverlay').style.display='flex'}
 function fecharVoxPro(){document.getElementById('proOverlay').style.display='none'}
 function _proRender(contexto,aviso,avisoErro){
