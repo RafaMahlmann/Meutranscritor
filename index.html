@@ -5772,6 +5772,41 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .maint-foot a:hover{color:var(--accent)}
 .preset-use-btn{background:none;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition);white-space:nowrap;flex-shrink:0}
 .preset-use-btn:hover{background:var(--accent-glow)}
+/* Carimbo (28/09/2026): o salvamento automático passa a avisar, no lugar
+   onde mexeu. Check de 12px ao lado do rótulo, some em 1,4s. Não aparece em
+   chave (lá o Acende é o recibo), nem em interruptor ou cartão. */
+.jz-carimbo{display:inline-flex;align-items:center;gap:4px;margin-left:8px;vertical-align:1px;font:600 11px/1 var(--font);color:var(--text3);letter-spacing:0;text-transform:none;opacity:0;transition:opacity 400ms linear;pointer-events:none}
+.jz-carimbo.on{opacity:1;transition-duration:120ms}
+.jz-carimbo svg,.jz-ok svg{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.jz-carimbo svg{width:12px;height:12px;stroke:var(--ok-txt);stroke-width:2.6}
+.jz-carimbo polyline,.jz-ok polyline{stroke-dasharray:24}
+.jz-carimbo.on polyline{animation:jzTraca 220ms var(--fc-curva) 60ms both}
+@keyframes jzTraca{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+/* Acende: a chave colada é conferida com o serviço. O check é o mesmo do
+   Carimbo, maior, e fica. Espera honesta: o aro só aparece depois de 400ms,
+   e erro de rede não pinta de vermelho. */
+#overlay .key-eye-wrap input{padding-right:66px!important} /* os campos trazem padding-right:38px inline; o check precisa de espaço antes do olho */
+.key-eye-wrap .jz-ok{position:absolute;right:40px;top:50%;margin-top:-11px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--ok-bg);color:var(--ok-txt);pointer-events:none}
+.key-eye-wrap .jz-ok[hidden]{display:none}
+.jz-ok svg{width:13px;height:13px;stroke:currentColor;stroke-width:2.8}
+.jz-ok.nasce{animation:seloAcende 420ms cubic-bezier(.2,1.28,.36,1) both}
+.jz-ok.nasce polyline{animation:jzTraca 280ms var(--fc-curva) 90ms both}
+.key-eye-wrap[data-e="conferindo"]{box-shadow:0 0 0 1.5px var(--accent)}
+.key-eye-wrap[data-e="aceita"]{box-shadow:0 0 0 1.5px var(--ok-txt)}
+.key-eye-wrap[data-e="recusada"]{box-shadow:0 0 0 1.5px var(--danger)}
+.key-eye-wrap.nega{animation:flLimite 240ms var(--fc-curva)}
+.jz-conf{min-height:0;margin-top:5px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font:600 11.5px/1.4 var(--font);color:var(--text3)}
+.jz-conf[data-e=""]{display:none}
+.jz-conf[data-e="aceita"]{color:var(--ok-txt)}
+.jz-conf[data-e="recusada"]{color:var(--danger)}
+.jz-conf .aro{width:12px;height:12px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--accent);flex:none;display:none;animation:jzGiro .8s linear infinite}
+.jz-conf.demora .aro{display:block}
+@keyframes jzGiro{to{transform:rotate(360deg)}}
+.jz-conf button{border:0;background:none;padding:0;font:700 11.5px var(--font);color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+@media(prefers-reduced-motion:reduce){
+  .jz-carimbo.on polyline,.jz-ok.nasce,.jz-ok.nasce polyline,.key-eye-wrap.nega{animation:none}
+  .jz-conf .aro{animation-duration:1.6s}
+}
 .preset-em-uso{flex-shrink:0;align-self:center;font-size:12px;font-weight:700;color:var(--ok-txt);background:var(--ok-bg);border-radius:10px;padding:6px 12px;white-space:nowrap}
 .mf{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
 .btn-save{background:var(--accent);color:white;border:none;border-radius:12px;padding:10px 22px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all var(--transition)}
@@ -8310,7 +8345,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.09.29.1';
+const VOX_VERSION='2026.09.29.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9051,6 +9086,23 @@ function applyStaticI18n(){
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
 // ── Configurações avançadas, Fase A (28/09/2026) ──
+"salvo":"saved",
+"salvo — aqui tudo salva sozinho":"saved — everything here saves by itself",
+"Isso parece uma chave de outro serviço: {q}.":"That looks like a key from another service: {q}.",
+"Mover para {q}":"Move it to {q}",
+"Essa chave parece incompleta. Copie de novo, inteira.":"That key looks incomplete. Copy it again, in full.",
+"Chave salva. {p} não deixa conferir daqui; o Vox confere na primeira gravação.":"Key saved. {p} doesn't allow checking from here; Vox checks it on the first recording.",
+"Salva. Conferindo com {p}…":"Saved. Checking with {p}…",
+"{p} está demorando pra responder…":"{p} is taking a while to answer…",
+"Chave aceita ({p})":"Key accepted ({p})",
+"Chave aceita ({p}). O serviço pediu uma pausa de alguns segundos.":"Key accepted ({p}). The service asked for a few seconds' pause.",
+"{p} não aceitou essa chave. Confira se copiou inteira.":"{p} didn't accept that key. Check that you copied all of it.",
+"Não deu pra conferir agora. A chave ficou salva e o Vox confere de novo quando for usar.":"Couldn't check it right now. The key is saved and Vox will check again when it's used.",
+"tentar de novo":"try again",
+"Conferindo a chave…":"Checking the key…",
+"{p} não aceitou a chave.":"{p} didn't accept the key.",
+"Chave aceita. Perguntando ao modelo {m}…":"Key accepted. Asking the model {m}…",
+"Chave aceita e o modelo {m} respondeu. Está funcionando.":"Key accepted and the model {m} answered. It's working.",
 "Dar nome a quem fala":"Name the speakers",
 "A IA de texto que já funciona":"The text AI that already works",
 "Groq (grátis)":"Groq (free)",
@@ -11915,6 +11967,7 @@ function _bkpCfg(){
 function _bkpSalvar(mudanca){
   const c=Object.assign(_bkpCfg(),mudanca||{});
   localStorage.setItem('vox_bkp_cfg',JSON.stringify(c));
+  _jzGravou=1;
   // Mantém a chave antiga em sincronia: nada mais lê ela aqui, mas os mesmos
   // dados podem ser abertos por uma versão atrasada do app em outro aparelho.
   if(c.ligado)localStorage.removeItem('vox_lembrete_backup_off');
@@ -12212,6 +12265,28 @@ document.addEventListener('DOMContentLoaded',async()=>{
       _hdMoreFechar();document.getElementById('btnHdMore')?.focus();
     }
   });
+  // Carimbo: captura zera a marca, o handler do campo grava e marca, a bolha lê.
+  (function(){
+    const ov=document.getElementById('overlay');if(!ov)return;
+    const era=new WeakMap();let tm=0,pend=null;
+    const ok=e=>e.target.matches&&e.target.matches('select,input[type=text]')&&!e.target.closest('.key-eye-wrap');
+    const firma=el=>{if(el.value!==era.get(el)){era.set(el,el.value);_jzCarimbo(el)}};
+    ov.addEventListener('focusin',e=>{if(ok(e))era.set(e.target,e.target.value)});
+    ['input','change'].forEach(ev=>ov.addEventListener(ev,()=>{_jzGravou=0},true));
+    ov.addEventListener('change',e=>{if(ok(e)&&e.target.tagName==='SELECT'&&_jzGravou)firma(e.target)});
+    ov.addEventListener('input',e=>{if(!ok(e)||e.target.tagName==='SELECT'||!_jzGravou)return;pend=e.target;clearTimeout(tm);tm=setTimeout(()=>{if(pend){firma(pend);pend=null}},700)});
+    ov.addEventListener('focusout',e=>{if(pend===e.target){clearTimeout(tm);firma(pend);pend=null}});
+    // Acende: confere ao colar, ao sair do campo, ou depois de 800ms parado com
+    // o formato certo. Digitar apaga o estado velho.
+    ov.addEventListener('input',e=>{
+      const c=e.target;if(!_CAMPO_PROV[c.id])return;
+      clearTimeout(c._ct);
+      if(c.closest('.key-eye-wrap')?.dataset.e)_jzConfPinta(c,'','');
+      if(e.inputType==='insertFromPaste'||e.inputType==='insertReplacementText'){_jzConfere(c);return}
+      c._ct=setTimeout(()=>{if(_chaveCompleta(_CAMPO_PROV[c.id],c.value))_jzConfere(c)},800);
+    });
+    ov.addEventListener('focusout',e=>{const c=e.target;if(_CAMPO_PROV[c.id]&&c.value.trim()){clearTimeout(c._ct);_jzConfere(c)}});
+  })();
   // Encaixe: interruptor que muda de estado dá um toque curto (Android)
   document.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('.toggle-sw'))_jzTato(8)},true);
   // FASE 1 — bottom sheet (mobile): tocar fora do .ibar com o sheet aberto fecha.
@@ -14524,6 +14599,126 @@ function _jzTema(modo,btn){
   h.classList.add('jz-tema');
   try{document.startViewTransition(troca).finished.finally(()=>h.classList.remove('jz-tema'))}
   catch(e){h.classList.remove('jz-tema');troca()}
+}
+// ── Carimbo e Acende (Configurações avançadas, Fase B — 28/09/2026) ──
+// Carimbo: o que salva sozinho passa a dizer que salvou, no lugar onde mexeu,
+// só quando o campo assenta (lista: na hora; texto: 700ms parado ou ao sair).
+// Acende: a chave colada é conferida com o próprio serviço, direto do aparelho,
+// uma vez por chave e nunca por tecla. Os dois usam o mesmo check.
+var _jzGravou=0,_jzCarimbou=false; // var: o saveCfg mora em outro bloco e pode rodar antes
+function _jzRotuloDe(campo){
+  const fr=campo.closest('.frow');
+  if(fr){const l=fr.querySelector('label>span:first-child')||fr.querySelector('label');if(l)return l}
+  const bk=campo.closest('.bkp-linha');if(bk)return bk.querySelector('p');
+  if(campo.id==='localBatPathInput')return document.getElementById('localBatPathLabel');
+  return null;
+}
+function _jzCarimbo(campo){
+  const lb=_jzRotuloDe(campo);if(!lb)return;
+  const casa=lb.tagName==='SPAN'?lb.parentNode:lb;
+  let c=casa.querySelector('.jz-carimbo');
+  if(!c){
+    c=document.createElement('span');c.className='jz-carimbo';c.setAttribute('aria-hidden','true');
+    c.innerHTML='<svg viewBox="0 0 24 24"><polyline points="4 12 9 17 20 6"/></svg><span></span>';
+    if(lb.tagName==='SPAN')lb.after(c);else lb.appendChild(c);
+  }
+  // A primeira vez ensina o modelo mental; depois, só "salvo".
+  c.lastChild.textContent=_jzCarimbou?t('salvo'):t('salvo — aqui tudo salva sozinho');_jzCarimbou=true;
+  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');
+  clearTimeout(c._t);c._t=setTimeout(()=>c.classList.remove('on'),_voxReduzMov()?1800:1400);
+}
+// Consulta leve e sem custo para saber se a chave existe. Testado em 29/09/2026
+// com chave falsa: OpenAI, Groq, AssemblyAI e Gladia respondem 401 e deixam o
+// navegador ler; o xAI responde 400 "Incorrect API key"; o pyannote não deixa o
+// navegador consultar (CORS) — nele a chave só é salva.
+const _CONF={
+  whisper:{nome:'OpenAI',url:'https://api.openai.com/v1/models',h:k=>({Authorization:'Bearer '+k})},
+  grok:{nome:'xAI',url:'https://api.x.ai/v1/models',h:k=>({Authorization:'Bearer '+k})},
+  groqwhisper:{nome:'Groq',url:'https://api.groq.com/openai/v1/models',h:k=>({Authorization:'Bearer '+k})},
+  assemblyai:{nome:'AssemblyAI',url:'https://api.assemblyai.com/v2/transcript?limit=1',h:k=>({authorization:k})},
+  gladia:{nome:'Gladia',url:'https://api.gladia.io/v2/pre-recorded?limit=1',h:k=>({'x-gladia-key':k})},
+  pyannote:{nome:'pyannote.ai'}
+};
+const _CAMPO_PROV={apiKey:'whisper',apiKeyGrok:'grok',apiKeyGroq:'groqwhisper',apiKeyAssembly:'assemblyai',apiKeyGladia:'gladia',apiKeyPyannote:'pyannote'};
+const _PREFIXO={'gsk_':'groqwhisper','xai-':'grok','sk-':'whisper'};
+const _CAMPO_DO_PROV={whisper:'apiKey',grok:'apiKeyGrok',groqwhisper:'apiKeyGroq'};
+function _jzConfUI(campo){
+  const w=campo.closest('.key-eye-wrap');
+  let ok=w.querySelector('.jz-ok');
+  if(!ok){ok=document.createElement('span');ok.className='jz-ok';ok.hidden=true;ok.setAttribute('aria-hidden','true');ok.innerHTML='<svg viewBox="0 0 24 24"><polyline points="4 12 9 17 20 6"/></svg>';w.appendChild(ok)}
+  let lin=w.nextElementSibling;
+  if(!lin||!lin.classList.contains('jz-conf')){lin=document.createElement('div');lin.className='jz-conf';lin.dataset.e='';lin.setAttribute('aria-live','polite');lin.innerHTML='<span class="aro"></span><span class="tx"></span>';w.after(lin)}
+  return {w,ok,lin};
+}
+function _jzConfPinta(campo,e,txt,botao){
+  const {w,ok,lin}=_jzConfUI(campo);
+  w.dataset.e=e;lin.dataset.e=e;lin.classList.remove('demora');
+  lin.querySelector('.tx').textContent=txt||'';
+  lin.querySelector('button')?.remove();
+  if(botao){const b=document.createElement('button');b.type='button';b.textContent=botao.txt;b.onclick=botao.fn;lin.appendChild(b)}
+  ok.hidden=e!=='aceita';
+}
+function _jzGuardaConf(id,v,e){try{const m=JSON.parse(localStorage.getItem('vox_conf')||'{}');m[id]={fim:v.slice(-4),e};localStorage.setItem('vox_conf',JSON.stringify(m))}catch(_){}}
+// Ao abrir as Configurações, a chave já aceita aparece com o check parado —
+// sem ir à rede de novo, se os 4 últimos caracteres ainda batem.
+function _jzConfRestaura(){
+  let m={};try{m=JSON.parse(localStorage.getItem('vox_conf')||'{}')}catch(_){}
+  Object.keys(_CAMPO_PROV).forEach(id=>{
+    const c=document.getElementById(id);if(!c)return;const v=c.value.trim(),r=m[id];
+    if(v&&r&&r.e==='aceita'&&r.fim===v.slice(-4)){c._conf=v;_jzConfPinta(c,'aceita',t('Chave aceita ({p})').replace('{p}',_CONF[_CAMPO_PROV[id]].nome))}
+    else if(c.closest('.key-eye-wrap')?.dataset.e)_jzConfPinta(c,'','');
+  });
+}
+function _jzMoveChave(campo,prov){
+  const alvo=document.getElementById(_CAMPO_DO_PROV[prov]);if(!alvo)return;
+  alvo.value=campo.value.trim();campo.value='';
+  _jzConfPinta(campo,'','');
+  campo.dispatchEvent(new Event('input',{bubbles:true}));
+  alvo.dispatchEvent(new Event('input',{bubbles:true}));
+  _jzConfere(alvo,true);
+  alvo.closest('.key-eye-wrap')?.scrollIntoView({block:'nearest',behavior:_voxReduzMov()?'auto':'smooth'});
+}
+async function _jzConfere(campo,forca){
+  const prov=_CAMPO_PROV[campo.id];if(!prov)return;
+  const v=campo.value.trim(),c=_CONF[prov];
+  if(!v){_jzConfPinta(campo,'','');return}
+  if(!forca&&campo._conf===v)return;
+  for(const pre in _PREFIXO){
+    const q=_PREFIXO[pre];
+    if(v.startsWith(pre)&&q!==prov){
+      _jzConfPinta(campo,'outro',t('Isso parece uma chave de outro serviço: {q}.').replace('{q}',_NOME_PROV[q]),{txt:t('Mover para {q}').replace('{q}',_NOME_PROV[q]),fn:()=>_jzMoveChave(campo,q)});
+      return;
+    }
+  }
+  if(!_chaveCompleta(prov,v)){if(forca)_jzConfPinta(campo,'recusada',t('Essa chave parece incompleta. Copie de novo, inteira.'));return}
+  campo._conf=v;campo._ab?.abort();
+  if(!c.url){_jzConfPinta(campo,'salva',t('Chave salva. {p} não deixa conferir daqui; o Vox confere na primeira gravação.').replace('{p}',c.nome));_posChaveJa();return}
+  const ab=campo._ab=new AbortController();
+  _jzConfPinta(campo,'conferindo',t('Salva. Conferindo com {p}…').replace('{p}',c.nome));
+  const {lin}=_jzConfUI(campo);
+  const t1=setTimeout(()=>lin.classList.add('demora'),400);
+  const t2=setTimeout(()=>{if(campo._ab===ab)lin.querySelector('.tx').textContent=t('{p} está demorando pra responder…').replace('{p}',c.nome)},6000);
+  const t3=setTimeout(()=>ab.abort(),15000);
+  let st=0,corpo='';
+  try{const r=await fetch(c.url,{headers:c.h(v),signal:ab.signal});st=r.status;if(st===400)corpo=await r.text().catch(()=>'')}catch(_){}
+  clearTimeout(t1);clearTimeout(t2);clearTimeout(t3);
+  if(campo.value.trim()!==v||campo._ab!==ab)return; // mudou no meio: o resultado velho não vale
+  campo._ab=null;
+  if(st===200||st===429){
+    // 429 também prova que a chave existe: o serviço só pediu calma.
+    _jzConfPinta(campo,'aceita',st===429?t('Chave aceita ({p}). O serviço pediu uma pausa de alguns segundos.').replace('{p}',c.nome):t('Chave aceita ({p})').replace('{p}',c.nome));
+    _jz(_jzConfUI(campo).ok,'nasce',520);_jzTato([8,40,12]);
+    _jzGuardaConf(campo.id,v,'aceita');
+    _posChaveJa(); // cofre do navegador e gravação guardada: a chave é boa, pode ir já
+  }else if(st===401||st===403||(st===400&&/api key/i.test(corpo))){
+    campo._conf=null;
+    _jzConfPinta(campo,'recusada',t('{p} não aceitou essa chave. Confira se copiou inteira.').replace('{p}',c.nome));
+    _jz(_jzConfUI(campo).w,'nega',260);
+  }else{
+    // Rede, CORS, 5xx ou demora: ninguém tem culpa, então nada fica vermelho.
+    campo._conf=null;
+    _jzConfPinta(campo,'sem-resposta',t('Não deu pra conferir agora. A chave ficou salva e o Vox confere de novo quando for usar.'),{txt:t('tentar de novo'),fn:()=>_jzConfere(campo,true)});
+  }
 }
 function _jzCor(btn){
   const s=btn.dataset.skin;
@@ -23207,16 +23402,29 @@ async function testTxtAI(){
   const out=document.getElementById('txtaiTestResult');
   // salva os campos atuais antes de testar (sem fechar o modal)
   saveCfg(false);
-  const tgt=_txtAITarget(cfg.txtProvider||'groq');
+  const pv=cfg.txtProvider||'groq',tgt=_txtAITarget(pv);
   if(!tgt){out.style.color='var(--danger)';out.textContent='🔑 '+t('Falta a chave desse cérebro.');return}
-  out.style.color='var(--text3)';out.textContent=t('Perguntando ao {p}…').replace('{p}',tgt.name);
+  // Passo 1 (Fase B): a chave, pela lista de modelos. Só barra quando o serviço
+  // disse que a chave é ruim; 404 ou rede seguem pro passo 2, que decide.
+  const urlModelos=pv==='groq'?'https://api.groq.com/openai/v1/models':pv==='openai'?'https://api.openai.com/v1/models':(cfg.txtBaseUrl?cfg.txtBaseUrl.replace(/\/+$/,'')+'/models':'');
+  let chaveOk=false;
+  if(urlModelos){
+    out.style.color='var(--text3)';out.textContent=t('Conferindo a chave…');
+    const ab=new AbortController(),t0=setTimeout(()=>ab.abort(),10000);
+    try{
+      const r=await fetch(urlModelos,{headers:{Authorization:'Bearer '+tgt.key},signal:ab.signal});
+      if(r.status===401||r.status===403){out.style.color='var(--danger)';out.textContent='🔑 '+t('{p} não aceitou a chave.').replace('{p}',tgt.name);return}
+      chaveOk=r.ok;
+    }catch(_){}finally{clearTimeout(t0)}
+  }
+  out.style.color='var(--text3)';out.textContent=(chaveOk?t('Chave aceita. Perguntando ao modelo {m}…'):t('Perguntando ao {p}…')).replace('{m}',tgt.model).replace('{p}',tgt.name);
   let tm;
   try{
     await Promise.race([
       callAI('Responda apenas: ok','',cfg.txtProvider||'groq',10,{temperature:0,semEspera:true}),
       new Promise((_,rej)=>{tm=setTimeout(()=>rej(new Error('⏱️ '+t('{p} demorou demais pra responder. Confira a internet e tente de novo.').replace('{p}',tgt.name))),20000)})
     ]);
-    out.style.color='var(--accent)';out.textContent='✅ '+t('{p} · {m} respondeu. Está funcionando.').replace('{p}',tgt.name).replace('{m}',tgt.model);
+    out.style.color='var(--accent)';out.textContent='✅ '+(chaveOk?t('Chave aceita e o modelo {m} respondeu. Está funcionando.'):t('{p} · {m} respondeu. Está funcionando.')).replace('{p}',tgt.name).replace('{m}',tgt.model);
   }catch(e){
     out.style.color='var(--danger)';out.textContent=e.message; // as mensagens do callAI já dizem quem falhou
   }finally{clearTimeout(tm)}
@@ -23552,6 +23760,7 @@ function renderLearningPanel(){
 }
 function openModal(){
   document.getElementById('overlay').classList.add('on');
+  _jzConfRestaura();
   updateRamBadge();
   updateStorageMeter();
   renderLearningPanel();
@@ -23637,6 +23846,7 @@ function saveCfg(close=true){
   cfg.txtModel=document.getElementById('txtModel').value.trim();
   cfg.txtKey=document.getElementById('txtKey').value.trim();
   localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+  _jzGravou=1; // o Carimbo só aparece se esta linha chegou a rodar
   updateDiarStatus();updateLocal100Badge();
   if(close){closeModal();toast(t('✅ Configurações salvas'))}
   _posChaveAgendar();
