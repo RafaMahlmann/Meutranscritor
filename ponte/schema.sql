@@ -44,3 +44,26 @@ CREATE TABLE IF NOT EXISTS ips (
   usos INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (dia, hash)
 );
+
+-- Medição da landing (voxcharmai.com), sem cookie e sem código de terceiros.
+-- Só totais por dia. `landing_vis` existe pra contar visitante único e frear
+-- abuso: guarda o endereço embaralhado com o dia, apagado no dia seguinte.
+CREATE TABLE IF NOT EXISTS landing_dias (
+  dia TEXT PRIMARY KEY,
+  visitas INTEGER NOT NULL DEFAULT 0,
+  visitantes INTEGER NOT NULL DEFAULT 0,
+  clique_gratis INTEGER NOT NULL DEFAULT 0,
+  clique_assinar INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS landing_origens (
+  dia TEXT NOT NULL,
+  origem TEXT NOT NULL,
+  n INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (dia, origem)
+);
+CREATE TABLE IF NOT EXISTS landing_vis (
+  dia TEXT NOT NULL,
+  hash TEXT NOT NULL,
+  eventos INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (dia, hash)
+);

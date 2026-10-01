@@ -23,6 +23,20 @@ ela mora aqui, como segredo do Cloudflare.
 - o endereço de internet, só embaralhado com o dia, para limitar abuso. É
   apagado no dia seguinte.
 
+## Medição da landing
+
+A landing (voxcharmai.com) avisa a ponte quando a página abre e quando alguém
+clica em "Comece grátis" ou "Assinar" (`POST /v1/landing/evento`). Sem cookie e
+sem código de terceiros. Fica guardado só:
+- totais por dia: visitas, visitantes únicos, cliques em cada botão;
+- de que site a visita veio (ou o `utm_source` do link), uma vez por visitante;
+- o endereço de internet embaralhado com o dia, pra contar visitante único e
+  frear abuso (60 eventos por endereço por dia). Apagado no dia seguinte.
+
+Robôs conhecidos são ignorados. O painel junta isso com a cortesia num funil:
+visitaram → clicaram em "Comece grátis" → usaram a cortesia → conectaram a
+própria chave. As vendas ficam no painel do Freemius.
+
 ## Por que a conta não chega
 
 - A chave é de uma conta **grátis** do Groq, **sem cartão**. Quando o limite
@@ -75,6 +89,7 @@ Depois, o endereço publicado (`https://vox-ponte.<conta>.workers.dev`) entra em
 - `POST /v1/cortesia/estado` `{aparelho}` → se ainda há cortesia para este aparelho.
 - `POST /v1/cortesia/transcrever` (form: `audio`, `aparelho`, `idioma`) → `{texto, restantes, ultima}`.
 - `POST /v1/cortesia/formou` `{aparelho}` → "este aparelho conectou a própria chave".
+- `POST /v1/landing/evento` `{tipo:"visita",origem}` ou `{tipo:"clique",alvo:"gratis"|"assinar"}` → medição da landing (só aceita a origem voxcharmai.com).
 - `GET /painel` → painel (com senha).
 
 Só aceita pedidos com `Origin` do app (`ORIGENS` no `wrangler.toml`) ou de
