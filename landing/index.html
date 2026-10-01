@@ -14680,12 +14680,30 @@ let I18N_EN = {
         origem = q.get('utm_source') || ref || 'direto';
     } catch (e) {}
     avisa({ tipo: 'visita', origem: origem });
+    /* Clique que troca de página na mesma aba: o WebKit (Safari) corta o
+       aviso no meio quando a página sai na hora — medido no ar em
+       01/10/2026: 5 cliques, 1 contado. Então o aviso vai primeiro e a
+       página só troca quando ele saiu, com teto de 0,4 s pra ninguém ficar
+       esperando. Se qualquer coisa falhar, o link funciona do jeito normal. */
+    function avisaEVai(o, destino) {
+        var foi = false;
+        function vai() { if (!foi) { foi = true; location.href = destino; } }
+        try {
+            fetch(PONTE + '/v1/landing/evento', { method: 'POST', body: JSON.stringify(o), keepalive: true, mode: 'no-cors' }).then(vai, vai);
+        } catch (e) { vai(); }
+        setTimeout(vai, 400);
+    }
     document.addEventListener('click', function (e) {
         var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
         if (!a) return;
         var h = a.getAttribute('href') || '';
-        if (h.indexOf('checkout.freemius.com') > -1) avisa({ tipo: 'clique', alvo: 'assinar' });
-        else if (h.indexOf('app.voxcharmai.com') > -1 && !/terms|privacy/.test(h)) avisa({ tipo: 'clique', alvo: 'gratis' });
+        var alvo = h.indexOf('checkout.freemius.com') > -1 ? 'assinar'
+            : (h.indexOf('app.voxcharmai.com') > -1 && !/terms|privacy/.test(h)) ? 'gratis' : '';
+        if (!alvo) return;
+        var mesmaAba = e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && (!a.target || a.target === '_self');
+        if (!mesmaAba) { avisa({ tipo: 'clique', alvo: alvo }); return; }
+        e.preventDefault();
+        avisaEVai({ tipo: 'clique', alvo: alvo }, a.href);
     }, true);
 })();
 </script>
