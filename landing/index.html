@@ -14653,5 +14653,41 @@ let I18N_EN = {
 "Ciclo de cobrança":"Billing cycle"
 };
 </script>
+<script>
+/* Medição da landing — sem cookie e sem código de terceiros.
+   Avisa a ponte do Vox (a mesma da cortesia) de duas coisas: "alguém abriu a
+   página" e "alguém clicou em Comece grátis / Assinar". A ponte guarda só
+   totais por dia e de que site a visita veio; o endereço de internet entra
+   embaralhado, só pra contar visitante único, e some no dia seguinte.
+   Explicado na Política de Privacidade (Analytics and tracking). */
+(function () {
+    var PONTE = 'https://vox-ponte.flordeplasma.workers.dev';
+    /* Teste local contra um `wrangler dev`: só vale em localhost. */
+    try {
+        if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+            var t = localStorage.getItem('vox_ponte_teste');
+            if (t) PONTE = t.replace(/\/+$/, '');
+        }
+    } catch (e) {}
+    function avisa(o) {
+        try { navigator.sendBeacon(PONTE + '/v1/landing/evento', JSON.stringify(o)); } catch (e) {}
+    }
+    var origem = 'direto';
+    try {
+        var q = new URLSearchParams(location.search);
+        var ref = document.referrer ? new URL(document.referrer).hostname : '';
+        if (/(^|\.)voxcharmai\.com$/.test(ref)) ref = '';
+        origem = q.get('utm_source') || ref || 'direto';
+    } catch (e) {}
+    avisa({ tipo: 'visita', origem: origem });
+    document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!a) return;
+        var h = a.getAttribute('href') || '';
+        if (h.indexOf('checkout.freemius.com') > -1) avisa({ tipo: 'clique', alvo: 'assinar' });
+        else if (h.indexOf('app.voxcharmai.com') > -1 && !/terms|privacy/.test(h)) avisa({ tipo: 'clique', alvo: 'gratis' });
+    }, true);
+})();
+</script>
 </body>
 </html>

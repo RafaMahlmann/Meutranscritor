@@ -54,6 +54,12 @@ export default {
     const url = new URL(request.url);
     const origem = request.headers.get('Origin') || '';
     try {
+      if (url.pathname === '/v1/landing/evento') {
+        if (!origemLanding(origem)) return new Response(null, { status: 403 });
+        if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origem) });
+        if (request.method !== 'POST') return new Response(null, { status: 405 });
+        return await landingEvento(request, env, origem);
+      }
       if (url.pathname.startsWith('/v1/')) {
         if (!origemPermitida(origem, env)) return json({ ok: false, motivo: 'origem' }, 403);
         if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origem) });
@@ -61,7 +67,7 @@ export default {
         if (url.pathname === '/v1/cortesia/estado') return await estado(request, env, origem);
         if (url.pathname === '/v1/cortesia/transcrever') return await transcrever(request, env, origem);
         if (url.pathname === '/v1/cortesia/formou') return await formou(request, env, origem);
-        // Aqui entra, mais tarde, a validação de licença do Freemius (mesma ponte).
+        // (A licença do Freemius NÃO passa por aqui: o app fala direto com a API deles.)
         return json({ ok: false, motivo: 'pedido_invalido' }, 404, origem);
       }
       if (url.pathname === '/painel' || url.pathname === '/painel/ajustes') {
@@ -194,6 +200,63 @@ async function formou(request, env, origem) {
   return json({ ok: true }, 200, origem);
 }
 
+// ── Medição da landing ──────────────────────────────────────────────────────
+// A landing (voxcharmai.com) avisa a ponte de duas coisas: "alguém abriu a
+// página" e "alguém clicou em Comece grátis / Assinar". Sem cookie e sem
+// código de terceiros. Guarda só totais por dia e de que site a visita veio.
+// O endereço de internet entra embaralhado com o dia, só pra contar visitante
+// único e frear abuso, e é apagado no dia seguinte.
+const ORIGENS_LANDING = ['https://voxcharmai.com', 'https://www.voxcharmai.com'];
+const RE_ROBO = /bot|crawl|spider|slurp|preview|headless|lighthouse|monitor|curl|wget|python|scrapy/i;
+const ALVOS_LANDING = { gratis: 'clique_gratis', assinar: 'clique_assinar' };
+const CAMPOS_LANDING = new Set(['visitas', 'visitantes', 'clique_gratis', 'clique_assinar']);
+
+function origemLanding(origem) {
+  return ORIGENS_LANDING.includes(origem) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origem);
+}
+function limparOrigem(o) {
+  return String(o || '').toLowerCase().replace(/^www\./, '').replace(/[^a-z0-9.\-]/g, '').slice(0, 60) || 'direto';
+}
+function somarLanding(env, dia, somas) {
+  const cols = Object.keys(somas).filter((c) => CAMPOS_LANDING.has(c) && somas[c]);
+  if (!cols.length) return null;
+  const sql = `INSERT INTO landing_dias (dia, ${cols.join(', ')}) VALUES (?, ${cols.map(() => '?').join(', ')})
+    ON CONFLICT(dia) DO UPDATE SET ${cols.map((c) => `${c} = ${c} + excluded.${c}`).join(', ')}`;
+  return env.DB.prepare(sql).bind(dia, ...cols.map((c) => somas[c]));
+}
+async function landingEvento(request, env, origem) {
+  const vazio = () => new Response(null, { status: 204, headers: cors(origem) });
+  if (RE_ROBO.test(request.headers.get('User-Agent') || '')) return vazio();
+  let ev = {};
+  try { ev = JSON.parse(await request.text()); } catch { return vazio(); }
+  const dia = hoje();
+  const ip = request.headers.get('CF-Connecting-IP') || 'sem-ip';
+  const hash = await sha256hex(`L|${ip}|${dia}|${env.SAL_IP || 'vox'}`);
+  const v = await env.DB.prepare('SELECT eventos FROM landing_vis WHERE dia = ? AND hash = ?').bind(dia, hash).first();
+  if ((v?.eventos || 0) >= 60) return vazio(); // um endereço sozinho não enche a contagem
+  const stmts = [
+    env.DB.prepare('INSERT INTO landing_vis (dia, hash, eventos) VALUES (?, ?, 1) ON CONFLICT(dia, hash) DO UPDATE SET eventos = eventos + 1').bind(dia, hash),
+    env.DB.prepare('DELETE FROM landing_vis WHERE dia < ?').bind(dia),
+  ];
+  if (ev.tipo === 'visita') {
+    stmts.push(somarLanding(env, dia, { visitas: 1, visitantes: v ? 0 : 1 }));
+    if (!v) {
+      // De onde veio: contado uma vez por visitante. Passou de 100 origens
+      // diferentes no dia, o resto vai pra "outras" (ninguém infla a tabela).
+      let o = limparOrigem(ev.origem);
+      const q = await env.DB.prepare('SELECT (SELECT COUNT(*) FROM landing_origens WHERE dia = ?) AS n, (SELECT COUNT(*) FROM landing_origens WHERE dia = ? AND origem = ?) AS tem').bind(dia, dia, o).first();
+      if (!q.tem && q.n >= 100) o = 'outras';
+      stmts.push(env.DB.prepare('INSERT INTO landing_origens (dia, origem, n) VALUES (?, ?, 1) ON CONFLICT(dia, origem) DO UPDATE SET n = n + 1').bind(dia, o));
+    }
+  } else if (ev.tipo === 'clique' && ALVOS_LANDING[ev.alvo]) {
+    stmts.push(somarLanding(env, dia, { [ALVOS_LANDING[ev.alvo]]: 1 }));
+  } else {
+    return vazio();
+  }
+  await env.DB.batch(stmts);
+  return vazio();
+}
+
 // ── Painel do Rafa ──────────────────────────────────────────────────────────
 
 async function painel(request, env, url) {
@@ -242,7 +305,10 @@ async function painel(request, env, url) {
   const fim = await env.DB.prepare('SELECT COUNT(*) AS n, SUM(formou) AS f FROM aparelhos WHERE usadas > 0 AND usadas >= MAX(cota, ?)')
     .bind(aj.por_aparelho).first();
 
-  return new Response(htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, salvo: url.searchParams.has('salvo'), temChave: !!env.GROQ_KEY }), {
+  const landing = (await env.DB.prepare('SELECT * FROM landing_dias ORDER BY dia DESC LIMIT 30').all()).results || [];
+  const origens = (await env.DB.prepare("SELECT origem, SUM(n) AS n FROM landing_origens WHERE dia >= ? GROUP BY origem ORDER BY n DESC LIMIT 12")
+    .bind(new Date(Date.now() - 3 * 3600e3 - 29 * 864e5).toISOString().slice(0, 10)).all()).results || [];
+  return new Response(htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, salvo: url.searchParams.has('salvo'), temChave: !!env.GROQ_KEY }), {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
@@ -253,7 +319,7 @@ async function painel(request, env, url) {
   });
 }
 
-function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, salvo, temChave }) {
+function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, salvo, temChave }) {
   const minHoje = Math.round((hojeRow.segundos || 0) / 60);
   const pct = aj.teto_minutos_dia ? Math.min(100, Math.round((minHoje / aj.teto_minutos_dia) * 100)) : 100;
   const p = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—');
@@ -263,6 +329,14 @@ function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, salv
       <td>${x.chegaram_ao_fim}</td><td>${x.formaram}</td>
       <td>${x.recusa_teto}</td><td>${x.recusa_esgotada}</td><td>${x.recusa_ip}</td><td>${x.recusa_grande}</td><td>${x.erros}</td>
     </tr>`).join('') || '<tr><td colspan="11" class="vazio">Ainda ninguém usou a cortesia.</td></tr>';
+  // O funil dos últimos 30 dias: landing -> clique -> cortesia -> chave própria.
+  const soma = (lista, campo) => lista.reduce((s, x) => s + (x[campo] || 0), 0);
+  const fVis = soma(landing, 'visitantes'), fGratis = soma(landing, 'clique_gratis'), fAssinar = soma(landing, 'clique_assinar');
+  const fCortesia = soma(dias, 'aparelhos_novos'), fChave = soma(dias, 'formaram');
+  const linhasLanding = landing.map((x) => `<tr><td>${esc(br(x.dia))}</td><td>${x.visitantes}</td><td>${x.visitas}</td><td>${x.clique_gratis}</td><td>${x.clique_assinar}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="vazio">Ainda nenhuma visita contada.</td></tr>';
+  const linhasOrigens = origens.map((x) => `<tr><td>${esc(x.origem)}</td><td>${x.n}</td></tr>`).join('')
+    || '<tr><td colspan="2" class="vazio">Sem dados ainda.</td></tr>';
   const linhasFaixas = faixas.map((x) => `<tr><td>${x.usadas}</td><td>${x.n}</td><td>${x.f || 0}</td><td>${p(x.f || 0, x.n)}</td></tr>`).join('')
     || '<tr><td colspan="4" class="vazio">Sem dados ainda.</td></tr>';
 
@@ -292,6 +366,18 @@ ul{margin:6px 0 0;padding-left:20px}li{margin-bottom:4px}
 ${salvo ? '<div class="ok">Ajustes salvos. Já estão valendo.</div>' : ''}
 ${temChave ? '' : '<div class="alerta">A chave do Groq ainda não foi colocada na ponte. A cortesia fica desligada até lá.</div>'}
 ${aj.ligada ? '' : '<div class="alerta">A cortesia está desligada. Ninguém novo recebe transcrição por nossa conta.</div>'}
+
+<div class="card">
+  <h2>O funil dos últimos 30 dias</h2>
+  <div class="grid">
+    <div class="card"><div class="leg">Visitaram a landing</div><div class="num">${fVis}</div></div>
+    <div class="card"><div class="leg">Clicaram em "Comece grátis"</div><div class="num">${fGratis}</div><div class="leg">${p(fGratis, fVis)} dos visitantes</div></div>
+    <div class="card"><div class="leg">Usaram a cortesia</div><div class="num">${fCortesia}</div><div class="leg">${p(fCortesia, fGratis)} dos cliques</div></div>
+    <div class="card"><div class="leg">Conectaram a própria chave</div><div class="num">${fChave}</div><div class="leg">${p(fChave, fCortesia)} de quem usou</div></div>
+    <div class="card"><div class="leg">Clicaram em "Assinar"</div><div class="num">${fAssinar}</div><div class="leg">${p(fAssinar, fVis)} dos visitantes</div></div>
+  </div>
+  <p class="leg" style="margin-top:12px">As vendas em si ficam no painel do Freemius. Quem já tem chave não passa pela cortesia, então "usaram a cortesia" conta só gente nova.</p>
+</div>
 
 <div class="card">
   <h2>Minutos de hoje</h2>
@@ -341,6 +427,20 @@ ${aj.ligada ? '' : '<div class="alerta">A cortesia está desligada. Ninguém nov
       <th>Recusa: teto</th><th>Recusa: acabou</th><th>Recusa: endereço</th><th>Recusa: grande</th><th>Erros</th></tr></thead>
     <tbody>${linhasDias}</tbody>
   </table></div>
+</div>
+
+<div class="card">
+  <h2>Landing: últimos 30 dias</h2>
+  <div class="rolar"><table>
+    <thead><tr><th>Dia</th><th>Visitantes</th><th>Visitas</th><th>Cliques "Comece grátis"</th><th>Cliques "Assinar"</th></tr></thead>
+    <tbody>${linhasLanding}</tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <h2>De onde as visitas vieram (30 dias)</h2>
+  <div class="rolar"><table><thead><tr><th>Origem</th><th>Visitantes</th></tr></thead><tbody>${linhasOrigens}</tbody></table></div>
+  <p class="leg" style="margin-top:12px">"direto" é quem digitou o endereço ou veio de um app que não informa a origem (WhatsApp, e-mail).</p>
 </div>
 
 <p class="leg">Nada aqui identifica ninguém. Cada aparelho é um código sorteado nele mesmo, sem nome nem e-mail. Endereços de internet entram embaralhados e são apagados todo dia. Nenhum áudio e nenhum texto ficam guardados.</p>
