@@ -10863,6 +10863,7 @@ let I18N_EN={
 "Deixar minha chave pronta":"Set up my key",
 "Esta gravação por nossa conta vai até {n} min. Faltam 15 segundos.":"This recording on us goes up to {n} min. 15 seconds left.",
 "Transformando em texto a gravação que estava guardada…":"Turning the saved recording into text…",
+"Não consegui transformar em texto agora. Sua gravação ficou guardada neste aparelho e eu tento de novo sozinho.":"Couldn't turn it into text right now. Your recording is saved on this device and I'll try again on my own.",
 "Você tem uma gravação guardada esperando a sua chave.":"You have a saved recording waiting for your key.",
 "A chave vai do seu aparelho direto para o Freemius, a loja que vende o Vox. Não passa por nós.":"The key goes from your device straight to Freemius, the store that sells Vox. It doesn't pass through us.",
 "A licença fica livre pra ativar em outro aparelho. Aqui, o Vox volta pro plano grátis — suas notas, pastas e mundos continuam todos aqui.":"The license becomes free to activate on another device. Here, Vox goes back to the free plan — your notes, folders and worlds all stay here.",
@@ -11686,14 +11687,30 @@ function _gravAvisoDoDia(){
 // Guarda os BYTES do áudio, não o File: o WebKit testado aqui recusa
 // guardar File/Blob no IndexedDB (erro vazio), mas aceita ArrayBuffer.
 const _PEND_IDB='vox_gravacoes_esperando_chave';
+// Id da gravação que está sendo transcrita agora e JÁ está na fila (ver
+// processAudio). Enquanto ele existe, guardar de novo duplicaria a gravação.
+let _gravNaFilaId=null,_gravJaAvisada=false;
 async function _pendenteGuardar(file,durSec,sn,mode){
+  // Quem chama aqui já mostra o próprio aviso de "ficou guardada".
+  if(_gravNaFilaId){_gravJaAvisada=true;return _gravNaFilaId}
   try{
     const lista=(await _idbGetBruto(_PEND_IDB))||[];
-    lista.push({id:'p'+Date.now(),buf:await file.arrayBuffer(),nome:file.name||'gravacao.webm',tipo:file.type||'audio/webm',dur:durSec||0,sn:sn||'',mode:mode||'livre'});
+    const id='p'+Date.now()+Math.random().toString(36).slice(2,6);
+    lista.push({id,buf:await file.arrayBuffer(),nome:file.name||'gravacao.webm',tipo:file.type||'audio/webm',dur:durSec||0,sn:sn||'',mode:mode||'livre'});
     await _idbSetBruto(_PEND_IDB,lista);
     localStorage.setItem('vox_tem_pendente','1');
-    return true;
+    return id;
   }catch(e){return false}
+}
+// Tira da fila SÓ aquele id, relendo a lista na hora: uma gravação nova pode
+// ter entrado na fila enquanto outra era transcrita, e regravar uma cópia
+// velha da lista apagaria a nova.
+async function _pendenteTirar(id){
+  try{
+    const lista=((await _idbGetBruto(_PEND_IDB))||[]).filter(p=>p.id!==id);
+    await _idbSetBruto(_PEND_IDB,lista);
+    if(!lista.length)localStorage.removeItem('vox_tem_pendente');
+  }catch(e){}
 }
 let _pendentesRodando=false;
 async function _pendentesProcessar(){
@@ -11702,20 +11719,26 @@ async function _pendentesProcessar(){
   try{
     const lista=(await _idbGetBruto(_PEND_IDB))||[];
     if(!lista.length){localStorage.removeItem('vox_tem_pendente');return}
-    toast(t('Transformando em texto a gravação que estava guardada…'));
-    const sobrou=[];
+    let avisou=false;
     for(const p of lista){
-      while(isProc||isRec)await new Promise(r=>setTimeout(r,500));
+      while(isProc||isRec||_gravNaFilaId)await new Promise(r=>setTimeout(r,500));
+      // Pode ter saído da fila enquanto esperava (a transcrição normal deu certo).
+      const ainda=((await _idbGetBruto(_PEND_IDB))||[]).some(x=>x.id===p.id);
+      if(!ainda)continue;
+      if(!avisou){toast(t('Transformando em texto a gravação que estava guardada…'));avisou=true}
       // Sem isto o texto cairia dentro do card que estiver com o cursor.
       activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;
       _armarDurAudio(p.dur);
       const file=new File([p.buf],p.nome,{type:p.tipo});
-      if(!(await doTranscribe(file,p.dur,true,p.sn,p.mode)))sobrou.push(p);
+      _gravNaFilaId=p.id;
+      let ok=false;
+      try{ok=await doTranscribe(file,p.dur,true,p.sn,p.mode)}finally{_gravNaFilaId=null}
+      if(ok)await _pendenteTirar(p.id);
     }
-    await _idbSetBruto(_PEND_IDB,sobrou);
-    if(!sobrou.length)localStorage.removeItem('vox_tem_pendente');
   }catch(e){}finally{_pendentesRodando=false}
 }
+// Voltou a internet: tenta de novo o que ficou guardado.
+window.addEventListener('online',()=>setTimeout(_pendentesProcessar,1500));
 // Roda sempre que as configurações são salvas. Quando a primeira chave de
 // transcrição aparece: manda UMA vez o sinal "este aparelho conectou a
 // própria chave" (sem conteúdo nenhum — é o que diz se a cortesia converte)
@@ -12039,7 +12062,7 @@ async function _cortarDepois(file,seg){
 async function _diarizarComLimite(fn,file,durSec,fromRec,sn,mode){
   const extra=!voxPro()&&_diarMes()>=LIM_DIAR_MES;
   // Grátis dentro do mês, Pro, ou gravação (que já veio limitada a 20 min).
-  if(!extra||fromRec){if(await fn(file,durSec,fromRec,sn,mode))_diarContar();return}
+  if(!extra||fromRec){const ok=await fn(file,durSec,fromRec,sn,mode);if(ok)_diarContar();return ok}
   let ini;
   try{ini=await _cortarInicio(file,LIM_DIAR_EXTRA_SEG,null)}catch(e){ini={file,cortou:false}}
   // Arquivo extra que já cabe nos 20 minutos: vai inteiro, sem aviso.
@@ -29372,7 +29395,27 @@ function sendTxt(){
 }
 
 // ── AUDIO PROCESSING ROUTER ──
+// GRAVAÇÃO NUNCA SE PERDE (05/10/2026). Antes, qualquer erro na transcrição
+// (internet caiu, serviço fora, chave vencida, aba fechada no meio) jogava a
+// gravação fora: só existia na memória. Agora ela vai pra fila do aparelho
+// ANTES de sair pra transcrever, e só sai da fila quando virou texto. Se der
+// errado, fica lá e é tentada de novo sozinha: ao abrir o app, ao voltar a
+// internet e ao salvar as configurações (_pendentesProcessar).
+// Arquivo anexado fica de fora: ele continua existindo no aparelho da pessoa.
 async function processAudio(file,durSec,fromRec){
+  if(!fromRec)return _processAudio(file,durSec,fromRec);
+  const sn=document.getElementById('snameInput').value.trim();
+  const id=await _pendenteGuardar(file,durSec,sn,sessionMode);
+  let ok=false;
+  _gravNaFilaId=id||null;_gravJaAvisada=false;
+  try{ok=await _processAudio(file,durSec,fromRec)}
+  finally{_gravNaFilaId=null}
+  if(!id)return ok;
+  if(ok===true){await _pendenteTirar(id);_pendentesProcessar()}
+  else if(!_gravJaAvisada)toast(t('Não consegui transformar em texto agora. Sua gravação ficou guardada neste aparelho e eu tento de novo sozinho.'),true);
+  return ok;
+}
+async function _processAudio(file,durSec,fromRec){
   const sn=document.getElementById('snameInput').value.trim();
   const mode=sessionMode;
   // Guarda a duração real ANTES de qualquer coisa — daqui pra frente ela vira
@@ -29389,7 +29432,7 @@ async function processAudio(file,durSec,fromRec){
     // e não tem como "entrar" dentro de um textarea alheio. Checar isso ANTES
     // do cfg.diarEnabled global evita que a preferência geral de diarização
     // sequestre uma gravação que já tinha destino certo.
-    await doTranscribe(file,durSec,fromRec,sn,mode);
+    return await doTranscribe(file,durSec,fromRec,sn,mode);
   }else if(cfg.diarEnabled&&cfg.provider==='local'){
     // SIGILO EM PRIMEIRO LUGAR. Quem escolheu o transcritor local NUNCA pode ter o
     // audio subido pra nuvem so porque a diarizacao ficou ligada na preferencia
@@ -29398,23 +29441,23 @@ async function processAudio(file,durSec,fromRec){
     // ser enviada pro servidor deles, em silencio, contra a promessa da tela.
     // Precisa vir ANTES de todos os caminhos de nuvem.
     if(cfg.diarLocal){
-      await _diarizarComLimite(doDiarizeLocal,file,durSec,fromRec,sn,mode);
+      return await _diarizarComLimite(doDiarizeLocal,file,durSec,fromRec,sn,mode);
     }else{
       toast(t('🔒 Seu áudio não saiu do seu computador — por isso a transcrição veio sem separar as vozes.'));
-      await doTranscribe(file,durSec,fromRec,sn,mode);
+      return await doTranscribe(file,durSec,fromRec,sn,mode);
     }
   }else if(cfg.diarEnabled&&cfg.diarProvider==='gladia'&&cfg.apiKeyGladia){
-    await _diarizarComLimite(doDiarizeGladia,file,durSec,fromRec,sn,mode);
+    return await _diarizarComLimite(doDiarizeGladia,file,durSec,fromRec,sn,mode);
   }else if(cfg.diarEnabled&&cfg.diarProvider==='assemblyai'&&cfg.apiKeyAssembly){
-    await _diarizarComLimite(doDiarizeAssembly,file,durSec,fromRec,sn,mode);
+    return await _diarizarComLimite(doDiarizeAssembly,file,durSec,fromRec,sn,mode);
   }else if(cfg.diarEnabled&&cfg.diarProvider==='openai'&&cfg.apiKey){
-    await _diarizarComLimite(doDiarizeOpenAI,file,durSec,fromRec,sn,mode);
+    return await _diarizarComLimite(doDiarizeOpenAI,file,durSec,fromRec,sn,mode);
   }else if(cfg.diarEnabled&&cfg.diarProvider==='pyannote'){
     // pyannote.ai: preparado na UI; integração backend em brush futuro
     toast(t('🎯 pyannote.ai ainda não está integrado. Usando transcrição padrão.'),true);
-    await doTranscribe(file,durSec,fromRec,sn,mode);
+    return await doTranscribe(file,durSec,fromRec,sn,mode);
   }else{
-    await doTranscribe(file,durSec,fromRec,sn,mode);
+    return await doTranscribe(file,durSec,fromRec,sn,mode);
   }
 }
 
