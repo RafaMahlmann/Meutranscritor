@@ -5855,6 +5855,63 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .storage-meter-fill.warn{background:#f59e0b}
 .storage-meter-fill.danger{background:var(--danger)}
 .maint-box{background:var(--bg-input);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+/* ── Plano 28: a Geral em quatro gavetas com nome de tarefa ──
+   A linha fechada já conta o estado ("Última cópia há 3 dias"); abrir desliza
+   em 260ms, a seta gira com mola e a borda pega a cor da família. */
+.gv{border:1px solid var(--border);border-radius:16px;background:var(--bg-card);margin-bottom:10px;transition:border-color 200ms linear}
+.gv.on{border-color:color-mix(in srgb,var(--gv-cor) 50%,var(--border))}
+.gv-cab{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;background:none;font-family:var(--font);text-align:left;color:var(--text);cursor:pointer;border-radius:16px}
+.gv-cab:focus-visible{outline:2px solid var(--gv-cor);outline-offset:-2px}
+.gv-bolha{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;color:var(--gv-cor);background:color-mix(in srgb,var(--gv-cor) 15%,transparent);transition:transform 70ms,background 200ms linear,color 200ms linear}
+.gv.on .gv-bolha{background:var(--gv-cor);color:var(--bg-card)}
+.gv-cab:active .gv-bolha{transform:scale(.88)}
+.gv-bolha svg{width:17px;height:17px}
+.gv-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.gv-txt b{font-size:14.5px;font-weight:700}
+.gv-txt small{font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gv-chev{flex:none;width:18px;height:18px;color:var(--text3);transition:transform 340ms cubic-bezier(.34,1.56,.64,1)}
+.gv.on .gv-chev{transform:rotate(180deg)}
+.gv-corpo{display:grid;grid-template-rows:0fr;transition:grid-template-rows 260ms var(--fc-curva)}
+.gv.on .gv-corpo{grid-template-rows:1fr}
+.gv.gv-seco .gv-corpo,.gv.gv-seco .gv-corpo>div,.gv.gv-seco .gv-chev,.gv.gv-seco .gv-bolha{transition:none}
+.gv-corpo>div{min-height:0;overflow:hidden;visibility:hidden;transition:visibility 0s linear 260ms}
+.gv.on .gv-corpo>div{visibility:visible;transition:visibility 0s}
+.gv-in{padding:2px 14px 14px}
+.gv.chega .gv-in>*{animation:gvSobe 260ms var(--fc-curva) both}
+.gv.chega .gv-in>*:nth-child(2){animation-delay:16ms}
+.gv.chega .gv-in>*:nth-child(3){animation-delay:32ms}
+.gv.chega .gv-in>*:nth-child(n+4){animation-delay:48ms}
+@keyframes gvSobe{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes gvFade{from{opacity:0}}
+.gv-rot{font-size:13.5px;font-weight:600;color:var(--text);margin:4px 0 8px}
+.gv-mais{margin:6px 0 12px}
+.gv-mais>summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--accent);list-style:none;padding:6px 0;display:inline-flex;align-items:center;gap:8px}
+.gv-mais>summary::-webkit-details-marker{display:none}
+.gv-mais>summary::before{content:'';width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform 200ms var(--fc-curva)}
+.gv-mais[open]>summary::before{transform:rotate(45deg)}
+.gv-mais>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.gv-recomecar>summary{color:var(--danger)}
+.gv-acao{flex-direction:column;align-items:stretch;gap:10px;margin-bottom:8px}
+.maint-btn.gv-neutro{border-color:var(--border2);color:var(--text)}
+.bkp-nivel{display:grid;width:100%;margin:0 0 6px}
+.bkp-nivel .jz-seg-ind{width:calc((100% - 4px)/4)}
+.bkp-nivel button{padding:9px 4px;font-size:12.5px}
+.bkp-nivel.solto .jz-seg-ind{opacity:0}
+/* Segure pra confirmar: aposenta a janelinha confirm() do navegador nas duas
+   ações grandes. Soltar antes de encher desfaz; o enchimento é o relógio. */
+.segura-btn{position:relative;overflow:hidden;width:100%;border:1.5px solid var(--danger);background:none;color:var(--danger);border-radius:10px;padding:10px 14px;font:700 12.5px var(--font);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.segura-fill{position:absolute;inset:0;background:var(--danger);transform-origin:left center;transform:scaleX(0);transition:transform 200ms var(--fc-curva)}
+.segura-btn.segurando .segura-fill{transform:scaleX(1);transition:transform 1200ms linear}
+.segura-txt{position:relative;z-index:1;transition:color 150ms linear}
+.segura-btn.segurando .segura-txt{color:#fff}
+.segura-btn.feito{animation:seguraFeito 320ms cubic-bezier(.34,1.56,.64,1)}
+.segura-btn:focus-visible{outline:2px solid var(--danger);outline-offset:2px}
+@keyframes seguraFeito{50%{transform:scale(1.04)}}
+@media(prefers-reduced-motion:reduce){
+  .cfg-tab-ind,.gv-corpo,.gv-chev,.gv{transition:none}
+  .cfg-tabs.anda .cfg-tab-ind,.cfg-tab-btn.pula .cfg-tab-bolha,.segura-btn.feito{animation:none}
+  .gv.chega .gv-in>*,.cfg-tab-pane.chega{animation:gvFade 120ms linear both}
+}
 .maint-info{flex:1}
 /* No celular a linha "Chaves de API: backup em arquivo" tem dois botões que
    não encolhem: o texto virava uma coluna de uma palavra e o segundo botão
@@ -6049,7 +6106,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* Selo "ativo" inline no nome da chave — não colide mais com o link do console */
 .key-row.active-key label>span:first-child::after{content:'✓ ativo';margin-left:7px;font-size:9px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--accent);background:var(--accent-glow);padding:2px 7px;border-radius:20px;vertical-align:1px}
 /* Abas do modal de configurações */
-.cfg-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:-4px 0 16px;background:var(--bg-input);border-radius:13px;padding:4px;position:sticky;top:0;z-index:5}
+.cfg-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:-4px 0 16px;background:var(--bg-input);border-radius:13px;padding:4px;position:sticky;top:0;z-index:5}
 /* A barra gruda no topo ao rolar, mas o fundo dela (--bg-input) é
    translúcido: o texto das seções passava visível por trás das abas (visto
    num celular de 375px em 28/09/2026). A camada de --bg-card por baixo deixa
@@ -6061,8 +6118,23 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
    em tela de celular a fileira toda estourava a largura do modal, cortando
    "⚙️ Geral" pra fora da tela. Com flex-wrap, se ainda não couber tudo numa
    linha só, quebra pra 2 linhas de 2 abas em vez de vazar da tela. */
-.cfg-tab-btn{flex:1 1 min(140px,45%);min-width:0;border:none;background:none;border-radius:10px;padding:8px 4px;font-size:11.5px;font-weight:700;font-family:var(--font);color:var(--text3);cursor:pointer;transition:all var(--transition);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cfg-tab-btn.on{background:var(--bg-card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+/* Plano 28 (05/10/2026): quatro colunas fixas que nunca quebram em 2 linhas.
+   Cada aba tem um balão na cor da sua família (as mesmas --hm-* do menu ⋯);
+   um cartão desliza até a aba escolhida — o mesmo Encaixe do PT|EN. */
+.cfg-tab-btn{position:relative;z-index:1;min-width:0;border:none;background:none;border-radius:10px;padding:8px 2px 7px;font-size:11.5px;font-weight:700;font-family:var(--font);color:var(--text3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15;transition:color 200ms linear}
+.cfg-tab-btn.on{color:var(--text)}
+.cfg-tab-lbl{text-align:center;overflow-wrap:anywhere}
+.cfg-tab-bolha{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--tab-cor);background:color-mix(in srgb,var(--tab-cor) 15%,transparent);transition:background 200ms linear,color 200ms linear,transform 70ms}
+.cfg-tab-bolha svg{width:16px;height:16px}
+.cfg-tab-btn.on .cfg-tab-bolha{background:var(--tab-cor);color:var(--bg-card)}
+.cfg-tab-btn:active .cfg-tab-bolha{transform:scale(.86)}
+.cfg-tab-btn.pula .cfg-tab-bolha{animation:cfgPula 340ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes cfgPula{0%{transform:scale(.9)}60%{transform:scale(1.08)}100%{transform:none}}
+.cfg-tab-btn:focus-visible{outline:2px solid var(--tab-cor);outline-offset:-2px}
+.cfg-tab-ind{position:absolute;left:4px;top:4px;bottom:4px;width:calc((100% - 8px)/4);border-radius:10px;background:var(--bg-card);box-shadow:var(--smode-elev);transform:translateX(calc(var(--tab-i,0)*100%));transition:transform 240ms var(--fc-curva);pointer-events:none}
+.cfg-tabs.anda .cfg-tab-ind{animation:jzEstica 240ms var(--fc-curva)}
+.cfg-tabs.noanim .cfg-tab-ind{transition:none}
+.cfg-tab-pane.chega{animation:gvSobe 220ms var(--fc-curva)}
 .local-100-badge{display:none;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:0.4px;color:var(--accent);background:var(--accent-glow);padding:3px 9px;border-radius:20px;white-space:nowrap}
 .local-100-badge.on{display:inline-flex}
 /* "Avançado": fechado por padrão. Quem nunca abrir nunca vai saber que existe,
@@ -7382,11 +7454,11 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div id="cfgAvancadasWrap">
       <div id="srvParque" hidden></div>
       <button type="button" class="cse-voltar" onclick="_mostraPortaEntrada()"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"/></svg></span><span data-i18n>voltar ao começo</span></button>
-      <div class="cfg-tabs">
-        <button class="cfg-tab-btn" id="cfgTabBtnGeral" onclick="cfgTab('Geral')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> <span data-i18n>Geral</span></button>
-        <button class="cfg-tab-btn on" id="cfgTabBtnTrans" onclick="cfgTab('Trans')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg></span> <span data-i18n>Transcrição</span></button>
-        <button class="cfg-tab-btn" id="cfgTabBtnText" onclick="cfgTab('Text')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span> <span data-i18n>IA de texto</span></button>
-        <button class="cfg-tab-btn" id="cfgTabBtnDiar" onclick="cfgTab('Diar')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span> <span data-i18n>Separar vozes</span></button>
+      <div class="cfg-tabs" id="cfgTabs" role="tablist"><span class="cfg-tab-ind" aria-hidden="true"></span>
+        <button class="cfg-tab-btn" id="cfgTabBtnGeral" onclick="cfgTab('Geral')" role="tab" style="--tab-cor:var(--hm-cfg)"><span class="cfg-tab-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="cfg-tab-lbl" data-i18n>Geral</span></button>
+        <button class="cfg-tab-btn on" id="cfgTabBtnTrans" onclick="cfgTab('Trans')" role="tab" style="--tab-cor:var(--hm-lang)"><span class="cfg-tab-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 10a7 7 0 0 0 14 0"/><line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="22"/></svg></span><span class="cfg-tab-lbl" data-i18n>Transcrição</span></button>
+        <button class="cfg-tab-btn" id="cfgTabBtnText" onclick="cfgTab('Text')" role="tab" style="--tab-cor:var(--hm-look)"><span class="cfg-tab-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><span class="cfg-tab-lbl" data-i18n>IA de texto</span></button>
+        <button class="cfg-tab-btn" id="cfgTabBtnDiar" onclick="cfgTab('Diar')" role="tab" style="--tab-cor:var(--hm-notas)"><span class="cfg-tab-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span><span class="cfg-tab-lbl" data-i18n>Separar vozes</span></button>
       </div>
       <div class="cfg-tab-pane" id="cfgPaneTrans">
       <div class="section-title" data-i18n>Transcrição</div>
@@ -7696,8 +7768,18 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
            (exportProject, exportKeysBackup, _importFile e os painéis de
            transferência); o que é novo é o Vox saber ONDE as chaves estão —
            _plPintar() lê as datas que exportKeysBackup e o cofre passaram a guardar. -->
+      <!-- Plano 28 (05/10/2026): a Geral deixou de ser uma lista corrida. São
+           quatro gavetas com nome de tarefa; a linha fechada de cada uma conta o
+           estado. Os blocos e ids de sempre só mudaram de casa (saveCfg() e os
+           atalhos acham tudo pelo id). Qual gaveta fica aberta: vox_cfg_gavetas. -->
+      <div class="gv" data-gv="proteger" style="--gv-cor:var(--hm-cofre)">
+        <button type="button" class="gv-cab" aria-expanded="false" aria-controls="gvCorpoProteger" onclick="_gvAlternar('proteger')">
+          <span class="gv-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+          <span class="gv-txt"><b data-i18n>Proteger e levar</b><small id="gvResProteger"></small></span>
+          <span class="gv-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="gv-corpo" id="gvCorpoProteger"><div><div class="gv-in">
       <div id="plSecao">
-      <div class="section-title" style="margin-top:4px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> <span data-i18n>Proteger e levar</span></div>
       <p class="fhint" style="margin:-6px 0 12px" data-i18n>Tudo o que você grava fica só neste aparelho e neste navegador. Se um dos dois mudar, o Vox abre vazio. Aqui você guarda uma cópia e leva pra onde quiser.</p>
       <span class="jz-seg pl-trilho" id="plTrilho" role="group"><span class="jz-seg-ind"></span><button type="button" data-v="guardar" onclick="_plAba('guardar',this)" data-i18n>Guardar</button><button type="button" data-v="restaurar" onclick="_plAba('restaurar',this)" data-i18n>Restaurar</button><button type="button" data-v="levar" onclick="_plAba('levar',this)" data-i18n>Outro aparelho</button></span>
 
@@ -7737,8 +7819,11 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <div id="pastaBackupSection" style="display:none">
           <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span data-i18n>Pasta no computador</span></div>
           <div class="bkp-selo"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n>Este navegador consegue guardar uma cópia numa pasta</span></div>
+          <p class="fhint" style="margin-bottom:6px" data-i18n>Escolha uma pasta e o Vox guarda uma cópia nela cada vez que você salvar.</p>
+          <details class="gv-mais"><summary data-i18n>Como funciona?</summary>
           <p class="fhint" style="margin-bottom:8px" data-i18n>Escolha uma pasta uma vez; sempre que você salvar uma cópia, o Vox grava outra ali também — ela sobrevive até se você limpar os dados do navegador. O Vox não copia nada por conta própria: a cópia acontece quando você toca em Salvar cópia agora (ou em Salvar agora, no aviso). Apontar pra uma pasta do OneDrive, iCloud Drive, Google Drive ou Dropbox leva a cópia pra fora do aparelho sem o Vox precisar de nuvem própria.</p>
           <div class="tx-tut" style="margin-bottom:8px" data-i18n-html>O que acontece depois que você autoriza: a cada cópia o Vox grava <strong>um arquivo do dia</strong> nessa pasta, mantém <strong>os 5 mais recentes</strong> e apaga os antigos sozinho. Ele não lê mais nada ali dentro, e a autorização é sua — dá pra tirar quando quiser, nas configurações do navegador.</div>
+          </details>
           <div class="maint-box" style="margin-bottom:8px">
             <div class="maint-info">
               <div class="maint-title" id="pastaBackupNome" data-i18n>Nenhuma pasta escolhida ainda</div>
@@ -7750,10 +7835,16 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         </div>
 
         <div id="bkpManualWrap" style="display:none">
+          <details class="gv-mais"><summary data-i18n>Por que aqui a cópia é manual?</summary>
           <div class="tx-tut" style="margin-bottom:10px" data-i18n>Neste aparelho o salvamento é manual, e isso não é limitação do Vox: navegadores de celular, o Firefox e o Safari não deixam site nenhum escrever numa pasta sua — é uma trava de segurança deles. Então o Vox faz a parte que cabe a ele: lembrar você na hora certa. E a hora, quem escolhe é você.</div>
+          </details>
         </div>
 
         <div class="section-title" style="margin-top:14px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></span> <span data-i18n>Quando te lembrar</span></div>
+        <span class="jz-seg bkp-nivel" id="bkpNivel" role="group" aria-label="Me lembrar de fazer cópia" data-i18n-aria><span class="jz-seg-ind"></span><button type="button" data-v="pouco" onclick="_bkpNivel('pouco',this)" data-i18n>Pouco</button><button type="button" data-v="normal" onclick="_bkpNivel('normal',this)" data-i18n>Normal</button><button type="button" data-v="bastante" onclick="_bkpNivel('bastante',this)" data-i18n>Bastante</button><button type="button" data-v="nunca" onclick="_bkpNivel('nunca',this)" data-i18n>Nunca</button></span>
+        <p class="fhint" id="bkpNivelInfo" style="margin:2px 0 10px"></p>
+        <button class="bkp-btn" id="bkpIcsBtn" style="margin-bottom:4px" onclick="_bkpBaixarIcs()" data-i18n>Pôr no meu calendário</button>
+        <details class="gv-mais" id="bkpAjustar"><summary data-i18n>Ajustar os números</summary>
         <div class="bkp-linha">
           <div>
             <p data-i18n>Lembretes de cópia de segurança</p>
@@ -7815,7 +7906,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <div><p data-i18n>A que horas</p></div>
           <select id="bkpHoraSel" onchange="_bkpSalvar({hora:+this.value})"></select>
         </div>
-        <button class="bkp-btn" id="bkpIcsBtn" style="margin-bottom:16px" onclick="_bkpBaixarIcs()" data-i18n>Baixar o lembrete</button>
+        </details>
         </div>
       </div>
 
@@ -7851,7 +7942,15 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <p class="fhint" style="margin:10px 0 0" data-i18n>QR pra quem está perto, link pra quem está longe. O conteúdo viaja dentro do próprio link, sem passar por um servidor do Vox.</p>
       </div>
       </div><!-- /plSecao -->
-      <div class="section-title" style="margin-top:22px" data-i18n>Experiência</div>
+        </div></div></div>
+      </div><!-- /gaveta proteger -->
+      <div class="gv" data-gv="jeito" style="--gv-cor:var(--hm-look)">
+        <button type="button" class="gv-cab" aria-expanded="false" aria-controls="gvCorpoJeito" onclick="_gvAlternar('jeito')">
+          <span class="gv-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>
+          <span class="gv-txt"><b data-i18n>Seu jeito de usar</b><small id="gvResJeito"></small></span>
+          <span class="gv-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="gv-corpo" id="gvCorpoJeito"><div><div class="gv-in">
       <!-- Plano 27 (05/10/2026): como o Vox abre neste mundo + perfil do mundo.
            Uma linha fechada por padrão; "Mudar" abre a prateleira ali mesmo. -->
       <div class="abre-esc">
@@ -7866,36 +7965,67 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       </div>
       <div class="diar-toggle-row">
         <div>
-          <p data-i18n>🤝 Modo assistido</p>
-          <small data-i18n>Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.</small>
+          <p data-i18n>Dicas pelo caminho</p>
+          <small data-i18n>O Vox explica cada função na primeira vez que você usa.</small>
         </div>
         <label class="toggle-sw">
-          <input type="checkbox" id="assistEnabled" onchange="cfg.assist=this.checked;localStorage.setItem('vox_cfg',JSON.stringify(cfg))">
+          <input type="checkbox" id="assistEnabled" onchange="cfg.assist=this.checked;localStorage.setItem('vox_cfg',JSON.stringify(cfg));_gvPintar()">
           <span></span>
         </label>
       </div>
-      <!-- Plano 22 (08/09/2026): mesma preferência do interruptor que aparece
-           dentro da porta simples (só depois que existe chave do Groq) — aqui é
-           onde a promessa "você desliga no fim da aba Geral" precisa existir de
-           verdade. Escondido até haver chave: ninguém deveria conseguir desligar
-           pra sempre uma tela de ajuda antes de ter visto ela funcionar. -->
+      <!-- Plano 22: só aparece depois que existe chave do Groq. -->
       <div class="diar-toggle-row" id="rowPularPortaSimples" style="display:none">
         <div>
-          <p data-i18n>Abrir sempre nas avançadas</p>
-          <small data-i18n>Pula a tela de entrada simples e vai direto pras quatro abas ao abrir Configurações.</small>
+          <p data-i18n>Abrir Configurações já completas</p>
+          <small data-i18n>Pula a tela de entrada e mostra tudo de uma vez.</small>
         </div>
         <label class="toggle-sw">
           <input type="checkbox" id="pularPortaSimplesChk" onchange="_pularPortaSimplesChange(this.checked)">
           <span></span>
         </label>
       </div>
-      <div class="section-title" style="margin-top:16px" data-i18n>Manutenção</div>
+        </div></div></div>
+      </div><!-- /gaveta jeito -->
+      <div class="gv" data-gv="palavras" id="gvPalavras" style="--gv-cor:var(--hm-notas)" hidden>
+        <button type="button" class="gv-cab" aria-expanded="false" aria-controls="gvCorpoPalavras" onclick="_gvAlternar('palavras')">
+          <span class="gv-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+          <span class="gv-txt"><b data-i18n>Palavras que o Vox aprendeu</b><small id="gvResPalavras"></small></span>
+          <span class="gv-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="gv-corpo" id="gvCorpoPalavras"><div><div class="gv-in">
+      <p class="fhint" style="margin-bottom:8px" data-i18n>Quando você escolhe "sempre ignorar" ou "sempre trocar" ao revisar um texto, a regra fica aqui. Toque no X pra tirar uma.</p>
+      <div class="maint-box" style="margin-bottom:8px;flex-direction:column;align-items:stretch;gap:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="maint-title" data-i18n>Palavras ignoradas</span>
+          <span id="personalDictCount" style="font-size:12px;color:var(--text4);font-weight:600">0</span>
+        </div>
+        <div id="personalDictList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        <p id="personalDictEmpty" style="font-size:12px;color:var(--text4)" data-i18n>Nenhuma ainda.</p>
+      </div>
+      <div class="maint-box" style="margin-bottom:8px;flex-direction:column;align-items:stretch;gap:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="maint-title" data-i18n>Correções aprendidas</span>
+          <span id="learnedRulesCount" style="font-size:12px;color:var(--text4);font-weight:600">0</span>
+        </div>
+        <div id="learnedRulesList" style="display:flex;flex-direction:column;gap:6px"></div>
+        <p id="learnedRulesEmpty" style="font-size:12px;color:var(--text4)" data-i18n>Nenhuma ainda.</p>
+      </div>
+      <button class="maint-btn" style="margin-bottom:4px" onclick="clearLearningData()" data-i18n>Esquecer tudo</button>
+        </div></div></div>
+      </div><!-- /gaveta palavras -->
+      <div class="gv" data-gv="socorro" style="--gv-cor:var(--hm-ajuda)">
+        <button type="button" class="gv-cab" aria-expanded="false" aria-controls="gvCorpoSocorro" onclick="_gvAlternar('socorro')">
+          <span class="gv-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg></span>
+          <span class="gv-txt"><b data-i18n>Se algo der errado</b><small id="gvResSocorro"></small></span>
+          <span class="gv-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="gv-corpo" id="gvCorpoSocorro"><div><div class="gv-in">
       <div class="maint-box" style="margin-bottom:8px">
         <div class="maint-info">
-          <div class="maint-title"><span data-i18n>Áudios na RAM</span> <span class="ram-badge" id="ramBadge" style="display:none">0</span></div>
-          <div class="maint-desc" data-i18n>Remove players de áudio e desbloqueia o app caso esteja travado.</div>
+          <div class="maint-title"><span data-i18n>O Vox travou?</span> <span class="ram-badge" id="ramBadge" style="display:none">0</span></div>
+          <div class="maint-desc" data-i18n>Fecha os áudios abertos e para qualquer gravação em andamento. Suas notas não são apagadas.</div>
         </div>
-        <button class="maint-btn" onclick="forceReset()" style="display:inline-flex;align-items:center;gap:5px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span> <span data-i18n>Liberar + Resetar</span></button>
+        <button class="maint-btn gv-neutro" onclick="forceReset()" style="display:inline-flex;align-items:center;gap:5px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span><span data-i18n>Destravar</span></button>
       </div>
       <div id="storageMeterSection">
         <div class="section-title" style="margin-top:16px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span> <span data-i18n>Espaço neste aparelho</span></div>
@@ -7914,56 +8044,20 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
              slot virou o sinal honesto de navigator.storage.persist(). -->
         <div class="tx-tut" id="storagePersistStatus" style="display:none;margin-bottom:16px"></div>
       </div>
-
-      <div class="section-title" style="margin-top:16px" data-i18n>📖 Dicionário e correções aprendidas</div>
-      <p class="fhint" style="margin-bottom:8px" data-i18n>Ao revisar palavras repetidas/suspeitas num texto, escolher "sempre ignorar" ou "sempre trocar" guarda a regra aqui — visível e editável a qualquer momento, nunca escondida.</p>
-      <div class="maint-box" style="margin-bottom:8px;flex-direction:column;align-items:stretch;gap:0">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span class="maint-title" data-i18n>Palavras ignoradas</span>
-          <span id="personalDictCount" style="font-size:12px;color:var(--text4);font-weight:600">0</span>
-        </div>
-        <div id="personalDictList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-        <p id="personalDictEmpty" style="font-size:12px;color:var(--text4)" data-i18n>Nenhuma ainda.</p>
-      </div>
-      <div class="maint-box" style="margin-bottom:8px;flex-direction:column;align-items:stretch;gap:0">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span class="maint-title" data-i18n>Correções aprendidas</span>
-          <span id="learnedRulesCount" style="font-size:12px;color:var(--text4);font-weight:600">0</span>
-        </div>
-        <div id="learnedRulesList" style="display:flex;flex-direction:column;gap:6px"></div>
-        <p id="learnedRulesEmpty" style="font-size:12px;color:var(--text4)" data-i18n>Nenhuma ainda.</p>
-      </div>
-      <button class="maint-btn" style="margin-bottom:16px" onclick="clearLearningData()" data-i18n>Esquecer tudo</button>
-
-      <div class="section-title" data-i18n>Apagar transcrições</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div class="maint-box">
+      <details class="gv-mais gv-recomecar" id="gvRecomecar"><summary data-i18n>Recomeçar do zero</summary>
+        <div class="maint-box gv-acao">
           <div class="maint-info">
-            <div class="maint-title" data-i18n>Apagar só as de hoje</div>
-            <div class="maint-desc" data-i18n>Remove todos os cards do dia atual. Fixados são preservados.</div>
+            <div class="maint-title" data-i18n>Mandar todas as notas pra lixeira</div>
+            <div class="maint-desc" data-i18n>Elas ficam lá por 30 dias e dá pra desfazer. Pra tirar só algumas, use Selecionar na tela principal.</div>
           </div>
-          <button class="maint-btn" onclick="bulkDelete('today')" data-i18n>Apagar hoje</button>
+          <button type="button" class="segura-btn" data-segura="lixeiraTudo"><span class="segura-fill"></span><span class="segura-txt" data-i18n>Segure pra mandar tudo pra lixeira</span></button>
         </div>
-        <div class="maint-box">
+        <div class="maint-box gv-acao">
           <div class="maint-info">
-            <div class="maint-title" data-i18n>Apagar não fixados</div>
-            <div class="maint-desc" data-i18n>Remove tudo exceto os cards com 📌 pin.</div>
+            <div class="maint-title" style="color:var(--danger)" data-i18n>Voltar o Vox ao primeiro dia</div>
+            <div class="maint-desc" data-i18n>Zera chaves, idioma, tema e ajustes. Suas notas podem ficar.</div>
           </div>
-          <button class="maint-btn" onclick="bulkDelete('unpinned')" data-i18n>Apagar não fixados</button>
-        </div>
-        <div class="maint-box" style="border:1px solid rgba(255,59,48,0.2)">
-          <div class="maint-info">
-            <div class="maint-title" style="color:var(--danger)" data-i18n>Apagar tudo</div>
-            <div class="maint-desc" data-i18n>Remove todos os cards e zera o histórico completamente.</div>
-          </div>
-          <button class="maint-btn" onclick="bulkDelete('all')" data-i18n>Apagar tudo</button>
-        </div>
-        <div class="maint-box" style="border:1px solid rgba(255,59,48,0.2)">
-          <div class="maint-info">
-            <div class="maint-title" style="color:var(--danger)" data-i18n>Zerar o app</div>
-            <div class="maint-desc" data-i18n>Zera todas as preferências, chaves e ajustes — como no primeiro dia.</div>
-          </div>
-          <button class="maint-btn" onclick="factoryResetStart()" data-i18n>Zerar</button>
+          <button class="maint-btn" onclick="factoryResetStart()" data-i18n>Zerar o Vox…</button>
         </div>
         <div id="frConfirm" style="display:none;background:var(--bg-input);border:1px solid rgba(255,59,48,0.35);border-radius:14px;padding:14px">
           <p style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:6px" data-i18n>⚠️ Tem certeza? Isso apaga chaves de API, idioma, tema, receitas e todos os ajustes.</p>
@@ -7975,11 +8069,13 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="maint-btn" onclick="exportProject()" style="display:inline-flex;align-items:center;gap:5px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span> <span data-i18n>Baixar a cópia das notas antes</span></button>
             <button class="maint-btn" onclick="exportKeysBackup()" style="display:inline-flex;align-items:center;gap:5px"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span> <span data-i18n>Baixar chaves antes</span></button>
-            <button class="maint-btn" style="background:var(--danger);color:#fff" onclick="factoryResetConfirm()" data-i18n>Zerar agora</button>
+            <button type="button" class="segura-btn" data-segura="zerar" style="flex:1 1 100%"><span class="segura-fill"></span><span class="segura-txt" data-i18n>Segure pra zerar o Vox</span></button>
             <button class="maint-btn" onclick="document.getElementById('frConfirm').style.display='none'" data-i18n>Cancelar</button>
           </div>
         </div>
-      </div>
+      </details>
+        </div></div></div>
+      </div><!-- /gaveta socorro -->
       <p style="font-size:11px;color:var(--text4);text-align:center;margin-top:18px">Vox · My Transcriber <span id="verSettings"></span></p>
       <p style="font-size:11px;color:var(--text4);text-align:center;margin-top:4px"><a href="terms.html" target="_blank" rel="noopener noreferrer" style="color:var(--text4);text-decoration:underline" data-i18n>Termos de Uso</a> · <a href="privacy.html" target="_blank" rel="noopener noreferrer" style="color:var(--text4);text-decoration:underline" data-i18n>Política de Privacidade</a></p>
       </div><!-- /cfgPaneGeral -->
@@ -8582,7 +8678,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.05.5';
+const VOX_VERSION='2026.10.05.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10081,7 +10177,7 @@ let I18N_EN={
 "bloco {i} de {n}…":"chunk {i} of {n}…","unindo os blocos…":"merging the chunks…",
 "De":"From","Para":"To","Automático":"Auto","Trocar":"Swap","Detectando idioma…":"Detecting language…","Idioma detectado":"Language detected","Texto já no idioma de destino":"Text already appears to be in the target language. No translation needed.","No automático eu detecto o idioma e trago para o idioma do app.":"In auto mode I detect the language and bring it to the app language.","Escolher idiomas manualmente":"Choose languages manually",
 "Nova versão disponível":"New version available","Atualizar":"Update",
-"Experiência":"Experience","Como o Vox abre":"How Vox opens","O Vox abre em":"Vox opens in","Mudar":"Change","neste mundo":"in this world","abre aqui":"opens here","Onde parei":"Where I left off","Volta na tela e no jeito de ver que você deixou.":"Back to the screen and view you left.","Um card embaixo do outro, do mais novo pro mais antigo.":"One card under the other, newest first.","Cards lado a lado, como um mural.":"Cards side by side, like a wall board.","Um card por vez, em tela de leitura.":"One card at a time, in reading view.","Fluxograma":"Flowchart","Suas pastas ligadas como um mapa.":"Your folders linked like a map.","Órbita":"Orbit","Suas pastas girando em volta de um centro.":"Your folders circling a center.","Calendário":"Calendar","Cada nota no dia em que nasceu.":"Each note on the day it was made.","Mundos":"Worlds","O céu com todos os seus mundos.":"The sky with all your worlds.","Pensamento fluido":"Free thinking","Do meu jeito":"My own way","Grava no modo Reunião e abre no Calendário.":"Records in Meeting mode and opens in the Calendar.","Grava no modo Consulta e abre no Documento.":"Records in Appointment mode and opens in Document view.","Grava no modo Livre e abre no Fluxograma.":"Records in Free mode and opens in the Flowchart.","Grava no modo Entrevista e abre na Lista.":"Records in Interview mode and opens in the List.","Abre onde você parou, no último modo que usou.":"Opens where you left off, in the last mode you used.","Como você vai usar o Vox neste mundo?":"How will you use Vox in this world?","Escolha um jeito de trabalhar: ele ajusta o modo de gravação e a tela de abertura deste mundo.":"Pick a way of working: it sets the recording mode and the opening screen of this world.","Seus cards":"Your cards","Abrir já com":"Open straight into","Vale só para este mundo. Cada mundo guarda a sua escolha.":"Only for this world. Each world keeps its own choice.","Voltar ao padrão":"Back to default","O Vox vai abrir onde você parou.":"Vox will open where you left off.","O Vox vai abrir em {x} neste mundo.":"Vox will open in {x} in this world.","{p} neste mundo: ":"{p} in this world: ","Pronto: o Vox volta a abrir onde você parou.":"Done: Vox opens where you left off again.","Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.":"This picks the recording mode and the screen this world opens in. You can change it later in Settings.","Ainda não há pastas pro {x} — abrimos nos seus cards.":"There are no folders for the {x} yet — we opened your cards.","Abriu em {x} — você escolheu isso.":"Opened in {x} — you chose this.","🤝 Modo assistido":"🤝 Assisted mode",
+"Experiência":"Experience","1 nota na lixeira · some em 30 dias":"1 note in the trash · gone in 30 days","Seu jeito de usar":"Your way of using it","Palavras que o Vox aprendeu":"Words Vox has learned","Se algo der errado":"If something goes wrong","Nenhuma cópia ainda":"No copy yet","Última cópia hoje":"Last copy today","Última cópia ontem":"Last copy yesterday","Última cópia há {n} dias":"Last copy {n} days ago","Abre em {x}":"Opens in {x}","dicas ligadas":"tips on","dicas desligadas":"tips off","1 palavra ou correção":"1 word or correction","{n} palavras e correções":"{n} words and corrections","Destravar, espaço, recomeçar":"Unfreeze, storage, start over","Escolha uma pasta e o Vox guarda uma cópia nela cada vez que você salvar.":"Pick a folder and Vox keeps a copy there every time you save.","Como funciona?":"How does it work?","Por que aqui a cópia é manual?":"Why is the copy manual here?","Pouco":"Rarely","Normal":"Normal","Bastante":"Often","Nunca":"Never","Pôr no meu calendário":"Add to my calendar","Ajustar os números":"Fine-tune the numbers","Me lembrar de fazer cópia":"Remind me to make a copy","O Vox não vai te lembrar na tela. O calendário, se você pôs, continua valendo.":"Vox won't remind you on screen. The calendar, if you added it, still works.","Do seu jeito: {n} notas ou {d} dias.":"Your way: {n} notes or {d} days.","Avisa a cada {n} notas novas ou {d} dias sem cópia, na tela principal e nunca em cima de uma gravação.":"Reminds you every {n} new notes or {d} days without a copy, on the main screen and never over a recording.","Dicas pelo caminho":"Tips along the way","O Vox explica cada função na primeira vez que você usa.":"Vox explains each feature the first time you use it.","Abrir Configurações já completas":"Open Settings fully expanded","Pula a tela de entrada e mostra tudo de uma vez.":"Skips the welcome screen and shows everything at once.","Quando você escolhe \"sempre ignorar\" ou \"sempre trocar\" ao revisar um texto, a regra fica aqui. Toque no X pra tirar uma.":"When you pick \"always ignore\" or \"always replace\" while reviewing a text, the rule is kept here. Tap the X to remove one.","O Vox travou?":"Is Vox stuck?","Fecha os áudios abertos e para qualquer gravação em andamento. Suas notas não são apagadas.":"Closes open audio and stops any recording in progress. Your notes are not deleted.","Destravar":"Unfreeze","Recomeçar do zero":"Start over","Mandar todas as notas pra lixeira":"Send all notes to the trash","Elas ficam lá por 30 dias e dá pra desfazer. Pra tirar só algumas, use Selecionar na tela principal.":"They stay there for 30 days and you can undo. To remove just a few, use Select on the main screen.","Segure pra mandar tudo pra lixeira":"Hold to send everything to the trash","Voltar o Vox ao primeiro dia":"Take Vox back to day one","Zera chaves, idioma, tema e ajustes. Suas notas podem ficar.":"Resets keys, language, theme and settings. Your notes can stay.","Zerar o Vox…":"Reset Vox…","Segure pra zerar o Vox":"Hold to reset Vox","Não há notas pra mandar pra lixeira.":"There are no notes to send to the trash.","{n} notas na lixeira · somem em 30 dias":"{n} notes in the trash · gone in 30 days","↩ Notas de volta":"↩ Notes are back","Segure até a barra encher.":"Hold until the bar fills up.","O espaço livre do aparelho está acabando, e isso pode limitar o que o Vox guarda. Libere espaço no aparelho ou salve uma cópia e mande notas antigas pra lixeira.":"Your device is running out of free space, which may limit what Vox can keep. Free up space or save a copy and send old notes to the trash.","O espaço livre do aparelho está ficando apertado. Se quiser, salve uma cópia e mande notas antigas pra lixeira.":"Free space on your device is getting tight. If you like, save a copy and send old notes to the trash.","Este navegador pode apagar os dados sozinho se faltar espaço. Guarde uma cópia de vez em quando.":"This browser may erase the data on its own if space runs low. Save a copy now and then.","Como o Vox abre":"How Vox opens","O Vox abre em":"Vox opens in","Mudar":"Change","neste mundo":"in this world","abre aqui":"opens here","Onde parei":"Where I left off","Volta na tela e no jeito de ver que você deixou.":"Back to the screen and view you left.","Um card embaixo do outro, do mais novo pro mais antigo.":"One card under the other, newest first.","Cards lado a lado, como um mural.":"Cards side by side, like a wall board.","Um card por vez, em tela de leitura.":"One card at a time, in reading view.","Fluxograma":"Flowchart","Suas pastas ligadas como um mapa.":"Your folders linked like a map.","Órbita":"Orbit","Suas pastas girando em volta de um centro.":"Your folders circling a center.","Calendário":"Calendar","Cada nota no dia em que nasceu.":"Each note on the day it was made.","Mundos":"Worlds","O céu com todos os seus mundos.":"The sky with all your worlds.","Pensamento fluido":"Free thinking","Do meu jeito":"My own way","Grava no modo Reunião e abre no Calendário.":"Records in Meeting mode and opens in the Calendar.","Grava no modo Consulta e abre no Documento.":"Records in Appointment mode and opens in Document view.","Grava no modo Livre e abre no Fluxograma.":"Records in Free mode and opens in the Flowchart.","Grava no modo Entrevista e abre na Lista.":"Records in Interview mode and opens in the List.","Abre onde você parou, no último modo que usou.":"Opens where you left off, in the last mode you used.","Como você vai usar o Vox neste mundo?":"How will you use Vox in this world?","Escolha um jeito de trabalhar: ele ajusta o modo de gravação e a tela de abertura deste mundo.":"Pick a way of working: it sets the recording mode and the opening screen of this world.","Seus cards":"Your cards","Abrir já com":"Open straight into","Vale só para este mundo. Cada mundo guarda a sua escolha.":"Only for this world. Each world keeps its own choice.","Voltar ao padrão":"Back to default","O Vox vai abrir onde você parou.":"Vox will open where you left off.","O Vox vai abrir em {x} neste mundo.":"Vox will open in {x} in this world.","{p} neste mundo: ":"{p} in this world: ","Pronto: o Vox volta a abrir onde você parou.":"Done: Vox opens where you left off again.","Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.":"This picks the recording mode and the screen this world opens in. You can change it later in Settings.","Ainda não há pastas pro {x} — abrimos nos seus cards.":"There are no folders for the {x} yet — we opened your cards.","Abriu em {x} — você escolheu isso.":"Opened in {x} — you chose this.","🤝 Modo assistido":"🤝 Assisted mode",
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
 "Zera todas as preferências, chaves e ajustes — como no primeiro dia.":"Resets all preferences, keys and settings — like day one.",
@@ -12461,8 +12557,35 @@ function _bkpSalvar(mudanca){
   else{localStorage.setItem('vox_lembrete_backup_off','1');_voxFecharLembrete()}
   _bkpPintar();
 }
+// Plano 28: as cinco decisões do lembrete viram uma escolha de quatro. Os
+// números exatos continuam em "Ajustar os números" (e mandam se mexidos).
+const BKP_NIVEIS={pouco:{notas:25,dias:15},normal:{notas:VOX_LEMBRETE_NOTAS,dias:VOX_LEMBRETE_DIAS},bastante:{notas:5,dias:3}};
+let _bkpNivelAnim=false;
+function _bkpNivelDe(c){
+  if(!c.ligado)return 'nunca';
+  for(const k in BKP_NIVEIS)if(BKP_NIVEIS[k].notas===c.notas&&BKP_NIVEIS[k].dias===c.dias)return k;
+  return '';
+}
+function _bkpNivel(v,btn){
+  _bkpNivelAnim=!!btn;
+  _bkpSalvar(v==='nunca'?{ligado:false}:Object.assign({ligado:true},BKP_NIVEIS[v]));
+  _bkpInit();
+  _bkpNivelAnim=false;
+  if(btn)_jzTato(8);
+}
 function _bkpPintar(){
   const c=_bkpCfg();
+  const nv=document.getElementById('bkpNivel');
+  if(nv){
+    const k=_bkpNivelDe(c);
+    nv.classList.toggle('solto',!k);
+    if(k)_jzSegPos(nv,k,_bkpNivelAnim);
+    else nv.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));
+    const inf=document.getElementById('bkpNivelInfo');
+    if(inf)inf.textContent=k==='nunca'?t('O Vox não vai te lembrar na tela. O calendário, se você pôs, continua valendo.')
+      :!k?t('Do seu jeito: {n} notas ou {d} dias.').replace('{n}',c.notas||'—').replace('{d}',c.dias||'—')
+      :t('Avisa a cada {n} notas novas ou {d} dias sem cópia, na tela principal e nunca em cima de uma gravação.').replace('{n}',c.notas).replace('{d}',c.dias);
+  }
   const g=document.getElementById('bkpGatilhos');
   if(g)g.classList.toggle('bkp-off',!c.ligado);
   const mudo=document.getElementById('bkpMudoAviso');
@@ -12643,6 +12766,7 @@ function _bkpMirarEnquantoAssenta(){
 async function _voxLembreteConfigurar(){
   openModal();
   cfgTab('Geral');
+  _gvAbrir('proteger');
   _plAba('guardar');
   // Espera o painel PARAR DE CRESCER antes de mirar. O medidor de espaço e o
   // estado da pasta chegam por promessa e empurram a seção pra baixo — rolar
@@ -12864,7 +12988,7 @@ function _abreTela(id){
 }
 function _abreAvisar(msg){toastDesfazer(msg,_abreIrMudar,t('Mudar'))}
 function _abreIrMudar(){
-  openModal();cfgTab('Geral');
+  openModal();cfgTab('Geral');_gvAbrir('jeito');
   // Abre a prateleira já, mas só rola depois que o modal assentou: rolar
   // durante a animação de entrada dele parava a rolagem no meio da aba.
   setTimeout(()=>_abrePainelAlternar(true),60);
@@ -23755,14 +23879,77 @@ function cfgTab(name){
   // atalhos diretos como openModalToDiar() e os toasts de "configure uma chave".
   // Por isso é aqui, e não só no botão "Configurações avançadas", que a porta
   // simples é escondida (Plano 22, 08/09/2026).
+  const jaVia=document.getElementById('cfgAvancadasWrap').offsetParent!==null;
   document.getElementById('cfgEntradaWrap').style.display='none';
   document.getElementById('cfgAvancadasWrap').style.display='';
+  _cfgTabPos(name,jaVia);
   ['Trans','Text','Diar','Geral'].forEach(n=>{
     document.getElementById('cfgPane'+n).style.display=n===name?'block':'none';
     document.getElementById('cfgTabBtn'+n).classList.toggle('on',n===name);
   });
   if(name==='Text')_updateTxtAIPresetGrok();
-  if(name==='Geral'){_syncPularPortaCheckboxGeral();_plPintar();_abreResumo()}
+  if(name==='Geral'){_syncPularPortaCheckboxGeral();_plPintar();_abreResumo();_gvPintar()}
+}
+// ── Plano 28 (05/10/2026): abas com balões + Geral em gavetas ──
+const CFG_TAB_ORDEM=['Geral','Trans','Text','Diar'];
+let _cfgTabAtual='';
+// O cartão desliza só quando a pessoa troca de aba com as abas já na tela.
+// Abrir as Configurações direto numa aba não anima nada — senão o cartão
+// nasceria na Geral e viajaria sozinho até a aba pedida.
+function _cfgTabPos(name,jaVia){
+  const bar=document.getElementById('cfgTabs');if(!bar)return;
+  const i=Math.max(0,CFG_TAB_ORDEM.indexOf(name));
+  const anima=jaVia&&_cfgTabAtual&&_cfgTabAtual!==name&&!_voxReduzMov();
+  if(!anima){bar.classList.add('noanim');bar.style.setProperty('--tab-i',i);void bar.offsetWidth;bar.classList.remove('noanim')}
+  else{
+    bar.style.setProperty('--tab-i',i);_jz(bar,'anda',260);
+    _jz(document.getElementById('cfgTabBtn'+name),'pula',360);
+    _jz(document.getElementById('cfgPane'+name),'chega',240);
+    _jzTato(8);
+  }
+  CFG_TAB_ORDEM.forEach(n=>{const b=document.getElementById('cfgTabBtn'+n);if(b)b.setAttribute('aria-selected',n===name?'true':'false')});
+  _cfgTabAtual=name;
+}
+const GV_PADRAO=['proteger'];
+function _gvAbertas(){try{const v=JSON.parse(localStorage.getItem('vox_cfg_gavetas')||'null');if(Array.isArray(v))return v}catch(e){}return GV_PADRAO.slice()}
+function _gvGravar(l){try{localStorage.setItem('vox_cfg_gavetas',JSON.stringify(l))}catch(e){}}
+function _gvEl(id){return document.querySelector('#cfgPaneGeral .gv[data-gv="'+id+'"]')}
+function _gvPor(id,on,anim){
+  const g=_gvEl(id);if(!g)return;
+  // Sem animação (pintar ao abrir, atalho que vai rolar até lá dentro), a
+  // gaveta muda de tamanho NA HORA: quem rola em seguida mede o tamanho final.
+  if(!anim){g.classList.add('gv-seco');g.classList.toggle('on',on);void g.offsetHeight;g.classList.remove('gv-seco')}
+  else g.classList.toggle('on',on);
+  const b=g.querySelector('.gv-cab');if(b)b.setAttribute('aria-expanded',on?'true':'false');
+  if(on&&anim)_jz(g,'chega',340);
+}
+function _gvAlternar(id){
+  const l=_gvAbertas(),on=l.indexOf(id)<0;
+  _gvGravar(on?l.concat(id):l.filter(x=>x!==id));
+  _gvPor(id,on,true);_jzTato(8);
+}
+// Atalhos que levam a um bloco de dentro de uma gaveta abrem ela antes de rolar.
+function _gvAbrir(id){
+  const l=_gvAbertas();
+  if(l.indexOf(id)<0){l.push(id);_gvGravar(l)}
+  _gvPor(id,true,false);
+}
+function _gvPintar(){
+  const l=_gvAbertas();
+  document.querySelectorAll('#cfgPaneGeral .gv').forEach(g=>_gvPor(g.dataset.gv,l.indexOf(g.dataset.gv)>=0,false));
+  const $=id=>document.getElementById(id);
+  if($('gvResProteger')){
+    const ult=localStorage.getItem('vox_last_backup');let r;
+    if(!ult)r=t('Nenhuma cópia ainda');
+    else{const d=Math.floor(_voxDiasDesde(ult));r=d<1?t('Última cópia hoje'):d===1?t('Última cópia ontem'):t('Última cópia há {n} dias').replace('{n}',d)}
+    $('gvResProteger').textContent=r;
+  }
+  if($('gvResJeito'))$('gvResJeito').textContent=t('Abre em {x}').replace('{x}',t(_abreOpcao(_abreEscolha()).nome))+' · '+(cfg.assist!==false?t('dicas ligadas'):t('dicas desligadas'));
+  // A gaveta das palavras só existe quando há o que mostrar.
+  const np=_personalDict.length+_learnedRules.length;
+  const gp=$('gvPalavras');if(gp)gp.hidden=!np;
+  if($('gvResPalavras'))$('gvResPalavras').textContent=np===1?t('1 palavra ou correção'):t('{n} palavras e correções').replace('{n}',np);
+  if($('gvResSocorro'))$('gvResSocorro').textContent=t('Destravar, espaço, recomeçar');
 }
 // Carlos (28/09/2026): quem entra nas avançadas pelo botão, ou já pula a porta
 // simples, cai primeiro na Geral — é onde moram chaves, cópias e espaço, que
@@ -24719,6 +24906,7 @@ function renderLearningPanel(){
     if(rulesEmpty)rulesEmpty.style.display=_learnedRules.length?'none':'block';
     if(rulesCount)rulesCount.textContent=_learnedRules.length;
   }
+  _gvPintar();
 }
 function openModal(){
   document.getElementById('overlay').classList.add('on');
@@ -24766,12 +24954,12 @@ async function updateStorageMeter(){
     document.getElementById('storageMeterUsed').textContent=t('{used} de {quota} usados').replace('{used}',_fmtBytes(usage)).replace('{quota}',_fmtBytes(quota));
     document.getElementById('storageMeterPct').textContent=pctText;
     const explainEl=document.getElementById('storageMeterExplain');
+    // Plano 28: abaixo de 60% não há nada a dizer — a barra basta.
+    explainEl.style.display=pctRaw>=60?'block':'none';
     if(pctRaw>=85){
-      explainEl.innerHTML=t('⚠️ O espaço livre do seu aparelho está ficando curto — isso pode limitar o que o Vox consegue guardar. Considere liberar espaço no aparelho, ou exporte e apague transcrições antigas aqui embaixo.');
+      explainEl.textContent=t('O espaço livre do aparelho está acabando, e isso pode limitar o que o Vox guarda. Libere espaço no aparelho ou salve uma cópia e mande notas antigas pra lixeira.');
     }else if(pctRaw>=60){
-      explainEl.innerHTML=t('O Vox guarda tudo aqui, direto no seu aparelho — nada vai pra nuvem. O espaço livre do aparelho está ficando mais apertado; se quiser, exporte as transcrições antigas (viram um arquivo no seu computador) e apague aqui embaixo pra abrir espaço.');
-    }else{
-      explainEl.innerHTML=t('O Vox guarda tudo aqui, direto no seu aparelho — nada vai pra nuvem. Suas transcrições são só texto, então ocupam bem pouco espaço: pra maioria das pessoas isso nunca chega a ser um problema. Se um dia quiser liberar espaço mesmo assim, é só exportar as antigas (viram um arquivo no seu computador) e apagar aqui embaixo.');
+      explainEl.textContent=t('O espaço livre do aparelho está ficando apertado. Se quiser, salve uma cópia e mande notas antigas pra lixeira.');
     }
     // Etapa 1 do plano de armazenamento durável: sinal honesto sobre o que
     // navigator.storage.persist() respondeu — antes a resposta era
@@ -24779,12 +24967,11 @@ async function updateStorageMeter(){
     const persistEl=document.getElementById('storagePersistStatus');
     if(persistEl){
       const p=localStorage.getItem('vox_storage_persisted');
-      if(p==='1'){
+      // Plano 28: "prometeu guardar" não muda nada pra pessoa — silêncio.
+      // Só o "não" vira um conselho, porque aí a cópia importa mais.
+      if(p==='0'){
         persistEl.style.display='block';
-        persistEl.textContent=t('🛡️ Este navegador prometeu guardar os dados do Vox — o risco de perda por falta de espaço é bem menor.');
-      }else if(p==='0'){
-        persistEl.style.display='block';
-        persistEl.textContent=t('Este navegador ainda não prometeu guardar os dados do Vox — sob pouco espaço, ele pode apagar sozinho.');
+        persistEl.textContent=t('Este navegador pode apagar os dados sozinho se faltar espaço. Guarde uma cópia de vez em quando.');
       }else{
         persistEl.style.display='none';
       }
@@ -25391,6 +25578,8 @@ function updateRamBadge(){const n=blobReg.size;const b=document.getElementById('
 
 // ── Restaurar configurações de fábrica ──
 function factoryResetStart(){
+  _gvAbrir('socorro');
+  const r=document.getElementById('gvRecomecar');if(r)r.open=true;
   const c=document.getElementById('frConfirm');
   if(c){c.style.display='block';c.scrollIntoView({behavior:'smooth',block:'center'})}
 }
@@ -25456,6 +25645,43 @@ function forceReset(){
 
 function clearAudio(){forceReset()}
 function revokeBlob(id){if(blobReg.has(id)){URL.revokeObjectURL(blobReg.get(id));blobReg.delete(id);updateRamBadge()}}
+
+// ── Plano 28: "Mandar todas as notas pra lixeira" ──
+// Substitui o "Apagar tudo" que apagava de vez (e com a janelinha do
+// navegador). Agora é a lixeira de sempre — 30 dias e Desfazer.
+function _apagarTudoLixeira(){
+  const vivos=[...document.querySelectorAll('.card:not(.proc-card)')].filter(c=>c.dataset.del!=='1');
+  if(!vivos.length){toast(t('Não há notas pra mandar pra lixeira.'));return}
+  const quando=new Date().toISOString();
+  vivos.forEach(c=>{c.dataset.del='1';c.dataset.delAt=quando});
+  saveHistory();renderFolders();applyFolderFilter();updateStats();
+  toastDesfazer((vivos.length===1?t('1 nota na lixeira · some em 30 dias'):t('{n} notas na lixeira · somem em 30 dias').replace('{n}',vivos.length)),()=>{
+    vivos.forEach(c=>{delete c.dataset.del;delete c.dataset.delAt});
+    saveHistory();renderFolders();applyFolderFilter();updateStats();
+    toast(t('↩ Notas de volta'));
+  });
+}
+const SEGURA_ACOES={lixeiraTudo:_apagarTudoLixeira,zerar:()=>factoryResetConfirm()};
+// Segure pra confirmar: o enchimento do botão é o relógio (1,2 s). Soltar
+// antes desfaz e explica; teclado vale (Enter ou Espaço segurados).
+(function(){
+  let alvo=null,tm=null;
+  function inicia(b){
+    if(alvo)return;alvo=b;b.classList.add('segurando');_jzTato(8);
+    tm=setTimeout(()=>{const a=b.dataset.segura;solta(true);_jz(b,'feito',340);_jzTato([10,40,18]);const f=SEGURA_ACOES[a];if(f)f()},1200);
+  }
+  function solta(ok){
+    if(!alvo)return;clearTimeout(tm);const b=alvo;alvo=null;b.classList.remove('segurando');
+    if(!ok)toast(t('Segure até a barra encher.'));
+  }
+  document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('.segura-btn');if(b&&e.button===0){e.preventDefault();b.focus({preventScroll:true});inicia(b)}});
+  document.addEventListener('pointerup',()=>solta(false),true);
+  document.addEventListener('pointercancel',()=>solta(false),true);
+  document.addEventListener('pointerleave',e=>{if(alvo&&e.target===alvo)solta(false)},true);
+  document.addEventListener('keydown',e=>{const b=e.target.closest&&e.target.closest('.segura-btn');if(b&&(e.key==='Enter'||e.key===' ')){e.preventDefault();if(!e.repeat)inicia(b)}});
+  document.addEventListener('keyup',e=>{if(alvo&&(e.key==='Enter'||e.key===' '))solta(false)});
+  document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('.segura-btn'))e.preventDefault()});
+})();
 
 // ── BULK DELETE ──
 function bulkDelete(mode){
