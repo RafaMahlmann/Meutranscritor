@@ -8576,7 +8576,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.05.2';
+const VOX_VERSION='2026.10.05.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -12844,6 +12844,14 @@ function _abreIrMudar(){
     if(r)r.scrollIntoView({behavior:'auto',block:'start'});
   },450);
 }
+// A landing (voxcharmai.com) mora em outro endereço e não enxerga o
+// localStorage daqui. Este cookie do domínio inteiro só diz "esta pessoa já
+// usa o Vox" — nada de conteúdo — pra landing levar direto pro app em vez de
+// mostrar a vitrine de novo (o susto que abriu o plano 27).
+function _abreMarcarUsuario(){
+  if(!/(^|\.)voxcharmai\.com$/.test(location.hostname))return;
+  try{document.cookie='vox_usa=1; domain=.voxcharmai.com; path=/; max-age=31536000; SameSite=Lax; Secure'}catch(e){}
+}
 // Mundo recém-criado a partir de uma sugestão: aplica o perfil combinado.
 function _abrePerfilPendente(){
   let pid='';try{pid=VOX_LS.get('vox_perfil_novo')||'';VOX_LS.rem('vox_perfil_novo')}catch(e){}
@@ -12859,6 +12867,7 @@ function _abreAoIniciar(){
   if(modo&&modo!==sessionMode&&document.querySelector('.smode-btn[data-m="'+modo+'"]'))setMode(modo,true);
   // Primeira vez: o vídeo e a configuração mandam.
   if(!_lsLer('vox_intro_seen')||!_lsLer('vox_onboarded'))return;
+  _abreMarcarUsuario();
   // Chegou por um link de transferência: ele fica na frente.
   if(/^#voxk?=/.test(location.hash))return;
   const esc=_abreEscolha();
