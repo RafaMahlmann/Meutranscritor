@@ -819,6 +819,7 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
 /* Aviso de "filtro deixou a tela vazia" — mais discreto que #emptyState
    (padding menor, sem ícone grande) porque a situação é menos rara e não é
    um convite a começar do zero, é só "tira um filtro". */
+.filter-empty[hidden]{display:none}
 .filter-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;gap:14px;animation:fadeDown .18s ease}
 .filter-empty p{font-size:13.5px;color:var(--text2);line-height:1.7;max-width:340px}
 .filter-empty-btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:background var(--transition)}
@@ -1934,6 +1935,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 /* ── FOLDERS SIDEBAR ── */
 .main-layout{display:flex;gap:14px;align-items:flex-start}
 .content-area{flex:1;min-width:0}
+/* A barra de gravar fica fixa embaixo (~96 px no computador, ~74 px no celular):
+   sem esta folga, rolando até o fim, o último card terminava ESCONDIDO atrás
+   dela. Achado na gravação do vídeo demo, 05/10/2026. */
+.content-area{padding-bottom:112px}
+@media(max-width:640px){.content-area{padding-bottom:92px}}
 /* Sem max-height/overflow, o painel crescia com o número de pastas SEM
    TETO — com uma árvore grande (o Rafa tem 138 cards só numa subpasta),
    a parte de baixo ficava fora da área visível, "brigando com a barra do
@@ -8582,7 +8588,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.05.5';
+const VOX_VERSION='2026.10.05.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10524,7 +10530,7 @@ let I18N_EN={
 "Este provedor ainda não tem chave configurada":"This provider doesn't have a key set up yet",
 // Pendências antigas de tradução, encontradas numa varredura do app inteiro
 "Transcription":"Transcription",
-"gravações":"recordings",
+"gravações":"recordings","gravação":"recording","de áudio":"of audio","Média: {n}s de processamento por minuto de áudio":"Average: {n}s of processing per minute of audio","Nenhuma gravação com {m} ainda":"No recordings with {m} yet",
 "Separa automaticamente as vozes: Profissional, Paciente, etc. Requer um pequeno saldo inicial na AssemblyAI (a partir de US$5).":"Automatically separates the voices: Professional, Patient, etc. Requires a small initial balance on AssemblyAI (from US$5).",
 "?":"?",
 "Recolher cabeçalho (etiquetas + Transformar)":"Collapse header (tags + Transform)",
@@ -11094,9 +11100,9 @@ function updateSpeedBadge(){
   if(s&&s.count>0&&s.totalAudioSec>0){
     const spm=s.totalProcSec/(s.totalAudioSec/60);
     const color=_speedColor(spm);
-    line2.innerHTML=`<span class="svgi">${ICO.clock}</span> <span style="color:${color}">${Math.round(spm)}s/min</span> · ${s.count} ${s.count===1?'gravação':'gravações'}`;
+    line2.innerHTML=`<span class="svgi">${ICO.clock}</span> <span style="color:${color}">${Math.round(spm)}s/min</span> · ${s.count} ${s.count===1?t('gravação'):t('gravações')}`;
     badge.style.display='block';
-    badge.title=`Média: ${Math.round(spm)}s de processamento por minuto de áudio`;
+    badge.title=t('Média: {n}s de processamento por minuto de áudio').replace('{n}',Math.round(spm));
     if(isLocal){badge.style.cursor='pointer';badge.onclick=toggleModelPicker}
     else{badge.style.cursor='default';badge.onclick=null}
   }else{
@@ -11124,9 +11130,9 @@ function updateModelStats(){
   if(s&&s.count>0&&s.totalAudioSec>0){
     const spm=s.totalProcSec/(s.totalAudioSec/60);
     const color=_speedColor(spm);
-    el.innerHTML=`<span class="svgi">${ICO.clock}</span> <strong style="color:${color}">${Math.round(spm)}s/min</strong> de áudio · ${s.count} gravações`;
+    el.innerHTML=`<span class="svgi">${ICO.clock}</span> <strong style="color:${color}">${Math.round(spm)}s/min</strong> ${t('de áudio')} · ${s.count} ${s.count===1?t('gravação'):t('gravações')}`;
   }else{
-    el.innerHTML=`<span style="color:var(--text4)">Nenhuma gravação com ${model} ainda</span>`;
+    el.innerHTML=`<span style="color:var(--text4)">${t('Nenhuma gravação com {m} ainda').replace('{m}',escHtml(model))}</span>`;
   }
 }
 function toggleModelPicker(){
@@ -35122,7 +35128,7 @@ function updateStats(){
   const bstime=document.getElementById('bstime');
   const bsc=document.getElementById('bsc');
   if(bstime)bstime.textContent=Math.ceil(stats.sec/60)+' '+t('min');
-  if(bsc)bsc.textContent=stats.count+' '+t('gravações');
+  if(bsc)bsc.textContent=stats.count+' '+(stats.count===1?t('gravação'):t('gravações'));
   // Média de duração por gravação — estatística pedida pelo Rafa: mostra o
   // perfil de uso ("gravo curto e muito" vs "gravo longo e pouco").
   if(stats.count>0&&stats.sec>0){
