@@ -8863,7 +8863,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.06.4';
+const VOX_VERSION='2026.10.06.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -27027,7 +27027,11 @@ function saveHistory(){
   if(_mundoTrancado(_mundoAtivo)&&!_cofreChave)return;
   const items=[];
   document.querySelectorAll('.card:not(.proc-card)').forEach(c=>{
-    const ta=c.querySelector('textarea');
+    // Com o Modo Conversa aberto, o editor do card mora DENTRO da tela da
+    // conversa (c._cchatEditor), não no card. Sem procurar lá, o card era
+    // pulado: qualquer salvamento nesse meio-tempo tirava a nota original do
+    // histórico — e recarregar antes de fechar a conversa a perdia de vez.
+    const ta=c.querySelector('textarea')||(c._cchatEditor&&c._cchatEditor.querySelector('textarea'));
     if(!ta)return;
     const base={
       type:c.dataset.type||'texto',prov:c.dataset.prov||'whisper',
