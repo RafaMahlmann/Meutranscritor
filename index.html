@@ -5743,6 +5743,30 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .abre-row small b{color:var(--accent);font-weight:700}
 .abre-mudar{border:none;background:var(--accent);color:#fff;font:inherit;font-size:13px;font-weight:700;padding:7px 14px;border-radius:999px;cursor:pointer;flex-shrink:0;transition:transform .12s var(--am-suave)}
 .abre-mudar:active{transform:scale(.94)}
+/* plano 29: o retângulo de orientação */
+.abre-guia{display:grid;gap:10px;padding:14px;margin:0 0 12px;border-radius:14px;overflow:hidden;
+  background:color-mix(in srgb,var(--accent) 8%,var(--bg-card));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border))}
+.abre-guia[hidden]{display:none}
+.abre-guia-des{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.abre-guia-des figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text3)}
+.abre-guia-des svg{display:block;width:100%;max-width:96px;height:auto;aspect-ratio:3/2;background:var(--bg-card);border:1px solid var(--border);border-radius:8px}
+.ag-pt{transform-box:fill-box;transform-origin:center;transition:transform 150ms var(--am-mola)}
+.abre-guia-des figure:hover .ag-pt{transform:scale(1.15)}
+.ag-c1{fill:var(--hm-cfg)}.ag-c2{fill:var(--hm-lang)}.ag-c3{fill:var(--hm-look)}.ag-c4{fill:var(--hm-notas)}.ag-c5{fill:var(--hm-cofre)}
+.ag-trilha{fill:none;stroke:var(--border2);stroke-width:1;stroke-dasharray:2 3}
+.ag-linha{fill:none;stroke:var(--text4);stroke-width:1.4}
+.abre-guia h4{margin:0 0 4px;font-size:14px;font-weight:700;color:var(--text)}
+.abre-guia p{margin:0;font-size:12.5px;line-height:1.55;color:var(--text2)}
+.abre-guia-ok{justify-self:start;border:none;background:var(--accent);color:#fff;font:700 13px var(--font);padding:7px 16px;border-radius:999px;cursor:pointer;transition:transform 80ms}
+.abre-guia-ok:active{transform:scale(.97)}
+.abre-guia-ok:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.abre-guia.chega{animation:abGuiaSobe 220ms cubic-bezier(.34,1.4,.64,1) both}
+.abre-guia.chega figure{animation:abGuiaFig 320ms var(--am-mola) both}
+.abre-guia.chega figure:nth-child(2){animation-delay:280ms}
+.abre-guia.chega figure:nth-child(3){animation-delay:560ms}
+@keyframes abGuiaSobe{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes abGuiaFig{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.abre-guia.sai{transition:height 240ms var(--am-saida),opacity 200ms linear,padding 240ms var(--am-saida),margin 240ms var(--am-saida);height:0!important;opacity:0;padding-block:0;margin-bottom:0}
 .abre-painel{margin:-4px 0 14px;padding:14px;border-radius:16px;background:var(--bg-input);display:flex;flex-direction:column;gap:14px}
 .abre-painel[hidden]{display:none}
 .abre-tit{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text3);margin:0 0 8px}
@@ -7960,6 +7984,23 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <!-- Plano 27 (05/10/2026): como o Vox abre neste mundo + perfil do mundo.
            Uma linha fechada por padrão; "Mudar" abre a prateleira ali mesmo. -->
       <div class="abre-esc">
+        <!-- Plano 29 (05/10/2026): orientação pra quem está começando. Os mesmos
+             cinco pontinhos (mesmas cores) em três arrumações dizem, sem texto,
+             que Cards, Órbita e Fluxograma são as MESMAS notas vistas de outro
+             jeito. Aparece enquanto a pessoa não mexeu em nada; "Entendi" ou
+             qualquer escolha fazem sumir de vez (vox_abre_guia_ok, global). -->
+        <div class="abre-guia" id="abreGuia" hidden>
+          <div class="abre-guia-des">
+            <figure><svg viewBox="0 0 60 40" aria-hidden="true" focusable="false"><circle class="ag-pt ag-c1" cx="14" cy="12" r="4.2"/><circle class="ag-pt ag-c2" cx="30" cy="12" r="4.2"/><circle class="ag-pt ag-c3" cx="46" cy="12" r="4.2"/><circle class="ag-pt ag-c4" cx="22" cy="28" r="4.2"/><circle class="ag-pt ag-c5" cx="38" cy="28" r="4.2"/></svg><figcaption data-i18n>Cards</figcaption></figure>
+            <figure><svg viewBox="0 0 60 40" aria-hidden="true" focusable="false"><circle class="ag-trilha" cx="30" cy="20" r="13"/><circle class="ag-pt ag-c1" cx="43" cy="20" r="4.2"/><circle class="ag-pt ag-c2" cx="34" cy="32.4" r="4.2"/><circle class="ag-pt ag-c3" cx="17.6" cy="24" r="4.2"/><circle class="ag-pt ag-c4" cx="19.5" cy="10.5" r="4.2"/><circle class="ag-pt ag-c5" cx="34" cy="7.6" r="4.2"/></svg><figcaption data-i18n>Órbita</figcaption></figure>
+            <figure><svg viewBox="0 0 60 40" aria-hidden="true" focusable="false"><path class="ag-linha" d="M12 20L28 10M12 20L28 30M28 10H46M28 30H46"/><circle class="ag-pt ag-c1" cx="12" cy="20" r="4.2"/><circle class="ag-pt ag-c2" cx="28" cy="10" r="4.2"/><circle class="ag-pt ag-c3" cx="28" cy="30" r="4.2"/><circle class="ag-pt ag-c4" cx="46" cy="10" r="4.2"/><circle class="ag-pt ag-c5" cx="46" cy="30" r="4.2"/></svg><figcaption data-i18n>Fluxograma</figcaption></figure>
+          </div>
+          <div>
+            <h4 data-i18n>As mesmas notas, de jeitos diferentes</h4>
+            <p data-i18n>Você escreve e guarda nas suas pastas. Cada desenho é só um jeito de olhar pro que você já tem. Não precisa escolher nada: o Vox abre do último jeito que você deixou.</p>
+          </div>
+          <button type="button" class="abre-guia-ok" onclick="_abreGuiaOk()" data-i18n>Entendi</button>
+        </div>
         <div class="diar-toggle-row abre-row" id="abreRow" onclick="if(!event.target.closest('button'))_abrePainelAlternar()">
           <div>
             <p data-i18n>O Vox abre em</p>
@@ -8684,7 +8725,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.05.7';
+const VOX_VERSION='2026.10.05.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10183,7 +10224,7 @@ let I18N_EN={
 "bloco {i} de {n}…":"chunk {i} of {n}…","unindo os blocos…":"merging the chunks…",
 "De":"From","Para":"To","Automático":"Auto","Trocar":"Swap","Detectando idioma…":"Detecting language…","Idioma detectado":"Language detected","Texto já no idioma de destino":"Text already appears to be in the target language. No translation needed.","No automático eu detecto o idioma e trago para o idioma do app.":"In auto mode I detect the language and bring it to the app language.","Escolher idiomas manualmente":"Choose languages manually",
 "Nova versão disponível":"New version available","Atualizar":"Update",
-"Experiência":"Experience","1 nota na lixeira · some em 30 dias":"1 note in the trash · gone in 30 days","Seu jeito de usar":"Your way of using it","Palavras que o Vox aprendeu":"Words Vox has learned","Se algo der errado":"If something goes wrong","Nenhuma cópia ainda":"No copy yet","Última cópia hoje":"Last copy today","Última cópia ontem":"Last copy yesterday","Última cópia há {n} dias":"Last copy {n} days ago","Abre em {x}":"Opens in {x}","dicas ligadas":"tips on","dicas desligadas":"tips off","1 palavra ou correção":"1 word or correction","{n} palavras e correções":"{n} words and corrections","Destravar, espaço, recomeçar":"Unfreeze, storage, start over","Escolha uma pasta e o Vox guarda uma cópia nela cada vez que você salvar.":"Pick a folder and Vox keeps a copy there every time you save.","Como funciona?":"How does it work?","Por que aqui a cópia é manual?":"Why is the copy manual here?","Pouco":"Rarely","Normal":"Normal","Bastante":"Often","Nunca":"Never","Pôr no meu calendário":"Add to my calendar","Ajustar os números":"Fine-tune the numbers","Me lembrar de fazer cópia":"Remind me to make a copy","O Vox não vai te lembrar na tela. O calendário, se você pôs, continua valendo.":"Vox won't remind you on screen. The calendar, if you added it, still works.","Do seu jeito: {n} notas ou {d} dias.":"Your way: {n} notes or {d} days.","Avisa a cada {n} notas novas ou {d} dias sem cópia, na tela principal e nunca em cima de uma gravação.":"Reminds you every {n} new notes or {d} days without a copy, on the main screen and never over a recording.","Dicas pelo caminho":"Tips along the way","O Vox explica cada função na primeira vez que você usa.":"Vox explains each feature the first time you use it.","Abrir Configurações já completas":"Open Settings fully expanded","Pula a tela de entrada e mostra tudo de uma vez.":"Skips the welcome screen and shows everything at once.","Quando você escolhe \"sempre ignorar\" ou \"sempre trocar\" ao revisar um texto, a regra fica aqui. Toque no X pra tirar uma.":"When you pick \"always ignore\" or \"always replace\" while reviewing a text, the rule is kept here. Tap the X to remove one.","O Vox travou?":"Is Vox stuck?","Fecha os áudios abertos e para qualquer gravação em andamento. Suas notas não são apagadas.":"Closes open audio and stops any recording in progress. Your notes are not deleted.","Destravar":"Unfreeze","Recomeçar do zero":"Start over","Mandar todas as notas pra lixeira":"Send all notes to the trash","Elas ficam lá por 30 dias e dá pra desfazer. Pra tirar só algumas, use Selecionar na tela principal.":"They stay there for 30 days and you can undo. To remove just a few, use Select on the main screen.","Segure pra mandar tudo pra lixeira":"Hold to send everything to the trash","Voltar o Vox ao primeiro dia":"Take Vox back to day one","Zera chaves, idioma, tema e ajustes. Suas notas podem ficar.":"Resets keys, language, theme and settings. Your notes can stay.","Zerar o Vox…":"Reset Vox…","Segure pra zerar o Vox":"Hold to reset Vox","Não há notas pra mandar pra lixeira.":"There are no notes to send to the trash.","{n} notas na lixeira · somem em 30 dias":"{n} notes in the trash · gone in 30 days","↩ Notas de volta":"↩ Notes are back","Segure até a barra encher.":"Hold until the bar fills up.","O espaço livre do aparelho está acabando, e isso pode limitar o que o Vox guarda. Libere espaço no aparelho ou salve uma cópia e mande notas antigas pra lixeira.":"Your device is running out of free space, which may limit what Vox can keep. Free up space or save a copy and send old notes to the trash.","O espaço livre do aparelho está ficando apertado. Se quiser, salve uma cópia e mande notas antigas pra lixeira.":"Free space on your device is getting tight. If you like, save a copy and send old notes to the trash.","Este navegador pode apagar os dados sozinho se faltar espaço. Guarde uma cópia de vez em quando.":"This browser may erase the data on its own if space runs low. Save a copy now and then.","Como o Vox abre":"How Vox opens","O Vox abre em":"Vox opens in","Mudar":"Change","neste mundo":"in this world","abre aqui":"opens here","Onde parei":"Where I left off","Volta na tela e no jeito de ver que você deixou.":"Back to the screen and view you left.","Um card embaixo do outro, do mais novo pro mais antigo.":"One card under the other, newest first.","Cards lado a lado, como um mural.":"Cards side by side, like a wall board.","Um card por vez, em tela de leitura.":"One card at a time, in reading view.","Fluxograma":"Flowchart","Suas pastas ligadas como um mapa.":"Your folders linked like a map.","Órbita":"Orbit","Suas pastas girando em volta de um centro.":"Your folders circling a center.","Calendário":"Calendar","Cada nota no dia em que nasceu.":"Each note on the day it was made.","Mundos":"Worlds","O céu com todos os seus mundos.":"The sky with all your worlds.","Pensamento fluido":"Free thinking","Do meu jeito":"My own way","Grava no modo Reunião e abre no Calendário.":"Records in Meeting mode and opens in the Calendar.","Grava no modo Consulta e abre no Documento.":"Records in Appointment mode and opens in Document view.","Grava no modo Livre e abre no Fluxograma.":"Records in Free mode and opens in the Flowchart.","Grava no modo Entrevista e abre na Lista.":"Records in Interview mode and opens in the List.","Abre onde você parou, no último modo que usou.":"Opens where you left off, in the last mode you used.","Como você vai usar o Vox neste mundo?":"How will you use Vox in this world?","Escolha um jeito de trabalhar: ele ajusta o modo de gravação e a tela de abertura deste mundo.":"Pick a way of working: it sets the recording mode and the opening screen of this world.","Seus cards":"Your cards","Abrir já com":"Open straight into","Vale só para este mundo. Cada mundo guarda a sua escolha.":"Only for this world. Each world keeps its own choice.","Voltar ao padrão":"Back to default","O Vox vai abrir onde você parou.":"Vox will open where you left off.","O Vox vai abrir em {x} neste mundo.":"Vox will open in {x} in this world.","{p} neste mundo: ":"{p} in this world: ","Pronto: o Vox volta a abrir onde você parou.":"Done: Vox opens where you left off again.","Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.":"This picks the recording mode and the screen this world opens in. You can change it later in Settings.","Ainda não há pastas pro {x} — abrimos nos seus cards.":"There are no folders for the {x} yet — we opened your cards.","Abriu em {x} — você escolheu isso.":"Opened in {x} — you chose this.","🤝 Modo assistido":"🤝 Assisted mode",
+"Experiência":"Experience","As mesmas notas, ligadas pelas pastas como um mapa.":"The same notes, linked through your folders like a map.","As mesmas notas, em volta das suas pastas.":"The same notes, around your folders.","As mesmas notas, cada uma no dia em que nasceu.":"The same notes, each on the day it was made.","Abre no céu, pra você escolher em qual mundo entrar.":"Opens on the sky, so you can pick which world to enter.","Outros jeitos de ver as mesmas notas":"Other ways to see the same notes","Ou começar escolhendo o mundo":"Or start by picking the world","Na dúvida, toque em Agora não. O Vox aprende com o uso.":"Not sure? Tap Not now. Vox learns as you use it.","Cards":"Cards","As mesmas notas, de jeitos diferentes":"The same notes, seen in different ways","Você escreve e guarda nas suas pastas. Cada desenho é só um jeito de olhar pro que você já tem. Não precisa escolher nada: o Vox abre do último jeito que você deixou.":"You write and keep things in your folders. Each drawing is just a way of looking at what you already have. No need to choose anything: Vox opens the way you last left it.","1 nota na lixeira · some em 30 dias":"1 note in the trash · gone in 30 days","Seu jeito de usar":"Your way of using it","Palavras que o Vox aprendeu":"Words Vox has learned","Se algo der errado":"If something goes wrong","Nenhuma cópia ainda":"No copy yet","Última cópia hoje":"Last copy today","Última cópia ontem":"Last copy yesterday","Última cópia há {n} dias":"Last copy {n} days ago","Abre em {x}":"Opens in {x}","dicas ligadas":"tips on","dicas desligadas":"tips off","1 palavra ou correção":"1 word or correction","{n} palavras e correções":"{n} words and corrections","Destravar, espaço, recomeçar":"Unfreeze, storage, start over","Escolha uma pasta e o Vox guarda uma cópia nela cada vez que você salvar.":"Pick a folder and Vox keeps a copy there every time you save.","Como funciona?":"How does it work?","Por que aqui a cópia é manual?":"Why is the copy manual here?","Pouco":"Rarely","Normal":"Normal","Bastante":"Often","Nunca":"Never","Pôr no meu calendário":"Add to my calendar","Ajustar os números":"Fine-tune the numbers","Me lembrar de fazer cópia":"Remind me to make a copy","O Vox não vai te lembrar na tela. O calendário, se você pôs, continua valendo.":"Vox won't remind you on screen. The calendar, if you added it, still works.","Do seu jeito: {n} notas ou {d} dias.":"Your way: {n} notes or {d} days.","Avisa a cada {n} notas novas ou {d} dias sem cópia, na tela principal e nunca em cima de uma gravação.":"Reminds you every {n} new notes or {d} days without a copy, on the main screen and never over a recording.","Dicas pelo caminho":"Tips along the way","O Vox explica cada função na primeira vez que você usa.":"Vox explains each feature the first time you use it.","Abrir Configurações já completas":"Open Settings fully expanded","Pula a tela de entrada e mostra tudo de uma vez.":"Skips the welcome screen and shows everything at once.","Quando você escolhe \"sempre ignorar\" ou \"sempre trocar\" ao revisar um texto, a regra fica aqui. Toque no X pra tirar uma.":"When you pick \"always ignore\" or \"always replace\" while reviewing a text, the rule is kept here. Tap the X to remove one.","O Vox travou?":"Is Vox stuck?","Fecha os áudios abertos e para qualquer gravação em andamento. Suas notas não são apagadas.":"Closes open audio and stops any recording in progress. Your notes are not deleted.","Destravar":"Unfreeze","Recomeçar do zero":"Start over","Mandar todas as notas pra lixeira":"Send all notes to the trash","Elas ficam lá por 30 dias e dá pra desfazer. Pra tirar só algumas, use Selecionar na tela principal.":"They stay there for 30 days and you can undo. To remove just a few, use Select on the main screen.","Segure pra mandar tudo pra lixeira":"Hold to send everything to the trash","Voltar o Vox ao primeiro dia":"Take Vox back to day one","Zera chaves, idioma, tema e ajustes. Suas notas podem ficar.":"Resets keys, language, theme and settings. Your notes can stay.","Zerar o Vox…":"Reset Vox…","Segure pra zerar o Vox":"Hold to reset Vox","Não há notas pra mandar pra lixeira.":"There are no notes to send to the trash.","{n} notas na lixeira · somem em 30 dias":"{n} notes in the trash · gone in 30 days","↩ Notas de volta":"↩ Notes are back","Segure até a barra encher.":"Hold until the bar fills up.","O espaço livre do aparelho está acabando, e isso pode limitar o que o Vox guarda. Libere espaço no aparelho ou salve uma cópia e mande notas antigas pra lixeira.":"Your device is running out of free space, which may limit what Vox can keep. Free up space or save a copy and send old notes to the trash.","O espaço livre do aparelho está ficando apertado. Se quiser, salve uma cópia e mande notas antigas pra lixeira.":"Free space on your device is getting tight. If you like, save a copy and send old notes to the trash.","Este navegador pode apagar os dados sozinho se faltar espaço. Guarde uma cópia de vez em quando.":"This browser may erase the data on its own if space runs low. Save a copy now and then.","Como o Vox abre":"How Vox opens","O Vox abre em":"Vox opens in","Mudar":"Change","neste mundo":"in this world","abre aqui":"opens here","Onde parei":"Where I left off","Volta na tela e no jeito de ver que você deixou.":"Back to the screen and view you left.","Um card embaixo do outro, do mais novo pro mais antigo.":"One card under the other, newest first.","Cards lado a lado, como um mural.":"Cards side by side, like a wall board.","Um card por vez, em tela de leitura.":"One card at a time, in reading view.","Fluxograma":"Flowchart","Suas pastas ligadas como um mapa.":"Your folders linked like a map.","Órbita":"Orbit","Suas pastas girando em volta de um centro.":"Your folders circling a center.","Calendário":"Calendar","Cada nota no dia em que nasceu.":"Each note on the day it was made.","Mundos":"Worlds","O céu com todos os seus mundos.":"The sky with all your worlds.","Pensamento fluido":"Free thinking","Do meu jeito":"My own way","Grava no modo Reunião e abre no Calendário.":"Records in Meeting mode and opens in the Calendar.","Grava no modo Consulta e abre no Documento.":"Records in Appointment mode and opens in Document view.","Grava no modo Livre e abre no Fluxograma.":"Records in Free mode and opens in the Flowchart.","Grava no modo Entrevista e abre na Lista.":"Records in Interview mode and opens in the List.","Abre onde você parou, no último modo que usou.":"Opens where you left off, in the last mode you used.","Como você vai usar o Vox neste mundo?":"How will you use Vox in this world?","Escolha um jeito de trabalhar: ele ajusta o modo de gravação e a tela de abertura deste mundo.":"Pick a way of working: it sets the recording mode and the opening screen of this world.","Seus cards":"Your cards","Abrir já com":"Open straight into","Vale só para este mundo. Cada mundo guarda a sua escolha.":"Only for this world. Each world keeps its own choice.","Voltar ao padrão":"Back to default","O Vox vai abrir onde você parou.":"Vox will open where you left off.","O Vox vai abrir em {x} neste mundo.":"Vox will open in {x} in this world.","{p} neste mundo: ":"{p} in this world: ","Pronto: o Vox volta a abrir onde você parou.":"Done: Vox opens where you left off again.","Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.":"This picks the recording mode and the screen this world opens in. You can change it later in Settings.","Ainda não há pastas pro {x} — abrimos nos seus cards.":"There are no folders for the {x} yet — we opened your cards.","Abriu em {x} — você escolheu isso.":"Opened in {x} — you chose this.","🤝 Modo assistido":"🤝 Assisted mode",
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
 "Zera todas as preferências, chaves e ajustes — como no primeiro dia.":"Resets all preferences, keys and settings — like day one.",
@@ -12954,10 +12995,12 @@ const ABRE_OPCOES=[
   {id:'list',   grupo:'cards', sym:'lista',      nome:'Lista',      desc:'Um card embaixo do outro, do mais novo pro mais antigo.'},
   {id:'masonry',grupo:'cards', sym:'masonry',    nome:'Masonry',    desc:'Cards lado a lado, como um mural.'},
   {id:'doc',    grupo:'cards', sym:'documento',  nome:'Documento',  desc:'Um card por vez, em tela de leitura.'},
-  {id:'fluxo',  grupo:'telas', sym:'fluxo',      nome:'Fluxograma', desc:'Suas pastas ligadas como um mapa.'},
-  {id:'orbital',grupo:'telas', sym:'orbital',    nome:'Órbita',     desc:'Suas pastas girando em volta de um centro.'},
-  {id:'cal',    grupo:'telas', sym:'calendario', nome:'Calendário', desc:'Cada nota no dia em que nasceu.'},
-  {id:'mundos', grupo:'telas', sym:'mundos',     nome:'Mundos',     desc:'O céu com todos os seus mundos.'}
+  {id:'fluxo',  grupo:'telas', sym:'fluxo',      nome:'Fluxograma', desc:'As mesmas notas, ligadas pelas pastas como um mapa.'},
+  {id:'orbital',grupo:'telas', sym:'orbital',    nome:'Órbita',     desc:'As mesmas notas, em volta das suas pastas.'},
+  {id:'cal',    grupo:'telas', sym:'calendario', nome:'Calendário', desc:'As mesmas notas, cada uma no dia em que nasceu.'},
+  // Mundos NÃO é um jeito de ver: troca o conjunto inteiro de notas. Fica
+  // num grupo próprio pra não desmentir o "são as mesmas notas" (plano 29).
+  {id:'mundos', grupo:'mundo', sym:'mundos',     nome:'Mundos',     desc:'Abre no céu, pra você escolher em qual mundo entrar.'}
 ];
 // Perfil = um jeito de trabalhar empacotado: modo de gravação + tela de
 // abertura. Ele configura o MUNDO em que foi escolhido, não o app inteiro.
@@ -13034,7 +13077,7 @@ function _abreAoIniciar(){
   if(alvo==='list'||alvo==='masonry'||alvo==='doc'){if(viewMode!==alvo)setViewMode(alvo);alvo=''}
   const avisos=+_lsLer('vox_abre_avisos')||0;
   let msg='';
-  if(alvo&&!ABRE_OPCOES.some(o=>o.id===alvo&&o.grupo==='telas'))alvo='';
+  if(alvo&&!ABRE_OPCOES.some(o=>o.id===alvo&&o.grupo!=='cards'))alvo='';
   if(alvo&&!_abreTelaPode(alvo)){
     // Escolheu abrir num mapa de pastas que ainda não tem pasta: cai nos
     // cards (lugar seguro) e, enquanto ainda avisa, conta por quê.
@@ -13052,7 +13095,26 @@ function _abreAoIniciar(){
     setTimeout(_abrePerguntar,alvo?1400:700);
 }
 // ── Configurações → Geral → Experiência: "O Vox abre em" ──
+// Plano 29: o retângulo "As mesmas notas, de jeitos diferentes".
+function _abreGuiaPintar(){
+  const g=document.getElementById('abreGuia');if(!g||g._saindo)return;
+  let ok='';try{ok=localStorage.getItem('vox_abre_guia_ok')||''}catch(e){}
+  const mostra=!ok&&!_lsLer('vox_abre_em')&&!_lsLer('vox_perfil');
+  if(mostra&&g.hidden){g.hidden=false;_jz(g,'chega',900)}
+  else if(!mostra)g.hidden=true;
+}
+function _abreGuiaOk(){
+  try{localStorage.setItem('vox_abre_guia_ok','1')}catch(e){}
+  const g=document.getElementById('abreGuia');if(!g)return;
+  if(_voxReduzMov()){g.hidden=true;return}
+  // Encolhe a altura e some; a linha "O Vox abre em" sobe pro lugar dele.
+  g._saindo=true;
+  g.style.height=g.offsetHeight+'px';void g.offsetHeight;
+  g.classList.add('sai');
+  setTimeout(()=>{g.hidden=true;g.classList.remove('sai');g.style.height='';g._saindo=false},260);
+}
 function _abreResumo(){
+  _abreGuiaPintar();
   const el=document.getElementById('abreResumo');if(!el)return;
   const p=_abrePerfilAtual();
   el.innerHTML=`<b>${escHtml(t(_abreOpcao(_abreEscolha()).nome))}</b> · ${escHtml(t('neste mundo'))}`+(p&&p.id!=='jeito'?` · ${escHtml(t(p.nome))}`:'');
@@ -13085,7 +13147,8 @@ function _abrePintar(){
         <div class="abre-ens-splash"><span>Vox</span></div></div>
     </div>
     <div><p class="abre-tit">${escHtml(t('Seus cards'))}</p><div class="abre-grade">${ABRE_OPCOES.filter(o=>o.grupo==='cards').map(porta).join('')}</div></div>
-    <div><p class="abre-tit">${escHtml(t('Abrir já com'))}</p><div class="abre-grade">${ABRE_OPCOES.filter(o=>o.grupo==='telas').map(porta).join('')}</div></div>
+    <div><p class="abre-tit">${escHtml(t('Outros jeitos de ver as mesmas notas'))}</p><div class="abre-grade">${ABRE_OPCOES.filter(o=>o.grupo==='telas').map(porta).join('')}</div></div>
+    <div><p class="abre-tit">${escHtml(t('Ou começar escolhendo o mundo'))}</p><div class="abre-grade">${ABRE_OPCOES.filter(o=>o.grupo==='mundo').map(porta).join('')}</div></div>
     <div class="abre-rodape"><small>${escHtml(t('Vale só para este mundo. Cada mundo guarda a sua escolha.'))}</small>
       <button type="button" class="abre-padrao" data-padrao="1">${escHtml(t('Voltar ao padrão'))}</button></div>`;
   if(!pn._abreLigado){pn._abreLigado=true;_abreLigarJuice(pn)}
@@ -13137,6 +13200,7 @@ function _abreEnsaiar(id,clack){
   _abreEnsaioT=setTimeout(()=>w.classList.remove('toca','clack'),4200);
 }
 function _abreEscolher(id,el){
+  try{localStorage.setItem('vox_abre_guia_ok','1')}catch(e){}
   const pn=document.getElementById('abrePainel');
   const antes=pn&&pn.querySelector('.abre-porta.on .abre-selo');
   const de=antes?antes.getBoundingClientRect():null;
@@ -13171,6 +13235,7 @@ function _abreEscolher(id,el){
   toast(id==='last'?t('O Vox vai abrir onde você parou.'):t('O Vox vai abrir em {x} neste mundo.').replace('{x}',t(_abreOpcao(id).nome)));
 }
 function _abrePerfilEscolher(pid){
+  try{localStorage.setItem('vox_abre_guia_ok','1')}catch(e){}
   const p=_abrePerfil(pid);if(!p)return;
   _lsPor('vox_perfil',p.id);
   if(p.modo&&p.modo!==sessionMode)setMode(p.modo);
@@ -13189,7 +13254,7 @@ function _abrePerguntar(){
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal abre-esc abre-pergunta">
     <div class="tx-title">${escHtml(t('Como você vai usar o Vox neste mundo?'))}</div>
-    <div class="tx-sub">${escHtml(t('Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.'))}</div>
+    <div class="tx-sub">${escHtml(t('Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.'))} <b>${escHtml(t('Na dúvida, toque em Agora não. O Vox aprende com o uso.'))}</b></div>
     <div class="abre-perfil-lista">${ABRE_PERFIS.map(p=>`<button type="button" class="abre-perfil-linha" onclick="_abrePerguntaEscolher('${p.id}')">${_abreMini(_abreOpcao(p.abre).sym)}<span><b>${escHtml(t(p.nome))}</b><small>${escHtml(t(p.desc))}</small></span></button>`).join('')}</div>
     <button type="button" class="abre-depois" onclick="_abrePerguntaEscolher('jeito',true)">${escHtml(t('Agora não'))}</button>
   </div>`;
