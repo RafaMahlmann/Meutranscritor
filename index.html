@@ -6845,6 +6845,93 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 #cchat-overlay .cchat-transform-btn:hover{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
 #cchat-overlay .cchat-transform-btn-ico{display:inline-flex;vertical-align:-2px}
 #cchat-overlay .cchat-transform-btn-ico svg{width:13px;height:13px}
+/* ── Plano 30 (06/10/2026): Ilha "Organizar" + sugestão ──
+   A prateleira do "O Vox abre em", agora pra conversa: cartões com prévia do
+   resultado desenhada com as abas desta conversa. Brota do botão (mola),
+   as abas voam pra dentro da pasta, a miniatura engole. */
+#cchat-overlay .cchat-org-btn{display:inline-flex;align-items:center;gap:6px;margin-right:6px;border-color:color-mix(in srgb,var(--accent) 45%,var(--border2));color:var(--accent);background:var(--accent-glow)}
+#cchat-overlay .cchat-org-btn[aria-expanded="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+#cchat-overlay .cchat-org-btn .svgi svg{width:14px;height:14px}
+.cchat-org-n{display:inline-block;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;line-height:18px;text-align:center}
+#cchat-overlay .cchat-org-btn[aria-expanded="true"] .cchat-org-n{background:#fff;color:var(--accent)}
+.cchat-org-n.rola{animation:orgRola 340ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes orgRola{0%{transform:scale(.6)}60%{transform:scale(1.25)}100%{transform:none}}
+#cchat-overlay .cchat-ttab-dot{width:7px;height:7px;border-radius:50%;background:var(--dot);flex:none}
+#cchat-overlay .cchat-ttab.active .cchat-ttab-dot{box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+#cchat-overlay .cchat-ttab-ok{font-size:10px;font-weight:800;color:var(--accent)}
+#cchat-overlay .cchat-ttab.active .cchat-ttab-ok{color:#fff}
+.ilha{position:absolute;z-index:40;width:min(440px,calc(100vw - 32px));padding:14px;border-radius:18px;background:var(--bg-card);border:1px solid var(--border);box-shadow:0 18px 50px rgba(0,0,0,.22);transform-origin:var(--io,top right)}
+.ilha[hidden]{display:none}
+.ilha-tit{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--text2)}
+.ilha-cartoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ilha-cartao{position:relative;display:flex;flex-direction:column;gap:4px;text-align:left;padding:8px 8px 10px;border:1.5px solid var(--border);border-radius:14px;background:var(--bg);color:var(--text);font-family:var(--font);cursor:pointer;min-width:0;transition:transform 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms,border-color 180ms}
+.ilha-cartao:hover,.ilha-cartao:focus-visible{transform:translateY(-2px);box-shadow:var(--shadow-card);border-color:color-mix(in srgb,var(--accent) 50%,var(--border))}
+.ilha-cartao:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.ilha-cartao:active{transform:scale(.96);transition-duration:70ms}
+.ilha-cartao b{font-size:13.5px}
+.ilha-cartao small{font-size:11.5px;color:var(--text3);line-height:1.35;overflow-wrap:anywhere}
+.ilha-prev{display:block;border-radius:10px;overflow:hidden;background:var(--bg-input);aspect-ratio:16/10}
+.ilha-prev svg{display:block;width:100%;height:100%}
+.ilha-prev-ceu{background:#0e1421}
+.ilha-selo{position:absolute;top:6px;right:6px;z-index:1;font-size:10px;font-weight:800;padding:3px 7px;border-radius:999px;background:var(--accent);color:#fff}
+.ilha-pasta-fundo{fill:color-mix(in srgb,var(--accent) 55%,var(--bg-card))}
+.ilha-pasta-frente{fill:color-mix(in srgb,var(--accent) 80%,var(--bg-card))}
+.ilha-papel{transition:transform 260ms cubic-bezier(.34,1.56,.64,1);transition-delay:calc(var(--i)*40ms)}
+.ilha-cartao:hover .ilha-papel,.ilha-cartao:focus-visible .ilha-papel{transform:translateY(-8px)}
+.ilha-planeta{fill:var(--hm-lang)}
+.ilha-anel{fill:none;stroke:rgba(255,255,255,.55);stroke-width:2}
+.ilha-estrela{fill:rgba(255,255,255,.75)}
+.ilha-mala{fill:#9a6a3a}
+.ilha-alca{fill:none;stroke:#7a4f28;stroke-width:4;stroke-linecap:round}
+.ilha-mala-g{transition:transform 320ms cubic-bezier(.34,1.56,.64,1)}
+.ilha-cartao:hover .ilha-mala-g,.ilha-cartao:focus-visible .ilha-mala-g{transform:translate(16px,-10px) rotate(-6deg)}
+.ilha-levar{margin-top:12px;padding:12px;border-radius:14px;background:var(--bg-input);display:grid;gap:10px}
+.ilha-levar[hidden]{display:none}
+.ilha-levar p{margin:0;font-size:12.5px;color:var(--text2);line-height:1.5}
+.ilha-segura{border-color:var(--accent);color:var(--accent)}
+.ilha-segura .segura-fill{background:var(--accent)}
+.ilha.brota,.ilha-levar.brota{animation:ilhaBrota 260ms cubic-bezier(.34,1.56,.64,1)}
+.ilha.brota .ilha-cartao{animation:ilhaSobe 260ms cubic-bezier(.22,1,.36,1) both}
+.ilha.brota .ilha-cartao:nth-child(2){animation-delay:40ms}
+.ilha.some{animation:ilhaSome 140ms linear forwards}
+.ilha-cartao.engole{animation:ilhaEngole 380ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes ilhaBrota{from{opacity:0;transform:scale(.9) translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes ilhaSobe{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ilhaSome{to{opacity:0;transform:scale(.96)}}
+@keyframes ilhaEngole{40%{transform:scale(1.06)}}
+#cchat-overlay .ilha-voo{position:fixed;z-index:10001;pointer-events:none;margin:0}
+.ilha-sug{position:absolute;z-index:39;width:min(380px,calc(100vw - 32px));display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:start;padding:12px;border-radius:16px;background:var(--bg-card);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));box-shadow:0 14px 40px rgba(0,0,0,.2);transform-origin:var(--io,top right);animation:ilhaBrota 300ms cubic-bezier(.34,1.56,.64,1)}
+.ilha-sug b{display:block;font-size:13.5px;margin-bottom:3px;color:var(--text)}
+.ilha-sug small{display:block;font-size:12px;color:var(--text3);line-height:1.4}
+.ilha-sug-bts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ilha-sug-bts button{border:1px solid var(--border2);background:none;color:var(--text);border-radius:999px;padding:6px 12px;font:700 12px var(--font);cursor:pointer;transition:transform 80ms}
+.ilha-sug-bts button:active{transform:scale(.95)}
+.ilha-sug-bts button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.ilha-sug-bts button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chegada-lista{display:grid;gap:8px}
+.chegada-op{display:flex;align-items:center;gap:10px;text-align:left;padding:11px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg-input);color:var(--text);font:600 13.5px var(--font);cursor:pointer;transition:transform 80ms,border-color 150ms}
+.chegada-op:hover{border-color:var(--accent)}
+.chegada-op:active{transform:scale(.98)}
+.chegada-op.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.chegada-op:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.chegada-cor{width:12px;height:12px;border-radius:4px;flex:none}
+@media(max-width:640px){
+  #cchat-overlay .cchat-org-lbl{display:none}
+  /* O cabeçalho do Modo Conversa já passava de 580px num celular de 375 (o
+     título ficava com largura zero e a tela inteira alargava). No celular os
+     botões ficam só com o ícone; o nome continua no texto (leitor de tela) e
+     no title. */
+  #cchat-overlay .cchat-header{gap:4px;padding:8px 10px}
+  #cchat-overlay .cchat-header .cchat-viewslot{width:auto;min-width:0}
+  #cchat-overlay .cchat-header .cchat-transform-btn{font-size:0;padding:7px 9px}
+  #cchat-overlay .cchat-header .cchat-org-btn{margin-right:0}
+  .ilha,.ilha-sug{position:fixed;left:0!important;right:0!important;bottom:0;top:auto!important;width:auto;border-radius:20px 20px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  .ilha.brota,.ilha-sug{animation:ilhaFolha 300ms cubic-bezier(.22,1,.36,1)}
+  @keyframes ilhaFolha{from{transform:translateY(100%)}to{transform:none}}
+}
+@media(prefers-reduced-motion:reduce){
+  .ilha,.ilha *,.ilha-sug,.cchat-org-n,.chegada-op{animation:none!important;transition:none!important}
+}
 #cchat-overlay .cchat-transform-pane{width:100%;min-height:100%}
 #cchat-overlay .cchat-transform-preview{cursor:text;min-height:300px}
 #cchat-overlay .cchat-transform-ta{width:100%;min-height:300px;border:none;outline:none;resize:none;font-size:var(--cf-sz,14px);line-height:1.6;font-family:inherit;background:transparent;color:var(--text)}
@@ -8725,7 +8812,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.06.1';
+const VOX_VERSION='2026.10.06.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9218,7 +9305,11 @@ async function _mundoColetarPacoteComEscopo(idsPasta,dts){
   // regenerado a cada load (addCard sempre sorteia um novo) — depois do
   // reload essa referência ficaria pendurada apontando pra um card morto.
   cardsEl.forEach(c=>{if(_flAbertas.some(j=>j.id===c.id))_flFecharJanela(c.id)});
-  const todos=await idbGet('vox_history').catch(()=>[])||[];
+  // Lê da cópia em memória que o saveHistory() acima acabou de atualizar. O
+  // IndexedDB grava em segundo plano: nota criada um instante antes (o
+  // "Levar pra outro mundo" do Modo Conversa cria e manda na mesma hora)
+  // ainda não estava lá — saía da origem e não entrava no pacote.
+  const todos=(_historyCache&&_historyCache.length)?_historyCache:(await idbGet('vox_history').catch(()=>[])||[]);
   // `dt` (data de criação) é o único campo estável entre saves/loads — o
   // `id` do DOM nasce de novo em todo addCard(), load incluso.
   const itens=todos.filter(it=>dts.has(it.dt));
@@ -9265,6 +9356,9 @@ async function _mundoImportarPacote(pacote){
   });
   const pastasFinal=pacote.pastas.map(f=>({...f,id:remap[f.id]||f.id,
     parentId:(f.parentId&&remap[f.parentId])?remap[f.parentId]:f.parentId}));
+  // Pasta que era filha de alguém que não veio junto chega solta (na raiz):
+  // um pai que não existe aqui deixaria a pasta invisível.
+  pastasFinal.forEach(f=>{if(f.parentId&&!pastasFinal.some(x=>x.id===f.parentId)&&!folders.some(x=>x.id===f.parentId))f.parentId=null});
   folders=[...folders,...pastasFinal];
   saveFolders();
   // Fotos primeiro: precisa da chave NOVA antes de recriar os cards que as
@@ -9300,7 +9394,9 @@ async function _mundoImportarPacote(pacote){
   });
   if(mudouTag)localStorage.setItem('vox_tag_nomes',JSON.stringify(tagNomes));
   saveHistory();applyFolderFilter();renderFolders();
-  return {notas:pacote.itens.length,subpastas:pacote.pastas.length-1};
+  const _idsChegaram=new Set(pastasFinal.map(f=>f.id));
+  const raiz=(pastasFinal.find(f=>!f.parentId||!_idsChegaram.has(f.parentId))||{}).id||'';
+  return {notas:pacote.itens.length,subpastas:pacote.pastas.length-1,raiz};
 }
 // Confirma, tira da origem, guarda o pacote fora do desvio por World, e
 // deixa a Galáxia de sempre escolher OU criar o destino — zero tela nova.
@@ -9434,6 +9530,7 @@ async function _mundoChecarPendente(){
   const r=await _mundoImportarPacote(pacote);
   if(mesmoMundo)return; // cancelou a troca — voltou pro mesmo lugar, sem "chegou"
   toast(t('📦 {n} notas e {m} subpastas agora moram aqui').replace('{n}',r.notas).replace('{m}',r.subpastas));
+  if(r.raiz)setTimeout(()=>_chegadaPerguntar(r.raiz),900);
   // Juice: o mesmo "afundar e voltar" que o chip do mundo ativo já faz ao
   // abrir a Galáxia — reaproveitado sozinho, sem precisar abrir nada.
   const chip=document.getElementById('worldChip');
@@ -10231,7 +10328,7 @@ let I18N_EN={
 "bloco {i} de {n}…":"chunk {i} of {n}…","unindo os blocos…":"merging the chunks…",
 "De":"From","Para":"To","Automático":"Auto","Trocar":"Swap","Detectando idioma…":"Detecting language…","Idioma detectado":"Language detected","Texto já no idioma de destino":"Text already appears to be in the target language. No translation needed.","No automático eu detecto o idioma e trago para o idioma do app.":"In auto mode I detect the language and bring it to the app language.","Escolher idiomas manualmente":"Choose languages manually",
 "Nova versão disponível":"New version available","Atualizar":"Update",
-"Experiência":"Experience","As mesmas notas, ligadas pelas pastas como um mapa.":"The same notes, linked through your folders like a map.","As mesmas notas, em volta das suas pastas.":"The same notes, around your folders.","As mesmas notas, cada uma no dia em que nasceu.":"The same notes, each on the day it was made.","Abre no céu, pra você escolher em qual mundo entrar.":"Opens on the sky, so you can pick which world to enter.","Outros jeitos de ver as mesmas notas":"Other ways to see the same notes","Ou começar escolhendo o mundo":"Or start by picking the world","Na dúvida, toque em Agora não. O Vox aprende com o uso.":"Not sure? Tap Not now. Vox learns as you use it.","Cards":"Cards","As mesmas notas, de jeitos diferentes":"The same notes, seen in different ways","Você escreve e guarda nas suas pastas. Cada desenho é só um jeito de olhar pro que você já tem. Não precisa escolher nada: o Vox abre do último jeito que você deixou.":"You write and keep things in your folders. Each drawing is just a way of looking at what you already have. No need to choose anything: Vox opens the way you last left it.","1 nota na lixeira · some em 30 dias":"1 note in the trash · gone in 30 days","Seu jeito de usar":"Your way of using it","Palavras que o Vox aprendeu":"Words Vox has learned","Se algo der errado":"If something goes wrong","Nenhuma cópia ainda":"No copy yet","Última cópia hoje":"Last copy today","Última cópia ontem":"Last copy yesterday","Última cópia há {n} dias":"Last copy {n} days ago","Abre em {x}":"Opens in {x}","dicas ligadas":"tips on","dicas desligadas":"tips off","1 palavra ou correção":"1 word or correction","{n} palavras e correções":"{n} words and corrections","Destravar, espaço, recomeçar":"Unfreeze, storage, start over","Escolha uma pasta e o Vox guarda uma cópia nela cada vez que você salvar.":"Pick a folder and Vox keeps a copy there every time you save.","Como funciona?":"How does it work?","Por que aqui a cópia é manual?":"Why is the copy manual here?","Pouco":"Rarely","Normal":"Normal","Bastante":"Often","Nunca":"Never","Pôr no meu calendário":"Add to my calendar","Ajustar os números":"Fine-tune the numbers","Me lembrar de fazer cópia":"Remind me to make a copy","O Vox não vai te lembrar na tela. O calendário, se você pôs, continua valendo.":"Vox won't remind you on screen. The calendar, if you added it, still works.","Do seu jeito: {n} notas ou {d} dias.":"Your way: {n} notes or {d} days.","Avisa a cada {n} notas novas ou {d} dias sem cópia, na tela principal e nunca em cima de uma gravação.":"Reminds you every {n} new notes or {d} days without a copy, on the main screen and never over a recording.","Dicas pelo caminho":"Tips along the way","O Vox explica cada função na primeira vez que você usa.":"Vox explains each feature the first time you use it.","Abrir Configurações já completas":"Open Settings fully expanded","Pula a tela de entrada e mostra tudo de uma vez.":"Skips the welcome screen and shows everything at once.","Quando você escolhe \"sempre ignorar\" ou \"sempre trocar\" ao revisar um texto, a regra fica aqui. Toque no X pra tirar uma.":"When you pick \"always ignore\" or \"always replace\" while reviewing a text, the rule is kept here. Tap the X to remove one.","O Vox travou?":"Is Vox stuck?","Fecha os áudios abertos e para qualquer gravação em andamento. Suas notas não são apagadas.":"Closes open audio and stops any recording in progress. Your notes are not deleted.","Destravar":"Unfreeze","Recomeçar do zero":"Start over","Mandar todas as notas pra lixeira":"Send all notes to the trash","Elas ficam lá por 30 dias e dá pra desfazer. Pra tirar só algumas, use Selecionar na tela principal.":"They stay there for 30 days and you can undo. To remove just a few, use Select on the main screen.","Segure pra mandar tudo pra lixeira":"Hold to send everything to the trash","Voltar o Vox ao primeiro dia":"Take Vox back to day one","Zera chaves, idioma, tema e ajustes. Suas notas podem ficar.":"Resets keys, language, theme and settings. Your notes can stay.","Zerar o Vox…":"Reset Vox…","Segure pra zerar o Vox":"Hold to reset Vox","Não há notas pra mandar pra lixeira.":"There are no notes to send to the trash.","{n} notas na lixeira · somem em 30 dias":"{n} notes in the trash · gone in 30 days","↩ Notas de volta":"↩ Notes are back","Segure até a barra encher.":"Hold until the bar fills up.","O espaço livre do aparelho está acabando, e isso pode limitar o que o Vox guarda. Libere espaço no aparelho ou salve uma cópia e mande notas antigas pra lixeira.":"Your device is running out of free space, which may limit what Vox can keep. Free up space or save a copy and send old notes to the trash.","O espaço livre do aparelho está ficando apertado. Se quiser, salve uma cópia e mande notas antigas pra lixeira.":"Free space on your device is getting tight. If you like, save a copy and send old notes to the trash.","Este navegador pode apagar os dados sozinho se faltar espaço. Guarde uma cópia de vez em quando.":"This browser may erase the data on its own if space runs low. Save a copy now and then.","Como o Vox abre":"How Vox opens","O Vox abre em":"Vox opens in","Mudar":"Change","neste mundo":"in this world","abre aqui":"opens here","Onde parei":"Where I left off","Volta na tela e no jeito de ver que você deixou.":"Back to the screen and view you left.","Um card embaixo do outro, do mais novo pro mais antigo.":"One card under the other, newest first.","Cards lado a lado, como um mural.":"Cards side by side, like a wall board.","Um card por vez, em tela de leitura.":"One card at a time, in reading view.","Fluxograma":"Flowchart","Suas pastas ligadas como um mapa.":"Your folders linked like a map.","Órbita":"Orbit","Suas pastas girando em volta de um centro.":"Your folders circling a center.","Calendário":"Calendar","Cada nota no dia em que nasceu.":"Each note on the day it was made.","Mundos":"Worlds","O céu com todos os seus mundos.":"The sky with all your worlds.","Pensamento fluido":"Free thinking","Do meu jeito":"My own way","Grava no modo Reunião e abre no Calendário.":"Records in Meeting mode and opens in the Calendar.","Grava no modo Consulta e abre no Documento.":"Records in Appointment mode and opens in Document view.","Grava no modo Livre e abre no Fluxograma.":"Records in Free mode and opens in the Flowchart.","Grava no modo Entrevista e abre na Lista.":"Records in Interview mode and opens in the List.","Abre onde você parou, no último modo que usou.":"Opens where you left off, in the last mode you used.","Como você vai usar o Vox neste mundo?":"How will you use Vox in this world?","Escolha um jeito de trabalhar: ele ajusta o modo de gravação e a tela de abertura deste mundo.":"Pick a way of working: it sets the recording mode and the opening screen of this world.","Seus cards":"Your cards","Abrir já com":"Open straight into","Vale só para este mundo. Cada mundo guarda a sua escolha.":"Only for this world. Each world keeps its own choice.","Voltar ao padrão":"Back to default","O Vox vai abrir onde você parou.":"Vox will open where you left off.","O Vox vai abrir em {x} neste mundo.":"Vox will open in {x} in this world.","{p} neste mundo: ":"{p} in this world: ","Pronto: o Vox volta a abrir onde você parou.":"Done: Vox opens where you left off again.","Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.":"This picks the recording mode and the screen this world opens in. You can change it later in Settings.","Ainda não há pastas pro {x} — abrimos nos seus cards.":"There are no folders for the {x} yet — we opened your cards.","Abriu em {x} — você escolheu isso.":"Opened in {x} — you chose this.","🤝 Modo assistido":"🤝 Assisted mode",
+"Experiência":"Experience","1 nota nova em \"{p}\"":"1 new note in \"{p}\"","Já guardada numa pasta":"Already saved in a folder","Organizar":"Organize","Organizar: guardar numa pasta ou levar pra outro mundo":"Organize: save into a folder or take to another world","Abrir a pasta":"Open the folder","Tudo já está em \"{p}\"":"Everything is already in \"{p}\"","{n} notas novas em \"{p}\"":"{n} new notes in \"{p}\"","Pasta \"{p}\" · 1 nota":"Folder \"{p}\" · 1 note","Pasta \"{p}\" · {n} notas":"Folder \"{p}\" · {n} notes","sugerido":"suggested","Guardar numa pasta":"Save into a folder","O que fazer com este texto?":"What to do with this text?","O que fazer com estas {n} abas?":"What to do with these {n} tabs?","Levar pra outro mundo":"Take to another world","Vira uma pasta e viaja. Você escolhe o mundo na próxima tela.":"It becomes a folder and travels. You pick the world on the next screen.","Tudo sai deste mundo e vai pro que você escolher. Lá, o Vox pergunta em qual pasta guardar.":"Everything leaves this world and goes to the one you pick. There, Vox asks which folder to put it in.","Segure pra levar":"Hold to take it","Pasta \"{p}\" criada com 1 nota":"Folder \"{p}\" created with 1 note","Pasta \"{p}\" criada com {n} notas":"Folder \"{p}\" created with {n} notes","O original voltou pra onde estava":"The original went back where it was","Deixar o original onde estava":"Keep the original where it was","Guardar tudo numa pasta?":"Save everything into a folder?","Você abriu {n} lentes. Elas viram notas ao lado do original, numa pasta chamada \"{p}\".":"You opened {n} lenses. They become notes next to the original, in a folder called \"{p}\".","Outras ações":"Other actions","Chegou \"{p}\". Onde guardar?":"\"{p}\" has arrived. Where should it go?","Ela pode ficar como pasta nova ou entrar numa pasta que já existe aqui.":"It can stay as a new folder or go inside a folder that already exists here.","Deixar como pasta nova":"Keep as a new folder","Dentro de \"{p}\"":"Inside \"{p}\"","Ficou como pasta nova":"Kept as a new folder","\"{p}\" agora mora dentro de \"{q}\"":"\"{p}\" now lives inside \"{q}\"","As mesmas notas, ligadas pelas pastas como um mapa.":"The same notes, linked through your folders like a map.","As mesmas notas, em volta das suas pastas.":"The same notes, around your folders.","As mesmas notas, cada uma no dia em que nasceu.":"The same notes, each on the day it was made.","Abre no céu, pra você escolher em qual mundo entrar.":"Opens on the sky, so you can pick which world to enter.","Outros jeitos de ver as mesmas notas":"Other ways to see the same notes","Ou começar escolhendo o mundo":"Or start by picking the world","Na dúvida, toque em Agora não. O Vox aprende com o uso.":"Not sure? Tap Not now. Vox learns as you use it.","Cards":"Cards","As mesmas notas, de jeitos diferentes":"The same notes, seen in different ways","Você escreve e guarda nas suas pastas. Cada desenho é só um jeito de olhar pro que você já tem. Não precisa escolher nada: o Vox abre do último jeito que você deixou.":"You write and keep things in your folders. Each drawing is just a way of looking at what you already have. No need to choose anything: Vox opens the way you last left it.","1 nota na lixeira · some em 30 dias":"1 note in the trash · gone in 30 days","Seu jeito de usar":"Your way of using it","Palavras que o Vox aprendeu":"Words Vox has learned","Se algo der errado":"If something goes wrong","Nenhuma cópia ainda":"No copy yet","Última cópia hoje":"Last copy today","Última cópia ontem":"Last copy yesterday","Última cópia há {n} dias":"Last copy {n} days ago","Abre em {x}":"Opens in {x}","dicas ligadas":"tips on","dicas desligadas":"tips off","1 palavra ou correção":"1 word or correction","{n} palavras e correções":"{n} words and corrections","Destravar, espaço, recomeçar":"Unfreeze, storage, start over","Escolha uma pasta e o Vox guarda uma cópia nela cada vez que você salvar.":"Pick a folder and Vox keeps a copy there every time you save.","Como funciona?":"How does it work?","Por que aqui a cópia é manual?":"Why is the copy manual here?","Pouco":"Rarely","Normal":"Normal","Bastante":"Often","Nunca":"Never","Pôr no meu calendário":"Add to my calendar","Ajustar os números":"Fine-tune the numbers","Me lembrar de fazer cópia":"Remind me to make a copy","O Vox não vai te lembrar na tela. O calendário, se você pôs, continua valendo.":"Vox won't remind you on screen. The calendar, if you added it, still works.","Do seu jeito: {n} notas ou {d} dias.":"Your way: {n} notes or {d} days.","Avisa a cada {n} notas novas ou {d} dias sem cópia, na tela principal e nunca em cima de uma gravação.":"Reminds you every {n} new notes or {d} days without a copy, on the main screen and never over a recording.","Dicas pelo caminho":"Tips along the way","O Vox explica cada função na primeira vez que você usa.":"Vox explains each feature the first time you use it.","Abrir Configurações já completas":"Open Settings fully expanded","Pula a tela de entrada e mostra tudo de uma vez.":"Skips the welcome screen and shows everything at once.","Quando você escolhe \"sempre ignorar\" ou \"sempre trocar\" ao revisar um texto, a regra fica aqui. Toque no X pra tirar uma.":"When you pick \"always ignore\" or \"always replace\" while reviewing a text, the rule is kept here. Tap the X to remove one.","O Vox travou?":"Is Vox stuck?","Fecha os áudios abertos e para qualquer gravação em andamento. Suas notas não são apagadas.":"Closes open audio and stops any recording in progress. Your notes are not deleted.","Destravar":"Unfreeze","Recomeçar do zero":"Start over","Mandar todas as notas pra lixeira":"Send all notes to the trash","Elas ficam lá por 30 dias e dá pra desfazer. Pra tirar só algumas, use Selecionar na tela principal.":"They stay there for 30 days and you can undo. To remove just a few, use Select on the main screen.","Segure pra mandar tudo pra lixeira":"Hold to send everything to the trash","Voltar o Vox ao primeiro dia":"Take Vox back to day one","Zera chaves, idioma, tema e ajustes. Suas notas podem ficar.":"Resets keys, language, theme and settings. Your notes can stay.","Zerar o Vox…":"Reset Vox…","Segure pra zerar o Vox":"Hold to reset Vox","Não há notas pra mandar pra lixeira.":"There are no notes to send to the trash.","{n} notas na lixeira · somem em 30 dias":"{n} notes in the trash · gone in 30 days","↩ Notas de volta":"↩ Notes are back","Segure até a barra encher.":"Hold until the bar fills up.","O espaço livre do aparelho está acabando, e isso pode limitar o que o Vox guarda. Libere espaço no aparelho ou salve uma cópia e mande notas antigas pra lixeira.":"Your device is running out of free space, which may limit what Vox can keep. Free up space or save a copy and send old notes to the trash.","O espaço livre do aparelho está ficando apertado. Se quiser, salve uma cópia e mande notas antigas pra lixeira.":"Free space on your device is getting tight. If you like, save a copy and send old notes to the trash.","Este navegador pode apagar os dados sozinho se faltar espaço. Guarde uma cópia de vez em quando.":"This browser may erase the data on its own if space runs low. Save a copy now and then.","Como o Vox abre":"How Vox opens","O Vox abre em":"Vox opens in","Mudar":"Change","neste mundo":"in this world","abre aqui":"opens here","Onde parei":"Where I left off","Volta na tela e no jeito de ver que você deixou.":"Back to the screen and view you left.","Um card embaixo do outro, do mais novo pro mais antigo.":"One card under the other, newest first.","Cards lado a lado, como um mural.":"Cards side by side, like a wall board.","Um card por vez, em tela de leitura.":"One card at a time, in reading view.","Fluxograma":"Flowchart","Suas pastas ligadas como um mapa.":"Your folders linked like a map.","Órbita":"Orbit","Suas pastas girando em volta de um centro.":"Your folders circling a center.","Calendário":"Calendar","Cada nota no dia em que nasceu.":"Each note on the day it was made.","Mundos":"Worlds","O céu com todos os seus mundos.":"The sky with all your worlds.","Pensamento fluido":"Free thinking","Do meu jeito":"My own way","Grava no modo Reunião e abre no Calendário.":"Records in Meeting mode and opens in the Calendar.","Grava no modo Consulta e abre no Documento.":"Records in Appointment mode and opens in Document view.","Grava no modo Livre e abre no Fluxograma.":"Records in Free mode and opens in the Flowchart.","Grava no modo Entrevista e abre na Lista.":"Records in Interview mode and opens in the List.","Abre onde você parou, no último modo que usou.":"Opens where you left off, in the last mode you used.","Como você vai usar o Vox neste mundo?":"How will you use Vox in this world?","Escolha um jeito de trabalhar: ele ajusta o modo de gravação e a tela de abertura deste mundo.":"Pick a way of working: it sets the recording mode and the opening screen of this world.","Seus cards":"Your cards","Abrir já com":"Open straight into","Vale só para este mundo. Cada mundo guarda a sua escolha.":"Only for this world. Each world keeps its own choice.","Voltar ao padrão":"Back to default","O Vox vai abrir onde você parou.":"Vox will open where you left off.","O Vox vai abrir em {x} neste mundo.":"Vox will open in {x} in this world.","{p} neste mundo: ":"{p} in this world: ","Pronto: o Vox volta a abrir onde você parou.":"Done: Vox opens where you left off again.","Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.":"This picks the recording mode and the screen this world opens in. You can change it later in Settings.","Ainda não há pastas pro {x} — abrimos nos seus cards.":"There are no folders for the {x} yet — we opened your cards.","Abriu em {x} — você escolheu isso.":"Opened in {x} — you chose this.","🤝 Modo assistido":"🤝 Assisted mode",
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
 "Zera todas as preferências, chaves e ajustes — como no primeiro dia.":"Resets all preferences, keys and settings — like day one.",
@@ -30534,9 +30631,11 @@ function _cchatInitTabs(id){
 function _cchatRenderTextTabs(id){
   const bar=document.getElementById('cchat-texttabs-'+id);if(!bar)return;
   const active=_cchatActiveTab[id]||'original';
-  let html=`<button type="button" class="cchat-ttab${active==='original'?' active':''}" data-tabid="original" onclick="_cchatSwitchTab('${id}','original')">${t('Original')}</button>`;
+  // Plano 30: cada aba ganha o pontinho na cor da categoria da lente — a
+  // mesma cor que aparece nas miniaturas da Ilha "Organizar".
+  let html=`<button type="button" class="cchat-ttab${active==='original'?' active':''}" data-tabid="original" onclick="_cchatSwitchTab('${id}','original')"><i class="cchat-ttab-dot" style="--dot:var(--text3)"></i>${t('Original')}</button>`;
   (_cchatTabs[id]||[]).forEach(tb=>{
-    html+=`<button type="button" class="cchat-ttab${active===tb.tabId?' active':''}" data-tabid="${tb.tabId}" onclick="_cchatSwitchTab('${id}','${tb.tabId}')">${escHtml(tb.label)}<span class="cchat-ttab-x" onclick="event.stopPropagation();_cchatCloseTab('${id}','${tb.tabId}')" title="${t('Fechar')}">${ICO.close}</span></button>`;
+    html+=`<button type="button" class="cchat-ttab${active===tb.tabId?' active':''}${tb.guardada?' guardada':''}" data-tabid="${tb.tabId}" onclick="_cchatSwitchTab('${id}','${tb.tabId}')"><i class="cchat-ttab-dot" style="--dot:${_cchatCorDe(tb.lensKey)}"></i>${escHtml(tb.label)}${tb.guardada?`<span class="cchat-ttab-ok" title="${t('Já guardada numa pasta')}">✓</span>`:''}<span class="cchat-ttab-x" onclick="event.stopPropagation();_cchatCloseTab('${id}','${tb.tabId}')" title="${t('Fechar')}">${ICO.close}</span></button>`;
   });
   bar.innerHTML=html;
 }
@@ -30566,6 +30665,7 @@ function _cchatCloseTab(id,tabId){
   document.querySelector(`#cchat-textslot-${id} [data-cchat-pane="${tabId}"]`)?.remove();
   if(_cchatActiveTab[id]===tabId)_cchatActiveTab[id]='original';
   _cchatSwitchTab(id,_cchatActiveTab[id]);
+  _cchatPersistir(id);_ilhaBotaoPintar(id);
 }
 function _cchatOpenLensMenu(id){
   const panel=document.getElementById('cchat-lensmenu-'+id);if(!panel)return;
@@ -30587,13 +30687,16 @@ async function _cchatRunLens(id,lensKey){
   toast(L.label+'…');
   try{
     const result=await generateLens(L,sourceText,key);
-    await _cchatAddTab(id,L.label,result);
+    await _cchatAddTab(id,L.label,result,lensKey);
   }catch(e){toast('❌ '+e.message,true)}
 }
-async function _cchatAddTab(id,label,text){
-  const tabId='ct'+Date.now();
+// opts.silencioso: reabrindo abas guardadas (sem toast, sem sugestão).
+async function _cchatAddTab(id,label,text,lensKey,opts){
+  opts=opts||{};
+  // Date.now() sozinho colidia ao reabrir várias abas no mesmo milissegundo.
+  const tabId='ct'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   _cchatTabs[id]=_cchatTabs[id]||[];
-  _cchatTabs[id].push({tabId,label,text});
+  _cchatTabs[id].push({tabId,label,text,lensKey:lensKey||'',guardada:!!opts.guardada});
   const slot=document.getElementById('cchat-textslot-'+id);
   if(slot){
     const pane=document.createElement('div');
@@ -30604,7 +30707,12 @@ async function _cchatAddTab(id,label,text){
     await _cchatRenderTabPreview(id,tabId);
   }
   _cchatSwitchTab(id,tabId);
-  toast('✅ '+t('Nova aba criada!'));
+  _ilhaBotaoPintar(id);
+  if(opts.silencioso)return;
+  _cchatPersistir(id);
+  // Quando a sugestão aparece, ela mesma conta que a aba nasceu — o aviso
+  // de "nova aba" sairia em cima dela.
+  if(!_ilhaTalvezSugerir(id))toast('✅ '+t('Nova aba criada!'));
 }
 // Abas de transformação nascem já em "modo Markdown" (negrito, títulos,
 // listas de verdade renderizados) — clicar no texto entra em edição (cru);
@@ -30637,6 +30745,7 @@ function _cchatExitTabEdit(id,tabId){
   const ta=pane.querySelector('.cchat-transform-ta');
   tb.text=ta.value;
   _cchatRenderTabPreview(id,tabId);
+  _cchatPersistir(id);
 }
 // As duas ações abaixo agem sobre a aba de transformação ATIVA — não fazem
 // nada se a aba ativa for a 'original' (botões só aparecem nesse caso, ver
@@ -30655,8 +30764,288 @@ function _cchatSaveNew(id){
   const tb=(_cchatTabs[id]||[]).find(t=>t.tabId===active);if(!tb)return;
   const card=document.getElementById(id);
   const mode=card?.dataset.mode||'livre';
-  setLastAICard(addCard(tb.text,null,0,'texto',cfg.provider,true,null,null,[],tb.label+' — '+(card?.dataset.sessionName||fmtDt(card?.dataset.dt||'')),mode,false));
+  // Plano 30: o card salvo daqui nasce com a etiqueta da lente (como no menu
+  // de lentes normal) e sabendo de qual nota veio.
+  const L=LENSES[tb.lensKey];
+  const nid=addCard(tb.text,null,0,'texto',cfg.provider,true,null,null,(L&&L.tag)?[L.tag,mode]:[],tb.label+' — '+(card?.dataset.sessionName||fmtDt(card?.dataset.dt||'')),mode,false);
+  const nc=document.getElementById(nid);
+  if(nc&&card?.dataset.dt){nc.dataset.origemDt=card.dataset.dt;if(tb.lensKey)nc.dataset.origemLente=tb.lensKey;saveHistory()}
+  setLastAICard(nid);
   toast('✅ '+t('Novo card criado!'));
+}
+// ── PLANO 30 (06/10/2026): Ilha "Organizar" + sugestão + abas que sobrevivem ──
+// As abas do Modo Conversa deixaram de ser efêmeras: cada card guarda as suas
+// (vox_cchat_abas, por mundo, indexado pelo dt — o id do DOM muda a cada
+// carregamento). Mundo com senha NÃO guarda: o cofre só cifra o histórico, e
+// um rascunho em texto puro ao lado dele vazaria o que a senha protege.
+const _cchatPastaGuardada={}; // {cardId: folderId} — pasta criada pelo "Guardar numa pasta"
+const _ilhaSugNao={};         // {cardId: true} — "Agora não" vale pra este card
+let _cchatAbasCache=null,_ilhaLevarId=null;
+function _cchatCorDe(lensKey){const L=LENSES[lensKey];return (L&&LENS_CATS[L.cat]&&LENS_CATS[L.cat].color)||'var(--text3)'}
+function _cchatTitulo(id){
+  const card=document.getElementById(id);
+  return (card?.dataset.sessionName||card?.querySelector('.sname-badge')?.textContent||'').trim()||fmtDt(card?.dataset.dt||'');
+}
+function _cchatAbasMapa(){
+  if(_cchatAbasCache)return Promise.resolve(_cchatAbasCache);
+  return idbGet('vox_cchat_abas').then(m=>(_cchatAbasCache=(m&&typeof m==='object')?m:{})).catch(()=>(_cchatAbasCache={}));
+}
+function _cchatPersistir(id){
+  if(_mundoTrancado(_mundoAtivo))return;
+  const dt=document.getElementById(id)?.dataset.dt;if(!dt)return;
+  const abas=(_cchatTabs[id]||[]).map(tb=>({label:tb.label,text:tb.text,lensKey:tb.lensKey||'',guardada:!!tb.guardada}));
+  const pasta=_cchatPastaGuardada[id]||'',semSug=!!_ilhaSugNao[id];
+  _cchatAbasMapa().then(m=>{
+    if(abas.length||pasta||semSug)m[dt]={abas,pasta,semSug,em:Date.now()};else delete m[dt];
+    // Rascunho de card que sumiu não pode crescer pra sempre: ficam os 60 mais recentes.
+    const ks=Object.keys(m);
+    if(ks.length>60)ks.sort((a,b)=>(m[a].em||0)-(m[b].em||0)).slice(0,ks.length-60).forEach(k=>delete m[k]);
+    return idbSet('vox_cchat_abas',m);
+  }).catch(()=>{});
+}
+async function _cchatRestaurar(id){
+  if(_mundoTrancado(_mundoAtivo))return;
+  const dt=document.getElementById(id)?.dataset.dt;if(!dt)return;
+  const m=await _cchatAbasMapa(),r=m[dt];if(!r)return;
+  if(!document.getElementById('cchat-textslot-'+id))return; // fechou antes de chegar
+  if(r.pasta&&folders.some(f=>f.id===r.pasta))_cchatPastaGuardada[id]=r.pasta;
+  if(r.semSug)_ilhaSugNao[id]=true;
+  for(const a of (r.abas||[]))await _cchatAddTab(id,a.label,a.text,a.lensKey,{silencioso:true,guardada:a.guardada});
+  _cchatSwitchTab(id,'original');
+  _ilhaBotaoPintar(id);
+}
+function _ilhaContar(id){return 1+(_cchatTabs[id]||[]).length}
+function _ilhaPendentes(id){return (_cchatTabs[id]||[]).filter(tb=>!tb.guardada)}
+function _ilhaCores(id){return ['var(--text3)',...(_cchatTabs[id]||[]).map(tb=>_cchatCorDe(tb.lensKey))].slice(0,7)}
+function _ilhaBotaoPintar(id){
+  const n=document.querySelector('#cchat-org-'+id+' .cchat-org-n');
+  if(n){const v=String(_ilhaContar(id));if(n.textContent!==v){n.textContent=v;_jz(n,'rola',360)}}
+  const il=document.getElementById('ilha-'+id);
+  if(il&&!il.hidden)_ilhaPintar(id); // a prévia acompanha as abas ao vivo
+}
+// Miniaturas-prévia: desenhadas com as abas DESTA conversa — uma folha por
+// aba, na cor da lente. Não é ícone: é o resultado que vai acontecer.
+function _ilhaPreviaPasta(id){
+  const cores=_ilhaCores(id),k=cores.length,w=Math.min(20,(104-(k-1)*4)/k),x0=80-(k*w+(k-1)*4)/2;
+  const papeis=cores.map((c,i)=>{const x=(x0+i*(w+4)).toFixed(1),ww=w.toFixed(1);
+    return `<g class="ilha-papel" style="--i:${i}"><rect x="${x}" y="24" width="${ww}" height="44" rx="3" fill="var(--bg-card)" stroke="${c}" stroke-width="1.6"/><rect x="${x}" y="24" width="${ww}" height="7" rx="2" fill="${c}"/></g>`}).join('');
+  return `<svg viewBox="0 0 160 100" aria-hidden="true" focusable="false"><path class="ilha-pasta-fundo" d="M18 22h38l8 9h78v59H18z"/>${papeis}<path class="ilha-pasta-frente" d="M18 50h124v40H18z"/></svg>`;
+}
+function _ilhaPreviaMundo(id){
+  const cores=_ilhaCores(id),k=cores.length;
+  const listras=cores.map((c,i)=>`<rect x="${(30+i*(54/k)).toFixed(1)}" y="52" width="${Math.max(3,54/k-3).toFixed(1)}" height="30" rx="1.5" fill="${c}"/>`).join('');
+  return `<svg viewBox="0 0 160 100" aria-hidden="true" focusable="false"><circle class="ilha-estrela" cx="20" cy="16" r="1.2"/><circle class="ilha-estrela" cx="60" cy="10" r="1"/><circle class="ilha-estrela" cx="150" cy="82" r="1.2"/><circle class="ilha-estrela" cx="98" cy="18" r="1"/><circle class="ilha-planeta" cx="122" cy="36" r="18"/><ellipse class="ilha-anel" cx="122" cy="36" rx="28" ry="7"/><g class="ilha-mala-g"><path class="ilha-alca" d="M44 44v-8h28v8"/><rect class="ilha-mala" x="22" y="44" width="72" height="44" rx="8"/>${listras}</g></svg>`;
+}
+function _ilhaPosicionar(id,el){
+  if(window.innerWidth<=640){el.style.top='';el.style.right='';return}
+  const ov=document.getElementById('cchat-overlay'),b=document.getElementById('cchat-org-'+id);
+  if(!ov||!b)return;
+  const ro=ov.getBoundingClientRect(),rb=b.getBoundingClientRect();
+  el.style.top=(rb.bottom-ro.top+8)+'px';
+  el.style.right=Math.max(16,ro.right-rb.right)+'px';
+}
+function _ilhaPintar(id){
+  const il=document.getElementById('ilha-'+id);if(!il)return;
+  const pend=_ilhaPendentes(id).length,n=_ilhaContar(id),tit=_cchatTitulo(id);
+  const pid=_cchatPastaGuardada[id],pasta=pid&&folders.find(f=>f.id===pid);
+  let guardar;
+  if(pasta&&!pend){
+    guardar=`<button type="button" class="ilha-cartao" data-acao="abrir" data-pasta="${escHtml(pasta.id)}"><span class="ilha-prev">${_ilhaPreviaPasta(id)}</span><b>${escHtml(t('Abrir a pasta'))}</b><small>${escHtml(t('Tudo já está em "{p}"').replace('{p}',pasta.name))}</small></button>`;
+  }else{
+    const sub=pasta?(pend===1?t('1 nota nova em "{p}"'):t('{n} notas novas em "{p}"').replace('{n}',pend)).replace('{p}',pasta.name)
+      :(n===1?t('Pasta "{p}" · 1 nota'):t('Pasta "{p}" · {n} notas').replace('{n}',n)).replace('{p}',tit);
+    guardar=`<button type="button" class="ilha-cartao" data-acao="guardar">${pend?`<span class="ilha-selo">${escHtml(t('sugerido'))}</span>`:''}<span class="ilha-prev">${_ilhaPreviaPasta(id)}</span><b>${escHtml(t('Guardar numa pasta'))}</b><small>${escHtml(sub)}</small></button>`;
+  }
+  il.innerHTML=`<p class="ilha-tit" id="ilha-tit-${id}">${escHtml(n===1?t('O que fazer com este texto?'):t('O que fazer com estas {n} abas?').replace('{n}',n))}</p>
+    <div class="ilha-cartoes">${guardar}<button type="button" class="ilha-cartao" data-acao="levar"><span class="ilha-prev ilha-prev-ceu">${_ilhaPreviaMundo(id)}</span><b>${escHtml(t('Levar pra outro mundo'))}</b><small>${escHtml(t('Vira uma pasta e viaja. Você escolhe o mundo na próxima tela.'))}</small></button></div>
+    <div class="ilha-levar" hidden><p>${escHtml(t('Tudo sai deste mundo e vai pro que você escolher. Lá, o Vox pergunta em qual pasta guardar.'))}</p><button type="button" class="segura-btn ilha-segura" data-segura="levarConversa"><span class="segura-fill"></span><span class="segura-txt">${escHtml(t('Segure pra levar'))}</span></button></div>`;
+}
+function _ilhaLigar(id){
+  const il=document.getElementById('ilha-'+id);if(!il)return;
+  il.addEventListener('click',e=>{
+    const c=e.target.closest('.ilha-cartao');if(!c)return;
+    if(c.dataset.acao==='guardar')_ilhaGuardar(id,c);
+    else if(c.dataset.acao==='abrir')_ilhaAbrirPasta(id,c.dataset.pasta);
+    else if(c.dataset.acao==='levar'){
+      const lv=il.querySelector('.ilha-levar');if(!lv)return;
+      lv.hidden=false;_ilhaLevarId=id;_jz(lv,'brota',320);
+      setTimeout(()=>lv.querySelector('.segura-btn')?.focus(),30);
+    }
+  });
+  // Setas andam entre os cartões (Tab também anda; Enter faz).
+  il.addEventListener('keydown',e=>{
+    if(!/^Arrow/.test(e.key))return;
+    const cs=[...il.querySelectorAll('.ilha-cartao')],i=cs.indexOf(document.activeElement);if(i<0)return;
+    e.preventDefault();const d=(e.key==='ArrowRight'||e.key==='ArrowDown')?1:-1;
+    cs[(i+d+cs.length)%cs.length].focus();
+  });
+}
+function _ilhaAlternar(id){const il=document.getElementById('ilha-'+id);if(!il)return;il.hidden?_ilhaAbrir(id):_ilhaFechar(id)}
+function _ilhaAbrir(id){
+  const il=document.getElementById('ilha-'+id);if(!il)return;
+  _ilhaSugFechar(id);
+  _ilhaPintar(id);il.hidden=false;il.classList.remove('some');
+  _ilhaPosicionar(id,il);_jz(il,'brota',340);
+  document.getElementById('cchat-org-'+id)?.setAttribute('aria-expanded','true');
+  setTimeout(()=>il.querySelector('.ilha-cartao')?.focus(),30);
+  il._fora=e=>{if(!il.contains(e.target)&&!e.target.closest('#cchat-org-'+id))_ilhaFechar(id)};
+  setTimeout(()=>{if(il._fora)document.addEventListener('pointerdown',il._fora,true)},0);
+}
+function _ilhaFechar(id,seco){
+  const il=document.getElementById('ilha-'+id);if(!il||il.hidden)return false;
+  if(il._fora){document.removeEventListener('pointerdown',il._fora,true);il._fora=null}
+  document.getElementById('cchat-org-'+id)?.setAttribute('aria-expanded','false');
+  if(seco||_voxReduzMov()){il.hidden=true;return true}
+  il.classList.add('some');
+  setTimeout(()=>{il.hidden=true;il.classList.remove('some')},150);
+  return true;
+}
+// O juice principal: cada aba (com a cor dela) voa em arco pra dentro da
+// miniatura da pasta, uma depois da outra; a miniatura "engole" no fim.
+function _ilhaVoo(id,alvo){
+  if(!alvo||_voxReduzMov())return;
+  const ov=document.getElementById('cchat-overlay');if(!ov)return;
+  const ra=alvo.getBoundingClientRect(),pend=new Set(_ilhaPendentes(id).map(tb=>tb.tabId));
+  const tabs=[...document.querySelectorAll('#cchat-texttabs-'+id+' .cchat-ttab')].filter(b=>b.dataset.tabid==='original'||pend.has(b.dataset.tabid));
+  tabs.forEach((b,i)=>{
+    const r=b.getBoundingClientRect();if(!r.width)return;
+    const c=b.cloneNode(true);c.classList.add('ilha-voo');c.removeAttribute('onclick');
+    c.style.left=r.left+'px';c.style.top=r.top+'px';c.style.width=r.width+'px';
+    ov.appendChild(c);
+    const dx=ra.left+ra.width/2-(r.left+r.width/2),dy=ra.top+ra.height/2-(r.top+r.height/2);
+    const a=c.animate([{transform:'translate(0,0) scale(1)',opacity:1},
+      {transform:`translate(${dx*.5}px,${dy*.5-60}px) scale(.85)`,opacity:1,offset:.5},
+      {transform:`translate(${dx}px,${dy}px) scale(.3)`,opacity:0}],
+      {duration:440,delay:i*70,easing:'cubic-bezier(.22,1,.36,1)',fill:'both'});
+    a.onfinish=()=>c.remove();
+  });
+  setTimeout(()=>_jz(alvo.closest('.ilha-cartao')||alvo,'engole',380),300+tabs.length*70);
+}
+function _ilhaNomeLivre(nome,pai){
+  const base=(nome||t('Conversa')).slice(0,60);
+  const usados=new Set(folders.filter(f=>(f.parentId||null)===(pai||null)).map(f=>f.name));
+  if(!usados.has(base))return base;
+  for(let i=2;i<99;i++){const n=base+' ('+i+')';if(!usados.has(n))return n}
+  return base;
+}
+// Guardar numa pasta: a pasta nasce com o nome da conversa, dentro da pasta
+// onde o original já estava; o original entra nela e cada aba ainda não
+// guardada vira uma nota com a etiqueta da lente e "veio de". calado=true é
+// o caminho do "Levar pra outro mundo" (sem voo, sem recibo).
+function _ilhaGuardar(id,alvo,calado){
+  const card=document.getElementById(id);if(!card)return null;
+  const pend=_ilhaPendentes(id);
+  const pid=_cchatPastaGuardada[id];let pasta=pid&&folders.find(f=>f.id===pid);
+  if(pasta&&!pend.length){if(!calado)_ilhaAbrirPasta(id,pasta.id);return pasta.id}
+  const tit=_cchatTitulo(id),ja=!!pasta,pai=card.dataset.folder||null,antes=card.dataset.folder||'';
+  if(!pasta){pasta=_mapaNovaPasta(pai,_ilhaNomeLivre(tit,pai));if(!pasta)return null}
+  if(!calado)_ilhaVoo(id,alvo);
+  const mode=card.dataset.mode||'livre';
+  _cfEmLote(()=>{
+    if(!ja)card.dataset.folder=pasta.id;
+    pend.forEach(tb=>{
+      const L=LENSES[tb.lensKey];
+      const nid=addCard(tb.text,null,0,'texto',cfg.provider,true,null,null,(L&&L.tag)?[L.tag,mode]:[],tb.label+' — '+tit,mode,false,pasta.id);
+      const nc=document.getElementById(nid);
+      if(nc&&card.dataset.dt){nc.dataset.origemDt=card.dataset.dt;if(tb.lensKey)nc.dataset.origemLente=tb.lensKey}
+      tb.guardada=true;
+    });
+  });
+  _cchatPastaGuardada[id]=pasta.id;
+  _cchatRenderTextTabs(id);_cchatPersistir(id);_ilhaBotaoPintar(id);
+  if(calado)return pasta.id;
+  _jzTato(10);
+  const nNotas=pend.length+(ja?0:1),nome=pasta.name;
+  setTimeout(()=>{
+    _ilhaFechar(id);_ilhaSugFechar(id);
+    const msg=ja?(pend.length===1?t('1 nota nova em "{p}"'):t('{n} notas novas em "{p}"').replace('{n}',pend.length)).replace('{p}',nome)
+      :(nNotas===1?t('Pasta "{p}" criada com 1 nota'):t('Pasta "{p}" criada com {n} notas').replace('{n}',nNotas)).replace('{p}',nome);
+    if(!ja&&antes!==pasta.id)toastDesfazer(msg,()=>{card.dataset.folder=antes;saveHistory();renderFolders();applyFolderFilter();toast(t('O original voltou pra onde estava'))},t('Deixar o original onde estava'));
+    else toast(msg);
+  },_voxReduzMov()?0:640);
+  return pasta.id;
+}
+function _ilhaAbrirPasta(id,fid){
+  if(!folders.some(f=>f.id===fid))return;
+  closeConversaMode(id);selectFolder(fid);
+}
+// Levar pra outro mundo: guarda numa pasta (se ainda não guardou) e manda a
+// pasta pelo mesmo caminho da transferência de sempre — sem a janelinha do
+// navegador: quem confirma é o "Segure pra levar".
+async function _ilhaLevar(id){
+  const card=document.getElementById(id);if(!card)return;
+  const dt=card.dataset.dt;
+  const fid=_ilhaGuardar(id,null,true);if(!fid)return;
+  const nome=(folders.find(f=>f.id===fid)||{}).name||'';
+  closeConversaMode(id);
+  // O rascunho deste card viajou como notas — aqui ele não tem mais dono.
+  if(dt)_cchatAbasMapa().then(m=>{delete m[dt];return idbSet('vox_cchat_abas',m)}).catch(()=>{});
+  const pacote=await _mundoColetarPacote(fid);
+  await _idbSetBruto(VOX_TRANSF_CHAVE,pacote);
+  _mundoRemoverPacoteDaOrigem(pacote);
+  toast(t('📦 Escolha em qual mundo "{p}" vai morar').replace('{p}',nome));
+  abrirGalaxia();
+}
+SEGURA_ACOES.levarConversa=()=>{if(_ilhaLevarId)_ilhaLevar(_ilhaLevarId)};
+// Sugestão: quando a pessoa já abriu 2 lentes e não guardou nada, o Vox
+// oferece o próximo passo uma vez, com a prévia e o motivo. "Agora não" vale
+// pra este card de vez. Nunca rouba o foco de quem está digitando.
+function _ilhaTalvezSugerir(id){
+  if(_ilhaSugNao[id]||_cchatPastaGuardada[id])return false;
+  if(_ilhaPendentes(id).length<2)return false;
+  if(document.getElementById('ilha-sug-'+id))return false;
+  const il=document.getElementById('ilha-'+id);if(il&&!il.hidden)return false;
+  const ov=document.getElementById('cchat-overlay');if(!ov)return false;
+  const n=_ilhaPendentes(id).length,tit=_cchatTitulo(id);
+  const s=document.createElement('div');
+  s.className='ilha-sug';s.id='ilha-sug-'+id;s.setAttribute('role','status');
+  s.innerHTML=`<span class="ilha-prev">${_ilhaPreviaPasta(id)}</span><div><b>${escHtml(t('Guardar tudo numa pasta?'))}</b><small>${escHtml(t('Você abriu {n} lentes. Elas viram notas ao lado do original, numa pasta chamada "{p}".').replace('{n}',n).replace('{p}',tit))}</small><div class="ilha-sug-bts"><button type="button" class="pri" data-sug="guardar">${escHtml(t('Guardar'))}</button><button type="button" data-sug="outras">${escHtml(t('Outras ações'))}</button><button type="button" data-sug="nao">${escHtml(t('Agora não'))}</button></div></div>`;
+  ov.appendChild(s);_ilhaPosicionar(id,s);
+  s.addEventListener('click',e=>{
+    const b=e.target.closest('[data-sug]');if(!b)return;
+    const a=b.dataset.sug;
+    if(a==='guardar')_ilhaGuardar(id,s.querySelector('.ilha-prev'));
+    else if(a==='outras'){_ilhaSugFechar(id);_ilhaAbrir(id)}
+    else{_ilhaSugNao[id]=true;_cchatPersistir(id);_ilhaSugFechar(id)}
+  });
+  _jz(document.querySelector('#cchat-org-'+id+' .cchat-org-n'),'rola',360);
+  return true;
+}
+function _ilhaSugFechar(id){const s=document.getElementById('ilha-sug-'+id);if(!s)return false;s.remove();return true}
+// ── Chegada noutro mundo: "onde guardar?" ──
+// A pasta de outro mundo não dá pra escolher antes da viagem (ele pode estar
+// com senha, e as pastas de lá só existem depois que ele abre). Então a
+// pergunta é feita aqui, na chegada, com "pasta nova" já como primeira opção.
+function _chegadaPerguntar(raizId){
+  const raiz=folders.find(f=>f.id===raizId);if(!raiz)return;
+  const opcoes=folders.filter(f=>!f.parentId&&f.id!==raizId&&!_pastaNaLixeira(f.id)&&!_pastaArquivada(f.id)).slice(0,8);
+  if(!opcoes.length)return;
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal chegada-modal">
+    <div class="tx-title">${escHtml(t('Chegou "{p}". Onde guardar?').replace('{p}',raiz.name))}</div>
+    <div class="tx-sub">${escHtml(t('Ela pode ficar como pasta nova ou entrar numa pasta que já existe aqui.'))}</div>
+    <div class="chegada-lista">
+      <button type="button" class="chegada-op pri" onclick="_chegadaEscolher('${escJs(raizId)}','')">${escHtml(t('Deixar como pasta nova'))}</button>
+      ${opcoes.map(f=>`<button type="button" class="chegada-op" onclick="_chegadaEscolher('${escJs(raizId)}','${escJs(f.id)}')"><i class="chegada-cor" style="background:${safeColor(f.color)}"></i>${escHtml(t('Dentro de "{p}"').replace('{p}',f.name))}</button>`).join('')}
+    </div>
+  </div>`;
+  ov.classList.add('on');
+  setTimeout(()=>ov.querySelector('.chegada-op')?.focus(),60);
+}
+function _chegadaEscolher(raizId,paiId){
+  closeTxOverlay();
+  if(!paiId){toast(t('Ficou como pasta nova'));return}
+  const raiz=folders.find(f=>f.id===raizId),pai=folders.find(f=>f.id===paiId);if(!raiz||!pai)return;
+  const lim=_limitePasta(paiId);if(lim){abrirVoxPro(lim);return}
+  const fam=_folderRaizDe(paiId)||pai;
+  raiz.parentId=paiId;
+  // A família inteira que chegou passa a ter a cor da família que a recebeu.
+  [raiz,...getFolderDescendants(raizId).map(x=>folders.find(f=>f.id===x)).filter(Boolean)].forEach(f=>{
+    f.color=fam.color;if(fam.contorno)f.contorno=true;else delete f.contorno;
+  });
+  folderExpanded.add(paiId);
+  saveFolders();renderFolders();applyFolderFilter();
+  toast(t('"{p}" agora mora dentro de "{q}"').replace('{p}',raiz.name).replace('{q}',pai.name));
 }
 function maybeRenderCchatApplyButton(id,result){
   const match=result.match(/\[SUGESTÃO\][\s\S]*?\[\/SUGESTÃO\]/);
@@ -30719,6 +31108,7 @@ function openConversaMode(id){
     <div class="cchat-header">
       <span class="cchat-title">💬 ${escHtml(title)}</span>
       <div class="cchat-viewslot"></div>
+      <button class="cchat-transform-btn cchat-org-btn" id="cchat-org-${id}" onclick="_ilhaAlternar('${id}')" aria-haspopup="dialog" aria-expanded="false" title="${t('Organizar: guardar numa pasta ou levar pra outro mundo')}"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v4M10 13h4"/></svg></span><span class="cchat-org-lbl">${t('Organizar')}</span><span class="cchat-org-n">1</span></button>
       <button class="cchat-transform-btn" onclick="_cchatOpenLensMenu('${id}')" title="${t('Transformar com IA')}"><span class="svgi">${ICO.magicWand}</span> ${t('Transformar')}</button>
       <button class="cchat-transform-btn" onclick="openReviewPanel('${id}','cchat-reviewpanel-${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}"><span class="cchat-transform-btn-ico">${ICO.checkSquare}</span> ${t('revisar')}</button>
       <button class="cchat-transform-btn" id="btnBrainConv" onclick="toggleBrainPanel(this)" title="${t('Trocar rapidamente os provedores de IA')}"><span class="cchat-transform-btn-ico">${ICO.brain}</span> ${t('Cérebro')}</button>
@@ -30760,10 +31150,12 @@ function openConversaMode(id){
       <textarea id="cchat-input-${id}" rows="2" placeholder="${t('Pergunte sobre este texto…')}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCchat('${id}')}" oninput="cchatAutoGrow(this)"></textarea>
       <button class="cchat-mic" id="cchat-mic-${id}" onclick="cchatMic('${id}')" title="${t('Ditar pergunta')}">${ICO.mic}</button>
       <button class="cchat-send" id="cchat-send-${id}" onclick="sendCchat('${id}')"><span class="svgi">${ICO.send}</span></button>
-    </div>`;
+    </div>
+    <div class="ilha" id="ilha-${id}" role="dialog" aria-labelledby="ilha-tit-${id}" hidden></div>`;
   document.body.appendChild(overlay);
-  // Abas de transformação (Original + resultados de IA) — efêmero, reseta
-  // toda vez que a tela abre.
+  _ilhaLigar(id);
+  // Abas de transformação (Original + resultados de IA). Começam vazias e
+  // _cchatRestaurar (logo abaixo) devolve as que este card já tinha.
   _cchatInitTabs(id);
   // A tela cresce a partir do ponto do botão que abriu — não do centro.
   // Fallback (centro) se por algum motivo o botão não foi encontrado.
@@ -30785,6 +31177,7 @@ function openConversaMode(id){
   editorWrap.style.display='';
   document.getElementById('cchat-textslot-'+id).appendChild(editorWrap);
   _cchatRenderTextTabs(id);
+  _cchatRestaurar(id);
   const ta=editorWrap.querySelector('textarea');
   if(ta){ta.style.minHeight='300px'}
   // Sincroniza o controle AAA recém-criado com o tamanho já salvo
@@ -30836,7 +31229,8 @@ function openConversaMode(id){
     }
   }
   // ESC fecha
-  card._cchatEscHandler=function(e){if(e.key==='Escape'){e.preventDefault();closeConversaMode(id)}};
+  // Esc fecha primeiro o que está por cima (Ilha, sugestão); só depois a tela.
+  card._cchatEscHandler=function(e){if(e.key==='Escape'){e.preventDefault();if(_ilhaFechar(id)||_ilhaSugFechar(id))return;closeConversaMode(id)}};
   document.addEventListener('keydown',card._cchatEscHandler);
   // Guarda id no overlay
   overlay.dataset.cardId=id;
@@ -30864,8 +31258,9 @@ function closeConversaMode(id){
   // Remove placeholder
   const placeholder=document.getElementById('cchat-placeholder-'+id);
   if(placeholder)placeholder.remove();
-  // Abas de transformação são efêmeras — descarta o estado ao fechar
-  delete _cchatTabs[id];delete _cchatActiveTab[id];
+  // As abas já estão guardadas (_cchatPersistir); aqui só sai da memória.
+  _ilhaFechar(id,true);_ilhaSugFechar(id);
+  delete _cchatTabs[id];delete _cchatActiveTab[id];delete _cchatPastaGuardada[id];delete _ilhaSugNao[id];
   // Remove overlay
   overlay.remove();
   document.body.style.overflow='';
