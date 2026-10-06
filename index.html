@@ -8725,7 +8725,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.05.8';
+const VOX_VERSION='2026.10.06.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -8746,7 +8746,9 @@ const VOX_MUNDO_KEYS=new Set(['vox_history','vox_folders','vox_folders_expanded'
   // Consultas abre no Documento e grava em Consulta, o de Ideias abre no
   // Fluxograma. O vox_view entrou aqui também; no mundo original a chave
   // continua a mesma de sempre, então ninguém perde o jeito de ver que tinha.
-  'vox_view','vox_modo','vox_ultima_tela','vox_abre_em','vox_perfil','vox_abre_avisos']);
+  'vox_view','vox_modo','vox_ultima_tela','vox_abre_em','vox_perfil','vox_abre_avisos',
+  // Plano 30: as abas do Modo Conversa (rascunho por card) são de cada mundo.
+  'vox_cchat_abas']);
 const VOX_MUNDO_RAIZ='m1';
 // Acesso CRU ao localStorage — sem o desvio por World. Usado pelo cadastro de
 // Worlds (que é global) e por quem precisa varrer as chaves de verdade.
@@ -9277,11 +9279,16 @@ async function _mundoImportarPacote(pacote){
   pacote.itens.forEach(it=>{
     const folder=(it.folder&&remap[it.folder])?remap[it.folder]:(it.folder||'');
     const images=(it.images||[]).map(img=>({...img,k:kMap[img.k]||img.k}));
+    // Plano 30: a transferência entre mundos perdia cor, dia do calendário,
+    // duração do áudio, arquivado e procedência — o carregamento normal e a
+    // importação de backup restauram isso por _restaurarEtiqueta; aqui não.
+    let _nid;
     if(it.diarized){
-      addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',folder,it.chatHistory||'[]');
+      _nid=addDiarCard(JSON.parse(it.utterances||'[]'),JSON.parse(it.speakers||'{}'),it.cost,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,it.view||'roteiro',folder,it.chatHistory||'[]');
     }else{
-      addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,folder,it.chatHistory||'[]',images,it.links||[],it.textosImagem||{});
+      _nid=addCard(it.text,null,it.cost,it.type,it.prov,false,it.ci,it.dt,it.tags||[],it.sessionName||'',it.mode||'livre',it.pinned||false,folder,it.chatHistory||'[]',images,it.links||[],it.textosImagem||{});
     }
+    _restaurarEtiqueta(_nid,it);
   });
   // Nomes de etiqueta usados pelos cards que chegaram: só entra o que ainda
   // não existe aqui — nunca sobrescreve nome que já foi escolhido no destino.
@@ -20615,6 +20622,10 @@ function _restaurarEtiqueta(id,it){
     }
   }
   if(el&&it.durAudio&&+it.durAudio>0)el.dataset.durAudio=String(Math.round(+it.durAudio));
+  if(el&&it.origem&&it.origem.dt){
+    el.dataset.origemDt=String(it.origem.dt);
+    if(it.origem.lente)el.dataset.origemLente=String(it.origem.lente);
+  }
 }
 // Os nomes das etiquetas são do dono do aparelho, não nossos. O padrão é a cor
 // ("Verde"), mas quem usa quase sempre quer o SIGNIFICADO ("Urgente", "Cliente").
@@ -26906,7 +26917,10 @@ function saveHistory(){
       ...(c.dataset.links?{links:JSON.parse(c.dataset.links)}:{}),
       // Texto já lido de dentro de alguma foto (Plano 19) — texto puro, sem
       // Blob nenhum, então não precisa de tratamento especial no backup.
-      ...(c.dataset.textosImagem?{textosImagem:JSON.parse(c.dataset.textosImagem)}:{})
+      ...(c.dataset.textosImagem?{textosImagem:JSON.parse(c.dataset.textosImagem)}:{}),
+      // Procedência (plano 30): de qual nota esta nasceu e por qual lente.
+      // Só entra quando existe — card comum salva o mesmo de sempre.
+      ...(c.dataset.origemDt?{origem:{dt:c.dataset.origemDt,lente:c.dataset.origemLente||''}}:{})
     };
     if(c.dataset.diarized==='true'){
       items.push({...base,diarized:true,utterances:c.dataset.utterances||'[]',speakers:c.dataset.speakers||'{}',view:c.dataset.view||'roteiro',chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
