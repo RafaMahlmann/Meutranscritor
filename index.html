@@ -9124,7 +9124,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.5';
+const VOX_VERSION='2026.10.07.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -15705,16 +15705,24 @@ function _flChaveDePasta(){
 function _flLerStore(){
   try{return JSON.parse(localStorage.getItem('vox_float_cards')||'{}')}catch(e){return{}}
 }
+// A posição de cada janela é guardada pelo dt do card (plano 30, lote 3): o
+// id do DOM nasce de novo a cada carregamento, então guardada por id a
+// posição nunca voltava e o registro só crescia. As entradas antigas por id
+// ('card_…') são lixo e saem na próxima vez que alguma posição é salva.
+function _flChaveCard(id){return document.getElementById(id)?.dataset.dt||id}
 function _flPosicaoSalva(folderKey,id){
   const store=_flLerStore();
-  return store[folderKey]?.[id]||null;
+  return store[folderKey]?.[_flChaveCard(id)]||null;
 }
 function _flSalvarPosicao(id){
   const j=_flAbertas.find(j=>j.id===id);
   if(!j)return;
   const store=_flLerStore();
+  Object.keys(store).forEach(p=>{const o=store[p];if(!o||typeof o!=='object')return;
+    Object.keys(o).forEach(k=>{if(/^card_/.test(k))delete o[k]});
+    if(!Object.keys(o).length&&p!==j.folder)delete store[p]});
   if(!store[j.folder])store[j.folder]={};
-  store[j.folder][id]={x:j.x,y:j.y,w:j.w,h:j.h};
+  store[j.folder][_flChaveCard(id)]={x:j.x,y:j.y,w:j.w,h:j.h};
   try{localStorage.setItem('vox_float_cards',JSON.stringify(store))}catch(e){}
 }
 
@@ -15800,14 +15808,19 @@ function _orbFiosDasNotas(){
   // satélites nas posições da última rodada de desenho
   const centros={};
   centros[_orbChave(_orbFoco)]={x:0,y:0};
-  getFolderChildrenVisiveis(_orbFoco).forEach((f,i)=>{
-    if(_orbMuralPos[i])centros[_orbChave(f.id)]={x:_orbMuralPos[i].x,y:_orbMuralPos[i].y};
+  // Pelo id de quem está em cada posição — contar as pastas pela ordem errava
+  // de bolha quando a vaga de uma pasta nova ocupava um lugar no anel.
+  _orbMuralIds.forEach((fid,i)=>{
+    if(fid&&_orbMuralPos[i])centros[_orbChave(fid)]={x:_orbMuralPos[i].x,y:_orbMuralPos[i].y};
   });
   _flAbertas.forEach(j=>{
     const card=document.getElementById(j.id);
     if(!card)return;
-    const alvo=centros[_orbChave(card.dataset.folder||null)];
-    if(!alvo)return;               // a nota é de outra pasta: sem fio, sem invenção
+    // Nota de uma subpasta mais funda se prende à bolha de cima que está na
+    // tela; nota de fora desta família fica sem fio (sem invenção).
+    let fid=card.dataset.folder||null,alvo=centros[_orbChave(fid)],guarda=0;
+    while(!alvo&&fid&&guarda++<50){fid=(folders.find(f=>f.id===fid)||{}).parentId||null;alvo=centros[_orbChave(fid)]}
+    if(!alvo)return;
     const p=_orbPontoDaJanela(j);
     const l=document.createElementNS(ORB_NS,'line');
     l.setAttribute('class','orb-fio-nota');
@@ -17195,6 +17208,9 @@ function _orbDesenhar(){
   // O mural se ancora no maior vão ENTRE os satélites — precisa saber onde
   // eles ficaram nesta rodada de desenho.
   _orbMuralPos=pos;
+  // Quem está em cada posição (a vaga da pasta nova também ocupa uma): é por
+  // aqui que o fio da nota acha a bolha certa (plano 30, lote 3).
+  _orbMuralIds=fs.map(it=>it.vaga?null:it.id);
   if(_orbMuralAberto)_orbMuralPosicionar();
   // As bolhas mudaram de lugar: os fios que chegam nelas precisam ser
   // redesenhados, senão apontam pra onde a pasta estava antes.
@@ -17552,6 +17568,7 @@ function _orbAnelFatiado(el,id,cards){
 }
 
 let _orbMuralPos=[];         // posições dos satélites do desenho atual
+let _orbMuralIds=[];         // e quem está em cada uma (null = a vaga)
 let _orbMuralAberto=false;
 let _orbMuralNotaId=null;    // ficha expandida dentro do mural
 let _orbMuralRect=null;      // rect do palco, medido só quando muda de verdade
@@ -21266,6 +21283,7 @@ function _restaurarEtiqueta(id,it){
     el.dataset.origemDt=String(it.origem.dt);
     if(it.origem.lente)el.dataset.origemLente=String(it.origem.lente);
   }
+  if(el&&Array.isArray(it.depende)&&it.depende.length)el.dataset.depende=JSON.stringify(it.depende.map(String).slice(0,40));
 }
 // Os nomes das etiquetas são do dono do aparelho, não nossos. O padrão é a cor
 // ("Verde"), mas quem usa quase sempre quer o SIGNIFICADO ("Urgente", "Cliente").
@@ -27774,7 +27792,10 @@ function saveHistory(){
       ...(c.dataset.textosImagem?{textosImagem:JSON.parse(c.dataset.textosImagem)}:{}),
       // Procedência (plano 30): de qual nota esta nasceu e por qual lente.
       // Só entra quando existe — card comum salva o mesmo de sempre.
-      ...(c.dataset.origemDt?{origem:{dt:c.dataset.origemDt,lente:c.dataset.origemLente||''}}:{})
+      ...(c.dataset.origemDt?{origem:{dt:c.dataset.origemDt,lente:c.dataset.origemLente||''}}:{}),
+      // Dependência (plano 30, lote 3): os dt das notas que vêm ANTES desta
+      // ("Depende de:"). Viaja junto no backup e na transferência entre mundos.
+      ...(c.dataset.depende?{depende:(()=>{try{const a=JSON.parse(c.dataset.depende);return Array.isArray(a)?a:[]}catch(e){return []}})()}:{})
     };
     if(c.dataset.diarized==='true'){
       items.push({...base,diarized:true,utterances:c.dataset.utterances||'[]',speakers:c.dataset.speakers||'{}',view:c.dataset.view||'roteiro',chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
@@ -32680,7 +32701,9 @@ function _ideiasGuardarPecas(id,ms,fonte){
   ms.forEach(p=>visita(p,new Set()));
   const titulo=p=>_ixCorta(String(p.tx).split('\n')[0],60);
   const origemDt=(fonte.tb&&fonte.tb.notaDt)||card.dataset.dt,tit=_cchatTitulo(id),mode=card.dataset.mode||'livre';
-  const criados=[],dts=[];
+  // dt de cada peça já guardada: quem vem antes nasce antes (ordem acima),
+  // então as dependências já têm dt quando a peça que depende delas nasce.
+  const criados=[],dts=[],dtDe={};
   _cfEmLote(()=>{
     ordem.forEach(p=>{
       const deps=p.deps.map(n=>by[n]).filter(Boolean).map(titulo);
@@ -32688,6 +32711,9 @@ function _ideiasGuardarPecas(id,ms,fonte){
       const nid=addCard(texto,null,0,'texto',cfg.provider,true,null,_dtUnico(),['ideia-'+p.tipo],IX_TIPOS[p.tipo].um+' — '+tit,mode,false,pasta.id);
       const nc=document.getElementById(nid);if(!nc)return;
       nc.dataset.origemDt=origemDt;nc.dataset.origemLente='ideias';dts.push(nc.dataset.dt);
+      dtDe[p.n]=nc.dataset.dt;
+      const dd=p.deps.map(n=>dtDe[n]).filter(Boolean);
+      if(dd.length)nc.dataset.depende=JSON.stringify(dd);
       const data=_ideiaData(p.tx);if(data){nc.dataset.quando=data;criados.push(nc)}
     });
   });
