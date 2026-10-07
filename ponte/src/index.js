@@ -498,6 +498,7 @@ ${aj.ligada ? '' : '<div class="alerta">A cortesia está desligada. Ninguém nov
     <div class="card"><div class="leg">Visitaram a landing</div><div class="num">${fVis}</div></div>
     <div class="card"><div class="leg">Clicaram em "Comece grátis"</div><div class="num">${fGratis}</div><div class="leg">${p(fGratis, fVis)} dos visitantes</div></div>
     <div class="card"><div class="leg">Usaram a cortesia</div><div class="num">${fCortesia}</div><div class="leg">${p(fCortesia, fGratis)} dos cliques</div></div>
+    <div class="card"><div class="leg">Usaram uma lente (o "pensa com você")</div><div class="num">${lentes30.aparelhos || 0}</div><div class="leg">${p(lentes30.aparelhos || 0, fCortesia)} de quem usou a cortesia</div></div>
     <div class="card"><div class="leg">Conectaram a própria chave</div><div class="num">${fChave}</div><div class="leg">${p(fChave, fCortesia)} de quem usou</div></div>
     <div class="card"><div class="leg">Clicaram em "Assinar"</div><div class="num">${fAssinar}</div><div class="leg">${p(fAssinar, fVis)} dos visitantes</div></div>
   </div>
