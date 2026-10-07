@@ -9124,7 +9124,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.6';
+const VOX_VERSION='2026.10.07.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -15808,14 +15808,19 @@ function _orbFiosDasNotas(){
   // satélites nas posições da última rodada de desenho
   const centros={};
   centros[_orbChave(_orbFoco)]={x:0,y:0};
-  getFolderChildrenVisiveis(_orbFoco).forEach((f,i)=>{
-    if(_orbMuralPos[i])centros[_orbChave(f.id)]={x:_orbMuralPos[i].x,y:_orbMuralPos[i].y};
+  // Pelo id de quem está em cada posição — contar as pastas pela ordem errava
+  // de bolha quando a vaga de uma pasta nova ocupava um lugar no anel.
+  _orbMuralIds.forEach((fid,i)=>{
+    if(fid&&_orbMuralPos[i])centros[_orbChave(fid)]={x:_orbMuralPos[i].x,y:_orbMuralPos[i].y};
   });
   _flAbertas.forEach(j=>{
     const card=document.getElementById(j.id);
     if(!card)return;
-    const alvo=centros[_orbChave(card.dataset.folder||null)];
-    if(!alvo)return;               // a nota é de outra pasta: sem fio, sem invenção
+    // Nota de uma subpasta mais funda se prende à bolha de cima que está na
+    // tela; nota de fora desta família fica sem fio (sem invenção).
+    let fid=card.dataset.folder||null,alvo=centros[_orbChave(fid)],guarda=0;
+    while(!alvo&&fid&&guarda++<50){fid=(folders.find(f=>f.id===fid)||{}).parentId||null;alvo=centros[_orbChave(fid)]}
+    if(!alvo)return;
     const p=_orbPontoDaJanela(j);
     const l=document.createElementNS(ORB_NS,'line');
     l.setAttribute('class','orb-fio-nota');
@@ -17203,6 +17208,9 @@ function _orbDesenhar(){
   // O mural se ancora no maior vão ENTRE os satélites — precisa saber onde
   // eles ficaram nesta rodada de desenho.
   _orbMuralPos=pos;
+  // Quem está em cada posição (a vaga da pasta nova também ocupa uma): é por
+  // aqui que o fio da nota acha a bolha certa (plano 30, lote 3).
+  _orbMuralIds=fs.map(it=>it.vaga?null:it.id);
   if(_orbMuralAberto)_orbMuralPosicionar();
   // As bolhas mudaram de lugar: os fios que chegam nelas precisam ser
   // redesenhados, senão apontam pra onde a pasta estava antes.
@@ -17560,6 +17568,7 @@ function _orbAnelFatiado(el,id,cards){
 }
 
 let _orbMuralPos=[];         // posições dos satélites do desenho atual
+let _orbMuralIds=[];         // e quem está em cada uma (null = a vaga)
 let _orbMuralAberto=false;
 let _orbMuralNotaId=null;    // ficha expandida dentro do mural
 let _orbMuralRect=null;      // rect do palco, medido só quando muda de verdade
