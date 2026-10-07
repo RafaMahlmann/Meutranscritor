@@ -696,6 +696,11 @@ header.has-speed-badge{padding-bottom:18px}
 .gbtn{background:var(--bg-input);border:none;color:var(--text3);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:5px;font-family:var(--font);letter-spacing:-0.1px}
 .gbtn:hover{background:var(--border2);color:var(--text)}
 .gbtn.on-accent{background:var(--accent-glow);color:var(--accent)}
+/* Botão fixo do Pro: no grátis, cor cheia da marca (é o único botão "cheio" da
+   fileira, por isso destaca sem precisar piscar); com Pro ativo, selo discreto. */
+.gbtn.gbtn-pro{background:var(--accent);color:#fff}
+.gbtn.gbtn-pro:hover{filter:brightness(1.08)}
+.gbtn.gbtn-pro.ativo{background:var(--accent-glow);color:var(--accent)}
 .gbtn.on-grok{background:var(--grok-glow);color:var(--grok)}
 .gbtn.on-groq{background:var(--groq-glow);color:var(--groq)}
 .gbtn.on-diar{background:var(--diar-glow);color:var(--diar)}
@@ -6266,6 +6271,10 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
      acima, pré-existente) e já viviam abaixo de 44px de altura; não vale a
      pena encolher ainda mais um alvo de toque que já era apertado. */
   .hd-actions .gbtn{padding:6px 9px;white-space:nowrap}
+  /* O botão fixo do Pro (07/10/2026) ocupa ~31px a mais na fileira: o nome
+     do app é quem cede (min-width:0 deixa .brand encolher e o ellipsis do
+     .brand-name agir), em vez de a página ganhar rolagem pro lado. */
+  .hd .brand{min-width:0}
   .theme-btn{width:28px;height:28px;font-size:14px;position:relative}
   /* .theme-btn perdeu 6px de cada lado (34px→28px) — hit-slop compensa. */
   .theme-btn::after{content:'';position:absolute;inset:-8px}
@@ -7092,6 +7101,14 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       </div>
     </div>
     <div class="hd-actions">
+      <!-- Entrada FIXA do Pro (07/10/2026, pedido do Rafa: "bem destacado").
+           Antes o Pro só existia dentro do menu "Mais". No grátis mostra
+           "Seja Pro"; com Pro ativo vira um selo discreto. Texto e estado
+           vêm de _proAtualizarMenu(). Nunca pisca nem abre sozinho. -->
+      <button class="gbtn gbtn-pro" id="btnProFixo" onclick="abrirVoxPro()" title="Vox Pro">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span id="btnProFixoTxt">Seja Pro</span>
+      </button>
       <!-- FASE 6: menu "Mais" (⋯) ATIVO em TODAS as larguras (iPhone, iPad e
            Windows). Os itens de configuração abaixo vivem dentro do dropdown
            (hdMoreDrop); só Cérebro/View/Buscar/Exportar ficam fora da fileira.
@@ -8894,7 +8911,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.06.6';
+const VOX_VERSION='2026.10.07.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11230,6 +11247,8 @@ let I18N_EN={
 "Pastas e subpastas sem teto":"Folders and subfolders with no cap",
 "Plano":"Plan",
 "Pro ativo neste aparelho":"Pro active on this device",
+"Seja Pro":"Go Pro",
+"Comparar os planos":"Compare plans",
 "Pronto: o Vox Pro está ativo neste aparelho.":"Done: Vox Pro is active on this device.",
 "Quantos mundos trancados com senha quiser":"As many password-locked worlds as you want",
 "Seleção em massa sem limite":"Unlimited bulk selection",
@@ -12202,6 +12221,8 @@ function _fmtDataCurta(d){try{return d.toLocaleDateString(getLocale(),{day:'nume
 function _proAtualizarMenu(){
   const s=document.getElementById('proMenuSub');
   if(s)s.textContent=voxPro()?t('Pro ativo neste aparelho'):t('Seu plano: grátis · veja o que o Pro libera');
+  const b=document.getElementById('btnProFixo'),bt=document.getElementById('btnProFixoTxt');
+  if(b&&bt){const pro=voxPro();b.classList.toggle('ativo',pro);bt.textContent=pro?'Pro':t('Seja Pro');b.title=pro?t('Pro ativo neste aparelho'):t('Seu plano: grátis · veja o que o Pro libera')}
 }
 const _PRO_LIBERA=['Até 6 aparelhos na mesma assinatura','Gravação sem limite diário, que nunca encolhe','Arquivos quantos quiser, sempre inteiros','Diarização sem limite no mês','Pastas e subpastas sem teto','Quantos mundos trancados com senha quiser','Seleção em massa sem limite','Exportar o calendário pro Google ou Apple (.ics)'];
 function abrirVoxPro(contexto){_proRender(contexto||'');document.getElementById('proOverlay').style.display='flex'}
@@ -12237,6 +12258,7 @@ function _proRender(contexto,aviso,avisoErro){
     <ul class="pro-lista">${lista}</ul>
     <p class="pro-preco">${t('US$ 6 por mês · US$ 59 por ano · US$ 149 uma vez só')}</p>
     <a class="ob-btn pro-assinar" href="${VOX_CHECKOUT}" target="_blank" rel="noopener noreferrer">${t('Assinar o Pro')}</a>
+    <a class="ob-btn-ghost pro-comparar" href="https://voxcharmai.com/?site#teste-gratis" target="_blank" rel="noopener noreferrer">${t('Comparar os planos')}</a>
     <div class="pro-sep"></div>
     <h3 class="pro-h3">${t('Já assinou?')}</h3>
     <p class="ob-p">${t('Cole a chave de licença que chegou no seu e-mail.')}</p>${antiga}${msg}
