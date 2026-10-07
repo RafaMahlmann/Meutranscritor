@@ -6970,6 +6970,42 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .ilha-no-txt{fill:var(--text2);font:600 7px var(--font)}
 .ilha-no{transform-box:fill-box;transform-origin:center;transition:transform 260ms cubic-bezier(.34,1.56,.64,1);transition-delay:calc(var(--i)*40ms)}
 .ilha-cartao:hover .ilha-no,.ilha-cartao:focus-visible .ilha-no{transform:scale(1.15)}
+/* plano 30, lote 2: paleta Ctrl+K do Modo Conversa + arrastar uma aba até o Organizar */
+.cpal{position:absolute;inset:0;z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:10vh 16px 16px;background:rgba(0,0,0,.28)}
+.cpal[hidden]{display:none}
+.cpal-box{width:min(720px,100%);max-height:76vh;display:flex;flex-direction:column;border-radius:16px;background:var(--bg-card);border:1px solid var(--border2);box-shadow:0 18px 50px rgba(0,0,0,.25);overflow:hidden}
+.cpal-box.brota{animation:cpalBrota 200ms cubic-bezier(.22,1,.36,1)}
+@keyframes cpalBrota{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
+.cpal-in{width:100%;border:0;border-bottom:1px solid var(--border);padding:13px 16px;font:500 15px var(--font);background:transparent;color:var(--text)}
+.cpal-in:focus{outline:none;box-shadow:inset 0 -2px 0 var(--accent)}
+.cpal-corpo{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);min-height:0;flex:1}
+.cpal .palette-list{max-height:none;min-height:0;overflow-y:auto;padding:6px;border-right:1px solid var(--border)}
+.cpal-grupo{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);padding:8px 10px 4px}
+.cpal .palette-row{cursor:pointer;color:var(--text);padding-right:10px}
+.cpal .palette-row.soco{animation:cpalSoco 260ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes cpalSoco{40%{transform:scale(.97)}to{transform:none}}
+.cpal-prev{padding:14px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.cpal-prev.troca{animation:cpalTroca 170ms cubic-bezier(.22,1,.36,1)}
+@keyframes cpalTroca{from{opacity:.3;transform:translateX(6px)}to{opacity:1;transform:none}}
+.cpal-prev b{font-size:14px;color:var(--text)}
+.cpal-prev small{font-size:12.5px;color:var(--text2);line-height:1.45}
+.cpal-prev .ilha-prev{max-width:260px}
+.cpal-prev-ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--cat,var(--accent)) 16%,transparent);color:var(--cat,var(--accent))}
+.cpal-prev-ico svg{width:22px;height:22px}
+.cpal-pe{margin:0;padding:8px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text3)}
+.cpal-pe kbd,.ilha-atalho kbd{font:700 10.5px var(--font);padding:1px 5px;border-radius:5px;border:1px solid var(--border2);background:var(--bg-input);color:var(--text2)}
+.ilha-atalho{display:none;margin:10px 2px 0;font-size:11.5px;color:var(--text3)}
+@media(hover:hover) and (pointer:fine){.ilha-atalho{display:block}}
+@media(max-width:640px){.cpal{padding-top:8px}.cpal-corpo{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.cpal-prev{order:-1;flex-direction:row;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border)}.cpal-prev .ilha-prev{width:110px;flex:none}.cpal .palette-list{border-right:0}}
+.cchat-ttab.arrastando-aba{opacity:.35}
+.aba-fantasma{position:fixed;z-index:10001;pointer-events:none;margin:0;box-shadow:0 10px 28px rgba(0,0,0,.25);transform-origin:30% 50%;transition:scale 160ms}
+.aba-fantasma.vai{scale:.9;outline:2px solid var(--accent)}
+#cchat-overlay .cchat-org-btn.alvo-aba{transform:scale(1.08);box-shadow:0 0 0 4px var(--accent-glow);border-color:var(--accent);transition:transform 160ms cubic-bezier(.34,1.56,.64,1),box-shadow 160ms}
+#cchat-overlay .cchat-org-btn.engole{animation:abaEngole 380ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes abaEngole{30%{transform:scale(1.15)}60%{transform:scale(.96)}to{transform:none}}
+#cchat-overlay .cchat-org-btn.nega{animation:abaNega 300ms linear}
+@keyframes abaNega{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media(prefers-reduced-motion:reduce){.cpal-box.brota,.cpal-prev.troca,.cpal .palette-row.soco,#cchat-overlay .cchat-org-btn.engole,#cchat-overlay .cchat-org-btn.nega{animation:none}}
 /* plano 31: ↶ Desfazer do Modo Conversa */
 #cchat-overlay .cchat-desfaz:disabled{opacity:.4;cursor:default}
 #cchat-overlay .cchat-desfaz.gira .svgi svg{animation:cchatGira 380ms cubic-bezier(.34,1.56,.64,1)}
@@ -9047,7 +9083,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.4';
+const VOX_VERSION='2026.10.07.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10582,6 +10618,24 @@ let I18N_EN={
 // ── Traduções novas (plano 30, duas equipes): cada equipe escreve só na SUA
 //    faixa, uma tradução por linha, ACIMA da sua marca. O aplica_patch.js da
 //    skill metodo-vox faz isso sozinho ("@@@ EQUIPE B" ou VOX_EQUIPE=B).
+"Ver como Órbita":"See as Orbit",
+"Ver como Fluxo":"See as Flow",
+"O original no meio e as abas em volta.":"The original in the middle, the tabs around it.",
+"Quem nasceu de quem, de cima pra baixo.":"What came from what, top to bottom.",
+"Volta a última coisa que você fez aqui.":"Undoes the last thing you did here.",
+"Transformar com IA":"Transform with AI",
+"Buscar ação":"Find an action",
+"O que fazer? (pasta, mapa, ideias, resumo…)":"What to do? (folder, map, ideas, summary…)",
+"escolhem":"choose",
+"faz":"runs it",
+"fecha":"closes",
+"Nada com \"{q}\". Tente: pasta, mapa, ideias, resumo.":"Nothing for \"{q}\". Try: folder, map, ideas, summary.",
+"Atalho:":"Shortcut:",
+"busca qualquer ação, inclusive as lentes.":"finds any action, lenses included.",
+"Arraste até Organizar pra guardar só esta aba":"Drag onto Organize to save just this tab",
+"A aba \"{x}\" já está em \"{p}\"":"The \"{x}\" tab is already in \"{p}\"",
+"Essa aba já foi guardada":"This tab was already saved",
+"guardar a aba \"{x}\"":"saving the \"{x}\" tab",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 // [EQUIPE B] traduções novas entram ACIMA desta linha
@@ -31082,9 +31136,10 @@ function _cchatRenderTextTabs(id){
   // mesma cor que aparece nas miniaturas da Ilha "Organizar".
   let html=`<button type="button" class="cchat-ttab${active==='original'?' active':''}" data-tabid="original" onclick="_cchatSwitchTab('${id}','original')"><i class="cchat-ttab-dot" style="--dot:var(--text3)"></i>${t('Original')}</button>`;
   (_cchatTabs[id]||[]).forEach(tb=>{
-    html+=`<button type="button" class="cchat-ttab${active===tb.tabId?' active':''}${tb.guardada?' guardada':''}" data-tabid="${tb.tabId}" onclick="_cchatSwitchTab('${id}','${tb.tabId}')"><i class="cchat-ttab-dot" style="--dot:${_cchatCorDe(tb.lensKey)}"></i>${escHtml(tb.label)}${tb.guardada?`<span class="cchat-ttab-ok" title="${t('Já guardada numa pasta')}">✓</span>`:''}<span class="cchat-ttab-x" onclick="event.stopPropagation();_cchatCloseTab('${id}','${tb.tabId}')" title="${t('Fechar')}">${ICO.close}</span></button>`;
+    html+=`<button type="button" class="cchat-ttab${active===tb.tabId?' active':''}${tb.guardada?' guardada':''}" data-tabid="${tb.tabId}" title="${escHtml(t('Arraste até Organizar pra guardar só esta aba'))}" onclick="_cchatSwitchTab('${id}','${tb.tabId}')"><i class="cchat-ttab-dot" style="--dot:${_cchatCorDe(tb.lensKey)}"></i>${escHtml(tb.label)}${tb.guardada?`<span class="cchat-ttab-ok" title="${t('Já guardada numa pasta')}">✓</span>`:''}<span class="cchat-ttab-x" onclick="event.stopPropagation();_cchatCloseTab('${id}','${tb.tabId}')" title="${t('Fechar')}">${ICO.close}</span></button>`;
   });
   bar.innerHTML=html;
+  if(!bar._arrasto){bar._arrasto=true;_abaArrastoLigar(id,bar)}
 }
 function _cchatSwitchTab(id,tabId){
   _cchatActiveTab[id]=tabId;
@@ -31405,7 +31460,8 @@ function _ilhaPintar(id){
   const mapa=`<button type="button" class="ilha-cartao" data-acao="mapa"><span class="ilha-prev">${_ilhaPreviaMapa(id)}</span><b>${escHtml(t('Ver como mapa'))}</b><small>${escHtml(nGalhos===0?t('Só o original, por enquanto'):nGalhos===1?t('Original + 1 galho, em órbita'):t('Original + {n} galhos, em órbita').replace('{n}',nGalhos))}</small></button>`;
   il.innerHTML=`<p class="ilha-tit" id="ilha-tit-${id}">${escHtml(n===1?t('O que fazer com este texto?'):t('O que fazer com estas {n} abas?').replace('{n}',n))}</p>
     <div class="ilha-cartoes">${guardar}${mapa}${typeof _ilhaCartaoIdeias==='function'?_ilhaCartaoIdeias(id):''}<button type="button" class="ilha-cartao" data-acao="levar"><span class="ilha-prev ilha-prev-ceu">${_ilhaPreviaMundo(id)}</span><b>${escHtml(t('Levar pra outro mundo'))}</b><small>${escHtml(t('Vira uma pasta e viaja. Você escolhe o mundo na próxima tela.'))}</small></button></div>
-    <div class="ilha-levar" hidden><p>${escHtml(t('Tudo sai deste mundo e vai pro que você escolher. Lá, o Vox pergunta em qual pasta guardar.'))}</p><button type="button" class="segura-btn ilha-segura" data-segura="levarConversa"><span class="segura-fill"></span><span class="segura-txt">${escHtml(t('Segure pra levar'))}</span></button></div>`;
+    <div class="ilha-levar" hidden><p>${escHtml(t('Tudo sai deste mundo e vai pro que você escolher. Lá, o Vox pergunta em qual pasta guardar.'))}</p><button type="button" class="segura-btn ilha-segura" data-segura="levarConversa"><span class="segura-fill"></span><span class="segura-txt">${escHtml(t('Segure pra levar'))}</span></button></div>
+    <p class="ilha-atalho">${escHtml(t('Atalho:'))} <kbd>${/Mac|iPhone|iPad/.test(navigator.platform||'')?'⌘':'Ctrl'}</kbd> <kbd>K</kbd> ${escHtml(t('busca qualquer ação, inclusive as lentes.'))}</p>`;
 }
 function _ilhaLigar(id){
   const il=document.getElementById('ilha-'+id);if(!il)return;
@@ -31470,6 +31526,175 @@ function _ilhaVoo(id,alvo){
   });
   setTimeout(()=>_jz(alvo.closest('.ilha-cartao')||alvo,'engole',380),300+tabs.length*70);
 }
+// ── PLANO 30, lote 2 (07/10/2026): paleta Ctrl+K e arrastar aba ──
+// A paleta é o atalho de teclado da Ilha: as mesmas ações, mais as lentes
+// (que já tinham paleta própria), numa busca só, com a prévia ao lado — a
+// mesma miniatura com as abas DESTA conversa. Não é o único caminho: tudo
+// continua no botão "Organizar". Reaproveita o visual .palette-* das lentes.
+let _cpalQ='',_cpalI=0,_cpalLista=[];
+function _cpalItens(id){
+  const it=[],pend=_ilhaPendentes(id).length,pid=_cchatPastaGuardada[id],pasta=pid&&folders.find(f=>f.id===pid),n=_ilhaContar(id),tit=_cchatTitulo(id);
+  const G=t('Organizar'),pv=h=>`<span class="ilha-prev">${h}</span>`;
+  if(pasta&&!pend)it.push({g:G,t:t('Abrir a pasta'),d:t('Tudo já está em "{p}"').replace('{p}',pasta.name),p:pv(_ilhaPreviaPasta(id)),c:'pasta abrir folder',f:()=>_ilhaAbrirPasta(id,pasta.id)});
+  else it.push({g:G,t:t('Guardar numa pasta'),d:pasta?(pend===1?t('1 nota nova em "{p}"'):t('{n} notas novas em "{p}"').replace('{n}',pend)).replace('{p}',pasta.name):(n===1?t('Pasta "{p}" · 1 nota'):t('Pasta "{p}" · {n} notas').replace('{n}',n)).replace('{p}',tit),p:pv(_ilhaPreviaPasta(id)),c:'salvar juntar arquivar colher folder save',f:()=>_ilhaGuardar(id,document.getElementById('cchat-org-'+id))});
+  it.push({g:G,t:t('Ver como Órbita'),d:t('O original no meio e as abas em volta.'),p:pv(_ilhaPreviaMapa(id)),c:'mapa arvore planetas orbital map',f:()=>{_mapaModo[id]='orbita';_cchatVer(id,'mapa',true)}});
+  it.push({g:G,t:t('Ver como Fluxo'),d:t('Quem nasceu de quem, de cima pra baixo.'),p:pv(_ilhaPreviaMapa(id)),c:'mapa fluxograma arvore flow map',f:()=>{_mapaModo[id]='fluxo';_cchatVer(id,'mapa',true)}});
+  if(typeof _ilhaCartaoIdeias==='function'){
+    const h=_ilhaCartaoIdeias(id),m=h.match(/<span class="ilha-prev">([\s\S]*?)<\/span><b>/),s=h.match(/<small>([\s\S]*?)<\/small>/);
+    it.push({g:G,t:t('Separar em ideias'),dHtml:s?s[1]:'',p:pv(m?m[1]:''),c:'quebrar explodir tarefas acoes pecas ideas split',f:()=>_ideiasAbrir(id)});
+  }
+  it.push({g:G,t:t('Levar pra outro mundo'),d:t('Vira uma pasta e viaja. Você escolhe o mundo na próxima tela.'),p:`<span class="ilha-prev ilha-prev-ceu">${_ilhaPreviaMundo(id)}</span>`,c:'mundo transferir mover world',f:()=>{_ilhaAbrir(id);setTimeout(()=>document.querySelector('#ilha-'+id+' [data-acao="levar"]')?.click(),60)}});
+  const pil=_cchatPilha[id]||[],ult=pil[pil.length-1];
+  if(ult)it.push({g:G,t:t('Desfazer: {x}').replace('{x}',ult.rot),d:t('Volta a última coisa que você fez aqui.'),ico:ICO.undo,c:'voltar undo ctrl z',f:()=>_cchatDesfazer(id)});
+  const GL=t('Transformar com IA');
+  Object.entries(LENSES).forEach(([k,L])=>{const hd=LENS_CATS[L.cat]||{},cat=hd.title?t(hd.title):'';
+    it.push({g:GL,t:L.label,d:L.desc,ico:L.icon,cor:hd.color,badge:cat,c:'lente transformar ia lens '+cat,f:()=>_cchatRunLens(id,k)})});
+  return it;
+}
+function _cpalAberta(id){const p=document.getElementById('cpal-'+id);return !!(p&&!p.hidden)}
+function _cpalAbrir(id){
+  const ov=document.getElementById('cchat-overlay');if(!ov)return;
+  _ilhaFechar(id,true);_ilhaSugFechar(id);
+  let p=document.getElementById('cpal-'+id);
+  if(!p){
+    p=document.createElement('div');p.className='cpal';p.id='cpal-'+id;
+    p.innerHTML=`<div class="cpal-box" role="dialog" aria-modal="true" aria-label="${escHtml(t('Buscar ação'))}"><input class="cpal-in" type="text" role="combobox" aria-expanded="true" aria-controls="cpal-lista-${id}" aria-autocomplete="list" aria-label="${escHtml(t('Buscar ação'))}" placeholder="${escHtml(t('O que fazer? (pasta, mapa, ideias, resumo…)'))}" autocomplete="off" spellcheck="false"><div class="cpal-corpo"><div class="palette-list" id="cpal-lista-${id}" role="listbox" aria-label="${escHtml(t('Ações'))}"></div><div class="cpal-prev" aria-live="polite"></div></div><p class="cpal-pe"><kbd>↑</kbd> <kbd>↓</kbd> ${escHtml(t('escolhem'))} · <kbd>Enter</kbd> ${escHtml(t('faz'))} · <kbd>Esc</kbd> ${escHtml(t('fecha'))}</p></div>`;
+    ov.appendChild(p);_cpalLigar(id,p);
+  }
+  p._volta=document.activeElement;
+  _cpalQ='';_cpalI=0;p.hidden=false;
+  const inp=p.querySelector('.cpal-in');inp.value='';
+  _cpalPintar(id);_jz(p.querySelector('.cpal-box'),'brota',220);_jzTato(6);
+  setTimeout(()=>inp.focus(),20);
+}
+function _cpalFechar(id,devolve){
+  const p=document.getElementById('cpal-'+id);if(!p||p.hidden)return false;
+  p.hidden=true;
+  if(devolve&&p._volta&&document.contains(p._volta))try{p._volta.focus()}catch(e){}
+  return true;
+}
+function _cpalAlternar(id){_cpalAberta(id)?_cpalFechar(id,true):_cpalAbrir(id)}
+function _cpalPintar(id){
+  const p=document.getElementById('cpal-'+id);if(!p)return;
+  const q=_ideiaSemAcento(_cpalQ).trim(),todos=_cpalItens(id);
+  _cpalLista=q?todos.filter(x=>_ideiaSemAcento(x.t+' '+(x.d||'')+' '+(x.badge||'')+' '+x.c).includes(q)):todos;
+  _cpalI=Math.min(_cpalI,Math.max(0,_cpalLista.length-1));
+  let g='',h='';
+  if(!_cpalLista.length)h=`<div class="palette-empty">${escHtml(t('Nada com "{q}". Tente: pasta, mapa, ideias, resumo.').replace('{q}',_cpalQ))}</div>`;
+  _cpalLista.forEach((x,i)=>{
+    if(x.g!==g){g=x.g;h+=`<div class="cpal-grupo" role="presentation">${escHtml(g)}</div>`}
+    h+=`<div class="palette-row${i===_cpalI?' hl':''}" role="option" id="cpal-${id}-${i}" data-i="${i}" aria-selected="${i===_cpalI}">`+
+      (x.badge?`<span class="palette-badge" style="--cat:${x.cor||'var(--accent)'}">${escHtml(x.badge)}</span>`:'')+
+      (x.ico?`<span class="palette-ico">${x.ico}</span>`:'')+
+      `<span class="palette-main"><span class="palette-lbl">${escHtml(x.t)}</span><span class="palette-d">${x.dHtml!=null?x.dHtml:escHtml(x.d||'')}</span></span></div>`;
+  });
+  p.querySelector('.palette-list').innerHTML=h;
+  const inp=p.querySelector('.cpal-in');
+  if(_cpalLista.length)inp.setAttribute('aria-activedescendant','cpal-'+id+'-'+_cpalI);else inp.removeAttribute('aria-activedescendant');
+  _cpalPrevia(id,false);
+}
+// A prévia é a mesma miniatura da Ilha (com as abas desta conversa); lente
+// mostra o ícone na cor da categoria e o que ela faz.
+function _cpalPrevia(id,anim){
+  const p=document.getElementById('cpal-'+id);if(!p)return;
+  const pv=p.querySelector('.cpal-prev'),x=_cpalLista[_cpalI];
+  if(!x){pv.innerHTML='';return}
+  pv.innerHTML=(x.p||`<span class="cpal-prev-ico" style="--cat:${x.cor||'var(--accent)'}">${x.ico||''}</span>`)+`<b>${escHtml(x.t)}</b><small>${x.dHtml!=null?x.dHtml:escHtml(x.d||'')}</small>`;
+  if(anim)_jz(pv,'troca',180);
+}
+function _cpalMover(id,d){
+  if(!_cpalLista.length)return;
+  _cpalI=(_cpalI+d+_cpalLista.length)%_cpalLista.length;
+  const p=document.getElementById('cpal-'+id);
+  p.querySelectorAll('.palette-row').forEach(r=>{const on=+r.dataset.i===_cpalI;r.classList.toggle('hl',on);r.setAttribute('aria-selected',String(on))});
+  p.querySelector('.cpal-in').setAttribute('aria-activedescendant','cpal-'+id+'-'+_cpalI);
+  p.querySelector('.palette-row.hl')?.scrollIntoView({block:'nearest'});
+  _cpalPrevia(id,true);
+}
+function _cpalRodar(id){
+  const x=_cpalLista[_cpalI];if(!x)return;
+  const p=document.getElementById('cpal-'+id),r=p&&p.querySelector('.palette-row.hl');
+  if(r)_jz(r,'soco',260);_jzTato(8);
+  setTimeout(()=>{_cpalFechar(id);x.f()},_voxReduzMov()?0:140);
+}
+function _cpalLigar(id,p){
+  const inp=p.querySelector('.cpal-in'),ul=p.querySelector('.palette-list');
+  inp.addEventListener('input',()=>{_cpalQ=inp.value;_cpalI=0;_cpalPintar(id)});
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){e.preventDefault();_cpalMover(id,1)}
+    else if(e.key==='ArrowUp'){e.preventDefault();_cpalMover(id,-1)}
+    else if(e.key==='Enter'){e.preventDefault();_cpalRodar(id)}
+    else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();_cpalFechar(id,true)}
+  });
+  ul.addEventListener('pointermove',e=>{const r=e.target.closest('.palette-row');if(r&&+r.dataset.i!==_cpalI){_cpalI=+r.dataset.i;_cpalMover(id,0)}});
+  ul.addEventListener('click',e=>{const r=e.target.closest('.palette-row');if(r){_cpalI=+r.dataset.i;_cpalRodar(id)}});
+  p.addEventListener('pointerdown',e=>{if(e.target===p)_cpalFechar(id,true)});
+}
+// Arrastar UMA aba até o botão "Organizar" guarda só ela na pasta da conversa
+// (atalho do estudo de 06/10). No mouse, arrasta depois de 6 px; no toque,
+// segurando 0,4 s — com o dedo, a fileira de abas rola de lado.
+let _abaArrastando=false;
+document.addEventListener('touchmove',e=>{if(_abaArrastando)e.preventDefault()},{passive:false});
+function _abaArrastoLigar(id,bar){
+  let D=null;
+  bar.addEventListener('pointerdown',e=>{
+    if(e.button)return;const b=e.target.closest('.cchat-ttab');if(!b||b.dataset.tabid==='original')return;
+    D={b,tab:b.dataset.tabid,x:e.clientX,y:e.clientY,cx:e.clientX,cy:e.clientY,pid:e.pointerId,on:false,toque:e.pointerType!=='mouse'};
+    if(D.toque){const d=D;d.tmr=setTimeout(()=>{if(D!==d)return;_jzTato(12);comeca()},400)}
+  });
+  bar.addEventListener('pointermove',e=>{
+    if(!D||e.pointerId!==D.pid)return;D.cx=e.clientX;D.cy=e.clientY;
+    if(!D.on){if(Math.hypot(e.clientX-D.x,e.clientY-D.y)<6)return;if(D.toque){clearTimeout(D.tmr);D=null;return}comeca()}
+    segue();
+  });
+  function comeca(){
+    const ov=document.getElementById('cchat-overlay');if(!ov){D=null;return}
+    D.on=true;_abaArrastando=true;try{D.b.setPointerCapture(D.pid)}catch(x){}
+    const r=D.b.getBoundingClientRect(),g=D.b.cloneNode(true);
+    g.removeAttribute('onclick');g.removeAttribute('title');g.classList.add('aba-fantasma');g.setAttribute('aria-hidden','true');
+    g.style.left=r.left+'px';g.style.top=r.top+'px';g.style.width=r.width+'px';
+    ov.appendChild(g);D.g=g;D.r=r;D.b.classList.add('arrastando-aba');
+    D.alvo=document.getElementById('cchat-org-'+id);_jzTato(8);segue();
+  }
+  function segue(){
+    if(!D||!D.g)return;
+    D.g.style.transform=`translate(${D.cx-D.x}px,${D.cy-D.y}px) rotate(${_voxReduzMov()?0:-3}deg)`;
+    const a=D.alvo,ra=a&&a.getBoundingClientRect();
+    const perto=!!(ra&&D.cx>ra.left-14&&D.cx<ra.right+14&&D.cy>ra.top-14&&D.cy<ra.bottom+14);
+    if(perto!==!!D.perto){D.perto=perto;a&&a.classList.toggle('alvo-aba',perto);D.g.classList.toggle('vai',perto);if(perto)_jzTato(10)}
+  }
+  function solta(e){
+    if(!D||e.pointerId!==D.pid)return;const d=D;clearTimeout(d.tmr);D=null;_abaArrastando=false;if(!d.on)return;
+    bar._semClique=true;setTimeout(()=>{bar._semClique=false},0);
+    d.b.classList.remove('arrastando-aba');if(d.alvo)d.alvo.classList.remove('alvo-aba');
+    const g=d.g,reduz=_voxReduzMov();
+    if(d.perto&&e.type!=='pointercancel'){
+      const ra=d.alvo.getBoundingClientRect();
+      const an=reduz?null:g.animate([{transform:g.style.transform,opacity:1},{transform:`translate(${ra.left+ra.width/2-(d.r.left+d.r.width/2)}px,${ra.top+ra.height/2-(d.r.top+d.r.height/2)}px) scale(.3)`,opacity:.2}],{duration:280,easing:'cubic-bezier(.5,0,.75,0)',fill:'forwards'});
+      // A ação não espera a animação: aba em segundo plano congela o relógio
+      // das animações, e aí o onfinish nunca chegaria.
+      let foi=false;const vai=()=>{if(foi)return;foi=true;g.remove();_abaGuardarSo(id,d.tab)};
+      if(an)an.onfinish=vai;setTimeout(vai,reduz?0:300);return;
+    }
+    const an=reduz?null:g.animate([{transform:g.style.transform},{transform:'translate(0,0)'}],{duration:220,easing:'cubic-bezier(.22,1,.36,1)'});
+    if(an)an.onfinish=()=>g.remove();setTimeout(()=>g.remove(),reduz?0:240);
+  }
+  bar.addEventListener('pointerup',solta);bar.addEventListener('pointercancel',solta);
+  // Soltar depois de arrastar não pode virar "trocar de aba".
+  bar.addEventListener('click',e=>{if(bar._semClique){e.stopPropagation();e.preventDefault()}},true);
+  bar.addEventListener('contextmenu',e=>{if(e.target.closest('.cchat-ttab'))e.preventDefault()});
+}
+function _abaGuardarSo(id,tabId){
+  const tb=(_cchatTabs[id]||[]).find(x=>x.tabId===tabId);if(!tb)return;
+  const b=document.getElementById('cchat-org-'+id);
+  if(tb.guardada){
+    const pid=_cchatPastaGuardada[id],p=pid&&folders.find(f=>f.id===pid);
+    toast(p?t('A aba "{x}" já está em "{p}"').replace('{x}',tb.label).replace('{p}',p.name):t('Essa aba já foi guardada'));
+    _jz(b,'nega',300);return;
+  }
+  _jz(b,'engole',380);
+  _ilhaGuardar(id,b,false,tabId);
+}
 function _ilhaNomeLivre(nome,pai){
   const base=(nome||t('Conversa')).slice(0,60);
   const usados=new Set(folders.filter(f=>(f.parentId||null)===(pai||null)).map(f=>f.name));
@@ -31481,14 +31706,15 @@ function _ilhaNomeLivre(nome,pai){
 // onde o original já estava; o original entra nela e cada aba ainda não
 // guardada vira uma nota com a etiqueta da lente e "veio de". calado=true é
 // o caminho do "Levar pra outro mundo" (sem voo, sem recibo).
-function _ilhaGuardar(id,alvo,calado){
+// soAba (plano 30, lote 2): guarda só essa aba — vem do arrastar até o Organizar.
+function _ilhaGuardar(id,alvo,calado,soAba){
   const card=document.getElementById(id);if(!card)return null;
-  const pend=_ilhaPendentes(id);
+  const pend=_ilhaPendentes(id).filter(tb=>!soAba||tb.tabId===soAba);
   const pid=_cchatPastaGuardada[id];let pasta=pid&&folders.find(f=>f.id===pid);
   if(pasta&&!pend.length){if(!calado)_ilhaAbrirPasta(id,pasta.id);return pasta.id}
   const tit=_cchatTitulo(id),ja=!!pasta,pai=card.dataset.folder||null,antes=card.dataset.folder||'';
   if(!pasta){pasta=_mapaNovaPasta(pai,_ilhaNomeLivre(tit,pai));if(!pasta)return null}
-  if(!calado)_ilhaVoo(id,alvo);
+  if(!calado&&!soAba)_ilhaVoo(id,alvo);
   const mode=card.dataset.mode||'livre';
   // Cada nota guarda de QUAL nota nasceu: o galho do mapa vira "veio de".
   // Aba nascida do original aponta pro card; aba nascida de outra aba aponta
@@ -31511,7 +31737,7 @@ function _ilhaGuardar(id,alvo,calado){
   _cchatRenderTextTabs(id);_cchatPersistir(id);_ilhaBotaoPintar(id);
   if(calado)return pasta.id;
   {const novos=pend.map(tb=>tb.notaDt).filter(Boolean),fid=pasta.id,ids=pend.map(tb=>tb.tabId);
-    _cchatEmpilha(id,ja?t('guardar {n} notas na pasta').replace('{n}',pend.length):t('criar a pasta "{p}"').replace('{p}',pasta.name),()=>{
+    _cchatEmpilha(id,soAba?t('guardar a aba "{x}"').replace('{x}',pend[0]?pend[0].label:''):ja?t('guardar {n} notas na pasta').replace('{n}',pend.length):t('criar a pasta "{p}"').replace('{p}',pasta.name),()=>{
       _cchatApagarPorDt(novos);
       (_cchatTabs[id]||[]).forEach(tb=>{if(ids.includes(tb.tabId)){tb.guardada=false;tb.notaDt=''}});
       if(!ja){
@@ -32167,7 +32393,7 @@ function _ixCriar(box,id,pecas,fonte){
     // A tela das ideias rola dentro dela mesma: perto da borda, rola junto.
     const br=box.getBoundingClientRect();if(y<br.top+70)box.scrollTop-=14;else if(y>br.bottom-70)box.scrollTop+=14}
   function volta(g,pc){const r=pc.getBoundingClientRect(),an=anima(g,[{transform:g.style.transform},{transform:`translate(${r.left-parseFloat(g.style.left)}px,${r.top-parseFloat(g.style.top)}px)`}],{duration:240,easing:SAIDA});
-    if(an)an.onfinish=()=>g.remove();else g.remove()}
+    if(an)an.onfinish=()=>g.remove();setTimeout(()=>g.remove(),an?260:0)}
   function soltaPonteiro(e){if(!D||e.pointerId!==D.pid)return;const d=D;D=null;clearTimeout(d.tmr);if(!d.on)return;_ixArrastando=false;
     M.arrastou=true;setTimeout(()=>{M.arrastou=false},0);M.el.classList.remove('arrastando');d.pc.classList.remove('saiu');
     if(d.alvo)d.alvo.classList.remove('mira-junta','linha-antes','linha-depois');if(d.zona)d.zona.classList.remove('mira');const g=d.g;
@@ -32175,7 +32401,7 @@ function _ixCriar(box,id,pecas,fonte){
     if(d.alvo){const b=d.alvo.dataset.id;
       if(d.modo==='junta'){const r=d.alvo.getBoundingClientRect(),gx=parseFloat(g.style.left),gy=parseFloat(g.style.top);
         const an=anima(g,[{transform:g.style.transform,opacity:1},{transform:`translate(${r.left+r.width/2-g.offsetWidth/2-gx}px,${r.top+r.height/2-g.offsetHeight/2-gy}px) scale(.25)`,opacity:.2}],{duration:220,easing:'cubic-bezier(.5,0,.75,0)',fill:'forwards'});
-        const fim=()=>{g.remove();juntarUm(d.id,b,true)};if(an)an.onfinish=fim;else fim();return}
+        let foi=false;const fim=()=>{if(foi)return;foi=true;g.remove();juntarUm(d.id,b,true)};if(an)an.onfinish=fim;setTimeout(fim,an?240:0);return}
       g.remove();M.foco=d.id;muda(()=>poe(d.id,b,d.modo));bate(pecaEl(d.id),'pousa',380);vibrar(8);return}
     if(d.zona){const k=d.zona.dataset.zona,p=achar(d.id);g.remove();
       M.foco=d.id;muda(()=>{solta(p,k);M.p.splice(M.p.indexOf(p),1);M.p.push(p)});bate(M.palco.querySelector(`[data-zona="${k}"]`),'engole',460);bate(pecaEl(d.id),'pousa',380);vibrar(8);return}
@@ -32442,7 +32668,9 @@ function openConversaMode(id){
   }
   // ESC fecha
   // Esc fecha primeiro o que está por cima (Ilha, sugestão); só depois a tela.
-  card._cchatEscHandler=function(e){if(e.key==='Escape'){e.preventDefault();if(_ilhaFechar(id)||_ilhaSugFechar(id)||_ideiasFechar(id))return;closeConversaMode(id)}};
+  card._cchatEscHandler=function(e){
+    if((e.ctrlKey||e.metaKey)&&!e.altKey&&!e.shiftKey&&(e.key==='k'||e.key==='K')){e.preventDefault();_cpalAlternar(id);return}
+    if(e.key==='Escape'){e.preventDefault();if(_cpalFechar(id,true)||_ilhaFechar(id)||_ilhaSugFechar(id)||_ideiasFechar(id))return;closeConversaMode(id)}};
   document.addEventListener('keydown',card._cchatEscHandler);
   // Guarda id no overlay
   overlay.dataset.cardId=id;
