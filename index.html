@@ -9124,7 +9124,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.7';
+const VOX_VERSION='2026.10.07.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -21283,6 +21283,7 @@ function _restaurarEtiqueta(id,it){
     el.dataset.origemDt=String(it.origem.dt);
     if(it.origem.lente)el.dataset.origemLente=String(it.origem.lente);
   }
+  if(el&&Array.isArray(it.depende)&&it.depende.length)el.dataset.depende=JSON.stringify(it.depende.map(String).slice(0,40));
 }
 // Os nomes das etiquetas são do dono do aparelho, não nossos. O padrão é a cor
 // ("Verde"), mas quem usa quase sempre quer o SIGNIFICADO ("Urgente", "Cliente").
@@ -27791,7 +27792,10 @@ function saveHistory(){
       ...(c.dataset.textosImagem?{textosImagem:JSON.parse(c.dataset.textosImagem)}:{}),
       // Procedência (plano 30): de qual nota esta nasceu e por qual lente.
       // Só entra quando existe — card comum salva o mesmo de sempre.
-      ...(c.dataset.origemDt?{origem:{dt:c.dataset.origemDt,lente:c.dataset.origemLente||''}}:{})
+      ...(c.dataset.origemDt?{origem:{dt:c.dataset.origemDt,lente:c.dataset.origemLente||''}}:{}),
+      // Dependência (plano 30, lote 3): os dt das notas que vêm ANTES desta
+      // ("Depende de:"). Viaja junto no backup e na transferência entre mundos.
+      ...(c.dataset.depende?{depende:(()=>{try{const a=JSON.parse(c.dataset.depende);return Array.isArray(a)?a:[]}catch(e){return []}})()}:{})
     };
     if(c.dataset.diarized==='true'){
       items.push({...base,diarized:true,utterances:c.dataset.utterances||'[]',speakers:c.dataset.speakers||'{}',view:c.dataset.view||'roteiro',chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
@@ -32697,7 +32701,9 @@ function _ideiasGuardarPecas(id,ms,fonte){
   ms.forEach(p=>visita(p,new Set()));
   const titulo=p=>_ixCorta(String(p.tx).split('\n')[0],60);
   const origemDt=(fonte.tb&&fonte.tb.notaDt)||card.dataset.dt,tit=_cchatTitulo(id),mode=card.dataset.mode||'livre';
-  const criados=[],dts=[];
+  // dt de cada peça já guardada: quem vem antes nasce antes (ordem acima),
+  // então as dependências já têm dt quando a peça que depende delas nasce.
+  const criados=[],dts=[],dtDe={};
   _cfEmLote(()=>{
     ordem.forEach(p=>{
       const deps=p.deps.map(n=>by[n]).filter(Boolean).map(titulo);
@@ -32705,6 +32711,9 @@ function _ideiasGuardarPecas(id,ms,fonte){
       const nid=addCard(texto,null,0,'texto',cfg.provider,true,null,_dtUnico(),['ideia-'+p.tipo],IX_TIPOS[p.tipo].um+' — '+tit,mode,false,pasta.id);
       const nc=document.getElementById(nid);if(!nc)return;
       nc.dataset.origemDt=origemDt;nc.dataset.origemLente='ideias';dts.push(nc.dataset.dt);
+      dtDe[p.n]=nc.dataset.dt;
+      const dd=p.deps.map(n=>dtDe[n]).filter(Boolean);
+      if(dd.length)nc.dataset.depende=JSON.stringify(dd);
       const data=_ideiaData(p.tx);if(data){nc.dataset.quando=data;criados.push(nc)}
     });
   });
