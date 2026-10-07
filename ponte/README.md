@@ -13,12 +13,21 @@ ela mora aqui, como segredo do Cloudflare.
 2. Pede a transcrição ao Groq (`whisper-large-v3-turbo`) com a chave do Vox.
 3. Devolve o texto e esquece.
 
+Desde 07/10/2026 também faz as primeiras **lentes** por nossa conta: recebe a
+instrução da lente e o texto da nota, pede ao Groq (`openai/gpt-oss-120b`),
+devolve a resposta e esquece. É o que deixa a pessoa sentir o "o Vox pensa com
+você" antes de ter chave.
+
+E informa ao app quantos **dias de Pro de presente** quem começa a usar ganha
+(ajuste `pro_dias`; 0 desliga a promoção pra quem chegar depois).
+
 **Não guarda** áudio, **não guarda** texto e não registra conteúdo em log.
 
 **Conta só números** (tabelas em `schema.sql`):
 - um código sorteado no próprio aparelho, sem nome nem e-mail, e quantas
   cortesias ele usou;
 - totais por dia: transcrições, minutos, recusas;
+- quantas lentes cada aparelho usou, e quantas por dia (sem o texto);
 - se o aparelho depois conectou a própria chave (um sinal único, sem conteúdo);
 - o endereço de internet, só embaralhado com o dia, para limitar abuso. É
   apagado no dia seguinte.
@@ -89,6 +98,7 @@ Depois, o endereço publicado (`https://vox-ponte.<conta>.workers.dev`) entra em
 - `POST /v1/cortesia/estado` `{aparelho}` → se ainda há cortesia para este aparelho.
 - `POST /v1/cortesia/transcrever` (form: `audio`, `aparelho`, `idioma`) → `{texto, restantes, ultima}`.
 - `POST /v1/cortesia/formou` `{aparelho}` → "este aparelho conectou a própria chave".
+- `POST /v1/cortesia/lente` `{aparelho, messages, max_tokens, temperature}` → resposta no formato do OpenAI (`choices[0].message.content`) + `{restantes, ultima}`. Recusa: `esgotada` (402), `teto_dia`/`limite_ip`/`ocupado` (429), `grande` (413).
 - `POST /v1/landing/evento` `{tipo:"visita",origem}` ou `{tipo:"clique",alvo:"gratis"|"assinar"}` → medição da landing (só aceita a origem voxcharmai.com).
 - `GET /painel` → painel (com senha).
 

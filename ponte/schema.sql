@@ -45,6 +45,24 @@ CREATE TABLE IF NOT EXISTS ips (
   PRIMARY KEY (dia, hash)
 );
 
+-- Lentes por nossa conta (07/10/2026). Mesma regra das transcrições: `cota` é o
+-- maior número que esse aparelho já viu. Nenhum texto é guardado.
+-- (A ponte também cria estas tabelas sozinha no primeiro uso, se faltarem.)
+CREATE TABLE IF NOT EXISTS lentes (
+  id TEXT PRIMARY KEY,
+  cota INTEGER NOT NULL,
+  usadas INTEGER NOT NULL DEFAULT 0,
+  criado TEXT NOT NULL,
+  ultimo TEXT
+);
+CREATE TABLE IF NOT EXISTS lentes_dias (
+  dia TEXT PRIMARY KEY,
+  usos INTEGER NOT NULL DEFAULT 0,
+  aparelhos INTEGER NOT NULL DEFAULT 0,
+  recusas INTEGER NOT NULL DEFAULT 0,
+  erros INTEGER NOT NULL DEFAULT 0
+);
+
 -- Medição da landing (voxcharmai.com), sem cookie e sem código de terceiros.
 -- Só totais por dia. `landing_vis` existe pra contar visitante único e frear
 -- abuso: guarda o endereço embaralhado com o dia, apagado no dia seguinte.

@@ -18,9 +18,20 @@
 const GROQ_URL_PADRAO = 'https://api.groq.com/openai/v1/audio/transcriptions';
 const MODELO = 'whisper-large-v3-turbo';
 
-// Maior arquivo aceito. Folga pra ~2 min no formato mais pesado que o app
+// Maior arquivo aceito. Folga pra ~3 min no formato mais pesado que o app
 // grava (AAC do Safari). Quem manda arquivo maior não é o app.
-const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_BYTES = 8 * 1024 * 1024;
+
+// LENTES por nossa conta (07/10/2026): o presente passou a incluir algumas
+// lentes, pra pessoa sentir o "o Vox pensa com você" antes de ter chave.
+// Mesmo modelo que o app usa com a chave do Groq.
+const GROQ_CHAT_PADRAO = 'https://api.groq.com/openai/v1/chat/completions';
+const MODELO_TEXTO = 'openai/gpt-oss-120b';
+// Texto que cabe numa lente por nossa conta (~3,5 mil tokens). Nota maior que
+// isso precisa da chave da pessoa. Mantém cada pedido abaixo do limite por
+// minuto do Groq grátis (8 mil tokens, somando entrada e resposta).
+const LENTE_MAX_CHARS = 14000;
+const LENTE_MAX_TOKENS = 3000;
 
 // O Groq cobra (e conta no limite) no mínimo 10 segundos por pedido.
 const SEGUNDOS_MINIMOS = 10;
@@ -28,10 +39,13 @@ const SEGUNDOS_MINIMOS = 10;
 // Valores de fábrica. O painel grava por cima, na tabela `ajustes`.
 const PADROES = {
   ligada: 1,             // liga e desliga a cortesia inteira
-  por_aparelho: 3,       // transcrições por nossa conta, por aparelho
-  max_segundos: 120,     // duração máxima de cada uma
+  por_aparelho: 5,       // transcrições por nossa conta, por aparelho (era 3 até 07/10/2026)
+  max_segundos: 180,     // duração máxima de cada uma (era 120)
   teto_minutos_dia: 400, // soma de todo mundo por dia (o Groq grátis dá 480)
   por_ip_dia: 10,        // pedidos por endereço de internet por dia
+  lentes_por_aparelho: 5, // lentes por nossa conta, por aparelho
+  lentes_dia: 40,        // lentes por nossa conta por dia, todo mundo somado
+  pro_dias: 14,          // dias de Pro de presente pra quem começa (0 = promoção desligada)
 };
 const LIMITES = {
   ligada: [0, 1],
@@ -39,6 +53,9 @@ const LIMITES = {
   max_segundos: [30, 600],
   teto_minutos_dia: [0, 2000],
   por_ip_dia: [1, 200],
+  lentes_por_aparelho: [0, 30],
+  lentes_dia: [0, 3000],
+  pro_dias: [0, 60],
 };
 
 const CAMPOS_DIA = new Set([
@@ -67,6 +84,7 @@ export default {
         if (url.pathname === '/v1/cortesia/estado') return await estado(request, env, origem);
         if (url.pathname === '/v1/cortesia/transcrever') return await transcrever(request, env, origem);
         if (url.pathname === '/v1/cortesia/formou') return await formou(request, env, origem);
+        if (url.pathname === '/v1/cortesia/lente') return await lente(request, env, origem);
         // (A licença do Freemius NÃO passa por aqui: o app fala direto com a API deles.)
         return json({ ok: false, motivo: 'pedido_invalido' }, 404, origem);
       }
@@ -93,7 +111,14 @@ async function estado(request, env, origem) {
   const aparelho = String(corpo.aparelho || '');
   if (!RE_APARELHO.test(aparelho)) return json({ ok: false, motivo: 'pedido_invalido' }, 400, origem);
   const aj = await lerAjustes(env);
-  const base = { ok: true, max_segundos: aj.max_segundos };
+  // pro_dias vai sempre (mesmo com a cortesia desligada): o presente de Pro
+  // é outra promoção, e o app só começa a contar na primeira gravação.
+  const base = { ok: true, max_segundos: aj.max_segundos, pro_dias: aj.pro_dias, lentes_restantes: 0 };
+  if (aj.ligada && env.GROQ_KEY && aj.lentes_por_aparelho > 0) {
+    await garantirTabelasLentes(env);
+    const l = await env.DB.prepare('SELECT cota, usadas FROM lentes WHERE id = ?').bind(aparelho).first();
+    base.lentes_restantes = Math.max(0, Math.max(l?.cota || 0, aj.lentes_por_aparelho) - (l?.usadas || 0));
+  }
   if (!aj.ligada || !env.GROQ_KEY) return json({ ...base, disponivel: false, restantes: 0, motivo: 'desligada' }, 200, origem);
   const dia = hoje();
   const d = await env.DB.prepare('SELECT segundos FROM dias WHERE dia = ?').bind(dia).first();
@@ -200,6 +225,99 @@ async function formou(request, env, origem) {
   return json({ ok: true }, 200, origem);
 }
 
+// ── Lentes por nossa conta (07/10/2026) ────────────────────────────────────
+// O app manda as mensagens da lente (instrução + o texto da nota); a ponte
+// pede ao Groq com a chave do Vox, devolve a resposta e esquece. Não guarda
+// o texto, não registra conteúdo em log. Conta só: quantas lentes cada
+// aparelho usou e quantas por dia, somando todo mundo.
+// A resposta imita o formato do OpenAI ({choices:[{message:{content}}]}), pra
+// o app tratar igual a qualquer provedor.
+let _tabelasLentesOk = false;
+async function garantirTabelasLentes(env) {
+  if (_tabelasLentesOk) return;
+  await env.DB.batch([
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS lentes (id TEXT PRIMARY KEY, cota INTEGER NOT NULL,
+      usadas INTEGER NOT NULL DEFAULT 0, criado TEXT NOT NULL, ultimo TEXT)`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS lentes_dias (dia TEXT PRIMARY KEY, usos INTEGER NOT NULL DEFAULT 0,
+      aparelhos INTEGER NOT NULL DEFAULT 0, recusas INTEGER NOT NULL DEFAULT 0, erros INTEGER NOT NULL DEFAULT 0)`),
+  ]);
+  _tabelasLentesOk = true;
+}
+function somarLentesDia(env, dia, c) {
+  return env.DB.prepare(`INSERT INTO lentes_dias (dia, usos, aparelhos, recusas, erros) VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(dia) DO UPDATE SET usos = usos + excluded.usos, aparelhos = aparelhos + excluded.aparelhos,
+      recusas = recusas + excluded.recusas, erros = erros + excluded.erros`)
+    .bind(dia, c.usos || 0, c.aparelhos || 0, c.recusas || 0, c.erros || 0);
+}
+
+async function lente(request, env, origem) {
+  const aj = await lerAjustes(env);
+  const dia = hoje();
+  // Erro no formato que o app já entende (o mesmo que um provedor devolveria).
+  const recusar = async (motivo, status, contar = true) => {
+    if (contar) await somarLentesDia(env, dia, { recusas: 1 }).run();
+    return json({ ok: false, motivo, error: { message: `cortesia_${motivo}` } }, status, origem);
+  };
+  if (!aj.ligada || !env.GROQ_KEY || aj.lentes_por_aparelho <= 0) return json({ ok: false, motivo: 'desligada', error: { message: 'cortesia_desligada' } }, 503, origem);
+  await garantirTabelasLentes(env);
+
+  const corpo = await request.json().catch(() => null);
+  const aparelho = String(corpo?.aparelho || '');
+  const msgs = Array.isArray(corpo?.messages) ? corpo.messages : null;
+  if (!RE_APARELHO.test(aparelho) || !msgs || !msgs.length || msgs.length > 3) return recusar('pedido_invalido', 400, false);
+  let total = 0;
+  const messages = [];
+  for (const m of msgs) {
+    if (!m || !['system', 'user'].includes(m.role) || typeof m.content !== 'string') return recusar('pedido_invalido', 400, false);
+    total += m.content.length;
+    messages.push({ role: m.role, content: m.content });
+  }
+  if (total > LENTE_MAX_CHARS + 4000) return recusar('grande', 413);
+
+  // Trava 1 — o teto do dia, somando todo mundo.
+  const d = await env.DB.prepare('SELECT usos FROM lentes_dias WHERE dia = ?').bind(dia).first();
+  if ((d?.usos || 0) >= aj.lentes_dia) return recusar('teto_dia', 429);
+  // Trava 2 — por endereço de internet (embaralhado; linha própria, não come as transcrições).
+  const ip = request.headers.get('CF-Connecting-IP') || 'sem-ip';
+  const hashIp = await sha256hex(`LENTE|${ip}|${dia}|${env.SAL_IP || 'vox'}`);
+  const ipRow = await env.DB.prepare('SELECT usos FROM ips WHERE dia = ? AND hash = ?').bind(dia, hashIp).first();
+  if ((ipRow?.usos || 0) >= aj.por_ip_dia) return recusar('limite_ip', 429);
+  // Trava 3 — quantas cada aparelho ganhou (mesma regra das transcrições).
+  const row = await env.DB.prepare('SELECT cota, usadas FROM lentes WHERE id = ?').bind(aparelho).first();
+  const cota = Math.max(row?.cota || 0, aj.lentes_por_aparelho);
+  const usadas = row?.usadas || 0;
+  if (usadas >= cota) return recusar('esgotada', 402);
+
+  const maxTokens = Math.min(LENTE_MAX_TOKENS, Math.max(200, Math.round(Number(corpo.max_tokens) || 2600)));
+  const temperature = Number.isFinite(Number(corpo.temperature)) ? Math.min(1, Math.max(0, Number(corpo.temperature))) : 0.5;
+  const r = await fetch(env.GROQ_CHAT_URL || GROQ_CHAT_PADRAO, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.GROQ_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: MODELO_TEXTO, messages, max_tokens: maxTokens, temperature }),
+  });
+  if (!r.ok) {
+    // Falha do Groq não gasta a lente da pessoa.
+    await somarLentesDia(env, dia, { erros: 1 }).run();
+    const motivo = r.status === 429 ? 'ocupado' : 'falha';
+    return json({ ok: false, motivo, error: { message: `cortesia_${motivo}` } }, r.status === 429 ? 429 : 502, origem);
+  }
+  const res = await r.json().catch(() => ({}));
+  const texto = String(res?.choices?.[0]?.message?.content || '').trim();
+  if (!texto) {
+    await somarLentesDia(env, dia, { erros: 1 }).run();
+    return json({ ok: false, motivo: 'falha', error: { message: 'cortesia_falha' } }, 502, origem);
+  }
+  const restantes = Math.max(0, cota - usadas - 1);
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO lentes (id, cota, usadas, criado, ultimo) VALUES (?, ?, 1, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET usadas = usadas + 1, ultimo = excluded.ultimo, cota = MAX(cota, excluded.cota)`)
+      .bind(aparelho, cota, dia, dia),
+    somarLentesDia(env, dia, { usos: 1, aparelhos: row ? 0 : 1 }),
+    env.DB.prepare('INSERT INTO ips (dia, hash, usos) VALUES (?, ?, 1) ON CONFLICT(dia, hash) DO UPDATE SET usos = usos + 1').bind(dia, hashIp),
+  ]);
+  return json({ ok: true, restantes, ultima: restantes === 0, choices: [{ message: { role: 'assistant', content: texto }, finish_reason: 'stop' }] }, 200, origem);
+}
+
 // ── Medição da landing ──────────────────────────────────────────────────────
 // A landing (voxcharmai.com) avisa a ponte de duas coisas: "alguém abriu a
 // página" e "alguém clicou em Comece grátis / Assinar". Sem cookie e sem
@@ -281,6 +399,9 @@ async function painel(request, env, url) {
       max_segundos: Math.round(Number(form.get('max_minutos')) * 60),
       teto_minutos_dia: Number(form.get('teto_minutos_dia')),
       por_ip_dia: Number(form.get('por_ip_dia')),
+      lentes_por_aparelho: Number(form.get('lentes_por_aparelho')),
+      lentes_dia: Number(form.get('lentes_dia')),
+      pro_dias: Number(form.get('pro_dias')),
     };
     const stmts = [];
     for (const [chave, valor] of Object.entries(novos)) {
@@ -305,10 +426,14 @@ async function painel(request, env, url) {
   const fim = await env.DB.prepare('SELECT COUNT(*) AS n, SUM(formou) AS f FROM aparelhos WHERE usadas > 0 AND usadas >= MAX(cota, ?)')
     .bind(aj.por_aparelho).first();
 
+  await garantirTabelasLentes(env);
+  const lentesHoje = (await env.DB.prepare('SELECT * FROM lentes_dias WHERE dia = ?').bind(dia).first()) || {};
+  const lentes30 = (await env.DB.prepare('SELECT SUM(usos) AS usos, SUM(aparelhos) AS aparelhos FROM lentes_dias WHERE dia >= ?')
+    .bind(new Date(Date.now() - 3 * 3600e3 - 29 * 864e5).toISOString().slice(0, 10)).first()) || {};
   const landing = (await env.DB.prepare('SELECT * FROM landing_dias ORDER BY dia DESC LIMIT 30').all()).results || [];
   const origens = (await env.DB.prepare("SELECT origem, SUM(n) AS n FROM landing_origens WHERE dia >= ? GROUP BY origem ORDER BY n DESC LIMIT 12")
     .bind(new Date(Date.now() - 3 * 3600e3 - 29 * 864e5).toISOString().slice(0, 10)).all()).results || [];
-  return new Response(htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, salvo: url.searchParams.has('salvo'), temChave: !!env.GROQ_KEY }), {
+  return new Response(htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, salvo: url.searchParams.has('salvo'), temChave: !!env.GROQ_KEY }), {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
@@ -319,7 +444,7 @@ async function painel(request, env, url) {
   });
 }
 
-function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, salvo, temChave }) {
+function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, salvo, temChave }) {
   const minHoje = Math.round((hojeRow.segundos || 0) / 60);
   const pct = aj.teto_minutos_dia ? Math.min(100, Math.round((minHoje / aj.teto_minutos_dia) * 100)) : 100;
   const p = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—');
@@ -386,6 +511,13 @@ ${aj.ligada ? '' : '<div class="alerta">A cortesia está desligada. Ninguém nov
   <p class="leg">O Groq grátis dá até 480 minutos por dia e 120 por hora. Quando o teto chega, a ponte para e quem grava vê que a cortesia de hoje acabou. Não gera cobrança.</p>
 </div>
 
+<div class="card">
+  <h2>Lentes por nossa conta</h2>
+  <div class="num">${lentesHoje.usos || 0} <span class="leg">de ${aj.lentes_dia} lentes hoje · ${lentesHoje.aparelhos || 0} aparelho(s) novo(s) · ${lentesHoje.recusas || 0} recusa(s) · ${lentesHoje.erros || 0} erro(s)</span></div>
+  <div class="barra${aj.lentes_dia && (lentesHoje.usos || 0) / aj.lentes_dia >= 0.8 ? ' alto' : ''}"><i style="width:${aj.lentes_dia ? Math.min(100, Math.round(((lentesHoje.usos || 0) / aj.lentes_dia) * 100)) : 100}%"></i></div>
+  <p class="leg">Últimos 30 dias: ${lentes30.usos || 0} lentes, ${lentes30.aparelhos || 0} aparelhos. O Groq grátis dá ~200 mil "pedaços de texto" (tokens) por dia nesse modelo: dá umas 40 a 60 lentes. Se chegar no teto, quem pede vê o convite pra chave grátis. Não gera cobrança.</p>
+</div>
+
 <div class="grid">
   <div class="card"><div class="leg">Aparelhos que usaram</div><div class="num">${total}</div></div>
   <div class="card"><div class="leg">Chegaram ao fim da cortesia</div><div class="num">${fim?.n || 0}</div></div>
@@ -416,6 +548,12 @@ ${aj.ligada ? '' : '<div class="alerta">A cortesia está desligada. Ninguém nov
       <small>Deixe abaixo de 480, que é o limite do Groq grátis.</small></label>
     <label><span>Pedidos por endereço de internet por dia</span><input type="number" name="por_ip_dia" min="1" max="200" value="${aj.por_ip_dia}">
       <small>Protege contra quem tenta esvaziar a cortesia. Escritórios e operadoras de celular dividem endereço, por isso não é 3.</small></label>
+    <label><span>Lentes por aparelho</span><input type="number" name="lentes_por_aparelho" min="0" max="30" value="${aj.lentes_por_aparelho}">
+      <small>Quantas lentes a pessoa usa antes de ter chave (é aqui que ela sente o "o Vox pensa com você"). 0 desliga.</small></label>
+    <label><span>Lentes por dia (todo mundo somado)</span><input type="number" name="lentes_dia" min="0" max="3000" value="${aj.lentes_dia}">
+      <small>O teto que protege a sua conta grátis do Groq. Uns 40 cabem folgado.</small></label>
+    <label><span>Dias de Pro de presente</span><input type="number" name="pro_dias" min="0" max="60" value="${aj.pro_dias}">
+      <small>Quem começa a usar ganha esses dias de Pro (conta da primeira gravação). 0 desliga a promoção pra quem chegar depois; quem já ganhou fica com os dias.</small></label>
     <button type="submit">Salvar ajustes</button>
   </form>
 </div>
