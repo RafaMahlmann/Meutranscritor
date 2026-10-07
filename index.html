@@ -1282,6 +1282,18 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 [data-theme="dark"]{--ink-icon:#9aa3ad}
 .icon-btn-copy{color:#eab308}
 .icon-btn-copy:hover{background:rgba(234,179,8,0.12);color:#ca8a04}
+/* Copiar saiu da bandeja e foi pra barra superior, colado nos 3 pontinhos
+   (Rafa, 29/09/2026): é a ação mais usada do card e não pode depender de
+   abrir o menu. Vive dentro do .ch-left, que abre/recolhe ao clique — por
+   isso o stopPropagation no onclick. Mesmo tamanho visual do botão dos
+   pontinhos (26px), com o alvo de 44px esticado pelo ::after, igual a ele.
+   order:1 = mesmo degrau do .ch-mode-badge; como vem depois no HTML, fica
+   logo à direita dele nos dois estados (aberto e recolhido). No Modo
+   Documento some: a barra de ferramentas do documento já tem o copiar. */
+.ch-left .ch-copy-btn{order:1;position:relative;width:26px;height:26px;border-radius:8px}
+.ch-left .ch-copy-btn svg{width:15px;height:15px}
+.ch-left .ch-copy-btn::after{content:'';position:absolute;top:50%;left:50%;width:var(--card-tap-min);height:var(--card-tap-min);transform:translate(-50%,-50%)}
+.card.focus-active .ch-copy-btn{display:none}
 .icon-btn.rec-here{color:var(--ca,var(--accent));background:var(--cag,var(--accent-glow))}
 .icon-btn.pinned{color:#f59e0b}
 .icon-btn.recording-this{background:var(--danger);color:white;animation:pulse-red 1.5s infinite}
@@ -9047,7 +9059,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.3';
+const VOX_VERSION='2026.10.07.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -30717,6 +30729,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar"><span class="svgi">${ICO.msgs}</span> ${t('Diarizado')}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${_modeIco(mode)}${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
+          <button type="button" class="icon-btn icon-btn-copy ch-copy-btn" onclick="event.stopPropagation();copyCard('${id}')" title="${t('Copiar para a área de transferência')}" aria-label="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?'<span class="svgi">'+ICO.pinOutline+'</span> '+escHtml(sn):t('+ nome')}</span>
           ${pinned?`<span class="badge pin"><span class="svgi">${ICO.pinOutline}</span> ${t('Fixado')}</span>`:''}
           <span class="ts">${timeStr} · ${dateStr}</span>
@@ -30728,7 +30741,6 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
             <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <button class="icon-btn ov2" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn ov1" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">${ICO.diarView}</button>
           <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
@@ -35003,6 +35015,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <button type="button" class="ch-del-btn" onclick="event.stopPropagation();askDel('${id}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.close}</button>
           <span class="badge${badgeCls}">${provLabel}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${_modeIco(mode)}${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
+          <button type="button" class="icon-btn icon-btn-copy ch-copy-btn" onclick="event.stopPropagation();copyCard('${id}')" title="${t('Copiar para a área de transferência')}" aria-label="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?escHtml(sn):t('+ nome')}</span>
           ${pinned?'<span class="badge pin"><span class="svgi">'+ICO.pinOutline+'</span></span>':''}
           <span class="ts">${timeStr} · ${dateStr}</span>
@@ -35014,7 +35027,6 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
             <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <button class="icon-btn ov2" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn ov1" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
           <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
