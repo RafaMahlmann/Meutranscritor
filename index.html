@@ -701,6 +701,8 @@ header.has-speed-badge{padding-bottom:18px}
 .gbtn.gbtn-pro{background:var(--accent);color:#fff}
 .gbtn.gbtn-pro:hover{filter:brightness(1.08)}
 .gbtn.gbtn-pro.ativo{background:var(--accent-glow);color:var(--accent)}
+/* Selo "Pro" nas funções do Pro dentro do menu Mais. */
+.hdm-pro{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.3px;color:var(--accent);background:var(--accent-glow);border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
 .gbtn.on-grok{background:var(--grok-glow);color:var(--grok)}
 .gbtn.on-groq{background:var(--groq-glow);color:var(--groq)}
 .gbtn.on-diar{background:var(--diar-glow);color:var(--diar)}
@@ -1282,6 +1284,18 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
 [data-theme="dark"]{--ink-icon:#9aa3ad}
 .icon-btn-copy{color:#eab308}
 .icon-btn-copy:hover{background:rgba(234,179,8,0.12);color:#ca8a04}
+/* Copiar saiu da bandeja e foi pra barra superior, colado nos 3 pontinhos
+   (Rafa, 29/09/2026): é a ação mais usada do card e não pode depender de
+   abrir o menu. Vive dentro do .ch-left, que abre/recolhe ao clique — por
+   isso o stopPropagation no onclick. Mesmo tamanho visual do botão dos
+   pontinhos (26px), com o alvo de 44px esticado pelo ::after, igual a ele.
+   order:1 = mesmo degrau do .ch-mode-badge; como vem depois no HTML, fica
+   logo à direita dele nos dois estados (aberto e recolhido). No Modo
+   Documento some: a barra de ferramentas do documento já tem o copiar. */
+.ch-left .ch-copy-btn{order:1;position:relative;width:26px;height:26px;border-radius:8px}
+.ch-left .ch-copy-btn svg{width:15px;height:15px}
+.ch-left .ch-copy-btn::after{content:'';position:absolute;top:50%;left:50%;width:var(--card-tap-min);height:var(--card-tap-min);transform:translate(-50%,-50%)}
+.card.focus-active .ch-copy-btn{display:none}
 .icon-btn.rec-here{color:var(--ca,var(--accent));background:var(--cag,var(--accent-glow))}
 .icon-btn.pinned{color:#f59e0b}
 .icon-btn.recording-this{background:var(--danger);color:white;animation:pulse-red 1.5s infinite}
@@ -7303,6 +7317,18 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
               </button>
             </div>
             <div class="hdm-item">
+              <button class="hdm-linha" id="btnRevisao" onclick="_hdMoreFechar();openRevisao()" title="Vox Pro" >
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t"><span data-i18n>Revisão da semana</span> <span class="hdm-pro">Pro</span></span><span class="hdm-sub" data-i18n>O que você decidiu e o que ficou em aberto</span></span>
+              </button>
+            </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnPergunte" onclick="_hdMoreFechar();openPergunte()" title="Vox Pro">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4"/><circle cx="12" cy="17.2" r=".6" fill="currentColor" stroke="none"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t"><span data-i18n>Pergunte às suas notas</span> <span class="hdm-pro">Pro</span></span><span class="hdm-sub" data-i18n>Uma pergunta, todas as notas</span></span>
+              </button>
+            </div>
+            <div class="hdm-item">
               <button class="hdm-linha" id="btnCostura" onclick="_hdMoreFechar();openCostura()" title="Agrupa notas sobre o mesmo assunto" data-i18n-title>
                 <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9c0 4 12 5 12 9"/></svg></span>
                 <span class="hdm-txt"><span class="hdm-t" data-i18n>Notas relacionadas</span><span class="hdm-sub" data-i18n>Junta notas do mesmo assunto</span><span class="hdm-selo" id="hdmSeloCostura" hidden></span></span>
@@ -8472,6 +8498,21 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   </div>
 </div>
 
+<!-- PENSAR NO HISTÓRICO (Pro) — Revisão e Pergunte às suas notas. Mesmo
+     esqueleto do Resumo do dia: título + ✕, corpo que troca de estado, ações no pé. -->
+<div class="overlay" id="pensarOverlay" onclick="if(event.target===this)closePensar()">
+  <div class="modal wide">
+    <div class="mh"><h2 id="pensarTitulo" data-i18n>Revisão</h2><button class="mh-close" onclick="closePensar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="mb">
+      <div id="pensarBody"></div>
+      <div id="pensarAcoes" style="display:none;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="gbtn" onclick="_pensCopiar()"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span> <span data-i18n>Copiar</span></button>
+        <button class="gbtn" onclick="_pensSalvar()"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span> <span data-i18n>Salvar como nota</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- NOTAS RELACIONADAS ("costurar") — mesmo esqueleto visual do Resumo do dia:
      título + ✕, corpo que troca de estado (carregando → resultado), ações no pé.
      Não gasta chamada de IA nenhuma: roda em cima do índice de vetores que a
@@ -9047,7 +9088,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.3';
+const VOX_VERSION='2026.10.07.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10569,6 +10610,32 @@ let I18N_EN={
 //    skill metodo-vox faz isso sozinho ("@@@ EQUIPE B" ou VOX_EQUIPE=B).
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
+"Revisão da semana":"Weekly review",
+"O que você decidiu e o que ficou em aberto":"What you decided and what's still open",
+"Pergunte às suas notas":"Ask your notes",
+"Uma pergunta, todas as notas":"One question, all your notes",
+"O Vox pensa no seu histórico inteiro: revisão da semana e do mês, e perguntas sobre todas as suas notas":"Vox thinks across your whole history: weekly and monthly reviews, and questions about all your notes",
+"A revisão da semana e do mês é do Vox Pro: ela lê todas as notas do período e junta o que você decidiu e o que ficou em aberto.":"The weekly and monthly review is part of Vox Pro: it reads every note in the period and brings together what you decided and what's still open.",
+"Perguntar às suas notas é do Vox Pro: ele responde só com o que você disse, e mostra de qual nota saiu cada parte.":"Asking your notes is part of Vox Pro: it answers only with what you said, and shows which note each part came from.",
+"Isto precisa da sua chave de IA (a do Groq é grátis, sem cartão, uns 2 minutos).":"This needs your AI key (Groq's is free, no card, about 2 minutes).",
+"Últimos 7 dias":"Last 7 days",
+"Últimos 30 dias":"Last 30 days",
+"Nenhuma nota neste período.":"No notes in this period.",
+"Lendo {n} notas…":"Reading {n} notes…",
+"Juntando as partes…":"Putting the parts together…",
+"{n} notas · {a} a {b}":"{n} notes · {a} to {b}",
+"Ex.: o que eu decidi sobre o aniversário?":"E.g.: what did I decide about the birthday?",
+"Perguntar":"Ask",
+"A resposta vem só do que você disse nas notas, com a nota de onde saiu cada parte.":"The answer comes only from what you said in your notes, with the note each part came from.",
+"Procurando em {n} notas…":"Searching {n} notes…",
+"Não encontrei isso nas suas notas deste período.":"I didn't find that in your notes from this period.",
+"Juntando o que achei…":"Putting together what I found…",
+"De onde saiu":"Where it came from",
+"{n} trecho(s) que a IA citou não conferiam com as suas notas e foram descartados.":"{n} quote(s) the AI gave didn't match your notes and were discarded.",
+"Revisão — {n} dias":"Review — {n} days",
+"Pergunta: {q}":"Question: {q}",
+"Salvo como nota.":"Saved as a note.",
+"Salvar como nota":"Save as a note",
 // [EQUIPE B] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -12520,7 +12587,7 @@ function _proAtualizarMenu(){
   const b=document.getElementById('btnProFixo'),bt=document.getElementById('btnProFixoTxt');
   if(b&&bt){b.classList.toggle('ativo',lic||pres);bt.textContent=lic?'Pro':pres?t('Pro · {n} dias').replace('{n}',_presenteDiasRestantes()):t('Seja Pro');b.title=sub}
 }
-const _PRO_LIBERA=['Até 6 aparelhos na mesma assinatura','Gravação sem limite diário, que nunca encolhe','Arquivos quantos quiser, sempre inteiros','Diarização sem limite no mês','Pastas e subpastas sem teto','Quantos mundos trancados com senha quiser','Seleção em massa sem limite','Exportar o calendário pro Google ou Apple (.ics)'];
+const _PRO_LIBERA=['Até 6 aparelhos na mesma assinatura','O Vox pensa no seu histórico inteiro: revisão da semana e do mês, e perguntas sobre todas as suas notas','Gravação sem limite diário, que nunca encolhe','Arquivos quantos quiser, sempre inteiros','Diarização sem limite no mês','Pastas e subpastas sem teto','Quantos mundos trancados com senha quiser','Seleção em massa sem limite','Exportar o calendário pro Google ou Apple (.ics)'];
 function abrirVoxPro(contexto){_proRender(contexto||'');document.getElementById('proOverlay').style.display='flex'}
 function fecharVoxPro(){document.getElementById('proOverlay').style.display='none'}
 function _proRender(contexto,aviso,avisoErro){
@@ -24272,6 +24339,196 @@ function _cofreImpedeSaida(){
   return false;
 }
 
+// ── PENSAR NO HISTÓRICO (Pro, 07/10/2026 — decisão do Rafa, doc 29) ──
+// O Pro "pensa no seu histórico inteiro", no lugar de trancar nota antiga no
+// grátis (os Termos prometem que limite nunca tranca nada). Duas peças que
+// faltavam ao lado do Resumo do dia / Notas relacionadas / Panorama:
+//  · Revisão da semana/do mês: o que você decidiu, o que ficou em aberto,
+//    quem faz o quê, o que voltou várias vezes;
+//  · Pergunte às suas notas: uma pergunta, respondida só com o que você disse,
+//    com as notas de onde saiu. Trecho citado é CONFERIDO no texto do card
+//    (_cchatCiteOk, o mesmo do Panorama) — trecho que não confere é descartado.
+// Notas longas: bloco a bloco (map) e unificação (reduce), como nas lentes.
+const PENS_BLOCO=18000,PENS_MAX_NOTA=4000,PENS_MAX_NOTAS=400;
+let _pensModo='revisao',_pensDias=7,_pensResultado='',_pensPergunta='';
+function _pensColeta(dias){
+  const limite=dias?Date.now()-dias*864e5:0,sel=[];
+  for(const c of document.querySelectorAll('#cardsList .card:not(.proc-card)')){
+    if(sel.length>=PENS_MAX_NOTAS)break;
+    const dt=c.dataset.dt?new Date(c.dataset.dt).getTime():0;
+    if(limite&&dt&&dt<limite)continue;
+    const txt=(c.querySelector('textarea')?.value||'').trim();
+    if(txt.length<20)continue;
+    // O card de boas-vindas do app (tag demo) não é pensamento da pessoa.
+    const tg=(c.dataset.tags||'').split(',');if(tg.includes('demo')||tg.includes(t('demo')))continue;
+    sel.push({id:c.id,txt:txt.slice(0,PENS_MAX_NOTA),data:_costData(c.id),nome:_costTitulo(c.id),dt});
+  }
+  return sel.sort((a,b)=>(a.dt||0)-(b.dt||0)); // do mais antigo pro mais novo: dá a ordem dos fatos
+}
+// Numera as notas no conjunto inteiro (n1, n2…) e divide em blocos que cabem numa chamada.
+function _pensBlocos(notas){
+  const blocos=[];let atual='',n=0;
+  notas.forEach((nt,i)=>{
+    const parte=`--- n${i+1} (${nt.data}${nt.nome?' · '+nt.nome:''}) ---\n${nt.txt}\n\n`;
+    if(atual&&atual.length+parte.length>PENS_BLOCO){blocos.push(atual);atual=''}
+    atual+=parte;n++;
+  });
+  if(atual)blocos.push(atual);
+  return blocos;
+}
+function _pensMd(txt){
+  // Texto da IA vira HTML seguro: escapa tudo e só depois devolve o **negrito**.
+  return escHtml(txt).replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+}
+function _pensPodeUsar(contextoPro){
+  if(!voxPro()){abrirVoxPro(contextoPro);return false}
+  return true;
+}
+function openRevisao(dias){
+  if(!_pensPodeUsar(t('A revisão da semana e do mês é do Vox Pro: ela lê todas as notas do período e junta o que você decidiu e o que ficou em aberto.')))return;
+  _pensModo='revisao';if(dias)_pensDias=dias;else if(![7,30].includes(_pensDias))_pensDias=7;
+  _pensAbrir();_pensRevisaoRodar();
+}
+function openPergunte(){
+  if(!_pensPodeUsar(t('Perguntar às suas notas é do Vox Pro: ele responde só com o que você disse, e mostra de qual nota saiu cada parte.')))return;
+  _pensModo='pergunta';if(![30,90,0].includes(_pensDias))_pensDias=90;
+  _pensAbrir();_pensPerguntaTela();
+}
+function _pensAbrir(){
+  document.getElementById('pensarOverlay').classList.add('on');
+  document.getElementById('pensarTitulo').textContent=_pensModo==='revisao'?t('Revisão'):t('Pergunte às suas notas');
+}
+function closePensar(){document.getElementById('pensarOverlay').classList.remove('on')}
+function _pensChips(lista,fn){
+  return `<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">${lista.map(([d,r])=>`<button class="gbtn${_pensDias===d?' on-accent':''}" onclick="${fn}(${d})">${escHtml(r)}</button>`).join('')}</div>`;
+}
+function _pensSemChave(){
+  return `<p class="ach-empty">${escHtml(t('Isto precisa da sua chave de IA (a do Groq é grátis, sem cartão, uns 2 minutos).'))}</p>
+    <div style="margin-top:10px"><button class="gbtn" onclick="closePensar();_obAbrirNaChave()">${escHtml(t('Pegar minha chave grátis'))}</button></div>`;
+}
+function _pensCarregando(msg){return `<div class="summary-loading"><div class="dots"><span></span><span></span><span></span></div> ${escHtml(msg)}</div>`}
+// ── Revisão ──
+async function _pensRevisaoRodar(dias){
+  if(dias)_pensDias=dias;
+  const body=document.getElementById('pensarBody'),barra=_pensChips([[7,t('Últimos 7 dias')],[30,t('Últimos 30 dias')]],'_pensRevisaoRodar');
+  _pensResultado='';_pensAcoes(false);
+  const key=aiKey();
+  if(!key){body.innerHTML=barra+_pensSemChave();return}
+  const notas=_pensColeta(_pensDias);
+  if(!notas.length){body.innerHTML=barra+`<p class="ach-empty">${escHtml(t('Nenhuma nota neste período.'))}</p>`;return}
+  const tarefa=`Você revisa as anotações faladas de UMA pessoa num período, para ela enxergar o período inteiro de uma vez. Organize SOMENTE com o que está escrito, sem inventar nada:
+
+**Decidido** — o que ficou decidido de fato.
+**Em aberto** — o que ela disse que precisa decidir ou resolver e não fechou.
+**Quem faz o quê, até quando** — formato: quem → o quê → prazo (use "—" quando não foi dito).
+**O que voltou várias vezes** — assunto que apareceu em notas diferentes.
+
+Omita seções vazias. Não promova ideia a decisão. Não use emoji. Frases curtas. ${_promptLang()}`;
+  const blocos=_pensBlocos(notas);
+  try{
+    let res;
+    if(blocos.length===1){
+      body.innerHTML=barra+_pensCarregando(t('Lendo {n} notas…').replace('{n}',notas.length));
+      res=await callAI(tarefa+'\n\nAnotações:\n'+blocos[0],key,'auto',2200,{temperature:0.3});
+    }else{
+      const parciais=[];
+      for(let i=0;i<blocos.length;i++){
+        body.innerHTML=barra+_pensCarregando(t('Lendo {n} notas…').replace('{n}',notas.length)+` (${i+1}/${blocos.length})`);
+        parciais.push((await callAI(tarefa+`\n\n[Parte ${i+1} de ${blocos.length} do período, em ordem — revise só esta parte.]\n\nAnotações:\n${blocos[i]}`,key,'auto',1600,{temperature:0.3})).trim());
+      }
+      body.innerHTML=barra+_pensCarregando(t('Juntando as partes…'));
+      res=await callAI(`Abaixo estão ${parciais.length} revisões parciais e sequenciais do MESMO período. Junte numa revisão final no mesmo formato (Decidido / Em aberto / Quem faz o quê, até quando / O que voltou várias vezes). Se algo ficou em aberto numa parte e foi decidido numa parte posterior, conte como decidido. Sem repetir, sem inventar, sem emoji. ${_promptLang()}\n\n`+parciais.map((p,i)=>`--- Parte ${i+1} ---\n${p}`).join('\n\n'),key,'auto',2200,{temperature:0.3});
+    }
+    _pensResultado=(res||'').trim();
+    const cab=`<div class="ach-grupo-sub" style="margin-bottom:10px">${escHtml(t('{n} notas · {a} a {b}').replace('{n}',notas.length).replace('{a}',notas[0].data).replace('{b}',notas[notas.length-1].data))}</div>`;
+    body.innerHTML=barra+cab+`<div class="summary-content">${_pensMd(_pensResultado)}</div>`;
+    _pensAcoes(true);
+  }catch(e){
+    if(e&&e.cortesia){body.innerHTML=barra+_pensSemChave();return}
+    body.innerHTML=barra+`<p style="color:var(--danger);font-size:13px">${escHtml(t('Erro:')+' '+e.message)}</p>`;
+  }
+}
+// ── Pergunte às suas notas ──
+function _pensPerguntaTela(dias){
+  if(dias!==undefined)_pensDias=dias;
+  const body=document.getElementById('pensarBody');
+  _pensResultado='';_pensAcoes(false);
+  const barra=_pensChips([[30,t('30 dias')],[90,t('3 meses')],[0,t('Tudo')]],'_pensPerguntaTela');
+  if(!aiKey()){body.innerHTML=barra+_pensSemChave();return}
+  body.innerHTML=barra+`<div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input type="text" id="pensPerguntaInput" class="ob-key" style="flex:1;min-width:200px;margin:0" maxlength="400" placeholder="${escHtml(t('Ex.: o que eu decidi sobre o aniversário?'))}" value="${escHtml(_pensPergunta)}" onkeydown="if(event.key==='Enter')_pensPerguntar()">
+      <button class="gbtn on-accent" onclick="_pensPerguntar()">${escHtml(t('Perguntar'))}</button>
+    </div>
+    <p class="ach-empty" style="margin-top:10px">${escHtml(t('A resposta vem só do que você disse nas notas, com a nota de onde saiu cada parte.'))}</p>
+    <div id="pensResposta"></div>`;
+  setTimeout(()=>document.getElementById('pensPerguntaInput')?.focus(),60);
+}
+async function _pensPerguntar(){
+  const inp=document.getElementById('pensPerguntaInput'),alvo=document.getElementById('pensResposta');
+  const q=(inp?.value||'').trim();if(!q||!alvo)return;
+  _pensPergunta=q;
+  const key=aiKey();if(!key)return;
+  const notas=_pensColeta(_pensDias);
+  if(!notas.length){alvo.innerHTML=`<p class="ach-empty">${escHtml(t('Nenhuma nota neste período.'))}</p>`;return}
+  const regras=`REGRAS QUE VALEM MAIS QUE RESPONDER:
+- Use SOMENTE o que está escrito nas anotações. Não complete com conhecimento seu.
+- Cada parte da resposta precisa de uma FONTE com trecho COPIADO LITERALMENTE da nota (8 a 25 palavras, sem parafrasear, sem reticências). Trecho que não for cópia exata será descartado.
+- Se as anotações não respondem, diga isso claramente. Não achar é uma resposta correta.
+- Sem emoji. ${_promptLang()}`;
+  const formato=`FORMATO (nada fora dele):
+RESPOSTA: (2 a 6 frases curtas, em linguagem simples)
+FONTE: n3 | trecho copiado exatamente da nota n3
+FONTE: n7 | outro trecho copiado exatamente da nota n7`;
+  const blocos=_pensBlocos(notas);
+  try{
+    let resp;
+    if(blocos.length===1){
+      alvo.innerHTML=_pensCarregando(t('Procurando em {n} notas…').replace('{n}',notas.length));
+      resp=await callAI(`Pergunta da pessoa: "${q}"\n\nResponda com base nas anotações faladas dela abaixo.\n\n${regras}\n\n${formato}\n\nAnotações:\n${blocos[0]}`,key,'auto',1400,{temperature:0.2});
+    }else{
+      const achados=[];
+      for(let i=0;i<blocos.length;i++){
+        alvo.innerHTML=_pensCarregando(t('Procurando em {n} notas…').replace('{n}',notas.length)+` (${i+1}/${blocos.length})`);
+        const r=(await callAI(`Pergunta da pessoa: "${q}"\n\nNas anotações abaixo (parte ${i+1} de ${blocos.length}), copie SOMENTE os trechos que ajudam a responder, no formato "FONTE: nN | trecho copiado exatamente". Se nada ajuda, responda apenas NADA.\n\n${regras}\n\nAnotações:\n${blocos[i]}`,key,'auto',1000,{temperature:0.1})).trim();
+        if(r&&!/^NADA\.?$/i.test(r))achados.push(r);
+      }
+      if(!achados.length){resp='RESPOSTA: '+t('Não encontrei isso nas suas notas deste período.')}
+      else{
+        alvo.innerHTML=_pensCarregando(t('Juntando o que achei…'));
+        resp=await callAI(`Pergunta da pessoa: "${q}"\n\nAbaixo estão trechos das anotações dela que ajudam a responder (n = número da nota). Responda usando só esses trechos e repita as FONTES que você usar, iguais.\n\n${regras}\n\n${formato}\n\nTrechos:\n${achados.join('\n')}`,key,'auto',1400,{temperature:0.2});
+      }
+    }
+    // Confere cada trecho no texto completo do card; o que não confere sai.
+    const resposta=((resp||'').match(/RESPOSTA:\s*([\s\S]*?)(?=^\s*FONTE:|$(?![\s\S]))/mi)||[])[1]?.trim()||(resp||'').replace(/^\s*FONTE:.*$/gmi,'').trim();
+    const fontes=[],vistos=new Set();let descartadas=0;
+    ((resp||'').match(/^\s*FONTE:\s*.+$/gmi)||[]).forEach(l=>{
+      const m=l.match(/^\s*FONTE:\s*n?(\d+)\s*\|\s*(.+?)\s*$/i);if(!m){descartadas++;return}
+      const nota=notas[parseInt(m[1],10)-1];
+      const trecho=m[2].replace(/^["'«»“”]+|["'«»“”]+$/g,'').trim();
+      const ta=nota&&document.getElementById(nota.id)?.querySelector('textarea');
+      if(!ta||!_cchatCiteOk(ta.value,trecho)){descartadas++;return}
+      const k=nota.id+'|'+trecho;if(vistos.has(k))return;vistos.add(k);
+      fontes.push({id:nota.id,trecho,data:nota.data,nome:nota.nome});
+    });
+    _pensResultado=resposta+(fontes.length?'\n\n'+fontes.map(f=>`— ${f.data} · ${f.nome}: "${f.trecho}"`).join('\n'):'');
+    alvo.innerHTML=`<div class="summary-content" style="margin-top:12px">${_pensMd(resposta)}</div>`+
+      (fontes.length?`<div class="ach-grupo-sub" style="margin:14px 0 6px">${escHtml(t('De onde saiu'))}</div>`+fontes.map(f=>
+        `<button class="gbtn" style="display:block;width:100%;text-align:left;white-space:normal;margin-bottom:6px;line-height:1.5" onclick="closePensar();_semGo('${escJs(f.id)}')"><strong>${escHtml(f.data)} · ${escHtml(f.nome)}</strong><br>“${escHtml(f.trecho)}”</button>`).join(''):'')+
+      (descartadas?`<p class="ach-empty" style="margin-top:8px">${escHtml(t('{n} trecho(s) que a IA citou não conferiam com as suas notas e foram descartados.').replace('{n}',descartadas))}</p>`:'');
+    _pensAcoes(true);
+  }catch(e){
+    alvo.innerHTML=`<p style="color:var(--danger);font-size:13px">${escHtml(t('Erro:')+' '+e.message)}</p>`;
+  }
+}
+function _pensAcoes(on){document.getElementById('pensarAcoes').style.display=on?'flex':'none'}
+function _pensCopiar(){if(_pensResultado)navigator.clipboard.writeText(_pensResultado).then(()=>toast(t('Copiado para a área de transferência!')))}
+function _pensSalvar(){
+  if(!_pensResultado)return;
+  const titulo=_pensModo==='revisao'?t('Revisão — {n} dias').replace('{n}',_pensDias):t('Pergunta: {q}').replace('{q}',_pensPergunta.slice(0,60));
+  addCard(_pensResultado,null,0,'texto',cfg.provider,true,null,null,[_pensModo==='revisao'?'revisao':'pergunta'],titulo,'livre',false);
+  saveHistory();closePensar();toast(t('Salvo como nota.'));
+}
+
 // ── DAILY SUMMARY ──
 async function openDaySummary(){
   document.getElementById('summaryOverlay').classList.add('on');
@@ -30717,6 +30974,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <span class="badge${badgeCls}">${provLabel}</span>
           <span class="badge diar"><span class="svgi">${ICO.msgs}</span> ${t('Diarizado')}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${_modeIco(mode)}${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
+          <button type="button" class="icon-btn icon-btn-copy ch-copy-btn" onclick="event.stopPropagation();copyCard('${id}')" title="${t('Copiar para a área de transferência')}" aria-label="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?'<span class="svgi">'+ICO.pinOutline+'</span> '+escHtml(sn):t('+ nome')}</span>
           ${pinned?`<span class="badge pin"><span class="svgi">${ICO.pinOutline}</span> ${t('Fixado')}</span>`:''}
           <span class="ts">${timeStr} · ${dateStr}</span>
@@ -30728,7 +30986,6 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
             <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <button class="icon-btn ov2" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn ov1" id="dv-${id}" onclick="toggleDiarView('${id}')" title="${t('Alternar roteiro / bolhas')}">${ICO.diarView}</button>
           <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
@@ -35003,6 +35260,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
           <button type="button" class="ch-del-btn" onclick="event.stopPropagation();askDel('${id}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.close}</button>
           <span class="badge${badgeCls}">${provLabel}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${_modeIco(mode)}${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
+          <button type="button" class="icon-btn icon-btn-copy ch-copy-btn" onclick="event.stopPropagation();copyCard('${id}')" title="${t('Copiar para a área de transferência')}" aria-label="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?escHtml(sn):t('+ nome')}</span>
           ${pinned?'<span class="badge pin"><span class="svgi">'+ICO.pinOutline+'</span></span>':''}
           <span class="ts">${timeStr} · ${dateStr}</span>
@@ -35014,7 +35272,6 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
             <button class="icon-btn" id="cr-${id}" onclick="cardRedo('${id}')" title="${t('Refazer (Ctrl+Shift+Z)')}" disabled>${ICO.redo}</button>
           </span>
           <button class="icon-btn rec-here" onclick="recHere('${id}')" title="${t('Gravar aqui')}">${ICO.mic}</button>
-          <button class="icon-btn icon-btn-copy" onclick="copyCard('${id}')" title="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <button class="icon-btn ov2" onclick="attachHere('${id}')" title="${t('Anexar áudio ou texto aqui')}">${ICO.attach}</button>
           <button class="icon-btn ov1" id="cpv-${id}" onclick="toggleCardPreview('${id}')" title="${t('Ver em Markdown (negrito, títulos, listas)')}">${ICO.eye}</button>
           <button class="icon-btn ov1" onclick="openReviewPanel('${id}')" title="${t('Revisar palavras repetidas ou fora de contexto')}">${ICO.checkSquare}</button>
