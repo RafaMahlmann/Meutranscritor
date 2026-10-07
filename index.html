@@ -9124,7 +9124,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.5';
+const VOX_VERSION='2026.10.07.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -15705,16 +15705,24 @@ function _flChaveDePasta(){
 function _flLerStore(){
   try{return JSON.parse(localStorage.getItem('vox_float_cards')||'{}')}catch(e){return{}}
 }
+// A posição de cada janela é guardada pelo dt do card (plano 30, lote 3): o
+// id do DOM nasce de novo a cada carregamento, então guardada por id a
+// posição nunca voltava e o registro só crescia. As entradas antigas por id
+// ('card_…') são lixo e saem na próxima vez que alguma posição é salva.
+function _flChaveCard(id){return document.getElementById(id)?.dataset.dt||id}
 function _flPosicaoSalva(folderKey,id){
   const store=_flLerStore();
-  return store[folderKey]?.[id]||null;
+  return store[folderKey]?.[_flChaveCard(id)]||null;
 }
 function _flSalvarPosicao(id){
   const j=_flAbertas.find(j=>j.id===id);
   if(!j)return;
   const store=_flLerStore();
+  Object.keys(store).forEach(p=>{const o=store[p];if(!o||typeof o!=='object')return;
+    Object.keys(o).forEach(k=>{if(/^card_/.test(k))delete o[k]});
+    if(!Object.keys(o).length&&p!==j.folder)delete store[p]});
   if(!store[j.folder])store[j.folder]={};
-  store[j.folder][id]={x:j.x,y:j.y,w:j.w,h:j.h};
+  store[j.folder][_flChaveCard(id)]={x:j.x,y:j.y,w:j.w,h:j.h};
   try{localStorage.setItem('vox_float_cards',JSON.stringify(store))}catch(e){}
 }
 
