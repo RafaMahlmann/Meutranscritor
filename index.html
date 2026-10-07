@@ -8894,7 +8894,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.06.6';
+const VOX_VERSION='2026.10.06.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -31314,12 +31314,26 @@ const IDEIAS_LENTE={cat:'extracao',tag:'ideias',temp:0.2,inplace:false,
   get label(){return t('Ideias soltas')},
   sys:'Você separa falas e textos em ideias pequenas e independentes. Fidelidade total: nunca inventa, nunca completa o que não foi dito.',
   get prompt(){return 'Separe o texto abaixo em ideias curtas e independentes, uma por linha, exatamente no formato:\n[tipo] frase\nTipos possíveis: decisão, ação, risco, pergunta, ideia. Mantenha nomes, números e datas como estão (datas no formato dd/mm). Não invente, não escreva introdução nem conclusão. No máximo 15 linhas.'}};
-function _ideiaTipoDe(s){
-  const x=String(s||'').toLowerCase();
+// Tipo da peça (plano 31). Ordem: pergunta pelo "?" ou pela palavra do
+// começo; depois a seção da lista ("Passos" = ação, "O que falta decidir" =
+// pergunta); depois verbo no infinitivo abrindo a frase ("Levantar o fluxo…"
+// = ação); por fim as palavras de sempre. Compara sem acento.
+const IDEIA_NAO_VERBO=' lugar mulher qualquer melhor maior menor pior valor setor par mar bar acucar celular familiar particular popular militar dolar similar regular titular escolar prazer poder dever colher talher ';
+function _ideiaSemAcento(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()}
+function _ideiaTipoDe(s,secao){
+  const x=_ideiaSemAcento(s).trim(),q=_ideiaSemAcento(secao);
   if(/\?\s*$/.test(x))return 'pergunta';
+  if(/^(quais?|quem|qual|quantos?|quantas?|em que|sera que|vale a pena|por que)\b/.test(x))return 'pergunta';
+  if(/passo|tarefa|a fazer|proximos/.test(q))return 'acao';
+  if(/falta decidir|pendenc|duvida|pergunta|em aberto/.test(q))return 'pergunta';
+  if(/risco/.test(q))return 'risco';
+  if(/decis|decidido/.test(q))return 'decisao';
+  const w=(x.match(/^[a-z]+/)||[''])[0];
+  if(w.length>3&&/(ar|er|ir|por)$/.test(w)&&IDEIA_NAO_VERBO.indexOf(' '+w+' ')<0)return 'acao';
+  if(/^(vamos|precisamos|temos que|tem que|devemos)\b/.test(x))return 'acao';
   if(/(^|\s)(decis|decid|manter|mantemos|fica |ficou decidido)/.test(x))return 'decisao';
-  if(/(^|\s)(risco|perigo|problema|se não|caso não|atras)/.test(x))return 'risco';
-  if(/(^|\s)(vai |vão |fazer|até \d|prazo|responsável|ficou com|fica com|treina|enviar|mandar|ligar|marcar|entregar|fecha|revisar)/.test(x))return 'acao';
+  if(/(^|\s)(risco|perigo|problema|se nao|caso nao|atras)/.test(x))return 'risco';
+  if(/(^|\s)(vai |vao |fazer|ate \d|prazo|responsavel|ficou com|fica com|treina|enviar|mandar|ligar|marcar|entregar|fecha|revisar)/.test(x))return 'acao';
   return 'ideia';
 }
 function _ideiaTipoDoRotulo(r){
@@ -31337,13 +31351,28 @@ function _ideiaData(s){
   if(!m[4]&&new Date(a,mes-1,d)<new Date(hoje.getFullYear(),hoje.getMonth()-2,hoje.getDate())){k=(a+1)+'-'+p(mes)+'-'+p(d);if(!_calValida(k))return ''}
   return k;
 }
-function _ideiaPeca(texto,tipo){
+function _ideiaPeca(texto,tipo,secao){
   texto=String(texto||'').replace(/\*\*/g,'').replace(/^\[[ x]\]\s*/i,'').trim();
-  return texto?{texto,tipo:tipo||_ideiaTipoDe(texto),data:_ideiaData(texto),fora:false}:null;
+  // "(depende de: 3, 4)" no fim sai do texto e vira dependência da peça.
+  let deps=[];const m=texto.match(/\(\s*depende d[eoa]s?:?\s*([^)]*)\)\s*[.;]?\s*$/i);
+  if(m){deps=(m[1].match(/\d+/g)||[]).map(Number);texto=texto.slice(0,m.index).replace(/[\s–—-]+$/,'').trim()}
+  return texto?{texto,tipo:tipo||_ideiaTipoDe(texto,secao),data:_ideiaData(texto),deps}:null;
 }
+// Aba que já é lista: cada item vira uma peça. O título acima dos itens
+// ("Passos", "O que falta decidir") ajuda a dizer o tipo, e o número do item
+// ("3.") é o que o "(depende de: 3)" cita — as peças ficam numeradas igual.
 function _ideiasDaLista(txt){
-  const itens=String(txt).split('\n').map(l=>l.match(/^\s*(?:[-*•–]|\d+[.)])\s+(.+)/)).filter(Boolean).map(m=>_ideiaPeca(m[1])).filter(Boolean);
-  return itens.length>=2?itens.slice(0,20):[];
+  let secao='';const itens=[];
+  String(txt).split('\n').forEach(l=>{
+    const m=l.match(/^\s*(?:[-*•–]|(\d+)[.)])\s+(.+)/);
+    if(m){const p=_ideiaPeca(m[2],null,secao);if(p){p.num=m[1]?+m[1]:0;itens.push(p)}return}
+    const h=l.replace(/[#*_:]/g,'').trim();if(h&&h.length<=60)secao=h;
+  });
+  if(itens.length<2)return [];
+  const lista=itens.slice(0,40),porNum={};
+  lista.forEach((p,i)=>{p.n=i+1;if(p.num&&!porNum[p.num])porNum[p.num]=p.n});
+  lista.forEach(p=>{p.deps=[...new Set(p.deps.map(d=>porNum[d]||d))].filter(d=>d!==p.n&&d>=1&&d<=lista.length)});
+  return lista;
 }
 function _ideiasDaIA(r){
   return String(r||'').split('\n').map(l=>l.match(/^\s*[-*]?\s*\[([^\]]+)\]\s*(.+)$/)).filter(Boolean)
