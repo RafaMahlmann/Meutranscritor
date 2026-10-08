@@ -735,6 +735,19 @@ header.has-speed-badge{padding-bottom:18px}
 .ob-btn:disabled{opacity:0.38;cursor:default}
 .ob-btn-ghost{width:100%;background:none;color:var(--text3);border:1px solid var(--border2);border-radius:13px;padding:12px;font-size:13.5px;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:8px;transition:all var(--transition)}
 .ob-btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+/* Medição opcional (lote 11, 08/10/2026): "Sim" e "Não" do MESMO tamanho, peso
+   e cor. Nenhum dos dois puxa o olho: a escolha é da pessoa, sem truque. */
+.medir-listas{display:grid;gap:10px;margin:2px 0 14px}
+.medir-lista{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.medir-lista b{display:block;font-size:12.5px;color:var(--text);margin-bottom:4px}
+.medir-lista ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--text2);line-height:1.6}
+.medir-par{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.medir-op{background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:13px;padding:13px 8px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:border-color 140ms,transform 120ms cubic-bezier(0.22,1,0.36,1)}
+.medir-op:hover{border-color:var(--accent)}
+.medir-op:active{transform:scale(0.97)}
+.medir-op[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.medir-op small{display:block;font-size:11px;font-weight:600;color:var(--accent);margin-top:2px}
+@media (prefers-reduced-motion:reduce){.medir-op{transition:none}.medir-op:active{transform:none}}
 .cortesia-nota{margin:0 14px 10px;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;background:var(--bg2);display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--text2);line-height:1.5}
 .cortesia-nota span{flex:1 1 220px}
 .cortesia-nota button{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap}
@@ -7419,6 +7432,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
                 <span class="hdm-txt"><span class="hdm-t" data-i18n>Rever as boas-vindas</span><span class="hdm-sub" data-i18n>As telas do primeiro dia, de novo. Nada muda no que você já configurou.</span></span>
               </button>
             </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnMedir" onclick="_hdMoreFechar();_medirPerguntar(true)" title="Contar meu uso" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Contar meu uso</span><span class="hdm-sub" id="medirMenuSub"></span></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -9124,7 +9143,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.8';
+const VOX_VERSION='2026.10.08.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10707,6 +10726,26 @@ let I18N_EN={
 "Salvar como nota":"Save as a note",
 // [EQUIPE B] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
+"Contar meu uso":"Count my usage",
+"Ligado · sem texto, sem áudio, sem nome":"On · no text, no audio, no name",
+"Desligado · nada é contado":"Off · nothing is counted",
+"Você ainda não escolheu":"You haven't chosen yet",
+"escolha atual":"current choice",
+"Podemos contar como você usa o Vox?":"Can we count how you use Vox?",
+"É pra melhorar o app: saber o que as pessoas usam e onde elas travam. Você decide, e pode mudar quando quiser no menu ⋯, em \"Contar meu uso\".":"It's to make the app better: to learn what people use and where they get stuck. It's your call, and you can change it anytime in the ⋯ menu, under \"Count my usage\".",
+"O que contamos":"What we count",
+"Que você abriu o app, gravou ou usou uma lente (o nome da lente, nunca o texto)":"That you opened the app, recorded, or used a lens (the lens name, never the text)",
+"Se conectou uma chave, abriu a tela do Pro ou chegou num limite do plano grátis":"Whether you connected a key, opened the Pro screen, or reached a free plan limit",
+"O que nunca sai daqui":"What never leaves your device",
+"Seu áudio e seus textos":"Your audio and your texts",
+"Nomes de notas e de pastas, seu nome, seu e-mail":"Note and folder names, your name, your email",
+"Sem cookie e sem Google: vai só pra ponte do Vox, com um código sorteado pra isso. Some depois de 90 dias sem uso, e desligar apaga na hora o que já foi contado.":"No cookies and no Google: it only goes to Vox's bridge, under a random code made just for this. It's gone after 90 days without use, and turning it off erases what was counted right away.",
+"O que é contado, em detalhe":"What's counted, in detail",
+"Pode contar":"Go ahead",
+"Não contar":"Don't count",
+"Obrigado! Dá pra desligar quando quiser, no menu ⋯.":"Thank you! You can turn it off anytime in the ⋯ menu.",
+"Desligado. O que já tinha sido contado deste aparelho foi apagado.":"Turned off. What had been counted from this device was erased.",
+"Tudo bem: nada é contado.":"All right: nothing is counted.",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -12396,6 +12435,7 @@ function _gravLimiteArmar(){
 let _gravBlocoNesta=false;
 function _gravAvisoDoDia(){
   _gravBlocoNesta=_gravEmBlocos();
+  if(_gravBlocoNesta)_medirUmaPorDia('limite_gravacao');
   if(!_gravBlocoNesta||localStorage.getItem('vox_grav_aviso_dia')===_diaLocal())return;
   _toastPro(t('Hoje você já fez {n} gravações. Daqui em diante, o plano grátis grava em blocos de 1 minuto — é só tocar de novo pra continuar.').replace('{n}',LIM_GRAV_DIA),
     t('No plano grátis, da {n}ª gravação do dia em diante a gravação vai em blocos de 1 minuto. O Pro grava sem limite.').replace('{n}',LIM_GRAV_DIA+1));
@@ -12461,6 +12501,7 @@ window.addEventListener('online',()=>setTimeout(_pendentesProcessar,1500));
 // e transforma em texto o que ficou guardado esperando.
 function _chaveTalvezChegou(){
   if(!_temChaveTranscricao())return;
+  if(_medirEstado()==='sim'&&localStorage.getItem('vox_medir_chave')!=='1'){localStorage.setItem('vox_medir_chave','1');_medir('chave')}
   const url=_ponteUrl();
   if(url&&localStorage.getItem('vox_cortesia_usou')==='1'&&localStorage.getItem('vox_cortesia_formou')!=='1'){
     fetch(url+'/v1/cortesia/formou',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({aparelho:_aparelhoId()})})
@@ -12480,6 +12521,131 @@ async function _primeiroPasso(){
   const est=await _cortesiaEstado();
   if(!est.disponivel){_obOpen();return}
   if((await _cortesiaAviso(false))==='chave')_obOpen();
+}
+// ── MEDIÇÃO OPCIONAL do uso do app (plano 30, lote 11, 08/10/2026) ──
+// Decisão do Rafa (07/10): medir mais, sem cookie, sem Google, sem terceiros,
+// e só de quem disser "sim". O app pergunta UMA vez (_medirTalvezPerguntar),
+// com "Sim" e "Não" do mesmo tamanho, e o menu Mais › "Contar meu uso" muda a
+// resposta quando a pessoa quiser. Sem "sim", nada é guardado nem enviado.
+// O que vai: só NOMES de eventos de uma lista fechada (a ponte confere de novo)
+// e o dia. Nunca texto, áudio, nome de nota, de pasta, nem quem é a pessoa.
+// O código do aparelho é sorteado só pra isto (não é o da cortesia, então as
+// duas contagens não se cruzam). Desligar apaga tudo o que a ponte tinha dele
+// e joga o código fora. A Política de Privacidade explica (#analytics).
+const _MEDIR_EVENTOS=new Set(['abriu','gravou','arquivo','chave','presente_inicio','presente_fim','tela_pro','assinou',
+  'limite_gravacao','limite_arquivo','limite_diarizacao','limite_pasta','limite_recurso_pro']);
+function _medirEstado(){const v=localStorage.getItem('vox_medir');return v==='1'?'sim':v==='0'?'nao':''}
+function _medirId(){
+  let id=localStorage.getItem('vox_medir_id')||'';
+  if(!/^[A-Za-z0-9_-]{16,64}$/.test(id)){
+    const b=new Uint8Array(18);crypto.getRandomValues(b);
+    id=btoa(String.fromCharCode(...b)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    localStorage.setItem('vox_medir_id',id);
+  }
+  return id;
+}
+function _medirFila(){try{const f=JSON.parse(localStorage.getItem('vox_medir_fila')||'[]');return Array.isArray(f)?f:[]}catch(e){return []}}
+let _medirTimer=null;
+// nome: um dos _MEDIR_EVENTOS, ou 'lente:<chave>' de uma lente que vem com o
+// app (lente criada pela pessoa vira só 'lente:propria' — o nome dela é dela).
+function _medir(nome){
+  if(_medirEstado()!=='sim'||!_ponteUrl())return;
+  if(String(nome).startsWith('lente:')){
+    const k=nome.slice(6);
+    nome=Object.prototype.hasOwnProperty.call(LENSES,k)&&/^[a-z]{2,24}$/.test(k)?nome:'lente:propria';
+  }else if(!_MEDIR_EVENTOS.has(nome))return;
+  const d=new Date(),dia=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const f=_medirFila();f.push({e:nome,dia});
+  localStorage.setItem('vox_medir_fila',JSON.stringify(f.slice(-300)));
+  clearTimeout(_medirTimer);_medirTimer=setTimeout(_medirEnviar,20000);
+}
+// Alguns eventos valem uma vez por dia (abriu, bateu no limite de gravações).
+function _medirUmaPorDia(nome){
+  const k='vox_medir_dia_'+nome;
+  if(localStorage.getItem(k)===_diaLocal())return;
+  if(_medirEstado()==='sim')localStorage.setItem(k,_diaLocal());
+  _medir(nome);
+}
+// Em lotes de até 50 (o máximo que a ponte aceita por pedido). Sem internet, a
+// fila espera; o evento leva o dia em que aconteceu.
+let _medirEnviando=false;
+async function _medirEnviar(saindo){
+  if(_medirEnviando||_medirEstado()!=='sim'||!_ponteUrl())return;
+  _medirEnviando=true;
+  try{
+    let f=_medirFila();
+    while(f.length){
+      const lote=f.slice(0,50);
+      const r=await fetch(_ponteUrl()+'/v1/uso/eventos',{method:'POST',headers:{'Content-Type':'application/json'},keepalive:!!saindo,
+        body:JSON.stringify({id:_medirId(),eventos:lote})});
+      if(!r.ok)break;
+      f=_medirFila().slice(lote.length);
+      localStorage.setItem('vox_medir_fila',JSON.stringify(f));
+    }
+  }catch(e){}finally{_medirEnviando=false}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&_medirFila().length)_medirEnviar(true)});
+function _medirAtualizarMenu(){
+  const s=document.getElementById('medirMenuSub');if(!s)return;
+  const e=_medirEstado();
+  s.textContent=e==='sim'?t('Ligado · sem texto, sem áudio, sem nome'):e==='nao'?t('Desligado · nada é contado'):t('Você ainda não escolheu');
+}
+// A pergunta. doMenu=true: aberta pelo menu (mostra qual é a resposta de agora).
+function _medirPerguntar(doMenu){
+  const e=doMenu?_medirEstado():'';
+  const agora=`<small>${t('escolha atual')}</small>`;
+  _cortesiaModal(`<h2 class="ob-h">${t('Podemos contar como você usa o Vox?')}</h2>
+    <p class="ob-p">${t('É pra melhorar o app: saber o que as pessoas usam e onde elas travam. Você decide, e pode mudar quando quiser no menu ⋯, em "Contar meu uso".')}</p>
+    <div class="medir-listas">
+      <div class="medir-lista"><b>${t('O que contamos')}</b><ul>
+        <li>${t('Que você abriu o app, gravou ou usou uma lente (o nome da lente, nunca o texto)')}</li>
+        <li>${t('Se conectou uma chave, abriu a tela do Pro ou chegou num limite do plano grátis')}</li></ul></div>
+      <div class="medir-lista"><b>${t('O que nunca sai daqui')}</b><ul>
+        <li>${t('Seu áudio e seus textos')}</li>
+        <li>${t('Nomes de notas e de pastas, seu nome, seu e-mail')}</li></ul></div>
+    </div>
+    <p class="ob-note">${t('Sem cookie e sem Google: vai só pra ponte do Vox, com um código sorteado pra isso. Some depois de 90 dias sem uso, e desligar apaga na hora o que já foi contado.')} <a href="privacy.html#analytics" target="_blank" rel="noopener noreferrer">${t('O que é contado, em detalhe')}</a></p>
+    <div class="medir-par" role="group" aria-label="${escHtml(t('Podemos contar como você usa o Vox?'))}">
+      <button type="button" class="medir-op" aria-pressed="${e==='sim'}" onclick="_medirEscolher(true)">${t('Pode contar')}${e==='sim'?agora:''}</button>
+      <button type="button" class="medir-op" aria-pressed="${e==='nao'}" onclick="_medirEscolher(false)">${t('Não contar')}${e==='nao'?agora:''}</button>
+    </div>`);
+}
+function _medirEscolher(sim){
+  const antes=_medirEstado();
+  _cortesiaFechar();
+  if(sim){
+    localStorage.setItem('vox_medir','1');
+    if(antes!=='sim'){
+      _medirUmaPorDia('abriu');
+      if(_temChaveTranscricao()&&localStorage.getItem('vox_medir_chave')!=='1'){localStorage.setItem('vox_medir_chave','1');_medir('chave')}
+      toast(t('Obrigado! Dá pra desligar quando quiser, no menu ⋯.'));
+    }
+  }else{
+    localStorage.setItem('vox_medir','0');
+    if(antes==='sim'){
+      // Desligou: apaga o que a ponte tem deste código e joga o código fora.
+      const id=localStorage.getItem('vox_medir_id');
+      if(id&&_ponteUrl())fetch(_ponteUrl()+'/v1/uso/apagar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
+      ['vox_medir_id','vox_medir_fila','vox_medir_chave','vox_medir_dia_abriu','vox_medir_dia_limite_gravacao'].forEach(k=>localStorage.removeItem(k));
+      toast(t('Desligado. O que já tinha sido contado deste aparelho foi apagado.'));
+    }else if(antes!=='nao')toast(t('Tudo bem: nada é contado.'));
+  }
+  _medirAtualizarMenu();
+}
+// Quando perguntar: depois da 2ª transcrição que deu certo (a 1ª já tem o aviso
+// do presente de Pro, e ninguém merece dois avisos seguidos), e nunca por cima
+// de outro aviso aberto. Se tiver algum aberto, tenta na próxima.
+function _medirTalvezPerguntar(){
+  if(_medirEstado()||!_ponteUrl())return;
+  const n=parseInt(localStorage.getItem('vox_medir_ok')||'0',10)+1;
+  localStorage.setItem('vox_medir_ok',String(n));
+  if(n<2)return;
+  setTimeout(()=>{
+    if(_medirEstado())return;
+    const aberto=[...document.querySelectorAll('.overlay')].some(o=>o.style.display&&o.style.display!=='none');
+    if(aberto||isRec||isProc)return;
+    _medirPerguntar(false);
+  },1800);
 }
 // ── VOX PRO: a licença do Freemius ──
 // A licença vai do aparelho DIRETO pro Freemius: a API de licença deles aceita
@@ -12540,6 +12706,7 @@ async function _presenteTalvezComecar(){
   if(dias<=0){localStorage.setItem('vox_presente_nao','1');return} // promoção desligada pra quem chega agora
   const ini=new Date(),fim=new Date(ini.getTime()+dias*864e5);
   localStorage.setItem('vox_presente_pro',JSON.stringify({ini:ini.toISOString(),fim:fim.toISOString(),dias}));
+  _medir('presente_inicio');
   _proAtualizarMenu();
   setTimeout(()=>_presenteModal('comecou'),1200);
 }
@@ -12574,7 +12741,7 @@ function _presenteConferir(){
   if(_presenteAtivo()){
     if(_presenteDiasRestantes()<=2&&localStorage.getItem('vox_presente_aviso2')!=='1'){localStorage.setItem('vox_presente_aviso2','1');_presenteModal('acabando')}
   }else if(localStorage.getItem('vox_presente_avisofim')!=='1'){
-    localStorage.setItem('vox_presente_avisofim','1');_proAtualizarMenu();_presenteModal('acabou');
+    localStorage.setItem('vox_presente_avisofim','1');_proAtualizarMenu();_presenteModal('acabou');_medir('presente_fim');
   }
 }
 // Identidade desta instalação pro Freemius (32 caracteres, sorteada aqui). É
@@ -12659,7 +12826,7 @@ function _proAtualizarMenu(){
   if(b&&bt){b.classList.toggle('ativo',lic||pres);bt.textContent=lic?'Pro':pres?t('Pro · {n} dias').replace('{n}',_presenteDiasRestantes()):t('Seja Pro');b.title=sub}
 }
 const _PRO_LIBERA=['Até 6 aparelhos na mesma assinatura','O Vox pensa no seu histórico inteiro: revisão da semana e do mês, e perguntas sobre todas as suas notas','Gravação sem limite diário, que nunca encolhe','Arquivos quantos quiser, sempre inteiros','Diarização sem limite no mês','Pastas e subpastas sem teto','Quantos mundos trancados com senha quiser','Seleção em massa sem limite','Exportar o calendário pro Google ou Apple (.ics)'];
-function abrirVoxPro(contexto){_proRender(contexto||'');document.getElementById('proOverlay').style.display='flex'}
+function abrirVoxPro(contexto){_medir('tela_pro');_proRender(contexto||'');document.getElementById('proOverlay').style.display='flex'}
 function fecharVoxPro(){document.getElementById('proOverlay').style.display='none'}
 function _proRender(contexto,aviso,avisoErro){
   const c=document.querySelector('#proOverlay .ob-body');if(!c)return;
@@ -12728,6 +12895,7 @@ async function _proAtivar(){
   if(btn){btn.disabled=true;btn.textContent=t('Ativando…')}
   try{
     await ativarLicenca(chave);
+    _medir('assinou');
     _proRender('',t('Pronto: o Vox Pro está ativo neste aparelho.'));
     toast(t('Vox Pro ativo. Obrigado!'));
   }catch(e){
@@ -12772,6 +12940,7 @@ function _pastasContagem(){
 function _limitePasta(parentId){
   if(voxPro())return '';
   const c=_pastasContagem();
+  if((!parentId&&c.raiz>=LIM_PASTAS_RAIZ)||(parentId&&c.sub>=LIM_SUBPASTAS))_medir('limite_pasta');
   if(!parentId&&c.raiz>=LIM_PASTAS_RAIZ)return t('O plano grátis vai até {n} pastas, e você já tem {n}. Nenhuma some — o Pro libera pastas sem teto.').replace(/\{n\}/g,LIM_PASTAS_RAIZ);
   if(parentId&&c.sub>=LIM_SUBPASTAS)return t('O plano grátis vai até {n} subpastas, e você já tem {n}. Nenhuma some — o Pro libera subpastas sem teto.').replace(/\{n\}/g,LIM_SUBPASTAS);
   return '';
@@ -12839,6 +13008,7 @@ function _diarVaiRodar(){
 function _diarExtraNaGravacao(){return !voxPro()&&_diarVaiRodar()&&_diarMes()>=LIM_DIAR_MES}
 function _diarAvisoInicio(){
   if(!_diarExtraNaGravacao())return;
+  _medir('limite_diarizacao');
   _toastPro(t('Esta é a {n}ª diarização do mês: no plano grátis, ela vai até 20 minutos. Depois, é só gravar de novo.').replace('{n}',_diarMes()+1),
     t('No plano grátis, a primeira diarização do mês vai inteira; nas seguintes, as vozes são separadas nos primeiros 20 minutos. O Pro separa as vozes sem limite.'));
 }
@@ -12864,6 +13034,7 @@ async function _diarizarComLimite(fn,file,durSec,fromRec,sn,mode){
   try{ini=await _cortarInicio(file,LIM_DIAR_EXTRA_SEG,null)}catch(e){ini={file,cortou:false}}
   // Arquivo extra que já cabe nos 20 minutos: vai inteiro, sem aviso.
   if(!ini.cortou){if(await fn(file,durSec,fromRec,sn,mode))_diarContar();return}
+  _medir('limite_diarizacao');
   _toastPro(t('No plano grátis, 1 diarização por mês vai inteira. Deste arquivo, separo as vozes dos primeiros 20 minutos; o resto vira texto comum, noutra nota.'),
     t('No plano grátis, a primeira diarização do mês vai inteira; nas seguintes, as vozes são separadas nos primeiros 20 minutos e o resto vira texto comum. O Pro separa as vozes do arquivo inteiro.'));
   const ok=await fn(ini.file,LIM_DIAR_EXTRA_SEG,false,sn,mode);
@@ -13550,6 +13721,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // também libera o que estava guardado esperando.
   setTimeout(_chaveTalvezChegou,1500);
   _proAtualizarMenu();setTimeout(_licencaTalvezConferir,2500);setTimeout(_presenteConferir,3500);
+  _medirAtualizarMenu();setTimeout(()=>{_medirUmaPorDia('abriu');if(_medirFila().length)_medirEnviar()},4000);
   document.getElementById('snameInput').addEventListener('input',e=>syncSessionName(e.target.value));
   document.addEventListener('click',e=>{
     if(!document.getElementById('expDrop').contains(e.target)&&!document.getElementById('btnExport').contains(e.target))
@@ -24470,7 +24642,7 @@ function _pensMd(txt){
   return escHtml(txt).replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
 }
 function _pensPodeUsar(contextoPro){
-  if(!voxPro()){abrirVoxPro(contextoPro);return false}
+  if(!voxPro()){_medir('limite_recurso_pro');abrirVoxPro(contextoPro);return false}
   return true;
 }
 function openRevisao(dias){
@@ -30677,6 +30849,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       const c=await _cortarInicio(file,LIM_ARQ_EXTRA_SEG,pid);
       // Arquivo extra que já cabe nos minutos do grátis vai inteiro, sem aviso.
       if(c.cortou){
+        _medir('limite_arquivo');
         file=c.file;actualSec=LIM_ARQ_EXTRA_SEG;cortouArquivo=true;_armarDurAudio(LIM_ARQ_EXTRA_SEG);
         _toastPro(t('No plano grátis, 1 arquivo por dia vai inteiro. Deste, vou transcrever os primeiros {n} minutos.').replace('{n}',LIM_ARQ_EXTRA_SEG/60),
           t('No plano grátis, o primeiro arquivo do dia vai inteiro e os seguintes, só os primeiros {n} minutos. O Pro transcreve sempre o arquivo inteiro.').replace('{n}',LIM_ARQ_EXTRA_SEG/60));
@@ -30761,6 +30934,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
     if(cortesiaRes&&cortesiaRes.ultima)_cortesiaNotaUltima(cardAlvo);
     if(!fromRec&&!opts.semLimiteArquivo)_arqContar();
     _presenteTalvezComecar().catch(()=>{});
+    _medir(fromRec?'gravou':'arquivo');_medirTalvezPerguntar();
     return true;
   }catch(err){
     document.getElementById(pid)?.remove();
@@ -35443,6 +35617,7 @@ async function runLens(id,lensKey,focus=''){
     window._traduzirAvisoIgual=avisoIgual;
     showTraduzirMenu(id,'auto');return;
   }
+  _medir('lente:'+lensKey);
   const card=document.getElementById(id);if(!card)return;
   const text=(card.querySelector('textarea')?.value||'').trim();
   if(!text){toast(t('ℹ️ Card vazio — nada para transformar'),true);return}
