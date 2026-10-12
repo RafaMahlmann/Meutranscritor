@@ -6950,6 +6950,76 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .mesa-resumo{font-size:12px;color:var(--text3);text-align:center;margin:12px 0 10px}
 .mesa-cancela{display:block;margin:8px auto 0;border:none;background:none;color:var(--text3);font:600 12.5px var(--font);cursor:pointer;padding:8px 12px}
 .card.mesa-nasce{animation:mesaNasce 700ms cubic-bezier(.22,1,.36,1)}
+/* Fileira que soma (lote 12, fase 1): recortes no alto da coluna do chat.
+   Linha "Na conversa" sempre à vista; "Conversa | Recortes" troca o que a
+   coluna mostra; valores com contagem antes do toque; miniaturas deslizam. */
+.cnv-topo{display:flex;flex-direction:column;gap:6px;padding:8px 10px 6px;border-bottom:1px solid var(--border)}
+.cnv-linha{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;font-size:11.5px}
+.cnv-linha-rot{font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:10px;color:var(--text3)}
+.cnv-pill{display:inline-flex;align-items:center;gap:4px;max-width:100%;min-width:0;padding:3px 9px;border-radius:99px;background:var(--bg-input);color:var(--text2);font-weight:700}
+.cnv-pill>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cnv-pill-orig{max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnv-pill-conj{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.cnv-pill button{border:0;background:none;color:inherit;font:700 13px var(--font);cursor:pointer;padding:0 2px;line-height:1}
+.cnv-linha.cnv-engole{animation:cnvEngole 300ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes cnvEngole{40%{transform:scaleY(.9) scaleX(1.02)}100%{transform:none}}
+.cnv-seg{align-self:flex-start}
+#cchat-overlay .cchat-chips[hidden],#cchat-overlay .cchat-messages[hidden],#cchat-overlay .cnv-painel[hidden]{display:none}
+.cnv-painel{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.cnv-rastro{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:12px;min-width:0}
+.cnv-mundo{border:0;background:none;color:var(--text2);font:700 12px var(--font);cursor:pointer;padding:2px 0}
+.cnv-tudo{color:var(--text3)}
+.cnv-mig{display:inline-flex;align-items:center;gap:2px;padding:2px 4px 2px 9px;border-radius:99px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-weight:700;min-width:0;max-width:100%}
+.cnv-mig>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnv-mig button{border:0;background:none;color:inherit;font:700 14px var(--font);cursor:pointer;width:22px;height:22px;border-radius:50%;line-height:1}
+.cnv-mig button:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
+.cnv-mig-sep{color:var(--text4)}
+.cnv-mais{align-self:flex-start;border:1px dashed var(--border2);background:none;color:var(--accent);border-radius:99px;padding:5px 12px;font:700 12px var(--font);cursor:pointer;transition:transform 120ms var(--fc-curva)}
+.cnv-mais:active,.cnv-fac:active,.cnv-val:active,.cnv-por:active{transform:scale(.94)}
+.cnv-facetas{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.cnv-facetas::-webkit-scrollbar{display:none}
+.cnv-fac{flex:none;border:1px solid var(--border2);background:var(--bg-card);color:var(--text2);border-radius:10px;padding:6px 10px;font:700 12px var(--font);cursor:pointer;min-height:34px;transition:transform 140ms var(--fc-curva),border-color 140ms}
+.cnv-fac.ativa{border-color:var(--accent);color:var(--accent)}
+.cnv-fac.aberta{background:var(--bg-input)}
+.cnv-fac b{display:inline-grid;place-items:center;min-width:16px;height:16px;border-radius:99px;background:var(--accent);color:#fff;font-size:10px;padding:0 4px}
+.cnv-valores{display:flex;flex-wrap:wrap;gap:6px;max-height:190px;overflow-y:auto;padding:2px}
+.cnv-val{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);border-radius:99px;padding:5px 10px 5px 6px;margin-left:calc(var(--nv,0)*10px);font:600 12px var(--font);cursor:pointer;min-height:32px;max-width:100%;transition:transform 140ms var(--fc-curva),border-color 140ms,background 140ms}
+.cnv-val-rot{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cnv-val-n{color:var(--text3);font-variant-numeric:tabular-nums;font-weight:700}
+.cnv-val[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg2))}
+.cnv-val[aria-pressed="true"] .cnv-val-n{color:var(--accent)}
+.cnv-val:disabled{opacity:.42;cursor:default}
+.cnv-bol{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--bg-input);color:#fff;font-size:9.5px;font-weight:800;flex:none;border:1px solid color-mix(in srgb,#000 12%,transparent)}
+.cnv-bol-p{width:10px;height:10px}
+.cnv-acoes{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.cnv-conta{font-size:12.5px;color:var(--text2)}
+.cnv-conta b{font-size:16px;color:var(--text);font-variant-numeric:tabular-nums}
+.cnv-conta.cnv-bump{animation:cnvBump 320ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes cnvBump{40%{transform:scale(1.12)}100%{transform:none}}
+.cnv-por{border:0;background:var(--accent);color:#fff;border-radius:12px;padding:9px 14px;font:700 12.5px var(--font);cursor:pointer;min-height:38px;transition:transform 140ms var(--fc-curva),filter 140ms}
+.cnv-por:disabled{opacity:.4;cursor:default}
+.cnv-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:8px}
+.cnv-mini{position:relative;border:1px solid var(--border);border-left:4px solid var(--mc,var(--border2));border-radius:12px;background:var(--bg-card);padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left}
+.cnv-mini:hover{border-color:var(--border2)}
+.cnv-mini:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cnv-mini.aberta{grid-column:1/-1}
+.cnv-mini-cab{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.cnv-mini-dt{font-size:10.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+.cnv-mini-tit{font-size:12.5px;line-height:1.3;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.cnv-mini-meta{font-size:10.5px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnv-mini-txt{font-size:12px;line-height:1.55;color:var(--text2);white-space:pre-wrap;overflow-wrap:anywhere;margin-top:4px;max-height:220px;overflow-y:auto}
+.cnv-mini-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.cnv-mini-acoes button{border:1px solid var(--border2);background:var(--bg2);color:var(--text2);border-radius:10px;padding:6px 10px;font:700 11.5px var(--font);cursor:pointer;min-height:32px}
+.cnv-mini-acoes button:hover{border-color:var(--accent);color:var(--accent)}
+.cnv-vazio,.cnv-mais-n{font-size:12px;color:var(--text3);margin:6px 2px;grid-column:1/-1}
+.cnv-selo{position:fixed;z-index:10002;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font:800 16px var(--font);pointer-events:none;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 45%,transparent)}
+@media (prefers-reduced-motion:reduce){
+  .cnv-mais,.cnv-fac,.cnv-val,.cnv-por{transition:none}
+  .cnv-mais:active,.cnv-fac:active,.cnv-val:active,.cnv-por:active{transform:none}
+  .cnv-conta.cnv-bump,.cnv-linha.cnv-engole{animation:cnvHalo 600ms linear}
+}
+@keyframes cnvHalo{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 40%,transparent)}100%{box-shadow:0 0 0 6px transparent}}
+
 @keyframes mesaNasce{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent);transform:scale(.97)}40%{transform:scale(1.01)}100%{box-shadow:0 0 0 14px transparent;transform:none}}
 @media (prefers-reduced-motion:reduce){.mesa-troca{transition:none}.card.mesa-nasce{animation:none}}
 .ilha-segura .segura-fill{background:var(--accent)}
@@ -9161,7 +9231,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.12.1';
+const VOX_VERSION='2026.10.12.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10776,6 +10846,41 @@ let I18N_EN={
 "🧵 Nasceu uma nota com as duas · as originais continuam aqui":"🧵 A note with both was born · the originals are still here",
 "↩ Desfeito — a nota juntada foi pra lixeira":"↩ Undone — the merged note went to the trash",
 "Isto precisa da sua chave de IA. A do Groq é grátis, sem cartão, e leva uns 2 minutos.":"This needs your AI key. Groq's is free, no card, and takes about 2 minutes.",
+"Ver":"View",
+"Recortes":"Slices",
+"Tag":"Tag",
+"Quem":"Who",
+"Quando":"When",
+"Esta semana":"This week",
+"Este mês":"This month",
+"Mais antigas":"Older",
+"Sem cor":"No color",
+"Sem pasta":"No folder",
+"tirar {x} do recorte":"removing {x} from the slice",
+"recortar por {x}":"slicing by {x}",
+"voltar a tudo":"going back to everything",
+"Este texto ainda não tem tags nem pessoas. Use Cor, Pasta, Tag ou Quem.":"This text has no tags or people yet. Use Color, Folder, Tag or Who.",
+"mais sobre este texto":"more about this text",
+"Tirar {x} do recorte":"Remove {x} from the slice",
+"Voltar a tudo":"Back to everything",
+"Mais sobre este texto":"More about this text",
+"Ninguém ainda: as pessoas aparecem nas gravações com vozes separadas.":"No one yet: people show up in recordings with separated voices.",
+"Nenhuma tag ainda.":"No tags yet.",
+"Nada aqui ainda.":"Nothing here yet.",
+"Pôr na conversa":"Add to the chat",
+"Pôr só esta":"Add just this one",
+"Abrir no Conversar":"Open in Chat mode",
+"+{n} notas neste recorte (as mais recentes aparecem primeiro)":"+{n} more notes in this slice (the newest show first)",
+"Nenhuma nota com tudo isso junto. Tire um pedaço do rastro lá em cima.":"No note has all of this together. Remove a piece of the trail above.",
+"Ainda não há outras notas neste mundo.":"There are no other notes in this world yet.",
+"Na conversa":"In the chat",
+"{n} nota":"{n} note",
+"Tirar da conversa":"Remove from the chat",
+"pôr \"{x}\" na conversa":"adding \"{x}\" to the chat",
+"tirar \"{x}\" da conversa":"removing \"{x}\" from the chat",
+"Agora a conversa lê também {n} notas de \"{x}\".":"Now the chat also reads {n} notes from \"{x}\".",
+"Este trecho está na nota \"{x}\"":"This passage is in the note \"{x}\"",
+"Abrir":"Open",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -31544,10 +31649,11 @@ async function buildDiarChatPrompt(id,question,key){
     // direto do card aqui sempre dava vazio, mandando pra IA um prompt sem
     // TEXTO nenhum — só pergunta + histórico (bug real, achado pelo Rafa).
     const text=(_cchatFindTextarea(id)?.value||'').trim();
-    const ctx=await _cchatBuildContext(text,question,key);
+    const extra=_cnvTextoConj(id);
+    const ctx=await _cchatBuildContext(extra?text+'\n\n'+extra:text,question,key);
     const history=getDiarChatHistory(id);
     const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
-    return `Você é um assistente analisando um texto. Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO].\n\n${_cchatFontesInstruction()}\n\nTEXTO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
+    return `Você é um assistente analisando um texto. Responda com base APENAS no texto abaixo.${extra?' O texto traz a nota aberta e, depois dela, outras notas que a pessoa pôs na conversa (cada uma começa com "=== Nota:"). Quando ajudar, diga de qual nota vem cada coisa.':''} Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO].\n\n${_cchatFontesInstruction()}\n\nTEXTO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
   }
   const utterances=JSON.parse(card.dataset.utterances||'[]');
   const speakers=JSON.parse(card.dataset.speakers||'{}');
@@ -31555,7 +31661,8 @@ async function buildDiarChatPrompt(id,question,key){
   const roteiro=buildRoteiro(utterances,speakers,withTimes);
   const mode=card.dataset.mode||'livre';
   const modeLabel=SESSION_MODES[mode]?.label||t('Livre');
-  const ctx=await _cchatBuildContext(roteiro,question,key);
+  const extraD=_cnvTextoConj(id);
+  const ctx=await _cchatBuildContext(extraD?roteiro+'\n\n'+extraD:roteiro,question,key);
   const history=getDiarChatHistory(id);
   const recent=history.slice(-6).map(m=>`${m.role==='user'?t('Usuário'):t('Assistente')}: ${m.content}`).join('\n\n');
   return `Você é um assistente analisando uma transcrição diarizada no modo "${modeLabel}". Responda com base APENAS no texto abaixo. Seja direto, objetivo e útil. Se a resposta envolver alterar o texto, envolva a parte editada entre [SUGESTÃO] e [/SUGESTÃO].\n\n${_cchatFontesInstruction()}\n\nTRANSCRIÇÃO:\n${ctx}${recent?'\n\nHISTÓRICO RECENTE:\n'+recent:''}\n\nPERGUNTA ATUAL:\n${question}`;
@@ -31718,6 +31825,278 @@ function _cchatOpenLensMenu(id){
   panel.classList.add('on');
   setTimeout(()=>document.addEventListener('click',_lensPanelAway),0);
 }
+// ── FILEIRA QUE SOMA (plano 30, lote 12, fase 1) ──
+// Recortes do conhecimento dentro do Conversar: Cor, Pasta, Tag, Quem e Quando
+// se SOMAM (E entre recortes, OU dentro do mesmo), cada valor mostra quantas
+// notas dá ANTES do toque (zero fica cinza, nunca some), o rastro no alto tem
+// "×" em cada pedaço, e "Pôr na conversa" faz o chat ler aquelas notas também
+// (com a citação conferida nelas). A linha "Na conversa" diz sempre do que a
+// conversa está falando. Tudo local, sem chave. Cada passo entra no ↶ único
+// do Conversar. Estudo e decisão do Rafa: pauta 30, lote 12.
+const _cnv={}; // {cardId:{sel:{cor,pasta,tag,quem,quando}, aberta, olhar, mais, vista, conj}}
+const CNV_FACETAS=['cor','pasta','tag','quem','quando'];
+const CNV_MAX_CONJ=40, CNV_MAX_MINI=40;
+function _cnvSelVazia(){return {cor:new Set(),pasta:new Set(),tag:new Set(),quem:new Set(),quando:new Set()}}
+function _cnvIniciar(id){
+  _cnv[id]={sel:_cnvSelVazia(),aberta:'',olhar:'',mais:0,vista:'conversa',conj:null};
+  _jzSegPos(document.getElementById('cnv-seg-'+id),'conversa',false);
+  _cnvPintarLinha(id);
+}
+function _cnvRotFaceta(f){return {cor:t('Cor'),pasta:t('Pasta'),tag:t('Tag'),quem:t('Quem'),quando:t('Quando')}[f]||f}
+// Tags que o app põe sozinho (lente, modo de gravação, peças das ideias, boas-vindas)
+// não são tema da pessoa: ficam fora do recorte Tag.
+let _cnvTagsAuto=null;
+function _cnvEhTagAuto(tg){
+  if(!_cnvTagsAuto){
+    _cnvTagsAuto=new Set(['demo',t('demo'),'ideias','juntar']);
+    try{Object.values(LENSES).forEach(L=>{if(L&&L.tag)_cnvTagsAuto.add(L.tag)})}catch(e){}
+    try{Object.keys(SESSION_MODES).forEach(k=>_cnvTagsAuto.add(k))}catch(e){}
+  }
+  return _cnvTagsAuto.has(tg)||/^ideia-/.test(tg);
+}
+function _cnvTags(c){return (c.dataset.tags||'').split(',').map(x=>x.trim()).filter(x=>x&&!_cnvEhTagAuto(x))}
+function _cnvQuem(c){try{return [...new Set(Object.values(JSON.parse(c.dataset.speakers||'{}')).map(x=>String(x).trim()).filter(Boolean))]}catch(e){return []}}
+function _cnvQuando(c){
+  const d=c.dataset.dt?new Date(c.dataset.dt):null;if(!d||isNaN(d))return 'antes';
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const dias=Math.floor((hoje-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
+  return dias<=0?'hoje':dias<7?'semana':dias<30?'mes':'antes';
+}
+const CNV_QUANDO=['hoje','semana','mes','antes'];
+function _cnvRotQuando(v){return {hoje:t('Hoje'),semana:t('Esta semana'),mes:t('Este mês'),antes:t('Mais antigas')}[v]||v}
+function _cnvEhDemo(c){const tg=(c.dataset.tags||'').split(',');return tg.includes('demo')||tg.includes(t('demo'))}
+// As notas que o recorte pode mostrar: vivas (sem lixeira nem arquivo), sem a
+// de boas-vindas e sem a que está aberta (ela já é a conversa).
+function _cnvBase(id){return _flCardsVivos().filter(c=>c.id!==id&&!_cnvEhDemo(c))}
+function _cnvPastaDe(fid){return fid?new Set([fid,...getFolderDescendants(fid)]):null}
+function _cnvBate(c,f,valores){
+  if(!valores||!valores.size)return true;
+  if(f==='cor'){const v=(c.dataset.tc!==undefined&&c.dataset.tc!=='')?'c'+c.dataset.tc:'sem';return valores.has(v)}
+  if(f==='pasta'){
+    const fo=c.dataset.folder||'';
+    for(const v of valores){if(v==='sem'){if(!fo)return true}else if(fo&&_cnvPastaDe(v).has(fo))return true}
+    return false;
+  }
+  if(f==='tag')return _cnvTags(c).some(x=>valores.has(x));
+  if(f==='quem')return _cnvQuem(c).some(x=>valores.has(x));
+  if(f==='quando')return valores.has(_cnvQuando(c));
+  return true;
+}
+function _cnvFiltra(cards,sel,exceto){return cards.filter(c=>CNV_FACETAS.every(f=>f===exceto||_cnvBate(c,f,sel[f])))}
+function _cnvTemSel(sel){return CNV_FACETAS.some(f=>sel[f].size)}
+// Os valores de um recorte, com a contagem que dariam somados aos OUTROS recortes.
+function _cnvValores(id,f){
+  const st=_cnv[id],base=_cnvFiltra(_cnvBase(id),st.sel,f);
+  const conta=v=>base.filter(c=>_cnvBate(c,f,new Set([v]))).length;
+  if(f==='cor'){
+    const nomes=TAG_NOMES();
+    const vs=TAG_CORES.map((cor,i)=>({v:'c'+i,rot:nomes[i],cor,ini:(nomes[i]||'?').charAt(0).toUpperCase()}));
+    vs.push({v:'sem',rot:t('Sem cor'),cor:'',ini:'–'});
+    return vs.map(x=>({...x,n:conta(x.v)})).filter(x=>x.n||st.sel.cor.has(x.v)||_cnvBase(id).some(c=>_cnvBate(c,'cor',new Set([x.v]))));
+  }
+  if(f==='pasta'){
+    const out=[];
+    const anda=(pai,nv)=>getFolderChildrenVisiveis(pai).forEach(fo=>{out.push({v:fo.id,rot:fo.name,cor:fo.color,nv:Math.min(nv,3),n:conta(fo.id)});anda(fo.id,nv+1)});
+    anda(null,0);out.push({v:'sem',rot:t('Sem pasta'),n:conta('sem'),nv:0});
+    return out;
+  }
+  if(f==='quando')return CNV_QUANDO.map(v=>({v,rot:_cnvRotQuando(v),n:conta(v)}));
+  const todos=new Map();
+  _cnvBase(id).forEach(c=>(f==='tag'?_cnvTags(c):_cnvQuem(c)).forEach(x=>todos.set(x,0)));
+  base.forEach(c=>(f==='tag'?_cnvTags(c):_cnvQuem(c)).forEach(x=>todos.set(x,(todos.get(x)||0)+1)));
+  return [...todos].map(([v,n])=>({v,rot:(f==='tag'?'#':'@')+v,n})).sort((a,b)=>b.n-a.n||a.rot.localeCompare(b.rot)).slice(0,60);
+}
+function _cnvRotValor(f,v){
+  if(f==='cor')return v==='sem'?t('Sem cor'):(TAG_NOMES()[+v.slice(1)]||v);
+  if(f==='pasta')return v==='sem'?t('Sem pasta'):(folders.find(x=>x.id===v)?.name||t('pasta'));
+  if(f==='tag')return '#'+v;
+  if(f==='quem')return '@'+v;
+  return _cnvRotQuando(v);
+}
+function _cnvNomeSel(sel){
+  const p=[];CNV_FACETAS.forEach(f=>{if(sel[f].size)p.push([...sel[f]].map(v=>_cnvRotValor(f,v)).join(' ou '))});
+  return p.join(' · ');
+}
+// ↶ único: guarda o recorte inteiro antes de cada passo.
+function _cnvFoto(id){const s=_cnv[id].sel;return Object.fromEntries(CNV_FACETAS.map(f=>[f,[...s[f]]]))}
+function _cnvVolta(id,foto){const st=_cnv[id];if(!st)return;CNV_FACETAS.forEach(f=>st.sel[f]=new Set(foto[f]||[]));_cnvPintar(id)}
+// Nome curto pros avisos: no celular o toast tem uma linha só.
+function _cnvCurto(x,n){x=String(x||'');n=n||24;return x.length>n?x.slice(0,n-1).trimEnd()+'…':x}
+function _cnvPasso(id,rot,muda){
+  const st=_cnv[id];if(!st)return;
+  const foto=_cnvFoto(id);muda(st.sel);
+  _cchatEmpilha(id,rot,()=>_cnvVolta(id,foto));
+  _cnvPintar(id,true);
+}
+function _cnvToca(id,f,v){
+  const st=_cnv[id];if(!st)return;
+  const tinha=st.sel[f].has(v),rot=_cnvRotValor(f,v);
+  _cnvPasso(id,(tinha?t('tirar {x} do recorte'):t('recortar por {x}')).replace('{x}',_cnvCurto(rot)),sel=>{tinha?sel[f].delete(v):sel[f].add(v)});
+  _jzTato(6);
+}
+function _cnvTira(id,f){_cnvPasso(id,t('tirar {x} do recorte').replace('{x}',_cnvCurto(_cnvRotFaceta(f))),sel=>sel[f].clear())}
+function _cnvLimpa(id){if(!_cnvTemSel(_cnv[id].sel))return;_cnvPasso(id,t('voltar a tudo'),sel=>CNV_FACETAS.forEach(f=>sel[f].clear()))}
+// ✦ As pessoas e as tags do texto aberto viram recorte (a porta do novato).
+function _cnvMais(id){
+  const card=document.getElementById(id);if(!card)return;
+  const tg=_cnvTags(card),qm=_cnvQuem(card);
+  if(!tg.length&&!qm.length){toast(t('Este texto ainda não tem tags nem pessoas. Use Cor, Pasta, Tag ou Quem.'));return}
+  _cnvPasso(id,t('mais sobre este texto'),sel=>{tg.forEach(x=>sel.tag.add(x));qm.forEach(x=>sel.quem.add(x))});
+}
+function _cnvAbre(id,f){const st=_cnv[id];st.aberta=st.aberta===f?'':f;_cnvPintar(id)}
+function _cnvVer(id,vista,mao){
+  const st=_cnv[id];if(!st)return;
+  st.vista=vista==='recortes'?'recortes':'conversa';
+  _jzSegPos(document.getElementById('cnv-seg-'+id),st.vista,!!mao);
+  const pn=document.getElementById('cnv-painel-'+id),ch=document.getElementById('cchat-chips-'+id),ms=document.getElementById('cchat-msgs-'+id);
+  const rec=st.vista==='recortes';
+  if(pn)pn.hidden=!rec;if(ch)ch.hidden=rec;if(ms)ms.hidden=rec;
+  if(rec)_cnvPintar(id);
+  if(mao)_jzTato(8);
+}
+function _cnvAtalho(e,id){
+  // Atalho do experiente: 1–9 tocam os valores do recorte aberto.
+  const st=_cnv[id];if(!st||!st.aberta||e.ctrlKey||e.metaKey||e.altKey)return;
+  const n=parseInt(e.key,10);if(!(n>=1&&n<=9))return;
+  const b=document.querySelectorAll('#cnv-painel-'+id+' .cnv-valores button:not([disabled])')[n-1];
+  if(b){e.preventDefault();b.click()}
+}
+function _cnvPintar(id,mudou){
+  const st=_cnv[id],pn=document.getElementById('cnv-painel-'+id);if(!st||!pn||pn.hidden)return;
+  const res=_cnvFiltra(_cnvBase(id),st.sel).sort((a,b)=>String(b.dataset.dt||'').localeCompare(String(a.dataset.dt||'')));
+  const mundo=(()=>{try{return _mundoAtual().nome||t('Meu espaço')}catch(e){return t('Meu espaço')}})();
+  const migs=CNV_FACETAS.filter(f=>st.sel[f].size).map(f=>`<span class="cnv-mig"><span>${escHtml([...st.sel[f]].map(v=>_cnvRotValor(f,v)).join(' ou '))}</span><button type="button" onclick="_cnvTira('${id}','${f}')" aria-label="${escHtml(t('Tirar {x} do recorte').replace('{x}',_cnvRotFaceta(f)))}">×</button></span>`).join('<span class="cnv-mig-sep" aria-hidden="true">›</span>');
+  const facetas=CNV_FACETAS.map(f=>{
+    const n=st.sel[f].size;
+    return `<button type="button" class="cnv-fac${st.aberta===f?' aberta':''}${n?' ativa':''}" aria-expanded="${st.aberta===f}" onclick="_cnvAbre('${id}','${f}')">${escHtml(_cnvRotFaceta(f))}${n?` <b>${n}</b>`:''} <span aria-hidden="true">▾</span></button>`;
+  }).join('');
+  let valores='';
+  if(st.aberta){
+    const vs=_cnvValores(id,st.aberta),f=st.aberta;
+    valores=`<div class="cnv-valores" role="group" aria-label="${escHtml(_cnvRotFaceta(f))}">${vs.length?vs.map(x=>{
+      const on=st.sel[f].has(x.v),cor=x.cor?safeColor(x.cor):'';
+      const bol=f==='cor'?`<span class="cnv-bol"${cor?` style="background:${cor}"`:''} aria-hidden="true">${escHtml(x.ini||'')}</span>`:f==='pasta'&&cor?`<span class="cnv-bol cnv-bol-p" style="background:${cor}" aria-hidden="true"></span>`:'';
+      return `<button type="button" class="cnv-val" style="--nv:${x.nv||0}" aria-pressed="${on}"${!x.n&&!on?' disabled':''} onclick="_cnvToca('${id}','${f}','${escJs(x.v)}')">${bol}<span class="cnv-val-rot">${escHtml(x.rot)}</span><span class="cnv-val-n">${x.n}</span></button>`;
+    }).join(''):`<span class="cnv-vazio">${escHtml(f==='quem'?t('Ninguém ainda: as pessoas aparecem nas gravações com vozes separadas.'):f==='tag'?t('Nenhuma tag ainda.'):t('Nada aqui ainda.'))}</span>`}</div>`;
+  }
+  const n=res.length;
+  pn.innerHTML=`<div class="cnv-rastro"><button type="button" class="cnv-mundo" onclick="_cnvLimpa('${id}')" title="${escHtml(t('Voltar a tudo'))}">◎ ${escHtml(mundo)}</button>${migs?'<span class="cnv-mig-sep" aria-hidden="true">›</span>'+migs:`<span class="cnv-tudo">${escHtml(t('Tudo'))}</span>`}</div>
+    <button type="button" class="cnv-mais" onclick="_cnvMais('${id}')">✦ ${escHtml(t('Mais sobre este texto'))}</button>
+    <div class="cnv-facetas">${facetas}</div>${valores}
+    <div class="cnv-acoes"><span class="cnv-conta" aria-live="polite"><b>${n}</b> ${escHtml(n===1?t('nota'):t('notas'))}</span>
+      <button type="button" class="cnv-por" onclick="_cnvPor('${id}',this)"${n?'':' disabled'}>${escHtml(t('Pôr na conversa'))} · ${Math.min(n,CNV_MAX_CONJ)}</button></div>
+    <div class="cnv-grade" id="cnv-grade-${id}"></div>`;
+  _cnvGrade(id,res,mudou);
+  if(mudou)_jz(pn.querySelector('.cnv-conta'),'cnv-bump',320);
+}
+function _cnvMiniHtml(id,c,aberta){
+  const st=_cnv[id];
+  const tc=(c.dataset.tc!==undefined&&c.dataset.tc!=='')?+c.dataset.tc:-1;
+  const cor=tc>=0?safeColor(TAG_CORES[tc]||''):'';
+  const ini=tc>=0?(TAG_NOMES()[tc]||'?').charAt(0).toUpperCase():'';
+  const d=c.dataset.dt?new Date(c.dataset.dt):null;
+  const data=d&&!isNaN(d)?d.toLocaleDateString(getLocale(),{day:'2-digit',month:'2-digit'}):'';
+  const pasta=c.dataset.folder?(folders.find(x=>x.id===c.dataset.folder)?.name||''):'';
+  const meta=[pasta,..._cnvQuem(c).slice(0,2).map(x=>'@'+x),..._cnvTags(c).slice(0,3).map(x=>'#'+x)].filter(Boolean).join(' · ');
+  const txt=(c.querySelector('textarea')?.value||'').trim();
+  return `<div class="cnv-mini-cab"><span class="cnv-bol"${cor?` style="background:${cor}"`:''} aria-hidden="true">${escHtml(ini)}</span><span class="cnv-mini-dt">${escHtml(data)}</span></div>
+    <b class="cnv-mini-tit">${escHtml(_costTitulo(c.id))}</b>${meta?`<span class="cnv-mini-meta">${escHtml(meta)}</span>`:''}
+    ${aberta?`<div class="cnv-mini-txt">${escHtml(txt.slice(0,600))}${txt.length>600?'…':''}</div>
+    <div class="cnv-mini-acoes"><button type="button" onclick="event.stopPropagation();_cnvPorUma('${id}','${escJs(c.id)}')">${escHtml(t('Pôr só esta'))}</button><button type="button" onclick="event.stopPropagation();_cnvAbrirNota('${id}','${escJs(c.id)}')">${escHtml(t('Abrir no Conversar'))}</button></div>`:''}`;
+}
+// A grade reaproveita os MESMOS nós entre um recorte e outro (chave = id do
+// card): quem continua desliza pro lugar novo (FLIP), quem chega cresce de .94.
+function _cnvGrade(id,res,anima){
+  const g=document.getElementById('cnv-grade-'+id),st=_cnv[id];if(!g||!st)return;
+  const velhos=new Map([...(g._cnvNos||new Map())]),antes=new Map();
+  velhos.forEach((el,k)=>{if(el.isConnected)antes.set(k,el.getBoundingClientRect())});
+  const nos=new Map(),mostra=res.slice(0,CNV_MAX_MINI);
+  g.innerHTML='';
+  mostra.forEach(c=>{
+    let el=velhos.get(c.id);
+    const ab=st.olhar===c.id;
+    if(!el){el=document.createElement('div');el.className='cnv-mini';el.tabIndex=0;el.setAttribute('role','button');el.dataset.cid=c.id;el._novo=true}
+    const tc=(c.dataset.tc!==undefined&&c.dataset.tc!=='')?safeColor(TAG_CORES[+c.dataset.tc]||''):'';
+    el.style.setProperty('--mc',tc||'var(--border2)');
+    el.classList.toggle('aberta',ab);el.setAttribute('aria-expanded',String(ab));
+    el.innerHTML=_cnvMiniHtml(id,c,ab);
+    el.onclick=()=>{st.olhar=st.olhar===c.id?'':c.id;_cnvGrade(id,_cnvFiltra(_cnvBase(id),st.sel).sort((a,b)=>String(b.dataset.dt||'').localeCompare(String(a.dataset.dt||''))),true);_jzTato(5)};
+    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.onclick()}};
+    g.appendChild(el);nos.set(c.id,el);
+  });
+  if(res.length>CNV_MAX_MINI){const m=document.createElement('p');m.className='cnv-mais-n';m.textContent=t('+{n} notas neste recorte (as mais recentes aparecem primeiro)').replace('{n}',res.length-CNV_MAX_MINI);g.appendChild(m)}
+  if(!res.length){const v=document.createElement('p');v.className='cnv-vazio';v.textContent=_cnvTemSel(st.sel)?t('Nenhuma nota com tudo isso junto. Tire um pedaço do rastro lá em cima.'):t('Ainda não há outras notas neste mundo.');g.appendChild(v)}
+  g._cnvNos=nos;
+  if(!anima||_voxReduzMov()){nos.forEach(el=>{el._novo=false});return}
+  nos.forEach((el,k)=>{
+    const a=antes.get(k);
+    if(a){const b=el.getBoundingClientRect(),dx=a.left-b.left,dy=a.top-b.top;
+      if(dx||dy){el.style.transition='none';el.style.transform=`translate(${dx}px,${dy}px)`;requestAnimationFrame(()=>{el.style.transition='transform 280ms cubic-bezier(.22,1,.36,1)';el.style.transform=''})}}
+    else if(el._novo){el.style.transition='none';el.style.transform='scale(.94)';el.style.opacity='0';requestAnimationFrame(()=>{el.style.transition='transform 280ms cubic-bezier(.22,1,.36,1),opacity 200ms linear';el.style.transform='';el.style.opacity=''})}
+    el._novo=false;
+  });
+}
+// ── Na conversa ──
+function _cnvConjCards(id){
+  const st=_cnv[id];if(!st||!st.conj)return [];
+  const porDt=new Map(_flCardsVivos().map(c=>[c.dataset.dt,c]));
+  return st.conj.dts.map(dt=>porDt.get(dt)).filter(Boolean);
+}
+function _cnvTextosConj(id){
+  return _cnvConjCards(id).map(c=>({cardId:c.id,titulo:_costTitulo(c.id),data:fmtDt(c.dataset.dt||''),txt:(c.querySelector('textarea')?.value||'').trim()})).filter(n=>n.txt);
+}
+function _cnvTextoConj(id){
+  return _cnvTextosConj(id).map(n=>`=== Nota: ${n.titulo} (${n.data}) ===\n${n.txt}`).join('\n\n');
+}
+function _cnvPintarLinha(id){
+  const ln=document.getElementById('cnv-linha-'+id),st=_cnv[id];if(!ln||!st)return;
+  const n=_cnvConjCards(id).length;
+  ln.innerHTML=`<span class="cnv-linha-rot">${escHtml(t('Na conversa'))}</span><span class="cnv-pill cnv-pill-orig">${escHtml(_cchatTitulo(id))}</span>${st.conj?`<span class="cnv-pill cnv-pill-conj"><span>+ ${escHtml(st.conj.nome)} · ${escHtml((n===1?t('{n} nota'):t('{n} notas')).replace('{n}',n))}</span><button type="button" onclick="_cnvTirarConj('${id}')" aria-label="${escHtml(t('Tirar da conversa'))}">×</button></span>`:''}`;
+}
+function _cnvPorConj(id,conj,rot){
+  const st=_cnv[id];if(!st)return;
+  const antes=st.conj;st.conj=conj;
+  _cchatEmpilha(id,rot,()=>{st.conj=antes;_cnvPintarLinha(id);_cchatPersistir(id);renderCchat(id)});
+  _cnvPintarLinha(id);_cchatPersistir(id);renderCchat(id);
+}
+function _cnvPor(id,btn){
+  const st=_cnv[id];if(!st)return;
+  const res=_cnvFiltra(_cnvBase(id),st.sel).sort((a,b)=>String(b.dataset.dt||'').localeCompare(String(a.dataset.dt||''))).slice(0,CNV_MAX_CONJ);
+  if(!res.length)return;
+  const nome=_cnvNomeSel(st.sel)||t('Tudo');
+  const conj={nome,dts:res.map(c=>c.dataset.dt).filter(Boolean),sel:_cnvFoto(id),em:Date.now()};
+  _cnvVoa(btn,document.getElementById('cnv-linha-'+id),()=>{
+    _cnvPorConj(id,conj,t('pôr "{x}" na conversa').replace('{x}',_cnvCurto(nome)));
+    _cnvVer(id,'conversa',false);
+    const ln=document.getElementById('cnv-linha-'+id);if(ln)_jz(ln,'cnv-engole',300);
+    toast(t('Agora a conversa lê também {n} notas de "{x}".').replace('{n}',conj.dts.length).replace('{x}',_cnvCurto(nome)));
+  });
+}
+function _cnvPorUma(id,cid){
+  const c=document.getElementById(cid);if(!c||!c.dataset.dt)return;
+  const nome=_costTitulo(cid);
+  _cnvPorConj(id,{nome,dts:[c.dataset.dt],sel:null,em:Date.now()},t('pôr "{x}" na conversa').replace('{x}',_cnvCurto(nome)));
+  _cnvVer(id,'conversa',true);
+}
+function _cnvTirarConj(id){
+  const st=_cnv[id];if(!st||!st.conj)return;
+  _cnvPorConj(id,null,t('tirar "{x}" da conversa').replace('{x}',_cnvCurto(st.conj.nome)));
+}
+function _cnvAbrirNota(id,cid){
+  if(!document.getElementById(cid))return;
+  closeConversaMode(id);setTimeout(()=>openConversaMode(cid),60);
+}
+// Um selo sai do botão e voa em arco até a linha "Na conversa" (460 ms).
+function _cnvVoa(de,para,fim){
+  if(!de||!para||_voxReduzMov()){fim();return}
+  const a=de.getBoundingClientRect(),b=para.getBoundingClientRect();
+  const s=document.createElement('div');s.className='cnv-selo';s.textContent='+';
+  s.style.left=(a.left+a.width/2-14)+'px';s.style.top=(a.top+a.height/2-14)+'px';
+  document.body.appendChild(s);
+  const dx=(b.left+30)-(a.left+a.width/2),dy=(b.top+b.height/2)-(a.top+a.height/2);
+  const anim=s.animate([{transform:'translate(0,0) scale(1)'},{transform:`translate(${dx*.5}px,${dy*.5-60}px) scale(1.15)`},{transform:`translate(${dx}px,${dy}px) scale(.6)`,opacity:.4}],{duration:460,easing:'cubic-bezier(.22,1,.36,1)'});
+  anim.onfinish=()=>{s.remove();fim()};
+}
 // O que precisa de IA dentro do Conversar, sem chave: o aviso fica POR CIMA
 // (o toast vence o overlay) e o botão leva direto pra tela da chave. O
 // openModal antigo abria as Configurações por trás do Conversar, invisível.
@@ -31866,8 +32245,9 @@ function _cchatPersistir(id){
   const dt=document.getElementById(id)?.dataset.dt;if(!dt)return;
   const abas=(_cchatTabs[id]||[]).map(tb=>({tabId:tb.tabId,label:tb.label,text:tb.text,lensKey:tb.lensKey||'',guardada:!!tb.guardada,pai:tb.pai||'original',notaDt:tb.notaDt||''}));
   const pasta=_cchatPastaGuardada[id]||'',semSug=!!_ilhaSugNao[id];
+  const conj=_cnv[id]&&_cnv[id].conj?_cnv[id].conj:null; // recorte posto na conversa (lote 12)
   _cchatAbasMapa().then(m=>{
-    if(abas.length||pasta||semSug)m[dt]={abas,pasta,semSug,em:Date.now()};else delete m[dt];
+    if(abas.length||pasta||semSug||conj)m[dt]={abas,pasta,semSug,conj,em:Date.now()};else delete m[dt];
     // Rascunho de card que sumiu não pode crescer pra sempre: ficam os 60 mais recentes.
     const ks=Object.keys(m);
     if(ks.length>60)ks.sort((a,b)=>(m[a].em||0)-(m[b].em||0)).slice(0,ks.length-60).forEach(k=>delete m[k]);
@@ -31878,6 +32258,7 @@ async function _cchatRestaurar(id){
   if(_mundoTrancado(_mundoAtivo))return;
   const dt=document.getElementById(id)?.dataset.dt;if(!dt)return;
   const m=await _cchatAbasMapa(),r=m[dt];if(!r)return;
+  if(r.conj&&Array.isArray(r.conj.dts)&&_cnv[id]){_cnv[id].conj=r.conj;_cnvPintarLinha(id)}
   if(!document.getElementById('cchat-textslot-'+id))return; // fechou antes de chegar
   if(r.pasta&&folders.some(f=>f.id===r.pasta))_cchatPastaGuardada[id]=r.pasta;
   if(r.semSug)_ilhaSugNao[id]=true;
@@ -33075,6 +33456,11 @@ function openConversaMode(id){
       </div>
       <div class="cchat-divider" id="cchat-divider-${id}"></div>
       <div class="cchat-chatzone" id="cchat-chatzone-${id}">
+        <div class="cnv-topo">
+          <div class="cnv-linha" id="cnv-linha-${id}" aria-live="polite"></div>
+          <span class="jz-seg cnv-seg" id="cnv-seg-${id}" role="group" aria-label="${escHtml(t('Ver'))}"><span class="jz-seg-ind"></span><button type="button" data-v="conversa" onclick="_cnvVer('${id}','conversa',true)">${escHtml(t('Conversa'))}</button><button type="button" data-v="recortes" onclick="_cnvVer('${id}','recortes',true)">${escHtml(t('Recortes'))}</button></span>
+        </div>
+        <div class="cnv-painel" id="cnv-painel-${id}" hidden></div>
         <div class="cchat-chips" id="cchat-chips-${id}">
           <button onclick="sendCchatChip('${id}',this)">${t('Resuma os pontos principais')}</button>
           <button onclick="sendCchatChip('${id}',this)">${t('Quais decisões foram tomadas?')}</button>
@@ -33091,6 +33477,7 @@ function openConversaMode(id){
     </div>
     <div class="ilha" id="ilha-${id}" role="dialog" aria-labelledby="ilha-tit-${id}" hidden></div>`;
   document.body.appendChild(overlay);
+  overlay.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('.cnv-painel'))_cnvAtalho(e,id)});
   _ilhaLigar(id);
   // Abas de transformação (Original + resultados de IA). Começam vazias e
   // _cchatRestaurar (logo abaixo) devolve as que este card já tinha.
@@ -33116,6 +33503,7 @@ function openConversaMode(id){
   document.getElementById('cchat-textslot-'+id).appendChild(editorWrap);
   _cchatRenderTextTabs(id);
   _cchatVer(id,'texto',false);
+  _cnvIniciar(id);
   _cchatRestaurar(id);
   const ta=editorWrap.querySelector('textarea');
   if(ta){ta.style.minHeight='300px'}
@@ -33181,6 +33569,7 @@ function closeConversaMode(id){
   const overlay=document.getElementById('cchat-overlay');
   if(!overlay)return;
   delete _cchatPilha[id];
+  delete _cnv[id];
   // Remove ESC handler
   if(card._cchatEscHandler){document.removeEventListener('keydown',card._cchatEscHandler);delete card._cchatEscHandler;if(card._cchatVpHandler){window.visualViewport.removeEventListener('resize',card._cchatVpHandler);delete card._cchatVpHandler};if(card._cchatBlurHandler){const inp=document.getElementById('cchat-input-'+id);if(inp)inp.removeEventListener('blur',card._cchatBlurHandler);delete card._cchatBlurHandler}}
   // Restaura editor ao card
@@ -33290,6 +33679,8 @@ async function renderCchat(id){
   // Lido SEMPRE (não só no mobile): além do balãozinho de texto original, é
   // contra este texto que cada citação é conferida antes de virar chip.
   const textoReal=_cchatFindTextarea(id)?.value||'';
+  // Com um recorte na conversa, a citação pode vir de qualquer nota dele.
+  const textoCite=textoReal+_cnvTextosConj(id).map(n=>'\n\n'+n.txt).join('');
   const sourceText=window.innerWidth<=640?textoReal:'';
   const sourceHtml=sourceText
     ?`<div class="cchat-msg cchat-assistant cchat-source"><div class="cchat-meta">📄 ${t('Texto original')}</div>${escHtml(sourceText)}</div>`
@@ -33316,7 +33707,7 @@ async function renderCchat(id){
     html=html.replace(/\[(\d+)\]/g,(full,n)=>{
       const trecho=map[n];
       if(trecho===undefined)return full; // IA nem listou a fonte — texto morto
-      if(!_cchatCiteOk(textoReal,trecho))
+      if(!_cchatCiteOk(textoCite,trecho))
         return `<span class="cchat-cite bad" title="${escHtml(t('Esta fonte não confere: o trecho citado não está no texto.'))}">[${n}]</span>`;
       return `<button type="button" class="cchat-cite" data-cite="${n}" data-msg-idx="${idx}" onclick="cchatGoToCitation('${id}',${idx},${n})">[${n}]</button>`;
     });
@@ -33367,7 +33758,12 @@ function cchatGoToCitation(id,msgIdx,n){
   const ta=_cchatFindTextarea(id);
   if(!ta){toast(t('Trecho não encontrado no texto'),true);return}
   const positions=_cchatFindAllOccurrences(ta.value,trecho);
-  if(!positions.length){toast(t('Trecho não encontrado no texto'),true);return}
+  if(!positions.length){
+    // Veio de outra nota do recorte posto na conversa: diz qual e oferece abrir.
+    const n=_cnvTextosConj(id).find(x=>_cchatCiteOk(x.txt,trecho));
+    if(n){toastDesfazer(t('Este trecho está na nota "{x}"').replace('{x}',n.titulo),()=>_cnvAbrirNota(id,n.cardId),t('Abrir'));const i=document.getElementById('toastIco');if(i)i.textContent='📄';return}
+    toast(t('Trecho não encontrado no texto'),true);return;
+  }
   // Bug real (achado pelo Rafa): quando o trecho citado não é único no
   // texto (frase curta/genérica que se repete), sempre pegar a 1ª ocorrência
   // fazia citações depois da 3ª/4ª caírem num lugar mais cedo e errado do
