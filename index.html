@@ -6164,6 +6164,8 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .toast-undo:active{transform:scale(.96)}
 .toast.err{border-color:rgba(255,59,48,0.3)}
 .toast.ok{border-color:rgba(16,185,129,0.3)}
+/* Celular: aviso longo quebra linha em vez de sair pela borda da tela (lote 12). */
+@media (max-width:600px){.toast-wrap{width:max-content;max-width:calc(100vw - 24px)}.toast{white-space:normal;line-height:1.35}}
 .model-pick-btn{width:100%;background:none;border:none;text-align:left;padding:9px 14px;cursor:pointer;transition:background var(--transition);font-family:var(--font);color:var(--text)}
 .model-pick-btn:hover{background:var(--bg-input)}
 .model-pick-btn.active{background:var(--accent-glow)}
@@ -6966,6 +6968,9 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .cnv-seg{align-self:flex-start}
 #cchat-overlay .cchat-chips[hidden],#cchat-overlay .cchat-messages[hidden],#cchat-overlay .cnv-painel[hidden]{display:none}
 .cnv-painel{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:0}
+/* Quem rola é o painel: sem isto, com muitas notas, a fileira de filtros (que
+   tem rolagem lateral) encolhia até sumir e os botões pareciam vazios. */
+.cnv-painel>*{flex-shrink:0}
 .cnv-rastro{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:12px;min-width:0}
 .cnv-mundo{border:0;background:none;color:var(--text2);font:700 12px var(--font);cursor:pointer;padding:2px 0}
 .cnv-tudo{color:var(--text3)}
@@ -7019,6 +7024,80 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   .cnv-conta.cnv-bump,.cnv-linha.cnv-engole{animation:cnvHalo 600ms linear}
 }
 @keyframes cnvHalo{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 40%,transparent)}100%{box-shadow:0 0 0 6px transparent}}
+/* Guardados (lote 12, fase 2) */
+.cnv-acoes-b{display:flex;gap:6px;align-items:center;margin-left:auto}
+.cnv-guardar{border:1px solid var(--border2);background:var(--bg-card);color:var(--text);border-radius:12px;padding:8px 12px;font:700 12.5px var(--font);cursor:pointer;min-height:38px;transition:transform 140ms var(--fc-curva)}
+.cnv-guardar:hover{border-color:var(--accent);color:var(--accent)}
+.cnv-guardar:active{transform:scale(.94)}
+.cnv-guardar.quieto{color:var(--text3);border-style:dashed}
+.cnv-mig-gd{background:color-mix(in srgb,var(--text) 9%,transparent);color:var(--text)}
+.cnv-mig-gd button:hover{background:color-mix(in srgb,var(--text) 14%,transparent)}
+.gd-sec{display:flex;flex-direction:column;gap:5px;min-width:0}
+.gd-rot{font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:10px;color:var(--text3)}
+.gd-rot small{font-weight:700;letter-spacing:0;color:var(--text4)}
+.gd-fileira{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:3px 2px 5px;scroll-snap-type:x proximity}
+.gd-fileira::-webkit-scrollbar{display:none}
+.gd-fileira.gd-cheio{animation:gdCheio 320ms cubic-bezier(.36,.07,.19,.97)}
+@keyframes gdCheio{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.gd{position:relative;flex:none;width:148px;border:1px solid var(--border);border-radius:14px;background:var(--bg-card);scroll-snap-align:start;transition:transform 200ms cubic-bezier(.34,1.56,.64,1),box-shadow 160ms,border-color 160ms}
+.gd:hover{border-color:var(--border2)}
+.gd.dentro{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.gd-corpo{display:flex;flex-direction:column;gap:2px;padding:30px 10px 9px;cursor:pointer;border-radius:14px;min-width:0;outline:none}
+.gd-corpo:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.gd-pilha{position:absolute;top:9px;left:38px;width:30px;height:18px;pointer-events:none}
+.gd-folha{position:absolute;top:0;width:13px;height:17px;border-radius:3px;background:var(--fc,var(--border2));border:1px solid color-mix(in srgb,#000 14%,transparent);box-shadow:0 1px 2px rgba(0,0,0,.12);transition:transform 260ms cubic-bezier(.34,1.56,.64,1)}
+.gd-folha:nth-child(1){left:0;z-index:3}
+.gd-folha:nth-child(2){left:5px;z-index:2;transform:rotate(5deg)}
+.gd-folha:nth-child(3){left:10px;z-index:1;transform:rotate(10deg)}
+.gd-folha-vazia{background:none;border-style:dashed;box-shadow:none}
+.gd:hover .gd-folha:nth-child(1){transform:rotate(-10deg) translateY(-2px)}
+.gd:hover .gd-folha:nth-child(2){transform:rotate(4deg) translate(3px,-3px);transition-delay:40ms}
+.gd:hover .gd-folha:nth-child(3){transform:rotate(18deg) translate(7px,-1px);transition-delay:80ms}
+.gd-nome{font-size:12.5px;line-height:1.3;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gd-nome-inp{font:700 12.5px var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--accent);border-radius:7px;padding:2px 6px;width:100%;min-width:0;box-sizing:border-box}
+.gd-conta{font-size:11px;color:var(--text2);display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-variant-numeric:tabular-nums}
+.gd-novas,.gd-mao{font-size:10px;font-weight:800;border-radius:99px;padding:1px 6px;white-space:nowrap}
+.gd-novas{background:var(--accent);color:#fff}
+.gd-mao{border:1px dashed var(--border2);color:var(--text3)}
+.gd-trecho{font-size:10.5px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnv-alca{border:0;background:none;color:var(--text3);cursor:grab;touch-action:none;font:700 15px var(--font);line-height:1;border-radius:8px;display:inline-grid;place-items:center;-webkit-user-select:none;user-select:none}
+.cnv-alca:hover{color:var(--accent);background:var(--bg-input)}
+.cnv-alca:active{cursor:grabbing}
+.gd-alca{position:absolute;top:4px;left:4px;width:30px;height:30px}
+.gd-menu-b{position:absolute;top:4px;right:4px;width:30px;height:30px;border:0;background:none;color:var(--text3);border-radius:8px;cursor:pointer;font:800 15px var(--font);line-height:1}
+.gd-menu-b:hover{color:var(--text);background:var(--bg-input)}
+.cnv-mini-esq{display:inline-flex;align-items:center;gap:2px}
+.cnv-mini-alca{width:26px;height:26px;margin:-4px 0 -4px -6px}
+.gd.gd-nasce{animation:gdNasce 420ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes gdNasce{0%{transform:scale(.82);opacity:0}60%{transform:scale(1.05);opacity:1}100%{transform:none}}
+.gd.gd-engole{animation:cnvEngole 300ms cubic-bezier(.34,1.56,.64,1)}
+.cnv-levando .cnv-linha{outline:2px dashed color-mix(in srgb,var(--accent) 70%,transparent);outline-offset:3px;border-radius:10px}
+.cnv-levando .gd:not(.cnv-pegado){box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent)}
+.cnv-pegado{opacity:.45}
+.cnv-linha.cnv-sobre{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.gd.cnv-sobre{transform:scale(1.05);box-shadow:0 0 0 2px var(--accent)}
+.cnv-fant{position:fixed;left:0;top:0;z-index:10002;pointer-events:none;max-width:220px;display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:12px;background:var(--bg-card);border:1px solid var(--accent);box-shadow:0 12px 30px rgba(0,0,0,.22);font-size:12px}
+.cnv-fant b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.cnv-fant-dica{color:var(--accent);font-weight:700;font-size:11px}
+.cnv-novas{border:1px solid var(--accent);background:none;color:var(--accent);border-radius:99px;padding:3px 9px;font:700 11.5px var(--font);cursor:pointer;min-height:26px}
+.cnv-novas:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.cnv-menu{position:fixed;z-index:60;min-width:190px;max-width:min(280px,calc(100vw - 16px));max-height:min(60vh,420px);overflow-y:auto;padding:5px;border-radius:14px;background:var(--bg-card);border:1px solid var(--border2);box-shadow:0 14px 38px rgba(0,0,0,.22);display:flex;flex-direction:column}
+.cnv-menu.cnv-menu-abre{animation:cnvMenuAbre 200ms cubic-bezier(.22,1,.36,1)}
+@keyframes cnvMenuAbre{from{opacity:0;transform:translateY(-4px) scale(.97)}to{opacity:1;transform:none}}
+.cnv-menu-tit{font-size:11px;font-weight:800;color:var(--text3);padding:6px 10px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnv-menu-sep{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--text4);padding:8px 10px 2px;border-top:1px solid var(--border);margin-top:4px}
+.cnv-menu button{display:flex;align-items:baseline;justify-content:space-between;gap:10px;text-align:left;border:0;background:none;color:var(--text);border-radius:9px;padding:9px 10px;font:600 13px var(--font);cursor:pointer;min-height:40px}
+.cnv-menu button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cnv-menu button small{color:var(--text3);font-size:11px;font-weight:600;white-space:nowrap}
+.cnv-menu button:hover,.cnv-menu button:focus-visible{background:var(--bg-input);outline:none}
+.cnv-menu button:disabled{opacity:.45;cursor:default}
+.cnv-menu button.perigo{color:var(--danger,#d33)}
+@media (prefers-reduced-motion:reduce){
+  .gd,.gd-folha,.cnv-guardar{transition:none}
+  .gd:hover .gd-folha{transform:none!important}
+  .gd.gd-nasce,.gd.gd-engole,.gd-fileira.gd-cheio{animation:cnvHalo 600ms linear}
+  .gd.cnv-sobre{transform:none}
+}
 
 @keyframes mesaNasce{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent);transform:scale(.97)}40%{transform:scale(1.01)}100%{box-shadow:0 0 0 14px transparent;transform:none}}
 @media (prefers-reduced-motion:reduce){.mesa-troca{transition:none}.card.mesa-nasce{animation:none}}
@@ -9231,7 +9310,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.12.2';
+const VOX_VERSION='2026.10.12.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9254,7 +9333,9 @@ const VOX_MUNDO_KEYS=new Set(['vox_history','vox_folders','vox_folders_expanded'
   // continua a mesma de sempre, então ninguém perde o jeito de ver que tinha.
   'vox_view','vox_modo','vox_ultima_tela','vox_abre_em','vox_perfil','vox_abre_avisos',
   // Plano 30: as abas do Modo Conversa (rascunho por card) são de cada mundo.
-  'vox_cchat_abas']);
+  'vox_cchat_abas',
+  // Plano 30, lote 12: os Guardados (recortes guardados) também.
+  'vox_guardados']);
 const VOX_MUNDO_RAIZ='m1';
 // Acesso CRU ao localStorage — sem o desvio por World. Usado pelo cadastro de
 // Worlds (que é global) e por quem precisa varrer as chaves de verdade.
@@ -9538,6 +9619,12 @@ async function _mundoTrancar(id,senha,codigo){
   }
   _cofreGravar(id,cofre);
   _cofreGuardarSessao(dek);
+  /* Antes das fotos (que podem demorar): os Guardados viram cifrados e os
+     rascunhos do Conversar (abas e recorte posto na conversa) somem. Eles
+     ficavam a claro: mundo trancado nunca mais os lê (_cchatRestaurar) nem
+     grava, mas o texto continuava no disco. */
+  await _gdVirarCofre(true).catch(function(){});
+  await idbDelete('vox_cchat_abas').catch(function(){});_cchatAbasCache=null;
   await _cofreVirarFotos(id,true).catch(function(){});
   return codigo;
 }
@@ -9562,6 +9649,7 @@ async function _mundoTirarCofre(id){
   await _cofreVirarFotos(id,false).catch(function(){});
   const claro=await _cofreDestampar(cru,await _idbGetBruto(cru));
   await _idbSetBruto(cru,claro||[]);
+  await _gdVirarCofre(false).catch(function(){});
   _cofreRemover(id);
   _cofreEsquecerSessao();
   return true;
@@ -10881,6 +10969,61 @@ let I18N_EN={
 "Agora a conversa lê também {n} notas de \"{x}\".":"Now the chat also reads {n} notes from \"{x}\".",
 "Este trecho está na nota \"{x}\"":"This passage is in the note \"{x}\"",
 "Abrir":"Open",
+"Sair de {x}":"Leave {x}",
+"Guardar este recorte pra abrir de novo depois":"Save this slice to open again later",
+"Escolha um recorte antes":"Pick a slice first",
+"Levar esta nota":"Carry this note",
+"Tirar daqui":"Take out of here",
+"Este Guardado está vazio por enquanto.":"This saved slice is empty for now.",
+"+1 nova: incluir?":"+1 new: include?",
+"+{n} novas: incluir?":"+{n} new: include?",
+"Guardados":"Saved",
+"+1 nova":"+1 new",
+"+{n} novas":"+{n} new",
+"à mão":"by hand",
+"+{n} à mão":"+{n} by hand",
+"Abrir {x}":"Open {x}",
+"Levar {x}":"Carry {x}",
+"Mais sobre {x}":"More on {x}",
+"Já são {n} Guardados. Apague um no ⋯ pra guardar outro.":"You already have {n} saved slices. Delete one in ⋯ to save another.",
+"Não consegui ler os Guardados deste mundo. Nada foi mudado.":"I couldn't read this world's saved slices. Nothing was changed.",
+"Isto já está guardado. Toque num chip pra recortar dentro e guardar outro.":"This is already saved. Tap a chip to slice inside it and save another.",
+"Escolha um recorte antes (Cor, Pasta, Tag, Quem ou Quando).":"Pick a slice first (Color, Folder, Tag, Who or When).",
+"guardar \"{x}\"":"saving \"{x}\"",
+"Guardado. Ele cresce sozinho quando chegar nota que bate.":"Saved. It grows on its own when a matching note arrives.",
+"Guardado à mão: só estas notas.":"Saved by hand: just these notes.",
+"abrir \"{x}\"":"opening \"{x}\"",
+"sair de \"{x}\"":"leaving \"{x}\"",
+"Nada em comum entre \"{a}\" e \"{b}\".":"Nothing in common between \"{a}\" and \"{b}\".",
+"juntar \"{x}\"":"combining \"{x}\"",
+"Nasceu \"{x}\": o que está nos dois ({n}). Os dois continuam aqui.":"Here's \"{x}\": what's in both ({n}). Both are still here.",
+"Esta nota já está em \"{x}\".":"This note is already in \"{x}\".",
+"guardar a nota em \"{x}\"":"saving the note in \"{x}\"",
+"Guardada em \"{x}\".":"Saved in \"{x}\".",
+"tirar a nota de \"{x}\"":"taking the note out of \"{x}\"",
+"Tirada de \"{x}\". A nota continua onde estava.":"Taken out of \"{x}\". The note stays where it was.",
+"apagar \"{x}\"":"deleting \"{x}\"",
+"Guardado apagado. As notas continuam onde estavam. ↶ desfaz.":"Saved slice deleted. The notes stay where they were. ↶ undoes.",
+"Nome do Guardado":"Saved slice name",
+"renomear \"{x}\"":"renaming \"{x}\"",
+"Abrir aqui":"Open here",
+"recortar dentro":"slice inside",
+"Juntar com…":"Combine with…",
+"o que está nos dois":"what's in both",
+"Apagar o Guardado":"Delete saved slice",
+"as notas ficam":"notes stay",
+"Juntar \"{x}\" com…":"Combine \"{x}\" with…",
+"em comum: {n}":"in common: {n}",
+"Pôr só esta na conversa":"Add just this one to the chat",
+"Guardar em":"Save in",
+"já está":"already there",
+"um Guardado novo, à mão":"a new one, by hand",
+"Solte na linha \"Na conversa\" ou em outro Guardado":"Drop it on the \"In the chat\" line or on another saved slice",
+"Solte na linha \"Na conversa\" ou num Guardado":"Drop it on the \"In the chat\" line or on a saved slice",
+"Em comum: {n}":"In common: {n}",
+"Já está aqui":"Already here",
+"Guardar aqui":"Save here",
+"incluir as notas novas":"including the new notes",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -28285,7 +28428,8 @@ async function exportProject(){
     stats:JSON.parse(localStorage.getItem('vox_stats')||'{}'),
     personalDict:JSON.parse(localStorage.getItem('vox_personal_dict')||'null'),
     learnedRules:JSON.parse(localStorage.getItem('vox_learned_rules')||'null'),
-    tagNomes:JSON.parse(localStorage.getItem('vox_tag_nomes')||'null')
+    tagNomes:JSON.parse(localStorage.getItem('vox_tag_nomes')||'null'),
+    guardados:await _gdParaBackup()
   };
   const json=JSON.stringify(data);
   dl(json,`vox_projeto_${new Date().toISOString().slice(0,10)}.json`);
@@ -28363,6 +28507,7 @@ async function _restoreProject(data){
   try{if(data.personalDict)localStorage.setItem('vox_personal_dict',JSON.stringify(data.personalDict))}catch(e){}
   try{if(data.learnedRules)localStorage.setItem('vox_learned_rules',JSON.stringify(data.learnedRules))}catch(e){}
   try{if(data.tagNomes)localStorage.setItem('vox_tag_nomes',JSON.stringify(data.tagNomes))}catch(e){}
+  try{if(Array.isArray(data.guardados))await _gdDoBackup(data.guardados)}catch(e){}
   if((data.personalDict||data.learnedRules)&&typeof loadLearningData==='function'){
     loadLearningData();
     if(typeof renderLearningPanel==='function')renderLearningPanel();
@@ -31833,14 +31978,15 @@ function _cchatOpenLensMenu(id){
 // (com a citação conferida nelas). A linha "Na conversa" diz sempre do que a
 // conversa está falando. Tudo local, sem chave. Cada passo entra no ↶ único
 // do Conversar. Estudo e decisão do Rafa: pauta 30, lote 12.
-const _cnv={}; // {cardId:{sel:{cor,pasta,tag,quem,quando}, aberta, olhar, mais, vista, conj}}
+const _cnv={}; // {cardId:{sel:{cor,pasta,tag,quem,quando}, aberta, olhar, mais, vista, conj, dentro}}
 const CNV_FACETAS=['cor','pasta','tag','quem','quando'];
 const CNV_MAX_CONJ=40, CNV_MAX_MINI=40;
 function _cnvSelVazia(){return {cor:new Set(),pasta:new Set(),tag:new Set(),quem:new Set(),quando:new Set()}}
 function _cnvIniciar(id){
-  _cnv[id]={sel:_cnvSelVazia(),aberta:'',olhar:'',mais:0,vista:'conversa',conj:null};
+  _cnv[id]={sel:_cnvSelVazia(),aberta:'',olhar:'',mais:0,vista:'conversa',conj:null,dentro:''};
   _jzSegPos(document.getElementById('cnv-seg-'+id),'conversa',false);
   _cnvPintarLinha(id);
+  _gdCarregar().then(()=>{if(_cnv[id])_cnvPintar(id)});
 }
 function _cnvRotFaceta(f){return {cor:t('Cor'),pasta:t('Pasta'),tag:t('Tag'),quem:t('Quem'),quando:t('Quando')}[f]||f}
 // Tags que o app põe sozinho (lente, modo de gravação, peças das ideias, boas-vindas)
@@ -31868,6 +32014,13 @@ function _cnvEhDemo(c){const tg=(c.dataset.tags||'').split(',');return tg.includ
 // As notas que o recorte pode mostrar: vivas (sem lixeira nem arquivo), sem a
 // de boas-vindas e sem a que está aberta (ela já é a conversa).
 function _cnvBase(id){return _flCardsVivos().filter(c=>c.id!==id&&!_cnvEhDemo(c))}
+// Dentro de um Guardado, o universo é só o que está nele (recortar dentro do recorte).
+function _cnvUniverso(id){
+  const st=_cnv[id],b=_cnvBase(id),g=st&&st.dentro?_gdAchar(st.dentro):null;
+  if(!g)return b;
+  const p=_gdPrep(g.regra);return b.filter(c=>_gdBate(c,p));
+}
+const _cnvRecente=(a,b)=>String(b.dataset.dt||'').localeCompare(String(a.dataset.dt||''));
 function _cnvPastaDe(fid){return fid?new Set([fid,...getFolderDescendants(fid)]):null}
 function _cnvBate(c,f,valores){
   if(!valores||!valores.size)return true;
@@ -31886,13 +32039,13 @@ function _cnvFiltra(cards,sel,exceto){return cards.filter(c=>CNV_FACETAS.every(f
 function _cnvTemSel(sel){return CNV_FACETAS.some(f=>sel[f].size)}
 // Os valores de um recorte, com a contagem que dariam somados aos OUTROS recortes.
 function _cnvValores(id,f){
-  const st=_cnv[id],base=_cnvFiltra(_cnvBase(id),st.sel,f);
+  const st=_cnv[id],U=_cnvUniverso(id),base=_cnvFiltra(U,st.sel,f);
   const conta=v=>base.filter(c=>_cnvBate(c,f,new Set([v]))).length;
   if(f==='cor'){
     const nomes=TAG_NOMES();
     const vs=TAG_CORES.map((cor,i)=>({v:'c'+i,rot:nomes[i],cor,ini:(nomes[i]||'?').charAt(0).toUpperCase()}));
     vs.push({v:'sem',rot:t('Sem cor'),cor:'',ini:'–'});
-    return vs.map(x=>({...x,n:conta(x.v)})).filter(x=>x.n||st.sel.cor.has(x.v)||_cnvBase(id).some(c=>_cnvBate(c,'cor',new Set([x.v]))));
+    return vs.map(x=>({...x,n:conta(x.v)})).filter(x=>x.n||st.sel.cor.has(x.v)||U.some(c=>_cnvBate(c,'cor',new Set([x.v]))));
   }
   if(f==='pasta'){
     const out=[];
@@ -31902,7 +32055,7 @@ function _cnvValores(id,f){
   }
   if(f==='quando')return CNV_QUANDO.map(v=>({v,rot:_cnvRotQuando(v),n:conta(v)}));
   const todos=new Map();
-  _cnvBase(id).forEach(c=>(f==='tag'?_cnvTags(c):_cnvQuem(c)).forEach(x=>todos.set(x,0)));
+  U.forEach(c=>(f==='tag'?_cnvTags(c):_cnvQuem(c)).forEach(x=>todos.set(x,0)));
   base.forEach(c=>(f==='tag'?_cnvTags(c):_cnvQuem(c)).forEach(x=>todos.set(x,(todos.get(x)||0)+1)));
   return [...todos].map(([v,n])=>({v,rot:(f==='tag'?'#':'@')+v,n})).sort((a,b)=>b.n-a.n||a.rot.localeCompare(b.rot)).slice(0,60);
 }
@@ -31924,8 +32077,8 @@ function _cnvVolta(id,foto){const st=_cnv[id];if(!st)return;CNV_FACETAS.forEach(
 function _cnvCurto(x,n){x=String(x||'');n=n||24;return x.length>n?x.slice(0,n-1).trimEnd()+'…':x}
 function _cnvPasso(id,rot,muda){
   const st=_cnv[id];if(!st)return;
-  const foto=_cnvFoto(id);muda(st.sel);
-  _cchatEmpilha(id,rot,()=>_cnvVolta(id,foto));
+  const foto=_cnvFoto(id),dentro=st.dentro;muda(st.sel);
+  _cchatEmpilha(id,rot,()=>{st.dentro=dentro;_cnvVolta(id,foto)});
   _cnvPintar(id,true);
 }
 function _cnvToca(id,f,v){
@@ -31935,7 +32088,7 @@ function _cnvToca(id,f,v){
   _jzTato(6);
 }
 function _cnvTira(id,f){_cnvPasso(id,t('tirar {x} do recorte').replace('{x}',_cnvCurto(_cnvRotFaceta(f))),sel=>sel[f].clear())}
-function _cnvLimpa(id){if(!_cnvTemSel(_cnv[id].sel))return;_cnvPasso(id,t('voltar a tudo'),sel=>CNV_FACETAS.forEach(f=>sel[f].clear()))}
+function _cnvLimpa(id){const st=_cnv[id];if(!st||(!_cnvTemSel(st.sel)&&!st.dentro))return;_cnvPasso(id,t('voltar a tudo'),sel=>{CNV_FACETAS.forEach(f=>sel[f].clear());st.dentro=''})}
 // ✦ As pessoas e as tags do texto aberto viram recorte (a porta do novato).
 function _cnvMais(id){
   const card=document.getElementById(id);if(!card)return;
@@ -31955,15 +32108,20 @@ function _cnvVer(id,vista,mao){
   if(mao)_jzTato(8);
 }
 function _cnvAtalho(e,id){
-  // Atalho do experiente: 1–9 tocam os valores do recorte aberto.
-  const st=_cnv[id];if(!st||!st.aberta||e.ctrlKey||e.metaKey||e.altKey)return;
+  // Atalho do experiente: 1–9 tocam os valores do recorte aberto; com nenhum
+  // aberto, abrem os primeiros Guardados.
+  const st=_cnv[id];if(!st||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.target&&e.target.matches&&e.target.matches('input,textarea,select'))return;
   const n=parseInt(e.key,10);if(!(n>=1&&n<=9))return;
+  if(!st.aberta){const g=_gdLista()[n-1];if(g){e.preventDefault();_gdAbrir(id,g.id)}return}
   const b=document.querySelectorAll('#cnv-painel-'+id+' .cnv-valores button:not([disabled])')[n-1];
   if(b){e.preventDefault();b.click()}
 }
 function _cnvPintar(id,mudou){
   const st=_cnv[id],pn=document.getElementById('cnv-painel-'+id);if(!st||!pn||pn.hidden)return;
-  const res=_cnvFiltra(_cnvBase(id),st.sel).sort((a,b)=>String(b.dataset.dt||'').localeCompare(String(a.dataset.dt||'')));
+  if(st.dentro&&!_gdAchar(st.dentro))st.dentro='';
+  const G=st.dentro?_gdAchar(st.dentro):null;
+  const res=_cnvFiltra(_cnvUniverso(id),st.sel).sort(_cnvRecente);
   const mundo=(()=>{try{return _mundoAtual().nome||t('Meu espaço')}catch(e){return t('Meu espaço')}})();
   const migs=CNV_FACETAS.filter(f=>st.sel[f].size).map(f=>`<span class="cnv-mig"><span>${escHtml([...st.sel[f]].map(v=>_cnvRotValor(f,v)).join(' ou '))}</span><button type="button" onclick="_cnvTira('${id}','${f}')" aria-label="${escHtml(t('Tirar {x} do recorte').replace('{x}',_cnvRotFaceta(f)))}">×</button></span>`).join('<span class="cnv-mig-sep" aria-hidden="true">›</span>');
   const facetas=CNV_FACETAS.map(f=>{
@@ -31980,12 +32138,19 @@ function _cnvPintar(id,mudou){
     }).join(''):`<span class="cnv-vazio">${escHtml(f==='quem'?t('Ninguém ainda: as pessoas aparecem nas gravações com vozes separadas.'):f==='tag'?t('Nenhuma tag ainda.'):t('Nada aqui ainda.'))}</span>`}</div>`;
   }
   const n=res.length;
-  pn.innerHTML=`<div class="cnv-rastro"><button type="button" class="cnv-mundo" onclick="_cnvLimpa('${id}')" title="${escHtml(t('Voltar a tudo'))}">◎ ${escHtml(mundo)}</button>${migs?'<span class="cnv-mig-sep" aria-hidden="true">›</span>'+migs:`<span class="cnv-tudo">${escHtml(t('Tudo'))}</span>`}</div>
+  const migG=G?`<span class="cnv-mig cnv-mig-gd"><span>▣ ${escHtml(_gdNome(G))}</span><button type="button" onclick="_gdSair('${id}')" aria-label="${escHtml(t('Sair de {x}').replace('{x}',_gdNome(G)))}">×</button></span>`:'';
+  const rastro=[migG,migs].filter(Boolean).join('<span class="cnv-mig-sep" aria-hidden="true">›</span>');
+  const podeGuardar=_cnvTemSel(st.sel);
+  const rolagem=document.getElementById('gd-fileira-'+id)?.scrollLeft||0;
+  pn.innerHTML=`<div class="cnv-rastro"><button type="button" class="cnv-mundo" onclick="_cnvLimpa('${id}')" title="${escHtml(t('Voltar a tudo'))}">◎ ${escHtml(mundo)}</button>${rastro?'<span class="cnv-mig-sep" aria-hidden="true">›</span>'+rastro:`<span class="cnv-tudo">${escHtml(t('Tudo'))}</span>`}</div>
+    ${_gdFileiraHtml(id)}
     <button type="button" class="cnv-mais" onclick="_cnvMais('${id}')">✦ ${escHtml(t('Mais sobre este texto'))}</button>
     <div class="cnv-facetas">${facetas}</div>${valores}
     <div class="cnv-acoes"><span class="cnv-conta" aria-live="polite"><b>${n}</b> ${escHtml(n===1?t('nota'):t('notas'))}</span>
-      <button type="button" class="cnv-por" onclick="_cnvPor('${id}',this)"${n?'':' disabled'}>${escHtml(t('Pôr na conversa'))} · ${Math.min(n,CNV_MAX_CONJ)}</button></div>
+      <span class="cnv-acoes-b"><button type="button" class="cnv-guardar${podeGuardar?'':' quieto'}" onclick="_gdGuardar('${id}')" title="${escHtml(podeGuardar?t('Guardar este recorte pra abrir de novo depois'):t('Escolha um recorte antes'))}">▣ ${escHtml(t('Guardar'))}</button>
+      <button type="button" class="cnv-por" onclick="_cnvPor('${id}',this)"${n?'':' disabled'}>${escHtml(t('Pôr na conversa'))} · ${Math.min(n,CNV_MAX_CONJ)}</button></span></div>
     <div class="cnv-grade" id="cnv-grade-${id}"></div>`;
+  const gf=document.getElementById('gd-fileira-'+id);if(gf&&rolagem)gf.scrollLeft=rolagem;
   _cnvGrade(id,res,mudou);
   if(mudou)_jz(pn.querySelector('.cnv-conta'),'cnv-bump',320);
 }
@@ -31999,10 +32164,11 @@ function _cnvMiniHtml(id,c,aberta){
   const pasta=c.dataset.folder?(folders.find(x=>x.id===c.dataset.folder)?.name||''):'';
   const meta=[pasta,..._cnvQuem(c).slice(0,2).map(x=>'@'+x),..._cnvTags(c).slice(0,3).map(x=>'#'+x)].filter(Boolean).join(' · ');
   const txt=(c.querySelector('textarea')?.value||'').trim();
-  return `<div class="cnv-mini-cab"><span class="cnv-bol"${cor?` style="background:${cor}"`:''} aria-hidden="true">${escHtml(ini)}</span><span class="cnv-mini-dt">${escHtml(data)}</span></div>
+  const g=st&&st.dentro?_gdAchar(st.dentro):null,tira=g&&_gdTiravel(g,c);
+  return `<div class="cnv-mini-cab"><span class="cnv-mini-esq"><button type="button" class="cnv-alca cnv-mini-alca" aria-label="${escHtml(t('Levar esta nota'))}" onpointerdown="_cnvPegaNota(event,'${id}','${escJs(c.id)}')" onclick="event.stopPropagation();if(event.detail===0)_cnvNotaMenu(this,'${id}','${escJs(c.id)}')">⠿</button><span class="cnv-bol"${cor?` style="background:${cor}"`:''} aria-hidden="true">${escHtml(ini)}</span></span><span class="cnv-mini-dt">${escHtml(data)}</span></div>
     <b class="cnv-mini-tit">${escHtml(_costTitulo(c.id))}</b>${meta?`<span class="cnv-mini-meta">${escHtml(meta)}</span>`:''}
     ${aberta?`<div class="cnv-mini-txt">${escHtml(txt.slice(0,600))}${txt.length>600?'…':''}</div>
-    <div class="cnv-mini-acoes"><button type="button" onclick="event.stopPropagation();_cnvPorUma('${id}','${escJs(c.id)}')">${escHtml(t('Pôr só esta'))}</button><button type="button" onclick="event.stopPropagation();_cnvAbrirNota('${id}','${escJs(c.id)}')">${escHtml(t('Abrir no Conversar'))}</button></div>`:''}`;
+    <div class="cnv-mini-acoes"><button type="button" onclick="event.stopPropagation();_cnvPorUma('${id}','${escJs(c.id)}')">${escHtml(t('Pôr só esta'))}</button><button type="button" onclick="event.stopPropagation();_cnvAbrirNota('${id}','${escJs(c.id)}')">${escHtml(t('Abrir no Conversar'))}</button>${tira?`<button type="button" onclick="event.stopPropagation();_gdTirarNota('${id}','${escJs(g.id)}','${escJs(c.id)}')">${escHtml(t('Tirar daqui'))}</button>`:''}</div>`:''}`;
 }
 // A grade reaproveita os MESMOS nós entre um recorte e outro (chave = id do
 // card): quem continua desliza pro lugar novo (FLIP), quem chega cresce de .94.
@@ -32020,12 +32186,12 @@ function _cnvGrade(id,res,anima){
     el.style.setProperty('--mc',tc||'var(--border2)');
     el.classList.toggle('aberta',ab);el.setAttribute('aria-expanded',String(ab));
     el.innerHTML=_cnvMiniHtml(id,c,ab);
-    el.onclick=()=>{st.olhar=st.olhar===c.id?'':c.id;_cnvGrade(id,_cnvFiltra(_cnvBase(id),st.sel).sort((a,b)=>String(b.dataset.dt||'').localeCompare(String(a.dataset.dt||''))),true);_jzTato(5)};
-    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.onclick()}};
+    el.onclick=()=>{st.olhar=st.olhar===c.id?'':c.id;_cnvGrade(id,_cnvFiltra(_cnvUniverso(id),st.sel).sort(_cnvRecente),true);_jzTato(5)};
+    el.onkeydown=e=>{if(e.target!==el)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();el.onclick()}};
     g.appendChild(el);nos.set(c.id,el);
   });
   if(res.length>CNV_MAX_MINI){const m=document.createElement('p');m.className='cnv-mais-n';m.textContent=t('+{n} notas neste recorte (as mais recentes aparecem primeiro)').replace('{n}',res.length-CNV_MAX_MINI);g.appendChild(m)}
-  if(!res.length){const v=document.createElement('p');v.className='cnv-vazio';v.textContent=_cnvTemSel(st.sel)?t('Nenhuma nota com tudo isso junto. Tire um pedaço do rastro lá em cima.'):t('Ainda não há outras notas neste mundo.');g.appendChild(v)}
+  if(!res.length){const v=document.createElement('p');v.className='cnv-vazio';v.textContent=_cnvTemSel(st.sel)?t('Nenhuma nota com tudo isso junto. Tire um pedaço do rastro lá em cima.'):st.dentro?t('Este Guardado está vazio por enquanto.'):t('Ainda não há outras notas neste mundo.');g.appendChild(v)}
   g._cnvNos=nos;
   if(!anima||_voxReduzMov()){nos.forEach(el=>{el._novo=false});return}
   nos.forEach((el,k)=>{
@@ -32050,8 +32216,8 @@ function _cnvTextoConj(id){
 }
 function _cnvPintarLinha(id){
   const ln=document.getElementById('cnv-linha-'+id),st=_cnv[id];if(!ln||!st)return;
-  const n=_cnvConjCards(id).length;
-  ln.innerHTML=`<span class="cnv-linha-rot">${escHtml(t('Na conversa'))}</span><span class="cnv-pill cnv-pill-orig">${escHtml(_cchatTitulo(id))}</span>${st.conj?`<span class="cnv-pill cnv-pill-conj"><span>+ ${escHtml(st.conj.nome)} · ${escHtml((n===1?t('{n} nota'):t('{n} notas')).replace('{n}',n))}</span><button type="button" onclick="_cnvTirarConj('${id}')" aria-label="${escHtml(t('Tirar da conversa'))}">×</button></span>`:''}`;
+  const n=_cnvConjCards(id).length,nv=_cnvNovasConj(id).length;
+  ln.innerHTML=`<span class="cnv-linha-rot">${escHtml(t('Na conversa'))}</span><span class="cnv-pill cnv-pill-orig">${escHtml(_cchatTitulo(id))}</span>${st.conj?`<span class="cnv-pill cnv-pill-conj"><span>+ ${escHtml(st.conj.nome)} · ${escHtml((n===1?t('{n} nota'):t('{n} notas')).replace('{n}',n))}</span><button type="button" onclick="_cnvTirarConj('${id}')" aria-label="${escHtml(t('Tirar da conversa'))}">×</button></span>`:''}${nv?`<button type="button" class="cnv-novas" onclick="_cnvIncluirNovas('${id}')">${escHtml((nv===1?t('+1 nova: incluir?'):t('+{n} novas: incluir?')).replace('{n}',nv))}</button>`:''}`;
 }
 function _cnvPorConj(id,conj,rot){
   const st=_cnv[id];if(!st)return;
@@ -32061,10 +32227,12 @@ function _cnvPorConj(id,conj,rot){
 }
 function _cnvPor(id,btn){
   const st=_cnv[id];if(!st)return;
-  const res=_cnvFiltra(_cnvBase(id),st.sel).sort((a,b)=>String(b.dataset.dt||'').localeCompare(String(a.dataset.dt||''))).slice(0,CNV_MAX_CONJ);
+  const res=_cnvFiltra(_cnvUniverso(id),st.sel).sort(_cnvRecente).slice(0,CNV_MAX_CONJ);
   if(!res.length)return;
-  const nome=_cnvNomeSel(st.sel)||t('Tudo');
-  const conj={nome,dts:res.map(c=>c.dataset.dt).filter(Boolean),sel:_cnvFoto(id),em:Date.now()};
+  const G=st.dentro?_gdAchar(st.dentro):null;
+  const nome=[G?_gdNome(G):'',_cnvNomeSel(st.sel)].filter(Boolean).join(' · ')||t('Tudo');
+  const conj={nome,dts:res.map(c=>c.dataset.dt).filter(Boolean),regra:_cnvRegraAtual(id),gd:G&&!_cnvTemSel(st.sel)?G.id:'',em:Date.now()};
+  if(conj.gd)_gdMarcarVisto(G);
   _cnvVoa(btn,document.getElementById('cnv-linha-'+id),()=>{
     _cnvPorConj(id,conj,t('pôr "{x}" na conversa').replace('{x}',_cnvCurto(nome)));
     _cnvVer(id,'conversa',false);
@@ -32096,6 +32264,498 @@ function _cnvVoa(de,para,fim){
   const dx=(b.left+30)-(a.left+a.width/2),dy=(b.top+b.height/2)-(a.top+a.height/2);
   const anim=s.animate([{transform:'translate(0,0) scale(1)'},{transform:`translate(${dx*.5}px,${dy*.5-60}px) scale(1.15)`},{transform:`translate(${dx}px,${dy}px) scale(.6)`,opacity:.4}],{duration:460,easing:'cubic-bezier(.22,1,.36,1)'});
   anim.onfinish=()=>{s.remove();fim()};
+}
+// ── GUARDADOS (plano 30, lote 12, fase 2) ──
+// O recorte guardado vira objeto: nome, pilhinha com as cores reais das
+// notas, contagem, um trecho e "+N novas". Feito com chips é VIVO (cresce
+// sozinho quando chega nota que bate); feito à mão guarda as notas que a
+// pessoa pôs. Tocar abre na Fileira (recortar dentro é mais um chip); o ⠿
+// leva até a linha "Na conversa" ou até outro Guardado (juntar dá o que está
+// nos dois). Um toque no ⠿ ou no ⋯ mostra os mesmos verbos escritos. Cada
+// mundo tem os seus (vox_guardados); no mundo trancado vão cifrados com a
+// chave dele. Guardado nunca mexe nas notas: apagar um apaga só o recorte.
+// Teto de 9, pra não virar cemitério.
+//
+// A regra de quem está num Guardado: {sels:[foto,...], dts:null|[dt], mais:[dt]}
+//  - sels: cada foto é um recorte (Cor/Pasta/Tag/Quem/Quando); a nota tem que
+//    bater com TODOS (é assim que "juntar dois vivos" vira o que está nos dois);
+//  - dts: null = vivo; lista = à mão (só aquelas notas, e ainda os sels);
+//  - mais: notas soltas à mão num vivo ("+1 à mão"), entram sempre.
+const GD_MAX=9, GD_CHAVE='vox_guardados', GD_VISTOS=1000;
+let _gdCache=null; // {mundo, lista, ok}
+let _gdFila=Promise.resolve();
+function _gdLista(){return (_gdCache&&_gdCache.mundo===_mundoAtivo)?_gdCache.lista:[]}
+function _gdAchar(gid){return _gdLista().find(g=>g.id===gid)||null}
+function _gdNome(g){return g.semNome?t('Sem nome'):(g.nome||t('Sem nome'))}
+function _gdVivo(g){return !Array.isArray(g.regra.dts)}
+// O que vem do disco ou de um backup passa por aqui: só fica o formato certo.
+function _gdLimpo(g){
+  if(!g||typeof g!=='object'||!/^[a-z0-9_-]{1,40}$/i.test(String(g.id||''))||!g.regra)return null;
+  const strs=a=>Array.isArray(a)?a.filter(x=>typeof x==='string').slice(0,5000):[];
+  const r=g.regra,foto=s=>Object.fromEntries(CNV_FACETAS.map(f=>[f,strs(s&&s[f])]));
+  return {id:String(g.id),nome:String(g.nome||'').slice(0,80),semNome:!!g.semNome,grao:g.grao==='trechos'?'trechos':'notas',
+    em:+g.em||Date.now(),vistos:strs(g.vistos).slice(0,GD_VISTOS),
+    regra:{sels:(Array.isArray(r.sels)?r.sels:[]).slice(0,12).map(foto),dts:Array.isArray(r.dts)?strs(r.dts):null,mais:strs(r.mais)}};
+}
+// Junta recortes sem repetir; com mais de 12 devolve null (quem chama congela as notas).
+function _gdSelsJuntas(...listas){
+  const vistos=new Set(),out=[];
+  listas.flat().forEach(s=>{const k=JSON.stringify(CNV_FACETAS.map(f=>[...((s&&s[f])||[])].sort()));if(!vistos.has(k)){vistos.add(k);out.push(s)}});
+  return out.length>12?null:out;
+}
+function _gdPrep(r){
+  r=r||{};
+  return {sels:(r.sels||[]).map(s=>Object.fromEntries(CNV_FACETAS.map(f=>[f,new Set((s&&s[f])||[])]))),
+    dts:Array.isArray(r.dts)?new Set(r.dts):null,mais:new Set(r.mais||[])};
+}
+function _gdBate(c,p){
+  const dt=c.dataset.dt||'';
+  if(dt&&p.mais.has(dt))return true;
+  if(p.dts&&!p.dts.has(dt))return false;
+  return p.sels.every(s=>CNV_FACETAS.every(f=>_cnvBate(c,f,s[f])));
+}
+function _gdMembros(r,cards){const p=_gdPrep(r);return (cards||_flCardsVivos().filter(c=>!_cnvEhDemo(c))).filter(c=>_gdBate(c,p))}
+function _gdNovas(g,membros){
+  if(!_gdVivo(g))return [];
+  const vs=g.vistos||[],v=new Set(vs),corte=vs.length>=GD_VISTOS?(vs[vs.length-1]||''):'';
+  return membros.filter(c=>{const dt=c.dataset.dt||'';return dt&&!v.has(dt)&&dt>=corte});
+}
+function _gdMarcarVisto(g){
+  if(!g)return;
+  g.vistos=_gdMembros(g.regra).sort(_cnvRecente).map(c=>c.dataset.dt).filter(Boolean).slice(0,GD_VISTOS);
+  _gdSalvar();
+}
+// Tirar uma nota de um Guardado só existe pra quem entrou à mão.
+function _gdTiravel(g,c){const dt=c.dataset.dt||'';return !!dt&&((g.regra.mais||[]).includes(dt)||(!_gdVivo(g)&&(g.regra.dts||[]).includes(dt)))}
+
+// ---- guardar e ler (por mundo; cifrado no mundo trancado) ----
+async function _gdCarregar(){
+  if(_gdCache&&_gdCache.mundo===_mundoAtivo)return _gdCache;
+  const c={mundo:_mundoAtivo,lista:[],ok:true};
+  let claroNoCofre=false;
+  try{
+    let v=JSON.parse(localStorage.getItem(GD_CHAVE)||'null');
+    claroNoCofre=!!(v&&!v.__cofre&&_cofreChave&&_mundoTrancado(_mundoAtivo));
+    if(v&&v.__cofre){
+      if(!_cofreChave)throw new Error('trancado');
+      const u8=new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:_b64uDec(v.i)},_cofreChave,_b64uDec(v.c)));
+      v=JSON.parse(new TextDecoder().decode(u8));
+    }
+    if(v&&Array.isArray(v.lista))c.lista=v.lista.map(_gdLimpo).filter(Boolean).slice(0,GD_MAX);
+  }catch(e){c.ok=false} // não leu: não guarda na memória nem regrava por cima (tenta de novo na próxima)
+  if(c.ok&&c.mundo===_mundoAtivo&&!(_gdCache&&_gdCache.mundo===_mundoAtivo)){
+    _gdCache=c;
+    if(claroNoCofre)_gdSalvar(); // trancar parou no meio: o que ficou a claro vira cifrado agora
+  }
+  return _gdCache&&_gdCache.mundo===_mundoAtivo?_gdCache:c;
+}
+async function _gdGravar(c,claro){
+  let v={v:1,lista:c.lista};
+  if(!claro&&_mundoTrancado(_mundoAtivo)){
+    if(!_cofreChave)return;
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},_cofreChave,new TextEncoder().encode(JSON.stringify(v))));
+    v={__cofre:1,i:_b64uEnc(iv),c:_b64uEnc(ct)};
+  }
+  if(c.mundo!==_mundoAtivo)return;
+  localStorage.setItem(GD_CHAVE,JSON.stringify(v));
+}
+// Em fila: duas gravações seguidas nunca chegam fora de ordem.
+function _gdSalvar(){
+  const c=_gdCache;if(!c||!c.ok||c.mundo!==_mundoAtivo)return _gdFila;
+  return _gdFila=_gdFila.then(()=>_gdGravar(c,false)).catch(()=>{});
+}
+// Trancar um mundo cifra os Guardados dele; tirar o cadeado devolve a claro.
+async function _gdVirarCofre(cifrar){
+  await _gdFila;
+  _gdCache=null;const c=await _gdCarregar();if(!c.ok)return;
+  await _gdGravar(c,!cifrar);
+}
+// Mesma regra do histórico: a cópia de segurança sai a claro (só sai de mundo
+// trancado quando ele está aberto; _cofreImpedeSaida cuida do resto).
+async function _gdParaBackup(){
+  try{const c=await _gdCarregar();return c.ok?JSON.parse(JSON.stringify(c.lista)):[]}catch(e){return []}
+}
+async function _gdDoBackup(lista){
+  const c=await _gdCarregar();if(!c.ok)return;
+  const tem=new Set(c.lista.map(g=>g.id));
+  lista.map(_gdLimpo).filter(g=>g&&!tem.has(g.id)).forEach(g=>{if(c.lista.length<GD_MAX)c.lista.push(g)});
+  await _gdSalvar();
+}
+
+// ---- a fileira ----
+function _gdFileiraHtml(id){
+  const l=_gdLista();if(!l.length)return '';
+  const st=_cnv[id],base=_cnvBase(id);
+  return `<div class="gd-sec"><span class="gd-rot">${escHtml(t('Guardados'))} <small>${l.length}/${GD_MAX}</small></span><div class="gd-fileira" id="gd-fileira-${id}" role="list">${l.map(g=>_gdTileHtml(id,g,base,st)).join('')}</div></div>`;
+}
+function _gdTileHtml(id,g,base,st){
+  const ms=_gdMembros(g.regra,base).sort(_cnvRecente);
+  const n=ms.length,nv=_gdNovas(g,ms).length,mao=(g.regra.mais||[]).length,vivo=_gdVivo(g),nome=_gdNome(g);
+  const folhas=ms.slice(0,3).map(c=>{
+    const tc=(c.dataset.tc!==undefined&&c.dataset.tc!=='')?safeColor(TAG_CORES[+c.dataset.tc]||''):'';
+    return `<span class="gd-folha" style="--fc:${tc||'var(--border2)'}"></span>`;
+  }).join('')||'<span class="gd-folha gd-folha-vazia"></span>';
+  const selos=(vivo&&nv?`<span class="gd-novas">${escHtml((nv===1?t('+1 nova'):t('+{n} novas')).replace('{n}',nv))}</span>`:'')
+    +(!vivo?`<span class="gd-mao">${escHtml(t('à mão'))}</span>`:mao?`<span class="gd-mao">${escHtml(t('+{n} à mão').replace('{n}',mao))}</span>`:'');
+  const gj=escJs(g.id);
+  return `<div class="gd${st&&st.dentro===g.id?' dentro':''}" role="listitem" data-gd="${escHtml(g.id)}">
+    <div class="gd-corpo" role="button" tabindex="0" aria-label="${escHtml(t('Abrir {x}').replace('{x}',nome))}" onclick="_gdAbrir('${id}','${gj}')" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();this.click()}">
+      <span class="gd-pilha" aria-hidden="true">${folhas}</span>
+      <b class="gd-nome">${escHtml(nome)}</b>
+      <span class="gd-conta">${escHtml((n===1?t('{n} nota'):t('{n} notas')).replace('{n}',n))}${selos}</span>
+      <span class="gd-trecho">${n?escHtml(_costTitulo(ms[0].id)):'&nbsp;'}</span>
+    </div>
+    <button type="button" class="cnv-alca gd-alca" aria-label="${escHtml(t('Levar {x}').replace('{x}',nome))}" onpointerdown="_gdPega(event,'${id}','${gj}')" onclick="if(event.detail===0)_gdMenu(this,'${id}','${gj}')">⠿</button>
+    <button type="button" class="gd-menu-b" aria-label="${escHtml(t('Mais sobre {x}').replace('{x}',nome))}" onclick="_gdMenu(this,'${id}','${gj}')">⋯</button>
+  </div>`;
+}
+function _gdTile(id,gid){return document.querySelector(`#gd-fileira-${id} [data-gd="${CSS.escape(gid)}"]`)}
+
+// ---- os verbos ----
+function _gdNovoId(){return 'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function _gdCheio(id){
+  if(_gdLista().length<GD_MAX)return false;
+  toast(t('Já são {n} Guardados. Apague um no ⋯ pra guardar outro.').replace('{n}',GD_MAX));
+  _jz(document.getElementById('gd-fileira-'+id),'gd-cheio',320);_jzTato([10,40,10]);
+  return true;
+}
+// Toda mudança na lista entra no ↶ único do Conversar (volta a lista de antes).
+function _gdMuda(id,rot,fn){
+  const c=_gdCache;
+  if(!c||!c.ok||c.mundo!==_mundoAtivo){toast(t('Não consegui ler os Guardados deste mundo. Nada foi mudado.'));return false}
+  const antes=JSON.stringify(c.lista);
+  fn(c.lista);
+  _cchatEmpilha(id,rot,()=>{if(_gdCache!==c)return;c.lista=JSON.parse(antes);_gdSalvar();if(_cnv[id])_cnvPintar(id)});
+  _gdSalvar();return true;
+}
+function _gdNasce(id,gid){
+  const el=_gdTile(id,gid);if(!el)return;
+  el.scrollIntoView({block:'nearest',inline:'nearest',behavior:_voxReduzMov()?'auto':'smooth'});
+  _jz(el,'gd-nasce',420);
+}
+// A regra do que está na tela agora: o Guardado aberto (se houver) + os chips.
+function _cnvRegraAtual(id){
+  const st=_cnv[id];if(!st)return null;
+  const tem=_cnvTemSel(st.sel),G=st.dentro?_gdAchar(st.dentro):null;
+  const foto=Object.fromEntries(CNV_FACETAS.map(f=>[f,[...st.sel[f]]]));
+  if(!G)return tem?{sels:[foto],dts:null,mais:[]}:null;
+  const r=JSON.parse(JSON.stringify(G.regra));
+  if(tem){
+    const sels=_gdSelsJuntas(r.sels||[],[foto]);
+    if(!sels)return {sels:[],dts:_cnvFiltra(_cnvUniverso(id),st.sel).map(c=>c.dataset.dt).filter(Boolean),mais:[]};
+    r.sels=sels;
+    // a nota solta à mão no vivo só continua se também bater com o recorte novo
+    const p=_gdPrep({sels:[foto]}),porDt=new Map(_flCardsVivos().map(c=>[c.dataset.dt,c]));
+    r.mais=(r.mais||[]).filter(dt=>{const c=porDt.get(dt);return c&&_gdBate(c,p)});
+  }
+  return r;
+}
+function _gdGuardar(id){
+  const st=_cnv[id];if(!st)return;
+  if(!_cnvTemSel(st.sel)){toast(st.dentro?t('Isto já está guardado. Toque num chip pra recortar dentro e guardar outro.'):t('Escolha um recorte antes (Cor, Pasta, Tag, Quem ou Quando).'));return}
+  if(!_gdCache||!_gdCache.ok){toast(t('Não consegui ler os Guardados deste mundo. Nada foi mudado.'));return}
+  if(_gdCheio(id))return;
+  const G=st.dentro?_gdAchar(st.dentro):null,r=_cnvRegraAtual(id);
+  const nome=[G?_gdNome(G):'',_cnvNomeSel(st.sel)].filter(Boolean).join(' · ').slice(0,80);
+  const g={id:_gdNovoId(),nome,semNome:false,grao:'notas',em:Date.now(),vistos:[],regra:r};
+  g.vistos=_gdMembros(r).sort(_cnvRecente).map(c=>c.dataset.dt).filter(Boolean).slice(0,GD_VISTOS);
+  if(!_gdMuda(id,t('guardar "{x}"').replace('{x}',_cnvCurto(nome)),l=>l.push(g)))return;
+  _cnvPintar(id);_gdNasce(id,g.id);_jzTato(8);
+  toast(_gdVivo(g)?t('Guardado. Ele cresce sozinho quando chegar nota que bate.'):t('Guardado à mão: só estas notas.'));
+  _gdRenomear(id,g.id,true);
+}
+function _gdAbrir(id,gid){
+  const st=_cnv[id],g=_gdAchar(gid);if(!st||!g)return;
+  _cnvMenuFecha();
+  const foto=_cnvFoto(id),dentro=st.dentro;
+  st.dentro=gid;CNV_FACETAS.forEach(f=>st.sel[f].clear());st.aberta='';st.olhar='';
+  _cchatEmpilha(id,t('abrir "{x}"').replace('{x}',_cnvCurto(_gdNome(g))),()=>{st.dentro=dentro;_cnvVolta(id,foto)});
+  _gdMarcarVisto(g);
+  if(st.vista!=='recortes')_cnvVer(id,'recortes',false);else _cnvPintar(id,true);
+  const pn=document.getElementById('cnv-painel-'+id);if(pn)pn.scrollTop=0;
+  _jzTato(6);
+}
+function _gdSair(id){
+  const st=_cnv[id];if(!st||!st.dentro)return;
+  const g=_gdAchar(st.dentro);
+  _cnvPasso(id,t('sair de "{x}"').replace('{x}',_cnvCurto(g?_gdNome(g):'')),()=>{st.dentro=''});
+}
+function _gdPorNaConversa(id,gid,de){
+  const g=_gdAchar(gid);if(!g||!_cnv[id])return;
+  _cnvMenuFecha();
+  const ms=_gdMembros(g.regra,_cnvBase(id)).sort(_cnvRecente);
+  if(!ms.length){toast(t('Este Guardado está vazio por enquanto.'));return}
+  const nome=_gdNome(g);
+  const conj={nome,dts:ms.slice(0,CNV_MAX_CONJ).map(c=>c.dataset.dt).filter(Boolean),regra:JSON.parse(JSON.stringify(g.regra)),gd:g.id,em:Date.now()};
+  const faz=()=>{
+    _cnvPorConj(id,conj,t('pôr "{x}" na conversa').replace('{x}',_cnvCurto(nome)));
+    _gdMarcarVisto(g);
+    _cnvVer(id,'conversa',false);
+    const ln=document.getElementById('cnv-linha-'+id);if(ln)_jz(ln,'cnv-engole',300);
+    toast(t('Agora a conversa lê também {n} notas de "{x}".').replace('{n}',conj.dts.length).replace('{x}',_cnvCurto(nome)));
+  };
+  de?_cnvVoa(de,document.getElementById('cnv-linha-'+id),faz):faz();
+}
+function _gdEmComum(id,a,b,todas){const pb=_gdPrep(b.regra);return _gdMembros(a.regra,todas?null:_cnvBase(id)).filter(c=>_gdBate(c,pb))}
+function _gdJuntar(id,ga,gb){
+  const a=_gdAchar(ga),b=_gdAchar(gb);if(!a||!b||ga===gb)return;
+  _cnvMenuFecha();
+  const comum=_gdEmComum(id,a,b,true).sort(_cnvRecente),nVe=_gdEmComum(id,a,b).length;
+  if(!nVe){toast(t('Nada em comum entre "{a}" e "{b}".').replace('{a}',_cnvCurto(_gdNome(a))).replace('{b}',_cnvCurto(_gdNome(b))));return}
+  if(_gdCheio(id))return;
+  // Dois vivos dão outro vivo (o que estiver nos dois, hoje e amanhã). Com
+  // mão no meio, fica a foto do que está nos dois agora.
+  const sels=_gdVivo(a)&&_gdVivo(b)&&!(a.regra.mais||[]).length&&!(b.regra.mais||[]).length?_gdSelsJuntas(a.regra.sels,b.regra.sels):null;
+  const dts=comum.map(c=>c.dataset.dt).filter(Boolean);
+  const regra=sels?{sels,dts:null,mais:[]}:{sels:[],dts,mais:[]};
+  const nome=(_gdNome(a)+' · '+_gdNome(b)).slice(0,80);
+  const g={id:_gdNovoId(),nome,semNome:false,grao:'notas',em:Date.now(),vistos:dts.slice(0,GD_VISTOS),regra};
+  if(!_gdMuda(id,t('juntar "{x}"').replace('{x}',_cnvCurto(nome)),l=>l.push(g)))return;
+  _cnvPintar(id);_gdNasce(id,g.id);_jzTato([8,30,8]);
+  toast(t('Nasceu "{x}": o que está nos dois ({n}). Os dois continuam aqui.').replace('{x}',_cnvCurto(nome)).replace('{n}',nVe));
+}
+function _gdPorNota(id,gid,cid){
+  const g=_gdAchar(gid),c=document.getElementById(cid);if(!g||!c||!c.dataset.dt)return;
+  _cnvMenuFecha();
+  const nome=_gdNome(g);
+  if(_gdBate(c,_gdPrep(g.regra))){toast(t('Esta nota já está em "{x}".').replace('{x}',_cnvCurto(nome)));return}
+  const dt=c.dataset.dt;
+  if(!_gdMuda(id,t('guardar a nota em "{x}"').replace('{x}',_cnvCurto(nome)),()=>{
+    g.regra.mais=[...(g.regra.mais||[]),dt];
+    g.vistos=[dt,...(g.vistos||[])].slice(0,GD_VISTOS);
+  }))return;
+  _cnvPintar(id);_jz(_gdTile(id,gid),'gd-engole',300);_jzTato(8);
+  toast(t('Guardada em "{x}".').replace('{x}',_cnvCurto(nome)));
+}
+// "Sem nome" é a cesta de antes: um Guardado à mão como os outros.
+function _gdSemNome(id,cid){
+  const c=document.getElementById(cid);if(!c||!c.dataset.dt)return;
+  const g=_gdLista().find(x=>x.semNome);
+  if(g){_gdPorNota(id,g.id,cid);return}
+  _cnvMenuFecha();
+  if(!_gdCache||!_gdCache.ok){toast(t('Não consegui ler os Guardados deste mundo. Nada foi mudado.'));return}
+  if(_gdCheio(id))return;
+  const novo={id:_gdNovoId(),nome:'',semNome:true,grao:'notas',em:Date.now(),vistos:[c.dataset.dt],regra:{sels:[],dts:[c.dataset.dt],mais:[]}};
+  if(!_gdMuda(id,t('guardar a nota em "{x}"').replace('{x}',t('Sem nome')),l=>l.push(novo)))return;
+  _cnvPintar(id);_gdNasce(id,novo.id);_jzTato(8);
+  toast(t('Guardada em "{x}".').replace('{x}',t('Sem nome')));
+}
+function _gdTirarNota(id,gid,cid){
+  const g=_gdAchar(gid),c=document.getElementById(cid);if(!g||!c||!_gdTiravel(g,c))return;
+  const dt=c.dataset.dt,nome=_gdNome(g);
+  if(!_gdMuda(id,t('tirar a nota de "{x}"').replace('{x}',_cnvCurto(nome)),()=>{
+    if((g.regra.mais||[]).includes(dt))g.regra.mais=g.regra.mais.filter(x=>x!==dt);else g.regra.dts=(g.regra.dts||[]).filter(x=>x!==dt);
+  }))return;
+  const st=_cnv[id];if(st&&st.olhar===cid)st.olhar='';
+  _cnvPintar(id,true);
+  toast(t('Tirada de "{x}". A nota continua onde estava.').replace('{x}',_cnvCurto(nome)));
+}
+function _gdApagar(id,gid){
+  const g=_gdAchar(gid);if(!g)return;
+  _cnvMenuFecha();
+  const nome=_gdNome(g);
+  if(!_gdMuda(id,t('apagar "{x}"').replace('{x}',_cnvCurto(nome)),l=>{const i=l.indexOf(g);if(i>=0)l.splice(i,1)}))return;
+  const st=_cnv[id];if(st&&st.dentro===gid)st.dentro='';
+  _cnvPintar(id,true);
+  toast(t('Guardado apagado. As notas continuam onde estavam. ↶ desfaz.'));
+}
+function _gdRenomear(id,gid,novo){
+  const el=_gdTile(id,gid),g=_gdAchar(gid);if(!el||!g)return;
+  _cnvMenuFecha();
+  const nm=el.querySelector('.gd-nome');if(!nm)return;
+  const inp=document.createElement('input');
+  inp.className='gd-nome-inp';inp.value=_gdNome(g);inp.maxLength=80;inp.setAttribute('aria-label',t('Nome do Guardado'));
+  nm.replaceWith(inp);inp.focus({preventScroll:true});inp.select();
+  let feito=false;
+  const fim=ok=>{
+    if(feito)return;feito=true;
+    const v=inp.value.replace(/\s+/g,' ').trim().slice(0,80);
+    if(ok&&v&&v!==_gdNome(g)&&_gdAchar(gid)===g){
+      // Recém-guardado: o nome faz parte do mesmo passo (o ↶ de "guardar" já o tira inteiro).
+      if(novo){g.nome=v;g.semNome=false;_gdSalvar()}
+      else _gdMuda(id,t('renomear "{x}"').replace('{x}',_cnvCurto(v)),()=>{g.nome=v;g.semNome=false});
+    }
+    // Só a peça do nome volta: repintar o painel inteiro aqui engolia o
+    // clique que tirou o foco (o botão sob o dedo era trocado no meio).
+    const b=document.createElement('b');b.className='gd-nome';b.textContent=_gdNome(g);
+    if(inp.isConnected)inp.replaceWith(b);
+  };
+  inp.onkeydown=e=>{
+    if(e.key==='Enter'){e.preventDefault();e.stopPropagation();fim(true)}
+    else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();fim(false)}
+  };
+  inp.onblur=()=>fim(true);
+  inp.onclick=e=>e.stopPropagation();
+  inp.onpointerdown=e=>e.stopPropagation();
+}
+
+// ---- menu escrito (o mesmo que o ⠿ faz arrastando) ----
+let _cnvMenuDe=null;
+function _cnvMenuFora(e){if(!e.target.closest('#cnv-menu')&&!(_cnvMenuDe&&_cnvMenuDe.contains(e.target)))_cnvMenuFecha()}
+function _cnvMenuFecha(){
+  const m=document.getElementById('cnv-menu');if(!m)return;
+  m.remove();document.removeEventListener('pointerdown',_cnvMenuFora,true);_cnvMenuDe=null;
+}
+function _cnvMenu(anchor,titulo,itens){
+  _cnvMenuFecha();
+  const ov=document.getElementById('cchat-overlay')||document.body;
+  const m=document.createElement('div');m.id='cnv-menu';m.className='cnv-menu';m.setAttribute('role','menu');
+  m.innerHTML=(titulo?`<div class="cnv-menu-tit">${escHtml(titulo)}</div>`:'')+itens.map((it,i)=>it.sep!==undefined
+    ?`<div class="cnv-menu-sep">${escHtml(it.sep)}</div>`
+    :`<button type="button" role="menuitem" data-i="${i}"${it.off?' disabled':''}${it.perigo?' class="perigo"':''}><span>${escHtml(it.rot)}</span>${it.dica?`<small>${escHtml(it.dica)}</small>`:''}</button>`).join('');
+  m.onclick=e=>{const b=e.target.closest('button[data-i]');if(!b||b.disabled)return;const it=itens[+b.dataset.i];if(!it.fica)_cnvMenuFecha();it.fn()};
+  m.onkeydown=e=>{
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();_cnvMenuFecha();try{anchor.focus()}catch(_){}return}
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault();const bs=[...m.querySelectorAll('button:not([disabled])')];if(!bs.length)return;
+      const i=bs.indexOf(document.activeElement);bs[(i+(e.key==='ArrowDown'?1:-1)+bs.length)%bs.length].focus();
+    }
+  };
+  ov.appendChild(m);_cnvMenuDe=anchor;
+  const r=anchor.getBoundingClientRect(),w=m.offsetWidth,h=m.offsetHeight;
+  let x=Math.min(r.left,innerWidth-w-8),y=r.bottom+6;
+  if(y+h>innerHeight-8)y=Math.max(8,r.top-h-6);
+  m.style.left=Math.max(8,x)+'px';m.style.top=y+'px';
+  _jz(m,'cnv-menu-abre',200);
+  const b0=m.querySelector('button:not([disabled])');if(b0)b0.focus({preventScroll:true});
+  setTimeout(()=>document.addEventListener('pointerdown',_cnvMenuFora,true),0);
+}
+function _gdMenu(anchor,id,gid){
+  const g=_gdAchar(gid);if(!g)return;
+  if(document.getElementById('cnv-menu')?.dataset.de===gid){_cnvMenuFecha();return}
+  const outros=_gdLista().filter(x=>x.id!==gid);
+  _cnvMenu(anchor,_gdNome(g),[
+    {rot:t('Abrir aqui'),dica:t('recortar dentro'),fn:()=>_gdAbrir(id,gid)},
+    {rot:t('Pôr na conversa'),fn:()=>_gdPorNaConversa(id,gid,anchor)},
+    ...(outros.length?[{rot:t('Juntar com…'),dica:t('o que está nos dois'),fica:true,fn:()=>_gdMenuJuntar(anchor,id,gid)}]:[]),
+    {rot:t('Renomear'),fn:()=>_gdRenomear(id,gid,false)},
+    {rot:t('Apagar o Guardado'),dica:t('as notas ficam'),perigo:true,fn:()=>_gdApagar(id,gid)},
+  ]);
+  const m=document.getElementById('cnv-menu');if(m)m.dataset.de=gid;
+}
+function _gdMenuJuntar(anchor,id,gid){
+  const g=_gdAchar(gid);if(!g)return;
+  const outros=_gdLista().filter(x=>x.id!==gid);
+  _cnvMenu(anchor,t('Juntar "{x}" com…').replace('{x}',_cnvCurto(_gdNome(g))),outros.map(o=>{
+    const n=_gdEmComum(id,g,o).length;
+    return {rot:_gdNome(o),dica:t('em comum: {n}').replace('{n}',n),off:!n,fn:()=>_gdJuntar(id,gid,o.id)};
+  }));
+}
+function _cnvNotaMenu(anchor,id,cid){
+  const c=document.getElementById(cid);if(!c)return;
+  if(document.getElementById('cnv-menu')?.dataset.de===cid){_cnvMenuFecha();return}
+  const l=_gdLista(),semNome=l.find(x=>x.semNome);
+  _cnvMenu(anchor,_costTitulo(cid),[
+    {rot:t('Pôr só esta na conversa'),fn:()=>_cnvPorUma(id,cid)},
+    {sep:t('Guardar em')},
+    ...l.map(g=>{const ja=_gdBate(c,_gdPrep(g.regra));return {rot:_gdNome(g),dica:ja?t('já está'):'',off:ja,fn:()=>_gdPorNota(id,g.id,cid)}}),
+    ...(semNome?[]:[{rot:t('Sem nome'),dica:t('um Guardado novo, à mão'),off:l.length>=GD_MAX,fn:()=>_gdSemNome(id,cid)}]),
+  ]);
+  const m=document.getElementById('cnv-menu');if(m)m.dataset.de=cid;
+}
+
+// ---- o ⠿: levar um Guardado ou uma nota até a conversa ou até um Guardado ----
+function _gdPega(e,id,gid){_cnvArrasta(e,id,{tipo:'gd',gid})}
+function _cnvPegaNota(e,id,cid){_cnvArrasta(e,id,{tipo:'nota',cid})}
+function _cnvAlvo(id,item,x,y){
+  const el=document.elementFromPoint(x,y);if(!el)return null;
+  const ln=el.closest('#cnv-linha-'+id);
+  if(ln)return {tipo:'linha',el:ln};
+  const tile=el.closest(`#gd-fileira-${id} .gd`);
+  if(tile&&!(item.tipo==='gd'&&tile.dataset.gd===item.gid))return {tipo:'gd',gid:tile.dataset.gd,el:tile};
+  return null;
+}
+function _cnvDicaAlvo(id,item,alvo){
+  if(!alvo)return item.tipo==='gd'?t('Solte na linha "Na conversa" ou em outro Guardado'):t('Solte na linha "Na conversa" ou num Guardado');
+  if(alvo.tipo==='linha')return t('Pôr na conversa');
+  const g=_gdAchar(alvo.gid);if(!g)return '';
+  if(item.tipo==='gd'){const a=_gdAchar(item.gid);return a?t('Em comum: {n}').replace('{n}',_gdEmComum(id,a,g).length):''}
+  const c=document.getElementById(item.cid);
+  return c&&_gdBate(c,_gdPrep(g.regra))?t('Já está aqui'):t('Guardar aqui');
+}
+let _cnvArrastoCancela=null;
+function _cnvArrasta(e,id,item){
+  if(e.button>0||!_cnv[id])return;
+  e.preventDefault();e.stopPropagation();
+  if(_cnvArrastoCancela)_cnvArrastoCancela();
+  const alca=e.currentTarget,x0=e.clientX,y0=e.clientY,ov=document.getElementById('cchat-overlay');
+  const pn=document.getElementById('cnv-painel-'+id);
+  let fant=null,alvo=null,ultX=x0,ultY=y0;
+  try{alca.setPointerCapture(e.pointerId)}catch(_){}
+  const dica=()=>{const d=fant&&fant.querySelector('.cnv-fant-dica');if(d)d.textContent=_cnvDicaAlvo(id,item,alvo)};
+  const mexe=ev=>{
+    ultX=ev.clientX;ultY=ev.clientY;
+    if(!fant){
+      if(Math.hypot(ultX-x0,ultY-y0)<5)return;
+      _cnvMenuFecha();
+      fant=document.createElement('div');fant.className='cnv-fant';
+      const nome=item.tipo==='gd'?_gdNome(_gdAchar(item.gid)||{}):_costTitulo(item.cid);
+      fant.innerHTML=`<b>${escHtml(nome)}</b><span class="cnv-fant-dica"></span>`;
+      document.body.appendChild(fant);
+      ov&&ov.classList.add('cnv-levando');
+      document.getElementById('toastWrap')?.classList.remove('on'); // o aviso do alto cobriria a linha "Na conversa"
+      (item.tipo==='gd'?_gdTile(id,item.gid):alca.closest('.cnv-mini'))?.classList.add('cnv-pegado');
+      dica();_jzTato(6);
+    }
+    fant.style.transform=`translate(${ultX+12}px,${ultY-18}px) rotate(-3deg) scale(1.03)`;
+    if(pn){const r=pn.getBoundingClientRect();if(ultY<r.top+36&&ultY>r.top-80)pn.scrollTop-=14;else if(ultY>r.bottom-36&&ultY<r.bottom+40)pn.scrollTop+=14}
+    const novo=_cnvAlvo(id,item,ultX,ultY);
+    if((novo&&novo.el)!==(alvo&&alvo.el)){
+      alvo&&alvo.el.classList.remove('cnv-sobre');alvo=novo;alvo&&alvo.el.classList.add('cnv-sobre');dica();
+      if(alvo)_jzTato(4);
+    }
+  };
+  const limpa=()=>{
+    alca.removeEventListener('pointermove',mexe);alca.removeEventListener('pointerup',solta);alca.removeEventListener('pointercancel',solta);alca.removeEventListener('lostpointercapture',perdeu);
+    _cnvArrastoCancela=null;
+    ov&&ov.classList.remove('cnv-levando');
+    document.querySelectorAll('.cnv-pegado').forEach(x=>x.classList.remove('cnv-pegado'));
+    alvo&&alvo.el.classList.remove('cnv-sobre');
+  };
+  // Some sem fazer nada: o Conversar fechou (Esc) ou o ⠿ foi repintado no meio.
+  const cancela=()=>{limpa();if(fant){fant.remove();fant=null}};
+  const perdeu=()=>{if(fant)cancela()};
+  _cnvArrastoCancela=cancela;
+  const solta=ev=>{
+    limpa();
+    try{alca.releasePointerCapture(ev.pointerId)}catch(_){}
+    if(!fant){ // foi um toque: mostra os mesmos verbos escritos
+      if(ev.type==='pointerup')item.tipo==='gd'?_gdMenu(alca,id,item.gid):_cnvNotaMenu(alca,id,item.cid);
+      return;
+    }
+    if(alvo&&ev.type==='pointerup'){
+      fant.remove();
+      if(alvo.tipo==='linha'){
+        if(item.tipo==='gd')_gdPorNaConversa(id,item.gid);
+        else{_cnvPorUma(id,item.cid);const ln=document.getElementById('cnv-linha-'+id);if(ln)_jz(ln,'cnv-engole',300)}
+      }else if(item.tipo==='gd')_gdJuntar(id,item.gid,alvo.gid);
+      else _gdPorNota(id,alvo.gid,item.cid);
+      return;
+    }
+    // Soltou fora: volta pro lugar com mola.
+    const r=alca.getBoundingClientRect();
+    if(_voxReduzMov()){fant.remove();return}
+    const an=fant.animate([{transform:fant.style.transform,opacity:1},{transform:`translate(${r.left}px,${r.top}px) rotate(0) scale(.7)`,opacity:0}],{duration:260,easing:'cubic-bezier(.34,1.56,.64,1)'});
+    an.onfinish=()=>fant.remove();
+  };
+  alca.addEventListener('pointermove',mexe);alca.addEventListener('pointerup',solta);alca.addEventListener('pointercancel',solta);alca.addEventListener('lostpointercapture',perdeu);
+}
+
+// ---- Na conversa: o que chegou depois ----
+function _cnvNovasConj(id){
+  const st=_cnv[id],cj=st&&st.conj;
+  if(!cj||!cj.regra||!Array.isArray(cj.dts)||cj.dts.length>=CNV_MAX_CONJ)return [];
+  const tem=new Set(cj.dts);
+  return _gdMembros(cj.regra,_cnvBase(id)).filter(c=>c.dataset.dt&&!tem.has(c.dataset.dt)).sort(_cnvRecente);
+}
+function _cnvIncluirNovas(id){
+  const st=_cnv[id],cj=st&&st.conj;if(!cj)return;
+  const nv=_cnvNovasConj(id);if(!nv.length)return;
+  const dts=[...nv.map(c=>c.dataset.dt),...cj.dts].slice(0,CNV_MAX_CONJ);
+  _cnvPorConj(id,{...cj,dts,em:Date.now()},t('incluir as notas novas'));
+  const ln=document.getElementById('cnv-linha-'+id);if(ln)_jz(ln,'cnv-engole',300);
+  toast(t('Agora a conversa lê também {n} notas de "{x}".').replace('{n}',dts.length).replace('{x}',_cnvCurto(cj.nome)));
 }
 // O que precisa de IA dentro do Conversar, sem chave: o aviso fica POR CIMA
 // (o toast vence o overlay) e o botão leva direto pra tela da chave. O
@@ -33477,7 +34137,15 @@ function openConversaMode(id){
     </div>
     <div class="ilha" id="ilha-${id}" role="dialog" aria-labelledby="ilha-tit-${id}" hidden></div>`;
   document.body.appendChild(overlay);
-  overlay.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('.cnv-painel'))_cnvAtalho(e,id)});
+  overlay.addEventListener('keydown',e=>{
+    // Pelo caminho da tecla, não pelo e.target.closest: Enter numa miniatura
+    // abre o Guardado e repinta o painel, e aí o alvo já saiu da página.
+    const z=e.composedPath().find(n=>n.matches&&n.matches('.cnv-painel,.cnv-topo,#cnv-menu'));if(!z)return;
+    if(z.classList.contains('cnv-painel'))_cnvAtalho(e,id);
+    // Enter/Espaço num botão dos Recortes é o botão: sem isto subia até o
+    // atalho global (spaceHotkey), que anulava o clique e começava a gravar.
+    if((e.key==='Enter'||e.key===' ')&&e.target.matches('button,[role=button]'))e.stopPropagation();
+  });
   _ilhaLigar(id);
   // Abas de transformação (Original + resultados de IA). Começam vazias e
   // _cchatRestaurar (logo abaixo) devolve as que este card já tinha.
@@ -33570,6 +34238,7 @@ function closeConversaMode(id){
   if(!overlay)return;
   delete _cchatPilha[id];
   delete _cnv[id];
+  _cnvMenuFecha();if(_cnvArrastoCancela)_cnvArrastoCancela();
   // Remove ESC handler
   if(card._cchatEscHandler){document.removeEventListener('keydown',card._cchatEscHandler);delete card._cchatEscHandler;if(card._cchatVpHandler){window.visualViewport.removeEventListener('resize',card._cchatVpHandler);delete card._cchatVpHandler};if(card._cchatBlurHandler){const inp=document.getElementById('cchat-input-'+id);if(inp)inp.removeEventListener('blur',card._cchatBlurHandler);delete card._cchatBlurHandler}}
   // Restaura editor ao card
@@ -36678,7 +37347,12 @@ function _mesaAbrir(idA,idB){
     ov.innerHTML='<div class="modal mesa-modal" role="dialog" aria-modal="true" aria-labelledby="mesaTit"></div>';
     document.body.appendChild(ov);
     ov.addEventListener('click',e=>{if(e.target===ov)_mesaFechar()});
-    ov.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();_mesaFechar()}});
+    ov.addEventListener('keydown',e=>{
+      if(e.key==='Escape'){e.stopPropagation();_mesaFechar();return}
+      // Enter/Espaço num botão da mesa é o botão, não o atalho global de gravar
+      // (o "Segure" fica de fora: o teclado dele mora num ouvinte do document).
+      if((e.key==='Enter'||e.key===' ')&&e.target.matches('button:not(.segura-btn)'))e.stopPropagation();
+    });
   }
   ov.querySelector('.mesa-modal').innerHTML=_mesaHtml();
   ov.style.display='flex';
@@ -37907,6 +38581,9 @@ function _floatDropTarget(cardId,x,y){
   if(tabBtn)return{kind:'tabbtn',tabId:tabBtn.dataset.tabid};
   const pane=el.closest(`#cchat-textslot-${cardId} [data-cchat-pane]`);
   if(pane)return{kind:'pane',tabId:pane.dataset.cchatPane};
+  // Os Recortes (e os Guardados dentro deles) ainda não recebem trecho solto
+  // (lote 12, fase 3): soltar ali não faz nada, em vez de criar aba sem querer.
+  if(el.closest(`#cnv-painel-${cardId}`))return{kind:'outside'};
   if(el.closest('#cchat-overlay'))return{kind:'empty'};
   return{kind:'outside'};
 }
