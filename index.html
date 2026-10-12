@@ -6934,6 +6934,24 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .ilha-levar[hidden]{display:none}
 .ilha-levar p{margin:0;font-size:12.5px;color:var(--text2);line-height:1.5}
 .ilha-segura{border-color:var(--accent);color:var(--accent)}
+/* Mesa de mesclar (lote 12, fase 0): os dois pedaços na ordem do texto novo,
+   cada um com a faixa da sua cor; trocar a ordem desliza (FLIP). */
+.mesa-modal{max-width:600px}
+.mesa-diz{font-size:13px;color:var(--text2);line-height:1.6;margin:0 0 12px}
+.mesa-lista{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.mesa-bloco{border:1px solid var(--border);border-left:4px solid var(--mc,var(--border2));border-radius:14px;padding:10px 12px;background:var(--bg2);min-width:0}
+.mesa-bloco-cab{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px;font-size:13px;color:var(--text)}
+.mesa-n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--bg-input);font-size:11px;font-weight:700;color:var(--text2);flex:none}
+.mesa-meta{font-size:11px;color:var(--text3)}
+.mesa-txt{font-size:12.5px;color:var(--text2);line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.mesa-troca{margin:10px auto 0;display:flex;align-items:center;gap:6px;border:1px solid var(--border2);background:var(--bg-card);color:var(--text2);border-radius:99px;padding:7px 14px;font:600 12.5px var(--font);cursor:pointer;transition:transform 120ms var(--fc-curva),border-color 140ms}
+.mesa-troca:hover{border-color:var(--accent);color:var(--accent)}
+.mesa-troca:active{transform:scale(.96)}
+.mesa-resumo{font-size:12px;color:var(--text3);text-align:center;margin:12px 0 10px}
+.mesa-cancela{display:block;margin:8px auto 0;border:none;background:none;color:var(--text3);font:600 12.5px var(--font);cursor:pointer;padding:8px 12px}
+.card.mesa-nasce{animation:mesaNasce 700ms cubic-bezier(.22,1,.36,1)}
+@keyframes mesaNasce{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent);transform:scale(.97)}40%{transform:scale(1.01)}100%{box-shadow:0 0 0 14px transparent;transform:none}}
+@media (prefers-reduced-motion:reduce){.mesa-troca{transition:none}.card.mesa-nasce{animation:none}}
 .ilha-segura .segura-fill{background:var(--accent)}
 .ilha.brota,.ilha-levar.brota{animation:ilhaBrota 260ms cubic-bezier(.34,1.56,.64,1)}
 .ilha.brota .ilha-cartao{animation:ilhaSobe 260ms cubic-bezier(.22,1,.36,1) both}
@@ -9143,7 +9161,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.08.1';
+const VOX_VERSION='2026.10.12.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10746,6 +10764,18 @@ let I18N_EN={
 "Obrigado! Dá pra desligar quando quiser, no menu ⋯.":"Thank you! You can turn it off anytime in the ⋯ menu.",
 "Desligado. O que já tinha sido contado deste aparelho foi apagado.":"Turned off. What had been counted from this device was erased.",
 "Tudo bem: nada é contado.":"All right: nothing is counted.",
+"{n} foto(s) ficam nela":"{n} photo(s) stay with it",
+"(vazia)":"(empty)",
+"Mesclar 2 notas":"Merge 2 notes",
+"As duas continuam onde estão. Nasce uma nota nova com as duas juntas, nesta ordem.":"Both stay where they are. A new note is born with the two together, in this order.",
+"Trocar a ordem":"Swap the order",
+"Nota nova: {n} palavras":"New note: {n} words",
+"na pasta \"{p}\"":"in the folder \"{p}\"",
+"tags das duas, sem cor":"tags from both, no color",
+"Segure pra mesclar":"Hold to merge",
+"🧵 Nasceu uma nota com as duas · as originais continuam aqui":"🧵 A note with both was born · the originals are still here",
+"↩ Desfeito — a nota juntada foi pra lixeira":"↩ Undone — the merged note went to the trash",
+"Isto precisa da sua chave de IA. A do Groq é grátis, sem cartão, e leva uns 2 minutos.":"This needs your AI key. Groq's is free, no card, and takes about 2 minutes.",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -31688,12 +31718,21 @@ function _cchatOpenLensMenu(id){
   panel.classList.add('on');
   setTimeout(()=>document.addEventListener('click',_lensPanelAway),0);
 }
+// O que precisa de IA dentro do Conversar, sem chave: o aviso fica POR CIMA
+// (o toast vence o overlay) e o botão leva direto pra tela da chave. O
+// openModal antigo abria as Configurações por trás do Conversar, invisível.
+function _cchatPedeChave(id){
+  toastDesfazer(t('Isto precisa da sua chave de IA. A do Groq é grátis, sem cartão, e leva uns 2 minutos.'),()=>{
+    closeConversaMode(id);setTimeout(_obAbrirNaChave,250);
+  },t('Pegar minha chave grátis'));
+  const i=document.getElementById('toastIco');if(i)i.textContent='🔑';
+}
 async function _cchatRunLens(id,lensKey){
   const panel=document.getElementById('cchat-lensmenu-'+id);
   if(panel){panel.classList.remove('on');panel.innerHTML=''}
   const L=LENSES[lensKey];if(!L)return;
   const key=aiKey();
-  if(!key){toast(t('🔑 Configure uma chave de IA!'),true);openModal();return}
+  if(!key){_cchatPedeChave(id);return}
   const sourceText=_cchatActiveTabText(id).trim();
   if(!sourceText){toast(t('ℹ️ Nada para transformar'),true);return}
   toast(L.label+'…');
@@ -32971,7 +33010,10 @@ function applyDiarChatEdit(id,raw){
 
 // ── MODO CONVERSA UNIVERSAL (overlay tela cheia) ──
 function openConversaMode(id){
-  if(_precisaConfigurar())return;
+  // Sem chave o Conversar abre também (lote 12, fase 0): ler, recortar, o ⠿,
+  // o mapa, as peças de uma lista, desfazer e os recortes são locais. O que
+  // precisa de IA (lente, pergunta) pede a chave na hora, ali dentro
+  // (_cchatPedeChave). Antes a porta ficava trancada pra quem acabou de chegar.
   const card=document.getElementById(id);if(!card)return;
   // Origem visual da animação de abertura: o overlay "nasce" a partir do
   // botão Conversar do dock, não do centro da tela (ver transform-origin
@@ -33373,6 +33415,8 @@ async function sendCchat(id,chipText){
   const input=document.getElementById('cchat-input-'+id);
   const text=(chipText!=null?String(chipText):input?.value||'').trim();
   if(!text)return;
+  // Sem chave: avisa antes de mexer em nada — a pergunta fica no campo, não se perde.
+  if(!aiKey()){_cchatPedeChave(id);return}
   if(input&&!chipText){input.value='';cchatAutoGrow(input)}
   appendDiarChatMessage(id,'user',text);
   renderCchat(id);
@@ -36219,6 +36263,96 @@ function _selJuntar(ids){
     toast(t('↩ Desfeito — os cards voltaram'));
   });
 }
+// ── MESA DE MESCLAR (plano 30, lote 12, fase 0) ──
+// O gesto que o Rafa mais elogia (o ⠿ que joga um card no outro) era o único
+// do app que destruía: colava o texto e apagava a origem de vez. Agora ele
+// abre esta mesa: as duas notas continuam onde estão, a pessoa vê o texto
+// novo antes, escolhe a ordem e segura pra mesclar. Nasce UMA nota nova, no
+// mesmo formato do "Juntar" da seleção ("— nome —" por pedaço), com as tags
+// somadas, sem cor (cor é sinal, não se herda), na pasta da primeira e com a
+// procedência apontando pra ela. ↶ manda a nota nova pra lixeira.
+let _mesaIds=null;
+function _mesaAbrir(idA,idB){
+  const a=document.getElementById(idA),b=document.getElementById(idB);
+  if(!a||!b||idA===idB)return;
+  _mesaIds=[idA,idB]; // A = onde soltou (vem primeiro, como sempre foi), B = a que foi arrastada
+  let ov=document.getElementById('mesaOverlay');
+  if(!ov){
+    ov=document.createElement('div');ov.className='overlay';ov.id='mesaOverlay';
+    ov.innerHTML='<div class="modal mesa-modal" role="dialog" aria-modal="true" aria-labelledby="mesaTit"></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click',e=>{if(e.target===ov)_mesaFechar()});
+    ov.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();_mesaFechar()}});
+  }
+  ov.querySelector('.mesa-modal').innerHTML=_mesaHtml();
+  ov.style.display='flex';
+  _jzTato(8);
+  setTimeout(()=>ov.querySelector('.mesa-troca')?.focus(),40);
+}
+function _mesaFechar(){const ov=document.getElementById('mesaOverlay');if(ov)ov.style.display='none';_mesaIds=null}
+function _mesaPedaco(c){
+  return {nome:(c.dataset.sessionName||'').trim()||fmtDt(c.dataset.dt||''),txt:(c.querySelector('textarea')?.value||'').trim()};
+}
+function _mesaBloco(c,k){
+  const p=_mesaPedaco(c);
+  const cor=(c.dataset.tc!==undefined&&c.dataset.tc!=='')?safeColor(TAG_CORES[+c.dataset.tc]||''):'';
+  const fotos=(()=>{try{return JSON.parse(c.dataset.images||'[]').length}catch(e){return 0}})();
+  const pasta=c.dataset.folder?(folders.find(f=>f.id===c.dataset.folder)?.name||''):'';
+  return `<li class="mesa-bloco" data-id="${escHtml(c.id)}"${cor?` style="--mc:${cor}"`:''}>
+    <div class="mesa-bloco-cab"><span class="mesa-n">${k+1}</span><b>${escHtml(p.nome)}</b>${pasta?`<span class="mesa-meta">${escHtml(pasta)}</span>`:''}${fotos?`<span class="mesa-meta">${escHtml(t('{n} foto(s) ficam nela').replace('{n}',fotos))}</span>`:''}</div>
+    <div class="mesa-txt">${p.txt?escHtml(p.txt):`<i>${escHtml(t('(vazia)'))}</i>`}</div>
+  </li>`;
+}
+function _mesaHtml(){
+  const cards=_mesaIds.map(id=>document.getElementById(id)).filter(Boolean);
+  const palavras=cards.reduce((n,c)=>n+(_mesaPedaco(c).txt.split(/\s+/).filter(Boolean).length),0);
+  const pasta=cards[0].dataset.folder?(folders.find(f=>f.id===cards[0].dataset.folder)?.name||''):'';
+  return `<div class="mh"><h2 id="mesaTit">${escHtml(t('Mesclar 2 notas'))}</h2><button class="mh-close" onclick="_mesaFechar()" aria-label="${escHtml(t('Fechar'))}">${ICO.close}</button></div>
+  <div class="mb">
+    <p class="mesa-diz">${escHtml(t('As duas continuam onde estão. Nasce uma nota nova com as duas juntas, nesta ordem.'))}</p>
+    <ol class="mesa-lista">${cards.map(_mesaBloco).join('')}</ol>
+    <button type="button" class="mesa-troca" onclick="_mesaTrocar()"><span aria-hidden="true">⇅</span> ${escHtml(t('Trocar a ordem'))}</button>
+    <p class="mesa-resumo">${escHtml(t('Nota nova: {n} palavras').replace('{n}',palavras))}${pasta?' · '+escHtml(t('na pasta "{p}"').replace('{p}',pasta)):''} · ${escHtml(t('tags das duas, sem cor'))}</p>
+    <button type="button" class="segura-btn ilha-segura mesa-segura" data-segura="mesclar"><span class="segura-fill"></span><span class="segura-txt">${escHtml(t('Segure pra mesclar'))}</span></button>
+    <button type="button" class="mesa-cancela" onclick="_mesaFechar()">${escHtml(t('Cancelar'))}</button>
+  </div>`;
+}
+// Troca a ordem MOVENDO os mesmos nós (FLIP): o bloco que persiste desliza
+// pro lugar novo em vez de piscar.
+function _mesaTrocar(){
+  if(!_mesaIds)return;
+  _mesaIds.reverse();
+  const ol=document.querySelector('#mesaOverlay .mesa-lista');if(!ol)return;
+  const lis=[...ol.children],antes=new Map(lis.map(li=>[li,li.getBoundingClientRect().top]));
+  ol.appendChild(lis[0]);
+  [...ol.children].forEach((li,k)=>{const n=li.querySelector('.mesa-n');if(n)n.textContent=k+1});
+  if(!_voxReduzMov())[...ol.children].forEach(li=>{
+    const d=antes.get(li)-li.getBoundingClientRect().top;if(!d)return;
+    li.style.transition='none';li.style.transform=`translateY(${d}px)`;
+    requestAnimationFrame(()=>{li.style.transition='transform 240ms cubic-bezier(.34,1.56,.64,1)';li.style.transform=''});
+  });
+  _jzTato(6);
+}
+function _mesaMesclar(){
+  const ids=_mesaIds;if(!ids)return;
+  const cards=ids.map(i=>document.getElementById(i)).filter(Boolean);
+  if(cards.length<2){_mesaFechar();return}
+  const pedacos=cards.map(_mesaPedaco).filter(p=>p.txt).map(p=>'— '+p.nome+' —\n'+p.txt);
+  if(!pedacos.length){_mesaFechar();toast(t('ℹ️ Os cards escolhidos estão vazios — não há o que juntar'),true);return}
+  const base=cards[0];
+  const tags=[...new Set(cards.flatMap(c=>(c.dataset.tags||'').split(',').filter(Boolean)))];
+  const novoId=addCard(pedacos.join('\n\n'),null,0,'texto',base.dataset.prov||'',true,null,null,
+    tags,t('Juntado de {n} cards').replace('{n}',cards.length),'livre',false,base.dataset.folder||'');
+  const nc=document.getElementById(novoId);
+  if(nc&&base.dataset.dt){nc.dataset.origemDt=base.dataset.dt;nc.dataset.origemLente='juntar'}
+  saveHistory();
+  _mesaFechar();
+  if(nc){nc.scrollIntoView({block:'center',behavior:_voxReduzMov()?'auto':'smooth'});_jz(nc,'mesa-nasce',700)}
+  toastDesfazer(t('🧵 Nasceu uma nota com as duas · as originais continuam aqui'),()=>{
+    paraLixeira(novoId,true);toast(t('↩ Desfeito — a nota juntada foi pra lixeira'));
+  });
+}
+SEGURA_ACOES.mesclar=_mesaMesclar;
 // ── mover para pasta / criar pasta nova ──
 // Mesmo desenho do seletor da etiqueta de cor (_cfSeletorDePasta): "Tudo" no
 // topo pra TIRAR de pasta, a árvore no meio, "Nova pasta…" no fim.
@@ -37693,14 +37827,10 @@ function _startDrag(el,e0,isTouch=false,isFolder=false){
     }
     if(folderEl){assignCardToFolder(_dragSrcId,folderEl.dataset.fid||'');_dragSrcId=null;_dragEl=null;return}
     const target=_cardUnderCursor(x,y,el.id);
-    if(target){
-      const srcText=el.querySelector('textarea')?.value||'';
-      const dstTa=target.querySelector('textarea');
-      if(dstTa&&srcText){dstTa.value=(dstTa.value.trimEnd()+'\n\n'+srcText).trim();autoR(dstTa);updateFooter(target.id)}
-      doDelete(_dragSrcId);saveHistory();
-      if(dstTa)navigator.clipboard.writeText(dstTa.value).then(()=>toast(t('🔗 Cards mesclados e copiados para a área de transferência')));
-      else toast(t('🔗 Cards mesclados!'));
-    }
+    // Card sobre card: abre a mesa de mesclar (lote 12, fase 0). Antes colava
+    // o texto no destino e chamava doDelete na origem — o apagar DEFINITIVO,
+    // que levava fotos, cor, data e procedência sem lixeira nem desfazer.
+    if(target)_mesaAbrir(target.id,_dragSrcId);
     _dragSrcId=null;_dragEl=null;
   }
 
