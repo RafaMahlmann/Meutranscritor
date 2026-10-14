@@ -6487,11 +6487,13 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* ── WORLD / GALÁXIA — tokens próprios (os demais vêm do app) ────────── */
 :root{
   --saida:cubic-bezier(.22,1,.36,1);
-  --ceu:#0e1421;--ceu2:#161f31;
+  --ceu:#0e1421;--ceu2:#161f31;--ceu3:#22314f;
   --gx-txt:#f0f0f4;--gx-txt2:#a8b0c2;--gx-txt3:#7c8499;
   --gx-sup:rgba(255,255,255,.07);--gx-bord:rgba(255,255,255,.14);
+  /* a hora azul do anoitecer (lote 13) */
+  --gx-hora1:#0d1a3a;--gx-hora2:#24427c;--gx-hora3:#4a6aa6;
 }
-[data-theme="dark"]{--ceu:#06070d;--ceu2:#0b0d16}
+[data-theme="dark"]{--ceu:#06070d;--ceu2:#0b0d16;--ceu3:#141d33}
 
 /* ==========================================================================
    1 · O CHIP (ponto de entrada — o mesmo da proposta anterior)
@@ -6519,7 +6521,9 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   /* fixed (no mockup era absolute, dentro do palco): aqui o painel mora no
      fim do body e precisa cobrir a janela inteira por conta própria. */
   position:fixed;inset:0;z-index:100;overflow:hidden;
-  background:var(--ceu);
+  /* Fundo em 3 tons (lote 13): alto escuro, horizonte mais claro — o canvas
+     das estrelas agora é transparente por cima. Era uma cor só. */
+  background:linear-gradient(180deg,var(--ceu) 0%,var(--ceu2) 62%,var(--ceu3) 100%);
   opacity:0;pointer-events:none;
   /* visibility:hidden é o que tira o painel fechado do caminho de VERDADE:
      sem ele, os filhos que reativam pointer-events (o título e os botões do
@@ -6592,7 +6596,34 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* limbo: a borda que faz o disco virar esfera. Parado, custo zero. */
 .limbo{position:absolute;inset:0;border-radius:50%;pointer-events:none;
   box-shadow:inset 0 0 calc(var(--r) * .38) rgba(0,0,0,.55),
-             inset 0 0 0 1px rgba(255,255,255,.10)}
+             inset 0 0 0 1px rgba(255,255,255,.10),
+             0 0 calc(var(--r) * .34) calc(var(--r) * .03) var(--atmo,transparent)}
+/* Atmosfera (lote 13): um anel de luz da cor do planeta, por fora do disco.
+   Nas sugestões, metade — elas ainda não são mundos da pessoa. */
+.pin{--atmo:color-mix(in srgb,var(--c1,#8fb0c9) 34%,transparent)}
+.pin.sug{--atmo:color-mix(in srgb,var(--c1,#8fb0c9) 17%,transparent)}
+/* "sugestão" embaixo do nome: sem isto "1 mundo" e 4 planetas confundia —
+   as sugestões pareciam mundos apagados da pessoa. */
+.pnome{text-align:center}
+.pnome small{display:block;font-size:10px;font-weight:500;letter-spacing:.2px;color:var(--gx-txt3);margin-top:1px}
+/* ── Anoitecer (lote 13): a chegada no céu ──
+   Toda vez (0,65 s): a hora azul escorre até a noite e as estrelas acendem
+   na ordem do catálogo — Sirius primeiro. Na primeira entrada (1,75 s), o
+   céu nasce do preto do vídeo e os mundos chegam um a um. Tocar pula. */
+.gx-hora{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(180deg,var(--gx-hora1) 0%,var(--gx-hora2) 62%,var(--gx-hora3) 100%)}
+.galaxia.chega-curta .gx-hora{animation:gxHoraC .65s cubic-bezier(.22,1,.36,1) both}
+.galaxia.chega-longa .gx-hora{animation:gxHoraL 1.35s ease-in-out both}
+@keyframes gxHoraC{from{opacity:.85}to{opacity:0}}
+@keyframes gxHoraL{0%,33%{opacity:1}100%{opacity:0}}
+.galaxia::after{content:'';position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:20}
+.galaxia.chega-longa::after{animation:gxPreto .5s cubic-bezier(.22,1,.36,1) both}
+@keyframes gxPreto{from{opacity:1}to{opacity:0}}
+.galaxia.chega-longa,.galaxia.chega-longa.on{transition:visibility 0s!important;transform:none!important}
+.galaxia.chega-longa.abrindo .pin{animation-duration:.6s;animation-delay:calc(380ms + var(--i,0) * 70ms)}
+@media (prefers-reduced-motion:reduce){
+  .galaxia.chega-curta .gx-hora,.galaxia.chega-longa .gx-hora,.galaxia.chega-longa::after{animation:none}
+}
 /* névoa por distância: o que estiver longe fica mais azul e mais apagado */
 .nevoa{position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:#121a2c;opacity:var(--dim,0)}
@@ -9116,6 +9147,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
      depender de quem é o pai. Nasce fechado (visibility:hidden), o que tira
      os botões de dentro do caminho do Tab e do clique. -->
 <div class="galaxia" id="galaxia" aria-hidden="true">
+  <div class="gx-hora" aria-hidden="true"></div>
   <canvas id="ceu"></canvas>
   <div class="vinheta"></div>
   <div class="cena" id="cena">
@@ -9192,7 +9224,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.14.3';
+const VOX_VERSION='2026.10.14.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10749,6 +10781,7 @@ let I18N_EN={
 "Mural":"Pinboard",
 "Cards em colunas, cada um do seu tamanho: cabe mais na tela.":"Cards in columns, each its own size: more fits on screen.",
 "Ver no Mural":"View as Pinboard",
+"sugestão":"suggestion",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -38265,7 +38298,7 @@ function exportObsidian(){
 
    Filtro: magnitude visual <= 5,0 (a mais fraca do vetor é 4,94).
    Ordenado da mais brilhante pra mais fraca — o celular usa só o
-   começo do vetor (520 estrelas = magnitude <= 4,06).
+   começo do vetor (magnitude <= 4,5, ~900 estrelas; ver NEST_MOB).
    6 caracteres por estrela: RA(12 bits) DEC(12 bits) MAG(6) B-V(6).
    ============================================================ */
 var STAR_AL="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -38288,19 +38321,27 @@ var STARS=(function(){
     if(bv<0.0){r=0.78+bv*0.18;g=0.86;b=1.0;}
     else if(bv<0.7){r=0.94+bv*0.09;g=0.96;b=1.0-bv*0.16;}
     else{r=1.0;g=0.96-Math.min(bv,1.9)*0.13;b=0.90-Math.min(bv,1.9)*0.26;}
+    var R8=Math.round(255*Math.min(1,r)),G8=Math.round(255*Math.min(1,g)),B8=Math.round(255*Math.min(1,b));
     out[i]={
       x:cd*Math.cos(rr), y:-Math.sin(dd), z:cd*Math.sin(rr),
-      m:mg,
-      /* raio e alfa saem da magnitude — a escala é logarítmica de verdade,
-         mas pra ponto de 1 a 3 px o linear lê melhor. */
+      m:mg, bv:bv,
+      /* o raio sai da magnitude em reta: pra ponto de 1 a 3 px lê melhor. */
       rr:Math.max(0.45,0.52+(5.0-mg)*0.285),
-      al:Math.min(1,0.40+(5.0-mg)*0.108),
-      cor:'rgba('+Math.round(255*Math.min(1,r))+','+Math.round(255*Math.min(1,g))+','+Math.round(255*Math.min(1,b))+',',
-      /* cintilação: amplitude e período próprios de cada estrela, pra
-         nenhuma piscar junto com a vizinha */
-      ta:Math.min(0.20,Math.max(0.055,0.115+(2.0-mg)*0.028)),
-      tf:0.9+((i*37)%23)*0.10,
-      tp:((i*61)%100)/100*6.283
+      /* O BRILHO, em curva (lote 13). A reta antiga (0,40 a 1) fazia uma
+         estrela de magnitude 1 brilhar só 2,1× mais que uma de 5; no céu real
+         são 40×. Aqui são ~5×: o céu ganha fundo sem perder as fracas (com
+         7,6×, no teste, ele ficava mais vazio que o de antes). */
+      al:Math.max(0.18,Math.min(1,Math.pow(10,-0.18*(mg-1)))),
+      R:R8,G:G8,B:B8,
+      cor:'rgba('+R8+','+G8+','+B8+',',
+      /* cintilação: DUAS ondas de ritmos diferentes por estrela (uma só
+         "respira" em vez de cintilar) e amplitude própria. Em desenharCeu ela
+         cresce perto da borda de baixo, como no céu de verdade. */
+      ta:0.14+0.20*((i*0.6180339)%1),
+      tf:2.2+2.4*((i*0.4142136)%1),
+      tf2:5.6+4.0*((i*0.7320508)%1),
+      tp:((i*61)%100)/100*6.283,
+      tp2:((i*29)%100)/100*6.283
     };
   }
   return out;
@@ -38438,9 +38479,12 @@ var aberta=false;
 // No app de verdade estes dois não vêm de botão de palco: vêm do aparelho.
 var mob=window.matchMedia('(max-width:640px)').matches;
 var quieto=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-window.matchMedia('(max-width:640px)').addEventListener('change',function(ev){mob=ev.matches});
+/* Celular: um corte só, por magnitude (até 4,5, ~900 estrelas). Computador:
+   o catálogo inteiro. Antes o comentário dizia 520 e o celular desenhava 1.630. */
+var NEST_TUDO=STARS.length,NEST_MOB=(function(){var k=0;while(k<STARS.length&&STARS[k].m<=4.5)k++;return k})();
+var NEST=mob?NEST_MOB:NEST_TUDO;
+window.matchMedia('(max-width:640px)').addEventListener('change',function(ev){mob=ev.matches;NEST=mob?NEST_MOB:NEST_TUDO;VIA=null});
 var PERSP=900, kx=1, ky=1, kz=1, kr=1;
-var NEST=1630;
 
 function W(id){for(var i=0;i<worlds.length;i++)if(worlds[i].id===id)return worlds[i];return worlds[0];}
 function todos(){return worlds.concat([NOVO]);}
@@ -38649,11 +38693,7 @@ function reposicionar(){
 
 /* ---------- céu ---------- */
 var ceuW=0,ceuH=0,dpr=1;
-// A cor do fundo era lida com getComputedStyle a CADA quadro (30 vezes por
-// segundo, recalculando estilo). Agora é lida ao medir: ao abrir e ao redimensionar.
-var FUNDO_CEU='#06070d';
 function medirCeu(){
-  FUNDO_CEU=getComputedStyle(document.documentElement).getPropertyValue('--ceu').trim()||'#06070d';
   var r=galaxia.getBoundingClientRect();
   ceuW=Math.round(r.width);ceuH=Math.round(r.height);
   dpr=Math.min(2,window.devicePixelRatio||1);
@@ -38663,14 +38703,147 @@ function medirCeu(){
 /* o repouso olha pra Órion e pro Cão Maior — Sirius, Rigel e Betelgeuse
    entram no quadro. YAW0 = 270 - RA(alvo em graus). */
 var YAW0=182, PITCH0=-6;
+/* ── O CÉU NOVO (lote 13, 14/10/2026) ──
+   Fundo em CSS (3 tons) atrás de um canvas transparente; aqui só a Via
+   Láctea, as estrelas e a estrela cadente. */
+/* Halo pré-desenhado em 3 tons (azulado, branco, quente), escolhido pela cor
+   da estrela. Antes era um disco chapado de borda dura. */
+var _HALOS=null;
+function _halo(bv){
+  if(!_HALOS){
+    _HALOS=[[190,210,255],[255,255,255],[255,226,190]].map(function(c){
+      var cv=document.createElement('canvas');cv.width=cv.height=64;
+      var g=cv.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+      gr.addColorStop(0,'rgba('+c+',.55)');gr.addColorStop(.28,'rgba('+c+',.16)');gr.addColorStop(1,'rgba('+c+',0)');
+      g.fillStyle=gr;g.fillRect(0,0,64,64);return cv;
+    });
+  }
+  return _HALOS[bv<0?0:(bv<0.7?1:2)];
+}
+/* A Via Láctea no plano galáctico de VERDADE (polo norte galáctico em AR
+   192,86° / Dec +27,13°): pontinhos de 1 px em 4 alfas, mais densos e mais
+   largos perto do centro (Sagitário), e nuvens suaves. Gerada uma vez, com
+   semente fixa: o céu é sempre o mesmo. Celular: menos pontos. */
+var VIA=null,_VIA_A=[0.05,0.08,0.11,0.15],_NUVEM=null;
+function _viaGerar(){
+  /* Medido no app: com 2.200 pontos e 40 nuvens, a vista de repouso (Órion,
+     do lado oposto ao centro da galáxia) pegava só 179 pontos — a faixa não
+     se lia. Com estes números ela aparece sem disputar com os nomes. */
+  var nP=mob?1500:4200,nN=mob?40:70,lev=[[],[],[],[]],nuv=[];
+  var aG=192.85948*Math.PI/180,dG=27.12825*Math.PI/180,lN=122.93192*Math.PI/180;
+  var sdG=Math.sin(dG),cdG=Math.cos(dG);
+  function eq(l,b){
+    var cb=Math.cos(b),sb=Math.sin(b),cl=Math.cos(lN-l);
+    var dec=Math.asin(Math.max(-1,Math.min(1,sb*sdG+cb*cdG*cl)));
+    var ra=aG+Math.atan2(cb*Math.sin(lN-l),sb*cdG-cb*sdG*cl);
+    var cd=Math.cos(dec);
+    return {x:cd*Math.cos(ra),y:-Math.sin(dec),z:cd*Math.sin(ra)};
+  }
+  var sem=12345;
+  function rnd(){sem=(sem*16807)%2147483647;return (sem-1)/2147483646;}
+  function gauss(){return Math.sqrt(-2*Math.log(rnd()+1e-9))*Math.cos(6.2832*rnd());}
+  function longitude(c){var l=rnd()<c?gauss()*0.9:(rnd()*2-1)*Math.PI;return Math.max(-Math.PI,Math.min(Math.PI,l));}
+  for(var i=0;i<nP;i++){
+    var l=longitude(0.45),cc=Math.cos(l/2);
+    lev[i%4].push(eq(l,gauss()*(0.07+0.08*cc*cc)));
+  }
+  for(var j=0;j<nN;j++){
+    var v=eq(longitude(0.4),gauss()*0.05);
+    v.s=0.07+rnd()*0.10;v.a=0.06+rnd()*0.06;nuv.push(v);
+  }
+  VIA={lev:lev,nuv:nuv};
+}
+function _nuvem(){
+  if(!_NUVEM){
+    var cv=document.createElement('canvas');cv.width=cv.height=64;
+    var g=cv.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+    gr.addColorStop(0,'rgba(178,196,255,1)');gr.addColorStop(.45,'rgba(150,170,235,.4)');gr.addColorStop(1,'rgba(140,160,230,0)');
+    g.fillStyle=gr;g.fillRect(0,0,64,64);_NUVEM=cv;
+  }
+  return _NUVEM;
+}
+/* A chegada (anoitecer). Tocar em qualquer lugar pula pro fim. */
+var chegada=null;
+function _chegadaK(){
+  if(!chegada)return Infinity;
+  var k=performance.now()-chegada.t0;
+  if(k>chegada.dur){chegada=null;galaxia.classList.remove('chega-curta','chega-longa');return Infinity;}
+  return k;
+}
+function _chegadaComecar(longa){
+  galaxia.classList.remove('chega-curta','chega-longa');
+  if(quieto){chegada=null;return;}
+  void galaxia.offsetWidth;
+  galaxia.classList.add(longa?'chega-longa':'chega-curta');
+  chegada={t0:performance.now(),dur:longa?1750:650,longa:!!longa};
+}
+function _chegadaPular(){
+  if(!chegada)return;
+  chegada=null;galaxia.classList.remove('chega-curta','chega-longa','abrindo');camSuja=true;acordar();
+}
+/* Estrela cadente rara: uma a cada 20–40 s, 700 ms, só com o céu parado.
+   Nunca com "reduzir movimento". */
+var cad=null,cadT=null;
+function _cadAgendar(){
+  clearTimeout(cadT);if(quieto)return;
+  cadT=setTimeout(function(){
+    if(!aberta)return;
+    if(arrastando||alvo||Math.abs(vel.yaw)>0.012||chegada){_cadAgendar();return;}
+    var a=0.35+Math.random()*0.35,ld=Math.random()<0.5?-1:1;
+    cad={t0:performance.now(),x:ceuW*(0.15+Math.random()*0.7),y:ceuH*(0.06+Math.random()*0.3),
+         dx:Math.cos(a)*ld,dy:Math.sin(a),len:Math.min(ceuW,ceuH)*(0.18+Math.random()*0.1)};
+    acordar();_cadAgendar();
+  },20000+Math.random()*20000);
+}
+function _desenharCadente(c){
+  if(!cad)return;
+  var k=(performance.now()-cad.t0)/700;if(k>=1){cad=null;return;}
+  var e=1-Math.pow(1-k,2),hx=cad.x+cad.dx*cad.len*e*1.4,hy=cad.y+cad.dy*cad.len*e*1.4;
+  var tl=cad.len*(0.35+0.5*Math.sin(Math.PI*k)),tx=hx-cad.dx*tl,ty=hy-cad.dy*tl,al=Math.sin(Math.PI*k);
+  var g=c.createLinearGradient(tx,ty,hx,hy);
+  g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(255,255,255,'+(0.85*al).toFixed(3)+')');
+  c.strokeStyle=g;c.lineWidth=1.4;c.lineCap='round';c.beginPath();c.moveTo(tx,ty);c.lineTo(hx,hy);c.stroke();
+}
 function desenharCeu(t){
   var w=ceuW,h=ceuH;
-  ctx.fillStyle=FUNDO_CEU;ctx.fillRect(0,0,w,h);
+  ctx.clearRect(0,0,w,h);
   var cx=w/2, cy=h/2, f=PERSP;
   var ya=(cam.yaw+YAW0)*Math.PI/180, pa=(cam.pitch+PITCH0)*Math.PI/180;
   var cyw=Math.cos(ya),syw=Math.sin(ya),cpt=Math.cos(pa),spt=Math.sin(pa);
-  var n=Math.min(NEST,STARS.length), i, s, x,y,z, x2,y2,z2, sx,sy, a, r, np=0;
-  var cintila=!quieto;
+  var n=Math.min(NEST,STARS.length), i, s, x,y,z, x2,y2,z2, sx,sy, a, r, np=0, k, q;
+  var cintila=!quieto, ch=_chegadaK(), lg=chegada&&chegada.longa;
+  /* Via Láctea, atrás das estrelas. Na chegada ela vem por último, como no céu real. */
+  if(!VIA)_viaGerar();
+  var vm=ch===Infinity?1:Math.max(0,Math.min(1,lg?(ch-1100)/600:(ch-300)/350));
+  if(vm>0){
+    var nv=_nuvem();
+    for(i=0;i<VIA.nuv.length;i++){
+      s=VIA.nuv[i];
+      x=s.x*cyw+s.z*syw; z=-s.x*syw+s.z*cyw; y=s.y;
+      y2=y*cpt-z*spt; z2=y*spt+z*cpt;
+      /* nuvem longe do centro da vista fica de fora: a perspectiva esticava
+         as da borda até virarem manchas do tamanho da tela */
+      if(z2>-0.6)continue;
+      r=Math.min(f*s.s,0.35*Math.min(w,h));sx=cx+f*(x/-z2);sy=cy+f*(y2/-z2);
+      if(r<4||sx<-r||sx>w+r||sy<-r||sy>h+r)continue;
+      ctx.globalAlpha=s.a*vm;ctx.drawImage(nv,sx-r,sy-r,r*2,r*2);
+    }
+    ctx.globalAlpha=1;
+    for(k=0;k<4;k++){
+      /* a cor de pintura troca só 4 vezes por quadro */
+      ctx.fillStyle='rgba(205,215,255,'+(_VIA_A[k]*vm).toFixed(3)+')';
+      q=VIA.lev[k];
+      for(i=0;i<q.length;i++){
+        s=q[i];
+        x=s.x*cyw+s.z*syw; z=-s.x*syw+s.z*cyw; y=s.y;
+        y2=y*cpt-z*spt; z2=y*spt+z*cpt;
+        if(z2>-0.12)continue;
+        sx=cx+f*(x/-z2); sy=cy+f*(y2/-z2);
+        if(sx<0||sx>w||sy<0||sy>h)continue;
+        ctx.fillRect(sx,sy,1,1);
+      }
+    }
+  }
   for(i=0;i<n;i++){
     s=STARS[i];
     x=s.x*cyw+s.z*syw; z=-s.x*syw+s.z*cyw; y=s.y;
@@ -38679,21 +38852,38 @@ function desenharCeu(t){
     sx=cx+f*(x2/-z2); sy=cy+f*(y2/-z2);
     if(sx<-6||sx>w+6||sy<-6||sy>h+6)continue;
     a=s.al;
-    if(cintila)a*=1+s.ta*Math.sin(t*s.tf+s.tp);
+    if(ch!==Infinity){
+      /* acendem na ordem do catálogo: a mais brilhante primeiro */
+      var ti=lg?250+950*Math.pow(i/n,0.55):40+380*Math.pow(i/n,0.55);
+      a*=Math.max(0,Math.min(1,(ch-ti)/(lg?300:180)));
+    }
+    if(cintila){
+      /* cintila mais perto da borda de baixo (mais ar no caminho) */
+      var kk=0.30+0.70*Math.max(0,Math.min(1,sy/h));
+      a*=1+s.ta*kk*(0.62*Math.sin(t*s.tf+s.tp)+0.38*Math.sin(t*s.tf2+s.tp2));
+    }
     if(a<=0.02)continue;
+    if(a>1)a=1;
     np++;
     r=s.rr;
-    ctx.fillStyle=s.cor+a.toFixed(3)+')';
+    var cor=s.cor;
+    if(cintila&&i<13){
+      /* as ~13 mais brilhantes trocam levemente de cor (±12%) */
+      var dc=0.12*Math.sin(t*s.tf2*0.7+s.tp);
+      cor='rgba('+Math.min(255,Math.round(s.R*(1+dc)))+','+s.G+','+Math.min(255,Math.round(s.B*(1-dc)))+',';
+    }
+    ctx.fillStyle=cor+a.toFixed(3)+')';
     if(r<0.95){ctx.fillRect(sx-0.5,sy-0.5,1.3,1.3);}
     else{
-      ctx.beginPath();ctx.arc(sx,sy,r,0,6.2832);ctx.fill();
       if(s.m<1.7){                       /* halo só nas mais brilhantes */
-        ctx.fillStyle=s.cor+(a*0.11).toFixed(3)+')';
-        ctx.beginPath();ctx.arc(sx,sy,r*3.6,0,6.2832);ctx.fill();
+        var hs=r*5.5;
+        ctx.globalAlpha=Math.min(1,a*0.55);ctx.drawImage(_halo(s.bv),sx-hs,sy-hs,hs*2,hs*2);ctx.globalAlpha=1;
       }
+      ctx.beginPath();ctx.arc(sx,sy,r,0,6.2832);ctx.fill();
     }
   }
   pintadas=np;
+  _desenharCadente(ctx);
 }
 
 /* ---------- laço ---------- */
@@ -38768,7 +38958,7 @@ function montar(){
     h+='<div class="pw'+(w.id===selId?' sel':'')+(w.del?' morto':'')+(w.vazio?' frio':'')+(w.trancado?' cofre':'')+'" data-id="'+esc(w.id)+'" style="'
       +'--x:'+(w.pos[0]*kx).toFixed(1)+'px;--y:'+(w.pos[1]*ky).toFixed(1)+'px;--z:'+(w.pos[2]*kz).toFixed(1)+'px">'
       +'<div class="pl">'
-      +'<button class="pin'+(w.fantasma?' fantasma':'')+'" style="--r:'+R+'px;--i:'+i+'" '
+      +'<button class="pin'+(w.fantasma?' fantasma':'')+(w.sug?' sug':'')+'" style="--r:'+R+'px;--i:'+i+(w.fantasma?'':';--c1:'+w.c[0])+'" '
       +'aria-label="'+esc(w.fantasma?t(w.nome):w.nome)+'">'
       +'<span class="esfera" style="'+(w.fantasma?'':'--c1:'+w.c[0]+';--c2:'+w.c[1]+';--c3:'+w.c[2])+'">'
       +(w.fantasma?'':'<span class="noite"></span><span class="brilho"></span>')+'</span>'
@@ -38776,7 +38966,7 @@ function montar(){
       +'<span class="nevoa"></span>'
       +(w.id===ativoId?'<span class="aqui"></span>':'')
       +'<span class="anel"></span>'
-      +'<span class="pnome">'+esc(w.fantasma?t(w.nome):w.nome)+'</span>'
+      +'<span class="pnome">'+esc(w.fantasma?t(w.nome):w.nome)+(w.sug?'<small>'+esc(t('sugestão'))+'</small>':'')+'</span>'
       +'</button></div></div>';
   }
   orbe.innerHTML=h;
@@ -39397,7 +39587,7 @@ window.addEventListener('resize',function(){
     cam.dolly=dollyBase;reposicionar();_conferirNaTela();camSuja=true;acordar();
   },140);
 });
-function abrirGalaxia(e){
+function abrirGalaxia(e,opts){
   if(e)e.stopPropagation();
   if(aberta)return;
   aberta=true;
@@ -39442,7 +39632,9 @@ function abrirGalaxia(e){
     galaxia.classList.add('on');
     pintarDet();
   });
-  setTimeout(function(){galaxia.classList.remove('abrindo');},quieto?0:900);
+  _chegadaComecar(!!(opts&&opts.longa));
+  setTimeout(function(){galaxia.classList.remove('abrindo');},quieto?0:(chegada&&chegada.longa?1900:900));
+  _cadAgendar();
   gxDica.textContent=mob
     ? t('arraste pra girar · belisque pra aproximar · toque duas vezes pra entrar')
     : t('arraste pra girar · role pra aproximar · as pastas são o mapa de dentro de um mundo — aqui é o mapa dos mundos');
@@ -39469,6 +39661,7 @@ function fecharGalaxia(semVeu){
   fecharCofreUI();
   fecharAjudaMundos();
   if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+  clearTimeout(cadT);cad=null;chegada=null;galaxia.classList.remove('chega-curta','chega-longa');
   if(jaEstavaFechada)return;
   /* devolve o foco pra onde ele estava: o chip que abriu o painel */
   try{document.getElementById('worldChip').focus({preventScroll:true});}catch(err){}
@@ -39483,6 +39676,8 @@ function fecharGalaxia(semVeu){
    pinça com escala travada no início do gesto), com uma dimensão a mais.
    ============================================================ */
 var pts=new Map(), pan=false, pX=0, pY=0, pinch=null, pinchD=0, alvoDown=null, mexeuPx=0;
+/* qualquer toque durante a chegada pula pro céu pronto */
+galaxia.addEventListener('pointerdown',_chegadaPular,true);
 cena.addEventListener('pointerdown',function(e){
   var pin=e.target.closest('.pin');
   alvoDown=pin?pin.closest('.pw').getAttribute('data-id'):null;
