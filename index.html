@@ -2008,6 +2008,46 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-cfg-btn.active{color:var(--accent);background:var(--accent-glow)}
 .folder-fc-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px;display:flex;border-radius:7px;transition:all var(--transition)}
 .folder-fc-btn:hover{background:var(--bg-input);color:var(--text2)}
+/* ── Botão dos Mundos: "Janela da noite" (lote 13, 14/10/2026) ──
+   Um pedacinho do céu na barra de Pastas: degradê noite → hora azul, globo
+   cor de estrela e duas estrelinhas. Forma própria de propósito: o Idioma
+   (menu ⋯) já é um globo azul e o "+" já é outro azul — só o tom não bastava.
+   Ícone #e8f0ff sobre #2c4c8c = 7,3:1 no pior ponto. No escuro ganha contorno
+   pra pastilha não sumir na barra. A porta já tem a cor do destino: é o azul
+   por onde o céu passa ao abrir (o voo, em abrirGalaxia). */
+:root{--mw-topo:#101b36;--mw-base:#2c4c8c;--mw-ic:#e8f0ff;--mw-est:#ffffff;--mw-bd:transparent;--mw-hz:#5a7cc0}
+[data-theme="dark"]{--mw-bd:#5d75a8}
+#btnFolderMundos,#btnFolderMundos:hover{position:relative;overflow:hidden;color:var(--mw-ic);
+  background:linear-gradient(180deg,var(--mw-topo),var(--mw-base));box-shadow:inset 0 0 0 1px var(--mw-bd);
+  transition:transform .12s cubic-bezier(.22,1,.36,1)}
+#btnFolderMundos::before,#btnFolderMundos::after{content:'';position:absolute;border-radius:50%;background:var(--mw-est);pointer-events:none}
+#btnFolderMundos::before{width:1.6px;height:1.6px;left:4px;top:3px;opacity:.85}
+#btnFolderMundos::after{width:1.3px;height:1.3px;right:3px;top:14px;opacity:.55}
+#btnFolderMundos .mw-hz{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .18s linear;
+  background:radial-gradient(ellipse 120% 70% at 50% 110%,var(--mw-hz),transparent 70%)}
+#btnFolderMundos:hover .mw-hz,#btnFolderMundos:focus-visible .mw-hz{opacity:.75}
+#btnFolderMundos svg{position:relative}
+#btnFolderMundos svg g{transform-box:view-box;transform-origin:12px 12px;transform:rotate(-18deg);transition:transform .26s cubic-bezier(.22,1,.36,1)}
+#btnFolderMundos:hover svg g{transform:rotate(-6deg)}
+#btnFolderMundos:active{transform:scale(.9);transition-duration:.09s}
+#btnFolderMundos.mola{animation:mwMola .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes mwMola{0%{transform:scale(.9)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
+/* cintilo: uma estrelinha de 4 pontas quando a barra de Pastas abre (no
+   máximo 1 a cada 45 s — ver toggleFolders). */
+#btnFolderMundos .mw-cint{position:absolute;right:1px;top:1px;width:6px;height:6px;opacity:0;pointer-events:none;color:var(--mw-est)}
+#btnFolderMundos .mw-cint svg{display:block;width:100%;height:100%}
+#btnFolderMundos.mw-cintila .mw-cint{animation:mwCint .7s cubic-bezier(.22,1,.36,1)}
+@keyframes mwCint{0%{opacity:0;transform:scale(.3) rotate(0deg)}35%{opacity:1;transform:scale(1) rotate(45deg)}100%{opacity:0;transform:scale(.5) rotate(90deg)}}
+/* o voo: um disco da cor do botão nasce DELE e cresce até cobrir a tela,
+   escurecendo até a cor do céu; o céu entra por cima. */
+.mw-voo{position:fixed;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;z-index:99;pointer-events:none;
+  background:var(--mw-base);transform:scale(1);transition:transform .42s cubic-bezier(.22,1,.36,1),background-color .42s linear,opacity .25s linear}
+.mw-voo.vai{background-color:var(--ceu2)}
+@media (prefers-reduced-motion:reduce){
+  #btnFolderMundos,#btnFolderMundos svg g,#btnFolderMundos .mw-hz{transition:none}
+  #btnFolderMundos.mola,#btnFolderMundos.mw-cintila .mw-cint{animation:none}
+  .mw-voo{display:none}
+}
 /* ══ FLUXOGRAMA DE PASTAS — Fase 1 (ver e navegar) ══
    Reusa o backdrop de .tx-overlay (fixed;inset:0;fundo escurecido), mas o
    modal interno ocupa a tela toda — não é um cartão de 420px, é um canvas.
@@ -6447,11 +6487,13 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* ── WORLD / GALÁXIA — tokens próprios (os demais vêm do app) ────────── */
 :root{
   --saida:cubic-bezier(.22,1,.36,1);
-  --ceu:#0e1421;--ceu2:#161f31;
+  --ceu:#0e1421;--ceu2:#161f31;--ceu3:#22314f;
   --gx-txt:#f0f0f4;--gx-txt2:#a8b0c2;--gx-txt3:#7c8499;
   --gx-sup:rgba(255,255,255,.07);--gx-bord:rgba(255,255,255,.14);
+  /* a hora azul do anoitecer (lote 13) */
+  --gx-hora1:#0d1a3a;--gx-hora2:#24427c;--gx-hora3:#4a6aa6;
 }
-[data-theme="dark"]{--ceu:#06070d;--ceu2:#0b0d16}
+[data-theme="dark"]{--ceu:#06070d;--ceu2:#0b0d16;--ceu3:#141d33}
 
 /* ==========================================================================
    1 · O CHIP (ponto de entrada — o mesmo da proposta anterior)
@@ -6479,7 +6521,9 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   /* fixed (no mockup era absolute, dentro do palco): aqui o painel mora no
      fim do body e precisa cobrir a janela inteira por conta própria. */
   position:fixed;inset:0;z-index:100;overflow:hidden;
-  background:var(--ceu);
+  /* Fundo em 3 tons (lote 13): alto escuro, horizonte mais claro — o canvas
+     das estrelas agora é transparente por cima. Era uma cor só. */
+  background:linear-gradient(180deg,var(--ceu) 0%,var(--ceu2) 62%,var(--ceu3) 100%);
   opacity:0;pointer-events:none;
   /* visibility:hidden é o que tira o painel fechado do caminho de VERDADE:
      sem ele, os filhos que reativam pointer-events (o título e os botões do
@@ -6552,7 +6596,34 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* limbo: a borda que faz o disco virar esfera. Parado, custo zero. */
 .limbo{position:absolute;inset:0;border-radius:50%;pointer-events:none;
   box-shadow:inset 0 0 calc(var(--r) * .38) rgba(0,0,0,.55),
-             inset 0 0 0 1px rgba(255,255,255,.10)}
+             inset 0 0 0 1px rgba(255,255,255,.10),
+             0 0 calc(var(--r) * .34) calc(var(--r) * .03) var(--atmo,transparent)}
+/* Atmosfera (lote 13): um anel de luz da cor do planeta, por fora do disco.
+   Nas sugestões, metade — elas ainda não são mundos da pessoa. */
+.pin{--atmo:color-mix(in srgb,var(--c1,#8fb0c9) 34%,transparent)}
+.pin.sug{--atmo:color-mix(in srgb,var(--c1,#8fb0c9) 17%,transparent)}
+/* "sugestão" embaixo do nome: sem isto "1 mundo" e 4 planetas confundia —
+   as sugestões pareciam mundos apagados da pessoa. */
+.pnome{text-align:center}
+.pnome small{display:block;font-size:10px;font-weight:500;letter-spacing:.2px;color:var(--gx-txt3);margin-top:1px}
+/* ── Anoitecer (lote 13): a chegada no céu ──
+   Toda vez (0,65 s): a hora azul escorre até a noite e as estrelas acendem
+   na ordem do catálogo — Sirius primeiro. Na primeira entrada (1,75 s), o
+   céu nasce do preto do vídeo e os mundos chegam um a um. Tocar pula. */
+.gx-hora{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(180deg,var(--gx-hora1) 0%,var(--gx-hora2) 62%,var(--gx-hora3) 100%)}
+.galaxia.chega-curta .gx-hora{animation:gxHoraC .65s cubic-bezier(.22,1,.36,1) both}
+.galaxia.chega-longa .gx-hora{animation:gxHoraL 1.35s ease-in-out both}
+@keyframes gxHoraC{from{opacity:.85}to{opacity:0}}
+@keyframes gxHoraL{0%,33%{opacity:1}100%{opacity:0}}
+.galaxia::after{content:'';position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:20}
+.galaxia.chega-longa::after{animation:gxPreto .5s cubic-bezier(.22,1,.36,1) both}
+@keyframes gxPreto{from{opacity:1}to{opacity:0}}
+.galaxia.chega-longa,.galaxia.chega-longa.on{transition:visibility 0s!important;transform:none!important}
+.galaxia.chega-longa.abrindo .pin{animation-duration:.6s;animation-delay:calc(380ms + var(--i,0) * 70ms)}
+@media (prefers-reduced-motion:reduce){
+  .galaxia.chega-curta .gx-hora,.galaxia.chega-longa .gx-hora,.galaxia.chega-longa::after{animation:none}
+}
 /* névoa por distância: o que estiver longe fica mais azul e mais apagado */
 .nevoa{position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:#121a2c;opacity:var(--dim,0)}
@@ -6640,6 +6711,41 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   opacity:0;transform:translateY(8px);pointer-events:none;
   transition:opacity .18s linear,transform .32s var(--saida)}
 .det.on{opacity:1;transform:none;pointer-events:auto}
+/* ── Ficha da PRIMEIRA ENTRADA (lote 13) ──
+   A pergunta "como vai usar" mora aqui, na ficha do planeta: escolher o
+   mundo e o jeito vira um gesto só, e nada cobre o céu. Os botões já
+   entram. "Do meu jeito" tem o mesmo tamanho das outras opções. */
+.det.d1a{max-height:min(72vh,600px);overflow:auto;overscroll-behavior:contain}
+.det .d1a-q{font-size:14px;font-weight:700;color:var(--gx-txt);margin-top:13px;letter-spacing:-.2px}
+.det .d1a-sub{font-size:12px;color:var(--gx-txt2);line-height:1.5;margin-top:3px}
+.det .d1a-jeito{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;width:100%;min-height:56px;
+  text-align:left;margin-top:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--gx-bord);background:var(--gx-sup);
+  color:var(--gx-txt);font-family:inherit;cursor:pointer;transition:transform .07s ease-out,background-color .15s linear,border-color .15s linear}
+.det .d1a-jeito b{font-size:13.5px;font-weight:700}
+.det .d1a-jeito b i{font-style:normal;font-size:10.5px;font-weight:700;color:#7fe3c0;margin-left:5px}
+.det .d1a-jeito small{grid-column:1;font-size:11.5px;color:var(--gx-txt2);line-height:1.4}
+.det .d1a-jeito .d1a-seta{grid-row:1 / span 2;grid-column:2;font-size:16px;color:var(--gx-txt2)}
+.det .d1a-jeito.on{border-color:rgba(52,216,160,.55);background:rgba(52,216,160,.10)}
+.det .d1a-jeito.on .d1a-seta{color:#7fe3c0}
+.det .d1a-jeito:hover{border-color:rgba(255,255,255,.32)}
+.det .d1a-jeito:active{transform:scale(.95,.93)}
+.det .d1a-jeito.mola{animation:d1aMola .32s cubic-bezier(.34,1.56,.64,1)}
+.det .d1a-jeito:focus-visible{outline:2px solid #7fe3c0;outline-offset:2px}
+@keyframes d1aMola{0%{transform:scale(.95,.93)}55%{transform:scale(1.03)}100%{transform:none}}
+.det .d1a-mais{margin-top:8px}
+.det .d1a-mais summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--gx-txt2);padding:6px 0;list-style:none}
+.det .d1a-mais summary::-webkit-details-marker{display:none}
+.det .d1a-mais summary::after{content:' ▾'}
+.det .d1a-mais[open] summary::after{content:' ▴'}
+.d1a-selo{position:fixed;z-index:120;pointer-events:none;font:700 12px var(--font);color:#04140e;background:#7fe3c0;
+  border-radius:999px;padding:4px 10px;white-space:nowrap}
+.gx-jausava{display:block;margin-top:4px;background:none;border:none;padding:0;font:600 11.5px var(--font);
+  color:var(--gx-txt2);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.gx-jausava:hover{color:var(--gx-txt)}
+@media (max-width:640px){.det.d1a{max-height:50vh}}
+.abre-pergunta .abre-perfil-linha.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.abre-pergunta-pe{font-size:12px;color:var(--text3);text-align:center;margin-top:10px}
+@media (prefers-reduced-motion:reduce){.det .d1a-jeito,.det .d1a-jeito.mola{transition:none;animation:none}}
 /* MUNDO VAZIO = MUNDO APAGADO.
    Nao e "sugestao": um mundo que VOCE criou e nunca usou tambem nasce
    assim, o que e verdade e nao invencao. Acende quando recebe a primeira
@@ -6813,6 +6919,16 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   max-width:min(440px,calc(100% - 340px));line-height:1.5;
   font-size:11.5px;color:var(--gx-txt3);pointer-events:none;
   transition:opacity .3s linear}
+/* Lote 13 (14/10/2026): o medidor era sobra de teste e aparecia pra todo
+   mundo — e o céu agora é a primeira tela de quem chega. Só aparece com
+   ?medidor no endereço (abrirGalaxia liga a classe .medir). */
+.gx-medidor{display:none}
+.galaxia.medir .gx-medidor{display:block}
+/* A noite e o brilho moram DENTRO da esfera (que já corta em círculo). Fora
+   dela, o disco de 2,2× pintava um círculo escuro no céu e escondia as
+   estrelas atrás de cada planeta. z-index 1: continuam por cima das manchas
+   (.esfera::after), como antes. */
+.esfera .noite,.esfera .brilho{z-index:1}
 .gx-medidor{position:absolute;right:14px;top:56px;z-index:7;
   font-size:10.5px;font-weight:600;color:var(--gx-txt3);font-variant-numeric:tabular-nums;
   background:rgba(12,15,24,.6);border:1px solid var(--gx-bord);border-radius:9px;padding:6px 9px;
@@ -6839,10 +6955,14 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* SEM MOVIMENTO: nada de transição, nada de cintilação (o JS desliga),
    nada de inércia. Navegar continua funcionando — resposta direta ao dedo
    não é "movimento não pedido". */
-.palco.quieto .galaxia{transition:opacity .12s linear,visibility 0s linear .12s!important;transform:none!important}
-.palco.quieto .galaxia.on{transition:opacity .12s linear,visibility 0s!important}
-.palco.quieto .galaxia.abrindo .pin{animation:none!important}
-.palco.quieto .det,.palco.quieto .anel,.palco.quieto .gxb{transition:none!important}
+/* "Reduzir movimento". As regras vinham do protótipo (.palco.quieto) e no
+   app nunca ligavam: ninguém punha a classe e .galaxia não é filha de .palco. */
+@media (prefers-reduced-motion:reduce){
+  .galaxia{transition:opacity .12s linear,visibility 0s linear .12s!important;transform:none!important}
+  .galaxia.on{transition:opacity .12s linear,visibility 0s!important}
+  .galaxia.abrindo .pin{animation:none!important}
+  .galaxia .det,.galaxia .anel,.galaxia .gxb{transition:none!important}
+}
 
 /* ---- vitrine: o painel de verdade, parado, dentro do documento ----
    Reaproveita as MESMAS classes do painel vivo (.det/.dn/.dd/.dinp) pra não
@@ -7442,7 +7562,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span data-i18n>Buscar</span>
       </button>
-      <button class="gbtn" id="btnView" onclick="toggleView()" title="Alterna entre Lista, Masonry e Documento" data-i18n-title>
+      <button class="gbtn" id="btnView" onclick="toggleView()" title="Troca o jeito de ver: Lista, Mural ou Documento" data-i18n-title>
         <span id="viewIcon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></span>
         <span id="viewLabel" data-i18n>Lista</span>
       </button>
@@ -7675,6 +7795,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </button>
         <button class="folder-fc-btn" id="btnFolderMundos" onclick="abrirGalaxia(event)" title="Ver todos os mundos" data-i18n-title aria-label="Ver todos os mundos">
+          <span class="mw-hz" aria-hidden="true"></span><span class="mw-cint" aria-hidden="true"><svg viewBox="0 0 10 10"><path d="M5 0 6 4 10 5 6 6 5 10 4 6 0 5 4 4z" fill="currentColor"/></svg></span>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-18 12 12)"><circle cx="12" cy="12" r="8.6"/><path d="M12 3.4c3.1 2.3 3.1 14.9 0 17.2"/><path d="M12 3.4c-3.1 2.3-3.1 14.9 0 17.2"/><path d="M3.9 9.1c5 2 11.2 2 16.2 0"/></g></svg>
         </button>
         <button class="folder-fc-btn" id="btnFolderNova" onclick="_folderIrCriarNova()" title="Nova pasta" data-i18n-title>
@@ -9061,6 +9182,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
      depender de quem é o pai. Nasce fechado (visibility:hidden), o que tira
      os botões de dentro do caminho do Tab e do clique. -->
 <div class="galaxia" id="galaxia" aria-hidden="true">
+  <div class="gx-hora" aria-hidden="true"></div>
   <canvas id="ceu"></canvas>
   <div class="vinheta"></div>
   <div class="cena" id="cena">
@@ -9071,6 +9193,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div>
         <span class="k" data-i18n>Seus mundos</span>
         <span class="n" id="gxCont"></span>
+        <button type="button" class="gx-jausava" id="gxJaUsava" onclick="_1aJaUsava()" hidden data-i18n>Já usava o Vox? Trazer minha cópia</button>
       </div>
     </div>
     <div class="gx-acoes">
@@ -9137,7 +9260,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.14.1';
+const VOX_VERSION='2026.10.14.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10690,6 +10813,44 @@ let I18N_EN={
 "A aba \"{x}\" já está em \"{p}\"":"The \"{x}\" tab is already in \"{p}\"",
 "Essa aba já foi guardada":"This tab was already saved",
 "guardar a aba \"{x}\"":"saving the \"{x}\" tab",
+"Troca o jeito de ver: Lista, Mural ou Documento":"Switch view: List, Pinboard or Document",
+"Mural":"Pinboard",
+"Cards em colunas, cada um do seu tamanho: cabe mais na tela.":"Cards in columns, each its own size: more fits on screen.",
+"Ver no Mural":"View as Pinboard",
+"sugestão":"suggestion",
+"Já usava o Vox? Trazer minha cópia":"Used Vox before? Bring back my backup",
+"Onde você quer começar?":"Where do you want to start?",
+"Na dúvida, este. Abre onde você parou e grava no último modo usado.":"Not sure? This one. Opens where you left off and records in the last mode you used.",
+"Entrar em {x}, jeito {p}":"Enter {x}, {p} way",
+"Como você vai usar o Vox?":"How will you use Vox?",
+"Como você vai usar {x}?":"How will you use {x}?",
+"Comece por aqui":"Start here",
+"Um lugar pra tudo. Na dúvida, comece aqui.":"A place for everything. Not sure? Start here.",
+"Vazio, esperando a primeira nota":"Empty, waiting for your first note",
+"Não tem resposta errada. Na dúvida, escolha Do meu jeito e vá usando.":"There's no wrong answer. Not sure? Pick My own way and just start.",
+"Já sei como vou usar":"I know how I'll use it",
+"Outro jeito":"Another way",
+"Dá pra trocar depois, em Configurações.":"You can change this later in Settings.",
+"Grava no modo Reunião. Da próxima vez, abre no Calendário.":"Records in Meeting mode. Next time, opens in Calendar.",
+"Grava no modo Consulta. Da próxima vez, abre no Documento.":"Records in Consultation mode. Next time, opens in Document.",
+"Grava no modo Livre. Da próxima vez, abre no Fluxograma.":"Records in Free mode. Next time, opens in Flowchart.",
+"Grava no modo Entrevista. Da próxima vez, abre na Lista.":"Records in Interview mode. Next time, opens in List.",
+"Grava no modo Livre. Da próxima vez, abre no Calendário, dia por dia.":"Records in Free mode. Next time, opens in Calendar, day by day.",
+"Grava no modo Livre. Da próxima vez, abre no Documento.":"Records in Free mode. Next time, opens in Document.",
+"Estudo":"Study",
+"O Vox arrumou {x} assim: grava no modo {m}. Da próxima vez, abre em {t}.":"Vox set up {x} like this: it records in {m} mode. Next time, it opens in {t}.",
+"Este é o Mural de {x}. Grave a próxima reunião no botão vermelho: a fala vira texto sozinha. Depois, a lente {l} ajuda a separar o que foi decidido do que ficou pra fazer.":"This is the {x} Pinboard. Record your next meeting with the red button: speech turns into text on its own. Then the {l} lens helps separate what was decided from what's left to do.",
+"Este é o Mural de {x}. Grave cada atendimento no botão vermelho, longe do resto: a fala vira texto sozinha. Depois, a lente {l} organiza o texto no formato de nota clínica.":"This is the {x} Pinboard. Record each appointment with the red button, away from everything else: speech turns into text on its own. Then the {l} lens organizes the text as a clinical note.",
+"Este é o Mural de {x}. Toque no botão vermelho e conte como foi o dia, do jeito que vier: a fala vira texto sozinha. Depois, experimente a lente {l}.":"This is the {x} Pinboard. Tap the red button and tell how your day went, however it comes out: speech turns into text on its own. Then try the {l} lens.",
+"Este é o Mural de {x}. Grave a aula ou o que você estudou no botão vermelho: a fala vira texto sozinha. Depois, a lente {l} transforma o texto em cartões de estudo.":"This is the {x} Pinboard. Record the class or what you studied with the red button: speech turns into text on its own. Then the {l} lens turns the text into study cards.",
+"Aqui é o seu Mural. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque numa lente (os botões coloridos da nota) pra transformar o texto. Comece pela lente {l}.":"This is your Pinboard. Tap the red button and speak: your speech becomes a note. Then tap a lens (the colored buttons on the note) to transform the text. Start with the {l} lens.",
+"Este é o Mural de {x}. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque numa lente (os botões coloridos da nota) pra transformar o texto. Comece pela lente {l}.":"This is the {x} Pinboard. Tap the red button and speak: your speech becomes a note. Then tap a lens (the colored buttons on the note) to transform the text. Start with the {l} lens.",
+"Gravar → virar texto → {l}.":"Record → turn into text → {l}.",
+"O modo {m} já está marcado lá embaixo.":"{m} mode is already selected down below.",
+"Da próxima vez, este mundo abre em {t}.":"Next time, this world opens in {t}.",
+"Boas-vindas":"Welcome",
+"Abriu em {x}: é o jeito {p} deste mundo.":"Opened in {x}: that's this world's {p} way.",
+"marcado":"selected",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -12109,6 +12270,9 @@ function _ehSoBoasVindas(){
 function _atualizarJaUsava(){
   const el=document.getElementById('voxJaUsava');if(!el)return;
   let off=false;try{off=localStorage.getItem('vox_jausava_off')==='1'}catch(e){}
+  // Quem entrou pelo céu viu o "Já usava o Vox?" lá: a cópia nunca cai num
+  // mundo sugerido por engano.
+  if(_1aPassou())off=true;
   el.style.display=(!off&&_ehSoBoasVindas())?'flex':'none';
 }
 function _jaUsavaFechar(){
@@ -13142,6 +13306,9 @@ function closeIntroVideo(finished=false){
   overlay.classList.remove('on');
   document.body.style.overflow='';
   localStorage.setItem('vox_intro_seen','1');
+  // Primeira entrada: do preto do vídeo, o céu anoitece (lote 13).
+  const _1a=_1aLer();
+  if(_1a&&_1a.etapa==='ceu'&&!introThenAbout&&!document.getElementById('galaxia').classList.contains('on'))abrirGalaxia(null,{longa:true});
   if(finished&&introThenAbout){
     introThenAbout=false;
     document.getElementById('aboutVer').textContent=VOX_VERSION;
@@ -13601,8 +13768,11 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // antes, _pastaNaLixeira respondia "não" pra todo mundo e nada era varrido.
   loadFolders();_mundoChecarPendente();_faxinaLixeira();applyFolderFilter();_syncAudioCfgUI();initFolderDrag();initSelectionGlow();initFloatSelHandle();
   initAudioDropzone();
+  // Primeira entrada pelo céu (lote 13): navegador limpo ganha a marca ANTES
+  // do card de boas-vindas, que passa a nascer no mundo escolhido.
+  _1aTalvezComecar();
   // Card de boas-vindas: primeiro uso, histórico vazio → demo pronta pra testar as lentes
-  if(!localStorage.getItem('vox_welcomed')&&!document.querySelector('#cardsList .card:not(.proc-card)')){
+  if(!_1aPassou()&&!localStorage.getItem('vox_welcomed')&&!document.querySelector('#cardsList .card:not(.proc-card)')){
     localStorage.setItem('vox_welcomed','1');
     const demoText=t('Falar é mais rápido que digitar — a maioria das pessoas fala três vezes mais palavras por minuto do que digita. Mas a fala se perde no ar. A ideia deste app é simples: você fala, o texto aparece, e aí começa a mágica — este mesmo texto pode virar um resumo, uma mesa-redonda entre especialistas, um e-mail pronto, flashcards de estudo. Toque nos botões coloridos aqui embaixo e veja com seus próprios olhos.');
     addCard(demoText,null,0,'texto','groqwhisper',true,null,null,[t('demo')],t('👋 Bem-vindo ao Vox'),'livre',false,'');
@@ -13615,7 +13785,9 @@ document.addEventListener('DOMContentLoaded',async()=>{
     document.getElementById('btnFolders').classList.add('folders-on');
     _ajustarAlturaPastas();
   }
-  updateSpeedBadge();syncLocalModel();checkMicPermission();checkBrowser();
+  // Equipe B (recado no doc 30): quem entra pelo céu não recebe a janela do
+  // microfone no boot — o navegador pergunta na hora de gravar (getMic).
+  updateSpeedBadge();syncLocalModel();if(!_1aPassou())checkMicPermission();checkBrowser();
   // _requestPersistentStorage() e o convite de instalar NÃO rodam mais aqui
   // (Etapa 1 do plano de armazenamento durável, 06/09/2026) — o gatilho
   // agora é _voxMomentoDeConfianca(), chamado de dentro de saveHistory(),
@@ -13632,7 +13804,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(vintroVideo)vintroVideo.addEventListener('ended',()=>closeIntroVideo(true));
   // Onboarding para quem já tinha mic mas nunca configurou provedor
   if(localStorage.getItem('vox_mic_granted')==='1'&&!localStorage.getItem('vox_onboarded')&&!cfg.apiKeyGroq&&!cfg.apiKey&&!cfg.apiKeyGrok){
-    setTimeout(_primeiroPasso,600);
+    if(!_1aPassou())setTimeout(_primeiroPasso,600);
   }
   // Chave que chegou por outro caminho (cofre do navegador, backup de chaves)
   // também libera o que estava guardado esperando.
@@ -13730,7 +13902,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
 const ABRE_OPCOES=[
   {id:'last',   grupo:'cards', sym:'ultima',     nome:'Onde parei', desc:'Volta na tela e no jeito de ver que você deixou.'},
   {id:'list',   grupo:'cards', sym:'lista',      nome:'Lista',      desc:'Um card embaixo do outro, do mais novo pro mais antigo.'},
-  {id:'masonry',grupo:'cards', sym:'masonry',    nome:'Masonry',    desc:'Cards lado a lado, como um mural.'},
+  {id:'masonry',grupo:'cards', sym:'masonry',    nome:'Mural',      desc:'Cards em colunas, cada um do seu tamanho: cabe mais na tela.'},
   {id:'doc',    grupo:'cards', sym:'documento',  nome:'Documento',  desc:'Um card por vez, em tela de leitura.'},
   {id:'fluxo',  grupo:'telas', sym:'fluxo',      nome:'Fluxograma', desc:'As mesmas notas, ligadas pelas pastas como um mapa.'},
   {id:'orbital',grupo:'telas', sym:'orbital',    nome:'Órbita',     desc:'As mesmas notas, em volta das suas pastas.'},
@@ -13742,15 +13914,101 @@ const ABRE_OPCOES=[
 // Perfil = um jeito de trabalhar empacotado: modo de gravação + tela de
 // abertura. Ele configura o MUNDO em que foi escolhido, não o app inteiro.
 const ABRE_PERFIS=[
-  {id:'reuniao',   nome:'Reunião',           modo:'reuniao',   abre:'cal',  desc:'Grava no modo Reunião e abre no Calendário.'},
-  {id:'consulta',  nome:'Consulta',          modo:'consulta',  abre:'doc',  desc:'Grava no modo Consulta e abre no Documento.'},
-  {id:'fluido',    nome:'Pensamento fluido', modo:'livre',     abre:'fluxo',desc:'Grava no modo Livre e abre no Fluxograma.'},
-  {id:'entrevista',nome:'Entrevista',        modo:'entrevista',abre:'list', desc:'Grava no modo Entrevista e abre na Lista.'},
+  // "Da próxima vez" (lote 13): a primeira vez num mundo é sempre o Mural,
+  // então o texto não promete abrir no Calendário agora.
+  {id:'reuniao',   nome:'Reunião',           modo:'reuniao',   abre:'cal',  desc:'Grava no modo Reunião. Da próxima vez, abre no Calendário.'},
+  {id:'consulta',  nome:'Consulta',          modo:'consulta',  abre:'doc',  desc:'Grava no modo Consulta. Da próxima vez, abre no Documento.'},
+  {id:'fluido',    nome:'Pensamento fluido', modo:'livre',     abre:'fluxo',desc:'Grava no modo Livre. Da próxima vez, abre no Fluxograma.'},
+  {id:'entrevista',nome:'Entrevista',        modo:'entrevista',abre:'list', desc:'Grava no modo Entrevista. Da próxima vez, abre na Lista.'},
+  {id:'diario',    nome:'Diário',            modo:'livre',     abre:'cal',  desc:'Grava no modo Livre. Da próxima vez, abre no Calendário, dia por dia.'},
+  {id:'estudo',    nome:'Estudo',            modo:'livre',     abre:'doc',  desc:'Grava no modo Livre. Da próxima vez, abre no Documento.'},
   {id:'jeito',     nome:'Do meu jeito',      modo:null,        abre:'last', desc:'Abre onde você parou, no último modo que usou.'}
 ];
 // Mundo nascido de uma sugestão do céu já entra com o perfil que combina.
-const ABRE_PERFIL_DA_SUGESTAO={reunioes:'reuniao',consultas:'consulta',entrevistas:'entrevista',brainstorm:'fluido'};
+const ABRE_PERFIL_DA_SUGESTAO={reunioes:'reuniao',consultas:'consulta',entrevistas:'entrevista',brainstorm:'fluido',diario:'diario',aulas:'estudo',prompts:'jeito'};
+// A lente que o card de boas-vindas sugere em cada mundo da primeira entrada.
+const _1A_LENTE={raiz:'Resumo pirâmide',reunioes:'Decisões & Ações',consultas:'Nota SOAP',diario:'Espelho',aulas:'Flashcards',
+  entrevistas:'Resumo pirâmide',brainstorm:'Tempestade de ideias',prompts:'Corretor mínimo'};
 function _lsLer(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
+// ── PRIMEIRA ENTRADA (lote 13, 14/10/2026) ──
+// Marca GLOBAL (fora do desvio por mundo, por isso VOX_LS) que diz "esta
+// pessoa está no meio da primeira entrada": vídeo → céu → mundo → Mural.
+// Sobrevive ao recarregamento da troca de mundo. É separada de vox_onboarded,
+// que só a tela da chave grava — e que deixava travado (sem a pergunta, sem
+// "onde parei") quem aceitou a cortesia ou adiou o microfone.
+// {v:1, etapa:'ceu'|'mural'|'feita', mundo, sug, perfil, desde}
+const VOX_1A='vox_1a_entrada';
+function _1aLer(){
+  let m=null;try{m=JSON.parse(VOX_LS.get(VOX_1A)||'null')}catch(e){}
+  if(!m||m.etapa==='feita')return null;
+  // Mais de 7 dias no meio do caminho: a pessoa sumiu; a próxima abertura é a normal.
+  if(!(m.desde>0)||Date.now()-m.desde>7*864e5){try{VOX_LS.rem(VOX_1A)}catch(e){}return null}
+  return m;
+}
+function _1aGravar(m){try{if(m)VOX_LS.set(VOX_1A,JSON.stringify(m));else VOX_LS.rem(VOX_1A)}catch(e){}}
+// Esta pessoa entrou pelo caminho novo (em qualquer etapa, até "feita").
+function _1aPassou(){try{return !!VOX_LS.get(VOX_1A)}catch(e){return false}}
+// Navegador limpo de verdade: sem vídeo visto, sem mundos, sem notas, sem
+// link de transferência. Quem já usa o Vox nunca recebe a marca.
+function _1aTalvezComecar(){
+  try{
+    if(localStorage.getItem('vox_intro_seen')||VOX_LS.get('vox_mundos')||VOX_LS.get(VOX_1A))return;
+    if(_mundoAtivo!==VOX_MUNDO_RAIZ||/^#voxk?=/.test(location.hash))return;
+    if(document.querySelector('#cardsList .card:not(.proc-card)'))return;
+    _1aGravar({v:1,etapa:'ceu',mundo:null,sug:null,perfil:null,desde:Date.now()});
+  }catch(e){}
+}
+// Chegou no Mural do mundo escolhido: aplica o jeito, cria o card de
+// boas-vindas DESTE mundo e conta o que fez. A tela do jeito vale da
+// PRÓXIMA abertura em diante; a primeira vez é sempre o Mural.
+function _1aChegarNoMural(){
+  const m=_1aLer();if(!m||m.etapa!=='mural')return;
+  m.etapa='feita';_1aGravar(m);
+  _abreMarcarUsuario();
+  if(viewMode!=='masonry')setViewMode('masonry');
+  const p=m.perfil?_abrePerfil(m.perfil):null;
+  if(p){
+    _lsPor('vox_perfil',p.id);
+    _abreGravar(p.abre);
+    if(p.modo&&p.modo!==sessionMode)setTimeout(()=>setMode(p.modo),420);
+  }
+  if(!_temNotaDaPessoa())_1aCardBoasVindas(m,p);
+  try{localStorage.setItem('vox_welcomed','1')}catch(e){}
+  if(!p){setTimeout(()=>_abrePerguntar(),700);return}
+  if(p.id!=='jeito'){
+    const modo=document.querySelector('.smode-btn[data-m="'+p.modo+'"]');
+    const msg=t('O Vox arrumou {x} assim: grava no modo {m}. Da próxima vez, abre em {t}.')
+      .replace('{x}',_mundoAtual().nome).replace('{m}',modo?modo.textContent.trim():t(p.nome)).replace('{t}',t(_abreOpcao(p.abre).nome));
+    setTimeout(()=>toastDesfazer(msg,()=>_abrePerguntar(true),t('Trocar')),1100);
+  }
+}
+function _1aCardBoasVindas(m,p){
+  const sid=m.sug||'';
+  const nome=_mundoAtual().nome;
+  const lente=t(_1A_LENTE[sid]||_1A_LENTE.raiz);
+  const abertura={
+    reunioes:'Este é o Mural de {x}. Grave a próxima reunião no botão vermelho: a fala vira texto sozinha. Depois, a lente {l} ajuda a separar o que foi decidido do que ficou pra fazer.',
+    consultas:'Este é o Mural de {x}. Grave cada atendimento no botão vermelho, longe do resto: a fala vira texto sozinha. Depois, a lente {l} organiza o texto no formato de nota clínica.',
+    diario:'Este é o Mural de {x}. Toque no botão vermelho e conte como foi o dia, do jeito que vier: a fala vira texto sozinha. Depois, experimente a lente {l}.',
+    aulas:'Este é o Mural de {x}. Grave a aula ou o que você estudou no botão vermelho: a fala vira texto sozinha. Depois, a lente {l} transforma o texto em cartões de estudo.'
+  }[sid]||(m.mundo===VOX_MUNDO_RAIZ||_mundoAtivo===VOX_MUNDO_RAIZ
+    ?'Aqui é o seu Mural. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque numa lente (os botões coloridos da nota) pra transformar o texto. Comece pela lente {l}.'
+    :'Este é o Mural de {x}. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque numa lente (os botões coloridos da nota) pra transformar o texto. Comece pela lente {l}.');
+  let txt=t(abertura).replace('{x}',nome).replace('{l}',lente);
+  txt+='\n\n'+t('Gravar → virar texto → {l}.').replace('{l}',lente);
+  if(p&&p.modo){
+    const b=document.querySelector('.smode-btn[data-m="'+p.modo+'"]');
+    txt+='\n\n'+t('O modo {m} já está marcado lá embaixo.').replace('{m}',b?b.textContent.trim():p.modo);
+    if(p.abre&&p.abre!=='last')txt+=' '+t('Da próxima vez, este mundo abre em {t}.').replace('{t}',t(_abreOpcao(p.abre).nome));
+  }
+  addCard(txt,null,0,'texto','groqwhisper',true,null,null,[t('demo')],t('Boas-vindas')+' · '+nome,(p&&p.modo)||'livre',false,'');
+}
+// O card de boas-vindas (etiqueta demo) não é nota da pessoa.
+function _temNotaDaPessoa(){
+  return [...document.querySelectorAll('#cardsList .card:not(.proc-card)')].some(c=>{
+    const tg=(c.dataset.tags||'').split(',');return !(tg.includes('demo')||tg.includes(t('demo')));
+  });
+}
 function _lsPor(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
 function _telaMarcar(id){_lsPor('vox_ultima_tela',id)}
 function _telaDesmarcar(id){if(_lsLer('vox_ultima_tela')===id)_lsPor('vox_ultima_tela',null)}
@@ -13804,8 +14062,15 @@ function _abreAoIniciar(){
   _abrePerfilPendente();
   const modo=_lsLer('vox_modo');
   if(modo&&modo!==sessionMode&&document.querySelector('.smode-btn[data-m="'+modo+'"]'))setMode(modo,true);
-  // Primeira vez: o vídeo e a configuração mandam.
-  if(!_lsLer('vox_intro_seen')||!_lsLer('vox_onboarded'))return;
+  // Primeira vez: o vídeo e o céu mandam. Antes esta linha exigia também
+  // vox_onboarded, que só a tela da chave grava: quem aceitou a cortesia ou
+  // adiou o microfone nunca tinha pergunta, "onde parei" nem "O Vox abre em".
+  if(!_lsLer('vox_intro_seen'))return;
+  const _1a=_1aLer();
+  // No meio da primeira entrada: recarregou no céu → volta pro céu; chegou
+  // no mundo escolhido → Mural com o jeito aplicado.
+  if(_1a&&_1a.etapa==='ceu'){setTimeout(()=>{if(!document.getElementById('galaxia').classList.contains('on'))abrirGalaxia()},400);return}
+  if(_1a&&_1a.etapa==='mural'){_1aChegarNoMural();return}
   _abreMarcarUsuario();
   // Chegou por um link de transferência: ele fica na frente.
   if(/^#voxk?=/.test(location.hash))return;
@@ -13815,6 +14080,10 @@ function _abreAoIniciar(){
   const avisos=+_lsLer('vox_abre_avisos')||0;
   let msg='';
   if(alvo&&!ABRE_OPCOES.some(o=>o.id===alvo&&o.grupo!=='cards'))alvo='';
+  // Calendário, Fluxograma ou Órbita vazios são tela vazia: só abrem sozinhos
+  // com pelo menos uma nota da pessoa (o card de boas-vindas não conta).
+  let semNota=false;
+  if(alvo&&alvo!=='mundos'&&!_temNotaDaPessoa()){alvo='';semNota=true}
   if(alvo&&!_abreTelaPode(alvo)){
     // Escolheu abrir num mapa de pastas que ainda não tem pasta: cai nos
     // cards (lugar seguro) e, enquanto ainda avisa, conta por quê.
@@ -13822,13 +14091,19 @@ function _abreAoIniciar(){
     alvo='';
   }
   if(alvo)setTimeout(()=>_abreTela(alvo),120);
-  if(esc!=='last'&&avisos>0){
+  // Não abriu na tela do jeito porque o mundo ainda não tem nota: não avisa
+  // "abriu em" (seria mentira) e guarda os avisos pra quando abrir de verdade.
+  if(esc!=='last'&&avisos>0&&!semNota){
     _lsPor('vox_abre_avisos',String(avisos-1));
-    if(!msg)msg=t('Abriu em {x} — você escolheu isso.').replace('{x}',t(_abreOpcao(esc).nome));
+    // Verdade nos dois casos: a pessoa escolheu, ou o jeito do mundo escolheu.
+    const per=_abrePerfilAtual();
+    if(!msg)msg=(per&&per.abre===esc
+      ?t('Abriu em {x}: é o jeito {p} deste mundo.').replace('{p}',t(per.nome))
+      :t('Abriu em {x} — você escolheu isso.')).replace('{x}',t(_abreOpcao(esc).nome));
     setTimeout(()=>_abreAvisar(msg),900);
   }
   // Mundo novo, ainda sem perfil e sem nota: pergunta uma vez como vai usar.
-  if(_mundoAtivo!==VOX_MUNDO_RAIZ&&!_lsLer('vox_perfil')&&!document.querySelector('#cardsList .card:not(.proc-card)'))
+  if(_mundoAtivo!==VOX_MUNDO_RAIZ&&!_lsLer('vox_perfil')&&!_temNotaDaPessoa())
     setTimeout(_abrePerguntar,alvo?1400:700);
 }
 // ── Configurações → Geral → Experiência: "O Vox abre em" ──
@@ -13986,14 +14261,23 @@ function _abrePadrao(){
   toast(t('Pronto: o Vox volta a abrir onde você parou.'));
 }
 // ── Mundo novo: "Como você vai usar o Vox neste mundo?" ──
-function _abrePerguntar(){
-  if(_lsLer('vox_perfil'))return;
+// Lote 13: a tônica do Rafa ("na dúvida, só vai usando") vem PRIMEIRO, e
+// "Do meu jeito" é um cartão do mesmo tamanho das opções (era um link
+// cinza de 13 px chamado "Agora não"). Título com o nome do mundo da pessoa.
+function _abrePerguntar(forcar){
+  if(_lsLer('vox_perfil')&&!forcar)return;
+  const raiz=_mundoAtivo===VOX_MUNDO_RAIZ;
+  const tit=raiz?t('Como você vai usar o Vox?'):t('Como você vai usar {x}?').replace('{x}',_mundoAtual().nome);
+  const atual=_lsLer('vox_perfil')||'jeito';
+  const ordem=['jeito'].concat(ABRE_PERFIS.map(p=>p.id).filter(id=>id!=='jeito'));
+  const linha=id=>{const p=_abrePerfil(id);const desc=id==='jeito'?t('Na dúvida, este. Abre onde você parou e grava no último modo usado.'):t(p.desc);
+    return `<button type="button" class="abre-perfil-linha${id===atual?' on':''}" onclick="_abrePerguntaEscolher('${p.id}')">${_abreMini(_abreOpcao(p.abre).sym)}<span><b>${escHtml(t(p.nome))}</b><small>${escHtml(desc)}</small></span></button>`};
   const ov=_txOverlay();
   ov.innerHTML=`<div class="tx-modal abre-esc abre-pergunta">
-    <div class="tx-title">${escHtml(t('Como você vai usar o Vox neste mundo?'))}</div>
-    <div class="tx-sub">${escHtml(t('Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.'))} <b>${escHtml(t('Na dúvida, toque em Agora não. O Vox aprende com o uso.'))}</b></div>
-    <div class="abre-perfil-lista">${ABRE_PERFIS.map(p=>`<button type="button" class="abre-perfil-linha" onclick="_abrePerguntaEscolher('${p.id}')">${_abreMini(_abreOpcao(p.abre).sym)}<span><b>${escHtml(t(p.nome))}</b><small>${escHtml(t(p.desc))}</small></span></button>`).join('')}</div>
-    <button type="button" class="abre-depois" onclick="_abrePerguntaEscolher('jeito',true)">${escHtml(t('Agora não'))}</button>
+    <div class="tx-title">${escHtml(tit)}</div>
+    <div class="tx-sub"><b>${escHtml(t('Não tem resposta errada. Na dúvida, escolha Do meu jeito e vá usando.'))}</b></div>
+    <div class="abre-perfil-lista">${ordem.map(linha).join('')}</div>
+    <div class="abre-pergunta-pe">${escHtml(t('Dá pra trocar depois, em Configurações.'))}</div>
   </div>`;
   ov.classList.add('on');
 }
@@ -14004,8 +14288,7 @@ function _abrePerguntaEscolher(pid,calado){
   if(p.modo&&p.modo!==sessionMode)setMode(p.modo);
   _abreGravar(p.abre);
   if(calado)return;
-  if(p.abre==='list'||p.abre==='masonry'||p.abre==='doc'){if(viewMode!==p.abre)setViewMode(p.abre)}
-  else if(p.abre!=='last'&&_abreTelaPode(p.abre))_abreTela(p.abre);
+  // Não troca de tela agora: o texto promete "da próxima vez" (lote 13).
   toast(t('{p} neste mundo: ').replace('{p}',t(p.nome))+t(p.desc));
 }
 
@@ -14069,7 +14352,7 @@ function applyView(){
       });
     }
     if(viewIcon)viewIcon.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="8" height="11" rx="2"/><rect x="13" y="3" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><rect x="3" y="17" width="8" height="4" rx="2"/></svg>';
-    if(viewLbl)viewLbl.textContent=t('Masonry');
+    if(viewLbl)viewLbl.textContent=t('Mural');
     requestAnimationFrame(_masonryAtivar);
   }else if(isFocusLike){
     cl.classList.add('focus-mode');if(cl.style.display!=='none')cl.style.display='block';
@@ -21148,7 +21431,7 @@ function _calAbrirNotaSubmenu(card,fita,px,py){
     {ic:ICO.eye,rot:t('Abrir a nota'),fn:()=>_flAbrirCard(card.id,fita)},
     {grupo:t('a pasta')+' '+nome},
     {ic:ICO.list,rot:t('Ver em Lista'),fn:()=>irPara(()=>setViewMode('list'))},
-    {ic:ICO.masonry,rot:t('Ver em Mosaico'),fn:()=>irPara(()=>setViewMode('masonry'))},
+    {ic:ICO.masonry,rot:t('Ver no Mural'),fn:()=>irPara(()=>setViewMode('masonry'))},
     {ic:ICO.orbit,rot:t('Ver em Órbita'),fn:()=>irPara(abrirOrbital)},
     {ic:ICO.flowchart,rot:t('Ver em Fluxograma'),fn:()=>irPara(abrirFluxograma)},
     {ic:ICO.export,rot:t('Exportar pasta'),fn:()=>exportFolder(fid)},
@@ -22928,6 +23211,12 @@ function toggleFolders(){
   document.getElementById('btnFolders').classList.toggle('folders-on',open);
   localStorage.setItem('vox_folders_open',open?'1':'0');
   if(open)_ajustarAlturaPastas();
+  // A porta dos Mundos dá um cintilo quando a barra abre — no máximo 1 a
+  // cada 45 s, pra nunca virar pisca-pisca.
+  if(open&&Date.now()-(toggleFolders._cint||0)>45000){
+    toggleFolders._cint=Date.now();
+    setTimeout(()=>_jz(document.getElementById('btnFolderMundos'),'mw-cintila',720),260);
+  }
 }
 // O max-height fixo de ontem (calc(100vh-150px)) resolvia a colisão com a
 // barra do Windows mas abria outra: numa janela mais baixa, o painel podia
@@ -38174,7 +38463,7 @@ function exportObsidian(){
 
    Filtro: magnitude visual <= 5,0 (a mais fraca do vetor é 4,94).
    Ordenado da mais brilhante pra mais fraca — o celular usa só o
-   começo do vetor (520 estrelas = magnitude <= 4,06).
+   começo do vetor (magnitude <= 4,5, ~900 estrelas; ver NEST_MOB).
    6 caracteres por estrela: RA(12 bits) DEC(12 bits) MAG(6) B-V(6).
    ============================================================ */
 var STAR_AL="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -38197,19 +38486,27 @@ var STARS=(function(){
     if(bv<0.0){r=0.78+bv*0.18;g=0.86;b=1.0;}
     else if(bv<0.7){r=0.94+bv*0.09;g=0.96;b=1.0-bv*0.16;}
     else{r=1.0;g=0.96-Math.min(bv,1.9)*0.13;b=0.90-Math.min(bv,1.9)*0.26;}
+    var R8=Math.round(255*Math.min(1,r)),G8=Math.round(255*Math.min(1,g)),B8=Math.round(255*Math.min(1,b));
     out[i]={
       x:cd*Math.cos(rr), y:-Math.sin(dd), z:cd*Math.sin(rr),
-      m:mg,
-      /* raio e alfa saem da magnitude — a escala é logarítmica de verdade,
-         mas pra ponto de 1 a 3 px o linear lê melhor. */
+      m:mg, bv:bv,
+      /* o raio sai da magnitude em reta: pra ponto de 1 a 3 px lê melhor. */
       rr:Math.max(0.45,0.52+(5.0-mg)*0.285),
-      al:Math.min(1,0.40+(5.0-mg)*0.108),
-      cor:'rgba('+Math.round(255*Math.min(1,r))+','+Math.round(255*Math.min(1,g))+','+Math.round(255*Math.min(1,b))+',',
-      /* cintilação: amplitude e período próprios de cada estrela, pra
-         nenhuma piscar junto com a vizinha */
-      ta:Math.min(0.20,Math.max(0.055,0.115+(2.0-mg)*0.028)),
-      tf:0.9+((i*37)%23)*0.10,
-      tp:((i*61)%100)/100*6.283
+      /* O BRILHO, em curva (lote 13). A reta antiga (0,40 a 1) fazia uma
+         estrela de magnitude 1 brilhar só 2,1× mais que uma de 5; no céu real
+         são 40×. Aqui são ~5×: o céu ganha fundo sem perder as fracas (com
+         7,6×, no teste, ele ficava mais vazio que o de antes). */
+      al:Math.max(0.18,Math.min(1,Math.pow(10,-0.18*(mg-1)))),
+      R:R8,G:G8,B:B8,
+      cor:'rgba('+R8+','+G8+','+B8+',',
+      /* cintilação: DUAS ondas de ritmos diferentes por estrela (uma só
+         "respira" em vez de cintilar) e amplitude própria. Em desenharCeu ela
+         cresce perto da borda de baixo, como no céu de verdade. */
+      ta:0.14+0.20*((i*0.6180339)%1),
+      tf:2.2+2.4*((i*0.4142136)%1),
+      tf2:5.6+4.0*((i*0.7320508)%1),
+      tp:((i*61)%100)/100*6.283,
+      tp2:((i*29)%100)/100*6.283
     };
   }
   return out;
@@ -38347,9 +38644,12 @@ var aberta=false;
 // No app de verdade estes dois não vêm de botão de palco: vêm do aparelho.
 var mob=window.matchMedia('(max-width:640px)').matches;
 var quieto=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-window.matchMedia('(max-width:640px)').addEventListener('change',function(ev){mob=ev.matches});
+/* Celular: um corte só, por magnitude (até 4,5, ~900 estrelas). Computador:
+   o catálogo inteiro. Antes o comentário dizia 520 e o celular desenhava 1.630. */
+var NEST_TUDO=STARS.length,NEST_MOB=(function(){var k=0;while(k<STARS.length&&STARS[k].m<=4.5)k++;return k})();
+var NEST=mob?NEST_MOB:NEST_TUDO;
+window.matchMedia('(max-width:640px)').addEventListener('change',function(ev){mob=ev.matches;NEST=mob?NEST_MOB:NEST_TUDO;VIA=null});
 var PERSP=900, kx=1, ky=1, kz=1, kr=1;
-var NEST=1630;
 
 function W(id){for(var i=0;i<worlds.length;i++)if(worlds[i].id===id)return worlds[i];return worlds[0];}
 function todos(){return worlds.concat([NOVO]);}
@@ -38568,15 +38868,147 @@ function medirCeu(){
 /* o repouso olha pra Órion e pro Cão Maior — Sirius, Rigel e Betelgeuse
    entram no quadro. YAW0 = 270 - RA(alvo em graus). */
 var YAW0=182, PITCH0=-6;
+/* ── O CÉU NOVO (lote 13, 14/10/2026) ──
+   Fundo em CSS (3 tons) atrás de um canvas transparente; aqui só a Via
+   Láctea, as estrelas e a estrela cadente. */
+/* Halo pré-desenhado em 3 tons (azulado, branco, quente), escolhido pela cor
+   da estrela. Antes era um disco chapado de borda dura. */
+var _HALOS=null;
+function _halo(bv){
+  if(!_HALOS){
+    _HALOS=[[190,210,255],[255,255,255],[255,226,190]].map(function(c){
+      var cv=document.createElement('canvas');cv.width=cv.height=64;
+      var g=cv.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+      gr.addColorStop(0,'rgba('+c+',.55)');gr.addColorStop(.28,'rgba('+c+',.16)');gr.addColorStop(1,'rgba('+c+',0)');
+      g.fillStyle=gr;g.fillRect(0,0,64,64);return cv;
+    });
+  }
+  return _HALOS[bv<0?0:(bv<0.7?1:2)];
+}
+/* A Via Láctea no plano galáctico de VERDADE (polo norte galáctico em AR
+   192,86° / Dec +27,13°): pontinhos de 1 px em 4 alfas, mais densos e mais
+   largos perto do centro (Sagitário), e nuvens suaves. Gerada uma vez, com
+   semente fixa: o céu é sempre o mesmo. Celular: menos pontos. */
+var VIA=null,_VIA_A=[0.05,0.08,0.11,0.15],_NUVEM=null;
+function _viaGerar(){
+  /* Medido no app: com 2.200 pontos e 40 nuvens, a vista de repouso (Órion,
+     do lado oposto ao centro da galáxia) pegava só 179 pontos — a faixa não
+     se lia. Com estes números ela aparece sem disputar com os nomes. */
+  var nP=mob?1500:4200,nN=mob?40:70,lev=[[],[],[],[]],nuv=[];
+  var aG=192.85948*Math.PI/180,dG=27.12825*Math.PI/180,lN=122.93192*Math.PI/180;
+  var sdG=Math.sin(dG),cdG=Math.cos(dG);
+  function eq(l,b){
+    var cb=Math.cos(b),sb=Math.sin(b),cl=Math.cos(lN-l);
+    var dec=Math.asin(Math.max(-1,Math.min(1,sb*sdG+cb*cdG*cl)));
+    var ra=aG+Math.atan2(cb*Math.sin(lN-l),sb*cdG-cb*sdG*cl);
+    var cd=Math.cos(dec);
+    return {x:cd*Math.cos(ra),y:-Math.sin(dec),z:cd*Math.sin(ra)};
+  }
+  var sem=12345;
+  function rnd(){sem=(sem*16807)%2147483647;return (sem-1)/2147483646;}
+  function gauss(){return Math.sqrt(-2*Math.log(rnd()+1e-9))*Math.cos(6.2832*rnd());}
+  function longitude(c){var l=rnd()<c?gauss()*0.9:(rnd()*2-1)*Math.PI;return Math.max(-Math.PI,Math.min(Math.PI,l));}
+  for(var i=0;i<nP;i++){
+    var l=longitude(0.45),cc=Math.cos(l/2);
+    lev[i%4].push(eq(l,gauss()*(0.07+0.08*cc*cc)));
+  }
+  for(var j=0;j<nN;j++){
+    var v=eq(longitude(0.4),gauss()*0.05);
+    v.s=0.07+rnd()*0.10;v.a=0.06+rnd()*0.06;nuv.push(v);
+  }
+  VIA={lev:lev,nuv:nuv};
+}
+function _nuvem(){
+  if(!_NUVEM){
+    var cv=document.createElement('canvas');cv.width=cv.height=64;
+    var g=cv.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+    gr.addColorStop(0,'rgba(178,196,255,1)');gr.addColorStop(.45,'rgba(150,170,235,.4)');gr.addColorStop(1,'rgba(140,160,230,0)');
+    g.fillStyle=gr;g.fillRect(0,0,64,64);_NUVEM=cv;
+  }
+  return _NUVEM;
+}
+/* A chegada (anoitecer). Tocar em qualquer lugar pula pro fim. */
+var chegada=null;
+function _chegadaK(){
+  if(!chegada)return Infinity;
+  var k=performance.now()-chegada.t0;
+  if(k>chegada.dur){chegada=null;galaxia.classList.remove('chega-curta','chega-longa');return Infinity;}
+  return k;
+}
+function _chegadaComecar(longa){
+  galaxia.classList.remove('chega-curta','chega-longa');
+  if(quieto){chegada=null;return;}
+  void galaxia.offsetWidth;
+  galaxia.classList.add(longa?'chega-longa':'chega-curta');
+  chegada={t0:performance.now(),dur:longa?1750:650,longa:!!longa};
+}
+function _chegadaPular(){
+  if(!chegada)return;
+  chegada=null;galaxia.classList.remove('chega-curta','chega-longa','abrindo');camSuja=true;acordar();
+}
+/* Estrela cadente rara: uma a cada 20–40 s, 700 ms, só com o céu parado.
+   Nunca com "reduzir movimento". */
+var cad=null,cadT=null;
+function _cadAgendar(){
+  clearTimeout(cadT);if(quieto)return;
+  cadT=setTimeout(function(){
+    if(!aberta)return;
+    if(arrastando||alvo||Math.abs(vel.yaw)>0.012||chegada){_cadAgendar();return;}
+    var a=0.35+Math.random()*0.35,ld=Math.random()<0.5?-1:1;
+    cad={t0:performance.now(),x:ceuW*(0.15+Math.random()*0.7),y:ceuH*(0.06+Math.random()*0.3),
+         dx:Math.cos(a)*ld,dy:Math.sin(a),len:Math.min(ceuW,ceuH)*(0.18+Math.random()*0.1)};
+    acordar();_cadAgendar();
+  },20000+Math.random()*20000);
+}
+function _desenharCadente(c){
+  if(!cad)return;
+  var k=(performance.now()-cad.t0)/700;if(k>=1){cad=null;return;}
+  var e=1-Math.pow(1-k,2),hx=cad.x+cad.dx*cad.len*e*1.4,hy=cad.y+cad.dy*cad.len*e*1.4;
+  var tl=cad.len*(0.35+0.5*Math.sin(Math.PI*k)),tx=hx-cad.dx*tl,ty=hy-cad.dy*tl,al=Math.sin(Math.PI*k);
+  var g=c.createLinearGradient(tx,ty,hx,hy);
+  g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(255,255,255,'+(0.85*al).toFixed(3)+')');
+  c.strokeStyle=g;c.lineWidth=1.4;c.lineCap='round';c.beginPath();c.moveTo(tx,ty);c.lineTo(hx,hy);c.stroke();
+}
 function desenharCeu(t){
   var w=ceuW,h=ceuH;
-  var fundo=getComputedStyle(document.documentElement).getPropertyValue('--ceu').trim()||'#06070d';
-  ctx.fillStyle=fundo;ctx.fillRect(0,0,w,h);
+  ctx.clearRect(0,0,w,h);
   var cx=w/2, cy=h/2, f=PERSP;
   var ya=(cam.yaw+YAW0)*Math.PI/180, pa=(cam.pitch+PITCH0)*Math.PI/180;
   var cyw=Math.cos(ya),syw=Math.sin(ya),cpt=Math.cos(pa),spt=Math.sin(pa);
-  var n=Math.min(NEST,STARS.length), i, s, x,y,z, x2,y2,z2, sx,sy, a, r, np=0;
-  var cintila=!quieto;
+  var n=Math.min(NEST,STARS.length), i, s, x,y,z, x2,y2,z2, sx,sy, a, r, np=0, k, q;
+  var cintila=!quieto, ch=_chegadaK(), lg=chegada&&chegada.longa;
+  /* Via Láctea, atrás das estrelas. Na chegada ela vem por último, como no céu real. */
+  if(!VIA)_viaGerar();
+  var vm=ch===Infinity?1:Math.max(0,Math.min(1,lg?(ch-1100)/600:(ch-300)/350));
+  if(vm>0){
+    var nv=_nuvem();
+    for(i=0;i<VIA.nuv.length;i++){
+      s=VIA.nuv[i];
+      x=s.x*cyw+s.z*syw; z=-s.x*syw+s.z*cyw; y=s.y;
+      y2=y*cpt-z*spt; z2=y*spt+z*cpt;
+      /* nuvem longe do centro da vista fica de fora: a perspectiva esticava
+         as da borda até virarem manchas do tamanho da tela */
+      if(z2>-0.6)continue;
+      r=Math.min(f*s.s,0.35*Math.min(w,h));sx=cx+f*(x/-z2);sy=cy+f*(y2/-z2);
+      if(r<4||sx<-r||sx>w+r||sy<-r||sy>h+r)continue;
+      ctx.globalAlpha=s.a*vm;ctx.drawImage(nv,sx-r,sy-r,r*2,r*2);
+    }
+    ctx.globalAlpha=1;
+    for(k=0;k<4;k++){
+      /* a cor de pintura troca só 4 vezes por quadro */
+      ctx.fillStyle='rgba(205,215,255,'+(_VIA_A[k]*vm).toFixed(3)+')';
+      q=VIA.lev[k];
+      for(i=0;i<q.length;i++){
+        s=q[i];
+        x=s.x*cyw+s.z*syw; z=-s.x*syw+s.z*cyw; y=s.y;
+        y2=y*cpt-z*spt; z2=y*spt+z*cpt;
+        if(z2>-0.12)continue;
+        sx=cx+f*(x/-z2); sy=cy+f*(y2/-z2);
+        if(sx<0||sx>w||sy<0||sy>h)continue;
+        ctx.fillRect(sx,sy,1,1);
+      }
+    }
+  }
   for(i=0;i<n;i++){
     s=STARS[i];
     x=s.x*cyw+s.z*syw; z=-s.x*syw+s.z*cyw; y=s.y;
@@ -38585,21 +39017,38 @@ function desenharCeu(t){
     sx=cx+f*(x2/-z2); sy=cy+f*(y2/-z2);
     if(sx<-6||sx>w+6||sy<-6||sy>h+6)continue;
     a=s.al;
-    if(cintila)a*=1+s.ta*Math.sin(t*s.tf+s.tp);
+    if(ch!==Infinity){
+      /* acendem na ordem do catálogo: a mais brilhante primeiro */
+      var ti=lg?250+950*Math.pow(i/n,0.55):40+380*Math.pow(i/n,0.55);
+      a*=Math.max(0,Math.min(1,(ch-ti)/(lg?300:180)));
+    }
+    if(cintila){
+      /* cintila mais perto da borda de baixo (mais ar no caminho) */
+      var kk=0.30+0.70*Math.max(0,Math.min(1,sy/h));
+      a*=1+s.ta*kk*(0.62*Math.sin(t*s.tf+s.tp)+0.38*Math.sin(t*s.tf2+s.tp2));
+    }
     if(a<=0.02)continue;
+    if(a>1)a=1;
     np++;
     r=s.rr;
-    ctx.fillStyle=s.cor+a.toFixed(3)+')';
+    var cor=s.cor;
+    if(cintila&&i<13){
+      /* as ~13 mais brilhantes trocam levemente de cor (±12%) */
+      var dc=0.12*Math.sin(t*s.tf2*0.7+s.tp);
+      cor='rgba('+Math.min(255,Math.round(s.R*(1+dc)))+','+s.G+','+Math.min(255,Math.round(s.B*(1-dc)))+',';
+    }
+    ctx.fillStyle=cor+a.toFixed(3)+')';
     if(r<0.95){ctx.fillRect(sx-0.5,sy-0.5,1.3,1.3);}
     else{
-      ctx.beginPath();ctx.arc(sx,sy,r,0,6.2832);ctx.fill();
       if(s.m<1.7){                       /* halo só nas mais brilhantes */
-        ctx.fillStyle=s.cor+(a*0.11).toFixed(3)+')';
-        ctx.beginPath();ctx.arc(sx,sy,r*3.6,0,6.2832);ctx.fill();
+        var hs=r*5.5;
+        ctx.globalAlpha=Math.min(1,a*0.55);ctx.drawImage(_halo(s.bv),sx-hs,sy-hs,hs*2,hs*2);ctx.globalAlpha=1;
       }
+      ctx.beginPath();ctx.arc(sx,sy,r,0,6.2832);ctx.fill();
     }
   }
   pintadas=np;
+  _desenharCadente(ctx);
 }
 
 /* ---------- laço ---------- */
@@ -38671,17 +39120,22 @@ function montar(){
   for(i=0;i<lista.length;i++){
     var w=lista[i];
     var R=(w.r*kr).toFixed(1);
-    h+='<div class="pw'+(w.id===selId?' sel':'')+(w.del?' morto':'')+(w.vazio?' frio':'')+(w.trancado?' cofre':'')+'" data-id="'+esc(w.id)+'" style="'
+    /* na primeira entrada o Meu espaço está vazio de propósito (o card de
+       boas-vindas nasce no mundo escolhido) — mas é a porta principal, então
+       fica aceso em vez de apagado. */
+    var frio=w.vazio&&!(w.id===ativoId&&_1aNoCeu());
+    h+='<div class="pw'+(w.id===selId?' sel':'')+(w.del?' morto':'')+(frio?' frio':'')+(w.trancado?' cofre':'')+'" data-id="'+esc(w.id)+'" style="'
       +'--x:'+(w.pos[0]*kx).toFixed(1)+'px;--y:'+(w.pos[1]*ky).toFixed(1)+'px;--z:'+(w.pos[2]*kz).toFixed(1)+'px">'
       +'<div class="pl">'
-      +'<button class="pin'+(w.fantasma?' fantasma':'')+'" style="--r:'+R+'px;--i:'+i+'" '
+      +'<button class="pin'+(w.fantasma?' fantasma':'')+(w.sug?' sug':'')+'" style="--r:'+R+'px;--i:'+i+(w.fantasma?'':';--c1:'+w.c[0])+'" '
       +'aria-label="'+esc(w.fantasma?t(w.nome):w.nome)+'">'
-      +'<span class="esfera" style="'+(w.fantasma?'':'--c1:'+w.c[0]+';--c2:'+w.c[1]+';--c3:'+w.c[2])+'"></span>'
-      +(w.fantasma?'<span class="mais">'+ICO_MAIS+'</span>':'<span class="noite"></span><span class="brilho"></span><span class="limbo"></span>')
+      +'<span class="esfera" style="'+(w.fantasma?'':'--c1:'+w.c[0]+';--c2:'+w.c[1]+';--c3:'+w.c[2])+'">'
+      +(w.fantasma?'':'<span class="noite"></span><span class="brilho"></span>')+'</span>'
+      +(w.fantasma?'<span class="mais">'+ICO_MAIS+'</span>':'<span class="limbo"></span>')
       +'<span class="nevoa"></span>'
       +(w.id===ativoId?'<span class="aqui"></span>':'')
       +'<span class="anel"></span>'
-      +'<span class="pnome">'+esc(w.fantasma?t(w.nome):w.nome)+'</span>'
+      +'<span class="pnome">'+esc(w.fantasma?t(w.nome):w.nome)+(w.sug?'<small>'+esc(t('sugestão'))+'</small>':'')+'</span>'
       +'</button></div></div>';
   }
   orbe.innerHTML=h;
@@ -38695,7 +39149,9 @@ function montar(){
   /* quem esta na lixeira nao conta como mundo que voce TEM -- ele so
      continua visivel pra poder ser restaurado. */
   var nVivos=worlds.filter(function(x){return !x.del&&!x.sug}).length;
-  document.getElementById('gxCont').textContent=nVivos+' '+t(nVivos===1?'mundo':'mundos');
+  var noCeu1a=_1aNoCeu();
+  document.getElementById('gxCont').textContent=noCeu1a?t('Onde você quer começar?'):nVivos+' '+t(nVivos===1?'mundo':'mundos');
+  var jaU=document.getElementById('gxJaUsava');if(jaU)jaU.hidden=!noCeu1a;
   var ne=document.getElementById('nEstrelas');if(ne)ne.textContent=Math.min(NEST,STARS.length);
   camSuja=true;
 }
@@ -38705,6 +39161,12 @@ function pintarDet(){
   var w=(selId==='__novo__')?NOVO:W(selId);
   if(!w){det.classList.remove('on');return;}
   var h='';
+  /* Primeira entrada: a ficha do Meu espaço e das sugestões pergunta como
+     vai usar, e os botões já entram. O "+" continua o de sempre. */
+  if(_1aNoCeu()&&!w.fantasma&&!w.del&&(w.sug||w.id===ativoId)){
+    det.innerHTML=_1aFicha(w);det.classList.add('on','d1a');return;
+  }
+  det.classList.remove('d1a');
   if(w.fantasma){
     h='<div class="dk">'+t('Um mundo novo')+'</div>'
      +'<div class="dn">'+t('Do zero')+'</div>'
@@ -39239,14 +39701,96 @@ function criar(){
   var nome=document.getElementById('inNome').value.trim();
   if(!nome)return;
   var d=document.getElementById('inDesc').value.trim();
+  /* Primeira entrada pelo "+": o mundo novo nasce, o Mural abre e a
+     pergunta vem numa folha lá (é o único caso fora do céu). */
+  var m1=_1aLer();
+  if(m1&&m1.etapa==='ceu'){m1.etapa='mural';m1.mundo=null;m1.sug=null;m1.perfil=null;_1aGravar(m1);}
   /* _mundoCriar grava no cadastro e já recarrega dentro do World novo —
      que nasce vazio, porque as chaves dele ainda não existem. */
   _mundoCriar(nome,d);
 }
+/* ── PRIMEIRA ENTRADA, no céu (lote 13) ── */
+function _1aNoCeu(){var m=_1aLer();return !!(m&&m.etapa==='ceu');}
+/* o jeito que a ficha marca: o da sugestão, ou "Do meu jeito" */
+var _1aEscolhidos={};
+function _1aMarcado(w){
+  if(_1aEscolhidos[w.id])return _1aEscolhidos[w.id];
+  return (w.sug&&ABRE_PERFIL_DA_SUGESTAO[w.sid])||'jeito';
+}
+function _1aBotao(w,pid,marcado){
+  var p=_abrePerfil(pid);if(!p)return '';
+  var desc=pid==='jeito'?t('Na dúvida, este. Abre onde você parou e grava no último modo usado.'):t(p.desc);
+  return '<button type="button" class="d1a-jeito'+(marcado?' on':'')+'" data-mundo="'+esc(w.id)+'" data-perfil="'+esc(pid)+'"'
+    +' aria-label="'+esc(t('Entrar em {x}, jeito {p}').replace('{x}',w.nome).replace('{p}',t(p.nome)))+'">'
+    +'<b>'+esc(t(p.nome))+(marcado?'<i>'+esc(t('marcado'))+'</i>':'')+'</b>'
+    +'<small>'+esc(desc)+'</small><span class="d1a-seta" aria-hidden="true">→</span></button>';
+}
+function _1aFicha(w){
+  var raiz=!w.sug,marc=_1aMarcado(w);
+  var princ=raiz?[marc]:[marc];
+  if(princ.indexOf('jeito')<0)princ.push('jeito');
+  var resto=ABRE_PERFIS.map(function(p){return p.id}).filter(function(id){return princ.indexOf(id)<0});
+  var tit=raiz?t('Como você vai usar o Vox?'):t('Como você vai usar {x}?').replace('{x}',w.nome);
+  return '<div class="dk">'+esc(raiz?t('Comece por aqui'):t('Sugestão'))+'</div>'
+    +'<div class="dn">'+esc(w.nome)+'</div>'
+    +'<div class="dd">'+esc(raiz?t('Um lugar pra tudo. Na dúvida, comece aqui.'):w.desc)+'</div>'
+    +(raiz?'<div class="dm">'+esc(t('Vazio, esperando a primeira nota'))+'</div>':'')
+    +'<div class="d1a-q" aria-live="polite">'+esc(tit)+'</div>'
+    +'<div class="d1a-sub">'+esc(t('Não tem resposta errada. Na dúvida, escolha Do meu jeito e vá usando.'))+'</div>'
+    +princ.map(function(id){return _1aBotao(w,id,id===marc)}).join('')
+    +'<details class="d1a-mais"><summary>'+esc(raiz?t('Já sei como vou usar'):t('Outro jeito'))+'</summary>'
+    +resto.map(function(id){return _1aBotao(w,id,false)}).join('')+'</details>'
+    +'<div class="dnota">'+esc(t('Dá pra trocar depois, em Configurações.'))+'</div>';
+}
+/* o nome do jeito voa em arco do botão até o planeta (380 ms) */
+function _1aSeloVoa(btn,w,txt){
+  if(quieto||!btn||!w._pw)return;
+  var pin=w._pw.querySelector('.pin');if(!pin)return;
+  var de=btn.getBoundingClientRect(),pa=pin.getBoundingClientRect();
+  var s=document.createElement('span');s.className='d1a-selo';s.textContent=txt;
+  s.style.left=(de.left+12)+'px';s.style.top=(de.top+8)+'px';document.body.appendChild(s);
+  var dx=pa.left+pa.width/2-(de.left+12),dy=pa.top+pa.height/2-(de.top+8),arco=-Math.min(80,40+Math.abs(dx)*.15);
+  var a=s.animate([{transform:'translate(0,0) scale(1)',opacity:1},
+    {transform:'translate('+(dx/2)+'px,'+(dy/2+arco)+'px) scale(1.1)',opacity:1},
+    {transform:'translate('+dx+'px,'+dy+'px) scale(.6)',opacity:0}],{duration:380,easing:'cubic-bezier(.22,1,.36,1)'});
+  a.onfinish=function(){s.remove()};
+}
+function _1aEscolher(id,pid,btn){
+  var m=_1aLer();if(!m||m.etapa!=='ceu')return;
+  var w=W(id);if(!w)return;
+  var p=_abrePerfil(pid)||_abrePerfil('jeito');
+  if(btn){btn.classList.remove('mola');void btn.offsetWidth;btn.classList.add('mola');_1aSeloVoa(btn,w,t(p.nome));}
+  try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}
+  m.etapa='mural';m.perfil=p.id;m.sug=w.sug?w.sid:null;m.mundo=w.sug?null:w.id;
+  _1aGravar(m);
+  var vai=function(){
+    if(w.sug){var g=_sugAchar(w.sid);if(!g)return;_sugDispensar(w.sid);_mundoCriar(t(g.nome),t(g.desc));}
+    else{fecharGalaxia(true);_1aChegarNoMural();}
+  };
+  if(quieto){vai();return;}
+  setTimeout(function(){det.classList.remove('on');enquadrarNo(w,PERSP*0.76,520,vai);},btn?300:0);
+}
+/* "Já usava o Vox?": sai da primeira entrada e abre a cópia no Meu espaço
+   (a cópia nunca cai num mundo sugerido por engano). */
+function _1aJaUsava(){
+  var m=_1aLer();if(m){m.etapa='feita';_1aGravar(m);}
+  fecharGalaxia();
+  setTimeout(function(){try{triggerImportProject()}catch(e){}},200);
+}
+det.addEventListener('click',function(e){
+  var b=e.target.closest&&e.target.closest('.d1a-jeito');if(!b)return;
+  _1aEscolhidos[b.getAttribute('data-mundo')]=b.getAttribute('data-perfil');
+  _1aEscolher(b.getAttribute('data-mundo'),b.getAttribute('data-perfil'),b);
+});
 function entrar(id){
   var w=W(id);
   if(!w)return;
   if(w.del)return;   // na lixeira nao se entra; a ficha so oferece restaurar
+  /* Primeira entrada: tocar de novo no planeta entra no jeito marcado. */
+  if(_1aNoCeu()&&(w.sug||w.id===ativoId)){_1aEscolher(w.id,_1aMarcado(w),null);return;}
+  /* Sugestao nao e mundo: entrar nela e adotar (antes o segundo toque
+     tentava trocar pra um mundo de id "sug:..." que nao existe). */
+  if(w.sug){adotarSugestao(w.sid);return;}
   /* Mundo trancado pede a senha ANTES de recarregar: a chave precisa estar
      guardada na sessao quando o app nascer do outro lado, senao o boot
      leria o historico cifrado e mostraria um mundo vazio. */
@@ -39302,17 +39846,35 @@ window.addEventListener('resize',function(){
     cam.dolly=dollyBase;reposicionar();_conferirNaTela();camSuja=true;acordar();
   },140);
 });
-function abrirGalaxia(e){
+function abrirGalaxia(e,opts){
   if(e)e.stopPropagation();
   if(aberta)return;
   aberta=true;
+  galaxia.classList.toggle('medir',/[?&]medidor\b/.test(location.search));
   _telaMarcar('mundos');
-  var chip=document.getElementById('wcGlobo').getBoundingClientRect();
+  /* O céu nasce de quem foi tocado: do globo das Pastas ou do chip do topo.
+     Antes nascia sempre do chip, mesmo quando o clique vinha das Pastas. */
+  var deBotao=e&&e.currentTarget&&e.currentTarget.id==='btnFolderMundos'?e.currentTarget:null;
+  var chip=(deBotao||document.getElementById('wcGlobo')).getBoundingClientRect();
   var p=palco.getBoundingClientRect();
   galaxia.style.setProperty('--ox',(chip.left-p.left+chip.width/2)+'px');
   galaxia.style.setProperty('--oy',(chip.top-p.top+chip.height/2)+'px');
-  document.getElementById('worldChip').classList.add('afunda');
-  setTimeout(function(){document.getElementById('worldChip').classList.remove('afunda');},130);
+  if(deBotao){
+    _jz(deBotao,'mola',340);
+    if(!quieto&&chip.width){
+      var vcx=chip.left+chip.width/2,vcy=chip.top+chip.height/2;
+      var R=Math.sqrt(Math.pow(Math.max(vcx,innerWidth-vcx),2)+Math.pow(Math.max(vcy,innerHeight-vcy),2));
+      var voo=document.createElement('div');voo.className='mw-voo';
+      voo.style.left=vcx+'px';voo.style.top=vcy+'px';
+      document.body.appendChild(voo);void voo.offsetWidth;
+      voo.classList.add('vai');voo.style.transform='scale('+(R/11+1).toFixed(2)+')';
+      setTimeout(function(){voo.style.opacity='0'},520);
+      setTimeout(function(){voo.remove()},820);
+    }
+  }else{
+    document.getElementById('worldChip').classList.add('afunda');
+    setTimeout(function(){document.getElementById('worldChip').classList.remove('afunda');},130);
+  }
 
   _mundosMontar();
   selId=ativoId;
@@ -39329,11 +39891,15 @@ function abrirGalaxia(e){
     galaxia.classList.add('on');
     pintarDet();
   });
-  setTimeout(function(){galaxia.classList.remove('abrindo');},quieto?0:900);
+  _chegadaComecar(!!(opts&&opts.longa));
+  setTimeout(function(){galaxia.classList.remove('abrindo');},quieto?0:(chegada&&chegada.longa?1900:900));
+  _cadAgendar();
   gxDica.textContent=mob
     ? t('arraste pra girar · belisque pra aproximar · toque duas vezes pra entrar')
     : t('arraste pra girar · role pra aproximar · as pastas são o mapa de dentro de um mundo — aqui é o mapa dos mundos');
-  gxDica.style.opacity='1';
+  /* na primeira entrada a ficha já diz o que fazer, e "toque duas vezes"
+     desmentiria os botões que entram com um toque */
+  gxDica.style.opacity=_1aNoCeu()?'0':'1';
   acordar();
 }
 function fecharGalaxia(semVeu){
@@ -39356,7 +39922,12 @@ function fecharGalaxia(semVeu){
   fecharCofreUI();
   fecharAjudaMundos();
   if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+  clearTimeout(cadT);cad=null;chegada=null;galaxia.classList.remove('chega-curta','chega-longa');
   if(jaEstavaFechada)return;
+  /* Fechou o céu no X no meio da primeira entrada: vale o Meu espaço e a
+     pergunta vem numa folha no Mural. Ninguém fica preso. */
+  var m1=_1aLer();
+  if(m1&&m1.etapa==='ceu'){m1.etapa='mural';m1.mundo=_mundoAtivo;m1.sug=null;m1.perfil=null;_1aGravar(m1);setTimeout(_1aChegarNoMural,300);}
   /* devolve o foco pra onde ele estava: o chip que abriu o painel */
   try{document.getElementById('worldChip').focus({preventScroll:true});}catch(err){}
   if(semVeu){
@@ -39370,6 +39941,8 @@ function fecharGalaxia(semVeu){
    pinça com escala travada no início do gesto), com uma dimensão a mais.
    ============================================================ */
 var pts=new Map(), pan=false, pX=0, pY=0, pinch=null, pinchD=0, alvoDown=null, mexeuPx=0;
+/* qualquer toque durante a chegada pula pro céu pronto */
+galaxia.addEventListener('pointerdown',_chegadaPular,true);
 cena.addEventListener('pointerdown',function(e){
   var pin=e.target.closest('.pin');
   alvoDown=pin?pin.closest('.pw').getAttribute('data-id'):null;
