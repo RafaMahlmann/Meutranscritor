@@ -5499,6 +5499,18 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .conv-s{border:none;background:none;color:var(--text3);font-family:var(--font);font-size:11.5px;
   font-weight:700;padding:8px 10px;border-radius:20px;cursor:pointer}
 .conv-s:hover{color:var(--text2)}
+/* Gravação que ficou para trás (14/10/2026): o cartão chega com mola, o botão
+   respira de leve enquanto espera e o cartão se recolhe quando a nota nasce. */
+.lembrete.guardada .ic-b{background:var(--ok-bg);color:var(--ok-txt)}
+.lembrete.guardada.pend-chega{animation:pendChega 420ms cubic-bezier(.34,1.56,.64,1)}
+.lembrete.guardada.pend-sai{animation:pendSai 260ms ease-in forwards}
+.lembrete.guardada .conv-p{animation:pendRespira 2.4s ease-in-out infinite}
+.lembrete.guardada .conv-p:disabled{opacity:.6;cursor:default;animation:none}
+.lembrete.guardada .pend-erro{color:var(--warn-txt);font-weight:700}
+@keyframes pendChega{0%{opacity:0;transform:translateY(-8px) scale(.97)}60%{opacity:1;transform:translateY(1px) scale(1.01)}100%{transform:none}}
+@keyframes pendSai{to{opacity:0;transform:scale(.97);max-height:0;padding-top:0;padding-bottom:0;margin:0}}
+@keyframes pendRespira{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent)}50%{box-shadow:0 0 0 6px transparent}}
+@media (prefers-reduced-motion:reduce){.lembrete.guardada.pend-chega,.lembrete.guardada.pend-sai,.lembrete.guardada .conv-p{animation:none}}
 /* Copias de seguranca reguláveis (14/09/2026) — a mesma secao serve as duas
    frentes: onde o navegador deixa, o Vox se oferece pra salvar sozinho; onde
    nao deixa, ele assume o que consegue e a pessoa e' quem regula. O .bkp-acende
@@ -7637,6 +7649,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <button type="button" class="conv-s" onclick="_jaUsavaFechar()" data-i18n>Fechar</button>
         </span>
       </div>
+      <div class="lembrete guardada" id="voxGuardada" style="display:none" role="status" aria-live="polite"></div>
       <div class="convite" id="voxConvite" style="display:none"></div>
       <div class="lembrete" id="voxLembrete" style="display:none"></div>
       <div class="cards" id="cardsList" style="display:none"></div>
@@ -9124,7 +9137,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.8';
+const VOX_VERSION='2026.10.14.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10656,9 +10669,9 @@ let I18N_EN={
 "De":"From","Para":"To","Automático":"Auto","Trocar":"Swap","Detectando idioma…":"Detecting language…","Idioma detectado":"Language detected","Texto já no idioma de destino":"Text already appears to be in the target language. No translation needed.","No automático eu detecto o idioma e trago para o idioma do app.":"In auto mode I detect the language and bring it to the app language.","Escolher idiomas manualmente":"Choose languages manually",
 "Nova versão disponível":"New version available","Atualizar":"Update",
 "Experiência":"Experience","Nada pra desfazer ainda":"Nothing to undo yet","Desfazer: {x}":"Undo: {x}","Desfazer o último passo nas ideias":"Undo the last step in the ideas","↩ Desfeito: {x}":"↩ Undone: {x}","fechar a aba \"{x}\"":"closing the \"{x}\" tab","criar a aba \"{x}\"":"creating the \"{x}\" tab","editar a aba \"{x}\"":"editing the \"{x}\" tab","substituir o original":"replacing the original","criar o card \"{x}\"":"creating the \"{x}\" card","criar a pasta \"{p}\"":"creating the \"{p}\" folder","guardar {n} notas na pasta":"saving {n} notes to the folder","guardar 1 ideia":"saving 1 idea","guardar {n} ideias":"saving {n} ideas","limpar a conversa":"clearing the chat","Conversa limpa":"Chat cleared","ℹ️ A conversa já está vazia":"ℹ️ The chat is already empty","Original substituído! O ↶ Desfazer lá em cima volta.":"Original replaced! The ↶ Undo button at the top brings it back.","Arrumar por:":"Arrange by:","Juntar as marcadas":"Merge the checked ones","Tirar as marcadas":"Remove the checked ones","Ações":"Actions","ação":"action","Perguntas":"Questions","perguntas":"questions","pergunta":"question","Decisões":"Decisions","decisões":"decisions","decisão":"decision","Riscos":"Risks","riscos":"risks","risco":"risk","Ideias":"Ideas","ideias":"ideas","ideia":"idea","Arrumar por":"Arrange by","Ordem":"Order","Tipo":"Type","Etapas":"Stages","Escolher peças":"Choose pieces","Todas":"All","Nenhuma":"None","Inverter":"Invert","Juntar":"Merge","Tirar":"Remove","Voltar a ação anterior (Ctrl+Z)":"Undo the last action (Ctrl+Z)","Solte aqui pra virar {x}":"Drop here to make it {x}","Etapa {n}":"Stage {n}","Começa aqui":"Starts here","depois da etapa {n}":"after stage {n}","sem dependência":"no dependency","Solte aqui pra criar a etapa {n}":"Drop here to create stage {n}","Falta decidir":"Still to decide","trava algum passo":"blocks a step","A {a} agora vem depois de {b}.":"{a} now comes after {b}.","A {a} não depende de nada agora.":"{a} doesn't depend on anything now.","depois de":"after","saiu":"removed","marcada":"checked","desmarcada":"unchecked","Mover ou mais opções da peça {n}":"Move or more options for piece {n}","Marcar a peça {n}":"Check piece {n}","Tipo {x}, trocar":"Type {x}, change","Separar {n}":"Split {n}","Texto da peça {n}":"Text of piece {n}","Tirar a peça {n}":"Remove piece {n}","marcadas de {n}":"checked of {n}","Marcar só as {x}":"Check only the {x}","só {x}":"only {x}","Marcar o grupo {x}":"Check the group {x}","Peças":"Pieces","Solte uma peça aqui":"Drop a piece here","Marcada a peça {n}":"Checked piece {n}","Desmarcada a peça {n}":"Unchecked piece {n}","Desfeito":"Undone","Juntei a {a} na {b}. \"Separar\" desfaz quando quiser.":"Merged {a} into {b}. \"Split\" undoes it anytime.","Juntei {n} peças na {b}.":"Merged {n} pieces into {b}.","Separei de volta em {n} peças.":"Split back into {n} pieces.","Tirei a peça {n}.":"Removed piece {n}.","Tirei {n} peças.":"Removed {n} pieces.","A {n} dependia dela.":"{n} depended on it.","As peças {n} dependiam delas.":"Pieces {n} depended on them.","Virar {x}":"Make it {x}","Juntar com a de baixo":"Merge with the one below","Subir":"Move up","Descer":"Move down","Separar de novo ({n})":"Split again ({n})","atual":"current","Enter divide a peça onde está o cursor: ponha o cursor no meio do texto.":"Enter splits the piece at the cursor: put the cursor inside the text.","A {n} virou {x} pelo jeito que começa. Toque no rótulo pra trocar.":"{n} became {x} from the way it starts. Tap the label to change it.","Arrastando a peça {n}":"Dragging piece {n}","Depende de: {x}":"Depends on: {x}","Decisão":"Decision","Ação":"Action","Risco":"Risk","Pergunta":"Question","Ideia":"Idea","Ideias soltas":"Loose ideas","{n} ideias de {a}":"{n} ideas from {a}","A IA separa as ideias de {a}":"The AI splits the ideas from {a}","Separar em ideias":"Split into ideas","Ideias de {a}":"Ideas from {a}","Separando as ideias…":"Splitting the ideas…","Ideias — {p}":"Ideas — {p}","Vão pra pasta \"{p}\"":"They go to the folder \"{p}\"","Toque numa peça pra deixar de fora.":"Tap a piece to leave it out.","Guardar 1 ideia":"Save 1 idea","Guardar {n} ideias":"Save {n} ideas","Juntar de volta":"Put it back together","1 ideia guardada em \"{p}\"":"1 idea saved in \"{p}\"","{n} ideias guardadas em \"{p}\"":"{n} ideas saved in \"{p}\"","1 já está no Calendário":"1 is already on the Calendar","{n} já estão no Calendário":"{n} are already on the Calendar","Tirado do Calendário":"Removed from the Calendar","Tirar do Calendário":"Remove from the Calendar","Ver como mapa":"See as a map","Só o original, por enquanto":"Just the original, for now","Original + 1 galho, em órbita":"Original + 1 branch, in orbit","Original + {n} galhos, em órbita":"Original + {n} branches, in orbit","Ver como":"View as","Mapa":"Map","Arrumação do mapa":"Map layout","Fluxo":"Flow","Guardar como pasta":"Save as a folder","Toque num galho pra abrir o texto ou transformar a partir dele.":"Tap a branch to open its text or transform from it.","Criando {x}…":"Creating {x}…","Abrir o texto":"Open the text","Transformar daqui":"Transform from here","Guardar tudo numa pasta":"Save everything into a folder","1 nota nova em \"{p}\"":"1 new note in \"{p}\"","Já guardada numa pasta":"Already saved in a folder","Organizar":"Organize","Organizar: guardar numa pasta ou levar pra outro mundo":"Organize: save into a folder or take to another world","Abrir a pasta":"Open the folder","Tudo já está em \"{p}\"":"Everything is already in \"{p}\"","{n} notas novas em \"{p}\"":"{n} new notes in \"{p}\"","Pasta \"{p}\" · 1 nota":"Folder \"{p}\" · 1 note","Pasta \"{p}\" · {n} notas":"Folder \"{p}\" · {n} notes","sugerido":"suggested","Guardar numa pasta":"Save into a folder","O que fazer com este texto?":"What to do with this text?","O que fazer com estas {n} abas?":"What to do with these {n} tabs?","Levar pra outro mundo":"Take to another world","Vira uma pasta e viaja. Você escolhe o mundo na próxima tela.":"It becomes a folder and travels. You pick the world on the next screen.","Tudo sai deste mundo e vai pro que você escolher. Lá, o Vox pergunta em qual pasta guardar.":"Everything leaves this world and goes to the one you pick. There, Vox asks which folder to put it in.","Segure pra levar":"Hold to take it","Pasta \"{p}\" criada com 1 nota":"Folder \"{p}\" created with 1 note","Pasta \"{p}\" criada com {n} notas":"Folder \"{p}\" created with {n} notes","O original voltou pra onde estava":"The original went back where it was","Deixar o original onde estava":"Keep the original where it was","Guardar tudo numa pasta?":"Save everything into a folder?","Você abriu {n} lentes. Elas viram notas ao lado do original, numa pasta chamada \"{p}\".":"You opened {n} lenses. They become notes next to the original, in a folder called \"{p}\".","Outras ações":"Other actions","Chegou \"{p}\". Onde guardar?":"\"{p}\" has arrived. Where should it go?","Ela pode ficar como pasta nova ou entrar numa pasta que já existe aqui.":"It can stay as a new folder or go inside a folder that already exists here.","Deixar como pasta nova":"Keep as a new folder","Dentro de \"{p}\"":"Inside \"{p}\"","Ficou como pasta nova":"Kept as a new folder","\"{p}\" agora mora dentro de \"{q}\"":"\"{p}\" now lives inside \"{q}\"","As mesmas notas, ligadas pelas pastas como um mapa.":"The same notes, linked through your folders like a map.","As mesmas notas, em volta das suas pastas.":"The same notes, around your folders.","As mesmas notas, cada uma no dia em que nasceu.":"The same notes, each on the day it was made.","Abre no céu, pra você escolher em qual mundo entrar.":"Opens on the sky, so you can pick which world to enter.","Outros jeitos de ver as mesmas notas":"Other ways to see the same notes","Ou começar escolhendo o mundo":"Or start by picking the world","Na dúvida, toque em Agora não. O Vox aprende com o uso.":"Not sure? Tap Not now. Vox learns as you use it.","Cards":"Cards","As mesmas notas, de jeitos diferentes":"The same notes, seen in different ways","Você escreve e guarda nas suas pastas. Cada desenho é só um jeito de olhar pro que você já tem. Não precisa escolher nada: o Vox abre do último jeito que você deixou.":"You write and keep things in your folders. Each drawing is just a way of looking at what you already have. No need to choose anything: Vox opens the way you last left it.","1 nota na lixeira · some em 30 dias":"1 note in the trash · gone in 30 days","Seu jeito de usar":"Your way of using it","Palavras que o Vox aprendeu":"Words Vox has learned","Se algo der errado":"If something goes wrong","Nenhuma cópia ainda":"No copy yet","Última cópia hoje":"Last copy today","Última cópia ontem":"Last copy yesterday","Última cópia há {n} dias":"Last copy {n} days ago","Abre em {x}":"Opens in {x}","dicas ligadas":"tips on","dicas desligadas":"tips off","1 palavra ou correção":"1 word or correction","{n} palavras e correções":"{n} words and corrections","Destravar, espaço, recomeçar":"Unfreeze, storage, start over","Escolha uma pasta e o Vox guarda uma cópia nela cada vez que você salvar.":"Pick a folder and Vox keeps a copy there every time you save.","Como funciona?":"How does it work?","Por que aqui a cópia é manual?":"Why is the copy manual here?","Pouco":"Rarely","Normal":"Normal","Bastante":"Often","Nunca":"Never","Pôr no meu calendário":"Add to my calendar","Ajustar os números":"Fine-tune the numbers","Me lembrar de fazer cópia":"Remind me to make a copy","O Vox não vai te lembrar na tela. O calendário, se você pôs, continua valendo.":"Vox won't remind you on screen. The calendar, if you added it, still works.","Do seu jeito: {n} notas ou {d} dias.":"Your way: {n} notes or {d} days.","Avisa a cada {n} notas novas ou {d} dias sem cópia, na tela principal e nunca em cima de uma gravação.":"Reminds you every {n} new notes or {d} days without a copy, on the main screen and never over a recording.","Dicas pelo caminho":"Tips along the way","O Vox explica cada função na primeira vez que você usa.":"Vox explains each feature the first time you use it.","Abrir Configurações já completas":"Open Settings fully expanded","Pula a tela de entrada e mostra tudo de uma vez.":"Skips the welcome screen and shows everything at once.","Quando você escolhe \"sempre ignorar\" ou \"sempre trocar\" ao revisar um texto, a regra fica aqui. Toque no X pra tirar uma.":"When you pick \"always ignore\" or \"always replace\" while reviewing a text, the rule is kept here. Tap the X to remove one.","O Vox travou?":"Is Vox stuck?","Fecha os áudios abertos e para qualquer gravação em andamento. Suas notas não são apagadas.":"Closes open audio and stops any recording in progress. Your notes are not deleted.","Destravar":"Unfreeze","Recomeçar do zero":"Start over","Mandar todas as notas pra lixeira":"Send all notes to the trash","Elas ficam lá por 30 dias e dá pra desfazer. Pra tirar só algumas, use Selecionar na tela principal.":"They stay there for 30 days and you can undo. To remove just a few, use Select on the main screen.","Segure pra mandar tudo pra lixeira":"Hold to send everything to the trash","Voltar o Vox ao primeiro dia":"Take Vox back to day one","Zera chaves, idioma, tema e ajustes. Suas notas podem ficar.":"Resets keys, language, theme and settings. Your notes can stay.","Zerar o Vox…":"Reset Vox…","Segure pra zerar o Vox":"Hold to reset Vox","Não há notas pra mandar pra lixeira.":"There are no notes to send to the trash.","{n} notas na lixeira · somem em 30 dias":"{n} notes in the trash · gone in 30 days","↩ Notas de volta":"↩ Notes are back","Segure até a barra encher.":"Hold until the bar fills up.","O espaço livre do aparelho está acabando, e isso pode limitar o que o Vox guarda. Libere espaço no aparelho ou salve uma cópia e mande notas antigas pra lixeira.":"Your device is running out of free space, which may limit what Vox can keep. Free up space or save a copy and send old notes to the trash.","O espaço livre do aparelho está ficando apertado. Se quiser, salve uma cópia e mande notas antigas pra lixeira.":"Free space on your device is getting tight. If you like, save a copy and send old notes to the trash.","Este navegador pode apagar os dados sozinho se faltar espaço. Guarde uma cópia de vez em quando.":"This browser may erase the data on its own if space runs low. Save a copy now and then.","Como o Vox abre":"How Vox opens","O Vox abre em":"Vox opens in","Mudar":"Change","neste mundo":"in this world","abre aqui":"opens here","Onde parei":"Where I left off","Volta na tela e no jeito de ver que você deixou.":"Back to the screen and view you left.","Um card embaixo do outro, do mais novo pro mais antigo.":"One card under the other, newest first.","Cards lado a lado, como um mural.":"Cards side by side, like a wall board.","Um card por vez, em tela de leitura.":"One card at a time, in reading view.","Fluxograma":"Flowchart","Suas pastas ligadas como um mapa.":"Your folders linked like a map.","Órbita":"Orbit","Suas pastas girando em volta de um centro.":"Your folders circling a center.","Calendário":"Calendar","Cada nota no dia em que nasceu.":"Each note on the day it was made.","Mundos":"Worlds","O céu com todos os seus mundos.":"The sky with all your worlds.","Pensamento fluido":"Free thinking","Do meu jeito":"My own way","Grava no modo Reunião e abre no Calendário.":"Records in Meeting mode and opens in the Calendar.","Grava no modo Consulta e abre no Documento.":"Records in Appointment mode and opens in Document view.","Grava no modo Livre e abre no Fluxograma.":"Records in Free mode and opens in the Flowchart.","Grava no modo Entrevista e abre na Lista.":"Records in Interview mode and opens in the List.","Abre onde você parou, no último modo que usou.":"Opens where you left off, in the last mode you used.","Como você vai usar o Vox neste mundo?":"How will you use Vox in this world?","Escolha um jeito de trabalhar: ele ajusta o modo de gravação e a tela de abertura deste mundo.":"Pick a way of working: it sets the recording mode and the opening screen of this world.","Seus cards":"Your cards","Abrir já com":"Open straight into","Vale só para este mundo. Cada mundo guarda a sua escolha.":"Only for this world. Each world keeps its own choice.","Voltar ao padrão":"Back to default","O Vox vai abrir onde você parou.":"Vox will open where you left off.","O Vox vai abrir em {x} neste mundo.":"Vox will open in {x} in this world.","{p} neste mundo: ":"{p} in this world: ","Pronto: o Vox volta a abrir onde você parou.":"Done: Vox opens where you left off again.","Isso escolhe o modo de gravação e a tela em que este mundo abre. Dá pra mudar depois em Configurações.":"This picks the recording mode and the screen this world opens in. You can change it later in Settings.","Ainda não há pastas pro {x} — abrimos nos seus cards.":"There are no folders for the {x} yet — we opened your cards.","Abriu em {x} — você escolheu isso.":"Opened in {x} — you chose this.","🤝 Modo assistido":"🤝 Assisted mode",
-// ── Traduções novas (plano 30, duas equipes): cada equipe escreve só na SUA
+// ── Traduções novas (plano 30, três equipes): cada equipe escreve só na SUA
 //    faixa, uma tradução por linha, ACIMA da sua marca. O aplica_patch.js da
-//    skill metodo-vox faz isso sozinho ("@@@ EQUIPE B" ou VOX_EQUIPE=B).
+//    skill metodo-vox faz isso sozinho ("@@@ EQUIPE B" ou VOX_EQUIPE=B; idem C).
 "Ver como Órbita":"See as Orbit",
 "Ver como Fluxo":"See as Flow",
 "O original no meio e as abas em volta.":"The original in the middle, the tabs around it.",
@@ -10706,6 +10719,22 @@ let I18N_EN={
 "Salvo como nota.":"Saved as a note.",
 "Salvar como nota":"Save as a note",
 // [EQUIPE B] traduções novas entram ACIMA desta linha
+// ── separador entre as equipes: não apagar, não escrever aqui ──
+"Falta a sua chave de transcrição. Coloque nas Configurações e toque de novo.":"Your transcription key is missing. Add it in Settings and tap again.",
+"sem internet":"no internet",
+"a chave foi recusada":"the key was rejected",
+"não sei o motivo":"unknown reason",
+"Uma gravação de {m} min ficou guardada":"A {m}-min recording was saved",
+"{n} gravações ({m} min) ficaram guardadas":"{n} recordings ({m} min) were saved",
+"Transformando em texto… a nota nova aparece aqui embaixo.":"Turning it into text… the new note shows up below.",
+"Ainda não deu: {x}. Confira a internet e toque de novo.":"Not yet: {x}. Check the internet and tap again.",
+"Ela está salva neste aparelho desde {q}. Toque pra virar texto agora.":"It's saved on this device since {q}. Tap to turn it into text now.",
+"Transformando…":"Working…",
+"Transformar em texto":"Turn into text",
+"Baixar o áudio":"Download the audio",
+"Áudio baixado. Ele continua guardado aqui até virar texto.":"Audio downloaded. It stays saved here until it becomes text.",
+"Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.":"I couldn't turn it into text right now. Your recording was saved: the button at the top of the list turns it into text when the internet is back.",
+// [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
 "Zera todas as preferências, chaves e ajustes — como no primeiro dia.":"Resets all preferences, keys and settings — like day one.",
@@ -12413,6 +12442,7 @@ async function _pendenteGuardar(file,durSec,sn,mode){
     lista.push({id,buf:await file.arrayBuffer(),nome:file.name||'gravacao.webm',tipo:file.type||'audio/webm',dur:durSec||0,sn:sn||'',mode:mode||'livre'});
     await _idbSetBruto(_PEND_IDB,lista);
     localStorage.setItem('vox_tem_pendente','1');
+    _pendPintar();
     return id;
   }catch(e){return false}
 }
@@ -12425,11 +12455,16 @@ async function _pendenteTirar(id){
     await _idbSetBruto(_PEND_IDB,lista);
     if(!lista.length)localStorage.removeItem('vox_tem_pendente');
   }catch(e){}
+  _pendPintar();
 }
-let _pendentesRodando=false;
-async function _pendentesProcessar(){
-  if(_pendentesRodando||!_chaveDoProvedorAtual()||localStorage.getItem('vox_tem_pendente')!=='1')return;
-  _pendentesRodando=true;
+let _pendentesRodando=false,_pendErro='';
+// manual=true vem do botão "Transformar em texto": sem chave, abre as
+// Configurações em vez de não fazer nada.
+async function _pendentesProcessar(manual){
+  if(_pendentesRodando)return;
+  if(!_chaveDoProvedorAtual()){if(manual===true){toast(t('Falta a sua chave de transcrição. Coloque nas Configurações e toque de novo.'),true);openModal()}return}
+  if(manual!==true&&localStorage.getItem('vox_tem_pendente')!=='1')return;
+  _pendentesRodando=true;_pendErro='';_pendPintar();
   try{
     const lista=(await _idbGetBruto(_PEND_IDB))||[];
     if(!lista.length){localStorage.removeItem('vox_tem_pendente');return}
@@ -12446,13 +12481,68 @@ async function _pendentesProcessar(){
       const file=new File([p.buf],p.nome,{type:p.tipo});
       _gravNaFilaId=p.id;
       let ok=false;
-      try{ok=await doTranscribe(file,p.dur,true,p.sn,p.mode)}finally{_gravNaFilaId=null}
+      // novaNota: a gravação recuperada vira SEMPRE uma nota nova, com o áudio
+      // junto. Antes, se a pessoa clicasse numa nota enquanto o texto chegava,
+      // ele era colado dentro dela e a gravação saía do cofre (achado 14/10).
+      try{ok=await doTranscribe(file,p.dur,true,p.sn,p.mode,{novaNota:true})}finally{_gravNaFilaId=null}
       if(ok)await _pendenteTirar(p.id);
+      else{_pendErro=_pendMotivo((document.getElementById('toastMsg')||{}).textContent||'');break}
     }
-  }catch(e){}finally{_pendentesRodando=false}
+  }catch(e){_pendErro=_pendMotivo(e&&e.message||'')}finally{_pendentesRodando=false;_pendPintar()}
+}
+function _pendMotivo(m){
+  if(/fetch|network|rede|internet|NAME_NOT_RESOLVED|Load failed|offline/i.test(m))return t('sem internet');
+  if(/401|403|invalid|inválid|chave|key/i.test(m))return t('a chave foi recusada');
+  return String(m).replace(/^❌\s*/,'').slice(0,80)||t('não sei o motivo');
+}
+// O cartão "ficou para trás" no alto da lista: aparece enquanto houver
+// gravação no cofre, com o botão que transforma em texto agora e o link que
+// baixa o áudio (a garantia de quem não quer esperar).
+async function _pendPintar(){
+  const el=document.getElementById('voxGuardada');if(!el)return;
+  let lista=[];try{lista=(await _idbGetBruto(_PEND_IDB))||[]}catch(e){}
+  if(!lista.length){
+    if(el.style.display!=='none'&&!el.classList.contains('pend-sai')){
+      if(typeof _voxReduzMov==='function'&&_voxReduzMov()){el.style.display='none'}
+      else{el.classList.add('pend-sai');setTimeout(()=>{el.style.display='none';el.classList.remove('pend-sai')},270)}
+    }
+    return;
+  }
+  const seg=lista.reduce((a,p)=>a+(+p.dur||0),0),min=Math.max(1,Math.round(seg/60));
+  const quando=(()=>{const n=parseInt(String(lista[0].id).slice(1,14),10);if(!n)return '';const d=new Date(n);return d.toLocaleString(getLocale(),{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})();
+  const tit=lista.length===1?t('Uma gravação de {m} min ficou guardada').replace('{m}',min):t('{n} gravações ({m} min) ficaram guardadas').replace('{n}',lista.length).replace('{m}',min);
+  const sub=_pendentesRodando?t('Transformando em texto… a nota nova aparece aqui embaixo.')
+    :_pendErro?t('Ainda não deu: {x}. Confira a internet e toque de novo.').replace('{x}',_pendErro)
+    :t('Ela está salva neste aparelho desde {q}. Toque pra virar texto agora.').replace('{q}',quando);
+  el.innerHTML=`<span class="ic-b"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/></svg></span></span>`+
+    `<span class="txt"><b>${escHtml(tit)}</b><span${_pendErro&&!_pendentesRodando?' class="pend-erro"':''}>${escHtml(sub)}</span></span>`+
+    `<span class="lemb-bts">`+
+    `<button type="button" class="conv-p" onclick="_pendentesProcessar(true)"${_pendentesRodando?' disabled':''}>${escHtml(_pendentesRodando?t('Transformando…'):t('Transformar em texto'))}</button>`+
+    `<button type="button" class="conv-s" onclick="_pendBaixar()">${escHtml(t('Baixar o áudio'))}</button>`+
+    `</span>`;
+  if(el.style.display==='none'||!el.style.display){el.style.display='flex';if(typeof _jz==='function')_jz(el,'pend-chega',430)}
+}
+async function _pendBaixar(){
+  let lista=[];try{lista=(await _idbGetBruto(_PEND_IDB))||[]}catch(e){}
+  lista.forEach((p,i)=>{
+    const n=parseInt(String(p.id).slice(1,14),10),d=n?new Date(n):new Date();
+    const z=x=>String(x).padStart(2,'0');
+    const ext=/ogg/.test(p.tipo)?'ogg':/mp4|m4a|aac/.test(p.tipo)?'m4a':'webm';
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([p.buf],{type:p.tipo}));
+    a.download=`vox-gravacao-${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}-${z(d.getHours())}h${z(d.getMinutes())}${lista.length>1?'-'+(i+1):''}.${ext}`;
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  });
+  if(lista.length)toast(t('Áudio baixado. Ele continua guardado aqui até virar texto.'));
 }
 // Voltou a internet: tenta de novo o que ficou guardado.
 window.addEventListener('online',()=>setTimeout(_pendentesProcessar,1500));
+// Só o "online" não basta: quando o Wi-Fi fica ligado e só a internet cai, o
+// navegador nunca avisa que ela voltou e a gravação ficava parada (achado
+// 14/10/2026). Tenta também ao abrir o app, ao voltar pra aba e a cada minuto
+// enquanto houver gravação esperando.
+window.addEventListener('load',()=>setTimeout(()=>{_pendPintar();_pendentesProcessar()},3000));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(_pendentesProcessar,800)});
+setInterval(()=>{if(!document.hidden&&localStorage.getItem('vox_tem_pendente')==='1')_pendentesProcessar()},60000);
 // Roda sempre que as configurações são salvas. Quando a primeira chave de
 // transcrição aparece: manda UMA vez o sinal "este aparelho conectou a
 // própria chave" (sem conteúdo nenhum — é o que diz se a cortesia converte)
@@ -30604,7 +30694,7 @@ async function processAudio(file,durSec,fromRec){
   finally{_gravNaFilaId=null}
   if(!id)return ok;
   if(ok===true){await _pendenteTirar(id);_pendentesProcessar()}
-  else if(!_gravJaAvisada)toast(t('Não consegui transformar em texto agora. Sua gravação ficou guardada neste aparelho e eu tento de novo sozinho.'),true);
+  else if(!_gravJaAvisada)toast(t('Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.'),true);
   return ok;
 }
 async function _processAudio(file,durSec,fromRec){
@@ -30737,7 +30827,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
     // "Gravar aqui"/"Anexar aqui" travam o alvo (recTargetTA) — usa ele de
     // preferência, pois activeTA já foi zerado pelo blur ao clicar em Parar/
     // Transcrever (a transcrição async demora bem mais que os 200ms do focusout).
-    const insertTA=(recTargetTA&&document.contains(recTargetTA))?recTargetTA:((activeTA&&document.contains(activeTA))?activeTA:null);
+    const insertTA=opts.novaNota?null:((recTargetTA&&document.contains(recTargetTA))?recTargetTA:((activeTA&&document.contains(activeTA))?activeTA:null));
     if(insertTA){
       const s=insertTA.selectionStart,en=insertTA.selectionEnd,cur=insertTA.value;
       const sep=cur.length>0&&cur[cur.length-1]!=='\n'?'\n':'';
