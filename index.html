@@ -2008,6 +2008,46 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .folder-cfg-btn.active{color:var(--accent);background:var(--accent-glow)}
 .folder-fc-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px;display:flex;border-radius:7px;transition:all var(--transition)}
 .folder-fc-btn:hover{background:var(--bg-input);color:var(--text2)}
+/* ── Botão dos Mundos: "Janela da noite" (lote 13, 14/10/2026) ──
+   Um pedacinho do céu na barra de Pastas: degradê noite → hora azul, globo
+   cor de estrela e duas estrelinhas. Forma própria de propósito: o Idioma
+   (menu ⋯) já é um globo azul e o "+" já é outro azul — só o tom não bastava.
+   Ícone #e8f0ff sobre #2c4c8c = 7,3:1 no pior ponto. No escuro ganha contorno
+   pra pastilha não sumir na barra. A porta já tem a cor do destino: é o azul
+   por onde o céu passa ao abrir (o voo, em abrirGalaxia). */
+:root{--mw-topo:#101b36;--mw-base:#2c4c8c;--mw-ic:#e8f0ff;--mw-est:#ffffff;--mw-bd:transparent;--mw-hz:#5a7cc0}
+[data-theme="dark"]{--mw-bd:#5d75a8}
+#btnFolderMundos,#btnFolderMundos:hover{position:relative;overflow:hidden;color:var(--mw-ic);
+  background:linear-gradient(180deg,var(--mw-topo),var(--mw-base));box-shadow:inset 0 0 0 1px var(--mw-bd);
+  transition:transform .12s cubic-bezier(.22,1,.36,1)}
+#btnFolderMundos::before,#btnFolderMundos::after{content:'';position:absolute;border-radius:50%;background:var(--mw-est);pointer-events:none}
+#btnFolderMundos::before{width:1.6px;height:1.6px;left:4px;top:3px;opacity:.85}
+#btnFolderMundos::after{width:1.3px;height:1.3px;right:3px;top:14px;opacity:.55}
+#btnFolderMundos .mw-hz{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .18s linear;
+  background:radial-gradient(ellipse 120% 70% at 50% 110%,var(--mw-hz),transparent 70%)}
+#btnFolderMundos:hover .mw-hz,#btnFolderMundos:focus-visible .mw-hz{opacity:.75}
+#btnFolderMundos svg{position:relative}
+#btnFolderMundos svg g{transform-box:view-box;transform-origin:12px 12px;transform:rotate(-18deg);transition:transform .26s cubic-bezier(.22,1,.36,1)}
+#btnFolderMundos:hover svg g{transform:rotate(-6deg)}
+#btnFolderMundos:active{transform:scale(.9);transition-duration:.09s}
+#btnFolderMundos.mola{animation:mwMola .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes mwMola{0%{transform:scale(.9)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
+/* cintilo: uma estrelinha de 4 pontas quando a barra de Pastas abre (no
+   máximo 1 a cada 45 s — ver toggleFolders). */
+#btnFolderMundos .mw-cint{position:absolute;right:1px;top:1px;width:6px;height:6px;opacity:0;pointer-events:none;color:var(--mw-est)}
+#btnFolderMundos .mw-cint svg{display:block;width:100%;height:100%}
+#btnFolderMundos.mw-cintila .mw-cint{animation:mwCint .7s cubic-bezier(.22,1,.36,1)}
+@keyframes mwCint{0%{opacity:0;transform:scale(.3) rotate(0deg)}35%{opacity:1;transform:scale(1) rotate(45deg)}100%{opacity:0;transform:scale(.5) rotate(90deg)}}
+/* o voo: um disco da cor do botão nasce DELE e cresce até cobrir a tela,
+   escurecendo até a cor do céu; o céu entra por cima. */
+.mw-voo{position:fixed;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;z-index:99;pointer-events:none;
+  background:var(--mw-base);transform:scale(1);transition:transform .42s cubic-bezier(.22,1,.36,1),background-color .42s linear,opacity .25s linear}
+.mw-voo.vai{background-color:var(--ceu2)}
+@media (prefers-reduced-motion:reduce){
+  #btnFolderMundos,#btnFolderMundos svg g,#btnFolderMundos .mw-hz{transition:none}
+  #btnFolderMundos.mola,#btnFolderMundos.mw-cintila .mw-cint{animation:none}
+  .mw-voo{display:none}
+}
 /* ══ FLUXOGRAMA DE PASTAS — Fase 1 (ver e navegar) ══
    Reusa o backdrop de .tx-overlay (fixed;inset:0;fundo escurecido), mas o
    modal interno ocupa a tela toda — não é um cartão de 420px, é um canvas.
@@ -6849,10 +6889,14 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* SEM MOVIMENTO: nada de transição, nada de cintilação (o JS desliga),
    nada de inércia. Navegar continua funcionando — resposta direta ao dedo
    não é "movimento não pedido". */
-.palco.quieto .galaxia{transition:opacity .12s linear,visibility 0s linear .12s!important;transform:none!important}
-.palco.quieto .galaxia.on{transition:opacity .12s linear,visibility 0s!important}
-.palco.quieto .galaxia.abrindo .pin{animation:none!important}
-.palco.quieto .det,.palco.quieto .anel,.palco.quieto .gxb{transition:none!important}
+/* "Reduzir movimento". As regras vinham do protótipo (.palco.quieto) e no
+   app nunca ligavam: ninguém punha a classe e .galaxia não é filha de .palco. */
+@media (prefers-reduced-motion:reduce){
+  .galaxia{transition:opacity .12s linear,visibility 0s linear .12s!important;transform:none!important}
+  .galaxia.on{transition:opacity .12s linear,visibility 0s!important}
+  .galaxia.abrindo .pin{animation:none!important}
+  .galaxia .det,.galaxia .anel,.galaxia .gxb{transition:none!important}
+}
 
 /* ---- vitrine: o painel de verdade, parado, dentro do documento ----
    Reaproveita as MESMAS classes do painel vivo (.det/.dn/.dd/.dinp) pra não
@@ -7685,6 +7729,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </button>
         <button class="folder-fc-btn" id="btnFolderMundos" onclick="abrirGalaxia(event)" title="Ver todos os mundos" data-i18n-title aria-label="Ver todos os mundos">
+          <span class="mw-hz" aria-hidden="true"></span><span class="mw-cint" aria-hidden="true"><svg viewBox="0 0 10 10"><path d="M5 0 6 4 10 5 6 6 5 10 4 6 0 5 4 4z" fill="currentColor"/></svg></span>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-18 12 12)"><circle cx="12" cy="12" r="8.6"/><path d="M12 3.4c3.1 2.3 3.1 14.9 0 17.2"/><path d="M12 3.4c-3.1 2.3-3.1 14.9 0 17.2"/><path d="M3.9 9.1c5 2 11.2 2 16.2 0"/></g></svg>
         </button>
         <button class="folder-fc-btn" id="btnFolderNova" onclick="_folderIrCriarNova()" title="Nova pasta" data-i18n-title>
@@ -9147,7 +9192,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.14.2';
+const VOX_VERSION='2026.10.14.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -22968,6 +23013,12 @@ function toggleFolders(){
   document.getElementById('btnFolders').classList.toggle('folders-on',open);
   localStorage.setItem('vox_folders_open',open?'1':'0');
   if(open)_ajustarAlturaPastas();
+  // A porta dos Mundos dá um cintilo quando a barra abre — no máximo 1 a
+  // cada 45 s, pra nunca virar pisca-pisca.
+  if(open&&Date.now()-(toggleFolders._cint||0)>45000){
+    toggleFolders._cint=Date.now();
+    setTimeout(()=>_jz(document.getElementById('btnFolderMundos'),'mw-cintila',720),260);
+  }
 }
 // O max-height fixo de ontem (calc(100vh-150px)) resolvia a colisão com a
 // barra do Windows mas abria outra: numa janela mais baixa, o painel podia
@@ -39352,12 +39403,29 @@ function abrirGalaxia(e){
   aberta=true;
   galaxia.classList.toggle('medir',/[?&]medidor\b/.test(location.search));
   _telaMarcar('mundos');
-  var chip=document.getElementById('wcGlobo').getBoundingClientRect();
+  /* O céu nasce de quem foi tocado: do globo das Pastas ou do chip do topo.
+     Antes nascia sempre do chip, mesmo quando o clique vinha das Pastas. */
+  var deBotao=e&&e.currentTarget&&e.currentTarget.id==='btnFolderMundos'?e.currentTarget:null;
+  var chip=(deBotao||document.getElementById('wcGlobo')).getBoundingClientRect();
   var p=palco.getBoundingClientRect();
   galaxia.style.setProperty('--ox',(chip.left-p.left+chip.width/2)+'px');
   galaxia.style.setProperty('--oy',(chip.top-p.top+chip.height/2)+'px');
-  document.getElementById('worldChip').classList.add('afunda');
-  setTimeout(function(){document.getElementById('worldChip').classList.remove('afunda');},130);
+  if(deBotao){
+    _jz(deBotao,'mola',340);
+    if(!quieto&&chip.width){
+      var vcx=chip.left+chip.width/2,vcy=chip.top+chip.height/2;
+      var R=Math.sqrt(Math.pow(Math.max(vcx,innerWidth-vcx),2)+Math.pow(Math.max(vcy,innerHeight-vcy),2));
+      var voo=document.createElement('div');voo.className='mw-voo';
+      voo.style.left=vcx+'px';voo.style.top=vcy+'px';
+      document.body.appendChild(voo);void voo.offsetWidth;
+      voo.classList.add('vai');voo.style.transform='scale('+(R/11+1).toFixed(2)+')';
+      setTimeout(function(){voo.style.opacity='0'},520);
+      setTimeout(function(){voo.remove()},820);
+    }
+  }else{
+    document.getElementById('worldChip').classList.add('afunda');
+    setTimeout(function(){document.getElementById('worldChip').classList.remove('afunda');},130);
+  }
 
   _mundosMontar();
   selId=ativoId;
