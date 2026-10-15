@@ -9675,7 +9675,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.15';
+const VOX_VERSION='2026.10.15.16';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10998,6 +10998,9 @@ let I18N_EN={
 "Abra a lista de notas de uma pasta pra eu mostrar o gesto.":"Open a folder's note list and I'll show you the gesture.",
 "Pronto. A mãozinha volta na próxima vez que você abrir uma lista de notas no Fluxograma, na Órbita ou no Calendário.":"Done. The little hand comes back the next time you open a note list in the Flowchart, Orbit or Calendar.",
 "Rever o gesto de arrastar":"Replay the drag gesture",
+"Uma gravação foi interrompida no meio. Ela ficou guardada e vai virar texto com as vozes separadas.":"A recording was interrupted midway. It was saved and will become text with the voices separated.",
+"Esta é a {n}ª diarização do mês: no plano grátis, as vozes saem nos primeiros 20 minutos e o resto vira texto, noutra nota. O Pro separa a gravação inteira.":"This is diarization #{n} this month: on the free plan, voices are separated for the first 20 minutes and the rest becomes text in another note. Pro separates the whole recording.",
+"No plano grátis, 1 diarização por mês vai inteira. Desta gravação, separo as vozes dos primeiros 20 minutos; o resto vira texto comum, noutra nota.":"On the free plan, 1 diarization per month goes in full. For this recording, I'll separate the voices of the first 20 minutes; the rest becomes plain text in another note.",
 "A mãozinha mostra de novo como pegar uma nota e soltar no lugar.":"The little hand shows again how to grab a note and drop it in place.",
 "Nota sem nome":"Untitled note",
 "calendário":"calendar",
@@ -13037,7 +13040,9 @@ function _gravLimiteArmar(){
   _gravLimiteDesarmar();
   if(!isRec||!recStart)return;
   const regras=[];
-  if(_diarExtraNaGravacao())regras.push({seg:LIM_DIAR_EXTRA_SEG,aviso:t('Faltam 15 segundos: no plano grátis, da 2ª diarização do mês em diante, a gravação com vozes separadas vai até 20 minutos.')});
+  // Diarização extra do grátis NÃO para mais a gravação (decisão de 15/10/2026): ela vai
+  // inteira, como arquivo — vozes nos 20 primeiros min e o resto em texto (_diarizarComLimite).
+  if(false&&_diarExtraNaGravacao())regras.push({seg:LIM_DIAR_EXTRA_SEG,aviso:t('Faltam 15 segundos: no plano grátis, da 2ª diarização do mês em diante, a gravação com vozes separadas vai até 20 minutos.')});
   if(_gravEmBlocos())regras.push({seg:LIM_GRAV_BLOCO_SEG,aviso:t('Faltam 15 segundos neste bloco de 1 minuto. Depois é só tocar em gravar de novo.')});
   if(!_temChaveTranscricao()&&_cortesiaLigada()){
     // Ainda sem resposta da ponte: pergunta e arma de novo quando ela chegar.
@@ -13080,7 +13085,13 @@ async function _pendenteGuardar(file,durSec,sn,mode,silencioso){
   try{
     const lista=(await _idbGetBruto(_PEND_IDB))||[];
     const id='p'+Date.now()+Math.random().toString(36).slice(2,6);
-    lista.push({id,buf:await file.arrayBuffer(),nome:file.name||'gravacao.webm',tipo:file.type||'audio/webm',dur:durSec||0,sn:sn||'',mode:mode||'livre'});
+    // Mundo de origem + cifra do cofre: uma consulta de um mundo trancado não pode
+    // ficar em claro no aparelho, nem virar nota em outro mundo.
+    let buf=await file.arrayBuffer();
+    const cifrado=!!(_mundoTrancado(_mundoAtivo)&&_cofreChave);
+    if(cifrado)buf=await _cofreCifrarBuf(buf);
+    lista.push({id,buf,nome:file.name||'gravacao.webm',tipo:file.type||'audio/webm',dur:durSec||0,sn:sn||'',mode:mode||'livre',
+      mundo:_mundoAtivo,cifrado,diar:_diarVaiRodar()});
     await _idbSetBruto(_PEND_IDB,lista);
     localStorage.setItem('vox_tem_pendente','1');
     if(!silencioso)_pendPintar();
@@ -13105,14 +13116,18 @@ let _pendentesRodando=false,_pendErro='';
 const _pendOcupadas=new Set();
 // manual=true vem do botão "Transformar em texto": sem chave, abre as
 // Configurações em vez de não fazer nada.
+// Pendência é deste mundo? (item antigo, sem mundo, vale em qualquer um — era assim)
+function _pendDoMundo(p){return !p.mundo||p.mundo===_mundoAtivo}
+async function _pendBuf(p){return p.cifrado?await _cofreDecifrarBuf(p.buf):p.buf}
 async function _pendentesProcessar(manual){
   if(_pendentesRodando)return;
   if(!_chaveDoProvedorAtual()){if(manual===true){toast(t('Falta a sua chave de transcrição. Coloque nas Configurações e toque de novo.'),true);openModal()}return}
   if(manual!==true&&localStorage.getItem('vox_tem_pendente')!=='1')return;
   _pendentesRodando=true;_pendErro='';_pendPintar();
   try{
-    const lista=(await _idbGetBruto(_PEND_IDB))||[];
-    if(!lista.length){localStorage.removeItem('vox_tem_pendente');return}
+    const todas=(await _idbGetBruto(_PEND_IDB))||[];
+    if(!todas.length){localStorage.removeItem('vox_tem_pendente');return}
+    const lista=todas.filter(_pendDoMundo);
     let avisou=false;
     for(const p of lista){
       while(isProc||isRec||_gravNaFilaId||_pendOcupadas.has(p.id))await new Promise(r=>setTimeout(r,500));
@@ -13122,14 +13137,20 @@ async function _pendentesProcessar(manual){
       if(!avisou){toast(t('Transformando em texto a gravação que estava guardada…'));avisou=true}
       // Sem isto o texto cairia dentro do card que estiver com o cursor.
       activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;
+      const buf=await _pendBuf(p);
+      if(!buf)continue; // cifrada e o cofre deste mundo está fechado: espera a senha
       _armarDurAudio(p.dur);
-      const file=new File([p.buf],p.nome,{type:p.tipo});
+      const file=new File([buf],p.nome,{type:p.tipo});
       _gravNaFilaId=p.id;
       let ok=false;
       // novaNota: a gravação recuperada vira SEMPRE uma nota nova, com o áudio
       // junto. Antes, se a pessoa clicasse numa nota enquanto o texto chegava,
       // ele era colado dentro dela e a gravação saía do cofre (achado 14/10).
-      try{ok=await doTranscribe(file,p.dur,true,p.sn,p.mode,{novaNota:true})}finally{_gravNaFilaId=null}
+      // Gravada pra separar vozes: volta pelo mesmo caminho (AssemblyAI e cia.), não pelo
+      // texto simples — senão a consulta recuperada perdia as vozes.
+      try{ok=p.diar&&_diarVaiRodar()
+        ?await _processAudio(file,p.dur,true,{sn:p.sn,mode:p.mode,opts:{novaNota:true}})
+        :await doTranscribe(file,p.dur,true,p.sn,p.mode,{novaNota:true})}finally{_gravNaFilaId=null}
       if(ok)await _pendenteTirar(p.id);
       else{_pendErro=_pendMotivo((document.getElementById('toastMsg')||{}).textContent||'');break}
     }
@@ -13147,7 +13168,7 @@ async function _pendPintar(){
   const el=document.getElementById('voxGuardada');if(!el)return;
   let lista=[];try{lista=(await _idbGetBruto(_PEND_IDB))||[]}catch(e){}
   // A que está sendo transcrita agora pela via normal não "ficou para trás": não entra no aviso.
-  lista=lista.filter(p=>!_pendOcupadas.has(p.id));
+  lista=lista.filter(p=>!_pendOcupadas.has(p.id)&&_pendDoMundo(p));
   if(!lista.length){
     if(el.style.display!=='none'&&!el.classList.contains('pend-sai')){
       if(typeof _voxReduzMov==='function'&&_voxReduzMov()){el.style.display='none'}
@@ -13170,7 +13191,9 @@ async function _pendPintar(){
   if(el.style.display==='none'||!el.style.display){el.style.display='flex';if(typeof _jz==='function')_jz(el,'pend-chega',430)}
 }
 async function _pendBaixar(){
-  let lista=[];try{lista=(await _idbGetBruto(_PEND_IDB))||[]}catch(e){}
+  let lista=[];try{lista=((await _idbGetBruto(_PEND_IDB))||[]).filter(_pendDoMundo)}catch(e){}
+  for(const p of lista)p.buf=await _pendBuf(p);
+  lista=lista.filter(p=>p.buf);
   lista.forEach((p,i)=>{
     const n=parseInt(String(p.id).slice(1,14),10),d=n?new Date(n):new Date();
     const z=x=>String(x).padStart(2,'0');
@@ -13574,7 +13597,7 @@ function _diarVaiRodar(){
 function _diarExtraNaGravacao(){return !voxPro()&&_diarVaiRodar()&&_diarMes()>=LIM_DIAR_MES}
 function _diarAvisoInicio(){
   if(!_diarExtraNaGravacao())return;
-  _toastPro(t('Esta é a {n}ª diarização do mês: no plano grátis, ela vai até 20 minutos. Depois, é só gravar de novo.').replace('{n}',_diarMes()+1),
+  _toastPro(t('Esta é a {n}ª diarização do mês: no plano grátis, as vozes saem nos primeiros 20 minutos e o resto vira texto, noutra nota. O Pro separa a gravação inteira.').replace('{n}',_diarMes()+1),
     t('No plano grátis, a primeira diarização do mês vai inteira; nas seguintes, as vozes são separadas nos primeiros 20 minutos. O Pro separa as vozes sem limite.'));
 }
 // Tudo depois dos `seg` primeiros segundos, pelo FFmpeg (o resto pode ser longo
@@ -13593,17 +13616,19 @@ async function _cortarDepois(file,seg){
 }
 async function _diarizarComLimite(fn,file,durSec,fromRec,sn,mode){
   const extra=!voxPro()&&_diarMes()>=LIM_DIAR_MES;
-  // Grátis dentro do mês, Pro, ou gravação (que já veio limitada a 20 min).
-  if(!extra||fromRec){const ok=await fn(file,durSec,fromRec,sn,mode);if(ok)_diarContar();return ok}
+  // Grátis dentro do mês ou Pro: vai inteiro. Gravação extra segue a mesma regra do arquivo.
+  if(!extra){const ok=await fn(file,durSec,fromRec,sn,mode);if(ok)_diarContar();return ok}
   let ini;
   try{ini=await _cortarInicio(file,LIM_DIAR_EXTRA_SEG,null)}catch(e){ini={file,cortou:false}}
   // Arquivo extra que já cabe nos 20 minutos: vai inteiro, sem aviso.
-  if(!ini.cortou){if(await fn(file,durSec,fromRec,sn,mode))_diarContar();return}
-  _toastPro(t('No plano grátis, 1 diarização por mês vai inteira. Deste arquivo, separo as vozes dos primeiros 20 minutos; o resto vira texto comum, noutra nota.'),
+  // Devolve sempre true/false: a gravação passa por aqui e a fila de pendentes decide por isso.
+  if(!ini.cortou){const ok=await fn(file,durSec,fromRec,sn,mode);if(ok)_diarContar();return ok}
+  _toastPro(fromRec?t('No plano grátis, 1 diarização por mês vai inteira. Desta gravação, separo as vozes dos primeiros 20 minutos; o resto vira texto comum, noutra nota.')
+    :t('No plano grátis, 1 diarização por mês vai inteira. Deste arquivo, separo as vozes dos primeiros 20 minutos; o resto vira texto comum, noutra nota.'),
     t('No plano grátis, a primeira diarização do mês vai inteira; nas seguintes, as vozes são separadas nos primeiros 20 minutos e o resto vira texto comum. O Pro separa as vozes do arquivo inteiro.'));
   const ok=await fn(ini.file,LIM_DIAR_EXTRA_SEG,false,sn,mode);
   // Se a diarização falhou, não transcreve o resto sozinho: a pessoa tenta de novo.
-  if(!ok)return;
+  if(!ok)return false;
   _diarContar();
   try{
     const resto=await _cortarDepois(file,LIM_DIAR_EXTRA_SEG);
@@ -13612,6 +13637,7 @@ async function _diarizarComLimite(fn,file,durSec,fromRec,sn,mode){
   }catch(e){
     toast(t('Não deu para transcrever o resto do arquivo. As vozes dos primeiros 20 minutos estão na nota.'),true);
   }
+  return true;
 }
 // Toast com "Ver o Pro" no lugar do "Desfazer": pra limite que aparece no meio
 // de um gesto rápido (marcar cards), onde abrir uma tela inteira atrapalharia.
@@ -33017,9 +33043,59 @@ function stopCapture(){
   if(dispStream){try{dispStream.getTracks().forEach(t=>t.stop())}catch(e){}dispStream=null}
   if(mixCtx){try{mixCtx.close()}catch(e){}mixCtx=null}
 }
-function makeRecorder(stream){
+// ── Cópia de segurança da gravação inteira (separação de vozes) ──────────────
+// Sem o corte de 10 min, fechar a aba aos 50 min perderia a consulta toda. A cada
+// minuto o que já foi gravado vai pro IndexedDB (cifrado se o mundo está trancado).
+// Ao abrir o app, uma cópia que sobrou vira item da fila de pendentes — a mesma do
+// cartão "ficou guardada" — e é transformada em texto com as vozes.
+const _GRAV_BACKUP_IDB='vox_gravacao_em_andamento';
+let _gravDiarInteira=false,_gravBackupIv=null,_gravBackupId='',_gravWake=null;
+function _gravBackupArmar(){
+  _gravBackupId='p'+Date.now()+Math.random().toString(36).slice(2,6);
+  clearInterval(_gravBackupIv);
+  _gravBackupIv=setInterval(_gravBackupSalvar,60000);
+  // Tela apagada no celular pode pausar a gravação: pede pra manter acesa.
+  try{navigator.wakeLock?.request('screen').then(w=>{_gravWake=w}).catch(()=>{})}catch(e){}
+}
+async function _gravBackupSalvar(){
+  if(!isRec||!MR||!_gravBackupId)return;
+  try{
+    const tipo=MR.mimeType||'audio/webm';
+    let buf=await new Blob(MR._buf,{type:tipo}).arrayBuffer();
+    const cifrado=!!(_mundoTrancado(_mundoAtivo)&&_cofreChave);
+    if(cifrado)buf=await _cofreCifrarBuf(buf);
+    await _idbSetBruto(_GRAV_BACKUP_IDB,{id:_gravBackupId,buf,tipo,nome:'gravacao.'+(tipo.includes('mp4')?'mp4':'webm'),
+      dur:Math.floor((Date.now()-recStart)/1000),sn:segSn||'',mode:segMode||'livre',mundo:_mundoAtivo,cifrado,diar:true});
+  }catch(e){}
+}
+function _gravBackupDesarmar(apagar){
+  clearInterval(_gravBackupIv);_gravBackupIv=null;_gravBackupId='';_gravDiarInteira=false;
+  try{_gravWake&&_gravWake.release()}catch(e){}_gravWake=null;
+  if(apagar)_idbSetBruto(_GRAV_BACKUP_IDB,null).catch(()=>{});
+}
+// Boot: sobrou cópia? A gravação foi interrompida (aba fechada, celular travou).
+async function _gravBackupRecuperar(){
+  try{
+    const b=await _idbGetBruto(_GRAV_BACKUP_IDB);
+    if(!b||!b.buf||isRec)return;
+    const lista=(await _idbGetBruto(_PEND_IDB))||[];
+    if(!lista.some(p=>p.id===b.id)){
+      lista.push({id:b.id,buf:b.buf,nome:b.nome,tipo:b.tipo,dur:b.dur||0,sn:b.sn||'',mode:b.mode||'livre',mundo:b.mundo,cifrado:!!b.cifrado,diar:true});
+      await _idbSetBruto(_PEND_IDB,lista);
+      localStorage.setItem('vox_tem_pendente','1');
+    }
+    await _idbSetBruto(_GRAV_BACKUP_IDB,null);
+    if(!b.mundo||b.mundo===_mundoAtivo)toast(t('Uma gravação foi interrompida no meio. Ela ficou guardada e vai virar texto com as vozes separadas.'));
+    _pendPintar();
+  }catch(e){}
+}
+window.addEventListener('load',()=>setTimeout(_gravBackupRecuperar,1500));
+function makeRecorder(stream,bps){
   const mime=MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':'';
-  const mr=new MediaRecorder(stream,mime?{mimeType:mime}:{});
+  const op=mime?{mimeType:mime}:{};
+  if(bps)op.audioBitsPerSecond=bps;
+  let mr;
+  try{mr=new MediaRecorder(stream,op)}catch(e){delete op.audioBitsPerSecond;mr=new MediaRecorder(stream,op)}
   mr._buf=[];
   mr.ondataavailable=e=>{if(e.data.size>0)mr._buf.push(e.data)};
   return mr;
@@ -33057,7 +33133,13 @@ async function startRec(targetCardId=null,targetTA=null){
   }
   try{
     const stream=await getCaptureStream();curStream=stream;
-    MR=makeRecorder(stream);
+    // Separação de vozes (AssemblyAI e cia.): a gravação vai INTEIRA, sem o corte de
+    // 10 min. O corte (28/06) existe pra gravação longa não estourar a memória e cabe
+    // no limite do Whisper — mas cortar aqui mandava cada pedaço pro Whisper, sem
+    // vozes, e a consulta longa nunca chegava na AssemblyAI. Em troca: qualidade de
+    // voz (32 kbps, ~15 MB por hora) e cópia de segurança a cada minuto.
+    _gravDiarInteira=!targetCardId&&!targetTA&&_diarVaiRodar();
+    MR=makeRecorder(stream,_gravDiarInteira?32000:0);
     MR.start(100);recStart=Date.now();isRec=true;
     // Feedback tátil ao iniciar (Android; iOS/desktop ignoram silenciosamente).
     // Era um toque seco de 30ms; agora são dois, curto→longo (14ms, pausa de
@@ -33085,7 +33167,8 @@ async function startRec(targetCardId=null,targetTA=null){
     segCard=null;segIndex=0;segTotalSec=0;
     segSn=document.getElementById('snameInput').value.trim();segMode=sessionMode;segProv=cfg.provider;
     if(segTimer){clearInterval(segTimer);segTimer=null}
-    if(!targetCardId)segTimer=setInterval(rotateSegment,SEG_MS); // só o botão principal rotaciona
+    if(!targetCardId&&!_gravDiarInteira)segTimer=setInterval(rotateSegment,SEG_MS); // só o botão principal rotaciona
+    if(_gravDiarInteira)_gravBackupArmar();
     document.getElementById('itxt').placeholder=t('🎙️ Gravando…');document.getElementById('itxt').disabled=true;
     document.getElementById('ibox').classList.add('rec');document.getElementById('vuWrap').classList.add('on');
     document.getElementById('docRecChip').style.display='inline-flex';
@@ -33115,6 +33198,8 @@ function stopRec(){
   const elapsed=Math.floor((Date.now()-recStart)/1000);
   clearInterval(recTimer);stopVU();
   if(segTimer){clearInterval(segTimer);segTimer=null}
+  // A gravação vai pra fila do aparelho (processAudio) na hora: a cópia de segurança sai.
+  _gravBackupDesarmar(true);
   document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
   if(segCard!==null){
     // Gravação longa: transcreve o último segmento e finaliza o card em andamento
@@ -33195,6 +33280,7 @@ function cancelRec(){
   if(!isRec||!MR)return;
   _flAbrirNoProximoCard=false; // cancelou: o próximo card a nascer não tem nada a ver com esta gravação
   if(segTimer){clearInterval(segTimer);segTimer=null}
+  _gravBackupDesarmar(true);
   try{MR.stop()}catch(e){}stopCapture();clearInterval(recTimer);stopVU();chunks=[];
   if(segCard!==null){const c=document.getElementById(segCard);if(c)c.remove();segCard=null;saveHistory()}
   document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
@@ -33269,9 +33355,10 @@ async function processAudio(file,durSec,fromRec){
   else{_pendPintar();if(!_gravJaAvisada)toast(t('Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.'),true)}
   return ok;
 }
-async function _processAudio(file,durSec,fromRec){
-  const sn=document.getElementById('snameInput').value.trim();
-  const mode=sessionMode;
+async function _processAudio(file,durSec,fromRec,ctx){
+  const sn=ctx&&ctx.sn!=null?ctx.sn:document.getElementById('snameInput').value.trim();
+  const mode=ctx&&ctx.mode||sessionMode;
+  const op=ctx&&ctx.opts;
   // Guarda a duração real ANTES de qualquer coisa — daqui pra frente ela vira
   // dataset.durAudio no card que nascer (ver _armarDurAudio). Só vale pra
   // gravação: em arquivo anexado o durSec que chega aqui é um chute pelo
@@ -33286,7 +33373,7 @@ async function _processAudio(file,durSec,fromRec){
     // e não tem como "entrar" dentro de um textarea alheio. Checar isso ANTES
     // do cfg.diarEnabled global evita que a preferência geral de diarização
     // sequestre uma gravação que já tinha destino certo.
-    return await doTranscribe(file,durSec,fromRec,sn,mode);
+    return await doTranscribe(file,durSec,fromRec,sn,mode,op);
   }else if(cfg.diarEnabled&&cfg.provider==='local'){
     // SIGILO EM PRIMEIRO LUGAR. Quem escolheu o transcritor local NUNCA pode ter o
     // audio subido pra nuvem so porque a diarizacao ficou ligada na preferencia
@@ -33298,7 +33385,7 @@ async function _processAudio(file,durSec,fromRec){
       return await _diarizarComLimite(doDiarizeLocal,file,durSec,fromRec,sn,mode);
     }else{
       toast(t('🔒 Seu áudio não saiu do seu computador — por isso a transcrição veio sem separar as vozes.'));
-      return await doTranscribe(file,durSec,fromRec,sn,mode);
+      return await doTranscribe(file,durSec,fromRec,sn,mode,op);
     }
   }else if(cfg.diarEnabled&&cfg.diarProvider==='gladia'&&cfg.apiKeyGladia){
     return await _diarizarComLimite(doDiarizeGladia,file,durSec,fromRec,sn,mode);
@@ -33309,9 +33396,9 @@ async function _processAudio(file,durSec,fromRec){
   }else if(cfg.diarEnabled&&cfg.diarProvider==='pyannote'){
     // pyannote.ai: preparado na UI; integração backend em brush futuro
     toast(t('🎯 pyannote.ai ainda não está integrado. Usando transcrição padrão.'),true);
-    return await doTranscribe(file,durSec,fromRec,sn,mode);
+    return await doTranscribe(file,durSec,fromRec,sn,mode,op);
   }else{
-    return await doTranscribe(file,durSec,fromRec,sn,mode);
+    return await doTranscribe(file,durSec,fromRec,sn,mode,op);
   }
 }
 
@@ -33498,7 +33585,7 @@ async function doDiarizeLocal(file,durSec,fromRec,sn,mode){
 }
 async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
   const key=cfg.apiKeyAssembly;
-  if(!key){toast(t('🔑 Configure a chave AssemblyAI!'),true);openModal();return}
+  if(!key){toast(t('🔑 Configure a chave AssemblyAI!'),true);openModal();return false}
   isProc=true;setStatus('Diarizando…','proc');lockUI(true);
   const pid='proc_'+Date.now();addProcCard(pid,file.name,durSec,fromRec?'gravacao':'arquivo','diar');
   try{
@@ -33517,7 +33604,10 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
     if(!subRes.ok)throw new Error(t('Submit falhou:')+' '+subRes.status);
     const{id}=await subRes.json();
     let data;
-    for(let i=0;i<120;i++){
+    // Consulta inteira de 60 min pode passar dos 6 min de espera antigos: a espera
+    // cresce com a duração (metade do áudio + 2 min de folga, nunca menos de 6 min).
+    const voltas=Math.max(120,Math.ceil(((durSec||0)*0.5+120)/3));
+    for(let i=0;i<voltas;i++){
       await new Promise(r=>setTimeout(r,3000));
       const pollRes=await fetch(`https://api.assemblyai.com/v2/transcript/${id}`,{headers:{authorization:key}});
       data=await pollRes.json();
@@ -33527,18 +33617,18 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
     }
     if(!data||data.status!=='completed')throw new Error(t('Timeout na diarização'));
     const utterances=(data.utterances||[]).map(u=>({speaker:u.speaker,text:u.text,start:u.start,end:u.end}));
-    document.getElementById(pid)?.remove();
     const actualSec=Math.ceil((data.audio_duration||durSec));
     const cost=Math.max(1,Math.ceil(actualSec/60))*0.006;
     setPL(pid,t('Identificando locutores…'));
     let speakers=buildDefaultSpeakers(utterances,mode);
     try{speakers=await autoRenameSpeakers(utterances,mode,speakers)}catch(e){console.warn('Auto-rename falhou:',e)}
+    document.getElementById(pid)?.remove();
     const words=utterances.reduce((a,u)=>a+u.text.split(/\s+/).filter(w=>w).length,0);
     stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
     addDiarCard(utterances,speakers,cost,cfg.provider==='groqwhisper'?'groq':cfg.provider,true,null,null,[],sn,mode,false);
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Diarização concluída!'));
     return true;
-  }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
+  }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true);return false}
   finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null}
 }
 
@@ -33595,15 +33685,17 @@ async function doDiarizeGladia(file,durSec,fromRec,sn,mode){
 // ── OPENAI DIARIZATION ──
 async function doDiarizeOpenAI(file,durSec,fromRec,sn,mode){
   const key=cfg.apiKey;
-  if(!key){toast(t('🔑 Configure a chave OpenAI!'),true);openModal();return}
+  if(!key){toast(t('🔑 Configure a chave OpenAI!'),true);openModal();return false}
   isProc=true;setStatus('Transcrevendo com diarização…','proc');lockUI(true);
   const pid='proc_'+Date.now();addProcCard(pid,file.name,durSec,fromRec?'gravacao':'arquivo','diar');
   try{
     const fd=new FormData();fd.append('file',file);
-    fd.append('model','gpt-4o-transcribe');
-    fd.append('response_format','verbose_json');
+    // Separar vozes na OpenAI exige o modelo -diarize + diarized_json (o gpt-4o-transcribe
+    // com verbose_json devolvia erro ou um locutor só). A AssemblyAI continua a indicada.
+    fd.append('model','gpt-4o-transcribe-diarize');
+    fd.append('response_format','diarized_json');
+    fd.append('chunking_strategy','auto');
     if(cfg.lang)fd.append('language',cfg.lang);
-    fd.append('timestamp_granularities[]','segment');
     const res=await fetch('https://api.openai.com/v1/audio/transcriptions',{
       method:'POST',headers:{Authorization:'Bearer '+key},body:fd
     });
@@ -33619,7 +33711,7 @@ async function doDiarizeOpenAI(file,durSec,fromRec,sn,mode){
       addCard(text,null,cost,fromRec?'gravacao':'arquivo',cfg.provider,true,null,null,[],sn,mode,false);
       stats.count++;stats.sec+=durSec;
       updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Transcrição concluída (sem diarização no retorno)'));
-      return;
+      return true;
     }
     const cost=Math.max(1,Math.ceil(durSec/60))*COST_W;
     document.getElementById(pid)?.remove();
