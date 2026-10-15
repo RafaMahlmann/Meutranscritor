@@ -56,7 +56,7 @@ sem bump, deixando o app corrigido se dizendo com a versão anterior.
   comentário): `VOX_SEM_BUMP=1 git commit ...`.
 - Depois de publicar, confirme o que está no ar de verdade — o `Cache-Control`
   é de 10 min, então use um cache-buster:
-  `curl -s 'https://voxcharmai.com/?cb=1' | grep -o "VOX_VERSION='[0-9.]*'"`.
+  `curl -s 'https://app.voxcharmai.com/?cb=1' | grep -o "VOX_VERSION='[0-9.]*'"`.
 
 ## 6. Testar o app navegando de verdade (não só ler código)
 
