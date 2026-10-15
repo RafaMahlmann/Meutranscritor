@@ -1229,6 +1229,37 @@ body.doc-mode .card.focus-active.dv-lendo .focus-ot-mount{display:none!important
 .dv-read th{background:var(--bg-input);text-align:left}
 .dv-read img{max-width:100%;border-radius:8px}
 .dv-read .dv-vazio{color:var(--text4);font-style:italic}
+/* Painel de navegação: à esquerda do papel em tela larga (o papel ganha uma
+   margem pra ele); gaveta flutuante em tela estreita. */
+.dv-nav{display:none}
+.dv-nav{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:10px 8px 8px;font-size:12.5px;color:var(--text2);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.dv-nav[hidden]{display:none!important}
+.dv-nav-hd{display:flex;align-items:center;justify-content:space-between;padding:0 6px 6px;color:var(--text3);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.dv-nav-x{background:none;border:0;color:var(--text3);font-size:16px;line-height:1;cursor:pointer;border-radius:6px;padding:2px 6px}
+.dv-nav-x:hover{background:var(--bg-input);color:var(--text)}
+.dv-nav-sec{padding:6px 0 8px;border-top:1px solid var(--border)}
+.dv-nav-sec:first-of-type{border-top:0}
+.dv-nav-sec h4{margin:0 0 4px;padding:0 6px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text3)}
+.dv-nav-h2{margin-top:8px!important}
+.dv-nav-vazio{margin:0;padding:2px 6px;color:var(--text4);font-size:12px;line-height:1.4}
+.dv-nav-i,.dv-nav-n{display:flex;align-items:baseline;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:5px 8px;font-family:var(--font);font-size:12.5px;line-height:1.35;color:var(--text2);cursor:pointer;transition:background .12s,color .12s}
+.dv-nav-i{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dv-nav-i.n2{padding-left:18px}
+.dv-nav-i.n3{padding-left:28px;font-size:12px}
+.dv-nav-i:hover,.dv-nav-n:hover{background:var(--bg-input);color:var(--text)}
+.dv-nav-i.on{background:var(--accent-glow);color:var(--accent2);font-weight:600}
+.dv-nav-n.on{background:var(--accent-glow);color:var(--text);font-weight:600}
+.dv-nav-nt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.dv-nav-nd{flex-shrink:0;font-size:10.5px;color:var(--text3);font-weight:500}
+.dv-nav-pasta{padding-bottom:2px}
+.dv-read .dv-b{scroll-margin-top:150px}
+@media(min-width:1200px){
+  body.doc-mode[data-dv-nav="on"] .dv-nav:not([hidden]){display:block;float:left;position:sticky;top:134px;width:204px;max-height:calc(100vh - 224px)}
+  body.doc-mode[data-dv-nav="on"] .cards.focus-mode{margin-left:228px}
+}
+@media(max-width:1199px){
+  body.doc-mode.dv-nav-aberto .dv-nav:not([hidden]){display:block;position:fixed;left:12px;top:132px;width:min(320px,calc(100vw - 24px));max-height:calc(100vh - 260px);z-index:55;box-shadow:0 14px 44px rgba(0,0,0,.22)}
+}
 .focus-active .ico-collapse{display:inline}
 .focus-active .ico-expand{display:none}
 .font-sz-wrap{display:inline-flex;align-items:center;gap:1px;background:var(--bg-input);border-radius:8px;padding:2px 4px}
@@ -7986,6 +8017,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
+            <button class="doc-tbtn" id="docNavBtn" onclick="_dvNavAlternar()" title="Navegação: títulos, origem e notas da pasta" data-i18n-title aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg></button>
             <button class="doc-tbtn" id="docModoBtn" onclick="_dvAlternar()" title="Editar o texto (E ou Ctrl+E)"></button>
           </div>
           <div class="doc-tsep"></div>
@@ -8046,6 +8078,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div class="lembrete guardada" id="voxGuardada" style="display:none" role="status" aria-live="polite"></div>
       <div class="convite" id="voxConvite" style="display:none"></div>
       <div class="lembrete" id="voxLembrete" style="display:none"></div>
+      <aside class="dv-nav" id="dvNav" aria-label="Navegação do documento" data-i18n-aria hidden></aside>
       <div class="cards" id="cardsList" style="display:none"></div>
     </div>
     <aside class="folders-bar" id="foldersBar">
@@ -9534,7 +9567,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.7';
+const VOX_VERSION='2026.10.15.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -12072,6 +12105,12 @@ let I18N_EN={
 "Fundo":"Background","Papel":"Paper","Sem folha":"No page",
 "Tema do papel":"Page theme","Sépia":"Sepia","Restaurar o padrão":"Restore defaults",
 "Título do documento":"Document title","Sem título":"Untitled",
+"Navegação: títulos, origem e notas da pasta":"Navigation: headings, origin and notes in the folder",
+"Navegação do documento":"Document navigation",
+"Navegar":"Navigate","Recolher painel":"Collapse panel","Nesta nota":"In this note",
+"Títulos (# …) aparecem aqui":"Headings (# …) show up here",
+"Veio de":"Came from","Gerou":"Produced","Na pasta":"In folder","Todas as notas":"All notes","Esta vista":"This view",
+"Esta nota está no arquivo ou na lixeira":"This note is in the archive or the trash",
 "Fonte":"Font","Moderna":"Modern","Com serifa":"Serif","Mono":"Mono",
 "Vale para a leitura e o título; o editor usa fonte mono.":"Applies to reading and the title; the editor uses a mono font.",
 "Abrir notas em":"Open notes in","Leitura":"Reading","Edição":"Editing",
@@ -14641,7 +14680,8 @@ function applyView(){
   if(!isFocusLike){
     document.querySelectorAll('.dv-hd,.dv-read').forEach(e=>e.remove());
     document.querySelectorAll('.card.dv-lendo').forEach(c=>c.classList.remove('dv-lendo'));
-    _dvModo='edicao';_dvCardAtual=null;_dvGen++;_dvPopFechar();
+    _dvModo='edicao';_dvCardAtual=null;_dvGen++;_dvPopFechar();_dvNavFechaGaveta();
+    const nv=document.getElementById('dvNav');if(nv)nv.hidden=true;
   }
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-focus',isFocusLike));
   // Lista continua coluna única (não é mais a grade do Masonry — revertido
@@ -14953,6 +14993,7 @@ function applyFocusCard(){
   // Mesmo card que já estava em Edição (ex.: filtro mudou e redesenhou): continua em Edição.
   _dvAbrir(fc,_dvCardAtual===fc.id&&_dvModo==='edicao'?'edicao':undefined);
   _tiraSolteSync(fc.id);
+  _dvNavAtualiza();
 }
 function toggleDocHeaderFold(){
   const cid=_docCardId();const card=document.getElementById(cid);if(!card)return;
@@ -14983,8 +15024,8 @@ function enterFocusCard(id){
 // + etiquetas, no lugar do selo de nome e do horário. O título é
 // contenteditable de propósito: um <textarea> a mais dentro do card quebraria
 // todo `card.querySelector('textarea')` do app (contagem, exportar, lentes).
-const _DV_PADRAO={tam:'m',larg:'padrao',pagina:'papel',tema:'auto',fonte:'sans',abrir:'leitura'};
-const _DV_VALIDOS={tam:['p','m','g'],larg:['estreita','padrao','larga'],pagina:['papel','livre'],tema:['auto','claro','escuro','sepia'],fonte:['sans','serif','mono'],abrir:['leitura','edicao']};
+const _DV_PADRAO={tam:'m',larg:'padrao',pagina:'papel',tema:'auto',fonte:'sans',abrir:'leitura',nav:'on'};
+const _DV_VALIDOS={tam:['p','m','g'],larg:['estreita','padrao','larga'],pagina:['papel','livre'],tema:['auto','claro','escuro','sepia'],fonte:['sans','serif','mono'],abrir:['leitura','edicao'],nav:['on','off']};
 const _DV_TAM_PX={p:'13px',m:'14px',g:'17px'};
 let _dvSalvo=null;
 function _dvPrefs(){
@@ -15003,7 +15044,7 @@ function _dvSalvarPrefs(p){
 function _dvAplicar(p){
   p=p||_dvPrefs();
   const b=document.body;
-  b.dataset.dvTam=p.tam;b.dataset.dvLarg=p.larg;b.dataset.dvPagina=p.pagina;b.dataset.dvTema=p.tema;b.dataset.dvFonte=p.fonte;
+  b.dataset.dvTam=p.tam;b.dataset.dvLarg=p.larg;b.dataset.dvPagina=p.pagina;b.dataset.dvTema=p.tema;b.dataset.dvFonte=p.fonte;b.dataset.dvNav=p.nav;
   _focusEditorInstance?.wrapper?.style.setProperty('--instance-font-size',_DV_TAM_PX[p.tam]);
 }
 const _DV_CAMPOS=[
@@ -15037,7 +15078,7 @@ function _dvPopIniciar(pop){
     const b=e.target.closest('button');if(!b)return;
     if(b.dataset.reset)_dvSalvarPrefs({..._DV_PADRAO});
     else if(b.dataset.k)_dvSalvarPrefs({..._dvPrefs(),[b.dataset.k]:b.dataset.v});
-    _dvPopRender();
+    _dvPopRender();_dvNavAtualiza();
   });
   // Só com mouse: passar por cima mostra como ficaria; sair volta ao salvo.
   if(window.matchMedia&&matchMedia('(hover:hover)').matches){
@@ -15337,6 +15378,163 @@ function _dvTecla(e){
   if(e.key==='e'||e.key==='E'||e.key==='Enter'){e.preventDefault();_dvEditar(_docCardId())}
 }
 document.addEventListener('keydown',_dvTecla);
+
+
+// ── DOCUMENTO v2 · Navegação (15/10/2026) ───────────────────────────────────
+// Painel à esquerda do papel, três seções: "Nesta nota" (índice dos títulos,
+// com destaque de onde você está lendo), "Veio de / Gerou" (a linhagem de
+// quem nasceu de uma lente) e "Na pasta" (as notas da vista atual, pra pular
+// de uma a outra sem voltar à Lista). Em tela larga fica fixo ao lado; em
+// tela estreita vira uma gaveta que abre pelo botão da barra.
+let _dvNavT=null,_dvNavGaveta=false,_dvEspiaRaf=0;
+function _dvNavLargo(){return window.matchMedia?matchMedia('(min-width:1200px)').matches:true}
+function _dvTituloCard(card){
+  const n=(card.dataset.sessionName||'').trim();
+  if(n)return n;
+  const tx=(card.querySelector('.cb textarea')?.value||'').split('\n').map(l=>l.replace(/^[\s#>*\-+\d.)\[\]xX]+/,'').trim()).find(l=>l);
+  return tx?(tx.length>56?tx.slice(0,56)+'…':tx):fmtDt(card.dataset.dt||'');
+}
+// Títulos # ## ### do texto de origem (ignora blocos de código).
+function _dvOutline(src){
+  const out=[];let pos=0,cerca=false;
+  src.split('\n').forEach(l=>{
+    const ini=pos;pos+=l.length+1;
+    if(/^\s{0,3}(```|~~~)/.test(l)){cerca=!cerca;return}
+    if(cerca)return;
+    const m=/^\s{0,3}(#{1,3})\s+(.+?)\s*#*\s*$/.exec(l);
+    if(!m)return;
+    const tx=m[2].replace(/!?\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/[*_`~]/g,'').trim();
+    if(tx)out.push({nivel:m[1].length,texto:tx,pos:ini});
+  });
+  return out;
+}
+function _dvNavAtualiza(){
+  const nav=document.getElementById('dvNav');if(!nav)return;
+  const btn=document.getElementById('docNavBtn');
+  if(viewMode!=='doc'){nav.hidden=true;return}
+  const card=document.getElementById(_docCardId()||'');
+  if(!card){nav.hidden=true;return}
+  nav.hidden=false;
+  const on=_dvNavLargo()?_dvPrefs().nav==='on':_dvNavGaveta;
+  btn?.classList.toggle('active',on);
+  btn?.setAttribute('aria-pressed',on);
+  if(!on)return; // fechado: nada a montar
+  const ta=card.querySelector('.cb textarea'),src=ta?ta.value:'';
+  const ids=getFocusCards();
+  let h='<div class="dv-nav-hd"><b>'+escHtml(t('Navegar'))+'</b><button type="button" class="dv-nav-x" data-a="fechar" title="'+escHtml(t('Recolher painel'))+'" aria-label="'+escHtml(t('Recolher painel'))+'">‹</button></div>';
+  // 1. Nesta nota
+  const ol=_dvOutline(src);
+  h+='<div class="dv-nav-sec"><h4>'+escHtml(t('Nesta nota'))+'</h4>';
+  h+=ol.length?ol.map(o=>'<button type="button" class="dv-nav-i n'+o.nivel+'" data-pos="'+o.pos+'" title="'+escHtml(o.texto)+'">'+escHtml(o.texto)+'</button>').join(''):'<p class="dv-nav-vazio">'+escHtml(t('Títulos (# …) aparecem aqui'))+'</p>';
+  h+='</div>';
+  // 2. Linhagem
+  const todos=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')];
+  const lente=k=>{try{return k&&LENSES[k]?LENSES[k].label:''}catch(e){return''}};
+  const pai=card.dataset.origemDt?todos.find(c=>c.dataset.dt===card.dataset.origemDt&&c.id!==card.id):null;
+  const filhos=card.dataset.dt?todos.filter(c=>c.dataset.origemDt===card.dataset.dt&&c.id!==card.id):[];
+  if(pai||filhos.length){
+    h+='<div class="dv-nav-sec"><h4>'+escHtml(pai?t('Veio de'):t('Gerou'))+'</h4>';
+    if(pai)h+='<button type="button" class="dv-nav-n" data-nota="'+pai.id+'"><span class="dv-nav-nt">'+escHtml(_dvTituloCard(pai))+'</span><span class="dv-nav-nd">'+escHtml(lente(card.dataset.origemLente))+'</span></button>';
+    if(pai&&filhos.length)h+='<h4 class="dv-nav-h2">'+escHtml(t('Gerou'))+'</h4>';
+    h+=filhos.map(c=>'<button type="button" class="dv-nav-n" data-nota="'+c.id+'"><span class="dv-nav-nt">'+escHtml(_dvTituloCard(c))+'</span><span class="dv-nav-nd">'+escHtml(lente(c.dataset.origemLente))+'</span></button>').join('');
+    h+='</div>';
+  }
+  // 3. Na pasta
+  const f=activeFolderId?folders.find(x=>x.id===activeFolderId):null;
+  const rot=activeFolderId===null?t('Todas as notas'):(f?f.name:t('Esta vista'));
+  let lista=ids,off=0;
+  const cur=ids.findIndex(c=>c.id===card.id);
+  if(lista.length>300){off=Math.max(0,Math.min(cur-150,lista.length-300));lista=lista.slice(off,off+300)}
+  h+='<div class="dv-nav-sec dv-nav-pasta"><h4>'+escHtml(t('Na pasta'))+' · '+escHtml(rot)+'</h4>';
+  h+=lista.map(c=>'<button type="button" class="dv-nav-n'+(c.id===card.id?' on':'')+'" data-nota="'+c.id+'"><span class="dv-nav-nt">'+escHtml(_dvTituloCard(c))+'</span></button>').join('');
+  h+='</div>';
+  nav.innerHTML=h;
+  if(!nav._dvOk){
+    nav._dvOk=true;
+    nav.addEventListener('click',e=>{
+      const b=e.target.closest('button');if(!b)return;
+      if(b.dataset.a==='fechar'){_dvNavAlternar();return}
+      if(b.dataset.nota){_dvAbrirNota(b.dataset.nota);return}
+      if(b.dataset.pos!=null)_dvIrPara(+b.dataset.pos);
+    });
+  }
+  nav.querySelector('.dv-nav-n.on')?.scrollIntoView({block:'nearest'});
+  _dvEspia();
+}
+function _dvNavAgenda(){
+  clearTimeout(_dvNavT);
+  _dvNavT=setTimeout(_dvNavAtualiza,350);
+}
+function _dvNavAlternar(){
+  if(_dvNavLargo()){
+    _dvSalvarPrefs({..._dvPrefs(),nav:_dvPrefs().nav==='on'?'off':'on'});
+  }else{
+    _dvNavGaveta=!_dvNavGaveta;
+    document.body.classList.toggle('dv-nav-aberto',_dvNavGaveta);
+    if(_dvNavGaveta)document.addEventListener('pointerdown',_dvNavFora,true);
+    else document.removeEventListener('pointerdown',_dvNavFora,true);
+  }
+  _dvNavAtualiza();
+}
+function _dvNavFora(e){
+  if(e.target.closest?.('#dvNav,#docNavBtn'))return;
+  _dvNavGaveta=false;document.body.classList.remove('dv-nav-aberto');
+  document.removeEventListener('pointerdown',_dvNavFora,true);
+  _dvNavAtualiza();
+}
+function _dvNavFechaGaveta(){
+  if(!_dvNavGaveta||_dvNavLargo())return;
+  _dvNavGaveta=false;document.body.classList.remove('dv-nav-aberto');
+  document.removeEventListener('pointerdown',_dvNavFora,true);
+  _dvNavAtualiza();
+}
+function _dvAbrirNota(id){
+  const i=getFocusCards().findIndex(c=>c.id===id);
+  if(i>=0){focusCardIdx=i;applyFocusCard();_dvNavFechaGaveta();return}
+  const c=document.getElementById(id);if(!c)return;
+  if(_cardArquivado(c)||_cardNaLixeira(c)){toast(t('Esta nota está no arquivo ou na lixeira'),true);return}
+  // fora do filtro atual: muda pra pasta dela e abre
+  selectFolder(c.dataset.folder||null);
+  enterFocusCard(id);
+  _dvNavFechaGaveta();
+}
+function _dvIrPara(pos){
+  const id=_docCardId();if(!id)return;
+  if(_dvModo==='leitura'){
+    const b=[...document.querySelectorAll('#dvread-'+id+' .dv-b')].find(x=>+x.dataset.s<=pos&&pos<+x.dataset.e);
+    b?.scrollIntoView({behavior:_voxReduzMov()?'auto':'smooth',block:'start'});
+  }else if(_focusEditorInstance&&_focusEditorCardId===id){
+    const inst=_focusEditorInstance;
+    inst.textarea.focus({preventScroll:true});
+    inst.textarea.setSelectionRange(pos,pos);
+    const ta=document.getElementById(id)?.querySelector('.cb textarea');
+    if(ta){ta.selectionStart=ta.selectionEnd=pos}
+    _dvRolaAteCursor(inst,pos);
+  }
+  _dvNavFechaGaveta();
+}
+// Destaca no índice o título que está no topo da tela (só na Leitura).
+function _dvEspia(){
+  if(_dvEspiaRaf)return;
+  _dvEspiaRaf=requestAnimationFrame(()=>{
+    _dvEspiaRaf=0;
+    const nav=document.getElementById('dvNav');
+    if(!nav||nav.hidden)return;
+    const bs=[...nav.querySelectorAll('.dv-nav-i')];if(!bs.length)return;
+    let ativo=null;
+    if(_dvModo==='leitura'){
+      const blocos=[...document.querySelectorAll('#dvread-'+(_docCardId()||'')+' .dv-b')];
+      bs.forEach(b=>{
+        const pos=+b.dataset.pos,el=blocos.find(x=>+x.dataset.s<=pos&&pos<+x.dataset.e);
+        if(el&&el.getBoundingClientRect().top<=180)ativo=b;
+      });
+      // No fim da página o último título nunca chega ao alto da tela: acende ele.
+      if(scrollY>0&&innerHeight+scrollY>=document.documentElement.scrollHeight-6)ativo=bs[bs.length-1];
+    }
+    bs.forEach(b=>b.classList.toggle('on',b===ativo));
+  });
+}
+window.addEventListener('scroll',_dvEspia,{passive:true});
 
 // ── FONT SIZE ──
 function setFontSize(s){
@@ -35021,6 +35219,7 @@ function _aplicarSname(id,trimmed,silencioso){
     badge.innerHTML=trimmed?(card.dataset.diarized==='true'?'<span class="svgi">'+ICO.pinOutline+'</span> ':'')+escHtml(trimmed):escHtml(t('+ nome'));
   }
   _dvTituloSync(id);
+  if(viewMode==='doc')_dvNavAgenda();
   saveHistory();
   if(!silencioso)toast(trimmed?t('✏️ Nome atualizado'):t('Nome removido'));
 }
@@ -37411,7 +37610,7 @@ function updateFooter(id){
   if(ta&&_focusEditorCardId===id&&_focusEditorInstance&&ta.value!==_focusEditorInstance.getValue()){
     _focusEditorInstance.setValue(ta.value);
   }
-  if(viewMode==='doc'){_dvMetaAtualiza(id);if(_dvModo==='leitura')_dvRenderAgendado(id)}
+  if(viewMode==='doc'){_dvMetaAtualiza(id);if(_dvModo==='leitura')_dvRenderAgendado(id);if(id===_docCardId())_dvNavAgenda()}
   saveHistory();
 }
 // Dentro da lixeira o botão de excluir apaga DE VEZ, e aí a confirmação faz
