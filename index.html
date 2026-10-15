@@ -9814,7 +9814,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.21';
+const VOX_VERSION='2026.10.15.22';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9839,7 +9839,9 @@ const VOX_MUNDO_KEYS=new Set(['vox_history','vox_folders','vox_folders_expanded'
   // Plano 30: as abas do Modo Conversa (rascunho por card) são de cada mundo.
   'vox_cchat_abas',
   // Mundos sob medida (15/10/2026): ofício, seu nome, pessoas, palavras do trabalho.
-  'vox_painel']);
+  'vox_painel',
+  // Rodada E (15/10/2026): nomes de pastas e etiquetas de mundo trancado (IndexedDB, cifrado).
+  'vox_nomes']);
 const VOX_MUNDO_RAIZ='m1';
 // Acesso CRU ao localStorage — sem o desvio por World. Usado pelo cadastro de
 // Worlds (que é global) e por quem precisa varrer as chaves de verdade.
@@ -9979,7 +9981,7 @@ function _cofreImportar(dekCru){return crypto.subtle.importKey('raw',dekCru,{nam
 // OUTRO mundo (a galaxia le pra contar notas) volta cifrado e o chamador
 // trata -- um mundo trancado nao conta nota nenhuma pra ninguem.
 function _cofreEhDoCofre(chaveCrua){
-  return !!_cofreChave && chaveCrua===_mundoChave('vox_history');
+  return !!_cofreChave && (chaveCrua===_mundoChave('vox_history')||chaveCrua===_mundoChave('vox_nomes'));
 }
 async function _cofreTampar(chaveCrua,valor){
   if(!_cofreEhDoCofre(chaveCrua))return valor;
@@ -10126,6 +10128,7 @@ async function _mundoTrancar(id,senha,codigo){
   _cofreGravar(id,cofre);
   _cofreGuardarSessao(dek);
   await _cofreVirarFotos(id,true).catch(function(){});
+  await _nomesTrancar().catch(function(){});
   return codigo;
 }
 // Aceita senha OU codigo de recuperacao, sem a pessoa precisar dizer qual e.
@@ -10149,6 +10152,7 @@ async function _mundoTirarCofre(id){
   await _cofreVirarFotos(id,false).catch(function(){});
   const claro=await _cofreDestampar(cru,await _idbGetBruto(cru));
   await _idbSetBruto(cru,claro||[]);
+  await _nomesDestrancar().catch(function(){});
   _cofreRemover(id);
   _cofreEsquecerSessao();
   return true;
@@ -10273,7 +10277,7 @@ function _mundoApagarDeVez(id){
   const suf='__'+id;
   _mundoApagarFotos(id).then(()=>{
     Object.keys(localStorage).forEach(k=>{if(k.slice(-suf.length)===suf)VOX_LS.rem(k)});
-    return idbDelete('!vox_history'+suf).catch(()=>{});
+    return idbDelete('!vox_history'+suf).catch(()=>{}).then(()=>idbDelete('!vox_nomes'+suf).catch(()=>{}));
   }).then(()=>{
     _mundosSalvar(_mundosLista().filter(m=>m.id!==id));
   }).catch(()=>{});
@@ -10326,9 +10330,7 @@ async function _mundoColetarPacoteComEscopo(idsPasta,dts){
   // ela já viaja inteira no `tags` de cada item. Posição vazia = padrão da
   // cor, e padrão não viaja (o destino tem o dele, no idioma dele).
   // (Correção do ramo fix-transfer-tag-nomes, 24/09, trazida pelo plano 30.)
-  let salvos=[];
-  try{salvos=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){}
-  if(!Array.isArray(salvos))salvos=[];
+  let salvos=_tagNomesLer();
   const corNomes={};
   itens.forEach(it=>{
     const i=parseInt(it.tc),s=salvos[i];
@@ -10403,9 +10405,7 @@ async function _mundoImportarPacote(pacote){
   // deixou no padrão — nunca sobrescreve nome que já foi escolhido aqui. Mesmo
   // molde do renomearEtiqueta(): array completo, uma posição por cor. (Pacote
   // gravado pela versão anterior traz `tagNomesUsados`, que era lixo: some.)
-  let salvos=[];
-  try{salvos=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){}
-  if(!Array.isArray(salvos))salvos=[];
+  let salvos=_tagNomesLer();
   let mudouNome=false;
   Object.keys(pacote.corNomes||{}).forEach(k=>{
     const i=+k,nome=pacote.corNomes[k],atual=salvos[i];
@@ -10414,7 +10414,7 @@ async function _mundoImportarPacote(pacote){
     while(salvos.length<TAG_CORES.length)salvos.push('');
     salvos[i]=nome.trim().slice(0,24);mudouNome=true;
   });
-  if(mudouNome){localStorage.setItem('vox_tag_nomes',JSON.stringify(salvos));if(typeof renderFiltroCores==='function')renderFiltroCores()}
+  if(mudouNome){_tagNomesGravar(salvos);if(typeof renderFiltroCores==='function')renderFiltroCores()}
   saveHistory();applyFolderFilter();renderFolders();
   const _idsChegaram=new Set(pastasFinal.map(f=>f.id));
   const raiz=(pastasFinal.find(f=>!f.parentId||!_idsChegaram.has(f.parentId))||{}).id||'';
@@ -11143,6 +11143,9 @@ let I18N_EN={
 "Pronto. A mãozinha volta na próxima vez que você abrir uma lista de notas no Fluxograma, na Órbita ou no Calendário.":"Done. The little hand comes back the next time you open a note list in the Flowchart, Orbit or Calendar.",
 "Rever o gesto de arrastar":"Replay the drag gesture",
 "Que atendimento você faz?":"What kind of appointments do you run?",
+"Criptografa as notas, as fotos e os nomes das pastas":"Encrypts notes, photos and folder names",
+"Com senha, as notas, as fotos e os nomes das pastas deste mundo ficam cifrados no aparelho.":"With a password, this world's notes, photos and folder names are encrypted on the device.",
+
 "Oficina":"Workshop",
 "Ideia, bug e pedido pra IA, falados antes de sumir.":"Ideas, bugs and AI requests, spoken before they vanish.",
 "Pedido pra IA":"AI request",
@@ -16498,6 +16501,59 @@ function getFolderCount(id, counts){
   return total;
 }
 
+// ── Nomes de pastas e etiquetas no cofre (Rodada E, 15/10/2026) ───────────────
+// Num mundo de Consultas o nome da pasta é o nome da pessoa. Com o mundo trancado,
+// os nomes reais vão pro IndexedDB (cifrados pelo mesmo cofre das notas) e o
+// localStorage fica só com um marcador. Ao destrancar, voltam pra tela.
+const _NOME_OCULTO='•••';
+let _nomesProntos=false,_tagNomesCofre=null;
+function _nomesCofreAtivo(){return !!_cofreChave&&_mundoTrancado(_mundoAtivo)}
+function _tagNomesLerCru(){let a=[];try{a=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){a=[]}return Array.isArray(a)?a:[]}
+function _tagNomesLer(){return Array.isArray(_tagNomesCofre)?_tagNomesCofre.slice():_tagNomesLerCru()}
+function _tagNomesGravar(arr){
+  arr=Array.isArray(arr)?arr:[];
+  if(_nomesCofreAtivo()&&_nomesProntos){
+    _tagNomesCofre=arr.slice();
+    localStorage.setItem('vox_tag_nomes',JSON.stringify(arr.map(()=>'')));
+    _nomesGuardar();
+  }else localStorage.setItem('vox_tag_nomes',JSON.stringify(arr));
+}
+function _nomesGuardar(){
+  if(!_nomesProntos||!_nomesCofreAtivo())return Promise.resolve();
+  const pastas={};folders.forEach(f=>{pastas[f.id]=f.name});
+  return idbSet('vox_nomes',{pastas,tags:_tagNomesCofre||[]}).catch(()=>{});
+}
+async function _nomesRestaurar(){
+  if(!_mundoTrancado(_mundoAtivo)){_nomesProntos=false;return}
+  if(!_cofreChave)return;   // trancado e sem a senha nesta sessão: os nomes continuam ocultos
+  let v=null;try{v=await idbGet('vox_nomes')}catch(e){}
+  if(v&&v.pastas){
+    folders.forEach(f=>{if(v.pastas[f.id]!=null)f.name=v.pastas[f.id]});
+    _tagNomesCofre=Array.isArray(v.tags)?v.tags:null;
+    _nomesProntos=true;
+    renderFolders();if(typeof renderFiltroCores==='function')renderFiltroCores();
+    return;
+  }
+  // Mundo trancado antes desta versão: os nomes ainda estão em claro. Migra agora —
+  // mas NUNCA se já houver marcador na tela (seria gravar "•••" como nome de verdade).
+  if(folders.some(f=>f.name===_NOME_OCULTO))return;
+  await _nomesTrancar();
+}
+async function _nomesTrancar(){
+  if(!_nomesCofreAtivo())return;
+  _nomesProntos=true;
+  _tagNomesCofre=_tagNomesLerCru();
+  saveFolders();
+  localStorage.setItem('vox_tag_nomes',JSON.stringify(_tagNomesCofre.map(()=>'')));
+  await _nomesGuardar();
+}
+async function _nomesDestrancar(){
+  if(!_nomesProntos)return;
+  localStorage.setItem('vox_folders',JSON.stringify(folders));
+  if(Array.isArray(_tagNomesCofre))localStorage.setItem('vox_tag_nomes',JSON.stringify(_tagNomesCofre));
+  _tagNomesCofre=null;_nomesProntos=false;
+  await idbDelete('vox_nomes').catch(()=>{});
+}
 // ── FOLDERS ──
 function loadFolders(){
   try{folders=JSON.parse(localStorage.getItem('vox_folders')||'[]')}catch(e){folders=[]}
@@ -16518,9 +16574,14 @@ function loadFolders(){
     getFolderPath(activeFolderId).forEach(p=>{if(p.id)folderExpanded.add(p.id);});
   }
   renderFolders();
+  if(_mundoTrancado(_mundoAtivo))_cofrePronto.then(_nomesRestaurar).catch(()=>{});
 }
 function saveFolders(){
-  localStorage.setItem('vox_folders',JSON.stringify(folders));
+  if(_mundoTrancado(_mundoAtivo)&&_cofreChave){
+    // Mundo trancado: no localStorage só o marcador; o nome real vai cifrado (_nomesGuardar).
+    localStorage.setItem('vox_folders',JSON.stringify(folders.map(f=>({...f,name:_NOME_OCULTO}))));
+    _nomesGuardar();
+  }else localStorage.setItem('vox_folders',JSON.stringify(folders));
   localStorage.setItem('vox_active_folder',activeFolderId||'');
   localStorage.setItem('vox_folders_expanded',JSON.stringify([...folderExpanded]));
 }
@@ -24432,9 +24493,7 @@ function _restaurarEtiqueta(id,it){
 const TAG_NOMES_PADRAO=()=>[t('Verde'),t('Azul'),t('Roxo'),t('Laranja'),t('Rosa'),t('Ciano'),t('Amarelo'),t('Vermelho')];
 function TAG_NOMES(){
   const padrao=TAG_NOMES_PADRAO();
-  let salvos=[];
-  try{salvos=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){salvos=[]}
-  if(!Array.isArray(salvos))salvos=[];
+  let salvos=_tagNomesLer();
   return padrao.map((p,i)=>{
     const s=salvos[i];
     return (typeof s==='string'&&s.trim())?s.trim():p;
@@ -24673,12 +24732,10 @@ function renomearEtiqueta(i){
   const nomes=TAG_NOMES();
   const novo=prompt(t('Nome desta etiqueta (vazio volta ao padrão):'),nomes[i]);
   if(novo===null)return;               // cancelou
-  let salvos=[];
-  try{salvos=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){salvos=[]}
-  if(!Array.isArray(salvos))salvos=[];
+  let salvos=_tagNomesLer();
   while(salvos.length<TAG_CORES.length)salvos.push('');
   salvos[i]=novo.trim().slice(0,24);   // teto curto: nome comprido estoura o balãozinho
-  localStorage.setItem('vox_tag_nomes',JSON.stringify(salvos));
+  _tagNomesGravar(salvos);
   renderFiltroCores();
   _cfSoco(i);   // qual das oito bolinhas mudou de nome, se o nome não aparece na fileira
   // Desde que a fileira passou a ser redesenhada por DIFERENÇA, o aviso de "N
@@ -31370,11 +31427,11 @@ async function exportProject(){
   const data={
     app:'vox',version:1,exportedAt:new Date().toISOString(),
     history:history2,
-    folders:JSON.parse(localStorage.getItem('vox_folders')||'[]'),
+    folders:_nomesCofreAtivo()&&_nomesProntos?JSON.parse(JSON.stringify(folders)):JSON.parse(localStorage.getItem('vox_folders')||'[]'),
     stats:JSON.parse(localStorage.getItem('vox_stats')||'{}'),
     personalDict:JSON.parse(localStorage.getItem('vox_personal_dict')||'null'),
     learnedRules:JSON.parse(localStorage.getItem('vox_learned_rules')||'null'),
-    tagNomes:JSON.parse(localStorage.getItem('vox_tag_nomes')||'null')
+    tagNomes:_nomesCofreAtivo()&&_nomesProntos?_tagNomesLer():JSON.parse(localStorage.getItem('vox_tag_nomes')||'null')
   };
   const json=JSON.stringify(data);
   dl(json,`vox_projeto_${new Date().toISOString().slice(0,10)}.json`);
@@ -31437,7 +31494,11 @@ async function _restoreProject(data){
   // pastas (merge sem duplicar id)
   try{
     const incoming=data.folders||[];
-    if(incoming.length){
+    if(incoming.length&&_nomesCofreAtivo()&&_nomesProntos){
+      // Mundo trancado: junta na memória e grava pelo caminho do cofre (nome real cifrado).
+      incoming.forEach(f=>{if(!folders.some(x=>x.id===f.id))folders.push({...f,parentId:f.parentId??null})});
+      saveFolders();
+    }else if(incoming.length){
       const cur=JSON.parse(localStorage.getItem('vox_folders')||'[]');
       const ids=new Set(cur.map(f=>f.id));
       incoming.forEach(f=>{if(!ids.has(f.id))cur.push(f)});
@@ -31451,7 +31512,7 @@ async function _restoreProject(data){
   try{if(data.stats){localStorage.setItem('vox_stats',JSON.stringify(data.stats));stats=data.stats}}catch(e){}
   try{if(data.personalDict)localStorage.setItem('vox_personal_dict',JSON.stringify(data.personalDict))}catch(e){}
   try{if(data.learnedRules)localStorage.setItem('vox_learned_rules',JSON.stringify(data.learnedRules))}catch(e){}
-  try{if(data.tagNomes)localStorage.setItem('vox_tag_nomes',JSON.stringify(data.tagNomes))}catch(e){}
+  try{if(data.tagNomes)_tagNomesGravar(data.tagNomes)}catch(e){}
   if((data.personalDict||data.learnedRules)&&typeof loadLearningData==='function'){
     loadLearningData();
     if(typeof renderLearningPanel==='function')renderLearningPanel();
@@ -39222,7 +39283,7 @@ function _meGuia(passo){
   }else{
     corpo=`<div class="mg-passo">${escHtml(t('Passo {a} de {b}').replace('{a}',3).replace('{b}',3))}</div>
       <div class="tx-title">${escHtml(t('Proteger os nomes'))}</div>
-      <div class="tx-sub">${escHtml(t('Com senha, as notas e as fotos deste mundo ficam cifradas no aparelho. Dica: use as iniciais da pessoa no nome da pasta.'))}</div>
+      <div class="tx-sub">${escHtml(t('Com senha, as notas, as fotos e os nomes das pastas deste mundo ficam cifrados no aparelho.'))}</div>
       <div class="fa-pe"><button type="button" class="conv-s" onclick="closeTxOverlay();abrirPainel()">${escHtml(t('Agora não'))}</button><button type="button" class="conv-p" onclick="closeTxOverlay();abrirGalaxia();toast(t('Na ficha deste mundo, toque em Proteger com senha.'))">${escHtml(t('Proteger com senha'))}</button></div>`;
   }
   ov.innerHTML=`<div class="tx-modal mg-modal" role="dialog" aria-modal="true">${corpo}</div>`;
@@ -43001,7 +43062,7 @@ function _faixaProtecao(w){
   }
   return '<button type="button" class="dcofre" onclick="trancarMundoUI()" title="'+t('Trancar este mundo')+'" aria-label="'+t('Trancar este mundo')+'">'
     +'<span class="pastilha">'+ICO_CADEADO_ANIM+'</span>'
-    +'<span class="txts"><span class="tt">'+t('Proteger com senha')+'</span><span class="ss">'+t('Criptografa as notas e as fotos')+'</span></span>'
+    +'<span class="txts"><span class="tt">'+t('Proteger com senha')+'</span><span class="ss">'+t('Criptografa as notas, as fotos e os nomes das pastas')+'</span></span>'
     +'</button>';
 }
 function trancarMundoUI(){
