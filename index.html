@@ -1190,6 +1190,10 @@ body.doc-mode .card.focus-active:not(.hdr-folded) .dv-chips{display:none}
 .dv-pop-reset{background:none;border:0;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;padding:4px 2px;border-radius:6px}
 .dv-pop-reset:hover{color:var(--accent)}
 .dv-pop-dica{font-size:11.5px;line-height:1.35;color:var(--text3)}
+/* Menu de exportar flutuante (ver _menuFlutAbrir): fixo na tela, opaco, com rolagem por dentro. */
+/* Onde o menu de exportar continua dentro do card (Lista, janelas): não passa de ~420px; o resto rola por dentro. */
+.lens-panel[id^="exp-menu-"].on:not(.menu-flut){max-height:min(60vh,420px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.lens-panel.menu-flut{position:fixed;z-index:80;margin:0;padding:6px;background:var(--bg-card);border:1px solid var(--border2);border-radius:14px;box-shadow:0 14px 44px rgba(0,0,0,.28);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 /* Leitura: o texto já formatado, na fonte e no tamanho escolhidos. O editor e
    o textarea some enquanto ela está de pé (classe dv-lendo no card). */
 body.doc-mode{--dv-fonte:var(--font);--dv-corpo:17px}
@@ -2688,6 +2692,28 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   transition:all var(--transition)}
 .fc-lista-float-btn:hover{background:var(--accent);color:#fff}
 .fc-lista-float-btn svg{width:12px;height:12px}
+/* Alça de 6 pontinhos + chevron nas notas das listas laterais (Fluxograma e Órbita) */
+.lista-grip{position:absolute;left:5px;top:8px;z-index:2;width:18px;height:24px;display:flex;align-items:center;justify-content:center;
+  color:var(--text3);cursor:grab;border-radius:6px;touch-action:none;user-select:none;-webkit-user-select:none;transition:color .12s,background-color .12s}
+.lista-grip:hover,.lista-grip:focus-visible{color:var(--text);background:var(--bg-input)}
+.lista-grip:active{cursor:grabbing}
+.lista-grip svg{width:14px;height:14px;pointer-events:none}
+.orb-mural-it .lista-grip,.orb-modal .lista-grip{color:rgba(255,255,255,.55)}
+.orb-mural-it .lista-grip:hover,.orb-modal .lista-grip:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.08)}
+.lista-exp{position:absolute;right:5px;top:7px;z-index:2;width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  background:none;border:0;border-radius:7px;color:var(--text4);cursor:pointer;transition:color .12s,background-color .12s,transform .18s}
+.lista-exp:hover{color:var(--text);background:var(--bg-input)}
+.lista-exp.on{transform:rotate(180deg);color:var(--accent)}
+.lista-exp svg{width:14px;height:14px}
+.orb-mural-it .lista-exp{color:rgba(255,255,255,.38)}
+.orb-mural-it .lista-exp:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.08)}
+.fc-lista-item.tem-grip{padding-left:28px}
+.fc-lista-item.tem-grip .fc-lista-item-corpo{padding-right:20px}
+.orb-mural-it.tem-grip .orb-mural-corpo{padding-left:27px;padding-right:26px}
+.orb-mural-it.tem-grip .orb-mural-acoes{padding-left:27px}
+.fl-pisca{animation:flPisca .6s ease-out}
+@keyframes flPisca{0%{box-shadow:0 0 0 0 var(--accent)}60%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.fl-pisca{animation:none}}
 .fc-lista-del-btn{display:flex;align-items:center;justify-content:center;flex-shrink:0;
   width:26px;height:26px;background:none;border:1px solid var(--border2);color:var(--text3);
   border-radius:8px;cursor:pointer;transition:all var(--transition)}
@@ -9600,7 +9626,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.10';
+const VOX_VERSION='2026.10.15.12';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -12138,7 +12164,8 @@ let I18N_EN={
 "Fundo":"Background","Papel":"Paper","Sem folha":"No page",
 "Tema do papel":"Page theme","Sépia":"Sepia","Restaurar o padrão":"Restore defaults",
 "Título do documento":"Document title","Sem título":"Untitled",
-"❌ Não foi possível copiar":"❌ Could not copy","Foco ao digitar":"Focus while typing","Ligado":"On","Desligado":"Off",
+"❌ Não foi possível copiar":"❌ Could not copy","Abrir como card flutuante":"Open as a floating card","Arrastar: solte numa pasta pra mover, ou no mapa pra deixar flutuando":"Drag: drop on a folder to move it, or on the map to leave it floating","Arrastar esta nota":"Drag this note","Mostrar mais texto":"Show more text","Mostrar menos":"Show less",
+"Foco ao digitar":"Focus while typing","Ligado":"On","Desligado":"Off",
 "Os menus quase somem enquanto você escreve; mexer o mouse traz de volta.":"Menus almost disappear while you write; moving the mouse brings them back.",
 "Inserir":"Insert","Título":"Heading","Tarefa":"Task","Bloco de código":"Code block","Divisor":"Divider","Data de hoje":"Today's date",
 "Transformar com IA…":"Transform with AI…",
@@ -12986,7 +13013,10 @@ const _PEND_IDB='vox_gravacoes_esperando_chave';
 // Id da gravação que está sendo transcrita agora e JÁ está na fila (ver
 // processAudio). Enquanto ele existe, guardar de novo duplicaria a gravação.
 let _gravNaFilaId=null,_gravJaAvisada=false;
-async function _pendenteGuardar(file,durSec,sn,mode){
+// silencioso: é a rede de segurança ANTES de transcrever (processAudio). Nesse caso o
+// cartão "ficou guardada" não aparece — a gravação está sendo transcrita agora e,
+// se tudo der certo, sai da fila sozinha; ele só aparece se a transcrição falhar.
+async function _pendenteGuardar(file,durSec,sn,mode,silencioso){
   // Quem chama aqui já mostra o próprio aviso de "ficou guardada".
   if(_gravNaFilaId){_gravJaAvisada=true;return _gravNaFilaId}
   try{
@@ -12995,7 +13025,7 @@ async function _pendenteGuardar(file,durSec,sn,mode){
     lista.push({id,buf:await file.arrayBuffer(),nome:file.name||'gravacao.webm',tipo:file.type||'audio/webm',dur:durSec||0,sn:sn||'',mode:mode||'livre'});
     await _idbSetBruto(_PEND_IDB,lista);
     localStorage.setItem('vox_tem_pendente','1');
-    _pendPintar();
+    if(!silencioso)_pendPintar();
     return id;
   }catch(e){return false}
 }
@@ -13011,6 +13041,10 @@ async function _pendenteTirar(id){
   _pendPintar();
 }
 let _pendentesRodando=false,_pendErro='';
+// Ids que a transcrição normal (processAudio) ainda está fechando: entre o fim dela e a
+// saída da fila há uns milissegundos em que a recuperação achava que a gravação tinha
+// ficado para trás e transcrevia de novo (nota duplicada).
+const _pendOcupadas=new Set();
 // manual=true vem do botão "Transformar em texto": sem chave, abre as
 // Configurações em vez de não fazer nada.
 async function _pendentesProcessar(manual){
@@ -13023,7 +13057,7 @@ async function _pendentesProcessar(manual){
     if(!lista.length){localStorage.removeItem('vox_tem_pendente');return}
     let avisou=false;
     for(const p of lista){
-      while(isProc||isRec||_gravNaFilaId)await new Promise(r=>setTimeout(r,500));
+      while(isProc||isRec||_gravNaFilaId||_pendOcupadas.has(p.id))await new Promise(r=>setTimeout(r,500));
       // Pode ter saído da fila enquanto esperava (a transcrição normal deu certo).
       const ainda=((await _idbGetBruto(_PEND_IDB))||[]).some(x=>x.id===p.id);
       if(!ainda)continue;
@@ -13054,6 +13088,8 @@ function _pendMotivo(m){
 async function _pendPintar(){
   const el=document.getElementById('voxGuardada');if(!el)return;
   let lista=[];try{lista=(await _idbGetBruto(_PEND_IDB))||[]}catch(e){}
+  // A que está sendo transcrita agora pela via normal não "ficou para trás": não entra no aviso.
+  lista=lista.filter(p=>!_pendOcupadas.has(p.id));
   if(!lista.length){
     if(el.style.display!=='none'&&!el.classList.contains('pend-sai')){
       if(typeof _voxReduzMov==='function'&&_voxReduzMov()){el.style.display='none'}
@@ -14711,6 +14747,7 @@ function setViewMode(m){
 // OverType). O antigo Modo Foco simples (ribbon) foi removido por ser muito
 // parecido com este e redundante.
 function applyView(){
+  _menuFlutFecha(); // menu de exportar flutuante não atravessa a troca de modo
   const cl=document.getElementById('cardsList');
   const isFocusLike=viewMode==='doc';
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
@@ -16934,7 +16971,22 @@ function _fcListarCards(id,nomePasta,manterExpansao){
   }
   if(!el.dataset.fichTrazerLigado){
     el.dataset.fichTrazerLigado='1';
-    el.addEventListener('pointerdown',()=>{const i=_fichAbertos.find(f=>f.el===el);if(i)_fichTrazerFrente(i)});
+    // Trazer pra frente no Fluxograma REORDENA o painel no DOM (appendChild). Feito no
+    // pointerdown, isso tirava o nó do clique do ar no meio do gesto: nenhum "click"
+    // chegava a nada dentro do painel (a nota, o chevron, os botões). Por isso a ordem
+    // só muda DEPOIS que o gesto termina (pointerup + um tique, quando o click já passou).
+    el.addEventListener('pointerdown',()=>{
+      const i=_fichAbertos.find(f=>f.el===el);if(!i)return;
+      if(i.tipo!=='fc'){_fichTrazerFrente(i);return}
+      el.dataset.fichTrazerPend='1';
+    });
+    const _fichTrazerDepois=()=>{
+      if(el.dataset.fichTrazerPend!=='1')return;
+      delete el.dataset.fichTrazerPend;
+      setTimeout(()=>{const i=_fichAbertos.find(f=>f.el===el);if(i)_fichTrazerFrente(i)},0);
+    };
+    el.addEventListener('pointerup',_fichTrazerDepois);
+    el.addEventListener('pointercancel',_fichTrazerDepois);
   }
   _painelLigar(el,'.fc-panel-alca','.fc-card-panel-body',_orbMuralEhGaveta);
   _fichTrazerFrente(inst);
@@ -16984,8 +17036,9 @@ function _fcListarCardsGaveta(id,nomePasta,manterExpansao){
         if(i<8)estilos.push(`animation-delay:${i*20}ms`);
         if(luz)estilos.push(`--fc-lista-ca:${safeColor(luz.ca)}`);
         const styleAttr=estilos.length?` style="${estilos.join(';')}"`:'';
-        return `<div class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}${entraClasse}"${tcAttr}${styleAttr}>
-          <button type="button" class="fc-lista-item-corpo" onclick="_fcAlternarExpansao('${escJs(c.id)}')">
+        return `<div class="fc-lista-item tem-grip${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}${entraClasse}"${tcAttr}${styleAttr}>
+          ${_listaGripHtml(c.id)}${_listaExpHtml(`_fcAlternarExpansao('${escJs(c.id)}')`,expandido)}
+          <button type="button" class="fc-lista-item-corpo" onclick="_listaAbrirFlutuante('${escJs(c.id)}',this)" title="${escHtml(t('Abrir como card flutuante'))}">
             <span class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();_fcRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
             <span class="fc-lista-previa">${previaTxt}</span>
           </button>
@@ -17506,6 +17559,70 @@ function _flMontarAlcaCalendario(card){
   alca.addEventListener('mousedown',e=>{e.preventDefault();_flStartWindowDrag(card,{clientX:e.clientX,clientY:e.clientY},false,'marcar')});
   alca.addEventListener('touchstart',e=>{e.preventDefault();const tt=e.touches[0];_flStartWindowDrag(card,{clientX:tt.clientX,clientY:tt.clientY},true,'marcar')},{passive:false});
 }
+// ── Notas das listas do Fluxograma e da Órbita: abrir flutuando e arrastar pelos 6 pontinhos ──
+// Cada nota das listas laterais ganha a alça de 6 pontinhos (a mesma da janela flutuante
+// e do card da lista) e o clique na nota passa a ABRIR a janela flutuante (antes só
+// mostrava mais texto, e o botão "Abrir flutuante" só nascia depois de expandir — quem
+// não expandia nunca achava). Arrastar pela alça abre a janela e entrega o arrasto pra
+// mesma máquina da janela (_flStartWindowDrag, modo "mover"): soltar numa pasta do mapa
+// move a nota pra ela, soltar no vazio deixa a janela ali, soltar num portal troca de
+// tela. O chevron ao lado continua mostrando mais texto (e arquivar/excluir).
+function _listaGripHtml(id){
+  return '<span class="lista-grip" role="button" tabindex="0" data-nid="'+escHtml(id)+'" title="'+escHtml(t('Arrastar: solte numa pasta pra mover, ou no mapa pra deixar flutuando'))+'" aria-label="'+escHtml(t('Arrastar esta nota'))+'">'+ICO.grip+'</span>';
+}
+function _listaExpHtml(fnCall,aberto){
+  return '<button type="button" class="lista-exp'+(aberto?' on':'')+'" onclick="event.stopPropagation();'+fnCall+'" title="'+escHtml(t(aberto?'Mostrar menos':'Mostrar mais texto'))+'" aria-label="'+escHtml(t(aberto?'Mostrar menos':'Mostrar mais texto'))+'" aria-expanded="'+(aberto?'true':'false')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>';
+}
+function _listaAbrirFlutuante(id,el){
+  const item=el&&el.closest?el.closest('.fc-lista-item,.orb-mural-it'):null;
+  const jaAberta=_flAbertas.some(j=>j.id===id);
+  _flAbrirCard(id,item||el||null);
+  if(jaAberta){ // já estava aberta: traz pra frente e dá um sinal de onde ela está
+    const w=document.getElementById('floatwin-'+id);
+    if(w&&!_voxReduzMov())_jz(w,'fl-pisca',600);
+  }
+}
+document.addEventListener('pointerdown',e=>{
+  const g=e.target.closest&&e.target.closest('.lista-grip');
+  if(!g||e.button)return;
+  // SEM preventDefault aqui: cancelar o pointerdown suprime os mousemove/mouseup que
+  // _flStartWindowDrag escuta. A seleção de texto é barrada no mousedown logo abaixo.
+  const id=g.dataset.nid,item=g.closest('.fc-lista-item,.orb-mural-it')||g;
+  const x0=e.clientX,y0=e.clientY;
+  if(e.pointerType==='touch'){ // no toque o arrasto de janela é outro (por dedo): tocar na alça só abre
+    _listaAbrirFlutuante(id,item);return;
+  }
+  let feito=false;
+  const limpar=()=>{feito=true;document.removeEventListener('pointermove',mover,true);document.removeEventListener('pointerup',soltar,true);document.removeEventListener('pointercancel',soltar,true)};
+  function mover(ev){
+    if(feito||Math.hypot(ev.clientX-x0,ev.clientY-y0)<4)return;
+    limpar();
+    // a janela nasce perto do ponteiro (o limite do painel pode empurrar um pouco pra esquerda)
+    const layer=document.getElementById('floatLayer');
+    let pos;
+    if(layer&&!_flAbertas.some(j=>j.id===id)){
+      const tam=_flTamanhoPadrao(),r=layer.getBoundingClientRect();
+      pos={x:(ev.clientX-r.left-_flX)/_flS-tam.largura+40,y:(ev.clientY-r.top-_flY)/_flS-20,w:tam.largura,h:tam.altura};
+    }
+    _flAbrirCard(id,item,pos);
+    const win=document.getElementById('floatwin-'+id);
+    if(win)_flStartWindowDrag(win,{clientX:ev.clientX,clientY:ev.clientY},false,'mover');
+  }
+  function soltar(){
+    if(feito)return;
+    limpar();
+    _listaAbrirFlutuante(id,item); // clicou na alça sem arrastar: só abre
+  }
+  document.addEventListener('pointermove',mover,true);
+  document.addEventListener('pointerup',soltar,true);
+  document.addEventListener('pointercancel',soltar,true);
+},true);
+document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('.lista-grip'))e.preventDefault()},true);
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('lista-grip')){
+    e.preventDefault();_listaAbrirFlutuante(e.target.dataset.nid,e.target);
+  }
+});
 // Abre uma janela flutuante pro card `id` — ou, se já tiver uma aberta,
 // só traz ela pra frente. `origemEl` (o item da lista clicado) é opcional:
 // quando existe, a janela nasce voando de lá até a posição final (FLIP).
@@ -19311,8 +19428,9 @@ function _orbMuralFichas(cards,cols,uidTok,notaAbertaId){
     if(entraClasse)estilos.push(`animation-delay:${i*22}ms`);
     if(luz)estilos.push(`--orb-mural-ca:${safeColor(luz.ca)}`);
     const styleAttr=estilos.length?` style="${estilos.join(';')}"`:'';
-    return `<div class="orb-mural-it${aberta?' aberta':''}${flutuando?' flutuando':''}${i===orfa?' orfa':''}${entraClasse}" data-nid="${escHtml(c.id)}"${tcAttr}${styleAttr}>
-      <button type="button" class="orb-mural-corpo${mthumb?' tem-foto':''}" onclick="${legado?'_orbMuralAlterna':'_fichOrbAlterna'}(${argUid}'${escJs(c.id)}')">
+    return `<div class="orb-mural-it tem-grip${aberta?' aberta':''}${flutuando?' flutuando':''}${i===orfa?' orfa':''}${entraClasse}" data-nid="${escHtml(c.id)}"${tcAttr}${styleAttr}>
+      ${_listaGripHtml(c.id)}${_listaExpHtml(`${legado?'_orbMuralAlterna':'_fichOrbAlterna'}(${argUid}'${escJs(c.id)}')`,aberta)}
+      <button type="button" class="orb-mural-corpo${mthumb?' tem-foto':''}" onclick="_listaAbrirFlutuante('${escJs(c.id)}',this)" title="${escHtml(t('Abrir como card flutuante'))}">
         ${mthumb}<span class="orb-mural-txt">
         <span class="orb-mural-nm${sn?'':' vazia'}" title="${sn?escHtml(sn):escHtml(t('Clique para nomear este card'))}" onclick="event.stopPropagation();${legado?'_orbMuralRenomear':'_fichOrbRenomear'}(${argUid}'${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
         <span class="orb-mural-pv">${previa}</span>
@@ -29872,10 +29990,11 @@ function _fcConstruirHtml(uidTok,id,nomePasta,itemExpandidoId){
       if(i<8)estilos.push('animation-delay:'+(i*20)+'ms');
       if(luz)estilos.push('--fc-lista-ca:'+safeColor(luz.ca));
       const styleAttr=estilos.length?(' style="'+estilos.join(';')+'"'):'';
-      const classes='fc-lista-item'+(jaAberta?' fc-lista-item-aberta':'')+(expandido?' fc-lista-item-expandida':'')+entraClasse;
+      const classes='fc-lista-item tem-grip'+(jaAberta?' fc-lista-item-aberta':'')+(expandido?' fc-lista-item-expandida':'')+entraClasse;
       pedacos.push(
         '<div class="'+classes+'"'+tcAttr+styleAttr+'>'
-        +'<button type="button" class="fc-lista-item-corpo" onclick="_fcAlternarExpansao(\''+uidJs+'\',\''+escJs(c.id)+'\')">'
+        +_listaGripHtml(c.id)+_listaExpHtml('_fcAlternarExpansao(\''+uidJs+'\',\''+escJs(c.id)+'\')',expandido)
+        +'<button type="button" class="fc-lista-item-corpo" onclick="_listaAbrirFlutuante(\''+escJs(c.id)+'\',this)" title="'+escHtml(t('Abrir como card flutuante'))+'">'
         +'<span class="fc-lista-nome'+(sn?'':' fc-lista-nome-vazia')+'" title="'+(sn?escHtml(sn):t('Clique para nomear este card'))+'" onclick="event.stopPropagation();_fcRenomear(\''+uidJs+'\',\''+escJs(c.id)+'\')">'+escHtml(sn||t('+ nome'))+'</span>'
         +'<span class="fc-lista-previa">'+previaTxt+'</span>'
         +'</button>'
@@ -32837,14 +32956,17 @@ function sendTxt(){
 async function processAudio(file,durSec,fromRec){
   if(!fromRec)return _processAudio(file,durSec,fromRec);
   const sn=document.getElementById('snameInput').value.trim();
-  const id=await _pendenteGuardar(file,durSec,sn,sessionMode);
+  const id=await _pendenteGuardar(file,durSec,sn,sessionMode,true);
   let ok=false;
   _gravNaFilaId=id||null;_gravJaAvisada=false;
+  if(id)_pendOcupadas.add(id);
   try{ok=await _processAudio(file,durSec,fromRec)}
   finally{_gravNaFilaId=null}
   if(!id)return ok;
-  if(ok===true){await _pendenteTirar(id);_pendentesProcessar()}
-  else if(!_gravJaAvisada)toast(t('Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.'),true);
+  try{if(ok===true)await _pendenteTirar(id)}
+  finally{_pendOcupadas.delete(id)}
+  if(ok===true)_pendentesProcessar();
+  else{_pendPintar();if(!_gravJaAvisada)toast(t('Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.'),true)}
   return ok;
 }
 async function _processAudio(file,durSec,fromRec){
@@ -33382,6 +33504,17 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
     el.scrollIntoView({behavior:'smooth',block:'center'});
   }
   if(save){saveHistory();renderFolders();applyFolderFilter()}
+  // Mesma regra do addCard: conversa (diarizada) nascida de uma gravação feita com o
+  // Fluxograma/Órbita/Calendário aberto abre como janela flutuante ali mesmo. Sem isto
+  // a gravação com "Diarização ON" terminava e o card ia parar na lista, escondido
+  // atrás do mapa — parecia que tinha sumido.
+  if(save&&_flAbrirNoProximoCard){
+    _flAbrirNoProximoCard=false;
+    if(_mapaAberto()){
+      const _org=_recOrigemVisual();
+      requestAnimationFrame(()=>_flAbrirCard(id,_org));
+    }
+  }
   return id;
 }
 
@@ -35542,6 +35675,7 @@ function openDiarExport(id){
       `<button class="tx-btn ghost" onclick="diarExportRun('${id}','txt')"><span class="svgi">${ICO.download}</span> ${t('Baixar TXT')}</button>`+
     `</div>`;
   p.classList.add('on');
+  _menuFlutTalvez(p,id);
 }
 function diarExportRun(id,dest){
   const card=document.getElementById(id);if(!card)return;
@@ -37485,8 +37619,88 @@ function toggleExportMenu(id){
     `<button class="lens-opt" onclick="exportCard('${id}','md');closeExportMenu('${id}')"><span class="lens-ico">${ICO.file}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Baixar Markdown')}</span><span class="lens-opt-d">${t('Para Obsidian, Notion, etc.')}</span></span></button>`+
     `<button class="lens-opt" onclick="exportCard('${id}','html');closeExportMenu('${id}')"><span class="lens-ico">${ICO.html}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Baixar HTML')}</span><span class="lens-opt-d">${t('Página formatada')}</span></span></button>`;
   p.classList.add('on');
+  _menuFlutTalvez(p,id);
 }
 function closeExportMenu(id){const p=document.getElementById('exp-menu-'+id);if(p){p.classList.remove('on');p.innerHTML=''}}
+// ── Menu de exportar flutuante (Mural e Documento) ──────────────────────────
+// O menu é um painel DENTRO do card. No Mural isso esticava um cartão pequeno até
+// ~760px (e o fundo dele ia parar atrás da barra de baixo); no Documento com o
+// cabeçalho recolhido (o padrão) o painel ficava escondido e o botão Exportar da
+// barra parecia morto. Enquanto aberto, o painel sai do card e vai pro <body>,
+// fixo na tela, junto do botão que o abriu, com altura limitada e rolagem por
+// dentro. Fechar (por qualquer caminho que tire o .on) devolve o painel ao card.
+let _menuFlutSt=null;
+function _menuFlutTalvez(p,id){
+  if(viewMode==='masonry'||viewMode==='doc')_menuFlutAbrir(p,id);
+}
+function _menuFlutAncora(id){
+  const visivel=e=>{if(!e)return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0};
+  const card=document.getElementById(id);
+  const ev=window.event,alvo=ev&&ev.target&&ev.target.closest?ev.target.closest('button'):null;
+  if(visivel(alvo)&&!alvo.closest('.lens-panel,.ca-menu'))return alvo; // item de menu já fechado não serve de âncora
+  if(viewMode==='doc'){const b=document.querySelector('#docBar button[onclick*="toggleExportMenu"]');if(visivel(b))return b}
+  const mais=card&&card.querySelector('.ca-more>button');
+  if(visivel(mais))return mais;
+  return card&&(card.querySelector('.ch')||card);
+}
+function _menuFlutAbrir(p,id){
+  _menuFlutFecha(p); // se já era este painel (reaberto com outro conteúdo, ex.: exportar conversa), só devolve ao card sem apagar
+  const ancora=_menuFlutAncora(id);
+  const orig={pai:p.parentNode,prox:p.nextSibling};
+  document.body.appendChild(p);
+  p.classList.add('menu-flut');
+  _menuFlutPos(p,ancora);
+  const obs=new MutationObserver(()=>{if(!p.classList.contains('on'))_menuFlutFecha()});
+  obs.observe(p,{attributes:true,attributeFilter:['class']});
+  _menuFlutSt={p,orig,obs,ancora,y0:scrollY};
+  document.addEventListener('pointerdown',_menuFlutFora,true);
+  document.addEventListener('keydown',_menuFlutTecla,true);
+  window.addEventListener('resize',_menuFlutFecha);
+  window.addEventListener('scroll',_menuFlutRolou,{passive:true});
+}
+// Rolar a página solta o balão da âncora: fecha (tremidinhas de até 24px não contam).
+function _menuFlutRolou(){const st=_menuFlutSt;if(st&&Math.abs(scrollY-st.y0)>24)_menuFlutFecha()}
+function _menuFlutPos(p,ancora){
+  const vw=innerWidth,vh=innerHeight;
+  const ib=document.querySelector('.ibar'),ibr=ib&&ib.getBoundingClientRect();
+  const fundo=ibr&&ibr.width>0&&ibr.top>vh*0.4?ibr.top-8:vh-8; // não passa por baixo da barra de gravar
+  const a=ancora?ancora.getBoundingClientRect():{left:vw/2,right:vw/2,top:vh/3,bottom:vh/3};
+  // largura primeiro: o texto quebra conforme ela, e a altura natural depende disso
+  const w=Math.min(292,vw-16);
+  p.style.width=w+'px';p.style.maxHeight='none';
+  const h=p.scrollHeight+2;
+  const abaixo=fundo-(a.bottom+6),acima=a.top-6-8;
+  let top,max;
+  if(h<=abaixo||abaixo>=acima){top=a.bottom+6;max=Math.max(160,abaixo)}
+  else{max=Math.max(160,acima);top=Math.max(8,a.top-6-Math.min(h,max))}
+  p.style.left=Math.max(8,Math.min(a.left,vw-w-8))+'px';
+  p.style.top=top+'px';
+  p.style.maxHeight=Math.min(max,h)+'px';
+}
+function _menuFlutFora(e){
+  const st=_menuFlutSt;if(!st)return;
+  if(e.target.closest&&(e.target.closest('.menu-flut')||(st.ancora&&st.ancora.contains(e.target))))return;
+  _menuFlutFecha();
+}
+function _menuFlutTecla(e){
+  if(e.key!=='Escape'||!_menuFlutSt)return;
+  e.preventDefault();e.stopImmediatePropagation();_menuFlutFecha();
+}
+function _menuFlutFecha(manter){
+  const st=_menuFlutSt;if(!st)return;
+  _menuFlutSt=null;
+  st.obs.disconnect();
+  document.removeEventListener('pointerdown',_menuFlutFora,true);
+  document.removeEventListener('keydown',_menuFlutTecla,true);
+  window.removeEventListener('resize',_menuFlutFecha);
+  window.removeEventListener('scroll',_menuFlutRolou);
+  const p=st.p;
+  p.classList.remove('menu-flut');p.style.cssText='';
+  if(p!==manter&&p.classList.contains('on')){p.classList.remove('on');p.innerHTML=''}
+  const pai=st.orig.pai;
+  if(pai&&pai.isConnected)pai.insertBefore(p,st.orig.prox&&st.orig.prox.parentNode===pai?st.orig.prox:null);
+  else p.remove();
+}
 // Gera o resultado de uma lente. Se a lente tem pass1, roda em DUAS passadas:
 // 1ª extrai o roteiro (fatos/tensões/elenco) com temperatura baixa; 2ª escreve
 // o texto final guiada pelo roteiro, na temperatura da lente. focus é opcional.
