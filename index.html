@@ -2600,6 +2600,39 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    pra não brigar com o FLIP de abrir/fechar, que usa transform inline. */
 .float-window.fl-levita{animation:flLevita .68s cubic-bezier(.3,1.35,.5,1) both;animation-delay:var(--fl-d,0ms)}
 @keyframes flLevita{0%{translate:0 0;scale:1}28%{translate:0 -14px;scale:1.035;box-shadow:0 8px 18px rgba(0,0,0,.28),0 30px 54px rgba(0,0,0,.36)}100%{translate:0 0;scale:1}}
+/* Portais: a trilha que aparece na borda enquanto uma janela está na mão. Vidro
+   escuro de propósito, pra ler sobre o Calendário claro e sobre a Órbita
+   escura. O portal sob o ponteiro vira âmbar e cresce; a janela encolhe. */
+.tela-portais{position:fixed;z-index:996;right:max(10px,env(safe-area-inset-right));top:50%;display:none;flex-direction:column;gap:10px;
+  padding:10px 8px;border-radius:34px;background:rgba(22,22,26,.84);border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 12px 36px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  pointer-events:none;opacity:0;transform:translate(130%,-50%);
+  transition:transform .34s cubic-bezier(.34,1.4,.5,1),opacity .2s}
+.tela-portais.vis{display:flex}
+.tela-portais.on{opacity:1;transform:translate(0,-50%)}
+.tela-portal{position:relative;width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);
+  background:rgba(255,255,255,.07);color:#f1f1f5;display:grid;place-items:center;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1),background .15s,color .15s,border-color .15s,box-shadow .2s,opacity .15s}
+.tela-portal svg{width:21px;height:21px}
+.tela-portal.tela-aqui{opacity:.38;border-style:dashed}
+.tela-portal.tela-off{opacity:.22}
+.tela-portal.tela-mira{transform:scale(1.24);background:#eab308;color:#2b2100;border-color:#b88a00;box-shadow:0 0 0 5px rgba(234,179,8,.28)}
+.tela-portal-rot{position:absolute;right:calc(100% + 16px);top:50%;translate:0 -50%;white-space:nowrap;
+  font:700 12px/1 var(--font);padding:7px 10px;border-radius:9px;background:#eab308;color:#2b2100;
+  opacity:0;pointer-events:none;transform:translateX(6px);transition:opacity .15s,transform .2s}
+.tela-portal.tela-mira .tela-portal-rot{opacity:1;transform:none}
+.tela-portal[data-portal="mundo"].tela-mira svg{animation:telaGira 1.6s linear infinite}
+@keyframes telaGira{to{transform:rotate(360deg)}}
+.float-window.fl-puxada{scale:.9;opacity:.88;transition:scale .18s cubic-bezier(.34,1.56,.64,1),opacity .15s,box-shadow .15s}
+.tela-bal-lado::before{display:none}
+.tela-bal-nao{display:block;width:100%;margin-top:6px;border:0;background:transparent;color:#2b2100;font:600 12px var(--font);
+  padding:8px;border-radius:9px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.tela-bal-nao:hover{background:rgba(255,255,255,.34)}
+.tela-bal-nao:focus-visible{outline:0;box-shadow:0 0 0 2px #fff,0 0 0 4px #2b2100}
+@media(prefers-reduced-motion:reduce){
+  .tela-portais,.tela-portal,.tela-portal-rot,.float-window.fl-puxada{transition:none}
+  .tela-portal[data-portal="mundo"].tela-mira svg{animation:none}
+}
 @media(prefers-reduced-motion:reduce){
   .tela-bal.in,.tela-bal.out,.tela-bal-levar.tela-brota,.tela-bal-opt.tela-nega,.tela-faisca,.tela-soco,.tela-bump,.float-window.fl-levita{animation:none}
   .tela-bal-ind,.tela-bal-opt,.fc-tela-btn{transition:none}
@@ -9332,7 +9365,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.2';
+const VOX_VERSION='2026.10.15.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11874,7 +11907,13 @@ let I18N_EN={
 "Abra um card flutuante primeiro.":"Open a floating card first.",
 "As janelas viram uma pasta nova, saem deste mundo e viajam. Lá, o Vox pergunta onde guardar.":"The windows become a new folder, leave this world and travel. There, Vox asks where to keep them.",
 "Crie uma pasta primeiro: este mapa mostra as pastas.":"Create a folder first: this map shows your folders.",
-"Mesa de {d}":"Table of {d}"
+"Mesa de {d}":"Table of {d}",
+// ── Portais (rodada 3) ──
+"Outro mundo":"Another world",
+"Você está aqui":"You are here",
+"Levar esta nota":"Take this note",
+"A nota vira uma pasta nova, sai deste mundo e viaja. Lá, o Vox pergunta onde guardar.":"The note becomes a new folder, leaves this world and travels. There, Vox asks where to keep it.",
+"Nota":"Note"
 };
 
 // ── STATE ──
@@ -17230,6 +17269,7 @@ function _flStartWindowDrag(el,e0,isTouch,modo){
       if(Math.hypot(x-ox,y-oy)<4)return;
       ativo=true;win.classList.add('float-window-arrastando');
       if(modo==='marcar'){win.classList.add('fl-modo-marcar');calPalcoEl?.classList.add('cal-pronta-receber')}
+      else _telaPortaisMostrar();
     }
     const limite=_flLimitePainel();
     const visivel=_flLimiteVisivel(winW,winH);
@@ -17239,6 +17279,7 @@ function _flStartWindowDrag(el,e0,isTouch,modo){
     win.style.left=nx+'px';win.style.top=ny+'px';
     const j=_flAbertas.find(j=>j.id===id);if(j){j.x=nx;j.y=ny}
     _orbFiosDasNotas(); // o fio acompanha a nota enquanto ela é arrastada
+    if(modo!=='marcar')_telaPortaisMirar(win,x,y);
     const achado=_flAlvoDropEmPonto(x,y,modo);
     if(achado&&achado.tipo==='cal'){
       // No calendário quem acende é a célula/vaga, com a linguagem do próprio
@@ -17261,6 +17302,19 @@ function _flStartWindowDrag(el,e0,isTouch,modo){
     alvoAtual?.classList.remove('fl-drop-alvo');
     if(!ativo){_calLimparAlvo();return}
     const{x,y}=coords(e);
+    // ── soltar num portal: troca de tela (ou leva a nota pra outro mundo) ──
+    // A janela volta pro lugar de onde saiu: o gesto escolheu a tela, não a
+    // posição, e soltá-la encostada na trilha da borda não é o que se quer.
+    const portal=modo==='marcar'?null:_telaPortaisFim(win);
+    if(portal){
+      _calLimparAlvo();
+      const j=_flAbertas.find(j=>j.id===id);
+      if(j){j.x=origLeft;j.y=origTop}
+      win.style.left=origLeft+'px';win.style.top=origTop+'px';
+      _orbFiosDasNotas();
+      _telaPortalSoltou(portal,id);
+      return;
+    }
     const achado=_flAlvoDropEmPonto(x,y,modo);
     // ── soltar num dia/hora do calendário: marca QUANDO, não mexe em pasta ──
     if(achado&&achado.tipo==='cal'){
@@ -19800,6 +19854,7 @@ function _telaBalAbrir(btn){
 function _telaBalFechar(instante){
   if(!_telaBalAberto&&!instante)return;
   const bal=_telaBalEl,btn=_telaBalBtn;
+  if(instante)_telaLevarUmFechar();
   _telaBalAberto=false;
   if(btn){btn.setAttribute('aria-expanded','false');if(!instante&&btn.isConnected)btn.focus({preventScroll:true})}
   if(!bal)return;
@@ -19816,15 +19871,16 @@ function _telaBalVoarPara(btn,fim){
   bal.classList.remove('in');bal.classList.add('out');
   setTimeout(()=>{bal.hidden=true;bal.classList.remove('out');fim()},250);
 }
-function _telaFaiscas(el){
+function _telaFaiscas(el,cores){
   if(!el||_voxReduzMov())return;
   const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
-  _jzOnda(el,'#2b2100','50%');
+  const c=cores||['#fff','#2b2100'];
+  _jzOnda(el,c[1],'50%');
   for(let i=0;i<9;i++){
     const a=i/9*Math.PI*2+Math.random()*.5,d=30+Math.random()*20,s=document.createElement('i');
     s.className='tela-faisca';s.style.left=cx+'px';s.style.top=cy+'px';
     s.style.setProperty('--dx',Math.cos(a)*d+'px');s.style.setProperty('--dy',Math.sin(a)*d+'px');
-    s.style.setProperty('--c',i%3?'#fff':'#2b2100');
+    s.style.setProperty('--c',i%3?c[0]:c[1]);
     document.body.appendChild(s);setTimeout(()=>s.remove(),600);
   }
 }
@@ -19884,6 +19940,127 @@ function _telaBalTecla(e){
   else if(e.key==='ArrowUp')n=(i-1+bs.length)%bs.length;
   else if(e.key==='Home')n=0;else n=bs.length-1;
   e.preventDefault();bs[n].focus({preventScroll:true});
+}
+
+// ── Portais (rodada 3) ───────────────────────────────────────────────────────
+// Enquanto uma janela está na mão, uma trilha aparece na borda direita com as
+// telas e, no fim, o planeta dos Mundos. Soltar sobre uma tela troca de tela
+// (a mesa inteira vai junto, como no balão); soltar sobre o planeta abre o
+// "Segure pra levar" daquela nota. É um atalho do arrasto — o balão continua
+// sendo o caminho de quem usa teclado ou leitor de tela, por isso a trilha é
+// aria-hidden e nunca recebe foco nem clique.
+let _telaPortaisEl=null,_telaPortalMira=null;
+function _telaPortaisMontar(){
+  if(_telaPortaisEl)return _telaPortaisEl;
+  const el=document.createElement('div');
+  el.className='tela-portais';el.setAttribute('aria-hidden','true');
+  const mk=(k,ico,rot)=>`<span class="tela-portal" data-portal="${k}">${ico}<span class="tela-portal-rot">${escHtml(rot)}</span></span>`;
+  el.innerHTML=Object.keys(TELAS).map(k=>mk(k,TELA_ICO[k],t(TELAS[k].nome))).join('')+mk('mundo',TELA_ICO_MUNDO,t('Outro mundo'));
+  document.body.appendChild(el);
+  _telaPortaisEl=el;
+  return el;
+}
+function _telaPortaisMostrar(){
+  const atual=_telaAtual();
+  if(!atual||!_flAtiva)return;
+  const el=_telaPortaisMontar();
+  el.querySelectorAll('.tela-portal').forEach(b=>{
+    const k=b.dataset.portal,aqui=k===atual;
+    b.classList.toggle('tela-aqui',aqui);
+    b.classList.toggle('tela-off',!aqui&&k!=='mundo'&&!_abreTelaPode(k));
+    b.classList.remove('tela-mira');
+    // Sem aviso falado: a trilha é aria-hidden; o título só serve ao mouse.
+    b.title=aqui?t('Você está aqui'):'';
+  });
+  _telaPortalMira=null;
+  clearTimeout(el._sai);
+  el.classList.add('vis');void el.offsetWidth;el.classList.add('on');
+}
+// O portal mais perto do ponteiro (até 22px de distância do círculo) acende, e
+// a janela encolhe como quem está sendo puxada.
+function _telaPortaisMirar(win,x,y){
+  const el=_telaPortaisEl;
+  if(!el||!el.classList.contains('on'))return;
+  let alvo=null,melhor=22;
+  el.querySelectorAll('.tela-portal').forEach(b=>{
+    if(b.classList.contains('tela-aqui')||b.classList.contains('tela-off'))return;
+    const r=b.getBoundingClientRect();
+    const d=Math.hypot(Math.max(r.left-x,0,x-r.right),Math.max(r.top-y,0,y-r.bottom));
+    if(d<melhor){melhor=d;alvo=b.dataset.portal}
+  });
+  if(alvo===_telaPortalMira)return;
+  _telaPortalMira=alvo;
+  el.querySelectorAll('.tela-portal').forEach(b=>b.classList.toggle('tela-mira',b.dataset.portal===alvo));
+  win.classList.toggle('fl-puxada',!!alvo);
+  if(alvo)_jzTato(6);
+}
+// Soltou: some a trilha e devolve qual portal estava aceso (ou null).
+function _telaPortaisFim(win){
+  const alvo=_telaPortalMira,el=_telaPortaisEl;
+  _telaPortalMira=null;
+  win.classList.remove('fl-puxada');
+  if(el&&el.classList.contains('on')){
+    el.classList.remove('on');
+    el._sai=setTimeout(()=>el.classList.remove('vis'),300);
+  }
+  return alvo;
+}
+function _telaPortalSoltou(portal,id){
+  const el=_telaPortaisEl,btn=el&&el.querySelector('.tela-portal[data-portal="'+portal+'"]');
+  if(portal==='mundo'){_telaLevarUmAbrir(id,btn);return}
+  _telaFaiscas(btn,['#eab308','#fff']);
+  _jzTato([8,30,12]);
+  if(_telaTrocar(portal))_telaChegada(_telaBotaoDe(portal));
+}
+
+// ── "Segure pra levar" de uma nota só ───────────────────────────────────────
+// Mesmo balão âmbar do menu, ao lado do planeta. O caminho é o de sempre
+// (_flLevarCards): a nota vira uma pasta, empacota e o céu dos Mundos abre.
+let _telaLevarUmEl=null,_telaLevarUmId=null;
+function _telaLevarUmAbrir(id,ancora){
+  const card=document.getElementById(id);
+  if(!card)return;
+  _telaLevarUmId=id;
+  let el=_telaLevarUmEl;
+  if(!el){
+    el=document.createElement('div');
+    el.className='tela-bal tela-bal-lado';el.hidden=true;el.setAttribute('role','dialog');
+    el.innerHTML=`<div class="tela-bal-t">${escHtml(t('Levar esta nota'))}</div>
+      <div class="tela-bal-levar"><p>${escHtml(t('A nota vira uma pasta nova, sai deste mundo e viaja. Lá, o Vox pergunta onde guardar.'))}</p>
+      <button type="button" class="segura-btn" data-segura="levarUma"><span class="segura-fill"></span><span class="segura-txt">${escHtml(t('Segure pra levar'))}</span></button>
+      <button type="button" class="tela-bal-nao">${escHtml(t('Agora não'))}</button></div>`;
+    document.body.appendChild(el);
+    _telaLevarUmEl=el;
+    el.querySelector('.tela-bal-nao').addEventListener('click',()=>_telaLevarUmFechar());
+    el.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();_telaLevarUmFechar()}});
+    document.addEventListener('pointerdown',e=>{
+      if(el.hidden||(e.target.closest&&e.target.closest('.tela-bal-lado')))return;
+      _telaLevarUmFechar();
+    },true);
+  }
+  el.hidden=false;el.classList.remove('in','out');
+  const w=Math.min(264,window.innerWidth-16);
+  el.style.width=w+'px';
+  // Ao lado do planeta (a trilha fica na borda direita, então abre pra esquerda).
+  const r=ancora?ancora.getBoundingClientRect():{left:window.innerWidth-60,top:window.innerHeight/2,height:46};
+  const h=el.offsetHeight;
+  el.style.left=Math.max(8,r.left-w-18)+'px';
+  el.style.top=Math.max(8,Math.min(window.innerHeight-h-8,r.top+r.height/2-h/2))+'px';
+  if(!_voxReduzMov()){void el.offsetWidth;el.classList.add('in')}
+  el.querySelector('.segura-btn').focus({preventScroll:true});
+}
+function _telaLevarUmFechar(){
+  const el=_telaLevarUmEl;
+  if(!el||el.hidden)return;
+  el.hidden=true;el.classList.remove('in','out');
+  _telaLevarUmId=null;
+}
+function _telaLevarUma(){
+  const id=_telaLevarUmId;
+  _telaLevarUmFechar();
+  const card=id&&document.getElementById(id);
+  if(!card){toast(t('Abra um card flutuante primeiro.'));return}
+  return _flLevarCards([id],card.dataset.sessionName||t('Nota'));
 }
 // Nomes dos dias vêm do locale (1/set/2024 foi um domingo) — nada de array
 // traduzido à mão que sai do ar quando a pessoa troca o idioma.
@@ -27594,7 +27771,7 @@ function _apagarTudoLixeira(){
     toast(t('↩ Notas de volta'));
   });
 }
-const SEGURA_ACOES={lixeiraTudo:_apagarTudoLixeira,zerar:()=>factoryResetConfirm(),levarMesa:()=>_telaLevarMesa()};
+const SEGURA_ACOES={lixeiraTudo:_apagarTudoLixeira,zerar:()=>factoryResetConfirm(),levarMesa:()=>_telaLevarMesa(),levarUma:()=>_telaLevarUma()};
 // Segure pra confirmar: o enchimento do botão é o relógio (1,2 s). Soltar
 // antes desfaz e explica; teclado vale (Enter ou Espaço segurados).
 (function(){
