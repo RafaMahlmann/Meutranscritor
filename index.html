@@ -7144,6 +7144,15 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .gx-jausava:hover{color:var(--gx-txt)}
 @media (max-width:640px){.det.d1a{max-height:50vh}}
 .abre-pergunta .abre-perfil-linha.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.of-modal{max-width:560px}
+.of-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:14px}
+.of-az{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:11px 12px;min-height:56px;border:1px solid var(--border);border-radius:12px;background:var(--bg-card);color:var(--text);font-family:var(--font);cursor:pointer;transition:border-color var(--transition),background var(--transition)}
+.of-az b{font-size:14px}
+.of-az small{font-size:11.5px;color:var(--text3)}
+.of-az:hover{border-color:var(--accent)}
+.of-az.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft,var(--bg-input))}
+.of-az:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.of-pe{display:flex;justify-content:center;margin-top:14px}
 .abre-pergunta-pe{font-size:12px;color:var(--text3);text-align:center;margin-top:10px}
 @media (prefers-reduced-motion:reduce){.det .d1a-jeito,.det .d1a-jeito.mola{transition:none;animation:none}}
 /* MUNDO VAZIO = MUNDO APAGADO.
@@ -8317,7 +8326,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
     <div class="smode-bar">
       <div class="smode-cap" id="smodeCap" data-multi="0">
         <div class="smode-rail" id="smodeRail" role="radiogroup" aria-label="Tipo de sessão">
-          <button class="smode-btn" data-m="consulta" role="radio" aria-checked="false" onclick="setMode('consulta')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg></span> <span data-i18n>Consulta</span></button>
+          <button class="smode-btn" data-m="consulta" role="radio" aria-checked="false" onclick="setMode('consulta',false,true)"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg></span> <span data-i18n>Consulta</span></button>
           <button class="smode-btn" data-m="reuniao" role="radio" aria-checked="false" onclick="setMode('reuniao')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n>Reunião</span></button>
           <button class="smode-btn" data-m="entrevista" role="radio" aria-checked="false" onclick="setMode('entrevista')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg></span> <span data-i18n>Entrevista</span></button>
           <button class="smode-btn active" data-m="livre" role="radio" aria-checked="true" onclick="setMode('livre')"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span> <span data-i18n>Livre</span></button>
@@ -9675,7 +9684,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.16';
+const VOX_VERSION='2026.10.15.17';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9698,7 +9707,9 @@ const VOX_MUNDO_KEYS=new Set(['vox_history','vox_folders','vox_folders_expanded'
   // continua a mesma de sempre, então ninguém perde o jeito de ver que tinha.
   'vox_view','vox_modo','vox_ultima_tela','vox_abre_em','vox_perfil','vox_abre_avisos',
   // Plano 30: as abas do Modo Conversa (rascunho por card) são de cada mundo.
-  'vox_cchat_abas']);
+  'vox_cchat_abas',
+  // Mundos sob medida (15/10/2026): ofício, seu nome, pessoas, palavras do trabalho.
+  'vox_painel']);
 const VOX_MUNDO_RAIZ='m1';
 // Acesso CRU ao localStorage — sem o desvio por World. Usado pelo cadastro de
 // Worlds (que é global) e por quem precisa varrer as chaves de verdade.
@@ -10135,10 +10146,11 @@ function _mundoApagarDeVez(id){
     _mundosSalvar(_mundosLista().filter(m=>m.id!==id));
   }).catch(()=>{});
 }
-function _mundoCriar(nome,desc){
+function _mundoCriar(nome,desc,extra){
   const l=_mundosLista();
   const id='m'+Date.now().toString(36);
-  l.push({id,nome:(nome||'').trim()||t('Novo mundo'),desc:(desc||'').trim(),criado:Date.now()});
+  // extra: {sid,tipo} quando o mundo nasce de uma sugestão (Consultas, Entrevistas…).
+  l.push(Object.assign({id,nome:(nome||'').trim()||t('Novo mundo'),desc:(desc||'').trim(),criado:Date.now()},extra||{}));
   _mundosSalvar(l);
   _mundoTrocar(id);
 }
@@ -10998,6 +11010,31 @@ let I18N_EN={
 "Abra a lista de notas de uma pasta pra eu mostrar o gesto.":"Open a folder's note list and I'll show you the gesture.",
 "Pronto. A mãozinha volta na próxima vez que você abrir uma lista de notas no Fluxograma, na Órbita ou no Calendário.":"Done. The little hand comes back the next time you open a note list in the Flowchart, Orbit or Calendar.",
 "Rever o gesto de arrastar":"Replay the drag gesture",
+"Que atendimento você faz?":"What kind of appointments do you run?",
+"O Vox passa a chamar as vozes do jeito do seu trabalho e acerta melhor quem é quem. Dá pra trocar depois.":"Vox will name the voices the way your work does and get who is who right more often. You can change it later.",
+"Pronto: na Consulta, as vozes agora saem como {a} e {b}.":"Done: in Appointment mode, voices now come out as {a} and {b}.",
+"Acompanhante":"Companion",
+"Saúde":"Health",
+"Psicologia":"Psychology",
+"Nutrição":"Nutrition",
+"Jurídico":"Legal",
+"Contábil":"Accounting",
+"Coaching e mentoria":"Coaching and mentoring",
+"Consultoria":"Consulting",
+"Corretagem":"Brokerage",
+"Outro":"Other",
+"Psicólogo(a)":"Psychologist",
+"Nutricionista":"Nutritionist",
+"Advogado(a)":"Lawyer",
+"Contador(a)":"Accountant",
+"Mentor(a)":"Mentor",
+"Professor(a)":"Teacher",
+"Aluno(a)":"Student",
+"Consultor(a)":"Consultant",
+"Corretor(a)":"Broker",
+"Atendido(a)":"Client",
+"Cliente":"Client",
+
 "Uma gravação foi interrompida no meio. Ela ficou guardada e vai virar texto com as vozes separadas.":"A recording was interrupted midway. It was saved and will become text with the voices separated.",
 "Esta é a {n}ª diarização do mês: no plano grátis, as vozes saem nos primeiros 20 minutos e o resto vira texto, noutra nota. O Pro separa a gravação inteira.":"This is diarization #{n} this month: on the free plan, voices are separated for the first 20 minutes and the rest becomes text in another note. Pro separates the whole recording.",
 "No plano grátis, 1 diarização por mês vai inteira. Desta gravação, separo as vozes dos primeiros 20 minutos; o resto vira texto comum, noutra nota.":"On the free plan, 1 diarization per month goes in full. For this recording, I'll separate the voices of the first 20 minutes; the rest becomes plain text in another note.",
@@ -12337,8 +12374,51 @@ let cfg={
   assist:true
 };
 
+// ── Ofício: consulta no sentido amplo (Mundos sob medida, 15/10/2026) ──────────
+// Antes o modo Consulta só sabia ser de saúde (Profissional/Paciente e um prompt de
+// "profissional de saúde"). Agora quem atende diz o ofício UMA vez e os papéis, a
+// descrição que ajuda a IA a acertar quem é quem e as palavras do trabalho seguem.
+// Sem ofício escolhido, fica como sempre foi: Profissional / Paciente.
+const OFICIOS=[
+  {id:'saude',  nome:'Saúde',      eu:'Profissional', outro:'Paciente', dEu:'o(a) profissional de saúde (faz perguntas clínicas, examina, orienta o tratamento)', dOutro:'o(a) paciente (relata sintomas, responde)', termos:['anamnese','prescrição','exame','retorno']},
+  {id:'psico',  nome:'Psicologia', eu:'Psicólogo(a)', outro:'Paciente', dEu:'o(a) psicólogo(a) ou terapeuta (escuta, faz perguntas abertas, devolve o que ouviu)', dOutro:'o(a) paciente (fala de sentimentos e situações da vida)', termos:['sessão','ansiedade','TCC','acolhimento']},
+  {id:'nutri',  nome:'Nutrição',   eu:'Nutricionista', outro:'Paciente', dEu:'o(a) nutricionista (pergunta sobre hábitos e alimentação, orienta o plano)', dOutro:'o(a) paciente (conta a rotina e o que come)', termos:['plano alimentar','proteína','IMC','suplemento']},
+  {id:'juridico',nome:'Jurídico',  eu:'Advogado(a)',  outro:'Cliente',  dEu:'o(a) advogado(a) (pergunta os fatos, explica direitos, prazos e próximos passos)', dOutro:'o(a) cliente (conta o caso)', termos:['petição','liminar','audiência','prazo','procuração']},
+  {id:'contabil',nome:'Contábil',  eu:'Contador(a)',  outro:'Cliente',  dEu:'o(a) contador(a) (pergunta sobre notas, impostos e documentos)', dOutro:'o(a) cliente (fala do negócio e das contas)', termos:['nota fiscal','Simples Nacional','pró-labore','IRPF','DAS']},
+  {id:'coach',  nome:'Coaching e mentoria', eu:'Mentor(a)', outro:'Cliente', dEu:'o(a) coach ou mentor(a) (faz perguntas, propõe metas e combinados)', dOutro:'o(a) cliente (fala de objetivos e obstáculos)', termos:['meta','plano de ação','combinado']},
+  {id:'aula',   nome:'Aulas',      eu:'Professor(a)', outro:'Aluno(a)', dEu:'o(a) professor(a) (explica, corrige, propõe exercícios)', dOutro:'o(a) aluno(a) (pergunta, tenta responder)', termos:['exercício','prova','revisão']},
+  {id:'consultoria',nome:'Consultoria', eu:'Consultor(a)', outro:'Cliente', dEu:'o(a) consultor(a) (diagnostica, pergunta, recomenda)', dOutro:'o(a) cliente (descreve a situação da empresa)', termos:['diagnóstico','proposta','escopo']},
+  {id:'corretagem',nome:'Corretagem', eu:'Corretor(a)', outro:'Cliente', dEu:'o(a) corretor(a) (apresenta opções, explica condições, negocia)', dOutro:'o(a) cliente (diz o que procura e o orçamento)', termos:['proposta','financiamento','vistoria','comissão']},
+  {id:'outro',  nome:'Outro',      eu:'Profissional', outro:'Atendido(a)', dEu:'o(a) profissional que conduz o atendimento (faz perguntas, orienta, explica)', dOutro:'a pessoa atendida (relata a situação, responde)', termos:[]}
+];
+function _painelLer(){try{return JSON.parse(localStorage.getItem('vox_painel')||'null')||{}}catch(e){return {}}}
+// Cascata: o que este mundo definiu vale; o que não definiu vem do Meu espaço (que
+// funciona como "quem eu sou"); o resto é o padrão do ofício.
+function _painelCfg(){
+  let raiz={};
+  if(_mundoAtivo!==VOX_MUNDO_RAIZ){try{raiz=JSON.parse(VOX_LS.get('vox_painel')||'null')||{}}catch(e){}}
+  return Object.assign({},raiz,_painelLer());
+}
+function _painelGravar(patch){
+  const p=Object.assign(_painelLer(),patch);
+  try{localStorage.setItem('vox_painel',JSON.stringify(p))}catch(e){}
+  return p;
+}
+function _oficioAtual(){const id=_painelCfg().oficio;return OFICIOS.find(o=>o.id===id)||null}
+function _consultaPapeis(){
+  const o=_oficioAtual(),pc=_painelCfg();
+  const eu=(pc.eu||'').trim()||(o?t(o.eu):t('Profissional'));
+  return [eu,o?t(o.outro):t('Paciente')];
+}
+function _consultaPrompt(){
+  const o=_oficioAtual(),[a,b]=_consultaPapeis();
+  const da=o?o.dEu:'o(a) profissional que conduz o atendimento (faz perguntas, orienta, explica)';
+  const db=o?o.dOutro:'a pessoa atendida (relata a situação, responde)';
+  const j=JSON.stringify({A:a,B:b});
+  return 'Identifique qual locutor é '+da+' e qual é '+db+'. Se houver uma terceira pessoa (acompanhante, familiar), chame de '+JSON.stringify(t('Acompanhante'))+'. Responda só com JSON: '+j+' ou vice-versa conforme o texto.';
+}
 const SESSION_MODES={
-  consulta:{label:t('Consulta'),speakers:[t('Profissional'),t('Paciente')],prompt:'Identifique qual locutor é o PROFISSIONAL DE SAÚDE (usa termos clínicos, faz perguntas, orienta) e qual é o PACIENTE (relata sintomas, responde). Responda só com JSON: {"A":"Profissional","B":"Paciente"} ou vice-versa conforme o texto.'},
+  consulta:{label:t('Consulta'),get speakers(){return _consultaPapeis()},get prompt(){return _consultaPrompt()}},
   reuniao:{label:t('Reunião'),speakers:[t('Facilitador'),t('Participante')],prompt:'Identifique os locutores. Sugira nomes baseados no contexto (ex: líder da reunião, participante). Responda só com JSON: {"A":"Nome","B":"Nome"}.'},
   entrevista:{label:t('Entrevista'),speakers:[t('Entrevistador'),t('Entrevistado')],prompt:'Identifique qual locutor é o ENTREVISTADOR (faz perguntas, conduz) e qual é o ENTREVISTADO (responde, narra). Responda só com JSON: {"A":"Entrevistador","B":"Entrevistado"} ou vice-versa.'},
   livre:{label:t('Livre'),speakers:[t('Locutor 1'),t('Locutor 2')],prompt:'Identifique os locutores e sugira nomes pelo contexto. Responda só com JSON: {"A":"Nome","B":"Nome"}.'}
@@ -25601,7 +25681,38 @@ let bannerDismissed=false;
 // abrindo=true: o boot devolvendo o modo que este mundo usou por último
 // (plano 27). Sem o "afundar" do trilho e sem o aviso de várias vozes — a
 // pessoa não clicou em nada, só abriu o app onde tinha deixado.
-function setMode(m,abrindo){
+// Uma vez por mundo, no primeiro toque em Consulta (e sempre que a pessoa pedir).
+function _oficioTalvezPerguntar(){
+  const pc=_painelCfg();
+  if(pc.oficio||_painelLer().perguntado||isRec)return;
+  _oficioPerguntar();
+}
+function _oficioPerguntar(depois){
+  _painelGravar({perguntado:true});
+  const atual=_painelCfg().oficio||'';
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal of-modal" role="dialog" aria-modal="true" aria-labelledby="ofTit">
+    <div class="tx-title" id="ofTit">${escHtml(t('Que atendimento você faz?'))}</div>
+    <div class="tx-sub">${escHtml(t('O Vox passa a chamar as vozes do jeito do seu trabalho e acerta melhor quem é quem. Dá pra trocar depois.'))}</div>
+    <div class="of-grade">${OFICIOS.map(o=>`<button type="button" class="of-az${o.id===atual?' on':''}" data-of="${escHtml(o.id)}" onclick="_oficioEscolher('${escJs(o.id)}')"><b>${escHtml(t(o.nome))}</b><small>${escHtml(t(o.eu))} · ${escHtml(t(o.outro))}</small></button>`).join('')}</div>
+    <div class="of-pe"><button type="button" class="conv-s" onclick="closeTxOverlay()">${escHtml(t('Agora não'))}</button></div>
+  </div>`;
+  ov.classList.add('on');
+  _oficioDepois=typeof depois==='function'?depois:null;
+}
+let _oficioDepois=null;
+function _oficioEscolher(id){
+  const o=OFICIOS.find(x=>x.id===id);if(!o)return;
+  _painelGravar({oficio:id,perguntado:true});
+  // O tipo e o ofício também ficam no registro do mundo: a Galáxia lê de todos.
+  try{const l=_mundosLista(),m=l.find(x=>x.id===_mundoAtivo);if(m){m.tipo=m.tipo||'consulta';m.oficio=id;_mundosSalvar(l)}}catch(e){}
+  closeTxOverlay();
+  const [a,b]=_consultaPapeis();
+  toast(t('Pronto: na Consulta, as vozes agora saem como {a} e {b}.').replace('{a}',a).replace('{b}',b));
+  if(_oficioDepois){const f=_oficioDepois;_oficioDepois=null;f()}
+}
+function setMode(m,abrindo,porToque){
+  if(m==='consulta'&&porToque)setTimeout(_oficioTalvezPerguntar,260);
   const antesMulti=DIAR_MODES.includes(sessionMode);
   sessionMode=m;
   try{localStorage.setItem('vox_modo',m)}catch(e){}
@@ -42067,7 +42178,8 @@ function adotarSugestao(sid){
   _sugDispensar(sid);
   var pf=ABRE_PERFIL_DA_SUGESTAO[sid];
   if(pf){try{VOX_LS.set('vox_perfil_novo',pf)}catch(e){}}
-  _mundoCriar(t(g.nome),t(g.desc));   /* ja entra no mundo novo */
+  var tipo={consultas:'consulta',entrevistas:'entrevista'}[sid];
+  _mundoCriar(t(g.nome),t(g.desc),tipo?{sid:sid,tipo:tipo}:{sid:sid});   /* ja entra no mundo novo */
 }
 function dispensarSugestao(sid){
   var g=_sugAchar(sid); if(!g)return;
