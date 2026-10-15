@@ -7305,6 +7305,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   transition:color .15s linear,border-color .15s linear}
 .dchip:hover{color:var(--gx-txt);border-color:rgba(255,255,255,.3)}
 .dchip:active{transform:scale(.96)}
+.dchip.on{color:var(--gx-txt);border-color:#12c78d;box-shadow:inset 0 0 0 1px #12c78d}
 /* "nao vou usar este": presente, mas sem competir com o botao principal */
 .dfora{display:block;width:100%;margin-top:8px;padding:6px 0;border:none;background:none;
   color:var(--gx-txt3);font-size:12px;font-weight:600;cursor:pointer}
@@ -7425,7 +7426,9 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* Mundo na lixeira: continua no ceu, apagado. A galaxia E a lixeira dos
    mundos -- nao existe outra tela onde ele pudesse esperar. */
 .pw.morto .pin{opacity:.34;filter:saturate(.2)}
-.pw.morto .pnome{opacity:.72;text-decoration:line-through;text-decoration-thickness:1px}
+.pw.morto .pnome{opacity:.85}
+.pw.morto .pn-t{text-decoration:line-through;text-decoration-thickness:1px;opacity:.8}
+.pnome small.plix{color:#ffb4a8;font-weight:600}
 .pw.morto .aqui,.pw.morto .anel{display:none}
 .det .dk{font-size:9.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--gx-txt3);margin-bottom:5px}
 .det .dn{font-size:19px;font-weight:700;letter-spacing:-.45px;color:var(--gx-txt);line-height:1.2}
@@ -9820,7 +9823,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.23';
+const VOX_VERSION='2026.10.15.24';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11149,6 +11152,7 @@ let I18N_EN={
 "Pronto. A mãozinha volta na próxima vez que você abrir uma lista de notas no Fluxograma, na Órbita ou no Calendário.":"Done. The little hand comes back the next time you open a note list in the Flowchart, Orbit or Calendar.",
 "Rever o gesto de arrastar":"Replay the drag gesture",
 "Que atendimento você faz?":"What kind of appointments do you run?",
+"na lixeira · some em {n} dias":"in the trash · gone in {n} days",
 "Apagar de vez agora":"Delete forever now",
 "Excluir este mundo":"Delete this world",
 "Isso não tem volta: as notas, as pastas e as fotos deste mundo somem deste aparelho.":"This can't be undone: this world's notes, folders and photos disappear from this device.",
@@ -42782,7 +42786,9 @@ function montar(){
       +'<span class="nevoa"></span>'
       +(w.id===ativoId?'<span class="aqui"></span>':'')
       +'<span class="anel"></span>'
-      +'<span class="pnome">'+esc(w.fantasma?t(w.nome):w.nome)+(w.sug?'<small>'+esc(t('sugestão'))+'</small>':'')+'</span>'
+      +'<span class="pnome"><span class="pn-t">'+esc(w.fantasma?t(w.nome):w.nome)+'</span>'+(w.sug?'<small>'+esc(t('sugestão'))+'</small>':'')
+      /* No ceu, o planeta na lixeira diz o que vai acontecer com ele. */
+      +(w.del?'<small class="plix">'+esc(t('na lixeira · some em {n} dias').replace('{n}',w.dias))+'</small>':'')+'</span>'
       +'</button></div></div>';
   }
   orbe.innerHTML=h;
@@ -43355,22 +43361,30 @@ function restaurarMundo(id){
    campos acima -- nao cria nada sozinho, quem cria e o botao de sempre. */
 function _bancadaHtml(){
   var noCeu={};sugestoes.forEach(function(x){noCeu[x.sid]=1});
-  var fora=_sugDispensadas();
-  var jaTem={};worlds.forEach(function(x){if(!x.sug)jaTem[(x.nome||'').toLowerCase()]=1});
-  var lista=VOX_SUGESTOES.filter(function(g){
-    return !noCeu[g.sid]&&fora.indexOf(g.sid)<0&&!jaTem[t(g.nome).toLowerCase()];
-  });
+  /* Todos os modelos ficam disponiveis aqui, mesmo que ja exista um mundo
+     com aquele nome (ou na lixeira): da pra ter "Consultas 2". So sai daqui
+     o que ja esta no ceu como sugestao. */
+  var lista=VOX_SUGESTOES.filter(function(g){return !noCeu[g.sid];});
   if(!lista.length)return '';
   var h='<div class="dbanc"><div class="dbanc-k">'+t('Ou comece de um destes')+'</div>';
   lista.forEach(function(g){
-    h+='<button type="button" class="dchip" onclick="usarSugestao(\''+esc(g.sid)+'\')">'+esc(t(g.nome))+'</button>';
+    h+='<button type="button" class="dchip" data-sid="'+esc(g.sid)+'" onclick="usarSugestao(\''+esc(g.sid)+'\')">'+esc(t(g.nome))+'</button>';
   });
   return h+'</div>';
 }
+var _bancadaSid=null;   /* modelo escolhido na bancada: vai junto ao criar */
+function _nomeLivre(base){
+  var usados={};_mundosLista().forEach(function(m){usados[(m.nome||'').toLowerCase()]=1});
+  if(!usados[base.toLowerCase()])return base;
+  for(var i=2;i<100;i++){var c=base+' '+i;if(!usados[c.toLowerCase()])return c;}
+  return base;
+}
 function usarSugestao(sid){
   var g=_sugAchar(sid); if(!g)return;
+  _bancadaSid=sid;
+  document.querySelectorAll('.dbanc .dchip').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-sid')===sid)});
   var n=document.getElementById('inNome'), d=document.getElementById('inDesc');
-  if(n){n.value=t(g.nome);}
+  if(n){n.value=_nomeLivre(t(g.nome));}
   if(d){d.value=t(g.desc);}
   checaNome();
   if(n&&!mob)n.focus();
@@ -43435,9 +43449,18 @@ function criar(){
      pergunta vem numa folha lá (é o único caso fora do céu). */
   var m1=_1aLer();
   if(m1&&m1.etapa==='ceu'){m1.etapa='mural';m1.mundo=null;m1.sug=null;m1.perfil=null;_1aGravar(m1);}
+  /* Veio de um modelo da bancada: o mundo nasce com o jeito dele (perfil, tipo). */
+  var sid=_bancadaSid,extra=null;
+  if(sid){
+    var tipo={consultas:'consulta',entrevistas:'entrevista',oficina:'oficina'}[sid];
+    extra=tipo?{sid:sid,tipo:tipo}:{sid:sid};
+    var pf=ABRE_PERFIL_DA_SUGESTAO[sid];
+    if(pf){try{VOX_LS.set('vox_perfil_novo',pf)}catch(e){}}
+    if(sid==='oficina'){try{VOX_LS.set('vox_oficina_nova','1')}catch(e){}}
+  }
   /* _mundoCriar grava no cadastro e já recarrega dentro do World novo —
      que nasce vazio, porque as chaves dele ainda não existem. */
-  _mundoCriar(nome,d);
+  _mundoCriar(nome,d,extra);
 }
 /* ── PRIMEIRA ENTRADA, no céu (lote 13) ── */
 function _1aNoCeu(){var m=_1aLer();return !!(m&&m.etapa==='ceu');}
