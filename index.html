@@ -1190,6 +1190,8 @@ body.doc-mode .card.focus-active:not(.hdr-folded) .dv-chips{display:none}
 .dv-pop-reset{background:none;border:0;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;padding:4px 2px;border-radius:6px}
 .dv-pop-reset:hover{color:var(--accent)}
 .dv-pop-dica{font-size:11.5px;line-height:1.35;color:var(--text3)}
+/* Menu de exportar flutuante (ver _menuFlutAbrir): fixo na tela, opaco, com rolagem por dentro. */
+.lens-panel.menu-flut{position:fixed;z-index:80;margin:0;padding:6px;background:var(--bg-card);border:1px solid var(--border2);border-radius:14px;box-shadow:0 14px 44px rgba(0,0,0,.28);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 /* Leitura: o texto já formatado, na fonte e no tamanho escolhidos. O editor e
    o textarea some enquanto ela está de pé (classe dv-lendo no card). */
 body.doc-mode{--dv-fonte:var(--font);--dv-corpo:17px}
@@ -9600,7 +9602,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.10';
+const VOX_VERSION='2026.10.15.11';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -14711,6 +14713,7 @@ function setViewMode(m){
 // OverType). O antigo Modo Foco simples (ribbon) foi removido por ser muito
 // parecido com este e redundante.
 function applyView(){
+  _menuFlutFecha(); // menu de exportar flutuante não atravessa a troca de modo
   const cl=document.getElementById('cardsList');
   const isFocusLike=viewMode==='doc';
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
@@ -35542,6 +35545,7 @@ function openDiarExport(id){
       `<button class="tx-btn ghost" onclick="diarExportRun('${id}','txt')"><span class="svgi">${ICO.download}</span> ${t('Baixar TXT')}</button>`+
     `</div>`;
   p.classList.add('on');
+  _menuFlutTalvez(p,id);
 }
 function diarExportRun(id,dest){
   const card=document.getElementById(id);if(!card)return;
@@ -37485,8 +37489,88 @@ function toggleExportMenu(id){
     `<button class="lens-opt" onclick="exportCard('${id}','md');closeExportMenu('${id}')"><span class="lens-ico">${ICO.file}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Baixar Markdown')}</span><span class="lens-opt-d">${t('Para Obsidian, Notion, etc.')}</span></span></button>`+
     `<button class="lens-opt" onclick="exportCard('${id}','html');closeExportMenu('${id}')"><span class="lens-ico">${ICO.html}</span><span class="lens-opt-main"><span class="lens-opt-lbl">${t('Baixar HTML')}</span><span class="lens-opt-d">${t('Página formatada')}</span></span></button>`;
   p.classList.add('on');
+  _menuFlutTalvez(p,id);
 }
 function closeExportMenu(id){const p=document.getElementById('exp-menu-'+id);if(p){p.classList.remove('on');p.innerHTML=''}}
+// ── Menu de exportar flutuante (Mural e Documento) ──────────────────────────
+// O menu é um painel DENTRO do card. No Mural isso esticava um cartão pequeno até
+// ~760px (e o fundo dele ia parar atrás da barra de baixo); no Documento com o
+// cabeçalho recolhido (o padrão) o painel ficava escondido e o botão Exportar da
+// barra parecia morto. Enquanto aberto, o painel sai do card e vai pro <body>,
+// fixo na tela, junto do botão que o abriu, com altura limitada e rolagem por
+// dentro. Fechar (por qualquer caminho que tire o .on) devolve o painel ao card.
+let _menuFlutSt=null;
+function _menuFlutTalvez(p,id){
+  if(viewMode==='masonry'||viewMode==='doc')_menuFlutAbrir(p,id);
+}
+function _menuFlutAncora(id){
+  const visivel=e=>{if(!e)return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0};
+  const card=document.getElementById(id);
+  const ev=window.event,alvo=ev&&ev.target&&ev.target.closest?ev.target.closest('button'):null;
+  if(visivel(alvo)&&!alvo.closest('.lens-panel,.ca-menu'))return alvo; // item de menu já fechado não serve de âncora
+  if(viewMode==='doc'){const b=document.querySelector('#docBar button[onclick*="toggleExportMenu"]');if(visivel(b))return b}
+  const mais=card&&card.querySelector('.ca-more>button');
+  if(visivel(mais))return mais;
+  return card&&(card.querySelector('.ch')||card);
+}
+function _menuFlutAbrir(p,id){
+  _menuFlutFecha(p); // se já era este painel (reaberto com outro conteúdo, ex.: exportar conversa), só devolve ao card sem apagar
+  const ancora=_menuFlutAncora(id);
+  const orig={pai:p.parentNode,prox:p.nextSibling};
+  document.body.appendChild(p);
+  p.classList.add('menu-flut');
+  _menuFlutPos(p,ancora);
+  const obs=new MutationObserver(()=>{if(!p.classList.contains('on'))_menuFlutFecha()});
+  obs.observe(p,{attributes:true,attributeFilter:['class']});
+  _menuFlutSt={p,orig,obs,ancora,y0:scrollY};
+  document.addEventListener('pointerdown',_menuFlutFora,true);
+  document.addEventListener('keydown',_menuFlutTecla,true);
+  window.addEventListener('resize',_menuFlutFecha);
+  window.addEventListener('scroll',_menuFlutRolou,{passive:true});
+}
+// Rolar a página solta o balão da âncora: fecha (tremidinhas de até 24px não contam).
+function _menuFlutRolou(){const st=_menuFlutSt;if(st&&Math.abs(scrollY-st.y0)>24)_menuFlutFecha()}
+function _menuFlutPos(p,ancora){
+  const vw=innerWidth,vh=innerHeight;
+  const ib=document.querySelector('.ibar'),ibr=ib&&ib.getBoundingClientRect();
+  const fundo=ibr&&ibr.width>0&&ibr.top>vh*0.4?ibr.top-8:vh-8; // não passa por baixo da barra de gravar
+  const a=ancora?ancora.getBoundingClientRect():{left:vw/2,right:vw/2,top:vh/3,bottom:vh/3};
+  // largura primeiro: o texto quebra conforme ela, e a altura natural depende disso
+  const w=Math.min(292,vw-16);
+  p.style.width=w+'px';p.style.maxHeight='none';
+  const h=p.scrollHeight+2;
+  const abaixo=fundo-(a.bottom+6),acima=a.top-6-8;
+  let top,max;
+  if(h<=abaixo||abaixo>=acima){top=a.bottom+6;max=Math.max(160,abaixo)}
+  else{max=Math.max(160,acima);top=Math.max(8,a.top-6-Math.min(h,max))}
+  p.style.left=Math.max(8,Math.min(a.left,vw-w-8))+'px';
+  p.style.top=top+'px';
+  p.style.maxHeight=Math.min(max,h)+'px';
+}
+function _menuFlutFora(e){
+  const st=_menuFlutSt;if(!st)return;
+  if(e.target.closest&&(e.target.closest('.menu-flut')||(st.ancora&&st.ancora.contains(e.target))))return;
+  _menuFlutFecha();
+}
+function _menuFlutTecla(e){
+  if(e.key!=='Escape'||!_menuFlutSt)return;
+  e.preventDefault();e.stopImmediatePropagation();_menuFlutFecha();
+}
+function _menuFlutFecha(manter){
+  const st=_menuFlutSt;if(!st)return;
+  _menuFlutSt=null;
+  st.obs.disconnect();
+  document.removeEventListener('pointerdown',_menuFlutFora,true);
+  document.removeEventListener('keydown',_menuFlutTecla,true);
+  window.removeEventListener('resize',_menuFlutFecha);
+  window.removeEventListener('scroll',_menuFlutRolou);
+  const p=st.p;
+  p.classList.remove('menu-flut');p.style.cssText='';
+  if(p!==manter&&p.classList.contains('on')){p.classList.remove('on');p.innerHTML=''}
+  const pai=st.orig.pai;
+  if(pai&&pai.isConnected)pai.insertBefore(p,st.orig.prox&&st.orig.prox.parentNode===pai?st.orig.prox:null);
+  else p.remove();
+}
 // Gera o resultado de uma lente. Se a lente tem pass1, roda em DUAS passadas:
 // 1ª extrai o roteiro (fatos/tensões/elenco) com temperatura baixa; 2ª escreve
 // o texto final guiada pelo roteiro, na temperatura da lente. focus é opcional.
