@@ -706,6 +706,27 @@ header.has-speed-badge{padding-bottom:18px}
 .gbtn.on-grok{background:var(--grok-glow);color:var(--grok)}
 .gbtn.on-groq{background:var(--groq-glow);color:var(--groq)}
 .gbtn.on-diar{background:var(--diar-glow);color:var(--diar)}
+/* Botão do jeito de ver (Lista · Mural · Documento): destacado no âmbar do
+   "copiar" do card (#eab308, a única cor de identidade que o app já tem
+   fora da marca), texto e ícone nele, com uma linha fina em volta. A linha é
+   box-shadow inset e não border: o .gbtn não tem borda, e uma borda de 1px
+   deixaria este botão 2px mais alto que os vizinhos. No claro o texto usa um
+   âmbar mais fundo (#8a6200, 5,5:1 sobre o fundo claro); #eab308 puro some. */
+.gbtn#btnView{color:#8a6200;background:rgba(234,179,8,.13);box-shadow:inset 0 0 0 1px rgba(184,138,0,.65)}
+.gbtn#btnView:hover{color:#6e4e00;background:rgba(234,179,8,.24)}
+[data-theme="dark"] .gbtn#btnView{color:#eab308;background:rgba(234,179,8,.12);box-shadow:inset 0 0 0 1px rgba(234,179,8,.55)}
+[data-theme="dark"] .gbtn#btnView:hover{color:#ffd34d;background:rgba(234,179,8,.22)}
+.gbtn#btnView:active{transform:scale(.94);transition-duration:.09s}
+.gbtn#btnView:focus-visible{outline:2px solid #eab308;outline-offset:2px}
+/* O clique: o ícone do modo novo dá o soco e o rótulo novo chega rolando
+   (_viewJuice). O anel e as faíscas vêm de _jzOnda/_telaFaiscas. */
+#btnView #viewIcon.view-soco{animation:telaSoco .44s cubic-bezier(.34,1.56,.64,1)}
+#btnView #viewLabel.view-rola{animation:viewRola .34s var(--fc-curva)}
+@keyframes viewRola{from{transform:translateY(60%);opacity:0}}
+@media(prefers-reduced-motion:reduce){
+  .gbtn#btnView:active{transform:none}
+  #btnView #viewIcon.view-soco,#btnView #viewLabel.view-rola{animation:none}
+}
 /* Botão só-ícone (engrenagem das Configurações): aperta o padding lateral pra
    não virar um retângulo largo com um ícone pequeno perdido no meio. */
 .gbtn-ico{padding-left:9px;padding-right:9px}
@@ -1065,6 +1086,211 @@ body.doc-mode .card.advanced-active .adv-float-toolbar{display:flex}
   body.doc-mode .card.focus-active .ch,body.doc-mode .card.focus-active .cf{padding-left:20px;padding-right:20px}
   body.doc-mode .card.focus-active .cb{padding-left:20px;padding-right:20px}
   body.doc-mode .card.focus-active .ctags{padding-left:20px;padding-right:20px}
+}
+/* ── DOCUMENTO v2 · Aparência + papel de verdade (15/10/2026) ───────────────
+   Quatro escolhas da pessoa (Aa na barra): tamanho, largura, papel/livre e
+   tema. Viram atributos data-dv-* no <body> e variáveis no próprio card em
+   foco — o resto do app não vê nada. O tema redefine as variáveis de cor SÓ
+   dentro do card (--bg-card, --text...), então badges, painéis e botões
+   daquele papel acompanham sozinhos. O editor (OverType) lê --dv-* abaixo,
+   por isso também acompanha — inclusive o escuro, que antes ficava branco. */
+body.doc-mode{--dv-w:850px;--dv-titulo:30px}
+body.doc-mode[data-dv-larg="estreita"]{--dv-w:680px}
+body.doc-mode[data-dv-larg="larga"]{--dv-w:1040px}
+body.doc-mode[data-dv-tam="p"]{--dv-titulo:26px}
+body.doc-mode[data-dv-tam="g"]{--dv-titulo:35px}
+body.doc-mode .cards.focus-mode .card.focus-active{max-width:var(--dv-w)}
+body.doc-mode .cards.focus-mode .card.focus-active.advanced-active{max-width:none}
+body.doc-mode .card.focus-active{--dv-paper:var(--bg-card);--dv-ink:var(--text);--dv-ink2:var(--text2);--dv-ink3:var(--text3);--dv-ink4:var(--text4);--dv-acc:var(--accent);--dv-line:var(--border2)}
+body.doc-mode[data-dv-tema="claro"] .card.focus-active{--bg-card:#ffffff;--bg-input:rgba(118,118,128,0.12);--text:#1d1d1f;--text2:#48484a;--text3:#8e8e93;--text4:#aeaeb2;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);color:#1d1d1f}
+body.doc-mode[data-dv-tema="escuro"] .card.focus-active{--bg-card:#212124;--bg-input:rgba(255,255,255,0.10);--text:#f5f5f7;--text2:#cfcfd4;--text3:#9d9da4;--text4:#8a8a93;--border:rgba(255,255,255,0.11);--border2:rgba(255,255,255,0.18);color:#f5f5f7}
+body.doc-mode[data-dv-tema="sepia"] .card.focus-active{--bg-card:#f4ecd8;--bg-input:rgba(91,70,54,0.10);--text:#4b3a28;--text2:#6a5742;--text3:#8a775e;--text4:#a8977e;--border:rgba(91,70,54,0.16);--border2:rgba(91,70,54,0.26);color:#4b3a28}
+/* Livre: sem folha — só o texto, sem moldura. No tema automático o fundo
+   some e o texto assenta direto na página; num tema próprio a cor continua. */
+body.doc-mode[data-dv-pagina="livre"] .cards.focus-mode .card.focus-active{border-color:transparent;box-shadow:none;border-radius:0}
+body.doc-mode[data-dv-pagina="livre"][data-dv-tema="auto"] .cards.focus-mode .card.focus-active{background:transparent}
+body.doc-mode[data-dv-pagina="livre"] .card.focus-active .cf{background:transparent;border-radius:0}
+/* O editor lê as cores do papel (variáveis do OverType, por cima do tema
+   "solar" que ele traz de fábrica). */
+body.doc-mode .focus-ot-mount .overtype-container,
+body.doc-mode .focus-ot-mount .overtype-wrapper{
+  --bg-primary:var(--dv-paper)!important;--bg-secondary:var(--dv-paper)!important;
+  --text:var(--dv-ink)!important;--text-primary:var(--dv-ink)!important;--text-secondary:var(--dv-ink3)!important;
+  --h1:var(--dv-ink)!important;--h2:var(--dv-ink)!important;--h3:var(--dv-ink)!important;
+  --strong:var(--dv-ink)!important;--em:var(--dv-ink)!important;--del:var(--dv-ink3)!important;
+  --link:var(--dv-acc)!important;--code:var(--dv-ink)!important;--code-bg:rgba(127,127,127,0.16)!important;
+  --blockquote:var(--dv-ink3)!important;--hr:var(--dv-line)!important;
+  --syntax-marker:rgba(127,127,127,0.62)!important;--syntax:var(--dv-ink3)!important;
+  --cursor:var(--dv-acc)!important;--selection:var(--accent-glow)!important;--list-marker:var(--dv-acc)!important;
+  --raw-line:var(--dv-ink3)!important;--border:var(--dv-line)!important;--hover-bg:rgba(127,127,127,0.12)!important;
+  --primary:var(--dv-ink)!important;--placeholder:var(--dv-ink4)!important;
+  background:var(--dv-paper)!important;color:var(--dv-ink)!important}
+body.doc-mode .focus-ot-mount .overtype-toolbar{background:var(--bg-input)!important}
+body.doc-mode .focus-ot-mount .overtype-toolbar-button svg{color:var(--dv-ink3)}
+/* Cabeçalho do papel: título editável + linha de informações. Substitui a
+   etiqueta do nome e o horário que moravam na fileira de selos do card. */
+.dv-hd{display:none}
+body.doc-mode .card.focus-active .dv-hd{display:block;padding:30px 44px 2px}
+body.doc-mode .card.focus-active.advanced-active .dv-hd{display:none}
+.dv-titulo{display:block;width:100%;border:0;background:transparent;outline:none;resize:none;overflow:hidden;
+  font-family:var(--font);font-size:var(--dv-titulo,30px);line-height:1.2;font-weight:700;letter-spacing:-.012em;
+  color:var(--text);padding:0;margin:0;border-radius:6px;box-shadow:none}
+.dv-titulo::placeholder{color:var(--text4);font-weight:600}
+.dv-titulo:focus{background:transparent}
+.dv-meta{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin-top:8px;font-size:12.5px;line-height:1.4;color:var(--text3)}
+.dv-meta i{font-style:normal;opacity:.55}
+.dv-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.dv-chip{font-size:12px;line-height:1.3;color:var(--text2);background:var(--bg-input);border-radius:999px;padding:2px 10px}
+/* Fileira de selos só some quando o papel já tem cabeçalho próprio; o
+   recolher continua sendo o botão ▾ da barra (traz os selos de volta). */
+body.doc-mode .card.focus-active .ch-left .sname-badge,
+body.doc-mode .card.focus-active .ch-left .ts{display:none}
+body.doc-mode .card.focus-active.hdr-folded:not(.advanced-active) .ch{display:none}
+body.doc-mode .card.focus-active.hdr-folded .cpanel-wrap-transform{display:none!important} /* a alcinha roxa de recolher ficava solta no celular */
+/* Zona de soltar foto: uma linha fina em repouso (antes: uma caixa de 78px
+   que empurrava o texto pra baixo); vira a caixa inteira quando alguém
+   arrasta um arquivo pela janela. */
+body.doc-mode .card.focus-active .tira{position:relative;padding:4px 44px 0;min-height:26px;overflow:visible}
+body.doc-mode .card.focus-active .tira .solte{border:0;border-radius:8px;padding:2px 0;min-width:0;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;text-align:left;color:var(--text4);background:transparent}
+body.doc-mode .card.focus-active .tira .solte .svgi{display:inline-block;margin:0;font-size:13px}
+body.doc-mode.arrastando-arquivo .card.focus-active .tira .solte,
+body.doc-mode .card.focus-active .tira .solte.sobre{position:absolute;left:44px;right:44px;top:2px;height:82px;z-index:6;flex-direction:column;justify-content:center;text-align:center;
+  border:1.5px dashed var(--accent);background:var(--bg-card);color:var(--accent2);font-size:12px;gap:4px;box-shadow:0 6px 22px rgba(0,0,0,.12)}
+body.doc-mode.arrastando-arquivo .card.focus-active .tira .solte .svgi{font-size:19px}
+/* Lembrete/convite de cópia de segurança empurravam o papel ~120px pra baixo
+   enquanto a pessoa escreve. Voltam quando ela sai do Documento. */
+body.doc-mode #voxLembrete,body.doc-mode #voxConvite,body.doc-mode #voxGuardada{display:none!important}
+@media(max-width:900px){
+  body.doc-mode .card.focus-active .dv-hd{padding:22px 20px 2px}
+  body.doc-mode .card.focus-active .tira{padding-left:20px;padding-right:20px}
+  body.doc-mode.arrastando-arquivo .card.focus-active .tira .solte,body.doc-mode .card.focus-active .tira .solte.sobre{left:20px;right:20px}
+}
+/* Aparência (Aa): mora na barra; abre um balão sem sair do papel. */
+.doc-bar{position:relative}
+body.doc-mode .doc-bar{position:sticky;top:70px;z-index:30}
+body.doc-mode .card.focus-active{scroll-margin-top:140px}
+.dv-titulo:empty::before{content:attr(data-ph);color:var(--text4);font-weight:600;pointer-events:none}
+body.doc-mode .card.focus-active:not(.hdr-folded) .dv-chips{display:none}
+.dv-aa{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:14px;letter-spacing:-.02em}
+.dv-pop{position:absolute;z-index:60;top:calc(100% + 6px);left:0;width:310px;max-width:calc(100vw - 24px);background:var(--bg-card);border:1px solid var(--border2);border-radius:14px;box-shadow:0 14px 44px rgba(0,0,0,.2);padding:12px 14px 10px;color:var(--text)}
+.dv-pop[hidden]{display:none}
+.dv-pop-row{display:flex;flex-direction:column;gap:6px;margin-bottom:11px}
+.dv-pop-lbl{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.dv-seg{display:flex;gap:2px;background:var(--bg-input);border-radius:9px;padding:2px}
+.dv-seg button{flex:1;background:none;border:none;border-radius:7px;padding:6px 4px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--text2);cursor:pointer;transition:background .15s,color .15s}
+.dv-seg button:hover{color:var(--text)}
+.dv-seg button[aria-pressed="true"]{background:var(--bg-card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.dv-temas{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dv-tema{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--text2)}
+.dv-tema-amostra{width:100%;height:34px;border-radius:9px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;font-size:15px;transition:border-color .15s,transform .15s}
+.dv-tema:hover .dv-tema-amostra{transform:translateY(-1px)}
+.dv-tema[aria-pressed="true"] .dv-tema-amostra{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow)}
+.dv-tema[aria-pressed="true"]{color:var(--text)}
+.dv-pop-rodape{display:flex;justify-content:flex-end;margin-top:-2px}
+.dv-pop-reset{background:none;border:0;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;padding:4px 2px;border-radius:6px}
+.dv-pop-reset:hover{color:var(--accent)}
+.dv-pop-dica{font-size:11.5px;line-height:1.35;color:var(--text3)}
+/* Leitura: o texto já formatado, na fonte e no tamanho escolhidos. O editor e
+   o textarea some enquanto ela está de pé (classe dv-lendo no card). */
+body.doc-mode{--dv-fonte:var(--font);--dv-corpo:17px}
+body.doc-mode[data-dv-fonte="serif"]{--dv-fonte:Georgia,'Iowan Old Style','Palatino Linotype','Times New Roman',serif}
+body.doc-mode[data-dv-fonte="mono"]{--dv-fonte:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+body.doc-mode[data-dv-tam="p"]{--dv-corpo:15px}
+body.doc-mode[data-dv-tam="g"]{--dv-corpo:20px}
+.dv-titulo{font-family:var(--dv-fonte,var(--font))}
+.dv-read{display:none}
+body.doc-mode .card.focus-active.dv-lendo .dv-read{display:block}
+body.doc-mode .card.focus-active.dv-lendo .cb textarea,
+body.doc-mode .card.focus-active.dv-lendo .focus-ot-mount{display:none!important}
+.dv-read{font-family:var(--dv-fonte);font-size:var(--dv-corpo);line-height:1.72;color:var(--text);cursor:text;outline:none;
+  padding:6px 0 30px;min-height:160px;overflow-wrap:anywhere}
+.dv-read:focus-visible{box-shadow:0 0 0 2px var(--accent-glow);border-radius:8px}
+/* o tom escuro do --accent2 não tem contraste sobre papel escuro: no escuro usa o --accent (como o .md-preview) */
+[data-theme="dark"] .dv-read a,[data-theme="dark"] .dv-nav-i.on,[data-theme="dark"] .dv-bolha-lentes .dv-bolha-mais,
+body.doc-mode[data-dv-tema="escuro"] .dv-read a,body.doc-mode[data-dv-tema="escuro"] .dv-nav-i.on{color:var(--accent)}
+.dv-read>.dv-b:first-child>:first-child{margin-top:0}
+.dv-read>.dv-b:last-child>:last-child{margin-bottom:0}
+.dv-read h1,.dv-read h2,.dv-read h3,.dv-read h4{line-height:1.25;font-weight:700;letter-spacing:-.012em;margin:1.2em 0 .4em}
+.dv-read h1{font-size:1.75em}.dv-read h2{font-size:1.4em}.dv-read h3{font-size:1.16em}.dv-read h4{font-size:1em}
+.dv-read p{margin:.2em 0 .85em}
+.dv-read ul,.dv-read ol{margin:.2em 0 .85em;padding-left:1.55em}
+.dv-read li{margin:.22em 0}
+.dv-read li>ul,.dv-read li>ol{margin:.15em 0 .15em}
+.dv-read li:has(>input[type=checkbox]){list-style:none;margin-left:-1.5em}
+.dv-read input[type=checkbox]{width:1.05em;height:1.05em;margin:0 .55em 0 0;vertical-align:-.14em;accent-color:var(--accent);cursor:pointer}
+.dv-read li.dv-feito{color:var(--text3);text-decoration:line-through;text-decoration-color:var(--text4)}
+.dv-read li.dv-feito>ul,.dv-read li.dv-feito>ol{display:inline-block;width:100%;text-decoration:none} /* inline-block não herda o risco: subitens não feitos ficam sem */
+.dv-read blockquote{margin:.3em 0 .85em;padding:.1em 0 .1em 16px;border-left:3px solid var(--accent);color:var(--text2)}
+.dv-read a{color:var(--accent2);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--accent-glow);cursor:pointer}
+.dv-read a:hover{text-decoration-color:currentColor}
+.dv-read code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;background:var(--bg-input);border-radius:5px;padding:.1em .38em}
+.dv-read pre{background:var(--bg-input);border-radius:10px;padding:12px 14px;overflow-x:auto;margin:.3em 0 .9em}
+.dv-read pre code{background:none;padding:0}
+.dv-read hr{border:none;border-top:1px solid var(--border2);margin:1.3em 0}
+.dv-read table{border-collapse:collapse;margin:.4em 0 .9em;font-size:.95em}
+.dv-read th,.dv-read td{border:1px solid var(--border2);padding:5px 11px}
+.dv-read th{background:var(--bg-input);text-align:left}
+.dv-read img{max-width:100%;border-radius:8px}
+.dv-read .dv-vazio{color:var(--text4);font-style:italic}
+/* Painel de navegação: à esquerda do papel em tela larga (o papel ganha uma
+   margem pra ele); gaveta flutuante em tela estreita. */
+.dv-nav{display:none}
+.dv-nav{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:10px 8px 8px;font-size:12.5px;color:var(--text2);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.dv-nav[hidden]{display:none!important}
+.dv-nav-hd{display:flex;align-items:center;justify-content:space-between;padding:0 6px 6px;color:var(--text3);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.dv-nav-x{background:none;border:0;color:var(--text3);font-size:16px;line-height:1;cursor:pointer;border-radius:6px;padding:2px 6px}
+.dv-nav-x:hover{background:var(--bg-input);color:var(--text)}
+.dv-nav-sec{padding:6px 0 8px;border-top:1px solid var(--border)}
+.dv-nav-sec:first-of-type{border-top:0}
+.dv-nav-sec h4{margin:0 0 4px;padding:0 6px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text3)}
+.dv-nav-h2{margin-top:8px!important}
+.dv-nav-vazio{margin:0;padding:2px 6px;color:var(--text4);font-size:12px;line-height:1.4}
+.dv-nav-i,.dv-nav-n{display:flex;align-items:baseline;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:5px 8px;font-family:var(--font);font-size:12.5px;line-height:1.35;color:var(--text2);cursor:pointer;transition:background .12s,color .12s}
+.dv-nav-i{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dv-nav-i.n2{padding-left:18px}
+.dv-nav-i.n3{padding-left:28px;font-size:12px}
+.dv-nav-i:hover,.dv-nav-n:hover{background:var(--bg-input);color:var(--text)}
+.dv-nav-i.on{background:var(--accent-glow);color:var(--accent2);font-weight:600}
+.dv-nav-n.on{background:var(--accent-glow);color:var(--text);font-weight:600}
+.dv-nav-nt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.dv-nav-nd{flex-shrink:0;font-size:10.5px;color:var(--text3);font-weight:500}
+.dv-nav-pasta{padding-bottom:2px}
+.dv-read .dv-b{scroll-margin-top:150px}
+/* Barra "/", bolha de seleção e foco ao digitar */
+.dv-flut{position:fixed;z-index:70;background:var(--bg-card);color:var(--text);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.22);font-family:var(--font)}
+.dv-flut[hidden]{display:none}
+.dv-slash{width:268px;max-height:322px;overflow-y:auto;padding:6px;scrollbar-width:thin}
+.dv-slash-hd{padding:4px 8px 6px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.dv-slash-i{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-radius:8px;padding:5px 8px;font-family:var(--font);font-size:13px;color:var(--text);cursor:pointer;text-align:left}
+.dv-slash-i.on,.dv-slash-i:hover{background:var(--accent-glow)}
+.dv-slash-g{flex:0 0 28px;height:28px;border-radius:7px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;color:var(--text2)}
+.dv-slash-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dv-slash-d{font-size:11px;color:var(--text4);font-family:ui-monospace,Menlo,Consolas,monospace}
+.dv-bolha{padding:4px}
+.dv-bolha-lin{display:flex;align-items:center;gap:1px}
+.dv-bolha button{background:none;border:0;border-radius:8px;min-width:30px;height:30px;padding:0 8px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.dv-bolha button:hover{background:var(--bg-input);color:var(--text)}
+.dv-bolha .svgi{display:inline-flex}
+.dv-bolha .svgi svg{width:15px;height:15px}
+.dv-bolha-sep{width:1px;height:18px;background:var(--border2);margin:0 4px}
+.dv-bolha-lentes{display:flex;flex-direction:column;gap:1px;border-top:1px solid var(--border);margin-top:4px;padding-top:4px;min-width:230px}
+.dv-bolha-lentes[hidden]{display:none}
+.dv-bolha-lentes button{justify-content:space-between;width:100%;height:auto;min-height:30px;padding:5px 9px;font-weight:500;text-align:left}
+.dv-bolha-lentes small{font-size:10.5px;color:var(--text3);font-weight:500}
+.dv-bolha-lentes .dv-bolha-mais{color:var(--accent2);justify-content:flex-start;border-top:1px solid var(--border);border-radius:0 0 8px 8px;margin-top:3px}
+/* Foco: os menus do app quase somem enquanto se digita; mexer o mouse traz de volta. */
+body.doc-mode header,body.doc-mode .stats,body.doc-mode #docBar,body.doc-mode .folders-bar,body.doc-mode .ibar,body.doc-mode .dv-nav,body.doc-mode .lista-bar{transition:opacity .45s ease}
+body.doc-mode.dv-digitando header,body.doc-mode.dv-digitando .stats,body.doc-mode.dv-digitando #docBar,body.doc-mode.dv-digitando .folders-bar,body.doc-mode.dv-digitando .ibar,body.doc-mode.dv-digitando .dv-nav,body.doc-mode.dv-digitando .lista-bar{opacity:.07}
+body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;transition:opacity .45s ease}
+@media(prefers-reduced-motion:reduce){
+  body.doc-mode header,body.doc-mode .stats,body.doc-mode #docBar,body.doc-mode .folders-bar,body.doc-mode .ibar,body.doc-mode .dv-nav,body.doc-mode .lista-bar,body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{transition:none}
+}
+@media(min-width:1200px){
+  body.doc-mode[data-dv-nav="on"] .dv-nav:not([hidden]){display:block;float:left;position:sticky;top:134px;width:204px;max-height:calc(100vh - 224px)}
+  body.doc-mode[data-dv-nav="on"] .cards.focus-mode{margin-left:228px}
+}
+@media(max-width:1199px){
+  body.doc-mode.dv-nav-aberto .dv-nav:not([hidden]){display:block;position:fixed;left:12px;top:132px;width:min(320px,calc(100vw - 24px));max-height:calc(100vh - 260px);z-index:55;box-shadow:0 14px 44px rgba(0,0,0,.22)}
 }
 .focus-active .ico-collapse{display:inline}
 .focus-active .ico-expand{display:none}
@@ -7823,7 +8049,13 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
+            <button class="doc-tbtn" id="docNavBtn" onclick="_dvNavAlternar()" title="Navegação: títulos, origem e notas da pasta" data-i18n-title aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg></button>
+            <button class="doc-tbtn" id="docModoBtn" onclick="_dvAlternar()" title="Editar o texto (E ou Ctrl+E)"></button>
+          </div>
+          <div class="doc-tsep"></div>
+          <div class="doc-tgrp">
             <button class="doc-tbtn" id="docHdrFoldBtn" onclick="toggleDocHeaderFold()" title="Recolher cabeçalho (etiquetas + Transformar)" data-i18n-title>▾</button>
+            <button class="doc-tbtn" id="docAaBtn" onclick="_dvPopAlternar(event)" aria-haspopup="true" aria-expanded="false" title="Aparência do documento (tamanho, largura, papel, tema)" data-i18n-title><span class="dv-aa">Aa</span></button>
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
@@ -7832,6 +8064,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
+            <button class="doc-tbtn" id="docLensBtn" onclick="_dvTransformar()" title="Transformar com IA (a nota inteira; para um trecho, selecione-o)" data-i18n-title><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21l15 -15l-3 -3l-15 15l3 3z"/><path d="M15 6l3 3"/><path d="M9 3a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/><path d="M19 13a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg></button>
             <button class="doc-tbtn" onclick="toggleAdvanced(_docCardId())" title="Avançado (clique de novo pra substituir e fechar)" data-i18n-title><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
           </div>
           <div class="doc-tsep"></div>
@@ -7850,6 +8083,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <div class="doc-tsep"></div>
           <button class="doc-tbtn doc-tbtn-exit" onclick="setViewMode('list')" title="Voltar à lista" data-i18n-title><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> <span data-i18n>Voltar</span></button>
         </div>
+        <div class="dv-pop" id="dvPop" hidden role="dialog" aria-label="Aparência do documento" data-i18n-aria></div>
       </div>
       <!-- Linha fina só pro botão "Selecionar" (07/09/2026). Não repete o nome
            da pasta nem a contagem: os dois já existem na plaqueta do painel de
@@ -7877,6 +8111,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div class="lembrete guardada" id="voxGuardada" style="display:none" role="status" aria-live="polite"></div>
       <div class="convite" id="voxConvite" style="display:none"></div>
       <div class="lembrete" id="voxLembrete" style="display:none"></div>
+      <aside class="dv-nav" id="dvNav" aria-label="Navegação do documento" data-i18n-aria hidden></aside>
       <div class="cards" id="cardsList" style="display:none"></div>
     </div>
     <aside class="folders-bar" id="foldersBar">
@@ -9365,7 +9600,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.4';
+const VOX_VERSION='2026.10.15.10';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11895,6 +12130,36 @@ let I18N_EN={
 "Continuação, a partir dos 20 minutos, sem separar as vozes (plano grátis: 1 diarização inteira por mês).":"Continued, from minute 20 on, without separating voices (free plan: 1 full speaker-separated session a month).",
 "Não deu para transcrever o resto do arquivo. As vozes dos primeiros 20 minutos estão na nota.":"Couldn't transcribe the rest of the file. The voices from the first 20 minutes are in the note.",
 "Até 6 aparelhos na mesma assinatura":"Up to 6 devices on the same subscription",
+// ── Documento v2: aparência e cabeçalho do papel (15/10/2026) ──
+"Aparência do documento (tamanho, largura, papel, tema)":"Document appearance (size, width, page, theme)",
+"Aparência do documento":"Document appearance",
+"Tamanho":"Size","Pequeno":"Small","Grande":"Large",
+"Largura":"Width","Estreita":"Narrow","Padrão":"Default","Larga":"Wide",
+"Fundo":"Background","Papel":"Paper","Sem folha":"No page",
+"Tema do papel":"Page theme","Sépia":"Sepia","Restaurar o padrão":"Restore defaults",
+"Título do documento":"Document title","Sem título":"Untitled",
+"❌ Não foi possível copiar":"❌ Could not copy","Foco ao digitar":"Focus while typing","Ligado":"On","Desligado":"Off",
+"Os menus quase somem enquanto você escreve; mexer o mouse traz de volta.":"Menus almost disappear while you write; moving the mouse brings them back.",
+"Inserir":"Insert","Título":"Heading","Tarefa":"Task","Bloco de código":"Code block","Divisor":"Divider","Data de hoje":"Today's date",
+"Transformar com IA…":"Transform with AI…",
+"Transformar com IA (a nota inteira; para um trecho, selecione-o)":"Transform with AI (the whole note; to transform an excerpt, select it)",
+"Transformar só este trecho":"Transform just this excerpt","troca o trecho":"replaces excerpt","nota nova":"new note",
+"Mais lentes (nota inteira)…":"More lenses (whole note)…","trecho":"excerpt",
+"ℹ️ O trecho mudou enquanto a IA trabalhava — nada foi alterado":"ℹ️ The excerpt changed while the AI was working — nothing was altered",
+"Navegação: títulos, origem e notas da pasta":"Navigation: headings, origin and notes in the folder",
+"Navegação do documento":"Document navigation",
+"Navegar":"Navigate","Recolher painel":"Collapse panel","Nesta nota":"In this note",
+"Títulos (# …) aparecem aqui":"Headings (# …) show up here",
+"Veio de":"Came from","Gerou":"Produced","Na pasta":"In folder","Todas as notas":"All notes","Esta vista":"This view",
+"Esta nota está no arquivo ou na lixeira":"This note is in the archive or the trash",
+"Fonte":"Font","Moderna":"Modern","Com serifa":"Serif","Mono":"Mono",
+"Vale para a leitura e o título; o editor usa fonte mono.":"Applies to reading and the title; the editor uses a mono font.",
+"Abrir notas em":"Open notes in","Leitura":"Reading","Edição":"Editing",
+"Editar o texto (E ou Ctrl+E)":"Edit the text (E or Ctrl+E)","Voltar a ler (Esc ou Ctrl+E)":"Back to reading (Esc or Ctrl+E)",
+"Texto da nota. Enter para editar.":"Note text. Press Enter to edit.",
+"Nota vazia. Clique para escrever.":"Empty note. Click to write.",
+"Clique no texto para editar · Esc volta a ler":"Click the text to edit · Esc goes back to reading",
+"palavra":"word","palavras":"words","min de leitura":"min read",
 // ── Trocar de tela com as janelas junto (15/10/2026) ──
 "Trocar de tela":"Switch screen",
 "Trocar de tela. 1 janela acompanha.":"Switch screen. 1 window comes along.",
@@ -14420,6 +14685,18 @@ function _abrePerguntaEscolher(pid,calado){
 function toggleView(){
   const modes=['list','masonry','doc'];
   setViewMode(modes[(modes.indexOf(viewMode)+1)%modes.length]);
+  _viewJuice();
+}
+// Só o clique do botão chama isto (setViewMode também é chamado por Configurações
+// e pelo "onde parei", e aí ninguém tocou no botão pra ganhar festa).
+function _viewJuice(){
+  const b=document.getElementById('btnView');
+  if(!b||_voxReduzMov())return;
+  _jz(document.getElementById('viewIcon'),'view-soco',440);
+  _jz(document.getElementById('viewLabel'),'view-rola',340);
+  _jzOnda(b,'#eab308','10px');
+  _telaFaiscas(b,['#eab308','#fff']);
+  _jzTato(8);
 }
 function setViewMode(m){
   viewMode=m;localStorage.setItem('vox_view',m);applyView();
@@ -14440,6 +14717,13 @@ function applyView(){
   cl.classList.remove('masonry','focus-mode','masonry-preview');
   if(viewMode!=='masonry')_masonryDesativar();
   document.body.classList.toggle('doc-mode',viewMode==='doc');
+  _dvAplicar();
+  if(!isFocusLike){
+    document.querySelectorAll('.dv-hd,.dv-read').forEach(e=>e.remove());
+    document.querySelectorAll('.card.dv-lendo').forEach(c=>c.classList.remove('dv-lendo'));
+    _dvModo='edicao';_dvCardAtual=null;_dvGen++;_dvPopFechar();_dvNavFechaGaveta();_dvSlashFecha();_dvBolhaFecha();_dvFocoDesliga();
+    const nv=document.getElementById('dvNav');if(nv)nv.hidden=true;
+  }
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-focus',isFocusLike));
   // Lista continua coluna única (não é mais a grade do Masonry — revertido
   // depois do Rafa comparar lado a lado), mas usa o mesmo wrap largo do
@@ -14672,7 +14956,12 @@ function getFocusCards(){
 // o OverType espelha o valor nele via onChange, então lentes de IA, tags, contagem de
 // palavras e undo/redo continuam lendo/escrevendo o mesmo lugar de sempre.
 let _focusEditorInstance=null,_focusEditorCardId=null,_focusEditorMountEl=null,_focusEditorGen=0;
+// Ligado enquanto o app MESMO escreve no editor (setValue do updateFooter, montagem): o
+// onChange do OverType dispara nesses casos e empilhava o texto novo no desfazer, então
+// o primeiro Ctrl+Z não desfazia nada (e limpava o refazer).
+let _focusSync=false;
 function _unmountFocusEditor(){
+  _dvSlashFecha();_dvBolhaFecha();_dvFocoDesliga();
   _focusEditorGen++; // invalida qualquer _mountFocusEditor pendente (ainda no await do
   // carregamento do script) de uma troca de card anterior — sem isso, uma montagem atrasada
   // podia "vencer" depois que o usuário já tinha saído daquele card, deixando um mount órfão.
@@ -14701,13 +14990,24 @@ async function _mountFocusEditor(id){
   mount.id='ot-'+id;mount.className='focus-ot-mount';
   ta.insertAdjacentElement('afterend',mount);
   ta.style.display='none';
-  const[inst]=new OverType(mount,{
+  _focusSync=true;
+  let inst;
+  try{[inst]=new OverType(mount,{
     value:ta.value,
     toolbar:viewMode==='doc', // Modo Documento ganha a régua de formatação nativa
     fontFamily:'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',
-    onChange:v=>{cardTypeBeforeInput(id,ta);ta.value=v;updateFooter(id);cardTypeInput(id)}
-  });
+    fontSize:_DV_TAM_PX[_dvPrefs().tam],
+    placeholder:t('Edite aqui…'),
+    onChange:v=>{if(_focusSync)return;cardTypeBeforeInput(id,ta);ta.value=v;updateFooter(id);cardTypeInput(id)}
+  })}finally{_focusSync=false}
   inst.textarea?.addEventListener('focus',()=>trackFocus(ta));
+  _dvEditorLigar(inst); // "/", bolha de seleção e foco — antes do Esc abaixo, pra o menu aberto ganhar o Esc
+  inst.textarea?.addEventListener('keydown',e=>{
+    if(e.key!=='Escape'||viewMode!=='doc')return;
+    _dvFocoDesliga();_dvBolhaFecha();
+    e.preventDefault();e.stopPropagation();
+    if(ta.value.trim()||inst.getValue().trim())_dvLer(id);else inst.textarea.blur();
+  });
   // Espelha a posição do cursor do textarea VISÍVEL (interno do OverType) pro textarea
   // real escondido — sem isso, "Gravar aqui" sempre inseria a transcrição no final,
   // ignorando onde a pessoa tinha acabado de clicar dentro do texto (o clique nunca
@@ -14727,6 +15027,7 @@ function applyFocusCard(){
   document.querySelectorAll('#cardsList .card.advanced-active').forEach(c=>exitAdvanced(c.id));
   const fc=cards[focusCardIdx];
   fc.classList.add('focus-active');
+  _dvCabecalho(fc);
   // Modo Documento é modo de visualização também, então segue a mesma regra
   // ("sempre recolhido", Rafa 18/08/2026): nasce dobrado a menos que a
   // pessoa tenha desdobrado de propósito alguma vez. Aqui a escolha PERSISTE
@@ -14739,8 +15040,10 @@ function applyFocusCard(){
   if(fta)fta.style.height='';
   const docLbl=document.getElementById('docNavLbl');if(docLbl)docLbl.textContent=`${focusCardIdx+1} / ${cards.length}`;
   fc.scrollIntoView({behavior:'smooth',block:'start'});
-  _mountFocusEditor(fc.id);
+  // Mesmo card que já estava em Edição (ex.: filtro mudou e redesenhou): continua em Edição.
+  _dvAbrir(fc,_dvCardAtual===fc.id&&_dvModo==='edicao'?'edicao':undefined);
   _tiraSolteSync(fc.id);
+  _dvNavAtualiza();
 }
 function toggleDocHeaderFold(){
   const cid=_docCardId();const card=document.getElementById(cid);if(!card)return;
@@ -14762,6 +15065,778 @@ function enterFocusCard(id){
   if(idx>=0)focusCardIdx=idx;
   setViewMode('doc');
 }
+
+// ── DOCUMENTO v2 · Aparência + papel de verdade (15/10/2026) ────────────────
+// Dois pedaços: (1) "Aa" na barra — a pessoa escolhe tamanho, largura, papel/
+// livre e tema; fica guardado (vox_doc_aparencia, vale pra todos os mundos,
+// é gosto de leitura, não dado) e vira data-dv-* no <body>. (2) cabeçalho do
+// papel — título editável + linha "data · modo · palavras · tempo de leitura"
+// + etiquetas, no lugar do selo de nome e do horário. O título é
+// contenteditable de propósito: um <textarea> a mais dentro do card quebraria
+// todo `card.querySelector('textarea')` do app (contagem, exportar, lentes).
+const _DV_PADRAO={tam:'m',larg:'padrao',pagina:'papel',tema:'auto',fonte:'sans',abrir:'leitura',nav:'on',foco:'on'};
+const _DV_VALIDOS={tam:['p','m','g'],larg:['estreita','padrao','larga'],pagina:['papel','livre'],tema:['auto','claro','escuro','sepia'],fonte:['sans','serif','mono'],abrir:['leitura','edicao'],nav:['on','off'],foco:['on','off']};
+const _DV_TAM_PX={p:'13px',m:'14px',g:'17px'};
+let _dvSalvo=null;
+function _dvPrefs(){
+  if(_dvSalvo)return _dvSalvo;
+  let p={};try{p=JSON.parse(localStorage.getItem('vox_doc_aparencia')||'{}')||{}}catch(e){}
+  const r={};
+  Object.keys(_DV_PADRAO).forEach(k=>{r[k]=_DV_VALIDOS[k].includes(p[k])?p[k]:_DV_PADRAO[k]});
+  return(_dvSalvo=r);
+}
+function _dvSalvarPrefs(p){
+  _dvSalvo=p;
+  try{localStorage.setItem('vox_doc_aparencia',JSON.stringify(p))}catch(e){}
+  _dvAplicar(p);
+}
+// p opcional: pré-visualização ao passar o mouse (não salva nada).
+function _dvAplicar(p){
+  p=p||_dvPrefs();
+  const b=document.body;
+  b.dataset.dvTam=p.tam;b.dataset.dvLarg=p.larg;b.dataset.dvPagina=p.pagina;b.dataset.dvTema=p.tema;b.dataset.dvFonte=p.fonte;b.dataset.dvNav=p.nav;b.dataset.dvFoco=p.foco;
+  _focusEditorInstance?.wrapper?.style.setProperty('--instance-font-size',_DV_TAM_PX[p.tam]);
+}
+const _DV_CAMPOS=[
+  {k:'tam',lbl:'Tamanho',ops:[['p','Pequeno'],['m','Normal'],['g','Grande']]},
+  {k:'fonte',lbl:'Fonte',ops:[['sans','Moderna'],['serif','Com serifa'],['mono','Mono']],dica:'Vale para a leitura e o título; o editor usa fonte mono.'},
+  {k:'larg',lbl:'Largura',ops:[['estreita','Estreita'],['padrao','Padrão'],['larga','Larga']]},
+  {k:'pagina',lbl:'Fundo',ops:[['papel','Papel'],['livre','Sem folha']]},
+  {k:'abrir',lbl:'Abrir notas em',ops:[['leitura','Leitura'],['edicao','Edição']]},
+  {k:'foco',lbl:'Foco ao digitar',ops:[['on','Ligado'],['off','Desligado']],dica:'Os menus quase somem enquanto você escreve; mexer o mouse traz de volta.'}
+];
+const _DV_TEMAS=[
+  ['auto','Automático','linear-gradient(135deg,#ffffff 50%,#212124 50%)','#8e8e93'],
+  ['claro','Claro','#ffffff','#1d1d1f'],
+  ['escuro','Escuro','#212124','#f5f5f7'],
+  ['sepia','Sépia','#f4ecd8','#4b3a28']
+];
+function _dvPopRender(){
+  const pop=document.getElementById('dvPop');if(!pop)return;
+  const p=_dvPrefs();
+  pop.innerHTML=_DV_CAMPOS.map(c=>
+    `<div class="dv-pop-row"><span class="dv-pop-lbl">${escHtml(t(c.lbl))}</span><div class="dv-seg">`+
+    c.ops.map(o=>`<button type="button" data-k="${c.k}" data-v="${o[0]}" aria-pressed="${p[c.k]===o[0]}">${escHtml(t(o[1]))}</button>`).join('')+
+    `</div>${c.dica?`<span class="dv-pop-dica">${escHtml(t(c.dica))}</span>`:''}</div>`).join('')+
+    `<div class="dv-pop-row"><span class="dv-pop-lbl">${escHtml(t('Tema do papel'))}</span><div class="dv-temas">`+
+    _DV_TEMAS.map(m=>`<button type="button" class="dv-tema" data-k="tema" data-v="${m[0]}" aria-pressed="${p.tema===m[0]}"><span class="dv-tema-amostra" style="background:${m[2]};color:${m[3]}">Ag</span>${escHtml(t(m[1]))}</button>`).join('')+
+    `</div></div>`+
+    `<div class="dv-pop-rodape"><button type="button" class="dv-pop-reset" data-reset="1">${escHtml(t('Restaurar o padrão'))}</button></div>`;
+}
+function _dvPopIniciar(pop){
+  if(pop._dvOk)return;pop._dvOk=true;
+  pop.addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.reset)_dvSalvarPrefs({..._DV_PADRAO});
+    else if(b.dataset.k)_dvSalvarPrefs({..._dvPrefs(),[b.dataset.k]:b.dataset.v});
+    _dvPopRender();_dvNavAtualiza();
+  });
+  // Só com mouse: passar por cima mostra como ficaria; sair volta ao salvo.
+  if(window.matchMedia&&matchMedia('(hover:hover)').matches){
+    pop.addEventListener('mouseover',e=>{const b=e.target.closest('button[data-k]');if(b)_dvAplicar({..._dvPrefs(),[b.dataset.k]:b.dataset.v})});
+    pop.addEventListener('mouseleave',()=>_dvAplicar());
+  }
+}
+function _dvPopAlternar(ev){
+  ev?.stopPropagation();
+  const pop=document.getElementById('dvPop');if(!pop)return;
+  if(pop.hidden)_dvPopAbrir();else _dvPopFechar();
+}
+function _dvPopAbrir(){
+  const pop=document.getElementById('dvPop'),btn=document.getElementById('docAaBtn'),bar=document.getElementById('docBar');
+  if(!pop||!btn||!bar)return;
+  _dvPopIniciar(pop);_dvPopRender();pop.hidden=false;
+  btn.setAttribute('aria-expanded','true');btn.classList.add('active');
+  const br=btn.getBoundingClientRect(),pr=bar.getBoundingClientRect();
+  pop.style.left=Math.max(0,Math.min(br.left-pr.left,pr.width-pop.offsetWidth))+'px';
+  document.addEventListener('pointerdown',_dvPopFora,true);
+  document.addEventListener('keydown',_dvPopTecla,true);
+}
+function _dvPopFechar(){
+  const pop=document.getElementById('dvPop');if(!pop||pop.hidden)return;
+  pop.hidden=true;
+  const btn=document.getElementById('docAaBtn');
+  if(btn){btn.setAttribute('aria-expanded','false');btn.classList.remove('active')}
+  document.removeEventListener('pointerdown',_dvPopFora,true);
+  document.removeEventListener('keydown',_dvPopTecla,true);
+  _dvAplicar(); // desfaz qualquer pré-visualização que ficou
+}
+function _dvPopFora(e){if(!e.target.closest?.('#dvPop,#docAaBtn'))_dvPopFechar()}
+function _dvPopTecla(e){
+  if(e.key!=='Escape')return;
+  e.preventDefault();e.stopImmediatePropagation(); // Esc fecha só o balão, não sai do Documento
+  _dvPopFechar();document.getElementById('docAaBtn')?.focus();
+}
+
+// Cabeçalho do papel
+function _dvTextoCard(card){
+  const ta=card.querySelector('.cb textarea')||card.querySelector('.roteiro-view textarea');
+  return ta?ta.value:'';
+}
+function _dvMetaHtml(card){
+  const partes=[];
+  if(card.dataset.dt){
+    try{partes.push(escHtml(new Date(card.dataset.dt).toLocaleDateString(getLocale(),{day:'numeric',month:'short',year:'numeric'})))}catch(e){}
+  }
+  const m=card.dataset.mode;
+  if(m&&SESSION_MODES[m])partes.push(escHtml(SESSION_MODES[m].label));
+  const txt=_dvTextoCard(card).trim(),n=txt?txt.split(/\s+/).length:0;
+  if(n){
+    partes.push(n+' '+escHtml(t(n===1?'palavra':'palavras')));
+    partes.push(Math.max(1,Math.round(n/200))+' '+escHtml(t('min de leitura')));
+  }
+  return partes.join('<i>·</i>');
+}
+function _dvMetaAtualiza(id){
+  const hd=document.getElementById('dvhd-'+id),card=document.getElementById(id);
+  if(!hd||!card)return;
+  hd.querySelector('.dv-meta').innerHTML=_dvMetaHtml(card);
+  const tags=(card.dataset.tags||'').split(',').filter(x=>x);
+  const ch=hd.querySelector('.dv-chips');
+  ch.innerHTML=tags.map(x=>`<span class="dv-chip">#${escHtml(x)}</span>`).join('');
+  ch.hidden=!tags.length;
+}
+function _dvTituloSync(id){
+  const ti=document.getElementById('dvt-'+id),card=document.getElementById(id);
+  if(!ti||!card||document.activeElement===ti)return;
+  const v=card.dataset.sessionName||'';
+  if(ti.textContent!==v)ti.textContent=v;
+}
+function _dvSalvaTitulo(id,ti){
+  const card=document.getElementById(id);if(!card)return;
+  const v=ti.textContent.replace(/\s+/g,' ').trim();
+  if(v!==(card.dataset.sessionName||''))_aplicarSname(id,v,true);
+  if(!v)ti.innerHTML=''; // zera o <br> que o navegador deixa e faz o :empty voltar
+  else if(ti.textContent!==v)ti.textContent=v;
+}
+function _dvCabecalho(card){
+  document.querySelectorAll('.dv-hd').forEach(e=>e.remove());
+  if(!card)return;
+  const id=card.id,col=card.querySelector(':scope > .diar-main-col')||card;
+  const hd=document.createElement('div');hd.className='dv-hd';hd.id='dvhd-'+id;
+  hd.innerHTML=`<h1 class="dv-titulo" id="dvt-${id}" contenteditable="true" role="textbox" aria-label="${escHtml(t('Título do documento'))}" data-ph="${escHtml(t('Sem título'))}" spellcheck="false"></h1><div class="dv-meta"></div><div class="dv-chips" hidden></div>`;
+  col.insertBefore(hd,col.firstChild);
+  const ti=hd.querySelector('.dv-titulo');
+  ti.textContent=card.dataset.sessionName||'';
+  ti.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();ti.blur();_focusEditorInstance?.focus()}
+    else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();ti.textContent=card.dataset.sessionName||'';ti.blur()}
+    else if(e.key.startsWith('Arrow')||((e.ctrlKey||e.metaKey)&&/^[zy]$/i.test(e.key)))e.stopPropagation(); // seta e Ctrl+Z aqui são do título, não do card
+  });
+  ti.addEventListener('paste',e=>{
+    e.preventDefault();
+    const tx=(e.clipboardData?.getData('text/plain')||'').replace(/\s*\n\s*/g,' ');
+    document.execCommand('insertText',false,tx);
+  });
+  ti.addEventListener('input',()=>{if(!ti.textContent.trim())ti.innerHTML=''});
+  ti.addEventListener('blur',()=>_dvSalvaTitulo(id,ti));
+  _dvMetaAtualiza(id);
+}
+
+
+// ── DOCUMENTO v2 · Leitura primeiro (15/10/2026) ────────────────────────────
+// Abrir uma nota no Documento mostra o texto já formatado (títulos, listas,
+// negrito, tarefas) — é assim que se LÊ uma transcrição. Clicar em qualquer
+// trecho vira edição com o cursor onde se clicou; Esc (ou Ctrl+E) volta a ler.
+// O editor OverType só existe em Edição; o <textarea> real do card continua
+// sendo a única fonte do texto (lentes, undo, gravar aqui, contagem...).
+// Nota vazia abre direto em Edição; "Abrir em" no Aa troca o padrão.
+let _dvModo='edicao',_dvCardAtual=null,_dvGen=0,_dvRenderT=null;
+const _DV_ICO_EDITAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const _DV_ICO_LER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>';
+function _dvBotao(){
+  const b=document.getElementById('docModoBtn');if(!b)return;
+  const c=document.getElementById(_docCardId()||''),diar=c?.dataset.diarized==='true';
+  const lendo=_dvModo==='leitura';
+  b.disabled=!!diar;
+  b.innerHTML=lendo?_DV_ICO_EDITAR:_DV_ICO_LER;
+  b.title=lendo?t('Editar o texto (E ou Ctrl+E)'):t('Voltar a ler (Esc ou Ctrl+E)');
+  b.setAttribute('aria-label',b.title);
+  b.classList.toggle('active',!lendo&&!diar);
+}
+function _dvLeituraEl(card){
+  let el=document.getElementById('dvread-'+card.id);
+  if(el)return el;
+  const cb=card.querySelector('.cb');if(!cb)return null;
+  el=document.createElement('div');
+  el.className='dv-read';el.id='dvread-'+card.id;el.tabIndex=0;el.setAttribute('role','document');
+  el.setAttribute('aria-label',t('Texto da nota. Enter para editar.'));
+  el.addEventListener('click',_dvCliqueLeitura);
+  cb.appendChild(el);
+  return el;
+}
+// Um bloco por token do marked, cada um com a posição de origem no texto
+// (data-s/data-e) — é o que permite ao clique cair no lugar certo do editor.
+function _dvRender(id){
+  const card=document.getElementById(id),el=document.getElementById('dvread-'+id),ta=card?.querySelector('.cb textarea');
+  if(!el||!ta||!window.marked||!window.DOMPurify)return;
+  const src=ta.value;
+  if(!src.trim()){el.innerHTML='<p class="dv-vazio">'+escHtml(t('Nota vazia. Clique para escrever.'))+'</p>';return}
+  let toks;
+  try{toks=marked.lexer(src,{gfm:true,breaks:true})}catch(e){el.textContent=src;return}
+  let pos=0,html='';
+  toks.forEach(tk=>{
+    const ini=pos;pos+=tk.raw.length;
+    if(tk.type==='space'||tk.type==='def')return;
+    const arr=[tk];arr.links=toks.links;
+    let h='';
+    try{h=DOMPurify.sanitize(marked.parser(arr))}catch(e){h=''}
+    if(h.trim())html+='<div class="dv-b" data-s="'+ini+'" data-e="'+pos+'">'+h+'</div>';
+  });
+  el.innerHTML=html;
+  el.querySelectorAll('a[href]').forEach(a=>{a.target='_blank';a.rel='noopener noreferrer'});
+  el.querySelectorAll('input[type=checkbox]').forEach(i=>{i.disabled=false;i.closest('li')?.classList.toggle('dv-feito',i.checked)});
+}
+function _dvRenderAgendado(id){
+  clearTimeout(_dvRenderT);
+  _dvRenderT=setTimeout(()=>{if(_dvModo==='leitura'&&_docCardId()===id)_dvRender(id)},60);
+}
+function _dvDica(){
+  let n=0;try{n=+localStorage.getItem('vox_dv_dica')||0}catch(e){}
+  if(n>=2)return;
+  try{localStorage.setItem('vox_dv_dica',String(n+1))}catch(e){}
+  setTimeout(()=>{if(_dvModo==='leitura')toast(t('Clique no texto para editar · Esc volta a ler'))},700);
+}
+// Chamado por applyFocusCard no lugar de montar o editor direto.
+async function _dvAbrir(fc,modo){
+  const gen=++_dvGen;
+  document.querySelectorAll('#cardsList .card.dv-lendo').forEach(c=>c.classList.remove('dv-lendo'));
+  const ta=fc.querySelector('.cb textarea');
+  _dvCardAtual=fc.id;
+  if(!ta||fc.dataset.diarized==='true'){_dvModo='edicao';_dvBotao();return _mountFocusEditor(fc.id)}
+  if(!modo)modo=(_dvPrefs().abrir==='edicao'||!ta.value.trim())?'edicao':'leitura';
+  if(modo==='leitura'){
+    try{await _loadMarkdownLibs()}catch(e){modo='edicao'}
+    if(gen!==_dvGen)return;
+  }
+  _dvModo=modo;
+  if(modo==='leitura'){
+    if(!_dvLeituraEl(fc)){_dvModo='edicao';_dvBotao();return _mountFocusEditor(fc.id)}
+    _dvRender(fc.id);fc.classList.add('dv-lendo');_dvDica();
+  }else{
+    fc.classList.remove('dv-lendo');
+    await _mountFocusEditor(fc.id);
+  }
+  _dvBotao();
+}
+async function _dvEditar(id,pos){
+  const card=document.getElementById(id);if(!card||card.dataset.diarized==='true'||card.classList.contains('advanced-active'))return;
+  if(_dvModo==='edicao'&&_focusEditorCardId===id){_focusEditorInstance?.focus();return}
+  _dvGen++;_dvModo='edicao';
+  card.classList.remove('dv-lendo');
+  await _mountFocusEditor(id);
+  const inst=_focusEditorInstance;if(!inst||_focusEditorCardId!==id)return;
+  const ta=card.querySelector('.cb textarea'),n=ta.value.length;
+  const p=pos==null?n:Math.max(0,Math.min(pos,n));
+  inst.textarea.focus({preventScroll:true});
+  inst.textarea.setSelectionRange(p,p);
+  ta.selectionStart=ta.selectionEnd=p;
+  _dvRolaAteCursor(inst,p);
+  _dvBotao();
+}
+// Leva a linha do cursor pro terço de cima do editor (a camada de preview do
+// OverType tem um filho por linha do texto, na mesma ordem).
+function _dvRolaAteCursor(inst,p){
+  try{
+    const linha=(inst.textarea.value.slice(0,p).match(/\n/g)||[]).length;
+    const el=inst.preview?.children[linha];if(!el)return;
+    const y=Math.max(0,el.offsetTop-inst.textarea.clientHeight/3);
+    inst.textarea.scrollTop=y;inst.preview.scrollTop=y;
+  }catch(e){}
+}
+function _dvLer(id){
+  const card=document.getElementById(id);if(!card||card.dataset.diarized==='true')return;
+  const ta=card.querySelector('.cb textarea');if(!ta)return;
+  if(_focusEditorCardId===id&&_focusEditorInstance)ta.value=_focusEditorInstance.getValue();
+  if(!ta.value.trim())return; // nota vazia: não há o que ler
+  _dvGen++;
+  const gen=_dvGen;
+  _loadMarkdownLibs().then(()=>{
+    if(gen!==_dvGen||_docCardId()!==id)return;
+    _unmountFocusEditor();
+    if(!_dvLeituraEl(card))return;
+    _dvRender(id);card.classList.add('dv-lendo');_dvModo='leitura';_dvBotao();
+    document.getElementById('dvread-'+id)?.focus({preventScroll:true});
+  }).catch(()=>{});
+}
+function _dvAlternar(){
+  const id=_docCardId();if(!id)return;
+  if(_dvModo==='leitura')_dvEditar(id);else _dvLer(id);
+}
+// Do ponto clicado ao índice no texto de origem: conta quantos caracteres
+// visíveis (sem espaços) vêm antes do cursor dentro do bloco e anda o mesmo
+// tanto no texto de origem pulando os sinais do markdown (#, **, -, [](…)).
+function _dvPosDoClique(e,id){
+  const ta=document.getElementById(id)?.querySelector('.cb textarea');if(!ta)return null;
+  const src=ta.value,blk=e.target.closest?.('.dv-b');
+  if(!blk)return src.length; // clicou na margem/abaixo do texto: vai pro fim
+  const s=+blk.dataset.s,fim=+blk.dataset.e,raw=src.slice(s,fim);
+  const fimUtil=s+raw.replace(/\s+$/,'').length;
+  let no=null,off=0;
+  try{
+    if(document.caretPositionFromPoint){const c=document.caretPositionFromPoint(e.clientX,e.clientY);no=c?.offsetNode;off=c?.offset||0}
+    else if(document.caretRangeFromPoint){const r=document.caretRangeFromPoint(e.clientX,e.clientY);no=r?.startContainer;off=r?.startOffset||0}
+  }catch(x){}
+  if(!no||!blk.contains(no))return fimUtil;
+  const pre=document.createRange();pre.setStart(blk,0);pre.setEnd(no,off);
+  const k=pre.toString().replace(/\s+/g,'').length;
+  const plain=blk.textContent.replace(/\s+/g,'');
+  if(!plain)return fimUtil;
+  let p=0,i=0;
+  if(k===0){while(i<raw.length&&raw[i]!==plain[0])i++;return Math.min(s+i,fimUtil)}
+  for(;i<raw.length&&p<k;i++){const c=raw[i];if(/\s/.test(c))continue;if(c===plain[p])p++}
+  return p<k?fimUtil:Math.min(s+i,fimUtil);
+}
+function _dvCliqueLeitura(e){
+  const el=e.currentTarget,id=el.id.replace(/^dvread-/,'');
+  if(e.button)return;
+  if(e.target.closest('a[href]'))return; // link abre o link, não vira edição
+  const cb=e.target.closest('input[type=checkbox]');
+  if(cb){_dvTarefa(id,cb);return}
+  const sel=window.getSelection();
+  if(sel&&!sel.isCollapsed&&el.contains(sel.anchorNode))return; // está selecionando pra copiar
+  _dvEditar(id,_dvPosDoClique(e,id));
+}
+// Marcar/desmarcar tarefa na leitura escreve "- [x]" ↔ "- [ ]" no texto de verdade.
+function _dvTarefa(id,cb){
+  const card=document.getElementById(id),ta=card?.querySelector('.cb textarea'),b=cb.closest('.dv-b');
+  if(!ta||!b)return;
+  const s=+b.dataset.s,fim=+b.dataset.e,n=[...b.querySelectorAll('input[type=checkbox]')].indexOf(cb);
+  const src=ta.value,raw=src.slice(s,fim);
+  const re=/^([ \t>]*(?:[-*+]|\d+[.)])[ \t]+\[)([ xX])(\])/gm;
+  let m,i=0,novo=null;
+  while((m=re.exec(raw))){
+    if(i++===n){const at=m.index+m[1].length;novo=raw.slice(0,at)+(m[2]===' '?'x':' ')+raw.slice(at+1);break}
+  }
+  if(novo===null){cb.checked=!cb.checked;return}
+  // Cada tarefa marcada é um passo de desfazer próprio (a rajada de 500ms da
+  // digitação juntaria dois cliques seguidos num passo só).
+  clearTimeout(_typeTimers[id]);delete _typeTimers[id];
+  cardTypeBeforeInput(id,ta);
+  ta.value=src.slice(0,s)+novo+src.slice(fim);
+  updateFooter(id);
+  _dvRender(id);
+}
+function _dvTecla(e){
+  if(viewMode!=='doc')return;
+  const a=document.activeElement;
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&(e.key==='e'||e.key==='E')){
+    if(a?.closest?.('.dv-titulo,#dvPop'))return;
+    e.preventDefault();_dvAlternar();return;
+  }
+  if(e.ctrlKey||e.metaKey||e.altKey||_dvModo!=='leitura')return;
+  if(!(a===document.body||a?.closest?.('.dv-read')))return;
+  if(e.key==='e'||e.key==='E'||e.key==='Enter'){e.preventDefault();_dvEditar(_docCardId())}
+}
+document.addEventListener('keydown',_dvTecla);
+
+
+// ── DOCUMENTO v2 · Navegação (15/10/2026) ───────────────────────────────────
+// Painel à esquerda do papel, três seções: "Nesta nota" (índice dos títulos,
+// com destaque de onde você está lendo), "Veio de / Gerou" (a linhagem de
+// quem nasceu de uma lente) e "Na pasta" (as notas da vista atual, pra pular
+// de uma a outra sem voltar à Lista). Em tela larga fica fixo ao lado; em
+// tela estreita vira uma gaveta que abre pelo botão da barra.
+let _dvNavT=null,_dvNavGaveta=false,_dvEspiaRaf=0;
+function _dvNavLargo(){return window.matchMedia?matchMedia('(min-width:1200px)').matches:true}
+function _dvTituloCard(card){
+  const n=(card.dataset.sessionName||'').trim();
+  if(n)return n;
+  const tx=(card.querySelector('.cb textarea')?.value||'').split('\n').map(l=>l.replace(/^[\s#>*\-+\d.)\[\]xX]+/,'').trim()).find(l=>l);
+  return tx?(tx.length>56?tx.slice(0,56)+'…':tx):fmtDt(card.dataset.dt||'');
+}
+// Títulos # ## ### do texto de origem (ignora blocos de código).
+function _dvOutline(src){
+  const out=[];let pos=0,cerca=false;
+  src.split('\n').forEach(l=>{
+    const ini=pos;pos+=l.length+1;
+    if(/^\s{0,3}(```|~~~)/.test(l)){cerca=!cerca;return}
+    if(cerca)return;
+    const m=/^\s{0,3}(#{1,3})\s+(.+?)\s*#*\s*$/.exec(l);
+    if(!m)return;
+    const tx=m[2].replace(/!?\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/[*_`~]/g,'').trim();
+    if(tx)out.push({nivel:m[1].length,texto:tx,pos:ini});
+  });
+  return out;
+}
+function _dvNavAtualiza(){
+  const nav=document.getElementById('dvNav');if(!nav)return;
+  const btn=document.getElementById('docNavBtn');
+  if(viewMode!=='doc'){nav.hidden=true;return}
+  const card=document.getElementById(_docCardId()||'');
+  if(!card){nav.hidden=true;return}
+  nav.hidden=false;
+  const on=_dvNavLargo()?_dvPrefs().nav==='on':_dvNavGaveta;
+  btn?.classList.toggle('active',on);
+  btn?.setAttribute('aria-pressed',on);
+  if(!on)return; // fechado: nada a montar
+  const ta=card.querySelector('.cb textarea'),src=ta?ta.value:'';
+  const ids=getFocusCards();
+  let h='<div class="dv-nav-hd"><b>'+escHtml(t('Navegar'))+'</b><button type="button" class="dv-nav-x" data-a="fechar" title="'+escHtml(t('Recolher painel'))+'" aria-label="'+escHtml(t('Recolher painel'))+'">‹</button></div>';
+  // 1. Nesta nota
+  const ol=_dvOutline(src);
+  h+='<div class="dv-nav-sec"><h4>'+escHtml(t('Nesta nota'))+'</h4>';
+  h+=ol.length?ol.map(o=>'<button type="button" class="dv-nav-i n'+o.nivel+'" data-pos="'+o.pos+'" title="'+escHtml(o.texto)+'">'+escHtml(o.texto)+'</button>').join(''):'<p class="dv-nav-vazio">'+escHtml(t('Títulos (# …) aparecem aqui'))+'</p>';
+  h+='</div>';
+  // 2. Linhagem
+  const todos=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')];
+  const lente=k=>{try{return k&&LENSES[k]?LENSES[k].label:''}catch(e){return''}};
+  const pai=card.dataset.origemDt?todos.find(c=>c.dataset.dt===card.dataset.origemDt&&c.id!==card.id):null;
+  const filhos=card.dataset.dt?todos.filter(c=>c.dataset.origemDt===card.dataset.dt&&c.id!==card.id):[];
+  if(pai||filhos.length){
+    h+='<div class="dv-nav-sec"><h4>'+escHtml(pai?t('Veio de'):t('Gerou'))+'</h4>';
+    if(pai)h+='<button type="button" class="dv-nav-n" data-nota="'+pai.id+'"><span class="dv-nav-nt">'+escHtml(_dvTituloCard(pai))+'</span><span class="dv-nav-nd">'+escHtml(lente(card.dataset.origemLente))+'</span></button>';
+    if(pai&&filhos.length)h+='<h4 class="dv-nav-h2">'+escHtml(t('Gerou'))+'</h4>';
+    h+=filhos.map(c=>'<button type="button" class="dv-nav-n" data-nota="'+c.id+'"><span class="dv-nav-nt">'+escHtml(_dvTituloCard(c))+'</span><span class="dv-nav-nd">'+escHtml(lente(c.dataset.origemLente))+'</span></button>').join('');
+    h+='</div>';
+  }
+  // 3. Na pasta
+  const f=activeFolderId?folders.find(x=>x.id===activeFolderId):null;
+  const rot=activeFolderId===null?t('Todas as notas'):(f?f.name:t('Esta vista'));
+  let lista=ids,off=0;
+  const cur=ids.findIndex(c=>c.id===card.id);
+  if(lista.length>300){off=Math.max(0,Math.min(cur-150,lista.length-300));lista=lista.slice(off,off+300)}
+  h+='<div class="dv-nav-sec dv-nav-pasta"><h4>'+escHtml(t('Na pasta'))+' · '+escHtml(rot)+'</h4>';
+  h+=lista.map(c=>'<button type="button" class="dv-nav-n'+(c.id===card.id?' on':'')+'" data-nota="'+c.id+'"><span class="dv-nav-nt">'+escHtml(_dvTituloCard(c))+'</span></button>').join('');
+  h+='</div>';
+  nav.innerHTML=h;
+  if(!nav._dvOk){
+    nav._dvOk=true;
+    nav.addEventListener('click',e=>{
+      const b=e.target.closest('button');if(!b)return;
+      if(b.dataset.a==='fechar'){_dvNavAlternar();return}
+      if(b.dataset.nota){_dvAbrirNota(b.dataset.nota);return}
+      if(b.dataset.pos!=null)_dvIrPara(+b.dataset.pos);
+    });
+  }
+  nav.querySelector('.dv-nav-n.on')?.scrollIntoView({block:'nearest'});
+  _dvEspia();
+}
+function _dvNavAgenda(){
+  clearTimeout(_dvNavT);
+  _dvNavT=setTimeout(_dvNavAtualiza,350);
+}
+function _dvNavAlternar(){
+  if(_dvNavLargo()){
+    _dvSalvarPrefs({..._dvPrefs(),nav:_dvPrefs().nav==='on'?'off':'on'});
+  }else{
+    _dvNavGaveta=!_dvNavGaveta;
+    document.body.classList.toggle('dv-nav-aberto',_dvNavGaveta);
+    if(_dvNavGaveta)document.addEventListener('pointerdown',_dvNavFora,true);
+    else document.removeEventListener('pointerdown',_dvNavFora,true);
+  }
+  _dvNavAtualiza();
+}
+function _dvNavFora(e){
+  if(e.target.closest?.('#dvNav,#docNavBtn'))return;
+  _dvNavGaveta=false;document.body.classList.remove('dv-nav-aberto');
+  document.removeEventListener('pointerdown',_dvNavFora,true);
+  _dvNavAtualiza();
+}
+function _dvNavFechaGaveta(){
+  if(!_dvNavGaveta||_dvNavLargo())return;
+  _dvNavGaveta=false;document.body.classList.remove('dv-nav-aberto');
+  document.removeEventListener('pointerdown',_dvNavFora,true);
+  _dvNavAtualiza();
+}
+function _dvAbrirNota(id){
+  const i=getFocusCards().findIndex(c=>c.id===id);
+  if(i>=0){focusCardIdx=i;applyFocusCard();_dvNavFechaGaveta();return}
+  const c=document.getElementById(id);if(!c)return;
+  if(_cardArquivado(c)||_cardNaLixeira(c)){toast(t('Esta nota está no arquivo ou na lixeira'),true);return}
+  // fora do filtro atual: muda pra pasta dela e abre
+  selectFolder(c.dataset.folder||null);
+  enterFocusCard(id);
+  _dvNavFechaGaveta();
+}
+function _dvIrPara(pos){
+  const id=_docCardId();if(!id)return;
+  if(_dvModo==='leitura'){
+    const b=[...document.querySelectorAll('#dvread-'+id+' .dv-b')].find(x=>+x.dataset.s<=pos&&pos<+x.dataset.e);
+    b?.scrollIntoView({behavior:_voxReduzMov()?'auto':'smooth',block:'start'});
+  }else if(_focusEditorInstance&&_focusEditorCardId===id){
+    const inst=_focusEditorInstance;
+    inst.textarea.focus({preventScroll:true});
+    inst.textarea.setSelectionRange(pos,pos);
+    const ta=document.getElementById(id)?.querySelector('.cb textarea');
+    if(ta){ta.selectionStart=ta.selectionEnd=pos}
+    _dvRolaAteCursor(inst,pos);
+  }
+  _dvNavFechaGaveta();
+}
+// Destaca no índice o título que está no topo da tela (só na Leitura).
+function _dvEspia(){
+  if(_dvEspiaRaf)return;
+  _dvEspiaRaf=requestAnimationFrame(()=>{
+    _dvEspiaRaf=0;
+    const nav=document.getElementById('dvNav');
+    if(!nav||nav.hidden)return;
+    const bs=[...nav.querySelectorAll('.dv-nav-i')];if(!bs.length)return;
+    let ativo=null;
+    if(_dvModo==='leitura'){
+      const blocos=[...document.querySelectorAll('#dvread-'+(_docCardId()||'')+' .dv-b')];
+      bs.forEach(b=>{
+        const pos=+b.dataset.pos,el=blocos.find(x=>+x.dataset.s<=pos&&pos<+x.dataset.e);
+        if(el&&el.getBoundingClientRect().top<=180)ativo=b;
+      });
+      // No fim da página o último título nunca chega ao alto da tela: acende ele.
+      if(scrollY>0&&innerHeight+scrollY>=document.documentElement.scrollHeight-6)ativo=bs[bs.length-1];
+    }
+    bs.forEach(b=>b.classList.toggle('on',b===ativo));
+  });
+}
+window.addEventListener('scroll',_dvEspia,{passive:true});
+
+
+// ── DOCUMENTO v2 · Barra "/", bolha de seleção e foco (15/10/2026) ─────────
+// Três gestos de quem escreve: "/" abre a lista de blocos (título, lista,
+// tarefa, citação, código, divisor, data, Transformar com IA); selecionar um
+// trecho abre uma bolha (negrito, itálico, link, título, citação; Copiar; e
+// Transformar SÓ NAQUELE TRECHO); e, enquanto você digita, os menus do app
+// ficam quase invisíveis — mexeu o mouse, voltam. O editor continua sendo o
+// OverType: os blocos entram com setRangeText + evento "input", o mesmo
+// caminho da régua dele, então tudo (desfazer, contagem, espelho no textarea
+// real) segue valendo sem código novo.
+const _DV_SLASH=[
+  {g:'H1',lbl:'Título 1',d:'#',kw:'titulo h1 cabecalho grande',pre:'# '},
+  {g:'H2',lbl:'Título 2',d:'##',kw:'titulo h2 subtitulo secao',pre:'## '},
+  {g:'H3',lbl:'Título 3',d:'###',kw:'titulo h3 subtitulo',pre:'### '},
+  {g:'•',lbl:'Lista',d:'-',kw:'lista marcadores bullet topicos',pre:'- '},
+  {g:'1.',lbl:'Lista numerada',d:'1.',kw:'lista numerada passos ordem',pre:'1. '},
+  {g:'☐',lbl:'Tarefa',d:'[ ]',kw:'tarefa todo checkbox fazer pendencia',pre:'- [ ] '},
+  {g:'❝',lbl:'Citação',d:'>',kw:'citacao quote destaque',pre:'> '},
+  {g:'</>',lbl:'Bloco de código',d:'```',kw:'codigo code bloco',bloco:'```\n\n```\n',caret:4},
+  {g:'—',lbl:'Divisor',d:'---',kw:'divisor linha separador hr',bloco:'---\n'},
+  {g:'📅',lbl:'Data de hoje',d:'',kw:'data hoje dia calendario',texto:()=>new Date().toLocaleDateString(getLocale(),{day:'numeric',month:'long',year:'numeric'})},
+  {g:'✨',lbl:'Transformar com IA…',d:'',kw:'ia transformar lente resumo traduzir',acao:'ia'}
+];
+let _dvSlashSt=null,_dvBolhaSt=null,_dvMouse={x:0,y:0},_dvFocoRef=null;
+const _dvSemAcento=s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+function _dvFlut(id,cls){
+  let el=document.getElementById(id);
+  if(!el){el=document.createElement('div');el.id=id;el.className='dv-flut '+cls;el.hidden=true;document.body.appendChild(el)}
+  return el;
+}
+// Posição (na tela) de um índice dentro do textarea: espelha o texto num div
+// invisível com a mesma tipografia e mede onde o índice cai.
+function _dvCoords(ta,pos){
+  const cs=getComputedStyle(ta),d=document.createElement('div');
+  ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','lineHeight','wordSpacing','textIndent','tabSize','paddingTop','paddingRight','paddingBottom','paddingLeft'].forEach(k=>{d.style[k]=cs[k]});
+  d.style.cssText+=';position:absolute;visibility:hidden;left:-9999px;top:0;border:0;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:break-word;width:'+ta.clientWidth+'px';
+  d.textContent=ta.value.slice(0,pos);
+  const sp=document.createElement('span');sp.textContent=ta.value.slice(pos)||'.';d.appendChild(sp);
+  document.body.appendChild(d);
+  const x=sp.offsetLeft,y=sp.offsetTop,lh=parseFloat(cs.lineHeight)||22;
+  d.remove();
+  const r=ta.getBoundingClientRect();
+  return{x:r.left+x-ta.scrollLeft,y:r.top+y-ta.scrollTop,lh};
+}
+// Coloca o balão dentro da tela: abaixo de y1, ou acima (y2) se não couber.
+function _dvPosFlut(el,x,y1,y2){
+  const w=el.offsetWidth,h=el.offsetHeight,vw=innerWidth,vh=innerHeight;
+  let top=y1;if(top+h>vh-8)top=Math.max(8,y2-h);
+  el.style.left=Math.max(8,Math.min(x,vw-w-8))+'px';
+  el.style.top=Math.max(8,top)+'px';
+}
+// ── "/" ──
+function _dvSlashChecar(inst){
+  const ta=inst.textarea;
+  if(!ta||ta.selectionStart!==ta.selectionEnd){_dvSlashFecha();return}
+  const p=ta.selectionStart,v=ta.value,li=v.lastIndexOf('\n',p-1)+1,pref=v.slice(li,p);
+  const m=/(^|\s)\/([^\s\/]{0,18})$/.exec(pref);
+  if(!m){_dvSlashFecha();return}
+  const q=_dvSemAcento(m[2]);
+  const itens=_DV_SLASH.filter(i=>!q||_dvSemAcento(t(i.lbl)+' '+i.kw).includes(q));
+  if(!itens.length){_dvSlashFecha();return}
+  const ini=p-m[2].length-1,ant=_dvSlashSt&&_dvSlashSt.ini===ini?_dvSlashSt.itens[_dvSlashSt.sel]:null;
+  _dvSlashSt={ini,inst,itens,sel:Math.max(0,itens.indexOf(ant))};
+  _dvSlashDesenha();
+}
+function _dvSlashDesenha(){
+  const st=_dvSlashSt;if(!st)return;
+  const el=_dvFlut('dvSlash','dv-slash');
+  el.setAttribute('role','listbox');
+  el.innerHTML='<div class="dv-slash-hd">'+escHtml(t('Inserir'))+'</div>'+st.itens.map((it,i)=>
+    '<button type="button" class="dv-slash-i'+(i===st.sel?' on':'')+'" data-i="'+i+'" role="option" aria-selected="'+(i===st.sel)+'"><span class="dv-slash-g">'+escHtml(it.g)+'</span><span class="dv-slash-l">'+escHtml(t(it.lbl))+'</span><span class="dv-slash-d">'+escHtml(it.d||'')+'</span></button>').join('');
+  el.hidden=false;
+  const c=_dvCoords(st.inst.textarea,st.ini);
+  _dvPosFlut(el,c.x,c.y+c.lh+6,c.y-6);
+  const on=el.querySelector('.on');
+  if(on){
+    if(on.offsetTop<el.scrollTop+24)el.scrollTop=Math.max(0,on.offsetTop-24);
+    else if(on.offsetTop+on.offsetHeight>el.scrollTop+el.clientHeight)el.scrollTop=on.offsetTop+on.offsetHeight-el.clientHeight;
+  }
+  if(!el._dvOk){
+    el._dvOk=true;
+    el.addEventListener('mousedown',e=>e.preventDefault()); // não tira o foco do texto
+    el.addEventListener('click',e=>{const b=e.target.closest('.dv-slash-i');if(b&&_dvSlashSt)_dvSlashAplica(_dvSlashSt.itens[+b.dataset.i])});
+  }
+}
+function _dvSlashFecha(){
+  _dvSlashSt=null;
+  const el=document.getElementById('dvSlash');if(el)el.hidden=true;
+}
+function _dvSlashTecla(e){
+  const st=_dvSlashSt;if(!st)return;
+  const k=e.key;
+  if(k==='ArrowDown'||k==='ArrowUp'){
+    e.preventDefault();e.stopImmediatePropagation();
+    st.sel=(st.sel+(k==='ArrowDown'?1:-1)+st.itens.length)%st.itens.length;_dvSlashDesenha();
+  }else if(k==='Enter'||k==='Tab'){
+    e.preventDefault();e.stopImmediatePropagation();_dvSlashAplica(st.itens[st.sel]);
+  }else if(k==='Escape'){
+    e.preventDefault();e.stopImmediatePropagation();_dvSlashFecha();
+  }
+}
+function _dvSlashAplica(it){
+  const st=_dvSlashSt;if(!st||!it)return;
+  const ta=st.inst.textarea,ini=st.ini,fim=ta.selectionStart;
+  _dvSlashFecha();
+  const v=ta.value,li=v.lastIndexOf('\n',ini-1)+1;
+  if(it.pre){
+    // tira o "/consulta" e troca o marcador que a linha já tinha (se tinha) pelo novo
+    ta.setRangeText('',ini,fim,'end');
+    const m=/^(#{1,6}[ \t]+|[-*+][ \t]+(?:\[[ xX]\][ \t]+)?|\d+[.)][ \t]+|>[ \t]+)/.exec(ta.value.slice(li)),ant=m?m[0].length:0;
+    ta.setRangeText(it.pre,li,li+ant,'end');
+    const c=ini-ant+it.pre.length;ta.setSelectionRange(c,c);
+  }else if(it.bloco){
+    const antes=v.slice(li,ini).trim()!=='';
+    ta.setRangeText((antes?'\n':'')+it.bloco,ini,fim,'end');
+    const c=ini+(antes?1:0)+(it.caret!=null?it.caret:it.bloco.length);ta.setSelectionRange(c,c);
+  }else if(it.texto){
+    ta.setRangeText(it.texto(),ini,fim,'end');
+  }else{
+    ta.setRangeText('',ini,fim,'end');
+  }
+  ta.dispatchEvent(new Event('input',{bubbles:true}));
+  ta.focus();
+  if(it.acao==='ia')_dvTransformar();
+}
+// "Transformar com IA": o painel de lentes mora no cabeçalho recolhido do
+// card — desdobra e abre o mesmo menu de sempre (a nota inteira).
+function _dvTransformar(){
+  const id=_docCardId();if(!id)return;
+  const c=document.getElementById(id);
+  if(c?.classList.contains('hdr-folded'))toggleDocHeaderFold();
+  toggleLensMenu(id);
+  setTimeout(()=>document.getElementById('lens-'+id)?.scrollIntoView({behavior:'smooth',block:'nearest'}),60);
+}
+// ── bolha de seleção ──
+const _DV_LENTES_SEL=['corretor','formal','simples','resumo','decisoes'];
+function _dvBolhaFecha(){
+  _dvBolhaSt=null;
+  const el=document.getElementById('dvBolha');if(el)el.hidden=true;
+}
+function _dvBolhaMostra(st,x,yAcima,yAbaixo){
+  if(_voxToque())return;
+  _dvBolhaSt=st;
+  const el=_dvFlut('dvBolha','dv-bolha');
+  const ed=st.modo==='edicao';
+  const b=(a,tt,h)=>'<button type="button" data-a="'+a+'" title="'+escHtml(tt)+'" aria-label="'+escHtml(tt)+'">'+h+'</button>';
+  el.innerHTML='<div class="dv-bolha-lin">'+
+    (ed?b('toggleBold',t('Negrito'),'<b>B</b>')+b('toggleItalic',t('Itálico'),'<i>I</i>')+b('insertLink',t('Link'),'<span class="svgi">'+ICO.link+'</span>')+b('toggleH2',t('Título'),'H')+b('toggleQuote',t('Citação'),'❝')+'<span class="dv-bolha-sep"></span>':'')+
+    b('lentes',t('Transformar só este trecho'),'<span class="svgi">'+ICO.magicWand+'</span> '+escHtml(t('Transformar'))+' ▾')+
+    b('copiar',t('Copiar'),'<span class="svgi">'+ICO.copy+'</span>')+
+    '</div><div class="dv-bolha-lentes" hidden>'+_DV_LENTES_SEL.filter(k=>LENSES[k]&&(ed||!LENSES[k].inplace)).map(k=>'<button type="button" data-lente="'+k+'">'+escHtml(LENSES[k].label)+(LENSES[k].inplace?'<small>'+escHtml(t('troca o trecho'))+'</small>':'<small>'+escHtml(t('nota nova'))+'</small>')+'</button>').join('')+
+    '<button type="button" data-a="todas" class="dv-bolha-mais">'+escHtml(t('Mais lentes (nota inteira)…'))+'</button></div>';
+  el.hidden=false;
+  const w=el.offsetWidth,h=el.offsetHeight;
+  el.style.left=Math.max(8,Math.min(x-w/2,innerWidth-w-8))+'px';
+  let top=yAcima-h;if(top<84)top=yAbaixo; // acima da seleção; se bater no menu do app, desce
+  el.style.top=Math.max(8,Math.min(top,innerHeight-h-8))+'px';
+  if(!el._dvOk){
+    el._dvOk=true;
+    el.addEventListener('mousedown',e=>e.preventDefault());
+    el.addEventListener('click',_dvBolhaClique);
+  }
+}
+function _dvBolhaEdicao(inst){
+  const ta=inst.textarea;if(!ta)return;
+  const a=ta.selectionStart,z=ta.selectionEnd;
+  if(z-a<2||_dvSlashSt||!ta.value.slice(a,z).trim()){_dvBolhaFecha();return}
+  const c1=_dvCoords(ta,a),c2=_dvCoords(ta,z);
+  const mesma=Math.abs(c1.y-c2.y)<2;
+  _dvBolhaMostra({modo:'edicao',inst,id:_focusEditorCardId,texto:ta.value.slice(a,z),ini:a,fim:z},mesma?(c1.x+c2.x)/2:c1.x+40,c1.y-8,c2.y+c2.lh+8);
+}
+function _dvBolhaLeitura(){
+  const el=document.querySelector('.dv-read');if(!el)return;
+  const sel=window.getSelection();
+  if(!sel||sel.isCollapsed||!el.contains(sel.anchorNode)||!el.contains(sel.focusNode)){_dvBolhaFecha();return}
+  const tx=sel.toString();
+  if(tx.trim().length<2){_dvBolhaFecha();return}
+  const r=sel.getRangeAt(0).getBoundingClientRect();
+  _dvBolhaMostra({modo:'leitura',id:_docCardId(),texto:tx,ini:null,fim:null},r.left+r.width/2,r.top-8,r.bottom+8);
+}
+async function _dvBolhaClique(e){
+  const st=_dvBolhaSt;if(!st)return;
+  const b=e.target.closest('button');if(!b)return;
+  const el=document.getElementById('dvBolha');
+  if(b.dataset.lente){const k=b.dataset.lente,s=st;_dvBolhaFecha();_dvLenteTrecho(s,k);return}
+  const a=b.dataset.a;
+  if(a==='lentes'){const l=el.querySelector('.dv-bolha-lentes');l.hidden=!l.hidden;return}
+  if(a==='todas'){_dvBolhaFecha();_dvTransformar();return}
+  if(a==='copiar'){
+    _dvBolhaFecha();
+    try{await navigator.clipboard.writeText(st.texto);toast(t('📋 Trecho copiado!'))}catch(x){toast(t('❌ Não foi possível copiar'),true)}
+    return;
+  }
+  // formatação (só na Edição): usa as ações da régua do próprio OverType
+  if(st.modo==='edicao'&&st.inst){
+    const inst=st.inst;
+    _dvBolhaFecha();
+    try{await inst.performAction(a)}catch(x){}
+    inst.textarea.focus();
+  }
+}
+// Lente só no trecho: a mesma máquina da lente da nota inteira (chave, cortesia,
+// toast, desfazer), só que alimentada com o trecho. Na Edição "Corretor" troca
+// o trecho no lugar; as outras viram nota nova ligada a esta ("Gerou" no painel).
+function _dvLenteTrecho(st,key){
+  const L=LENSES[key];if(!L)return;
+  const sel={texto:st.texto,ini:st.modo==='edicao'?st.ini:null,fim:st.modo==='edicao'?st.fim:null};
+  runLens(st.id,key,'',sel);
+}
+// ── foco ao digitar ──
+function _dvFocoLiga(){
+  if(_dvPrefs().foco!=='on'||_voxToque()||isRec||isProc||viewMode!=='doc')return;
+  if(!document.body.classList.contains('dv-digitando')){_dvFocoRef={..._dvMouse};document.body.classList.add('dv-digitando')}
+}
+function _dvFocoDesliga(){
+  _dvFocoRef=null;document.body.classList.remove('dv-digitando');
+}
+document.addEventListener('mousemove',e=>{
+  _dvMouse={x:e.clientX,y:e.clientY};
+  if(_dvFocoRef&&Math.hypot(_dvMouse.x-_dvFocoRef.x,_dvMouse.y-_dvFocoRef.y)>6)_dvFocoDesliga();
+},{passive:true});
+document.addEventListener('pointerdown',_dvFocoDesliga,true);
+window.addEventListener('blur',_dvFocoDesliga);
+// Ligações no textarea do OverType (chamado por _mountFocusEditor, ANTES do
+// listener do Esc, pra "/" aberto ganhar o Esc/Enter).
+function _dvEditorLigar(inst){
+  const ta=inst.textarea;if(!ta)return;
+  ta.addEventListener('keydown',_dvSlashTecla,true);
+  ta.addEventListener('input',()=>{_dvSlashChecar(inst);_dvBolhaFecha();_dvFocoLiga()});
+  ta.addEventListener('mouseup',()=>_dvBolhaEdicao(inst));
+  ta.addEventListener('keyup',e=>{
+    if(/^Arrow(Left|Right)$/.test(e.key))_dvSlashChecar(inst);
+    if(e.shiftKey||/^(Arrow|Home$|End$)/.test(e.key))_dvBolhaEdicao(inst);
+  });
+  ta.addEventListener('click',()=>{if(ta.selectionStart===ta.selectionEnd){_dvSlashFecha();_dvBolhaFecha()}});
+  ta.addEventListener('scroll',()=>{_dvSlashFecha();_dvBolhaFecha()},{passive:true});
+  ta.addEventListener('blur',()=>setTimeout(()=>{
+    if(document.activeElement!==ta){_dvSlashFecha();_dvBolhaFecha();_dvFocoDesliga()}
+  },120));
+}
+window.addEventListener('scroll',()=>{if(_dvBolhaSt)_dvBolhaFecha()},{passive:true});
+document.addEventListener('mouseup',e=>{
+  if(viewMode!=='doc'||_dvModo!=='leitura')return;
+  if(e.target.closest?.('#dvBolha'))return;
+  setTimeout(_dvBolhaLeitura,10); // a seleção só fecha depois do mouseup
+});
+document.addEventListener('mousedown',e=>{
+  if(_dvBolhaSt&&!e.target.closest?.('#dvBolha')&&_dvBolhaSt.modo==='leitura')_dvBolhaFecha();
+  if(_dvSlashSt&&!e.target.closest?.('#dvSlash'))_dvSlashFecha();
+},true);
 
 // ── FONT SIZE ──
 function setFontSize(s){
@@ -30367,6 +31442,7 @@ function _tipoDrag(e){
   return'generico';
 }
 function _showAudioDrop(on,tipo){
+  document.body.classList.toggle('arrastando-arquivo',!!on); // a zona de soltar foto do Documento cresce com isto
   const ibar=document.querySelector('.ibar');if(!ibar)return;
   ibar.classList.toggle('file-drag',!!on);
   if(on&&!stagedFile){
@@ -34430,6 +35506,13 @@ function renameSname(id){
   if(novo===null)return;
   const trimmed=novo.trim();
   if(trimmed===current)return;
+  _aplicarSname(id,trimmed);
+}
+// Aplica o nome já decidido (o prompt acima e o título editável do Modo
+// Documento chegam aqui). silencioso: o título do documento salva ao sair do
+// campo — um toast a cada saída seria barulho.
+function _aplicarSname(id,trimmed,silencioso){
+  const card=document.getElementById(id);if(!card)return;
   card.dataset.sessionName=trimmed;
   const badge=card.querySelector('.sname-badge');
   if(badge){
@@ -34437,8 +35520,10 @@ function renameSname(id){
     badge.title=trimmed||t('Clique para nomear este card');
     badge.innerHTML=trimmed?(card.dataset.diarized==='true'?'<span class="svgi">'+ICO.pinOutline+'</span> ':'')+escHtml(trimmed):escHtml(t('+ nome'));
   }
+  _dvTituloSync(id);
+  if(viewMode==='doc')_dvNavAgenda();
   saveHistory();
-  toast(trimmed?t('✏️ Nome atualizado'):t('Nome removido'));
+  if(!silencioso)toast(trimmed?t('✏️ Nome atualizado'):t('Nome removido'));
 }
 
 // Exportação com controle: escolher tempos + quais locutores incluir
@@ -36579,14 +37664,17 @@ function tradSwap(id){
   if(!de||!para)return; if(de.value==='auto')return;
   const tmp=de.value; de.value=para.value; para.value=tmp;
 }
-async function runLens(id,lensKey,focus=''){
+// sel (opcional): {texto,ini,fim} — roda a lente só num trecho (bolha de seleção do
+// Modo Documento). Com ini/fim e lente "no lugar", troca só o trecho; sem eles, ou
+// com lente que gera nota, o resultado vira nota nova ligada a esta.
+async function runLens(id,lensKey,focus='',sel=null){
   // Sem chave de IA: as primeiras lentes podem ir por nossa conta (ponte), pra
   // pessoa sentir o "o Vox pensa com você" antes do passo da chave. Traduzir
   // tem caminho próprio (menu) e fica fora do presente.
   let viaCortesia=false;
   if(!aiKey()&&lensKey!=='traduzir'&&LENSES[lensKey]){
     const c0=document.getElementById(id);
-    const t0=(c0&&c0.querySelector('textarea')?.value||'').trim();
+    const t0=(sel?sel.texto:(c0&&c0.querySelector('textarea')?.value||'')).trim();
     if(!t0){toast(t('ℹ️ Card vazio — nada para transformar'),true);return}
     if(!(await _cortesiaLentePode(LENSES[lensKey],t0)))return;
     viaCortesia=true;
@@ -36606,8 +37694,9 @@ async function runLens(id,lensKey,focus=''){
     showTraduzirMenu(id,'auto');return;
   }
   const card=document.getElementById(id);if(!card)return;
-  const text=(card.querySelector('textarea')?.value||'').trim();
+  const text=(sel?sel.texto:(card.querySelector('textarea')?.value||'')).trim();
   if(!text){toast(t('ℹ️ Card vazio — nada para transformar'),true);return}
+  const estavaAqui=viewMode==='doc'&&_docCardId()===id,modoAntes=_dvModo;
   const key=viaCortesia?_CORTESIA_CHAVE:aiKey();
   if(!key){toast(t('🔑 Configure uma chave de IA!'),true);_obAbrirNaChave();return}
   const L=LENSES[lensKey];if(!L)return;
@@ -36616,16 +37705,30 @@ async function runLens(id,lensKey,focus=''){
   _cortesiaLenteUltima=false;
   try{
     const result=await generateLens(L,text,key,focus);
-    if(L.inplace){
+    if(L.inplace&&(!sel||sel.ini!=null)){
       const ta=card.querySelector('textarea');
-      pushCardHistory(id);ta.value=result;autoR(ta);updateFooter(id);saveHistory();
+      let novoTexto=result;
+      if(sel){
+        // o texto pode ter mudado enquanto a IA trabalhava: acha o trecho de novo, ou não mexe em nada
+        const i=ta.value.slice(sel.ini,sel.fim)===sel.texto?sel.ini:ta.value.indexOf(sel.texto);
+        if(i<0){toast(t('ℹ️ O trecho mudou enquanto a IA trabalhava — nada foi alterado'),true);return}
+        novoTexto=ta.value.slice(0,i)+result+ta.value.slice(i+sel.texto.length);
+      }
+      pushCardHistory(id);ta.value=novoTexto;autoR(ta);updateFooter(id);saveHistory();
       toast(L.label+' '+t('aplicado! Ctrl+Z desfaz.'));
     }else{
       const mode=card.dataset.mode||'livre';
       if(lensKey==='traduzir'&&(result||'').trim().toLowerCase()===(text||'').trim().toLowerCase()){
         toast(t('Texto já no idioma de destino'));
       }
-      const novo=addCard(result,null,0,'texto',viaCortesia?'groqwhisper':cfg.provider,true,null,null,[L.tag,mode],L.label+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false);
+      const novo=addCard(result,null,0,'texto',viaCortesia?'groqwhisper':cfg.provider,true,null,null,[L.tag,mode],L.label+(sel?' ('+t('trecho')+')':'')+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false);
+      // linhagem: a nota nova sabe de qual nasceu (aparece em "Veio de" / "Gerou" no Documento)
+      const nc=document.getElementById(novo);
+      if(nc&&card.dataset.dt){nc.dataset.origemDt=card.dataset.dt;nc.dataset.origemLente=lensKey;saveHistory()}
+      // Dentro do Documento: a nota nova entra no começo da lista e empurrava a tela pra outra nota.
+      // Volta pra onde a pessoa estava (no mesmo modo, Leitura ou Edição); o "Gerou" do painel mostra a nova.
+      if(estavaAqui&&_docCardId()!==id){const i=getFocusCards().findIndex(c=>c.id===id);if(i>=0){focusCardIdx=i;_dvCardAtual=id;_dvModo=modoAntes;applyFocusCard()}}
+      if(viewMode==='doc')_dvNavAgenda();
       setLastAICard(novo);
       toast(L.label+' '+t('gerado! Ctrl+Z desfaz.'));
       if(viaCortesia&&_cortesiaLenteUltima)_cortesiaNotaUltima(novo,'lente');
@@ -36825,8 +37928,10 @@ function updateFooter(id){
   // (Modo Foco) atualizado sem precisar caçar cada função que muda o texto (undo,
   // lentes de IA, etc). Guard de igualdade evita loop com o onChange do próprio editor.
   if(ta&&_focusEditorCardId===id&&_focusEditorInstance&&ta.value!==_focusEditorInstance.getValue()){
-    _focusEditorInstance.setValue(ta.value);
+    _focusSync=true;
+    try{_focusEditorInstance.setValue(ta.value)}finally{_focusSync=false}
   }
+  if(viewMode==='doc'){_dvMetaAtualiza(id);if(_dvModo==='leitura')_dvRenderAgendado(id);if(id===_docCardId())_dvNavAgenda()}
   saveHistory();
 }
 // Dentro da lixeira o botão de excluir apaga DE VEZ, e aí a confirmação faz
@@ -38472,7 +39577,9 @@ function initFloatSelHandle(){
   // nenhum. Bloqueia esse recurso nativo por completo — a única forma de
   // carregar um trecho passa a ser o nosso ⠿.
   document.addEventListener('dragstart',e=>{
-    if(e.target.closest('#cardsList, #cchat-overlay'))e.preventDefault();
+    // alvo pode ser um nó de texto (arrastar texto selecionado da Leitura): ele não tem closest()
+    const alvo=e.target.nodeType===1?e.target:e.target.parentElement;
+    if(alvo&&alvo.closest('#cardsList, #cchat-overlay'))e.preventDefault();
   });
 }
 
@@ -39188,9 +40295,11 @@ document.addEventListener('keydown',e=>{
       if(card&&cardRedo(card.id))e.preventDefault();
     }
   }
-  if(viewMode==='doc'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
-    if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();focusStep(1)}
-    if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();focusStep(-1)}
+  if(viewMode==='doc'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)&&!document.activeElement.isContentEditable){
+    // Em Leitura, ↑/↓ rolam o texto; só ←/→ trocam de card.
+    const lendo=_dvModo==='leitura';
+    if(e.key==='ArrowLeft'||(!lendo&&e.key==='ArrowUp')){e.preventDefault();focusStep(1)}
+    if(e.key==='ArrowRight'||(!lendo&&e.key==='ArrowDown')){e.preventDefault();focusStep(-1)}
     if(e.key==='Escape'){e.preventDefault();setViewMode('list')}
   }
 });
