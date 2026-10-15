@@ -9365,7 +9365,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.3';
+const VOX_VERSION='2026.10.15.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -19584,21 +19584,24 @@ function _telaLevitar(ids){
 }
 // Troca de tela. Devolve true se trocou. Sem janela nenhuma é só fechar uma e
 // abrir a outra, do jeito de sempre.
+let _telaTrocando=false;
 function _telaTrocar(dest){
   const orig=_telaAtual();
   if(!TELAS[dest]||dest===orig)return false;
   if(!_abreTelaPode(dest)){toast(t('Crie uma pasta primeiro: este mapa mostra as pastas.'));return false}
   if(!orig||!_flAbertas.length){
-    if(orig)TELAS[orig].fechar();
-    TELAS[dest].abrir();
+    // _telaTrocando: o fechar() de sempre esconde o balão na hora; aqui ele
+    // precisa continuar de pé pra voar até o botão da tela nova.
+    _telaTrocando=true;
+    try{if(orig)TELAS[orig].fechar();TELAS[dest].abrir()}finally{_telaTrocando=false}
     return true;
   }
   // Camada escondida (botão de camadas desligado): as janelas não têm retângulo
   // na tela, então não há o que retratar. Elas seguem vivas e voltam quando a
   // camada for religada.
   const retratos=_flAtiva?_flRetratar():[];
-  TELAS[orig].fechar({manter:true});
-  TELAS[dest].abrir();
+  _telaTrocando=true;
+  try{TELAS[orig].fechar({manter:true});TELAS[dest].abrir()}finally{_telaTrocando=false}
   // O Fluxograma só enquadra o mapa no próximo quadro (requestAnimationFrame no
   // abrir), e a câmera das janelas é a do mapa: sem enquadrar aqui, elas seriam
   // recolocadas pra uma câmera que muda logo depois. O enquadramento do abrir
@@ -19852,6 +19855,7 @@ function _telaBalAbrir(btn){
 // instante=true some sem animar (a tela abaixo mudou, ou o balão perdeu o
 // sentido). Sem isso, ele voa de volta pro botão.
 function _telaBalFechar(instante){
+  if(_telaTrocando)return;
   if(!_telaBalAberto&&!instante)return;
   const bal=_telaBalEl,btn=_telaBalBtn;
   if(instante)_telaLevarUmFechar();
