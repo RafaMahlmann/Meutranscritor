@@ -7437,6 +7437,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .det .dbtn:hover{background:#2ad3a0}
 .det .dbtn:active{transform:scale(.97)}
 .det .dbtn.sec{background:transparent;color:var(--gx-txt2);border:1px solid var(--gx-bord)}
+.det .dbtn.perigo{background:#e5484d;color:#fff}
+.det .dbtn.perigo:hover{background:#f2555a}
+.det .dbtn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.det .dexcluir{color:#ff8a80}
+.det .dexcluir:hover{color:#ffb4ab}
+.det .derro{font-size:12px;color:#ff8a80;margin-top:8px;font-weight:600}
 .det .dinp{width:100%;margin-top:10px;background:rgba(255,255,255,.08);border:1.5px solid transparent;
   border-radius:11px;padding:10px 12px;font-size:14px;font-family:var(--font);color:var(--gx-txt);outline:none;
   transition:border-color .15s linear,background .15s linear}
@@ -9814,7 +9820,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.22';
+const VOX_VERSION='2026.10.15.23';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11143,6 +11149,24 @@ let I18N_EN={
 "Pronto. A mãozinha volta na próxima vez que você abrir uma lista de notas no Fluxograma, na Órbita ou no Calendário.":"Done. The little hand comes back the next time you open a note list in the Flowchart, Orbit or Calendar.",
 "Rever o gesto de arrastar":"Replay the drag gesture",
 "Que atendimento você faz?":"What kind of appointments do you run?",
+"Apagar de vez agora":"Delete forever now",
+"Excluir este mundo":"Delete this world",
+"Isso não tem volta: as notas, as pastas e as fotos deste mundo somem deste aparelho.":"This can't be undone: this world's notes, folders and photos disappear from this device.",
+"Para confirmar, digite o nome do mundo:":"To confirm, type the world name:",
+"Vão juntos todas as notas, pastas e fotos deste mundo.":"All of this world's notes, folders and photos go with it.",
+"Vão juntos {n} e {p}, com as fotos.":"{n} and {p} go with it, along with the photos.",
+"Excluir mundo":"Delete world",
+"Excluir {x}?":"Delete {x}?",
+"Fica {n} dias na lixeira e dá para restaurar. Depois é apagado de vez.":"It stays {n} days in the trash and can be restored. After that it is deleted forever.",
+"Você está neste mundo: o Vox volta para o Meu espaço antes.":"You are in this world: Vox goes back to My space first.",
+"Baixar uma cópia antes":"Download a copy first",
+"Quer guardar uma cópia antes? Entre no mundo e use Guardar uma cópia.":"Want to keep a copy first? Enter the world and use Save a copy.",
+"Senha ou código deste mundo":"This world's password or code",
+"Mandar para a lixeira":"Move to trash",
+"O nome não confere.":"The name doesn't match.",
+"{x} foi apagado de vez.":"{x} was deleted forever.",
+"{x} foi para a lixeira. Dá para restaurar na Galáxia por {n} dias.":"{x} went to the trash. You can restore it from the Galaxy for {n} days.",
+
 "Criptografa as notas, as fotos e os nomes das pastas":"Encrypts notes, photos and folder names",
 "Com senha, as notas, as fotos e os nomes das pastas deste mundo ficam cifrados no aparelho.":"With a password, this world's notes, photos and folder names are encrypted on the device.",
 
@@ -42808,6 +42832,8 @@ function pintarDet(){
      +'<div class="dd">'+esc(w.desc)+'</div>'
      +'<button type="button" class="dbtn" onclick="adotarSugestao(\''+esc(w.sid)+'\')">'+t('Usar este')+'</button>'
      +'<button type="button" class="dfora" onclick="dispensarSugestao(\''+esc(w.sid)+'\')">'+t('Não vou usar este')+'</button>';
+  }else if(_exMundo&&_exMundo.id===w.id){
+    h=_exMundoHtml(w);
   }else if(_edMundo===w.id){
     h='<div class="dk">'+t('Editando')+'</div>'
      +'<input class="dinp" id="edNome" maxlength="28" aria-label="'+t('Nome do mundo')+'" value="'+esc(w.nome)+'">'
@@ -42820,7 +42846,8 @@ function pintarDet(){
     h='<div class="dk">'+t('Na lixeira')+'</div>'
      +'<div class="dn">'+esc(w.nome)+'</div>'
      +'<div class="dm">'+t('Some em {n} dias').replace('{n}',w.dias)+'</div>'
-     +'<button type="button" class="dbtn" onclick="restaurarMundo(\''+esc(w.id)+'\')">'+t('Restaurar')+'</button>';
+     +'<button type="button" class="dbtn" onclick="restaurarMundo(\''+esc(w.id)+'\')">'+t('Restaurar')+'</button>'
+     +'<button type="button" class="dfora dexcluir" onclick="excluirMundoPedir(\''+esc(w.id)+'\',\'apagar\')">'+t('Apagar de vez agora')+'</button>';
   }else{
     var eAtivo=(w.id===ativoId);
     /* notas === null = a contagem ainda está vindo do banco (ver
@@ -42849,7 +42876,8 @@ function pintarDet(){
      +(noAtivo?_faixaProtecao(w):'')
      +(eAtivo
        ? '<button class="dbtn sec" onclick="fecharGalaxia()">'+t('Voltar pra este mundo')+'</button>'
-       : '<button class="dbtn" onclick="entrar(\''+esc(w.id)+'\')">'+t('Entrar em')+' '+esc(w.nome)+'</button>');
+       : '<button class="dbtn" onclick="entrar(\''+esc(w.id)+'\')">'+t('Entrar em')+' '+esc(w.nome)+'</button>')
+     +(w.id!==VOX_MUNDO_RAIZ?'<button type="button" class="dfora dexcluir" onclick="excluirMundoPedir(\''+esc(w.id)+'\')">'+t('Excluir este mundo')+'</button>':'');
   }
   det.innerHTML=h;
   det.classList.add('on');
@@ -43205,6 +43233,82 @@ function dispensarSugestao(sid){
 }
 
 /* ---------- editar e lixeira, na propria ficha ---------- */
+/* ---------- excluir um mundo (15/10/2026) ----------
+   Confirmar -> lixeira (30 dias, da pra restaurar) -> apagar de vez. Mundo com
+   senha pede a senha antes. Apagar de vez agora pede o nome do mundo digitado. */
+var _exMundo=null;
+function excluirMundoPedir(id,etapa){_edMundo=null;_exMundo={id:id,etapa:etapa||'confirmar',erro:''};pintarDet();
+  setTimeout(function(){var i=document.getElementById('exSenha')||document.getElementById('exNome');if(i)i.focus();},60);}
+function excluirMundoCancelar(){_exMundo=null;pintarDet();}
+function _exMundoHtml(w){
+  var e=_exMundo;
+  if(e.etapa==='apagar'){
+    return '<div class="dk">'+t('Apagar de vez')+'</div>'
+      +'<div class="dn">'+esc(w.nome)+'</div>'
+      +'<div class="dd">'+t('Isso não tem volta: as notas, as pastas e as fotos deste mundo somem deste aparelho.')+'</div>'
+      +'<div class="dnota">'+t('Para confirmar, digite o nome do mundo:')+' <b>'+esc(w.nome)+'</b></div>'
+      +'<input class="dinp" id="exNome" autocomplete="off" aria-label="'+t('Nome do mundo')+'" oninput="document.getElementById(\'exApagar\').disabled=this.value.trim()!==W(\''+esc(w.id)+'\').nome.trim()">'
+      +(e.erro?'<div class="derro">'+esc(e.erro)+'</div>':'')
+      +'<button type="button" class="dbtn perigo" id="exApagar" disabled onclick="apagarMundoAgora(\''+esc(w.id)+'\')">'+t('Apagar de vez')+'</button>'
+      +'<button type="button" class="dbtn sec" onclick="excluirMundoCancelar()">'+t('Cancelar')+'</button>';
+  }
+  var tranc=_mundoTrancado(w.id);
+  var oQue=(w.notas===-1||tranc)?t('Vão juntos todas as notas, pastas e fotos deste mundo.')
+    :t('Vão juntos {n} e {p}, com as fotos.').replace('{n}',(w.notas===null?'…':w.notas)+' '+t(w.notas===1?'nota':'notas')).replace('{p}',w.pastas+' '+t(w.pastas===1?'pasta':'pastas'));
+  var ativo=(w.id===_mundoAtivo);
+  return '<div class="dk">'+t('Excluir mundo')+'</div>'
+    +'<div class="dn">'+t('Excluir {x}?').replace('{x}',esc(w.nome))+'</div>'
+    +'<div class="dd">'+oQue+' '+t('Fica {n} dias na lixeira e dá para restaurar. Depois é apagado de vez.').replace('{n}',LIXEIRA_DIAS)+'</div>'
+    +(ativo?'<div class="dnota">'+t('Você está neste mundo: o Vox volta para o Meu espaço antes.')+' <a href="#" onclick="event.preventDefault();fecharGalaxia();exportProject()">'+t('Baixar uma cópia antes')+'</a></div>'
+      :'<div class="dnota">'+t('Quer guardar uma cópia antes? Entre no mundo e use Guardar uma cópia.')+'</div>')
+    +(tranc?'<input class="dinp" id="exSenha" type="password" autocomplete="current-password" placeholder="'+t('Senha ou código deste mundo')+'" aria-label="'+t('Senha ou código deste mundo')+'" onkeydown="if(event.key===\'Enter\')excluirMundoConfirmar(\''+esc(w.id)+'\')">':'')
+    +(e.erro?'<div class="derro">'+esc(e.erro)+'</div>':'')
+    +'<button type="button" class="dbtn perigo" onclick="excluirMundoConfirmar(\''+esc(w.id)+'\')">'+t('Mandar para a lixeira')+'</button>'
+    +'<button type="button" class="dbtn sec" onclick="excluirMundoCancelar()">'+t('Cancelar')+'</button>';
+}
+/* Confere a senha sem mexer na chave da sessao (aceita senha OU codigo). */
+function _exConferirSenha(id,segredo){
+  var c=_cofreDe(id);
+  if(!c)return Promise.resolve(true);
+  return _cofreDesenvelopar(c.pass,segredo).then(function(d){return !!d}).catch(function(){return false})
+    .then(function(ok){return ok?ok:_cofreDesenvelopar(c.code,_cofreNormalizar(segredo)).then(function(d){return !!d}).catch(function(){return false})});
+}
+function excluirMundoConfirmar(id){
+  if(id===VOX_MUNDO_RAIZ)return;
+  var w=W(id);if(!w||w.id!==id)return;
+  var campo=document.getElementById('exSenha');
+  var seg=campo?campo.value:'';
+  (_mundoTrancado(id)?_exConferirSenha(id,seg):Promise.resolve(true)).then(function(ok){
+    if(!ok){_exMundo.erro=t('Senha ou código não confere.');pintarDet();return}
+    _exMundo=null;
+    if(id===_mundoAtivo){
+      /* Nao da pra ficar dentro de um mundo na lixeira: marca e volta pro Meu espaco. */
+      var l=_mundosLista(),m=l.find(function(x){return x.id===id});
+      if(!m)return;
+      m.del=true;m.delAt=new Date().toISOString();_mundosSalvar(l);
+      try{VOX_LS.set('vox_mundo_excluido',m.nome)}catch(e){}
+      _mundoTrocar(VOX_MUNDO_RAIZ);
+      return;
+    }
+    lixeiraMundo(id);
+  });
+}
+function apagarMundoAgora(id){
+  var w=W(id);if(!w||w.id!==id||!w.del||id===_mundoAtivo||id===VOX_MUNDO_RAIZ)return;
+  var i=document.getElementById('exNome');
+  if(!i||i.value.trim()!==String(w.nome).trim()){_exMundo.erro=t('O nome não confere.');pintarDet();return}
+  var nome=w.nome;
+  _exMundo=null;
+  _mundoApagarDeVez(id);
+  /* _mundoApagarDeVez tira do cadastro no fim (assincrono): remonta o ceu ja sem ele. */
+  setTimeout(function(){selId=ativoId;_remontarCeu();},700);
+  toast(t('{x} foi apagado de vez.').replace('{x}',nome));
+}
+/* Depois de excluir o mundo em que estava: o app reabriu no Meu espaco e conta o que houve. */
+window.addEventListener('load',function(){setTimeout(function(){
+  try{var n=VOX_LS.get('vox_mundo_excluido');if(!n)return;VOX_LS.rem('vox_mundo_excluido');
+    toast(t('{x} foi para a lixeira. Dá para restaurar na Galáxia por {n} dias.').replace('{x}',n).replace('{n}',LIXEIRA_DIAS));}catch(e){}
+},1600)});
 function editarMundo(id){_edMundo=id;pintarDet();
   var e=document.getElementById('edNome');
   if(e&&!mob)setTimeout(function(){e.focus();e.select();},80);
@@ -43296,7 +43400,8 @@ function selecionar(id,mover){
     if(id==='__novo__')return;
     entrar(id);return;
   }
-  if(_edMundo&&_edMundo!==id)_edMundo=null;   /* trocou de planeta: a edicao nao vai junto */
+  if(_edMundo&&_edMundo!==id)_edMundo=null;
+  if(_exMundo&&_exMundo.id!==id)_exMundo=null;   /* trocou de planeta: a confirmacao de excluir nao vai junto */   /* trocou de planeta: a edicao nao vai junto */
   selId=id;
   var els=orbe.querySelectorAll('.pw');
   for(var i=0;i<els.length;i++)els[i].classList.toggle('sel',els[i].getAttribute('data-id')===id);
