@@ -9600,7 +9600,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.10';
+const VOX_VERSION='2026.10.15.11';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -12986,7 +12986,10 @@ const _PEND_IDB='vox_gravacoes_esperando_chave';
 // Id da gravação que está sendo transcrita agora e JÁ está na fila (ver
 // processAudio). Enquanto ele existe, guardar de novo duplicaria a gravação.
 let _gravNaFilaId=null,_gravJaAvisada=false;
-async function _pendenteGuardar(file,durSec,sn,mode){
+// silencioso: é a rede de segurança ANTES de transcrever (processAudio). Nesse caso o
+// cartão "ficou guardada" não aparece — a gravação está sendo transcrita agora e,
+// se tudo der certo, sai da fila sozinha; ele só aparece se a transcrição falhar.
+async function _pendenteGuardar(file,durSec,sn,mode,silencioso){
   // Quem chama aqui já mostra o próprio aviso de "ficou guardada".
   if(_gravNaFilaId){_gravJaAvisada=true;return _gravNaFilaId}
   try{
@@ -12995,7 +12998,7 @@ async function _pendenteGuardar(file,durSec,sn,mode){
     lista.push({id,buf:await file.arrayBuffer(),nome:file.name||'gravacao.webm',tipo:file.type||'audio/webm',dur:durSec||0,sn:sn||'',mode:mode||'livre'});
     await _idbSetBruto(_PEND_IDB,lista);
     localStorage.setItem('vox_tem_pendente','1');
-    _pendPintar();
+    if(!silencioso)_pendPintar();
     return id;
   }catch(e){return false}
 }
@@ -13011,6 +13014,10 @@ async function _pendenteTirar(id){
   _pendPintar();
 }
 let _pendentesRodando=false,_pendErro='';
+// Ids que a transcrição normal (processAudio) ainda está fechando: entre o fim dela e a
+// saída da fila há uns milissegundos em que a recuperação achava que a gravação tinha
+// ficado para trás e transcrevia de novo (nota duplicada).
+const _pendOcupadas=new Set();
 // manual=true vem do botão "Transformar em texto": sem chave, abre as
 // Configurações em vez de não fazer nada.
 async function _pendentesProcessar(manual){
@@ -13023,7 +13030,7 @@ async function _pendentesProcessar(manual){
     if(!lista.length){localStorage.removeItem('vox_tem_pendente');return}
     let avisou=false;
     for(const p of lista){
-      while(isProc||isRec||_gravNaFilaId)await new Promise(r=>setTimeout(r,500));
+      while(isProc||isRec||_gravNaFilaId||_pendOcupadas.has(p.id))await new Promise(r=>setTimeout(r,500));
       // Pode ter saído da fila enquanto esperava (a transcrição normal deu certo).
       const ainda=((await _idbGetBruto(_PEND_IDB))||[]).some(x=>x.id===p.id);
       if(!ainda)continue;
@@ -13054,6 +13061,8 @@ function _pendMotivo(m){
 async function _pendPintar(){
   const el=document.getElementById('voxGuardada');if(!el)return;
   let lista=[];try{lista=(await _idbGetBruto(_PEND_IDB))||[]}catch(e){}
+  // A que está sendo transcrita agora pela via normal não "ficou para trás": não entra no aviso.
+  lista=lista.filter(p=>!_pendOcupadas.has(p.id));
   if(!lista.length){
     if(el.style.display!=='none'&&!el.classList.contains('pend-sai')){
       if(typeof _voxReduzMov==='function'&&_voxReduzMov()){el.style.display='none'}
@@ -32837,14 +32846,17 @@ function sendTxt(){
 async function processAudio(file,durSec,fromRec){
   if(!fromRec)return _processAudio(file,durSec,fromRec);
   const sn=document.getElementById('snameInput').value.trim();
-  const id=await _pendenteGuardar(file,durSec,sn,sessionMode);
+  const id=await _pendenteGuardar(file,durSec,sn,sessionMode,true);
   let ok=false;
   _gravNaFilaId=id||null;_gravJaAvisada=false;
+  if(id)_pendOcupadas.add(id);
   try{ok=await _processAudio(file,durSec,fromRec)}
   finally{_gravNaFilaId=null}
   if(!id)return ok;
-  if(ok===true){await _pendenteTirar(id);_pendentesProcessar()}
-  else if(!_gravJaAvisada)toast(t('Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.'),true);
+  try{if(ok===true)await _pendenteTirar(id)}
+  finally{_pendOcupadas.delete(id)}
+  if(ok===true)_pendentesProcessar();
+  else{_pendPintar();if(!_gravJaAvisada)toast(t('Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.'),true)}
   return ok;
 }
 async function _processAudio(file,durSec,fromRec){
@@ -33382,6 +33394,17 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
     el.scrollIntoView({behavior:'smooth',block:'center'});
   }
   if(save){saveHistory();renderFolders();applyFolderFilter()}
+  // Mesma regra do addCard: conversa (diarizada) nascida de uma gravação feita com o
+  // Fluxograma/Órbita/Calendário aberto abre como janela flutuante ali mesmo. Sem isto
+  // a gravação com "Diarização ON" terminava e o card ia parar na lista, escondido
+  // atrás do mapa — parecia que tinha sumido.
+  if(save&&_flAbrirNoProximoCard){
+    _flAbrirNoProximoCard=false;
+    if(_mapaAberto()){
+      const _org=_recOrigemVisual();
+      requestAnimationFrame(()=>_flAbrirCard(id,_org));
+    }
+  }
   return id;
 }
 
