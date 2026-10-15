@@ -706,6 +706,27 @@ header.has-speed-badge{padding-bottom:18px}
 .gbtn.on-grok{background:var(--grok-glow);color:var(--grok)}
 .gbtn.on-groq{background:var(--groq-glow);color:var(--groq)}
 .gbtn.on-diar{background:var(--diar-glow);color:var(--diar)}
+/* Botão do jeito de ver (Lista · Mural · Documento): destacado no âmbar do
+   "copiar" do card (#eab308, a única cor de identidade que o app já tem
+   fora da marca), texto e ícone nele, com uma linha fina em volta. A linha é
+   box-shadow inset e não border: o .gbtn não tem borda, e uma borda de 1px
+   deixaria este botão 2px mais alto que os vizinhos. No claro o texto usa um
+   âmbar mais fundo (#8a6200, 5,5:1 sobre o fundo claro); #eab308 puro some. */
+.gbtn#btnView{color:#8a6200;background:rgba(234,179,8,.13);box-shadow:inset 0 0 0 1px rgba(184,138,0,.65)}
+.gbtn#btnView:hover{color:#6e4e00;background:rgba(234,179,8,.24)}
+[data-theme="dark"] .gbtn#btnView{color:#eab308;background:rgba(234,179,8,.12);box-shadow:inset 0 0 0 1px rgba(234,179,8,.55)}
+[data-theme="dark"] .gbtn#btnView:hover{color:#ffd34d;background:rgba(234,179,8,.22)}
+.gbtn#btnView:active{transform:scale(.94);transition-duration:.09s}
+.gbtn#btnView:focus-visible{outline:2px solid #eab308;outline-offset:2px}
+/* O clique: o ícone do modo novo dá o soco e o rótulo novo chega rolando
+   (_viewJuice). O anel e as faíscas vêm de _jzOnda/_telaFaiscas. */
+#btnView #viewIcon.view-soco{animation:telaSoco .44s cubic-bezier(.34,1.56,.64,1)}
+#btnView #viewLabel.view-rola{animation:viewRola .34s var(--fc-curva)}
+@keyframes viewRola{from{transform:translateY(60%);opacity:0}}
+@media(prefers-reduced-motion:reduce){
+  .gbtn#btnView:active{transform:none}
+  #btnView #viewIcon.view-soco,#btnView #viewLabel.view-rola{animation:none}
+}
 /* Botão só-ícone (engrenagem das Configurações): aperta o padding lateral pra
    não virar um retângulo largo com um ícone pequeno perdido no meio. */
 .gbtn-ico{padding-left:9px;padding-right:9px}
@@ -9365,7 +9386,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.4';
+const VOX_VERSION='2026.10.15.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -14420,6 +14441,18 @@ function _abrePerguntaEscolher(pid,calado){
 function toggleView(){
   const modes=['list','masonry','doc'];
   setViewMode(modes[(modes.indexOf(viewMode)+1)%modes.length]);
+  _viewJuice();
+}
+// Só o clique do botão chama isto (setViewMode também é chamado por Configurações
+// e pelo "onde parei", e aí ninguém tocou no botão pra ganhar festa).
+function _viewJuice(){
+  const b=document.getElementById('btnView');
+  if(!b||_voxReduzMov())return;
+  _jz(document.getElementById('viewIcon'),'view-soco',440);
+  _jz(document.getElementById('viewLabel'),'view-rola',340);
+  _jzOnda(b,'#eab308','10px');
+  _telaFaiscas(b,['#eab308','#fff']);
+  _jzTato(8);
 }
 function setViewMode(m){
   viewMode=m;localStorage.setItem('vox_view',m);applyView();
