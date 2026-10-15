@@ -1189,6 +1189,46 @@ body.doc-mode .card.focus-active:not(.hdr-folded) .dv-chips{display:none}
 .dv-pop-rodape{display:flex;justify-content:flex-end;margin-top:-2px}
 .dv-pop-reset{background:none;border:0;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;padding:4px 2px;border-radius:6px}
 .dv-pop-reset:hover{color:var(--accent)}
+.dv-pop-dica{font-size:11.5px;line-height:1.35;color:var(--text3)}
+/* Leitura: o texto já formatado, na fonte e no tamanho escolhidos. O editor e
+   o textarea some enquanto ela está de pé (classe dv-lendo no card). */
+body.doc-mode{--dv-fonte:var(--font);--dv-corpo:17px}
+body.doc-mode[data-dv-fonte="serif"]{--dv-fonte:Georgia,'Iowan Old Style','Palatino Linotype','Times New Roman',serif}
+body.doc-mode[data-dv-fonte="mono"]{--dv-fonte:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+body.doc-mode[data-dv-tam="p"]{--dv-corpo:15px}
+body.doc-mode[data-dv-tam="g"]{--dv-corpo:20px}
+.dv-titulo{font-family:var(--dv-fonte,var(--font))}
+.dv-read{display:none}
+body.doc-mode .card.focus-active.dv-lendo .dv-read{display:block}
+body.doc-mode .card.focus-active.dv-lendo .cb textarea,
+body.doc-mode .card.focus-active.dv-lendo .focus-ot-mount{display:none!important}
+.dv-read{font-family:var(--dv-fonte);font-size:var(--dv-corpo);line-height:1.72;color:var(--text);cursor:text;outline:none;
+  padding:6px 0 30px;min-height:160px;overflow-wrap:anywhere}
+.dv-read:focus-visible{box-shadow:0 0 0 2px var(--accent-glow);border-radius:8px}
+.dv-read>.dv-b:first-child>:first-child{margin-top:0}
+.dv-read>.dv-b:last-child>:last-child{margin-bottom:0}
+.dv-read h1,.dv-read h2,.dv-read h3,.dv-read h4{line-height:1.25;font-weight:700;letter-spacing:-.012em;margin:1.2em 0 .4em}
+.dv-read h1{font-size:1.75em}.dv-read h2{font-size:1.4em}.dv-read h3{font-size:1.16em}.dv-read h4{font-size:1em}
+.dv-read p{margin:.2em 0 .85em}
+.dv-read ul,.dv-read ol{margin:.2em 0 .85em;padding-left:1.55em}
+.dv-read li{margin:.22em 0}
+.dv-read li>ul,.dv-read li>ol{margin:.15em 0 .15em}
+.dv-read li:has(>input[type=checkbox]){list-style:none;margin-left:-1.5em}
+.dv-read input[type=checkbox]{width:1.05em;height:1.05em;margin:0 .55em 0 0;vertical-align:-.14em;accent-color:var(--accent);cursor:pointer}
+.dv-read li.dv-feito{color:var(--text3);text-decoration:line-through;text-decoration-color:var(--text4)}
+.dv-read li.dv-feito>ul,.dv-read li.dv-feito>ol{display:inline-block;width:100%;text-decoration:none} /* inline-block não herda o risco: subitens não feitos ficam sem */
+.dv-read blockquote{margin:.3em 0 .85em;padding:.1em 0 .1em 16px;border-left:3px solid var(--accent);color:var(--text2)}
+.dv-read a{color:var(--accent2);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--accent-glow);cursor:pointer}
+.dv-read a:hover{text-decoration-color:currentColor}
+.dv-read code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;background:var(--bg-input);border-radius:5px;padding:.1em .38em}
+.dv-read pre{background:var(--bg-input);border-radius:10px;padding:12px 14px;overflow-x:auto;margin:.3em 0 .9em}
+.dv-read pre code{background:none;padding:0}
+.dv-read hr{border:none;border-top:1px solid var(--border2);margin:1.3em 0}
+.dv-read table{border-collapse:collapse;margin:.4em 0 .9em;font-size:.95em}
+.dv-read th,.dv-read td{border:1px solid var(--border2);padding:5px 11px}
+.dv-read th{background:var(--bg-input);text-align:left}
+.dv-read img{max-width:100%;border-radius:8px}
+.dv-read .dv-vazio{color:var(--text4);font-style:italic}
 .focus-active .ico-collapse{display:inline}
 .focus-active .ico-expand{display:none}
 .font-sz-wrap{display:inline-flex;align-items:center;gap:1px;background:var(--bg-input);border-radius:8px;padding:2px 4px}
@@ -7946,6 +7986,10 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           </div>
           <div class="doc-tsep"></div>
           <div class="doc-tgrp">
+            <button class="doc-tbtn" id="docModoBtn" onclick="_dvAlternar()" title="Editar o texto (E ou Ctrl+E)"></button>
+          </div>
+          <div class="doc-tsep"></div>
+          <div class="doc-tgrp">
             <button class="doc-tbtn" id="docHdrFoldBtn" onclick="toggleDocHeaderFold()" title="Recolher cabeçalho (etiquetas + Transformar)" data-i18n-title>▾</button>
             <button class="doc-tbtn" id="docAaBtn" onclick="_dvPopAlternar(event)" aria-haspopup="true" aria-expanded="false" title="Aparência do documento (tamanho, largura, papel, tema)" data-i18n-title><span class="dv-aa">Aa</span></button>
           </div>
@@ -9490,7 +9534,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.6';
+const VOX_VERSION='2026.10.15.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -12028,6 +12072,13 @@ let I18N_EN={
 "Fundo":"Background","Papel":"Paper","Sem folha":"No page",
 "Tema do papel":"Page theme","Sépia":"Sepia","Restaurar o padrão":"Restore defaults",
 "Título do documento":"Document title","Sem título":"Untitled",
+"Fonte":"Font","Moderna":"Modern","Com serifa":"Serif","Mono":"Mono",
+"Vale para a leitura e o título; o editor usa fonte mono.":"Applies to reading and the title; the editor uses a mono font.",
+"Abrir notas em":"Open notes in","Leitura":"Reading","Edição":"Editing",
+"Editar o texto (E ou Ctrl+E)":"Edit the text (E or Ctrl+E)","Voltar a ler (Esc ou Ctrl+E)":"Back to reading (Esc or Ctrl+E)",
+"Texto da nota. Enter para editar.":"Note text. Press Enter to edit.",
+"Nota vazia. Clique para escrever.":"Empty note. Click to write.",
+"Clique no texto para editar · Esc volta a ler":"Click the text to edit · Esc goes back to reading",
 "palavra":"word","palavras":"words","min de leitura":"min read",
 // ── Trocar de tela com as janelas junto (15/10/2026) ──
 "Trocar de tela":"Switch screen",
@@ -14587,7 +14638,11 @@ function applyView(){
   if(viewMode!=='masonry')_masonryDesativar();
   document.body.classList.toggle('doc-mode',viewMode==='doc');
   _dvAplicar();
-  if(!isFocusLike){document.querySelectorAll('.dv-hd').forEach(e=>e.remove());_dvPopFechar()}
+  if(!isFocusLike){
+    document.querySelectorAll('.dv-hd,.dv-read').forEach(e=>e.remove());
+    document.querySelectorAll('.card.dv-lendo').forEach(c=>c.classList.remove('dv-lendo'));
+    _dvModo='edicao';_dvCardAtual=null;_dvGen++;_dvPopFechar();
+  }
   document.querySelectorAll('.wrap').forEach(w=>w.classList.toggle('wrap-focus',isFocusLike));
   // Lista continua coluna única (não é mais a grade do Masonry — revertido
   // depois do Rafa comparar lado a lado), mas usa o mesmo wrap largo do
@@ -14858,6 +14913,11 @@ async function _mountFocusEditor(id){
     onChange:v=>{cardTypeBeforeInput(id,ta);ta.value=v;updateFooter(id);cardTypeInput(id)}
   });
   inst.textarea?.addEventListener('focus',()=>trackFocus(ta));
+  inst.textarea?.addEventListener('keydown',e=>{
+    if(e.key!=='Escape'||viewMode!=='doc')return;
+    e.preventDefault();e.stopPropagation();
+    if(ta.value.trim()||inst.getValue().trim())_dvLer(id);else inst.textarea.blur();
+  });
   // Espelha a posição do cursor do textarea VISÍVEL (interno do OverType) pro textarea
   // real escondido — sem isso, "Gravar aqui" sempre inseria a transcrição no final,
   // ignorando onde a pessoa tinha acabado de clicar dentro do texto (o clique nunca
@@ -14890,7 +14950,8 @@ function applyFocusCard(){
   if(fta)fta.style.height='';
   const docLbl=document.getElementById('docNavLbl');if(docLbl)docLbl.textContent=`${focusCardIdx+1} / ${cards.length}`;
   fc.scrollIntoView({behavior:'smooth',block:'start'});
-  _mountFocusEditor(fc.id);
+  // Mesmo card que já estava em Edição (ex.: filtro mudou e redesenhou): continua em Edição.
+  _dvAbrir(fc,_dvCardAtual===fc.id&&_dvModo==='edicao'?'edicao':undefined);
   _tiraSolteSync(fc.id);
 }
 function toggleDocHeaderFold(){
@@ -14922,8 +14983,8 @@ function enterFocusCard(id){
 // + etiquetas, no lugar do selo de nome e do horário. O título é
 // contenteditable de propósito: um <textarea> a mais dentro do card quebraria
 // todo `card.querySelector('textarea')` do app (contagem, exportar, lentes).
-const _DV_PADRAO={tam:'m',larg:'padrao',pagina:'papel',tema:'auto'};
-const _DV_VALIDOS={tam:['p','m','g'],larg:['estreita','padrao','larga'],pagina:['papel','livre'],tema:['auto','claro','escuro','sepia']};
+const _DV_PADRAO={tam:'m',larg:'padrao',pagina:'papel',tema:'auto',fonte:'sans',abrir:'leitura'};
+const _DV_VALIDOS={tam:['p','m','g'],larg:['estreita','padrao','larga'],pagina:['papel','livre'],tema:['auto','claro','escuro','sepia'],fonte:['sans','serif','mono'],abrir:['leitura','edicao']};
 const _DV_TAM_PX={p:'13px',m:'14px',g:'17px'};
 let _dvSalvo=null;
 function _dvPrefs(){
@@ -14942,13 +15003,15 @@ function _dvSalvarPrefs(p){
 function _dvAplicar(p){
   p=p||_dvPrefs();
   const b=document.body;
-  b.dataset.dvTam=p.tam;b.dataset.dvLarg=p.larg;b.dataset.dvPagina=p.pagina;b.dataset.dvTema=p.tema;
+  b.dataset.dvTam=p.tam;b.dataset.dvLarg=p.larg;b.dataset.dvPagina=p.pagina;b.dataset.dvTema=p.tema;b.dataset.dvFonte=p.fonte;
   _focusEditorInstance?.wrapper?.style.setProperty('--instance-font-size',_DV_TAM_PX[p.tam]);
 }
 const _DV_CAMPOS=[
   {k:'tam',lbl:'Tamanho',ops:[['p','Pequeno'],['m','Normal'],['g','Grande']]},
+  {k:'fonte',lbl:'Fonte',ops:[['sans','Moderna'],['serif','Com serifa'],['mono','Mono']],dica:'Vale para a leitura e o título; o editor usa fonte mono.'},
   {k:'larg',lbl:'Largura',ops:[['estreita','Estreita'],['padrao','Padrão'],['larga','Larga']]},
-  {k:'pagina',lbl:'Fundo',ops:[['papel','Papel'],['livre','Sem folha']]}
+  {k:'pagina',lbl:'Fundo',ops:[['papel','Papel'],['livre','Sem folha']]},
+  {k:'abrir',lbl:'Abrir notas em',ops:[['leitura','Leitura'],['edicao','Edição']]}
 ];
 const _DV_TEMAS=[
   ['auto','Automático','linear-gradient(135deg,#ffffff 50%,#212124 50%)','#8e8e93'],
@@ -14962,7 +15025,7 @@ function _dvPopRender(){
   pop.innerHTML=_DV_CAMPOS.map(c=>
     `<div class="dv-pop-row"><span class="dv-pop-lbl">${escHtml(t(c.lbl))}</span><div class="dv-seg">`+
     c.ops.map(o=>`<button type="button" data-k="${c.k}" data-v="${o[0]}" aria-pressed="${p[c.k]===o[0]}">${escHtml(t(o[1]))}</button>`).join('')+
-    `</div></div>`).join('')+
+    `</div>${c.dica?`<span class="dv-pop-dica">${escHtml(t(c.dica))}</span>`:''}</div>`).join('')+
     `<div class="dv-pop-row"><span class="dv-pop-lbl">${escHtml(t('Tema do papel'))}</span><div class="dv-temas">`+
     _DV_TEMAS.map(m=>`<button type="button" class="dv-tema" data-k="tema" data-v="${m[0]}" aria-pressed="${p.tema===m[0]}"><span class="dv-tema-amostra" style="background:${m[2]};color:${m[3]}">Ag</span>${escHtml(t(m[1]))}</button>`).join('')+
     `</div></div>`+
@@ -15077,6 +15140,203 @@ function _dvCabecalho(card){
   ti.addEventListener('blur',()=>_dvSalvaTitulo(id,ti));
   _dvMetaAtualiza(id);
 }
+
+
+// ── DOCUMENTO v2 · Leitura primeiro (15/10/2026) ────────────────────────────
+// Abrir uma nota no Documento mostra o texto já formatado (títulos, listas,
+// negrito, tarefas) — é assim que se LÊ uma transcrição. Clicar em qualquer
+// trecho vira edição com o cursor onde se clicou; Esc (ou Ctrl+E) volta a ler.
+// O editor OverType só existe em Edição; o <textarea> real do card continua
+// sendo a única fonte do texto (lentes, undo, gravar aqui, contagem...).
+// Nota vazia abre direto em Edição; "Abrir em" no Aa troca o padrão.
+let _dvModo='edicao',_dvCardAtual=null,_dvGen=0,_dvRenderT=null;
+const _DV_ICO_EDITAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const _DV_ICO_LER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>';
+function _dvBotao(){
+  const b=document.getElementById('docModoBtn');if(!b)return;
+  const c=document.getElementById(_docCardId()||''),diar=c?.dataset.diarized==='true';
+  const lendo=_dvModo==='leitura';
+  b.disabled=!!diar;
+  b.innerHTML=lendo?_DV_ICO_EDITAR:_DV_ICO_LER;
+  b.title=lendo?t('Editar o texto (E ou Ctrl+E)'):t('Voltar a ler (Esc ou Ctrl+E)');
+  b.setAttribute('aria-label',b.title);
+  b.classList.toggle('active',!lendo&&!diar);
+}
+function _dvLeituraEl(card){
+  let el=document.getElementById('dvread-'+card.id);
+  if(el)return el;
+  const cb=card.querySelector('.cb');if(!cb)return null;
+  el=document.createElement('div');
+  el.className='dv-read';el.id='dvread-'+card.id;el.tabIndex=0;el.setAttribute('role','document');
+  el.setAttribute('aria-label',t('Texto da nota. Enter para editar.'));
+  el.addEventListener('click',_dvCliqueLeitura);
+  cb.appendChild(el);
+  return el;
+}
+// Um bloco por token do marked, cada um com a posição de origem no texto
+// (data-s/data-e) — é o que permite ao clique cair no lugar certo do editor.
+function _dvRender(id){
+  const card=document.getElementById(id),el=document.getElementById('dvread-'+id),ta=card?.querySelector('.cb textarea');
+  if(!el||!ta||!window.marked||!window.DOMPurify)return;
+  const src=ta.value;
+  if(!src.trim()){el.innerHTML='<p class="dv-vazio">'+escHtml(t('Nota vazia. Clique para escrever.'))+'</p>';return}
+  let toks;
+  try{toks=marked.lexer(src,{gfm:true,breaks:true})}catch(e){el.textContent=src;return}
+  let pos=0,html='';
+  toks.forEach(tk=>{
+    const ini=pos;pos+=tk.raw.length;
+    if(tk.type==='space'||tk.type==='def')return;
+    const arr=[tk];arr.links=toks.links;
+    let h='';
+    try{h=DOMPurify.sanitize(marked.parser(arr))}catch(e){h=''}
+    if(h.trim())html+='<div class="dv-b" data-s="'+ini+'" data-e="'+pos+'">'+h+'</div>';
+  });
+  el.innerHTML=html;
+  el.querySelectorAll('a[href]').forEach(a=>{a.target='_blank';a.rel='noopener noreferrer'});
+  el.querySelectorAll('input[type=checkbox]').forEach(i=>{i.disabled=false;i.closest('li')?.classList.toggle('dv-feito',i.checked)});
+}
+function _dvRenderAgendado(id){
+  clearTimeout(_dvRenderT);
+  _dvRenderT=setTimeout(()=>{if(_dvModo==='leitura'&&_docCardId()===id)_dvRender(id)},60);
+}
+function _dvDica(){
+  let n=0;try{n=+localStorage.getItem('vox_dv_dica')||0}catch(e){}
+  if(n>=2)return;
+  try{localStorage.setItem('vox_dv_dica',String(n+1))}catch(e){}
+  setTimeout(()=>{if(_dvModo==='leitura')toast(t('Clique no texto para editar · Esc volta a ler'))},700);
+}
+// Chamado por applyFocusCard no lugar de montar o editor direto.
+async function _dvAbrir(fc,modo){
+  const gen=++_dvGen;
+  document.querySelectorAll('#cardsList .card.dv-lendo').forEach(c=>c.classList.remove('dv-lendo'));
+  const ta=fc.querySelector('.cb textarea');
+  _dvCardAtual=fc.id;
+  if(!ta||fc.dataset.diarized==='true'){_dvModo='edicao';_dvBotao();return _mountFocusEditor(fc.id)}
+  if(!modo)modo=(_dvPrefs().abrir==='edicao'||!ta.value.trim())?'edicao':'leitura';
+  if(modo==='leitura'){
+    try{await _loadMarkdownLibs()}catch(e){modo='edicao'}
+    if(gen!==_dvGen)return;
+  }
+  _dvModo=modo;
+  if(modo==='leitura'){
+    if(!_dvLeituraEl(fc)){_dvModo='edicao';_dvBotao();return _mountFocusEditor(fc.id)}
+    _dvRender(fc.id);fc.classList.add('dv-lendo');_dvDica();
+  }else{
+    fc.classList.remove('dv-lendo');
+    await _mountFocusEditor(fc.id);
+  }
+  _dvBotao();
+}
+async function _dvEditar(id,pos){
+  const card=document.getElementById(id);if(!card||card.dataset.diarized==='true'||card.classList.contains('advanced-active'))return;
+  if(_dvModo==='edicao'&&_focusEditorCardId===id){_focusEditorInstance?.focus();return}
+  _dvGen++;_dvModo='edicao';
+  card.classList.remove('dv-lendo');
+  await _mountFocusEditor(id);
+  const inst=_focusEditorInstance;if(!inst||_focusEditorCardId!==id)return;
+  const ta=card.querySelector('.cb textarea'),n=ta.value.length;
+  const p=pos==null?n:Math.max(0,Math.min(pos,n));
+  inst.textarea.focus({preventScroll:true});
+  inst.textarea.setSelectionRange(p,p);
+  ta.selectionStart=ta.selectionEnd=p;
+  _dvRolaAteCursor(inst,p);
+  _dvBotao();
+}
+// Leva a linha do cursor pro terço de cima do editor (a camada de preview do
+// OverType tem um filho por linha do texto, na mesma ordem).
+function _dvRolaAteCursor(inst,p){
+  try{
+    const linha=(inst.textarea.value.slice(0,p).match(/\n/g)||[]).length;
+    const el=inst.preview?.children[linha];if(!el)return;
+    const y=Math.max(0,el.offsetTop-inst.textarea.clientHeight/3);
+    inst.textarea.scrollTop=y;inst.preview.scrollTop=y;
+  }catch(e){}
+}
+function _dvLer(id){
+  const card=document.getElementById(id);if(!card||card.dataset.diarized==='true')return;
+  const ta=card.querySelector('.cb textarea');if(!ta)return;
+  if(_focusEditorCardId===id&&_focusEditorInstance)ta.value=_focusEditorInstance.getValue();
+  if(!ta.value.trim())return; // nota vazia: não há o que ler
+  _dvGen++;
+  const gen=_dvGen;
+  _loadMarkdownLibs().then(()=>{
+    if(gen!==_dvGen||_docCardId()!==id)return;
+    _unmountFocusEditor();
+    if(!_dvLeituraEl(card))return;
+    _dvRender(id);card.classList.add('dv-lendo');_dvModo='leitura';_dvBotao();
+    document.getElementById('dvread-'+id)?.focus({preventScroll:true});
+  }).catch(()=>{});
+}
+function _dvAlternar(){
+  const id=_docCardId();if(!id)return;
+  if(_dvModo==='leitura')_dvEditar(id);else _dvLer(id);
+}
+// Do ponto clicado ao índice no texto de origem: conta quantos caracteres
+// visíveis (sem espaços) vêm antes do cursor dentro do bloco e anda o mesmo
+// tanto no texto de origem pulando os sinais do markdown (#, **, -, [](…)).
+function _dvPosDoClique(e,id){
+  const ta=document.getElementById(id)?.querySelector('.cb textarea');if(!ta)return null;
+  const src=ta.value,blk=e.target.closest?.('.dv-b');
+  if(!blk)return src.length; // clicou na margem/abaixo do texto: vai pro fim
+  const s=+blk.dataset.s,fim=+blk.dataset.e,raw=src.slice(s,fim);
+  const fimUtil=s+raw.replace(/\s+$/,'').length;
+  let no=null,off=0;
+  try{
+    if(document.caretPositionFromPoint){const c=document.caretPositionFromPoint(e.clientX,e.clientY);no=c?.offsetNode;off=c?.offset||0}
+    else if(document.caretRangeFromPoint){const r=document.caretRangeFromPoint(e.clientX,e.clientY);no=r?.startContainer;off=r?.startOffset||0}
+  }catch(x){}
+  if(!no||!blk.contains(no))return fimUtil;
+  const pre=document.createRange();pre.setStart(blk,0);pre.setEnd(no,off);
+  const k=pre.toString().replace(/\s+/g,'').length;
+  const plain=blk.textContent.replace(/\s+/g,'');
+  if(!plain)return fimUtil;
+  let p=0,i=0;
+  if(k===0){while(i<raw.length&&raw[i]!==plain[0])i++;return Math.min(s+i,fimUtil)}
+  for(;i<raw.length&&p<k;i++){const c=raw[i];if(/\s/.test(c))continue;if(c===plain[p])p++}
+  return p<k?fimUtil:Math.min(s+i,fimUtil);
+}
+function _dvCliqueLeitura(e){
+  const el=e.currentTarget,id=el.id.replace(/^dvread-/,'');
+  if(e.button)return;
+  if(e.target.closest('a[href]'))return; // link abre o link, não vira edição
+  const cb=e.target.closest('input[type=checkbox]');
+  if(cb){_dvTarefa(id,cb);return}
+  const sel=window.getSelection();
+  if(sel&&!sel.isCollapsed&&el.contains(sel.anchorNode))return; // está selecionando pra copiar
+  _dvEditar(id,_dvPosDoClique(e,id));
+}
+// Marcar/desmarcar tarefa na leitura escreve "- [x]" ↔ "- [ ]" no texto de verdade.
+function _dvTarefa(id,cb){
+  const card=document.getElementById(id),ta=card?.querySelector('.cb textarea'),b=cb.closest('.dv-b');
+  if(!ta||!b)return;
+  const s=+b.dataset.s,fim=+b.dataset.e,n=[...b.querySelectorAll('input[type=checkbox]')].indexOf(cb);
+  const src=ta.value,raw=src.slice(s,fim);
+  const re=/^([ \t>]*(?:[-*+]|\d+[.)])[ \t]+\[)([ xX])(\])/gm;
+  let m,i=0,novo=null;
+  while((m=re.exec(raw))){
+    if(i++===n){const at=m.index+m[1].length;novo=raw.slice(0,at)+(m[2]===' '?'x':' ')+raw.slice(at+1);break}
+  }
+  if(novo===null){cb.checked=!cb.checked;return}
+  // Cada tarefa marcada é um passo de desfazer próprio (a rajada de 500ms da
+  // digitação juntaria dois cliques seguidos num passo só).
+  clearTimeout(_typeTimers[id]);delete _typeTimers[id];
+  cardTypeBeforeInput(id,ta);
+  ta.value=src.slice(0,s)+novo+src.slice(fim);
+  updateFooter(id);
+  _dvRender(id);
+}
+function _dvTecla(e){
+  if(viewMode!=='doc')return;
+  const a=document.activeElement;
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&(e.key==='e'||e.key==='E')){
+    if(a?.closest?.('.dv-titulo,#dvPop'))return;
+    e.preventDefault();_dvAlternar();return;
+  }
+  if(e.ctrlKey||e.metaKey||e.altKey||_dvModo!=='leitura')return;
+  if(!(a===document.body||a?.closest?.('.dv-read')))return;
+  if(e.key==='e'||e.key==='E'||e.key==='Enter'){e.preventDefault();_dvEditar(_docCardId())}
+}
+document.addEventListener('keydown',_dvTecla);
 
 // ── FONT SIZE ──
 function setFontSize(s){
@@ -37151,7 +37411,7 @@ function updateFooter(id){
   if(ta&&_focusEditorCardId===id&&_focusEditorInstance&&ta.value!==_focusEditorInstance.getValue()){
     _focusEditorInstance.setValue(ta.value);
   }
-  if(viewMode==='doc')_dvMetaAtualiza(id);
+  if(viewMode==='doc'){_dvMetaAtualiza(id);if(_dvModo==='leitura')_dvRenderAgendado(id)}
   saveHistory();
 }
 // Dentro da lixeira o botão de excluir apaga DE VEZ, e aí a confirmação faz
@@ -39514,8 +39774,10 @@ document.addEventListener('keydown',e=>{
     }
   }
   if(viewMode==='doc'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)&&!document.activeElement.isContentEditable){
-    if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();focusStep(1)}
-    if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();focusStep(-1)}
+    // Em Leitura, ↑/↓ rolam o texto; só ←/→ trocam de card.
+    const lendo=_dvModo==='leitura';
+    if(e.key==='ArrowLeft'||(!lendo&&e.key==='ArrowUp')){e.preventDefault();focusStep(1)}
+    if(e.key==='ArrowRight'||(!lendo&&e.key==='ArrowDown')){e.preventDefault();focusStep(-1)}
     if(e.key==='Escape'){e.preventDefault();setViewMode('list')}
   }
 });
