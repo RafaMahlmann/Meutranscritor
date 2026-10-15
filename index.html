@@ -9332,7 +9332,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.1';
+const VOX_VERSION='2026.10.15.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9348,7 +9348,7 @@ const VOX_VERSION='2026.10.15.1';
 // Se toda a feature for removida um dia, o World original continua abrindo.
 const VOX_MUNDO_KEYS=new Set(['vox_history','vox_folders','vox_folders_expanded',
   'vox_active_folder','vox_tag_nomes','vox_tags_collapsed','vox_cal',
-  'vox_float_cards','vox_stats','vox_speed_stats','vox_rec_count','vox_ressurgidas',
+  'vox_float_cards','vox_mesa_telas','vox_stats','vox_speed_stats','vox_rec_count','vox_ressurgidas',
   // Plano 27 (05/10/2026): "como o Vox abre" é de cada mundo — o mundo de
   // Consultas abre no Documento e grava em Consulta, o de Ideias abre no
   // Fluxograma. O vox_view entrou aqui também; no mundo original a chave
@@ -16182,6 +16182,7 @@ function _flSalvarPosicao(id){
   if(!store[j.folder])store[j.folder]={};
   store[j.folder][_flChaveCard(id)]={x:j.x,y:j.y,w:j.w,h:j.h};
   try{localStorage.setItem('vox_float_cards',JSON.stringify(store))}catch(e){}
+  _telaGuardarArranjo(id);
 }
 
 // Pedido do Rafa: o painel lateral (#fcCardPanel) precisa ficar SEMPRE
@@ -19465,15 +19466,21 @@ function _flCameraNeutra(){
   if(_flCameraSegueMapa())return;
   _flX=0;_flY=0;_flS=1;_flAplicarTransform();
 }
-// Recoloca cada janela onde o retrato diz, já dentro da camada nova, com a
-// câmera que ela tem agora (a do mapa, ou a neutra no Calendário).
-function _flRecolocar(retratos){
+// Recoloca cada janela onde o plano diz, já dentro da camada nova, com a
+// câmera que ela tem agora (a do mapa, ou a neutra no Calendário). Um plano é
+// um retângulo de TELA ({id,left,top,width,height}); com `desde` (o retângulo
+// de onde a janela vem) ela desliza até lá em vez de aparecer no lugar novo.
+// Devolve {id:{x,y}} em unidades do mundo, pra quem quiser saber se a pessoa
+// mexeu na janela depois.
+function _flRecolocar(planos){
   const layer=document.getElementById('floatLayer');
-  if(!layer||!retratos.length)return;
+  const colocadas={};
+  if(!layer||!planos.length)return colocadas;
   _flCameraNeutra();
   const lr=_flRetanguloDaCamada(layer);
   const limite=_flLimitePainel();
-  retratos.forEach(p=>{
+  const mundoDe=r=>({x:(r.left-lr.left-_flX)/_flS,y:(r.top-lr.top-_flY)/_flS,w:r.width/_flS,h:r.height/_flS});
+  planos.forEach(p=>{
     const j=_flAbertas.find(k=>k.id===p.id),win=document.getElementById('floatwin-'+p.id);
     if(!j||!win)return;
     const w=Math.max(FL_MIN_W,p.width/_flS),h=Math.max(FL_MIN_H,p.height/_flS);
@@ -19485,7 +19492,20 @@ function _flRecolocar(retratos){
     y=Math.max(minY,Math.min(y,Math.min(limite.maxBottom-h,maxY)));
     j.x=x;j.y=y;j.w=w;j.h=h;
     win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';
+    colocadas[p.id]={x,y};
+    if(p.desde)_flDeslizar(win,mundoDe(p.desde),{x,y,w,h});
   });
+  return colocadas;
+}
+// A janela desliza de um retângulo (unidades do mundo) até o que já está no
+// estilo dela. Animação de verdade (Web Animations), não transição de CSS: o
+// valor final já está gravado, então nada se perde se a animação não rodar.
+function _flDeslizar(win,de,para){
+  if(!win||_voxReduzMov()||!win.animate)return;
+  if(Math.abs(de.x-para.x)<2&&Math.abs(de.y-para.y)<2&&Math.abs(de.w-para.w)<2&&Math.abs(de.h-para.h)<2)return;
+  const px=o=>({left:o.x+'px',top:o.y+'px',width:o.w+'px',height:o.h+'px'});
+  const a=win.animate([px(de),px(para)],{duration:380,easing:'cubic-bezier(.22,1,.36,1)'});   // sem quique: o do levitar já basta, e aqui o tamanho também anda
+  a.onfinish=()=>{win.classList.add('float-window-pousou');setTimeout(()=>win.classList.remove('float-window-pousou'),200)};
 }
 // A alça "marcar no dia" só existe com o Calendário aberto. Antes uma janela
 // nunca trocava de mapa, então ela nunca precisava ser tirada; agora precisa.
@@ -19530,7 +19550,8 @@ function _telaTrocar(dest){
   // recolocadas pra uma câmera que muda logo depois. O enquadramento do abrir
   // roda depois e dá o mesmo resultado.
   if(dest==='fluxo')_fcEnquadrar();
-  if(retratos.length)_flRecolocar(retratos);
+  let colocadas={};const lembrados=new Set();
+  if(retratos.length)colocadas=_flRecolocar(_telaPlanejar(retratos,dest,lembrados));
   else _flCameraNeutra();
   _flSincAlcaCalendario();
   _flSincBotoesCamada();
@@ -19539,7 +19560,132 @@ function _telaTrocar(dest){
   if(_calAberto())_calPintar();
   _telaSincBadge();
   _telaLevitar(retratos.map(r=>r.id));
+  // Com a tela assentada (as entradas animadas levam até ~500ms), quem não tinha
+  // arranjo lembrado e ficou em cima da própria âncora sai de cima dela.
+  const semMemoria=retratos.map(r=>r.id).filter(id=>!lembrados.has(id));
+  if(semMemoria.length)setTimeout(()=>_telaPousar(dest,semMemoria,colocadas),560);
   return true;
+}
+
+// ── Cada tela lembra o arranjo da mesa; pouso inteligente (rodada 2) ─────────
+// vox_mesa_telas = {tela:{dt:{x,y,w,h,t}}}, em coordenadas de TELA relativas à
+// camada. Grava toda vez que a pessoa solta ou redimensiona uma janela num
+// mapa (_flSalvarPosicao). Na troca, uma nota que já foi arrumada na tela de
+// destino volta pro lugar em que foi arrumada; a que nunca foi arrumada ali
+// fica onde estava, e só sai de cima da própria âncora (bolha, nó ou dia).
+const TELA_MEM='vox_mesa_telas',TELA_MEM_MAX=60;
+function _telaMemLer(){
+  try{const m=JSON.parse(localStorage.getItem(TELA_MEM)||'{}');return(m&&typeof m==='object'&&!Array.isArray(m))?m:{}}catch(e){return{}}
+}
+function _telaGuardarArranjo(id){
+  const tela=_telaAtual();
+  if(!tela||!_flAtiva)return;
+  const j=_flAbertas.find(k=>k.id===id),win=document.getElementById('floatwin-'+id),card=document.getElementById(id),layer=document.getElementById('floatLayer');
+  const dt=card&&card.dataset.dt;
+  if(!j||!win||!dt||!layer)return;
+  const lr=layer.getBoundingClientRect(),r=win.getBoundingClientRect();
+  if(!r.width||!lr.width)return;
+  const m=_telaMemLer();
+  const mt=(m[tela]&&typeof m[tela]==='object')?m[tela]:(m[tela]={});
+  mt[dt]={x:Math.round(r.left-lr.left),y:Math.round(r.top-lr.top),w:Math.round(r.width),h:Math.round(r.height),t:Date.now()};
+  const ks=Object.keys(mt);
+  if(ks.length>TELA_MEM_MAX)ks.sort((a,b)=>(mt[a].t||0)-(mt[b].t||0)).slice(0,ks.length-TELA_MEM_MAX).forEach(k=>delete mt[k]);
+  try{localStorage.setItem(TELA_MEM,JSON.stringify(m))}catch(e){}
+}
+// Os retângulos de TELA de onde cada janela vai sair na tela nova: o lembrado,
+// quando existe; senão o retrato de onde ela estava. `lembrados` recebe os ids
+// que vieram da memória (esses a pessoa arrumou — o pouso não mexe neles).
+function _telaPlanejar(retratos,dest,lembrados){
+  const layer=document.getElementById('floatLayer');
+  const lr=_flRetanguloDaCamada(layer);
+  const mem=_telaMemLer()[dest]||{};
+  return retratos.map(p=>{
+    const dt=document.getElementById(p.id)?.dataset.dt,m=dt&&mem[dt];
+    if(m&&m.w>0&&m.h>0){
+      lembrados.add(p.id);
+      return{id:p.id,left:lr.left+m.x,top:lr.top+m.y,width:m.w,height:m.h,desde:p};
+    }
+    return p;
+  });
+}
+// O retângulo, na tela, do que a nota é nesta tela: a bolha da pasta (Órbita),
+// o nó da pasta (Fluxograma) ou a célula do dia (Calendário). Nota de pasta
+// funda sobe até o ancestral que está desenhado, como os fios da Órbita.
+function _telaAncora(card,dest){
+  if(!card)return null;
+  if(dest==='cal'){
+    if(!_calGradeEl)return null;
+    let k=card.dataset.quando;
+    if(!(k&&_calValida(k))){if(!_calPrefs.aconteceu)return null;k=_calChaveDoIso(card.dataset.dt)}
+    const cel=[..._calGradeEl.children].find(c=>c.dataset.dia===k);
+    return cel?cel.getBoundingClientRect():null;
+  }
+  const orb=dest==='orbital';
+  const nos=[...document.querySelectorAll(orb?'#orbMundo [data-orb-id]':'#fcNodes [data-fc-id]')];
+  let fid=card.dataset.folder||'';
+  for(let g=0;g<50;g++){
+    const no=nos.find(n=>(orb?n.dataset.orbId:n.dataset.fcId)===fid);
+    if(no)return no.getBoundingClientRect();
+    if(!fid)break;
+    fid=(folders.find(f=>f.id===fid)||{}).parentId||'';
+  }
+  return null;
+}
+function _telaInter(p,q){
+  const w=Math.min(p.left+p.width,q.left+q.width)-Math.max(p.left,q.left);
+  const h=Math.min(p.top+p.height,q.top+q.height)-Math.max(p.top,q.top);
+  return(w>0&&h>0)?w*h:0;
+}
+// Onde a janela `r` fica sem cobrir a âncora `a`: tenta ao lado (direita,
+// esquerda), depois embaixo e em cima, sempre dentro da camada, e fica com o
+// lugar que cobre menos a âncora e pisa menos nas outras janelas. Devolve
+// null se a âncora nem está coberta (menos de 25% dela) ou se nenhum lugar
+// deixa a âncora à vista.
+function _telaVaga(r,a,lr,outros){
+  const area=a.width*a.height;
+  if(!(area>0)||_telaInter(r,a)/area<0.25)return null;
+  const lim=_flLimitePainel();
+  const limR=lim.maxRight===Infinity?Infinity:lr.left+_flX+lim.maxRight*_flS;
+  const limB=lim.maxBottom===Infinity?Infinity:lr.top+_flY+lim.maxBottom*_flS;
+  const w=r.width,h=r.height,g=12;
+  const maxX=Math.min(lr.right,limR)-w,maxY=Math.min(lr.bottom,limB)-h;
+  const prende=(x,y)=>({left:Math.max(lr.left,Math.min(x,maxX)),top:Math.max(lr.top,Math.min(y,maxY)),width:w,height:h});
+  const cx=a.left+a.width/2-w/2,cy=a.top+a.height/2-h/2;
+  const cands=[prende(a.right+g,cy),prende(a.left-g-w,cy),prende(cx,a.bottom+g),prende(cx,a.top-g-h)];
+  const pontos=c=>_telaInter(c,a)*4+outros.reduce((s,o)=>s+_telaInter(c,o),0);
+  let melhor=null,mp=pontos(r);
+  // Só vale se a âncora fica de fato à vista no lugar novo. Janela grande demais
+  // pra tela não tem pra onde ir: mexer só pra cobrir um pouco menos seria
+  // empurrar a janela por nada, e a troca de tela promete que elas ficam onde
+  // estão.
+  cands.forEach(c=>{const p=pontos(c);if(p<mp-1&&_telaInter(c,a)/area<0.25){melhor=c;mp=p}});
+  return melhor;
+}
+function _telaPousar(dest,ids,colocadas){
+  if(_telaAtual()!==dest||!_flAtiva)return;
+  const layer=document.getElementById('floatLayer');
+  if(!layer)return;
+  const lr=layer.getBoundingClientRect();
+  const rects={};
+  _flAbertas.forEach(j=>{const w=document.getElementById('floatwin-'+j.id);if(w)rects[j.id]=w.getBoundingClientRect()});
+  ids.forEach(id=>{
+    const j=_flAbertas.find(k=>k.id===id),win=document.getElementById('floatwin-'+id),ref=colocadas&&colocadas[id];
+    if(!j||!win||!rects[id])return;
+    // Se a pessoa já pegou a janela, o arranjo é dela.
+    if(win.classList.contains('float-window-arrastando')||(ref&&(Math.abs(j.x-ref.x)>1||Math.abs(j.y-ref.y)>1)))return;
+    const a=_telaAncora(document.getElementById(id),dest);
+    if(!a)return;
+    const outros=Object.keys(rects).filter(k=>k!==id).map(k=>rects[k]);
+    const v=_telaVaga(rects[id],a,lr,outros);
+    if(!v)return;
+    const de={x:j.x,y:j.y,w:j.w,h:j.h};
+    const x=(v.left-lr.left-_flX)/_flS,y=(v.top-lr.top-_flY)/_flS;
+    j.x=x;j.y=y;
+    win.style.left=x+'px';win.style.top=y+'px';
+    rects[id]=new DOMRect(v.left,v.top,v.width,v.height);
+    _flDeslizar(win,de,{x,y,w:j.w,h:j.h});
+  });
+  _orbFiosDasNotas();
 }
 
 // ── Levar a mesa pra outro mundo ─────────────────────────────────────────────
