@@ -9657,7 +9657,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.13';
+const VOX_VERSION='2026.10.15.14';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10974,6 +10974,7 @@ let I18N_EN={
 "Hoje":"Today",
 "Exportar para calendário (.ics)":"Export to calendar (.ics)",
 "arraste uma nota de um dia pro outro":"drag a note from one day to another",
+"clique numa nota pra abrir · arraste pra outro dia":"click a note to open it · drag it to another day",
 "Nota sem nome":"Untitled note",
 "calendário":"calendar",
 "o calendário":"the calendar",
@@ -22516,6 +22517,7 @@ function _calDicaTexto(){
   // dica ensina o único gesto que existe ali — e é justamente o caminho de
   // volta pra dentro.
   if(_calVisao==='sem'||_calVisao==='ano')return t('toque num mês pra ver os dias');
+  if(!_voxToque())return t('clique numa nota pra abrir · arraste pra outro dia');
   return t('arraste uma nota de um dia pro outro');
 }
 // Trocar de degrau é tela nova e gesto novo: a dica volta a aparecer, com a
@@ -22978,6 +22980,12 @@ function _calCelClick(e){
   // a visão Dia por cima do pouso.
   if(Date.now()-_calCliqueBloqueado<350)return;
   if(e.target.closest('.float-layer, .mapa-menu, .fc-card-panel'))return;
+  // Com mouse, clicar na ETIQUETA da nota abre a nota (flutuante); clicar no
+  // número do dia ou no vazio da célula continua entrando no dia. No toque a
+  // etiqueta tem 14px — pequena demais pra acertar no dedo — então o toque
+  // segue abrindo o dia, e a nota abre pelo menu de contexto.
+  const fita=e.target.closest('.cal-fita');
+  if(fita&&fita.dataset.cid&&!_voxToque()){_listaAbrirFlutuante(fita.dataset.cid,fita);return}
   const cel=e.target.closest('.cal-cel');
   if(!cel||!_calValida(cel.dataset.dia))return;
   _calAbrirDia(cel.dataset.dia,cel);
