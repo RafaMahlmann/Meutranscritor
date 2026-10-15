@@ -7223,6 +7223,17 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .pn-ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none}
 .pn-vazio li.ok .pn-ck{border-color:#1b9a5a;background:#1b9a5a;color:#fff}
 .pn-vazio li.ok span:not(.pn-ck){color:var(--text3);text-decoration:line-through}
+.pn-sempes{grid-column:1/-1;border-color:#d9921a}
+.pn-guarda{display:inline-flex;align-items:center;gap:5px;margin-left:auto;font-size:12px;color:var(--text3)}
+.pn-guarda select{font:inherit;font-size:12px;max-width:170px;color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:7px;padding:3px 6px}
+.pn-ficha{margin-bottom:12px}
+.pn-ficha .pn-k{display:flex;align-items:center}
+.pn-fdl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:14px}
+.pn-fdl dt{color:var(--text3);font-size:12.5px;font-weight:600}
+.pn-fdl dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media (max-width:480px){.pn-fdl{grid-template-columns:1fr}.pn-fdl dd{margin-bottom:4px}}
+.pn-fc{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--text3);font-weight:600}
+.pn-fc input,.pn-fc textarea{font:inherit;font-size:14px;font-weight:400;color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:9px;padding:7px 9px;resize:vertical}
 .pn-ult{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px}
 .pn-vis{display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-top:1px dashed var(--border);padding-top:12px;font-size:12.5px;color:var(--text3)}
 .pn-vis button{font:inherit;font-size:12.5px;border:1px solid var(--border);background:var(--bg-card);color:var(--text2);border-radius:999px;padding:5px 12px;cursor:pointer}
@@ -9823,7 +9834,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.24';
+const VOX_VERSION='2026.10.15.25';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11242,6 +11253,26 @@ let I18N_EN={
 "Linha do tempo":"Timeline",
 "sem nota":"no note",
 "Ver todas as notas desta pessoa":"See all of this person's notes",
+"Ver ficha de {n}":"See {n}'s file",
+"Escolha antes em \"Guardar em\" de quem é esta sessão.":"First choose in \"Save in\" whose session this is.",
+"Sem pessoa definida":"No person set",
+"Sessões gravadas sem escolher com quem era. Diga de quem é cada uma e ela entra na ficha da pessoa.":"Sessions recorded without choosing who they were with. Say whose each one is and it joins that person's file.",
+"+ Nova pessoa…":"+ New person…",
+"Escolha a pessoa…":"Choose the person…",
+"e mais {n}":"and {n} more",
+"ficha, sem sessões":"file, no sessions",
+"Ficha":"File",
+"Nome completo":"Full name",
+"Objetivo":"Goal",
+"Sempre lembrar":"Always remember",
+"Retorno combinado":"Agreed follow-up",
+"Salvar ficha":"Save file",
+"Anote o objetivo, o que sempre lembrar e o retorno combinado. Fica só neste mundo e, com senha, vai cifrado.":"Note the goal, what to always remember and the agreed follow-up. It stays in this world only and, with a password, is encrypted.",
+"Preencher ficha":"Fill in file",
+"Este mundo está trancado: entre com a senha para editar a ficha.":"This world is locked: enter the password to edit the file.",
+"Ficha salva.":"File saved.",
+"Editar":"Edit",
+"Nome da pessoa:":"Person's name:",
 "Personalizar este mundo":"Customize this world",
 "Toque num quadro para mudar. Vale só para este mundo.":"Tap a tile to change it. Applies to this world only.",
 "Ofício":"Profession",
@@ -16548,15 +16579,15 @@ function _tagNomesGravar(arr){
 }
 function _nomesGuardar(){
   if(!_nomesProntos||!_nomesCofreAtivo())return Promise.resolve();
-  const pastas={};folders.forEach(f=>{pastas[f.id]=f.name});
-  return idbSet('vox_nomes',{pastas,tags:_tagNomesCofre||[]}).catch(()=>{});
+  const pastas={},fichas={};folders.forEach(f=>{pastas[f.id]=f.name;if(f.ficha)fichas[f.id]=f.ficha});
+  return idbSet('vox_nomes',{pastas,fichas,tags:_tagNomesCofre||[]}).catch(()=>{});
 }
 async function _nomesRestaurar(){
   if(!_mundoTrancado(_mundoAtivo)){_nomesProntos=false;return}
   if(!_cofreChave)return;   // trancado e sem a senha nesta sessão: os nomes continuam ocultos
   let v=null;try{v=await idbGet('vox_nomes')}catch(e){}
   if(v&&v.pastas){
-    folders.forEach(f=>{if(v.pastas[f.id]!=null)f.name=v.pastas[f.id]});
+    folders.forEach(f=>{if(v.pastas[f.id]!=null)f.name=v.pastas[f.id];if(v.fichas&&v.fichas[f.id])f.ficha=v.fichas[f.id]});
     _tagNomesCofre=Array.isArray(v.tags)?v.tags:null;
     _nomesProntos=true;
     renderFolders();if(typeof renderFiltroCores==='function')renderFiltroCores();
@@ -16607,7 +16638,8 @@ function loadFolders(){
 function saveFolders(){
   if(_mundoTrancado(_mundoAtivo)&&_cofreChave){
     // Mundo trancado: no localStorage só o marcador; o nome real vai cifrado (_nomesGuardar).
-    localStorage.setItem('vox_folders',JSON.stringify(folders.map(f=>({...f,name:_NOME_OCULTO}))));
+    // A ficha da pessoa (objetivo, o que lembrar) também: vai junto com o nome.
+    localStorage.setItem('vox_folders',JSON.stringify(folders.map(f=>{const g={...f,name:_NOME_OCULTO};delete g.ficha;return g})));
     _nomesGuardar();
   }else localStorage.setItem('vox_folders',JSON.stringify(folders));
   localStorage.setItem('vox_active_folder',activeFolderId||'');
@@ -16626,6 +16658,7 @@ function getFolderCounts(){
 }
 function renderFolders(){
   if(_voxLote)return;   // lote em curso: quem abriu redesenha uma vez só, no fim
+  document.querySelectorAll('.card .cs-faixa').forEach(fx=>_csFaixaSinc(fx.closest('.card')));
   // O filtro de etiquetas vive no mesmo painel e muda pelas mesmas razões
   // (card criado, apagado, importado) — desenhar junto evita ficar espalhando
   // chamada de atualização por todo lado.
@@ -26051,6 +26084,7 @@ function moveFolder(id,destId){
 function assignCardToFolder(cardId,fid,silencioso){
   const card=document.getElementById(cardId);if(!card)return;
   card.dataset.folder=fid;
+  _csFaixaSinc(card);
   if(silencioso)return;
   saveHistory();renderFolders();applyFolderFilter();
   const fname=fid?(folders.find(f=>f.id===fid)?.name||t('pasta')):t('Tudo');
@@ -26225,10 +26259,10 @@ function _avisoSegredo(txt){
 }
 // ── Ajustes da Consulta (o ⋯ do botão Consulta, de qualquer mundo) ─────────────
 let _csProFora=false;
-function _csPastasOpts(sel){
+function _csPastasOpts(sel,vazio){
   const fundo=f=>{let d=0,x=f;while(x&&x.parentId&&d<6){x=folders.find(y=>y.id===x.parentId);d++}return d};
   const ord=[];const add=pid=>folders.filter(f=>(f.parentId||null)===pid).forEach(f=>{ord.push(f);add(f.id)});add(null);
-  return `<option value="">${escHtml(t('Sem pasta'))}</option>`+ord.map(f=>`<option value="${escHtml(f.id)}"${f.id===sel?' selected':''}>${'· '.repeat(fundo(f))}${escHtml(f.name)}</option>`).join('');
+  return `<option value="">${escHtml(vazio||t('Sem pasta'))}</option>`+ord.map(f=>`<option value="${escHtml(f.id)}"${f.id===sel?' selected':''}>${'· '.repeat(fundo(f))}${escHtml(f.name)}</option>`).join('');
 }
 function _csRota(){
   if(cfg.provider==='local'&&cfg.diarLocal)return {serv:t('seu computador'),aviso:''};
@@ -26330,12 +26364,29 @@ function _csProPintar(m){
 }
 // Faixa da Consulta no card com vozes (qualquer mundo): título, trocar papéis, guardar na pasta.
 function _csFaixaHtml(id,folder,sn,dt){
+  const fp=folder?folders.find(f=>f.id===folder):null;
   let quando='';try{quando=new Date(dt).toLocaleDateString(getLocale(),{weekday:'short',day:'2-digit',month:'2-digit'})}catch(e){}
   // O título da sessão já está no cabeçalho do card: aqui só o que é da consulta.
   return `<div class="cs-faixa"><span class="cs-faixa-t"><b>${escHtml(t('Consulta'))}</b><small>${escHtml(quando)}</small></span>
     <button type="button" class="cs-faixa-b cs-fechar" onclick="fecharAtendimento('${escJs(id)}')" title="${escHtml(t('Nota do seu ofício, devolutiva e combinados'))}">${escHtml(t('Fechar atendimento'))}</button>
     <button type="button" class="cs-faixa-b" onclick="swapSpeakers('${escJs(id)}')" title="${escHtml(t('A IA inverteu quem é quem? Troque num toque.'))}">⇄ ${escHtml(t('Trocar papéis'))}</button>
-    <label class="cs-faixa-p"><span>${escHtml(t('Guardar em'))}</span><select onchange="assignCardToFolder('${escJs(id)}',this.value)">${_csPastasOpts(folder||'')}</select></label></div>`;
+    <label class="cs-faixa-p"><span>${escHtml(t('Guardar em'))}</span><select onchange="assignCardToFolder('${escJs(id)}',this.value)">${_csPastasOpts(folder||'')}</select></label>
+    <button type="button" class="cs-faixa-b cs-ficha" onclick="_csVerFicha('${escJs(id)}')"${fp?'':' hidden'}>${escHtml(_csFichaRotulo(fp))}</button></div>`;
+}
+function _csFichaRotulo(f){return f?t('Ver ficha de {n}').replace('{n}',f.name):''}
+// Guardou em outra pasta (pela faixa, pelo painel ou arrastando): a faixa mostra a pessoa certa.
+function _csFaixaSinc(card){
+  const fx=card&&card.querySelector('.cs-faixa');if(!fx)return;
+  const fid=card.dataset.folder||'',f=folders.find(x=>x.id===fid);
+  // As opções são refeitas: o card pode ter nascido antes das pastas carregarem
+  // (ou com os nomes ainda "•••" do cofre), e pastas novas precisam aparecer.
+  const sel=fx.querySelector('.cs-faixa-p select');if(sel&&document.activeElement!==sel)sel.innerHTML=_csPastasOpts(fid);
+  const b=fx.querySelector('.cs-ficha');if(b){b.hidden=!f;b.textContent=_csFichaRotulo(f)}
+}
+function _csVerFicha(id){
+  const fid=document.getElementById(id)?.dataset.folder||'';
+  if(!folders.some(f=>f.id===fid)){toast(t('Escolha antes em "Guardar em" de quem é esta sessão.'),true);return}
+  abrirPainel();_painelVerPessoa(fid);
 }
 function swapSpeakers(id){
   const card=document.getElementById(id);if(!card)return;
@@ -39183,6 +39234,8 @@ function _painelPintar(){
   const o=_oficioAtual(),hoje=_calChave(new Date());
   const agenda=_csAgenda(),deHoje=agenda.filter(c=>c.dataset.quando===hoje),prox=agenda[0];
   const pessoas=_csPessoasLista();
+  const soFicha=folders.filter(f=>f.ficha&&!f.del&&!pessoas.some(p=>p.f.id===f.id));
+  const semPessoa=_csCards().filter(c=>!folders.some(f=>f.id===(c.dataset.folder||''))).sort((a,b)=>String(b.dataset.dt).localeCompare(String(a.dataset.dt)));
   const semNota=_csCards().filter(c=>c.dataset.diarized==='true'&&!_csFilhas(c).length).slice(-4).reverse();
   const agora=Date.now();
   const semRetorno=pessoas.filter(p=>{
@@ -39217,8 +39270,13 @@ function _painelPintar(){
         ${semRetorno.map(p=>`<button type="button" class="pn-lin pn-pend" onclick="_painelVerPessoa('${escJs(p.f.id)}')"><span class="pn-nome">${escHtml(p.f.name)}</span><span class="pn-sub">${escHtml(t('sem retorno há {n} dias').replace('{n}',Math.floor((agora-new Date(p.ultima.dataset.dt).getTime())/864e5)))}</span></button>`).join('')}
         ${!semNota.length&&!semRetorno.length?`<span class="pn-sub">${escHtml(t('Tudo em dia.'))}</span>`:''}
       </section>
-      <section class="pn-bloco pn-pessoas"><span class="pn-k">${escHtml(t('Pessoas'))} <small>${pessoas.length}</small></span>
-        <div class="pn-pess">${pessoas.map(p=>`<button type="button" class="pn-pes" onclick="_painelVerPessoa('${escJs(p.f.id)}')" title="${escHtml(p.f.name)}"><span class="pn-av" style="--pn-c:${safeColor(p.f.color||'')}">${escHtml(_csIniciais(p.f.name))}</span><span class="pn-pn">${escHtml(p.f.name)}</span><small>${escHtml(t('{n} sessões').replace('{n}',p.ses.length))} · ${escHtml(_csData(p.ultima.dataset.dt))}</small></button>`).join('')||`<span class="pn-sub">${escHtml(t('Cada pessoa é uma pasta. Escolha "Com quem é?" no ⋯ do botão Consulta antes de gravar.'))}</span>`}</div>
+      ${semPessoa.length?`<section class="pn-bloco pn-sempes"><span class="pn-k">${escHtml(t('Sem pessoa definida'))} <small>${semPessoa.length}</small></span>
+        <span class="pn-sub">${escHtml(t('Sessões gravadas sem escolher com quem era. Diga de quem é cada uma e ela entra na ficha da pessoa.'))}</span>
+        ${semPessoa.slice(0,8).map(c=>`<div class="pn-lin pn-pend"><span class="pn-hora">${escHtml(_csData(c.dataset.dt))}</span><span class="pn-nome">${escHtml(c.dataset.sessionName||t('Sessão'))}</span><label class="pn-guarda"><span>${escHtml(t('Guardar em'))}</span><select onchange="_painelGuardar('${escJs(c.id)}',this)">${_csPastasOpts('',t('Escolha a pessoa…'))}<option value="__nova__">${escHtml(t('+ Nova pessoa…'))}</option></select></label></div>`).join('')}
+        ${semPessoa.length>8?`<span class="pn-sub">${escHtml(t('e mais {n}').replace('{n}',semPessoa.length-8))}</span>`:''}
+      </section>`:''}
+      <section class="pn-bloco pn-pessoas"><span class="pn-k">${escHtml(t('Pessoas'))} <small>${pessoas.length+soFicha.length}</small></span>
+        <div class="pn-pess">${pessoas.map(p=>`<button type="button" class="pn-pes" onclick="_painelVerPessoa('${escJs(p.f.id)}')" title="${escHtml(p.f.name)}"><span class="pn-av" style="--pn-c:${safeColor(p.f.color||'')}">${escHtml(_csIniciais(p.f.name))}</span><span class="pn-pn">${escHtml(p.f.name)}</span><small>${escHtml(t('{n} sessões').replace('{n}',p.ses.length))} · ${escHtml(_csData(p.ultima.dataset.dt))}</small></button>`).join('')}${soFicha.map(f=>`<button type="button" class="pn-pes" onclick="_painelVerPessoa('${escJs(f.id)}')" title="${escHtml(f.name)}"><span class="pn-av" style="--pn-c:${safeColor(f.color||'')}">${escHtml(_csIniciais(f.name))}</span><span class="pn-pn">${escHtml(f.name)}</span><small>${escHtml(t('ficha, sem sessões'))}</small></button>`).join('')}${pessoas.length||soFicha.length?'':`<span class="pn-sub">${escHtml(t('Cada pessoa é uma pasta. Escolha "Com quem é?" no ⋯ do botão Consulta antes de gravar.'))}</span>`}</div>
       </section>
     </div>
     <nav class="pn-vis" aria-label="${escHtml(t('As mesmas notas, de outro jeito'))}"><span>${escHtml(t('As mesmas notas, de outro jeito:'))}</span>
@@ -39228,7 +39286,7 @@ function _painelPintar(){
   </div>`;
 }
 // Ficha da pessoa: tudo calculado das notas; "Da última vez" sem IA, só do que já foi escrito.
-function _painelVerPessoa(fid){
+function _painelVerPessoa(fid,editar){
   const ov=document.getElementById('painelOv');if(!ov)return;
   const f=folders.find(x=>x.id===fid);
   if(!f){_painelPintar();return}
@@ -39241,6 +39299,7 @@ function _painelVerPessoa(fid){
     <header class="pn-cab"><div><button type="button" class="pn-volta" onclick="_painelPintar()">← ${escHtml(t('Painel'))}</button><b>${escHtml(f.name)}</b>
       <small>${ses.length?escHtml(t('desde {d}').replace('{d}',_csData(ses[ses.length-1].dataset.dt,{month:'short',year:'numeric'})))+' · '+escHtml(t('{n} sessões').replace('{n}',ses.length)):''}${prox?' · '+escHtml(t('próxima: {d}').replace('{d}',_csData(prox.dataset.quando+'T12:00:00')+(prox.dataset.quandoHora?' '+prox.dataset.quandoHora:''))):''}</small></div>
       <div class="pn-cab-bts"><button type="button" class="pn-bt pn-p" onclick="_painelComecar('${escJs(fid)}')">${escHtml(t('Gravar sessão {n}').replace('{n}',ses.length+1))}</button><button type="button" class="pn-x" onclick="fecharPainel()" aria-label="${escHtml(t('Fechar'))}">×</button></div></header>
+    ${_fichaHtml(f,editar)}
     <div class="pn-grade">
       <section class="pn-bloco pn-agora"><span class="pn-k">${escHtml(t('Da última vez'))}${ult?' · '+escHtml(_csData(ult.dataset.dt)):''}</span>
         ${linhas.length?`<ul class="pn-ult">${linhas.map(x=>`<li>${escHtml(x.replace(/^[-*•]\s*/,''))}</li>`).join('')}</ul><span class="pn-sub">${escHtml(t('Tirado da nota "{n}".').replace('{n}',comb.dataset.sessionName||''))}</span>`
@@ -39253,6 +39312,42 @@ function _painelVerPessoa(fid){
     </div>
     <nav class="pn-vis"><button type="button" onclick="fecharPainel();selectFolder('${escJs(fid)}')">${escHtml(t('Ver todas as notas desta pessoa'))}</button></nav>
   </div>`;
+}
+// Ficha editável da pessoa: mora no próprio objeto da pasta, então o backup leva junto
+// e, com o mundo trancado, vai cifrada com os nomes (vox_nomes) — nunca em claro.
+const _FICHA_CAMPOS=[['nome','Nome completo',0],['objetivo','Objetivo',1],['lembrar','Sempre lembrar',1],['retorno','Retorno combinado',0]];
+function _fichaHtml(f,editar){
+  const fi=f.ficha||{},tem=_FICHA_CAMPOS.some(([k])=>fi[k]);
+  if(editar)return `<section class="pn-bloco pn-ficha pn-ficha-ed"><span class="pn-k">${escHtml(t('Ficha'))}</span>
+    ${_FICHA_CAMPOS.map(([k,r,longo])=>`<label class="pn-fc"><span>${escHtml(t(r))}</span>${longo?`<textarea id="fi_${k}" rows="2" maxlength="2000">${escHtml(fi[k]||'')}</textarea>`:`<input id="fi_${k}" type="text" maxlength="200" value="${escHtml(fi[k]||'')}">`}</label>`).join('')}
+    <div class="pn-bts"><button type="button" class="pn-bt pn-p" onclick="_fichaSalvar('${escJs(f.id)}')">${escHtml(t('Salvar ficha'))}</button><button type="button" class="pn-bt" onclick="_painelVerPessoa('${escJs(f.id)}')">${escHtml(t('Cancelar'))}</button></div></section>`;
+  if(!tem)return `<section class="pn-bloco pn-ficha"><span class="pn-k">${escHtml(t('Ficha'))}</span><span class="pn-sub">${escHtml(t('Anote o objetivo, o que sempre lembrar e o retorno combinado. Fica só neste mundo e, com senha, vai cifrado.'))}</span>
+    <div class="pn-bts"><button type="button" class="pn-bt" onclick="_painelVerPessoa('${escJs(f.id)}',true)">${escHtml(t('Preencher ficha'))}</button></div></section>`;
+  return `<section class="pn-bloco pn-ficha"><span class="pn-k">${escHtml(t('Ficha'))}<button type="button" class="pn-mini" onclick="_painelVerPessoa('${escJs(f.id)}',true)">${escHtml(t('Editar'))}</button></span>
+    <dl class="pn-fdl">${_FICHA_CAMPOS.filter(([k])=>fi[k]).map(([k,r])=>`<dt>${escHtml(t(r))}</dt><dd>${escHtml(fi[k])}</dd>`).join('')}</dl></section>`;
+}
+function _fichaSalvar(fid){
+  const f=folders.find(x=>x.id===fid);if(!f)return;
+  if(_mundoTrancado(_mundoAtivo)&&!_cofreChave){toast(t('Este mundo está trancado: entre com a senha para editar a ficha.'),true);return}
+  const fi={};
+  _FICHA_CAMPOS.forEach(([k])=>{const v=String(document.getElementById('fi_'+k)?.value||'').trim().slice(0,2000);if(v)fi[k]=v});
+  if(Object.keys(fi).length){fi.em=new Date().toISOString();f.ficha=fi}else delete f.ficha;
+  saveFolders();
+  toast(t('Ficha salva.'));
+  _painelVerPessoa(fid);
+}
+// "Sem pessoa definida": guardar a sessão numa pasta (ou numa pessoa nova) direto do painel.
+function _painelGuardar(id,sel){
+  let fid=sel.value;
+  if(fid==='__nova__'){
+    const nome=prompt(t('Nome da pessoa:'));
+    const nova=nome&&nome.trim()?_mapaNovaPasta(null,nome):null;
+    if(!nova){sel.value='';return}
+    fid=nova.id;
+  }
+  if(!fid)return;
+  assignCardToFolder(id,fid);
+  _painelPintar();
 }
 function _painelComecar(fid){
   fecharPainel();
