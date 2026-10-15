@@ -1194,6 +1194,14 @@ body.doc-mode .card.focus-active:not(.hdr-folded) .dv-chips{display:none}
 /* Onde o menu de exportar continua dentro do card (Lista, janelas): não passa de ~420px; o resto rola por dentro. */
 .lens-panel[id^="exp-menu-"].on:not(.menu-flut){max-height:min(60vh,420px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .lens-panel.menu-flut{position:fixed;z-index:80;margin:0;padding:6px;background:var(--bg-card);border:1px solid var(--border2);border-radius:14px;box-shadow:0 14px 44px rgba(0,0,0,.28);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+/* Rótulo das alças da janela flutuante + etiqueta que acompanha o cursor no arrasto */
+.float-window .ch .drag-handle,.float-window .drag-handle-cal{position:relative;overflow:visible}
+.float-window .ch .drag-handle[data-rot]:hover::after,.float-window .drag-handle-cal[data-rot]:hover::after{
+  content:attr(data-rot);position:absolute;left:0;top:calc(100% + 6px);z-index:9;white-space:nowrap;pointer-events:none;
+  background:var(--text);color:var(--bg-card);font-family:var(--font);font-size:11.5px;font-weight:600;line-height:1;padding:6px 9px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#flDica{position:fixed;z-index:9999;pointer-events:none;max-width:260px;background:var(--text);color:var(--bg-card);font-family:var(--font);font-size:12px;font-weight:600;line-height:1.3;padding:7px 11px;border-radius:9px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+#flDica[hidden]{display:none}
+#flDica.aviso{background:var(--warning);color:#1a1200}
 /* Leitura: o texto já formatado, na fonte e no tamanho escolhidos. O editor e
    o textarea some enquanto ela está de pé (classe dv-lendo no card). */
 body.doc-mode{--dv-fonte:var(--font);--dv-corpo:17px}
@@ -12165,6 +12173,7 @@ let I18N_EN={
 "Tema do papel":"Page theme","Sépia":"Sepia","Restaurar o padrão":"Restore defaults",
 "Título do documento":"Document title","Sem título":"Untitled",
 "❌ Não foi possível copiar":"❌ Could not copy","Abrir como card flutuante":"Open as a floating card","Arrastar: solte numa pasta pra mover, ou no mapa pra deixar flutuando":"Drag: drop on a folder to move it, or on the map to leave it floating","Arrastar esta nota":"Drag this note","Mostrar mais texto":"Show more text","Mostrar menos":"Show less",
+"Marcar um dia":"Set a day","Levar para uma pasta":"Take to a folder","Levar esta nota para uma pasta: arraste até a pasta no mapa":"Take this note to a folder: drag it onto the folder on the map","Soltar em {d}":"Drop on {d}","Solte num dia do calendário":"Drop on a day in the calendar","Soltar na pasta {p}":"Drop in folder {p}","esta pasta":"this folder","Esta alça leva para pastas. Para marcar o dia, use a alça de calendário":"This handle takes notes to folders. To set a day, use the calendar handle","Esta alça leva a nota para pastas. Para marcar o dia, arraste pela alça de calendário.":"This handle takes the note to folders. To set a day, drag by the calendar handle.",
 "Foco ao digitar":"Focus while typing","Ligado":"On","Desligado":"Off",
 "Os menus quase somem enquanto você escreve; mexer o mouse traz de volta.":"Menus almost disappear while you write; moving the mouse brings them back.",
 "Inserir":"Insert","Título":"Heading","Tarefa":"Task","Bloco de código":"Code block","Divisor":"Divider","Data de hoje":"Today's date",
@@ -17552,6 +17561,7 @@ function _flMontarAlcaCalendario(card){
   const alca=document.createElement('div');
   alca.className='drag-handle-cal';
   alca.title=t('Arrastar para marcar no calendário');
+  alca.dataset.rot=t('Marcar um dia');
   alca.innerHTML=`<span class="svgi">${CAL_ICO.dia}</span>`;
   grip.insertAdjacentElement('afterend',alca);
   // Mesmo par de listeners que initCardDrag usa pra alça de sempre — só troca
@@ -17682,6 +17692,7 @@ function _flAbrirCard(id,origemEl,posFixa){
   // Etapa 1 do plano de 07/09: a alça nova só nasce com o calendário aberto —
   // em Fluxograma/Órbita a janela continua com uma alça só, nada muda lá.
   _flMontarAlcaCalendario(card);
+  _flRotularAlcas(card);
   world.appendChild(win);
   // O card pode chegar aqui JÁ ao vivo: na gravação longa ele nasce e é
   // aberto no mesmo quadro, antes de setSegCardLive marcar a janela (que
@@ -18286,6 +18297,7 @@ function _flTrazerFrente(id){
 // Devolve o card pro lugar de sempre em #cardsList, respeitando a ordem
 // por data (prepend em addCard = mais novo primeiro).
 function _flReinserirNaLista(card){
+  _flDesrotularAlcas(card);
   const lista=document.getElementById('cardsList');
   if(!lista)return;
   const dt=card.dataset.dt||'';
@@ -18436,6 +18448,49 @@ function _flLimiteVisivel(winW,winH){
     maxY:(r.height-_flY)/_flS-m
   };
 }
+// ── Alças da janela flutuante: dizer o que cada uma faz (15/10/2026) ──────────
+// A janela tem duas alças — ⠿ (leva a nota para uma PASTA) e o ícone de calendário
+// (marca um DIA). Sem nome, o leigo arrastava pela errada e nada acontecia. Agora:
+// (1) cada alça tem rótulo ao passar o mouse; (2) enquanto se arrasta, uma etiqueta
+// acompanha o cursor dizendo o que vai acontecer ("Soltar na pasta Aulas", "Soltar em
+// 22 de outubro"); (3) soltar num dia pela alça de pasta avisa qual alça usar.
+function _flRotularAlcas(card){
+  const g=card.querySelector('.ch .drag-handle');
+  if(g){
+    if(g.dataset.tituloOrig===undefined)g.dataset.tituloOrig=g.title||'';
+    g.title=t('Levar esta nota para uma pasta: arraste até a pasta no mapa');
+    g.dataset.rot=t('Levar para uma pasta');
+  }
+}
+function _flDesrotularAlcas(card){
+  const g=card.querySelector('.ch .drag-handle');
+  if(g&&g.dataset.tituloOrig!==undefined){g.title=g.dataset.tituloOrig;delete g.dataset.tituloOrig;delete g.dataset.rot}
+}
+function _flNomeDoNo(achado){
+  const id=achado&&achado.folderId;
+  if(id===''||id==null)return t('Tudo');
+  const f=(typeof folders!=='undefined'?folders:[]).find(x=>x.id===id);
+  return f?f.name:t('esta pasta');
+}
+function _flDicaArrasto(x,y,modo,achado){
+  let txt='',aviso=false;
+  if(modo==='marcar'){
+    if(achado&&achado.tipo==='cal')txt=t('Soltar em {d}').replace('{d}',_calRotuloDia(achado.dia))+(achado.hora?' · '+achado.hora:achado.semHora?' · '+t('o dia todo'):'');
+    else txt=t('Solte num dia do calendário');
+  }else if(achado&&achado.tipo==='pasta'){
+    txt=t('Soltar na pasta {p}').replace('{p}',_flNomeDoNo(achado));
+  }else if(_calAberto()&&_calAlvoEmPonto(x,y,false)){
+    txt=t('Esta alça leva para pastas. Para marcar o dia, use a alça de calendário');aviso=true;
+  }
+  let el=document.getElementById('flDica');
+  if(!txt){if(el)el.hidden=true;return}
+  if(!el){el=document.createElement('div');el.id='flDica';el.setAttribute('role','status');document.body.appendChild(el)}
+  el.hidden=false;el.textContent=txt;el.classList.toggle('aviso',aviso);
+  const w=el.offsetWidth,h=el.offsetHeight;
+  el.style.left=Math.max(8,Math.min(x+16,innerWidth-w-8))+'px';
+  el.style.top=Math.max(8,Math.min(y+22,innerHeight-h-8))+'px';
+}
+function _flDicaArrastoFim(){document.getElementById('flDica')?.remove()}
 function _flStartWindowDrag(el,e0,isTouch,modo){
   // Etapa 1 do plano de 07/09/2026: `modo` diz qual alça começou o gesto.
   // 'mover' (padrão, a alça de 6 pontos de sempre) e 'marcar' (a alça nova,
@@ -18473,6 +18528,7 @@ function _flStartWindowDrag(el,e0,isTouch,modo){
     _orbFiosDasNotas(); // o fio acompanha a nota enquanto ela é arrastada
     if(modo!=='marcar')_telaPortaisMirar(win,x,y);
     const achado=_flAlvoDropEmPonto(x,y,modo);
+    _flDicaArrasto(x,y,modo,achado);
     if(achado&&achado.tipo==='cal'){
       // No calendário quem acende é a célula/vaga, com a linguagem do próprio
       // calendário (o ímã da fase 1 e a vaga tracejada da coluna) — não a
@@ -18492,6 +18548,7 @@ function _flStartWindowDrag(el,e0,isTouch,modo){
     win.classList.remove('float-window-arrastando','fl-modo-marcar');
     calPalcoEl?.classList.remove('cal-pronta-receber');
     alvoAtual?.classList.remove('fl-drop-alvo');
+    _flDicaArrastoFim();
     if(!ativo){_calLimparAlvo();return}
     const{x,y}=coords(e);
     // ── soltar num portal: troca de tela (ou leva a nota pra outro mundo) ──
@@ -18508,6 +18565,8 @@ function _flStartWindowDrag(el,e0,isTouch,modo){
       return;
     }
     const achado=_flAlvoDropEmPonto(x,y,modo);
+    // Soltou num dia pela alça de pasta (⠿): nada é marcado — diz qual alça usar.
+    if(modo==='mover'&&!achado&&_calAberto()&&_calAlvoEmPonto(x,y,false))toast(t('Esta alça leva a nota para pastas. Para marcar o dia, arraste pela alça de calendário.'));
     // ── soltar num dia/hora do calendário: marca QUANDO, não mexe em pasta ──
     if(achado&&achado.tipo==='cal'){
       const alvoEl=achado.el;
