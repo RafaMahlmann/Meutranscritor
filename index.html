@@ -9772,7 +9772,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <p data-i18n>Cada mundo é um Vox do zero: pastas, notas, etiquetas e calendário próprios. O que você guarda em um não aparece no outro.</p>
       <p data-i18n>As outras visões — órbita, fluxograma, calendário — mostram as MESMAS notas de jeitos diferentes. Aqui não: aqui você troca o conjunto inteiro.</p>
       <p data-i18n>Serve pra separar o que não se mistura: o que é de um cliente, um diário pessoal, um projeto com árvore de pastas própria, uma decisão que você quer pensar sem o resto no caminho.</p>
-      <p data-i18n>Suas chaves e configurações são as mesmas em todos os mundos — elas são suas, não do espaço. Só o conteúdo muda.</p>
+      <p data-i18n>Suas chaves são as mesmas em todos os mundos — elas são suas, não do espaço. O jeito de trabalhar pode ser de cada um: um mundo de Consultas tem o seu ofício, os seus modelos de nota e o seu painel.</p>
       <p class="gxa-fim" data-i18n>Toque num planeta pra ver o que tem dentro, e de novo pra entrar.</p>
     </div>
   </div>
@@ -9814,7 +9814,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.20';
+const VOX_VERSION='2026.10.15.21';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -9910,7 +9910,9 @@ const VOX_SUGESTOES=[
   {sid:'aulas',     ceu:0, nome:'Aulas',      desc:'Aula, leitura, estudo — o que você quer reler depois.'},
   {sid:'entrevistas',ceu:0,nome:'Entrevistas',desc:'Quem falou o quê, com o nome de cada voz.'},
   {sid:'brainstorm',ceu:0, nome:'Brainstorm', desc:'Ideia solta, sem juízo nenhum, pra escolher depois.'},
-  {sid:'prompts',   ceu:0, nome:'Prompts',    desc:'O que funcionou pra pedir, guardado pra repetir.'}
+  // Oficina (15/10/2026): o mundo de quem programa. A antiga sugestão "Prompts" virou
+  // a pasta "Pedidos pra IA" dela — dois planetas parecidos no céu confundiam.
+  {sid:'oficina',   ceu:0, nome:'Oficina',    desc:'Ideia, bug e pedido pra IA, falados antes de sumir.'}
 ];
 function _sugDispensadas(){
   try{return JSON.parse(VOX_LS.get('vox_sug_fora')||'[]')||[]}catch(e){return []}
@@ -11141,6 +11143,43 @@ let I18N_EN={
 "Pronto. A mãozinha volta na próxima vez que você abrir uma lista de notas no Fluxograma, na Órbita ou no Calendário.":"Done. The little hand comes back the next time you open a note list in the Flowchart, Orbit or Calendar.",
 "Rever o gesto de arrastar":"Replay the drag gesture",
 "Que atendimento você faz?":"What kind of appointments do you run?",
+"Oficina":"Workshop",
+"Ideia, bug e pedido pra IA, falados antes de sumir.":"Ideas, bugs and AI requests, spoken before they vanish.",
+"Pedido pra IA":"AI request",
+"A fala solta vira um pedido claro para o agente, e aponta o que faltou dizer":"Loose speech becomes a clear request for the agent, and points out what was missing",
+"Relato de bug":"Bug report",
+"Título, passos, esperado × aconteceu, ambiente":"Title, steps, expected × actual, environment",
+"Regra pro agente":"Rule for the agent",
+"Frases curtas e imperativas para colar no AGENTS.md ou CLAUDE.md":"Short imperative lines to paste into AGENTS.md or CLAUDE.md",
+"Registro de decisão":"Decision record",
+"Contexto, opções, decisão e consequências (MADR)":"Context, options, decision and consequences (MADR)",
+"Standup":"Standup",
+"Ontem, hoje e o que está travando":"Yesterday, today and blockers",
+"Novidades da versão":"Release notes",
+"Changelog em Adicionado, Mudado, Corrigido…":"Changelog in Added, Changed, Fixed…",
+"Mensagem de commit":"Commit message",
+"Assunto curto + corpo explicando o porquê":"Short subject + body explaining why",
+"Pergunta e resposta":"Q&A",
+"A entrevista em pingue-pongue, limpa para publicar":"The interview as clean Q&A, ready to publish",
+"Aspas citáveis":"Quotable lines",
+"As frases mais fortes, ao pé da letra, com quem disse":"The strongest lines, verbatim, with who said them",
+"Perfil do entrevistado":"Interviewee profile",
+"Quem é, o que pensa, o que conta":"Who they are, what they think, what they tell",
+"Temas da entrevista":"Interview themes",
+"Os assuntos que apareceram, com trechos de apoio":"The topics that came up, with supporting quotes",
+"Respostas por pergunta":"Answers by question",
+"Encaixa as respostas no seu roteiro de perguntas":"Fits the answers into your question script",
+"Pedidos pra IA":"AI requests",
+"Bugs":"Bugs",
+"Ideias":"Ideas",
+"Atenção: este texto parece ter uma chave secreta. Confira antes de colar em outro lugar.":"Careful: this text seems to contain a secret key. Check it before pasting it elsewhere.",
+"Ajustes da Entrevista":"Interview settings",
+"Roteiro de perguntas (uma por linha)":"Question script (one per line)",
+"Como você conheceu o produto?":"How did you find out about the product?",
+"A lente \"Respostas por pergunta\" encaixa cada resposta na pergunta.":"The \"Answers by question\" lens fits each answer under its question.",
+"Palavras do tema":"Topic words",
+"Suas chaves são as mesmas em todos os mundos — elas são suas, não do espaço. O jeito de trabalhar pode ser de cada um: um mundo de Consultas tem o seu ofício, os seus modelos de nota e o seu painel.":"Your keys are the same in every world — they are yours, not the space's. The way you work can differ per world: an Appointments world has its own profession, note templates and dashboard.",
+
 "Painel":"Dashboard",
 "Painel da Consulta: o que vem agora e o que ficou pendente":"Appointments dashboard: what's next and what's pending",
 "Personalizar":"Customize",
@@ -12765,7 +12804,7 @@ function _consultaPrompt(){
 const SESSION_MODES={
   consulta:{label:t('Consulta'),get speakers(){return _consultaPapeis()},get prompt(){return _consultaPrompt()}},
   reuniao:{label:t('Reunião'),speakers:[t('Facilitador'),t('Participante')],prompt:'Identifique os locutores. Sugira nomes baseados no contexto (ex: líder da reunião, participante). Responda só com JSON: {"A":"Nome","B":"Nome"}.'},
-  entrevista:{label:t('Entrevista'),speakers:[t('Entrevistador'),t('Entrevistado')],prompt:'Identifique qual locutor é o ENTREVISTADOR (faz perguntas, conduz) e qual é o ENTREVISTADO (responde, narra). Responda só com JSON: {"A":"Entrevistador","B":"Entrevistado"} ou vice-versa.'},
+  entrevista:{label:t('Entrevista'),speakers:[t('Entrevistador'),t('Entrevistado')],prompt:'Identifique qual locutor é o ENTREVISTADOR (faz perguntas, conduz) e qual é o ENTREVISTADO (responde, narra). Se houver mais de um entrevistado (grupo), use "Entrevistado 2", "Entrevistado 3"… Responda só com JSON: {"A":"Entrevistador","B":"Entrevistado"} ou vice-versa.'},
   livre:{label:t('Livre'),speakers:[t('Locutor 1'),t('Locutor 2')],prompt:'Identifique os locutores e sugira nomes pelo contexto. Responda só com JSON: {"A":"Nome","B":"Nome"}.'}
 };
 const _MODE_ICOS={consulta:'stetho',reuniao:'users',entrevista:'mic',livre:'fileText'};
@@ -14859,10 +14898,10 @@ const ABRE_PERFIS=[
   {id:'jeito',     nome:'Do meu jeito',      modo:null,        abre:'last', desc:'Abre onde você parou, no último modo que usou.'}
 ];
 // Mundo nascido de uma sugestão do céu já entra com o perfil que combina.
-const ABRE_PERFIL_DA_SUGESTAO={reunioes:'reuniao',consultas:'consulta',entrevistas:'entrevista',brainstorm:'fluido',diario:'diario',aulas:'estudo',prompts:'jeito'};
+const ABRE_PERFIL_DA_SUGESTAO={reunioes:'reuniao',consultas:'consulta',entrevistas:'entrevista',brainstorm:'fluido',diario:'diario',aulas:'estudo',prompts:'jeito',oficina:'jeito'};
 // A lente que o card de boas-vindas sugere em cada mundo da primeira entrada.
 const _1A_LENTE={raiz:'Resumo pirâmide',reunioes:'Decisões & Ações',consultas:'Nota SOAP',diario:'Espelho',aulas:'Flashcards',
-  entrevistas:'Resumo pirâmide',brainstorm:'Tempestade de ideias',prompts:'Corretor mínimo'};
+  entrevistas:'Resumo pirâmide',brainstorm:'Tempestade de ideias',prompts:'Corretor mínimo',oficina:'Pedido pra IA'};
 function _lsLer(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
 // ── PRIMEIRA ENTRADA (lote 13, 14/10/2026) ──
 // Marca GLOBAL (fora do desvio por mundo, por isso VOX_LS) que diz "esta
@@ -26026,6 +26065,79 @@ let bannerDismissed=false;
 // abrindo=true: o boot devolvendo o modo que este mundo usou por último
 // (plano 27). Sem o "afundar" do trilho e sem o aviso de várias vozes — a
 // pessoa não clicou em nada, só abriu o app onde tinha deixado.
+
+// ── Glossário que vai junto pro transcritor (Whisper/Groq aceitam "prompt") ──────
+// As palavras do seu trabalho (⋯ do Consulta, glossário da Oficina) ajudam a acertar
+// nomes de remédio, termos jurídicos, nomes de função. Teto curto: o Whisper lê ~224 tokens.
+function _txDica(fd){
+  try{
+    const pc=_painelCfg(),o=(sessionMode==='consulta')?_oficioAtual():null;
+    const ps=String(pc.palavras||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean).concat(o?o.termos:[]);
+    const u=[...new Set(ps)];if(!u.length)return;
+    let txt='';for(const p of u){if((txt+p).length>600)break;txt+=(txt?', ':'')+p}
+    fd.append('prompt',txt+'.');
+  }catch(e){}
+}
+// ── Oficina e Entrevista: lentes do tipo do mundo ──────────────────────────────
+const LENTES_OFICINA=[
+  {k:'of_pedido',nome:'Pedido pra IA',desc:'A fala solta vira um pedido claro para o agente, e aponta o que faltou dizer',
+    p:'Transforme a fala num pedido claro para um agente de IA que programa (Claude Code, Codex, Cursor). Use estas seções:\n**Objetivo:**\n**Onde (arquivos, telas, funções citados):**\n**Restrições (o que não pode mudar):**\n**Casos-limite:**\n**O que já tentei:**\n**Como saber que ficou pronto:**\nSeção sem informação: escreva "não dito". No fim, uma linha "**Faltou dizer:**" com o que mais ajudaria o agente.'},
+  {k:'of_bug',nome:'Relato de bug',desc:'Título, passos, esperado × aconteceu, ambiente',
+    p:'Escreva um relato de bug a partir da fala:\n**Título:** (curto)\n**Passos para reproduzir:** (numerados)\n**Esperado:**\n**Aconteceu:**\n**Ambiente (aparelho, navegador, versão):**\n**Gravidade:**\nSem informação: "não dito".'},
+  {k:'of_regra',nome:'Regra pro agente',desc:'Frases curtas e imperativas para colar no AGENTS.md ou CLAUDE.md',
+    p:'Transforme a fala em regras para um arquivo AGENTS.md: frases curtas, imperativas, uma por linha, começando com "- ". Agrupe por assunto com um título "##". Não invente regra que não foi dita.'},
+  {k:'of_decisao',nome:'Registro de decisão',desc:'Contexto, opções, decisão e consequências (MADR)',
+    p:'Registre a decisão no formato MADR curto:\n# (título da decisão)\n## Contexto\n## Opções consideradas\n## Decisão\n## Consequências\nSem informação: "não registrado".'},
+  {k:'of_standup',nome:'Standup',desc:'Ontem, hoje e o que está travando',
+    p:'Organize como standup:\n**Ontem:**\n**Hoje:**\n**Travando:**\nFrases curtas.'},
+  {k:'of_novidades',nome:'Novidades da versão',desc:'Changelog em Adicionado, Mudado, Corrigido…',
+    p:'Escreva as novidades no padrão Keep a Changelog, só com as seções que tiverem conteúdo: ### Adicionado, ### Mudado, ### Corrigido, ### Removido, ### Segurança. Uma linha por item, do ponto de vista de quem usa.'},
+  {k:'of_commit',nome:'Mensagem de commit',desc:'Assunto curto + corpo explicando o porquê',
+    p:'Escreva uma mensagem de commit: primeira linha com até 72 caracteres no imperativo; linha em branco; corpo curto explicando o porquê e o que muda para quem usa.'}
+];
+const LENTES_ENTREVISTA=[
+  {k:'en_pingue',nome:'Pergunta e resposta',desc:'A entrevista em pingue-pongue, limpa para publicar',
+    p:'Reescreva a entrevista no formato pergunta e resposta, com **P:** e **R:**, tirando vícios de fala sem mudar o sentido. Mantenha os nomes de quem fala, se houver.'},
+  {k:'en_aspas',nome:'Aspas citáveis',desc:'As frases mais fortes, ao pé da letra, com quem disse',
+    p:'Liste de 5 a 8 frases fortes, AO PÉ DA LETRA (não reescreva), cada uma com quem disse. Formato: > "frase" — Nome. Se houver marcas [mm:ss] no texto, mantenha a do trecho.'},
+  {k:'en_perfil',nome:'Perfil do entrevistado',desc:'Quem é, o que pensa, o que conta',
+    p:'Monte o perfil do entrevistado só com o que foi dito:\n**Quem é:**\n**O que faz:**\n**O que pensa sobre o tema:**\n**Histórias que contou:**\n**Pontos para checar:**'},
+  {k:'en_temas',nome:'Temas da entrevista',desc:'Os assuntos que apareceram, com trechos de apoio',
+    p:'Liste os temas que apareceram. Para cada tema: um título em negrito, uma frase de síntese e 1 ou 2 trechos literais de apoio entre aspas.'},
+  {k:'en_roteiro',nome:'Respostas por pergunta',desc:'Encaixa as respostas no seu roteiro de perguntas',
+    get p(){const r=String(_painelCfg().roteiro||'').split('\n').map(x=>x.trim()).filter(Boolean);
+      return r.length?'Para cada pergunta do roteiro abaixo, escreva a pergunta em negrito e, embaixo, um resumo fiel da resposta (ou "não respondida"):\n'+r.map((x,i)=>(i+1)+'. '+x).join('\n')
+        :'Liste as perguntas feitas na entrevista em negrito e, embaixo de cada uma, um resumo fiel da resposta.'}}
+];
+function _tipoLentesRegistrar(){
+  Object.keys(LENSES).filter(k=>k.startsWith('of_')||k.startsWith('en_')).forEach(k=>delete LENSES[k]);
+  const m=_mundosLista().find(x=>x.id===_mundoAtivo),tipo=m&&m.tipo;
+  const reg=(lista,cat,titulo,desc,cor)=>{
+    LENS_CATS[cat]={title:titulo,desc,color:cor};
+    lista.forEach(L=>{LENSES[L.k]={cat,label:t(L.nome),icon:ICO.fileText||ICO.clipboard,inplace:false,tag:cat,temp:0.2,desc:t(L.desc),
+      sys:'Você trabalha só com o que está no texto. Não invente fatos, nomes, números ou citações.',
+      get prompt(){return L.p+' '+_promptLang()}}});
+  };
+  if(tipo==='oficina')reg(LENTES_OFICINA,'oficina','Oficina','Pedido pra IA, bug, regra, decisão, changelog','#6a3fc2');
+  if(tipo==='entrevista')reg(LENTES_ENTREVISTA,'entrevista','Entrevista','Pergunta e resposta, aspas, perfil, temas','#d9480f');
+}
+// Oficina recém-criada: nasce com as pastas do jeito de trabalhar (a de "Prompts" incluída).
+function _oficinaSemente(){
+  try{
+    if(VOX_LS.get('vox_oficina_nova')!=='1')return;
+    const m=_mundosLista().find(x=>x.id===_mundoAtivo);if(!m||m.tipo!=='oficina')return;
+    VOX_LS.rem('vox_oficina_nova');
+    if(folders.length)return;
+    [['Pedidos pra IA','#6a3fc2'],['Bugs','#d64a3c'],['Decisões','#0e7c82'],['Ideias','#d9921a']].forEach(([n,c],i)=>folders.push({id:'f_of'+i+Date.now().toString(36),name:t(n),color:c,parentId:null}));
+    saveFolders();renderFolders();
+  }catch(e){}
+}
+window.addEventListener('load',()=>setTimeout(()=>{try{_tipoLentesRegistrar();_oficinaSemente()}catch(e){}},900));
+// Aviso antes de copiar: parece ter uma chave secreta no texto?
+function _avisoSegredo(txt){
+  if(/\b(sk-[A-Za-z0-9_-]{16,}|gsk_[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|xox[bpa]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{30,})/.test(txt||''))
+    setTimeout(()=>toast(t('Atenção: este texto parece ter uma chave secreta. Confira antes de colar em outro lugar.'),true),900);
+}
 // ── Ajustes da Consulta (o ⋯ do botão Consulta, de qualquer mundo) ─────────────
 let _csProFora=false;
 function _csPastasOpts(sel){
@@ -26052,6 +26164,7 @@ function _csVozesHtml(){
 function _csAbrir(btn){
   const ja=document.getElementById('csPop');
   if(ja){_csFechar();return}
+  if(sessionMode==='entrevista'){_enAbrir(btn);return}
   const pc=_painelCfg(),o=_oficioAtual(),[eu,outro]=_consultaPapeis();
   const pess=pc.pessoas||0,onde=(cfg.audioSource==='both')?'online':'presencial';
   const naoOnline=!audioSupportsInternal();
@@ -26071,6 +26184,23 @@ function _csAbrir(btn){
     ${rota?`<div class="cs-sig"><span class="cs-k">${escHtml(t('Para onde vai a conversa'))}</span><span>${escHtml(t('Áudio'))} → <b>${escHtml(rota.serv)}</b></span>${rota.aviso?`<small>${escHtml(rota.aviso)}</small>`:''}</div>`:''}
     <div class="cs-pe"><button type="button" class="cs-link" onclick="_csFechar();_mundoPersonalizar()">${escHtml(t('Personalizar este mundo'))}</button><button type="button" class="cs-link" onclick="_csCopiarAviso(this)">${escHtml(t('Copiar frase para avisar quem você atende'))}</button>
     ${mundo&&mundo.tipo==='consulta'?'':`<button type="button" class="cs-link" onclick="_csMundoProprio()">${escHtml(t('Criar um mundo só pra Consultas'))}</button>`}</div>`;
+  document.body.appendChild(pop);
+  const r=(btn||document.getElementById('csMais')||document.body).getBoundingClientRect(),w=pop.offsetWidth;
+  pop.style.left=Math.max(12,Math.min(r.right-w,innerWidth-w-12))+'px';
+  pop.style.bottom=Math.max(12,innerHeight-r.top+10)+'px';
+  setTimeout(()=>{document.addEventListener('pointerdown',_csFora,true);document.addEventListener('keydown',_csTecla,true)},0);
+}
+// Ajustes da Entrevista: com quem é, quantas pessoas, roteiro de perguntas e palavras.
+function _enAbrir(btn){
+  const pc=_painelCfg(),pess=pc.pessoas||0;
+  const pop=document.createElement('div');
+  pop.id='csPop';pop.className='cs-pop';pop.setAttribute('role','dialog');pop.setAttribute('aria-label',t('Ajustes da Entrevista'));
+  pop.innerHTML=`<div class="cs-cab"><b>${escHtml(t('Ajustes da Entrevista'))}</b><small>${escHtml(t('neste mundo'))}</small><button type="button" class="cs-x" onclick="_csFechar()" aria-label="${escHtml(t('Fechar'))}">×</button></div>
+    <label class="cs-lin"><span class="cs-k">${escHtml(t('Com quem é?'))}</span><select id="csPasta" onchange="_csComQuem(this.value)">${_csPastasOpts(activeFolderId||'')}</select></label>
+    <div class="cs-lin"><span class="cs-k">${escHtml(t('Pessoas'))}</span><span class="cs-seg">${[[2,'2'],[3,'3'],[4,'4+'],[0,t('não sei')]].map(([v,l])=>`<button type="button" class="${pess===v?'on':''}" onclick="_csPessoas(${v},this)">${escHtml(l)}</button>`).join('')}</span></div>
+    <label class="cs-lin cs-col"><span class="cs-k">${escHtml(t('Roteiro de perguntas (uma por linha)'))}</span><textarea id="enRoteiro" rows="4" placeholder="${escHtml(t('Como você conheceu o produto?'))}" onchange="_painelGravar({roteiro:this.value})">${escHtml(pc.roteiro||'')}</textarea><small>${escHtml(t('A lente "Respostas por pergunta" encaixa cada resposta na pergunta.'))}</small></label>
+    <label class="cs-lin cs-col"><span class="cs-k">${escHtml(t('Palavras do tema'))}</span><textarea id="csPalavras" rows="2" onchange="_painelGravar({palavras:this.value})">${escHtml(pc.palavras||'')}</textarea></label>
+    <div class="cs-lin"><span class="cs-k">${escHtml(t('Vozes'))}</span><span class="cs-vozes">${_csVozesHtml()}</span></div>`;
   document.body.appendChild(pop);
   const r=(btn||document.getElementById('csMais')||document.body).getBoundingClientRect(),w=pop.offsetWidth;
   pop.style.left=Math.max(12,Math.min(r.right-w,innerWidth-w-12))+'px';
@@ -26140,9 +26270,10 @@ function swapSpeakers(id){
 }
 // Pessoas e palavras do trabalho vão junto pra AssemblyAI (só no modo Consulta).
 function _aaiExtras(mode){
-  if(mode!=='consulta')return {};
-  const pc=_painelCfg(),o=_oficioAtual(),x={};
+  if(mode!=='consulta'&&mode!=='entrevista')return {};
+  const pc=_painelCfg(),o=mode==='consulta'?_oficioAtual():null,x={};
   if(pc.pessoas===2||pc.pessoas===3)x.speakers_expected=pc.pessoas;
+  else if(pc.pessoas===4)x.speaker_options={min_speakers_expected:4,max_speakers_expected:10};
   const termos=[...new Set(String(pc.palavras||'').split(/[,;\n]/).map(s=>s.trim()).filter(Boolean).concat(o?o.termos:[]))]
     .filter(s=>s.split(/\s+/).length<=6).slice(0,100);
   if(termos.length)x.keyterms_prompt=termos;
@@ -26200,8 +26331,9 @@ function setMode(m,abrindo,porToque){
   if(needsDiar&&hasKey&&!cfg.diarEnabled){
     cfg.diarEnabled=true;localStorage.setItem('vox_cfg',JSON.stringify(cfg));updateDiarStatus();
   }
-  const cm=document.getElementById('csMais');if(cm)cm.hidden=m!=='consulta';
-  if(m!=='consulta')_csFechar();
+  const cm=document.getElementById('csMais');
+  if(cm){cm.hidden=m!=='consulta'&&m!=='entrevista';const r=m==='entrevista'?t('Ajustes da Entrevista'):t('Ajustes da Consulta');cm.title=r;cm.setAttribute('aria-label',r)}
+  _csFechar();
   _csProPintar(m);
   const banner=document.getElementById('diarBanner');
   if(needsDiar&&!hasKey&&!bannerDismissed){banner.style.display='block'}
@@ -32393,15 +32525,15 @@ async function _vtTranscribe(blob){
   let res;
   const key=cfg.apiKeyGroq||cfg.apiKey;
   if(cfg.apiKeyGroq){
-    fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');
+    fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);
     res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
   }else if(cfg.provider==='grok'&&cfg.apiKeyGrok){
     res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{'Authorization':'Bearer '+cfg.apiKeyGrok},body:fd});
   }else if(cfg.provider==='local'){
-    fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');
+    fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);
     res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd});
   }else{
-    fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');
+    fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);
     res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
   }
   if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||'Erro '+res.status);}
@@ -34050,9 +34182,9 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       else{
         const fd=new FormData();fd.append('file',file);let res;
         if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
-        else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
-        else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd})}
-        else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
+        else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
+        else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd})}
+        else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
         if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||'Erro '+res.status)}
         text=cfg.provider==='grok'?(await res.json()).text||'':await res.text();
       }
@@ -40362,10 +40494,11 @@ function _cardTags(id){return (document.getElementById(id)?.dataset.tags||'').sp
 function _hashTags(id){const t=_cardTags(id);return t.length?'\n\n'+t.map(x=>'#'+x.trim().replace(/\s+/g,'-')).join(' '):''}
 function copyCard(id){
   const text=document.querySelector('#'+id+' textarea')?.value||'';
+  _avisoSegredo(text);
   const tags=_cardTags(id);
   navigator.clipboard.writeText(text+_hashTags(id)).then(()=>toast(t(tags.length?'📋 Copiado com tags!':'📋 Copiado!')));
 }
-function copyCardTextOnly(id){navigator.clipboard.writeText(document.querySelector('#'+id+' textarea')?.value||'').then(()=>toast(t('📋 Texto copiado!')))}
+function copyCardTextOnly(id){const tx=document.querySelector('#'+id+' textarea')?.value||'';_avisoSegredo(tx);navigator.clipboard.writeText(tx).then(()=>toast(t('📋 Texto copiado!')))}
 function cardMarkdown(id){
   const c=document.getElementById(id);if(!c)return'';
   const txt=c.querySelector('textarea')?.value.trim()||'';
@@ -41723,9 +41856,9 @@ async function txChunk(file,key){
     let res;
     try{
       if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
-      else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
-      else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd,signal:ctrl.signal})}
-      else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
+      else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
+      else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd,signal:ctrl.signal})}
+      else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
     }catch(netErr){
       clearTimeout(to);
       if(attempt<MAX-1){
@@ -42996,7 +43129,8 @@ function adotarSugestao(sid){
   _sugDispensar(sid);
   var pf=ABRE_PERFIL_DA_SUGESTAO[sid];
   if(pf){try{VOX_LS.set('vox_perfil_novo',pf)}catch(e){}}
-  var tipo={consultas:'consulta',entrevistas:'entrevista'}[sid];
+  var tipo={consultas:'consulta',entrevistas:'entrevista',oficina:'oficina'}[sid];
+  if(sid==='oficina'){try{VOX_LS.set('vox_oficina_nova','1')}catch(e){}}
   _mundoCriar(t(g.nome),t(g.desc),tipo?{sid:sid,tipo:tipo}:{sid:sid});   /* ja entra no mundo novo */
 }
 function dispensarSugestao(sid){
