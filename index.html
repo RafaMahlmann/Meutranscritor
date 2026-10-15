@@ -2688,6 +2688,28 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   transition:all var(--transition)}
 .fc-lista-float-btn:hover{background:var(--accent);color:#fff}
 .fc-lista-float-btn svg{width:12px;height:12px}
+/* Alça de 6 pontinhos + chevron nas notas das listas laterais (Fluxograma e Órbita) */
+.lista-grip{position:absolute;left:5px;top:8px;z-index:2;width:18px;height:24px;display:flex;align-items:center;justify-content:center;
+  color:var(--text3);cursor:grab;border-radius:6px;touch-action:none;user-select:none;-webkit-user-select:none;transition:color .12s,background-color .12s}
+.lista-grip:hover,.lista-grip:focus-visible{color:var(--text);background:var(--bg-input)}
+.lista-grip:active{cursor:grabbing}
+.lista-grip svg{width:14px;height:14px;pointer-events:none}
+.orb-mural-it .lista-grip,.orb-modal .lista-grip{color:rgba(255,255,255,.55)}
+.orb-mural-it .lista-grip:hover,.orb-modal .lista-grip:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.08)}
+.lista-exp{position:absolute;right:5px;top:7px;z-index:2;width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  background:none;border:0;border-radius:7px;color:var(--text4);cursor:pointer;transition:color .12s,background-color .12s,transform .18s}
+.lista-exp:hover{color:var(--text);background:var(--bg-input)}
+.lista-exp.on{transform:rotate(180deg);color:var(--accent)}
+.lista-exp svg{width:14px;height:14px}
+.orb-mural-it .lista-exp{color:rgba(255,255,255,.38)}
+.orb-mural-it .lista-exp:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.08)}
+.fc-lista-item.tem-grip{padding-left:28px}
+.fc-lista-item.tem-grip .fc-lista-item-corpo{padding-right:20px}
+.orb-mural-it.tem-grip .orb-mural-corpo{padding-left:27px;padding-right:26px}
+.orb-mural-it.tem-grip .orb-mural-acoes{padding-left:27px}
+.fl-pisca{animation:flPisca .6s ease-out}
+@keyframes flPisca{0%{box-shadow:0 0 0 0 var(--accent)}60%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.fl-pisca{animation:none}}
 .fc-lista-del-btn{display:flex;align-items:center;justify-content:center;flex-shrink:0;
   width:26px;height:26px;background:none;border:1px solid var(--border2);color:var(--text3);
   border-radius:8px;cursor:pointer;transition:all var(--transition)}
@@ -9600,7 +9622,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.11';
+const VOX_VERSION='2026.10.15.12';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -12138,7 +12160,8 @@ let I18N_EN={
 "Fundo":"Background","Papel":"Paper","Sem folha":"No page",
 "Tema do papel":"Page theme","Sépia":"Sepia","Restaurar o padrão":"Restore defaults",
 "Título do documento":"Document title","Sem título":"Untitled",
-"❌ Não foi possível copiar":"❌ Could not copy","Foco ao digitar":"Focus while typing","Ligado":"On","Desligado":"Off",
+"❌ Não foi possível copiar":"❌ Could not copy","Abrir como card flutuante":"Open as a floating card","Arrastar: solte numa pasta pra mover, ou no mapa pra deixar flutuando":"Drag: drop on a folder to move it, or on the map to leave it floating","Arrastar esta nota":"Drag this note","Mostrar mais texto":"Show more text","Mostrar menos":"Show less",
+"Foco ao digitar":"Focus while typing","Ligado":"On","Desligado":"Off",
 "Os menus quase somem enquanto você escreve; mexer o mouse traz de volta.":"Menus almost disappear while you write; moving the mouse brings them back.",
 "Inserir":"Insert","Título":"Heading","Tarefa":"Task","Bloco de código":"Code block","Divisor":"Divider","Data de hoje":"Today's date",
 "Transformar com IA…":"Transform with AI…",
@@ -16943,7 +16966,22 @@ function _fcListarCards(id,nomePasta,manterExpansao){
   }
   if(!el.dataset.fichTrazerLigado){
     el.dataset.fichTrazerLigado='1';
-    el.addEventListener('pointerdown',()=>{const i=_fichAbertos.find(f=>f.el===el);if(i)_fichTrazerFrente(i)});
+    // Trazer pra frente no Fluxograma REORDENA o painel no DOM (appendChild). Feito no
+    // pointerdown, isso tirava o nó do clique do ar no meio do gesto: nenhum "click"
+    // chegava a nada dentro do painel (a nota, o chevron, os botões). Por isso a ordem
+    // só muda DEPOIS que o gesto termina (pointerup + um tique, quando o click já passou).
+    el.addEventListener('pointerdown',()=>{
+      const i=_fichAbertos.find(f=>f.el===el);if(!i)return;
+      if(i.tipo!=='fc'){_fichTrazerFrente(i);return}
+      el.dataset.fichTrazerPend='1';
+    });
+    const _fichTrazerDepois=()=>{
+      if(el.dataset.fichTrazerPend!=='1')return;
+      delete el.dataset.fichTrazerPend;
+      setTimeout(()=>{const i=_fichAbertos.find(f=>f.el===el);if(i)_fichTrazerFrente(i)},0);
+    };
+    el.addEventListener('pointerup',_fichTrazerDepois);
+    el.addEventListener('pointercancel',_fichTrazerDepois);
   }
   _painelLigar(el,'.fc-panel-alca','.fc-card-panel-body',_orbMuralEhGaveta);
   _fichTrazerFrente(inst);
@@ -16993,8 +17031,9 @@ function _fcListarCardsGaveta(id,nomePasta,manterExpansao){
         if(i<8)estilos.push(`animation-delay:${i*20}ms`);
         if(luz)estilos.push(`--fc-lista-ca:${safeColor(luz.ca)}`);
         const styleAttr=estilos.length?` style="${estilos.join(';')}"`:'';
-        return `<div class="fc-lista-item${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}${entraClasse}"${tcAttr}${styleAttr}>
-          <button type="button" class="fc-lista-item-corpo" onclick="_fcAlternarExpansao('${escJs(c.id)}')">
+        return `<div class="fc-lista-item tem-grip${jaAberta?' fc-lista-item-aberta':''}${expandido?' fc-lista-item-expandida':''}${entraClasse}"${tcAttr}${styleAttr}>
+          ${_listaGripHtml(c.id)}${_listaExpHtml(`_fcAlternarExpansao('${escJs(c.id)}')`,expandido)}
+          <button type="button" class="fc-lista-item-corpo" onclick="_listaAbrirFlutuante('${escJs(c.id)}',this)" title="${escHtml(t('Abrir como card flutuante'))}">
             <span class="fc-lista-nome${sn?'':' fc-lista-nome-vazia'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();_fcRenomear('${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
             <span class="fc-lista-previa">${previaTxt}</span>
           </button>
@@ -17515,6 +17554,70 @@ function _flMontarAlcaCalendario(card){
   alca.addEventListener('mousedown',e=>{e.preventDefault();_flStartWindowDrag(card,{clientX:e.clientX,clientY:e.clientY},false,'marcar')});
   alca.addEventListener('touchstart',e=>{e.preventDefault();const tt=e.touches[0];_flStartWindowDrag(card,{clientX:tt.clientX,clientY:tt.clientY},true,'marcar')},{passive:false});
 }
+// ── Notas das listas do Fluxograma e da Órbita: abrir flutuando e arrastar pelos 6 pontinhos ──
+// Cada nota das listas laterais ganha a alça de 6 pontinhos (a mesma da janela flutuante
+// e do card da lista) e o clique na nota passa a ABRIR a janela flutuante (antes só
+// mostrava mais texto, e o botão "Abrir flutuante" só nascia depois de expandir — quem
+// não expandia nunca achava). Arrastar pela alça abre a janela e entrega o arrasto pra
+// mesma máquina da janela (_flStartWindowDrag, modo "mover"): soltar numa pasta do mapa
+// move a nota pra ela, soltar no vazio deixa a janela ali, soltar num portal troca de
+// tela. O chevron ao lado continua mostrando mais texto (e arquivar/excluir).
+function _listaGripHtml(id){
+  return '<span class="lista-grip" role="button" tabindex="0" data-nid="'+escHtml(id)+'" title="'+escHtml(t('Arrastar: solte numa pasta pra mover, ou no mapa pra deixar flutuando'))+'" aria-label="'+escHtml(t('Arrastar esta nota'))+'">'+ICO.grip+'</span>';
+}
+function _listaExpHtml(fnCall,aberto){
+  return '<button type="button" class="lista-exp'+(aberto?' on':'')+'" onclick="event.stopPropagation();'+fnCall+'" title="'+escHtml(t(aberto?'Mostrar menos':'Mostrar mais texto'))+'" aria-label="'+escHtml(t(aberto?'Mostrar menos':'Mostrar mais texto'))+'" aria-expanded="'+(aberto?'true':'false')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>';
+}
+function _listaAbrirFlutuante(id,el){
+  const item=el&&el.closest?el.closest('.fc-lista-item,.orb-mural-it'):null;
+  const jaAberta=_flAbertas.some(j=>j.id===id);
+  _flAbrirCard(id,item||el||null);
+  if(jaAberta){ // já estava aberta: traz pra frente e dá um sinal de onde ela está
+    const w=document.getElementById('floatwin-'+id);
+    if(w&&!_voxReduzMov())_jz(w,'fl-pisca',600);
+  }
+}
+document.addEventListener('pointerdown',e=>{
+  const g=e.target.closest&&e.target.closest('.lista-grip');
+  if(!g||e.button)return;
+  // SEM preventDefault aqui: cancelar o pointerdown suprime os mousemove/mouseup que
+  // _flStartWindowDrag escuta. A seleção de texto é barrada no mousedown logo abaixo.
+  const id=g.dataset.nid,item=g.closest('.fc-lista-item,.orb-mural-it')||g;
+  const x0=e.clientX,y0=e.clientY;
+  if(e.pointerType==='touch'){ // no toque o arrasto de janela é outro (por dedo): tocar na alça só abre
+    _listaAbrirFlutuante(id,item);return;
+  }
+  let feito=false;
+  const limpar=()=>{feito=true;document.removeEventListener('pointermove',mover,true);document.removeEventListener('pointerup',soltar,true);document.removeEventListener('pointercancel',soltar,true)};
+  function mover(ev){
+    if(feito||Math.hypot(ev.clientX-x0,ev.clientY-y0)<4)return;
+    limpar();
+    // a janela nasce perto do ponteiro (o limite do painel pode empurrar um pouco pra esquerda)
+    const layer=document.getElementById('floatLayer');
+    let pos;
+    if(layer&&!_flAbertas.some(j=>j.id===id)){
+      const tam=_flTamanhoPadrao(),r=layer.getBoundingClientRect();
+      pos={x:(ev.clientX-r.left-_flX)/_flS-tam.largura+40,y:(ev.clientY-r.top-_flY)/_flS-20,w:tam.largura,h:tam.altura};
+    }
+    _flAbrirCard(id,item,pos);
+    const win=document.getElementById('floatwin-'+id);
+    if(win)_flStartWindowDrag(win,{clientX:ev.clientX,clientY:ev.clientY},false,'mover');
+  }
+  function soltar(){
+    if(feito)return;
+    limpar();
+    _listaAbrirFlutuante(id,item); // clicou na alça sem arrastar: só abre
+  }
+  document.addEventListener('pointermove',mover,true);
+  document.addEventListener('pointerup',soltar,true);
+  document.addEventListener('pointercancel',soltar,true);
+},true);
+document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('.lista-grip'))e.preventDefault()},true);
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('lista-grip')){
+    e.preventDefault();_listaAbrirFlutuante(e.target.dataset.nid,e.target);
+  }
+});
 // Abre uma janela flutuante pro card `id` — ou, se já tiver uma aberta,
 // só traz ela pra frente. `origemEl` (o item da lista clicado) é opcional:
 // quando existe, a janela nasce voando de lá até a posição final (FLIP).
@@ -19320,8 +19423,9 @@ function _orbMuralFichas(cards,cols,uidTok,notaAbertaId){
     if(entraClasse)estilos.push(`animation-delay:${i*22}ms`);
     if(luz)estilos.push(`--orb-mural-ca:${safeColor(luz.ca)}`);
     const styleAttr=estilos.length?` style="${estilos.join(';')}"`:'';
-    return `<div class="orb-mural-it${aberta?' aberta':''}${flutuando?' flutuando':''}${i===orfa?' orfa':''}${entraClasse}" data-nid="${escHtml(c.id)}"${tcAttr}${styleAttr}>
-      <button type="button" class="orb-mural-corpo${mthumb?' tem-foto':''}" onclick="${legado?'_orbMuralAlterna':'_fichOrbAlterna'}(${argUid}'${escJs(c.id)}')">
+    return `<div class="orb-mural-it tem-grip${aberta?' aberta':''}${flutuando?' flutuando':''}${i===orfa?' orfa':''}${entraClasse}" data-nid="${escHtml(c.id)}"${tcAttr}${styleAttr}>
+      ${_listaGripHtml(c.id)}${_listaExpHtml(`${legado?'_orbMuralAlterna':'_fichOrbAlterna'}(${argUid}'${escJs(c.id)}')`,aberta)}
+      <button type="button" class="orb-mural-corpo${mthumb?' tem-foto':''}" onclick="_listaAbrirFlutuante('${escJs(c.id)}',this)" title="${escHtml(t('Abrir como card flutuante'))}">
         ${mthumb}<span class="orb-mural-txt">
         <span class="orb-mural-nm${sn?'':' vazia'}" title="${sn?escHtml(sn):escHtml(t('Clique para nomear este card'))}" onclick="event.stopPropagation();${legado?'_orbMuralRenomear':'_fichOrbRenomear'}(${argUid}'${escJs(c.id)}')">${escHtml(sn||t('+ nome'))}</span>
         <span class="orb-mural-pv">${previa}</span>
@@ -29881,10 +29985,11 @@ function _fcConstruirHtml(uidTok,id,nomePasta,itemExpandidoId){
       if(i<8)estilos.push('animation-delay:'+(i*20)+'ms');
       if(luz)estilos.push('--fc-lista-ca:'+safeColor(luz.ca));
       const styleAttr=estilos.length?(' style="'+estilos.join(';')+'"'):'';
-      const classes='fc-lista-item'+(jaAberta?' fc-lista-item-aberta':'')+(expandido?' fc-lista-item-expandida':'')+entraClasse;
+      const classes='fc-lista-item tem-grip'+(jaAberta?' fc-lista-item-aberta':'')+(expandido?' fc-lista-item-expandida':'')+entraClasse;
       pedacos.push(
         '<div class="'+classes+'"'+tcAttr+styleAttr+'>'
-        +'<button type="button" class="fc-lista-item-corpo" onclick="_fcAlternarExpansao(\''+uidJs+'\',\''+escJs(c.id)+'\')">'
+        +_listaGripHtml(c.id)+_listaExpHtml('_fcAlternarExpansao(\''+uidJs+'\',\''+escJs(c.id)+'\')',expandido)
+        +'<button type="button" class="fc-lista-item-corpo" onclick="_listaAbrirFlutuante(\''+escJs(c.id)+'\',this)" title="'+escHtml(t('Abrir como card flutuante'))+'">'
         +'<span class="fc-lista-nome'+(sn?'':' fc-lista-nome-vazia')+'" title="'+(sn?escHtml(sn):t('Clique para nomear este card'))+'" onclick="event.stopPropagation();_fcRenomear(\''+uidJs+'\',\''+escJs(c.id)+'\')">'+escHtml(sn||t('+ nome'))+'</span>'
         +'<span class="fc-lista-previa">'+previaTxt+'</span>'
         +'</button>'
