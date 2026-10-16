@@ -1949,6 +1949,25 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .enc-pino{position:absolute;top:0;transform:translateX(-50%);background:none;border:0;padding:0 2px;font-size:13px;line-height:16px;color:#d9921a;cursor:pointer}
 .enc-pino:focus-visible{outline:2px solid var(--accent);border-radius:4px}
 .enc-leg{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.es-modal{max-width:560px}
+.es-largo{max-width:min(980px,96vw)}
+.es-bloco{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.es-k{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+.es-bloco ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.es-bloco p{margin:0;font-size:14px;color:var(--text)}
+.es-vazio{font-size:13.5px!important;color:var(--text3)!important;margin:8px 0!important}
+.es-item{display:flex;gap:9px;align-items:baseline;font-size:14px;color:var(--text);padding:6px 8px;border:1px solid var(--border);border-radius:9px;cursor:pointer;flex-wrap:wrap}
+.es-item input{accent-color:var(--accent);transform:translateY(1px)}
+.es-item small{margin-left:auto;font-size:12px;color:var(--text3)}
+.es-item.ok span{text-decoration:line-through;color:var(--text3)}
+.es-quadro{overflow-x:auto;margin-top:14px;border:1px solid var(--border);border-radius:10px}
+.es-quadro table{border-collapse:collapse;font-size:12.5px;min-width:100%}
+.es-quadro th,.es-quadro td{border-bottom:1px solid var(--border);padding:7px 9px;text-align:left;vertical-align:top;max-width:220px}
+.es-quadro thead th{font-size:11.5px;color:var(--text3);background:var(--bg-input);position:sticky;top:0}
+.es-quadro tbody th{white-space:nowrap;color:var(--text)}
+.es-quadro .es-nf{color:var(--text4);font-style:italic}
+.es-quadro .es-nd{color:var(--text4)}
+.es-quadro .es-atual th{color:var(--accent)}
 .nota-faixa{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 14px 8px;border-bottom:1px dashed var(--border);font-size:12px}
 .nf-selo{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;background:color-mix(in srgb,#d9921a 16%,transparent);color:#a86a0c}
 .nf-selo.ok{background:color-mix(in srgb,#1b9a5a 16%,transparent);color:#157a47}
@@ -9987,7 +10006,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.14';
+const VOX_VERSION='2026.10.16.15';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11481,6 +11500,26 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"O essencial":"The essentials",
+"Combinados":"Agreements",
+"Ainda não há nota de combinados desta sessão.":"There's no agreements note for this session yet.",
+"Próximo atendimento":"Next session",
+"Não marcado. Arraste a nota de combinados até o dia no Calendário.":"Not scheduled. Drag the agreements note to the day in the Calendar.",
+"Decidido":"Decided",
+"Nenhuma decisão clara.":"No clear decision.",
+"A fazer":"To do",
+"Nenhuma tarefa combinada.":"No agreed task.",
+"Refazer com a IA":"Redo with AI",
+"A IA lê a reunião e separa o que foi decidido e as tarefas, com quem faz e até quando.":"The AI reads the meeting and separates what was decided and the tasks, with who does them and by when.",
+"Separar decisões e tarefas":"Separate decisions and tasks",
+"Para isso, configure uma IA de texto nas Configurações.":"For this, set up a text AI in Settings.",
+"Lendo a reunião…":"Reading the meeting…",
+"Escreva o roteiro (as perguntas) no ⋯ do botão Entrevista para montar o quadro.":"Write the script (the questions) in the ⋯ of the Interview button to build the board.",
+"não falou":"didn't say",
+"Preencher {n} entrevista(s) com a IA":"Fill {n} interview(s) with AI",
+"Quadro das entrevistas":"Interview board",
+"Cada linha é uma entrevista; cada coluna, uma pergunta do roteiro.":"Each row is an interview; each column, a script question.",
+"Lendo {a} de {b}…":"Reading {a} of {b}…",
 "Revisada em {d}":"Reviewed on {d}",
 "Rascunho da IA":"AI draft",
 "Conferir com a conversa":"Check against the conversation",
@@ -35211,7 +35250,8 @@ function _encGravar(c,patch,semSalvar){
 }
 function _convBarHtml(id,mode){
   if(mode)return `<div class="conversa-bar enc-acoes" id="convbar-${id}">
-    <button class="conversa-btn primary" onclick="openConversaMode('${id}')">${ICO.messageCircle}${t('Conversar')}</button>
+    <button class="conversa-btn primary" onclick="_encEssencial('${id}')">${t('O essencial')}</button>
+    <button class="conversa-btn" onclick="openConversaMode('${id}')">${ICO.messageCircle}${t('Conversar')}</button>
     <button class="conversa-btn" onclick="toggleLensMenu('${id}')">${ICO.magicWand}${t('Transformar')}</button></div>`;
   return `<div class="conversa-bar" id="convbar-${id}">
         <button class="conversa-btn primary" onclick="openConversaMode('${id}')">${ICO.messageCircle}<span class="conversa-lbl-curto">${t('Conversar')}</span><span class="conversa-lbl-longo">${t('Conversar sobre este texto')}</span></button>
@@ -35420,6 +35460,91 @@ async function _encCapitulos(id){
     toast((e&&e.message&&!/JSON/.test(e.message))?_friendlyAIError(e).message:t('A IA não devolveu os assuntos. Tente de novo.'),true);
     _encPintar(id);
   }
+}
+// ── Cada encontro com a sua cara (proposta 7 do estudo) ──
+// "O essencial" mostra primeiro o que importa naquele tipo de encontro:
+//  · consulta: os combinados (da nota de combinados) para ticar e a próxima data;
+//  · reunião: decisões e tarefas com dono e prazo, para ticar;
+//  · entrevista: o quadro pessoa × pergunta do roteiro, juntando as entrevistas do mundo.
+// O que a IA extrai fica guardado no card (encontro.essencial / encontro.respostas);
+// os ticados ficam em encontro.feitos.
+function _encEssencial(id){
+  const c=document.getElementById(id);if(!_encEh(c))return;
+  const m=c.dataset.mode;
+  if(m==='entrevista')return _encQuadro(id);
+  const ov=_txOverlay(),e=_encLer(c);
+  const feitos=e.feitos||{};
+  const tick=(k,txt,extra)=>`<label class="es-item${feitos[k]?' ok':''}"><input type="checkbox" ${feitos[k]?'checked':''} onchange="_encTicar('${escJs(id)}','${escJs(k)}',this.checked);this.parentNode.classList.toggle('ok',this.checked)"><span>${escHtml(txt)}</span>${extra?`<small>${escHtml(extra)}</small>`:''}</label>`;
+  let corpo='';
+  if(m==='consulta'){
+    const fid=c.dataset.folder||'',filhas=_csFilhas(c);
+    const comb=filhas.find(x=>/Combinados|Agreements/i.test(x.dataset.sessionName||''));
+    const linhas=comb?(comb.querySelector('textarea')?.value||'').split('\n').map(x=>x.trim()).filter(x=>x&&!/^\*\*[^*]+:\*\*$/.test(x)).map(x=>x.replace(/^[-*•]\s*/,'').replace(/\*\*/g,'')).slice(0,12):[];
+    const prox=fid?_csAgenda().find(x=>(x.dataset.folder||'')===fid):null;
+    corpo=`<div class="es-bloco"><span class="es-k">${escHtml(t('Combinados'))}</span>${linhas.length?linhas.map((x,i)=>tick('c'+i,x)).join(''):`<p class="es-vazio">${escHtml(t('Ainda não há nota de combinados desta sessão.'))}</p><button type="button" class="conv-s" onclick="closeTxOverlay();fecharAtendimento('${escJs(id)}')">${escHtml(t('Fechar atendimento'))}</button>`}</div>
+      <div class="es-bloco"><span class="es-k">${escHtml(t('Próximo atendimento'))}</span><p>${prox?escHtml(_csData(prox.dataset.quando+'T12:00:00',{weekday:'long',day:'2-digit',month:'long'})+(prox.dataset.quandoHora?' · '+prox.dataset.quandoHora:'')):escHtml(t('Não marcado. Arraste a nota de combinados até o dia no Calendário.'))}</p></div>`;
+  }else{
+    const es=e.essencial;
+    corpo=es?`<div class="es-bloco"><span class="es-k">${escHtml(t('Decidido'))}</span>${(es.decisoes||[]).length?`<ul>${es.decisoes.map(x=>`<li>${escHtml(x)}</li>`).join('')}</ul>`:`<p class="es-vazio">${escHtml(t('Nenhuma decisão clara.'))}</p>`}</div>
+      <div class="es-bloco"><span class="es-k">${escHtml(t('A fazer'))}</span>${(es.tarefas||[]).length?es.tarefas.map((x,i)=>tick('t'+i,x.o_que,[x.quem,x.quando].filter(Boolean).join(' · '))).join(''):`<p class="es-vazio">${escHtml(t('Nenhuma tarefa combinada.'))}</p>`}</div>
+      <button type="button" class="enc-mini" onclick="_encEssencialGerar('${escJs(id)}')">${escHtml(t('Refazer com a IA'))}</button>`
+      :`<p class="es-vazio">${escHtml(t('A IA lê a reunião e separa o que foi decidido e as tarefas, com quem faz e até quando.'))}</p><button type="button" class="conv-p" id="esGerar" onclick="_encEssencialGerar('${escJs(id)}')">${escHtml(t('Separar decisões e tarefas'))}</button>`;
+  }
+  ov.innerHTML=`<div class="tx-modal es-modal" role="dialog" aria-modal="true" aria-labelledby="esTit"><div class="tx-title" id="esTit">${escHtml(t('O essencial'))}</div><div class="tx-sub">${escHtml(c.dataset.sessionName||_csData(c.dataset.dt))}</div>${corpo}
+    <div class="fa-pe"><button type="button" class="conv-s" onclick="closeTxOverlay()">${escHtml(t('Fechar'))}</button></div></div>`;
+  ov.classList.add('on');
+}
+function _encTicar(id,k,on){
+  const c=document.getElementById(id);if(!c)return;
+  const f={...(_encLer(c).feitos||{})};if(on)f[k]=1;else delete f[k];
+  _encGravar(c,{feitos:Object.keys(f).length?f:null});
+}
+function _encTextoIA(c){
+  let us=[],sp={};try{us=JSON.parse(c.dataset.utterances||'[]');sp=JSON.parse(c.dataset.speakers||'{}')}catch(e){}
+  const ign=new Set(_encLer(c).ignorar||[]);
+  return us.filter(u=>!ign.has(u.speaker)).map(u=>'['+fmtMs(u.start)+'] '+(sp[u.speaker]||u.speaker)+': '+u.text).join('\n').slice(0,30000);
+}
+async function _encEssencialGerar(id){
+  const c=document.getElementById(id);if(!c)return;
+  const key=aiKey();if(!key){toast(t('Para isso, configure uma IA de texto nas Configurações.'),true);return}
+  const b=document.getElementById('esGerar');if(b){b.disabled=true;b.textContent=t('Lendo a reunião…')}
+  try{
+    const r=await callAI('Leia a reunião abaixo e devolva SOMENTE JSON: {"decisoes":["..."],"tarefas":[{"o_que":"...","quem":"nome ou vazio","quando":"prazo dito ou vazio"}]}. Use só o que foi dito; não invente dono nem prazo. Frases curtas. '+_promptLang()+'\n\nReunião:\n'+_encTextoIA(c),key,'auto',900,{temperature:0.2});
+    const j=JSON.parse((String(r).match(/\{[\s\S]*\}/)||['{}'])[0]);
+    const es={decisoes:(Array.isArray(j.decisoes)?j.decisoes:[]).map(x=>String(x).slice(0,200)).filter(Boolean).slice(0,15),
+      tarefas:(Array.isArray(j.tarefas)?j.tarefas:[]).map(x=>({o_que:String(x&&x.o_que||'').slice(0,200),quem:String(x&&x.quem||'').slice(0,60),quando:String(x&&x.quando||'').slice(0,60)})).filter(x=>x.o_que).slice(0,20)};
+    _encGravar(c,{essencial:es,feitos:null});
+    _encEssencial(id);
+  }catch(e){toast(_friendlyAIError(e).message,true);if(b){b.disabled=false;b.textContent=t('Separar decisões e tarefas')}}
+}
+// Entrevista: o quadro junta todas as entrevistas com vozes separadas deste mundo.
+function _encQuadro(id){
+  const perg=String(_painelCfg().roteiro||'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,12);
+  const ents=_flCardsVivos().filter(x=>_encEh(x)&&x.dataset.mode==='entrevista').sort((a,b)=>String(a.dataset.dt).localeCompare(String(b.dataset.dt)));
+  const ov=_txOverlay();
+  const nome=x=>x.dataset.sessionName||(folders.find(f=>f.id===x.dataset.folder)||{}).name||_csData(x.dataset.dt);
+  const faltam=ents.filter(x=>!Array.isArray(_encLer(x).respostas)).length;
+  const corpo=!perg.length?`<p class="es-vazio">${escHtml(t('Escreva o roteiro (as perguntas) no ⋯ do botão Entrevista para montar o quadro.'))}</p>`
+    :`<div class="es-quadro"><table><thead><tr><th></th>${perg.map((p,i)=>`<th title="${escHtml(p)}">${i+1}. ${escHtml(p.length>38?p.slice(0,36)+'…':p)}</th>`).join('')}</tr></thead><tbody>${ents.map(x=>{const rs=_encLer(x).respostas;return `<tr${x.id===id?' class="es-atual"':''}><th>${escHtml(nome(x))}</th>${perg.map((p,i)=>{const v=Array.isArray(rs)?rs[i]:undefined;return v===undefined?'<td class="es-nd">—</td>':v?`<td>${escHtml(v)}</td>`:`<td class="es-nf">${escHtml(t('não falou'))}</td>`}).join('')}</tr>`}).join('')}</tbody></table></div>
+      ${faltam?`<button type="button" class="conv-p" id="esGerar" onclick="_encQuadroGerar('${escJs(id)}')">${escHtml(t('Preencher {n} entrevista(s) com a IA').replace('{n}',faltam))}</button>`:''}`;
+  ov.innerHTML=`<div class="tx-modal es-modal es-largo" role="dialog" aria-modal="true" aria-labelledby="esTit"><div class="tx-title" id="esTit">${escHtml(t('Quadro das entrevistas'))}</div><div class="tx-sub">${escHtml(t('Cada linha é uma entrevista; cada coluna, uma pergunta do roteiro.'))}</div>${corpo}
+    <div class="fa-pe"><button type="button" class="conv-s" onclick="closeTxOverlay()">${escHtml(t('Fechar'))}</button></div></div>`;
+  ov.classList.add('on');
+}
+async function _encQuadroGerar(id){
+  const key=aiKey();if(!key){toast(t('Para isso, configure uma IA de texto nas Configurações.'),true);return}
+  const perg=String(_painelCfg().roteiro||'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,12);
+  const ents=_flCardsVivos().filter(x=>_encEh(x)&&x.dataset.mode==='entrevista'&&!Array.isArray(_encLer(x).respostas));
+  const b=document.getElementById('esGerar');
+  for(let k=0;k<ents.length;k++){
+    const x=ents[k];if(b){b.disabled=true;b.textContent=t('Lendo {a} de {b}…').replace('{a}',k+1).replace('{b}',ents.length)}
+    try{
+      const r=await callAI('Perguntas do roteiro:\n'+perg.map((p,i)=>(i+1)+'. '+p).join('\n')+'\n\nPara cada pergunta, resuma em até 12 palavras o que a pessoa entrevistada respondeu, usando só o que foi dito. Se ela não falou sobre aquilo, use null. Responda SOMENTE com um array JSON na ordem das perguntas, ex.: ["...", null, "..."]. '+_promptLang()+'\n\nEntrevista:\n'+_encTextoIA(x),key,'auto',700,{temperature:0.2});
+      const arr=JSON.parse((String(r).match(/\[[\s\S]*\]/)||['[]'])[0]);
+      _encGravar(x,{respostas:perg.map((p,i)=>arr[i]==null||arr[i]===''?null:String(arr[i]).slice(0,160))});
+    }catch(e){toast(_friendlyAIError(e).message,true);break}
+  }
+  _encQuadro(id);
 }
 // ── Nota com prova (proposta 5 do estudo) ──
 // Nota que nasceu de uma conversa com vozes separadas ganha uma faixa: rascunho
