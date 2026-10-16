@@ -9834,7 +9834,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.15.25';
+const VOX_VERSION='2026.10.16.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -43319,9 +43319,14 @@ function adotarSugestao(sid){
   _sugDispensar(sid);
   var pf=ABRE_PERFIL_DA_SUGESTAO[sid];
   if(pf){try{VOX_LS.set('vox_perfil_novo',pf)}catch(e){}}
+  _mundoCriar(t(g.nome),t(g.desc),_sugExtra(sid));   /* ja entra no mundo novo */
+}
+/* O que o mundo nasce sendo, venha a sugestao do "Usar este" ou da primeira
+   entrada no ceu: sem o tipo, Consultas nascia sem Painel nem ficha. */
+function _sugExtra(sid){
   var tipo={consultas:'consulta',entrevistas:'entrevista',oficina:'oficina'}[sid];
   if(sid==='oficina'){try{VOX_LS.set('vox_oficina_nova','1')}catch(e){}}
-  _mundoCriar(t(g.nome),t(g.desc),tipo?{sid:sid,tipo:tipo}:{sid:sid});   /* ja entra no mundo novo */
+  return tipo?{sid:sid,tipo:tipo}:{sid:sid};
 }
 function dispensarSugestao(sid){
   var g=_sugAchar(sid); if(!g)return;
@@ -43612,7 +43617,7 @@ function _1aEscolher(id,pid,btn){
   m.etapa='mural';m.perfil=p.id;m.sug=w.sug?w.sid:null;m.mundo=w.sug?null:w.id;
   _1aGravar(m);
   var vai=function(){
-    if(w.sug){var g=_sugAchar(w.sid);if(!g)return;_sugDispensar(w.sid);_mundoCriar(t(g.nome),t(g.desc));}
+    if(w.sug){var g=_sugAchar(w.sid);if(!g)return;_sugDispensar(w.sid);_mundoCriar(t(g.nome),t(g.desc),_sugExtra(w.sid));}
     else{fecharGalaxia(true);_1aChegarNoMural();}
   };
   if(quieto){vai();return;}
