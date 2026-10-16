@@ -1949,6 +1949,23 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .enc-pino{position:absolute;top:0;transform:translateX(-50%);background:none;border:0;padding:0 2px;font-size:13px;line-height:16px;color:#d9921a;cursor:pointer}
 .enc-pino:focus-visible{outline:2px solid var(--accent);border-radius:4px}
 .enc-leg{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.nota-faixa{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 14px 8px;border-bottom:1px dashed var(--border);font-size:12px}
+.nf-selo{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;background:color-mix(in srgb,#d9921a 16%,transparent);color:#a86a0c}
+.nf-selo.ok{background:color-mix(in srgb,#1b9a5a 16%,transparent);color:#157a47}
+.nf-bt{font:inherit;font-size:11.5px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);border-radius:8px;padding:3px 9px;cursor:pointer}
+.nf-bt:hover{border-color:var(--accent)}
+.nf-ok{border-color:#1b9a5a;color:#157a47}
+.nf-link{font:inherit;font-size:11.5px;background:none;border:0;color:var(--text3);text-decoration:underline;cursor:pointer}
+.nf-modal{max-width:640px}
+.nf-lista{list-style:none;margin:12px 0 0;padding-left:0;display:flex;flex-direction:column;gap:10px;max-height:min(60vh,520px);overflow:auto}
+.nf-lista li{font-size:14px;line-height:1.45;color:var(--text)}
+.nf-tit{font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3)!important}
+.nf-frase{display:block}
+.nf-nao .nf-frase{text-decoration:underline wavy #d9921a;text-underline-offset:3px}
+.nf-nao small{display:block;font-size:12px;color:#a86a0c;margin-top:2px}
+.nf-cita{display:block;width:100%;text-align:left;font:inherit;font-size:12.5px;color:var(--text2);background:var(--bg-input);border:0;border-left:3px solid #d9921a;border-radius:0 8px 8px 0;padding:6px 10px;margin-top:4px;cursor:pointer}
+.nf-cita small{display:block;font-size:10.5px;color:var(--text4)}
+.nf-cita:hover{background:color-mix(in srgb,var(--accent) 10%,var(--bg-input))}
 .enc-rabs{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:11px;color:var(--text3)}
 .enc-rabs>span{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:10px}
 .enc-rabs button{font:inherit;font-size:12px;color:var(--text);background:var(--bg-input);border:1px dashed var(--border2);border-radius:8px;padding:2px 8px;cursor:pointer}
@@ -9970,7 +9987,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.13';
+const VOX_VERSION='2026.10.16.14';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11464,6 +11481,14 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Revisada em {d}":"Reviewed on {d}",
+"Rascunho da IA":"AI draft",
+"Conferir com a conversa":"Check against the conversation",
+"Voltar a rascunho":"Back to draft",
+"Revisei":"I reviewed it",
+"Nota marcada como revisada.":"Note marked as reviewed.",
+"{a} de {b} frases têm um trecho da conversa que as sustenta. As marcadas em laranja não têm: confira antes de usar.":"{a} of {b} sentences have a passage in the conversation backing them. The ones in orange don't: check before using.",
+"Sem trecho na conversa que sustente esta frase. Confira.":"No passage in the conversation backs this sentence. Check it.",
 "Rabisco":"Scribble",
 "Rabiscos":"Scribbles",
 "Duas ou três palavras e Enter. A IA desenvolve depois.":"Two or three words and Enter. The AI expands them later.",
@@ -24835,6 +24860,7 @@ function _restaurarEtiqueta(id,it){
   }
   if(el&&Array.isArray(it.depende)&&it.depende.length)el.dataset.depende=JSON.stringify(it.depende.map(String).slice(0,40));
   if(el&&it.encontro&&typeof it.encontro==='object'&&!Array.isArray(it.encontro)){el.dataset.encontro=JSON.stringify(it.encontro);_encRefresh(id)}
+  if(el&&el.dataset.origemDt)_notaFaixaSinc(el);
 }
 // Os nomes das etiquetas são do dono do aparelho, não nossos. O padrão é a cor
 // ("Verde"), mas quem usa quase sempre quer o SIGNIFICADO ("Urgente", "Cliente").
@@ -35395,6 +35421,69 @@ async function _encCapitulos(id){
     _encPintar(id);
   }
 }
+// ── Nota com prova (proposta 5 do estudo) ──
+// Nota que nasceu de uma conversa com vozes separadas ganha uma faixa: rascunho
+// ou revisada, "Conferir com a conversa" e "Revisei". Conferir procura, aqui
+// no aparelho e sem IA, o trecho da conversa que sustenta cada frase da nota.
+// Frase sem trecho fica marcada para a pessoa olhar: é ali que a IA pode ter
+// inventado. Ideia do Linked Evidence da Abridge.
+function _notaPai(c){
+  const dt=c&&c.dataset.origemDt;if(!dt)return null;
+  return _flCardsVivos().find(x=>x.dataset.dt===dt&&x.dataset.diarized==='true')||null;
+}
+function _notaFaixaSinc(c){
+  if(!c||!c.isConnected)return;
+  const pai=_notaPai(c);
+  let fx=c.querySelector('.nota-faixa');
+  // Ao abrir o app, a nota pode voltar antes da sessão de onde nasceu: tenta de novo logo depois.
+  if(!pai&&!c._notaDeNovo){c._notaDeNovo=1;setTimeout(()=>_notaFaixaSinc(c),0);return}
+  if(!pai){fx?.remove();return}
+  if(!fx){fx=document.createElement('div');fx.className='nota-faixa';const ch=c.querySelector('.ch');if(ch)ch.after(fx);else c.prepend(fx)}
+  const rev=_encLer(c).revisado;
+  fx.innerHTML=`<span class="nf-selo${rev?' ok':''}">${escHtml(rev?t('Revisada em {d}').replace('{d}',_csData(rev)):t('Rascunho da IA'))}</span>
+    <button type="button" class="nf-bt" onclick="_notaConferir('${escJs(c.id)}')">${escHtml(t('Conferir com a conversa'))}</button>
+    ${rev?`<button type="button" class="nf-link" onclick="_notaRevisei('${escJs(c.id)}',false)">${escHtml(t('Voltar a rascunho'))}</button>`:`<button type="button" class="nf-bt nf-ok" onclick="_notaRevisei('${escJs(c.id)}',true)">${escHtml(t('Revisei'))} ✓</button>`}`;
+}
+function _notaRevisei(id,sim){
+  const c=document.getElementById(id);if(!c)return;
+  _encGravar(c,{revisado:sim?new Date().toISOString():null});
+  _notaFaixaSinc(c);
+  if(sim)toast(t('Nota marcada como revisada.'));
+}
+const _PROVA_PARADAS=new Set('para pela pelo pelos pelas como mais muito muita muitos muitas isso essa esse esta este estas estes aqui quando onde porque sobre entre depois antes ainda também tambem ela ele elas eles dela dele nossa nosso sessao paciente cliente pessoa profissional nota vezes coisa fazer feito vamos teve tinha estava foram seria pode podem'.split(' '));
+function _provaPalavras(x){return [...new Set(_guiaNorm(x).replace(/[^\p{L}\p{N}]+/gu,' ').split(' ').filter(w=>w.length>=4&&!_PROVA_PARADAS.has(w)))]}
+// Para cada frase da nota, o trecho (1 ou 2 falas seguidas) que mais divide palavras com ela.
+function _notaProvas(c,pai){
+  let us=[],sp={};try{us=JSON.parse(pai.dataset.utterances||'[]');sp=JSON.parse(pai.dataset.speakers||'{}')}catch(e){}
+  const ign=new Set(_encLer(pai).ignorar||[]);us=us.filter(u=>!ign.has(u.speaker));
+  // Primeiro cada fala sozinha; só se nenhuma bastar, pares de falas seguidas.
+  const sozinhas=us.map(u=>({u,v:[u],w:new Set(_provaPalavras(u.text))}));
+  const pares=us.slice(0,-1).map((u,i)=>{const v=[u,us[i+1]];return {u,v,w:new Set(_provaPalavras(v.map(x=>x.text).join(' ')))}});
+  const linhas=String(c.querySelector('textarea')?.value||'').split('\n').map(x=>x.replace(/\*\*/g,'').replace(/^\s*(#+|[-*•]|\d+[.)])\s*/,'').trim()).filter(Boolean);
+  return linhas.map(l=>{
+    const pw=_provaPalavras(l.replace(/^[^:]{1,40}:\s*/,''));
+    if(pw.length<2)return {l,titulo:true};
+    const busca=lista=>{let m=null,p=0;lista.forEach(j=>{const k=pw.filter(w=>j.w.has(w)).length;if(k>p){p=k;m=j}});return {m,p}};
+    const basta=r=>r.m&&r.p>=2&&r.p/pw.length>=0.34;
+    let r=busca(sozinhas);if(!basta(r))r=busca(pares);
+    const melhor=r.m,ok=basta(r);
+    return {l,ok,u:ok?melhor.u:null,quem:ok?(sp[melhor.u.speaker]||melhor.u.speaker):'',trecho:ok?melhor.v.map(x=>x.text).join(' '):''};
+  });
+}
+function _notaConferir(id){
+  const c=document.getElementById(id),pai=_notaPai(c);if(!c||!pai)return;
+  const r=_notaProvas(c,pai),checadas=r.filter(x=>!x.titulo),boas=checadas.filter(x=>x.ok).length;
+  const ov=_txOverlay();
+  ov.innerHTML=`<div class="tx-modal nf-modal" role="dialog" aria-modal="true" aria-labelledby="nfTit">
+    <div class="tx-title" id="nfTit">${escHtml(t('Conferir com a conversa'))}</div>
+    <div class="tx-sub">${escHtml(t('{a} de {b} frases têm um trecho da conversa que as sustenta. As marcadas em laranja não têm: confira antes de usar.').replace('{a}',boas).replace('{b}',checadas.length))}</div>
+    <ul class="nf-lista">${r.map(x=>x.titulo?`<li class="nf-tit">${escHtml(x.l)}</li>`:x.ok
+      ?`<li class="nf-sim"><span class="nf-frase">${escHtml(x.l)}</span><button type="button" class="nf-cita" onclick="closeTxOverlay();_encIr('${escJs(pai.id)}',${+x.u.start||0})"><small>${escHtml(x.quem)} · ${escHtml(fmtMs(x.u.start))}</small>"${escHtml(x.trecho.slice(0,220))}${x.trecho.length>220?'…':''}"</button></li>`
+      :`<li class="nf-nao"><span class="nf-frase">${escHtml(x.l)}</span><small>${escHtml(t('Sem trecho na conversa que sustente esta frase. Confira.'))}</small></li>`).join('')}</ul>
+    <div class="fa-pe"><button type="button" class="conv-s" onclick="closeTxOverlay()">${escHtml(t('Fechar'))}</button><button type="button" class="conv-p" onclick="closeTxOverlay();_notaRevisei('${escJs(id)}',true)">${escHtml(t('Revisei'))} ✓</button></div>
+  </div>`;
+  ov.classList.add('on');
+}
 // Repinta bolhas e fita (com marcas e vozes ignoradas) depois de qualquer mudança.
 function _encRefresh(id){
   const c=document.getElementById(id);if(!_encEh(c))return;
@@ -35908,7 +35997,7 @@ function _cchatSaveNew(id){
   const L=LENSES[tb.lensKey];
   const nid=addCard(tb.text,null,0,'texto',cfg.provider,true,null,null,(L&&L.tag)?[L.tag,mode]:[],tb.label+' — '+(card?.dataset.sessionName||fmtDt(card?.dataset.dt||'')),mode,false);
   const nc=document.getElementById(nid);
-  if(nc&&card?.dataset.dt){nc.dataset.origemDt=card.dataset.dt;if(tb.lensKey)nc.dataset.origemLente=tb.lensKey;saveHistory()}
+  if(nc&&card?.dataset.dt){nc.dataset.origemDt=card.dataset.dt;if(tb.lensKey)nc.dataset.origemLente=tb.lensKey;_notaFaixaSinc(nc);saveHistory()}
   setLastAICard(nid);
   if(nc&&nc.dataset.dt){const dt=nc.dataset.dt;_cchatEmpilha(id,t('criar o card "{x}"').replace('{x}',tb.label),()=>_cchatApagarPorDt([dt]))}
   toast('✅ '+t('Novo card criado!'));
@@ -36290,7 +36379,7 @@ function _ilhaGuardar(id,alvo,calado,soAba){
       const nid=addCard(tb.text,null,0,'texto',cfg.provider,true,null,_dtUnico(),(L&&L.tag)?[L.tag,mode]:[],tb.label+' — '+tit,mode,false,pasta.id);
       const nc=document.getElementById(nid);
       const paiDt=dtDe[tb.pai||'original']||card.dataset.dt;
-      if(nc&&paiDt){nc.dataset.origemDt=paiDt;if(tb.lensKey)nc.dataset.origemLente=tb.lensKey}
+      if(nc&&paiDt){nc.dataset.origemDt=paiDt;if(tb.lensKey)nc.dataset.origemLente=tb.lensKey;_notaFaixaSinc(nc)}
       if(nc){tb.notaDt=nc.dataset.dt;dtDe[tb.tabId]=nc.dataset.dt}
       tb.guardada=true;
     });
@@ -40537,7 +40626,7 @@ async function runLens(id,lensKey,focus='',sel=null,opts=null){
       const novo=addCard(result,null,0,'texto',viaCortesia?'groqwhisper':cfg.provider,true,null,null,[L.tag,mode],L.label+(sel?' ('+t('trecho')+')':'')+' — '+(card.dataset.sessionName||fmtDt(card.dataset.dt||'')),mode,false,opts&&opts.pasta?opts.pasta:'');
       // linhagem: a nota nova sabe de qual nasceu (aparece em "Veio de" / "Gerou" no Documento)
       const nc=document.getElementById(novo);
-      if(nc&&card.dataset.dt){nc.dataset.origemDt=card.dataset.dt;nc.dataset.origemLente=lensKey;saveHistory()}
+      if(nc&&card.dataset.dt){nc.dataset.origemDt=card.dataset.dt;nc.dataset.origemLente=lensKey;_notaFaixaSinc(nc);saveHistory()}
       // Dentro do Documento: a nota nova entra no começo da lista e empurrava a tela pra outra nota.
       // Volta pra onde a pessoa estava (no mesmo modo, Leitura ou Edição); o "Gerou" do painel mostra a nova.
       if(estavaAqui&&_docCardId()!==id){const i=getFocusCards().findIndex(c=>c.id===id);if(i>=0){focusCardIdx=i;_dvCardAtual=id;_dvModo=modoAntes;applyFocusCard()}}
