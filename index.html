@@ -1949,6 +1949,17 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .enc-pino{position:absolute;top:0;transform:translateX(-50%);background:none;border:0;padding:0 2px;font-size:13px;line-height:16px;color:#d9921a;cursor:pointer}
 .enc-pino:focus-visible{outline:2px solid var(--accent);border-radius:4px}
 .enc-leg{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.enc-rabs{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:11px;color:var(--text3)}
+.enc-rabs>span{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:10px}
+.enc-rabs button{font:inherit;font-size:12px;color:var(--text);background:var(--bg-input);border:1px dashed var(--border2);border-radius:8px;padding:2px 8px;cursor:pointer}
+.enc-rabs button i{font-style:normal;color:var(--text4);margin-right:5px;font-variant-numeric:tabular-nums}
+.enc-corte{position:absolute;top:-1px;bottom:-1px;width:2px;margin-left:-1px;background:var(--bg-card);pointer-events:none}
+.enc-caps{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.enc-caps button{font:inherit;font-size:12px;color:var(--text2);background:none;border:1px solid var(--border2);border-radius:999px;padding:3px 10px;cursor:pointer;display:inline-flex;gap:6px;align-items:baseline}
+.enc-caps button small{font-size:10px;color:var(--text4);font-variant-numeric:tabular-nums}
+.enc-caps button:hover{border-color:var(--accent);color:var(--accent)}
+.enc-caps .enc-caps-gerar{border-style:dashed;color:var(--text3)}
+.enc-caps .enc-mini{border:0;padding:2px}
 .enc-voz{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:600;color:var(--text);background:var(--bg-input);border:1px solid transparent;border-radius:999px;padding:3px 10px 3px 8px;cursor:pointer;max-width:100%}
 .enc-voz:hover{border-color:var(--accent)}
 .enc-voz small{font-weight:500;color:var(--text3);font-variant-numeric:tabular-nums}
@@ -1985,6 +1996,11 @@ body.enc-tela-on .ibar.rec-on{z-index:9980}
 .eo-kbd{font-size:11px;border:1px solid currentColor;border-radius:5px;padding:1px 6px;opacity:.8}
 .eo-marcas{display:flex;flex-wrap:wrap;gap:6px;min-height:24px}
 .eo-marcas span{font-size:12px;color:#f0b24a;border:1px solid #3b3220;border-radius:999px;padding:3px 10px}
+.eo-rab{display:flex;flex-direction:column;gap:6px;margin:0}
+.eo-rab input{font:inherit;font-size:15px;color:#eef4f6;background:#111c22;border:1px dashed #3b4d57;border-radius:12px;padding:11px 14px}
+.eo-rab input:focus{outline:none;border-color:#7f949e;border-style:solid}
+.eo-rab ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:13px;color:#dfe8ec}
+.eo-rab li i{font-style:normal;font-variant-numeric:tabular-nums;color:#7f949e;margin-right:8px}
 .eo-pe{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #22313a;padding-top:14px}
 .eo-link{font:inherit;font-size:12.5px;color:#7f949e;background:none;border:0;text-decoration:underline;cursor:pointer;margin-right:auto}
 .eo-bt{font:inherit;font-size:14px;font-weight:600;color:#dfe8ec;background:none;border:1px solid #3b4d57;border-radius:12px;padding:10px 16px;cursor:pointer}
@@ -9954,7 +9970,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.12';
+const VOX_VERSION='2026.10.16.13';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11448,6 +11464,14 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Rabisco":"Scribble",
+"Rabiscos":"Scribbles",
+"Duas ou três palavras e Enter. A IA desenvolve depois.":"Two or three words and Enter. The AI expands them later.",
+"Assuntos":"Topics",
+"Separar em assuntos":"Split into topics",
+"Para separar em assuntos, configure uma IA de texto nas Configurações.":"To split into topics, set up a text AI in Settings.",
+"Separando…":"Splitting…",
+"A IA não devolveu os assuntos. Tente de novo.":"The AI didn't return the topics. Try again.",
 "Tela de atendimento":"Session screen",
 "Nada anotado da última sessão.":"Nothing noted from the last session.",
 "Ao parar, o Vox pergunta de quem é esta consulta.":"When you stop, Vox asks whose session this is.",
@@ -35183,8 +35207,15 @@ function _encPintar(id){
   const pinos=(e.marcas||[]).map(m=>`<button type="button" class="enc-pino" style="left:${pct((+m.de||0)/total*100)}" onclick="_encIr('${escJs(id)}',${+m.de||0})" title="${escHtml((m.rot||t('Marcado'))+' · '+fmtMs(m.de))}" aria-label="${escHtml(t('Ir para a marca')+' '+fmtMs(m.de))}">★</button>`).join('');
   const leg=keys.map(k=>`<button type="button" class="enc-voz${ign.has(k)?' ign':''}" onclick="event.stopPropagation();_encVozMenu('${escJs(id)}','${escJs(k)}',this)" aria-haspopup="menu"><span class="enc-dot" style="background:${cor(k)}"></span><span class="enc-voz-n">${escHtml(sp[k]||k)}</span><small>${ign.has(k)?escHtml(t('não é daqui')):Math.round((tempo[k]||0)/soma*100)+'%'}</small></button>`).join('');
   const ler=c.dataset.view==='bolhas';
-  box.innerHTML=`<div class="enc-fita-w">${pinos?`<div class="enc-pinos">${pinos}</div>`:''}<div class="enc-fita" role="img" aria-label="${escHtml(t('Quem falou quando'))}">${seg}</div><div class="enc-dur"><span>0:00</span><span>${fmtMs(total)}</span></div></div>
-    <div class="enc-leg">${leg}<span class="enc-leg-dir"><button type="button" class="enc-mini" onclick="toggleDiarView('${escJs(id)}');_encPintar('${escJs(id)}')">${escHtml(ler?t('Editar o texto'):t('Ver a conversa'))}</button></span></div>`;
+  const caps=(e.capitulos||[]).filter(x=>x&&x.t);
+  const cortes=caps.map(x=>`<b class="enc-corte" style="left:${pct((+x.ms||0)/total*100)}"></b>`).join('');
+  const capsHtml=caps.length
+    ?`<div class="enc-caps" role="list" aria-label="${escHtml(t('Assuntos'))}">${caps.map(x=>`<button type="button" role="listitem" onclick="_encIr('${escJs(id)}',${+x.ms||0})"><small>${escHtml(fmtMs(x.ms))}</small>${escHtml(x.t)}</button>`).join('')}<button type="button" class="enc-mini" onclick="_encCapitulos('${escJs(id)}')">${escHtml(t('Refazer'))}</button></div>`
+    :(us.length>=4?`<div class="enc-caps"><button type="button" class="enc-caps-gerar" onclick="_encCapitulos('${escJs(id)}')">${escHtml(t('Separar em assuntos'))}</button></div>`:'');
+  const rabs=(e.rabiscos||[]).filter(r=>r&&r.txt);
+  const rabHtml=rabs.length?`<div class="enc-rabs"><span>${escHtml(t('Rabiscos'))}</span>${rabs.map(r=>`<button type="button" onclick="_encIr('${escJs(id)}',${+r.ms||0})"><i>${escHtml(fmtMs(r.ms))}</i>${escHtml(r.txt)}</button>`).join('')}</div>`:'';
+  box.innerHTML=`<div class="enc-fita-w">${pinos?`<div class="enc-pinos">${pinos}</div>`:''}<div class="enc-fita" role="img" aria-label="${escHtml(t('Quem falou quando'))}">${seg}${cortes}</div><div class="enc-dur"><span>0:00</span><span>${fmtMs(total)}</span></div></div>${capsHtml}
+    ${rabHtml}<div class="enc-leg">${leg}<span class="enc-leg-dir"><button type="button" class="enc-mini" onclick="toggleDiarView('${escJs(id)}');_encPintar('${escJs(id)}')">${escHtml(ler?t('Editar o texto'):t('Ver a conversa'))}</button></span></div>`;
 }
 // ── Marcar o momento (proposta 2) ──
 // Durante a gravação, um toque (ou a tecla M) marca os últimos 30 segundos. Uma
@@ -35265,6 +35296,7 @@ function _encTelaAbrir(){
     </div>
     <button type="button" class="eo-marca" id="encMarcaBtn" onclick="_encMarcar()">★ ${escHtml(t('Marcar este momento'))} <span class="eo-kbd">M</span></button>
     <div class="eo-marcas" id="encMarcas" aria-live="polite"></div>
+    <form class="eo-rab" onsubmit="event.preventDefault();_encRabiscar(this.querySelector('input'))"><span class="eo-k">${escHtml(t('Rabisco'))}</span><input id="encRabisco" type="text" maxlength="140" autocomplete="off" placeholder="${escHtml(t('Duas ou três palavras e Enter. A IA desenvolve depois.'))}" aria-label="${escHtml(t('Rabisco'))}"><ul id="encRabiscos"></ul></form>
     <div class="eo-pe"><button type="button" class="eo-link" onclick="_encTelaNunca()">${escHtml(t('Não abrir esta tela'))}</button><button type="button" class="eo-bt" onclick="_encTelaMinimizar()">${escHtml(t('Minimizar'))}</button><button type="button" class="eo-bt eo-parar" onclick="stopRec()">${escHtml(t('Parar e guardar'))}</button></div>
   </div>`;
   ov.classList.add('on');document.body.classList.add('enc-tela-on');document.getElementById('encVolta')?.remove();
@@ -35272,8 +35304,22 @@ function _encTelaAbrir(){
   clearInterval(_encTelaT);
   const tic=()=>{const r=document.getElementById('encRelogio');if(!r||!recStart)return;const s=Math.floor((Date.now()-recStart)/1000);r.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
   tic();_encTelaT=setInterval(tic,1000);
-  _encTelaMarcas();
+  _encTelaMarcas();_encTelaRabiscos();
   document.getElementById('encMarcaBtn').focus();
+}
+// ── Rabiscos que viram nota (proposta 4 do estudo) ──
+// Duas ou três palavras durante o encontro, com o minuto. No "Fechar
+// atendimento", a IA desenvolve cada uma com o que foi dito perto daquele
+// minuto e mantém as palavras de quem anotou em negrito.
+function _encRabiscar(inp){
+  const v=String(inp&&inp.value||'').trim();
+  if(!v||!isRec||!recStart||!_encGrav)return;
+  _encGrav.rabiscos.push({ms:Date.now()-recStart,txt:v.slice(0,140)});
+  inp.value='';_encTelaRabiscos();
+}
+function _encTelaRabiscos(){
+  const ul=document.getElementById('encRabiscos');if(!ul||!_encGrav)return;
+  ul.innerHTML=_encGrav.rabiscos.slice(-5).map(r=>`<li><i>${escHtml(fmtMs(r.ms))}</i>${escHtml(r.txt)}</li>`).join('');
 }
 function _encTelaMarcas(){
   const box=document.getElementById('encMarcas');if(!box||!_encGrav)return;
@@ -35320,6 +35366,34 @@ function _encFoco(c){
     partes.push('anotações rápidas que quem atende escreveu durante o encontro, com o minuto (desenvolva cada uma com o que foi dito perto daquele minuto; mantenha as palavras de quem anotou em **negrito** e o que você acrescentar em texto normal): '+e.rabiscos.map(r=>'['+fmtMs(r.ms)+'] '+r.txt).join(' | '));
   }
   return partes.join('. ');
+}
+// ── Fita do tempo com capítulos (proposta 6 do estudo) ──
+// A IA separa a conversa em assuntos, com o minuto em que cada um começa. Viram
+// botões em cima da conversa (tocar leva até lá) e cortes finos na fita.
+// Só sob pedido: custa uma chamada de IA, e numa conversa curta não faz falta.
+async function _encCapitulos(id){
+  const c=document.getElementById(id);if(!_encEh(c))return;
+  const key=aiKey();
+  if(!key){toast(t('Para separar em assuntos, configure uma IA de texto nas Configurações.'),true);return}
+  let us=[],sp={};try{us=JSON.parse(c.dataset.utterances||'[]');sp=JSON.parse(c.dataset.speakers||'{}')}catch(e){}
+  const ign=new Set(_encLer(c).ignorar||[]);
+  const linhas=us.filter(u=>!ign.has(u.speaker)).map(u=>'['+fmtMs(u.start)+'] '+(sp[u.speaker]||u.speaker)+': '+u.text);
+  let texto=linhas.join('\n');
+  if(texto.length>24000){const passo=Math.ceil(linhas.length/(linhas.length*24000/texto.length));texto=linhas.filter((x,i)=>i%passo===0).join('\n')}
+  const bt=c.querySelector('.enc-caps-gerar,.enc-caps .enc-mini');if(bt){bt.disabled=true;bt.textContent=t('Separando…')}
+  try{
+    const resp=await callAI('Divida esta conversa em 3 a 8 assuntos, na ordem em que aparecem. Para cada assunto: um título curto (até 4 palavras, em linguagem simples) e o minuto em que começa, copiado de uma marcação [m:ss] da conversa. Responda SOMENTE com JSON: [{"titulo":"...","inicio":"m:ss"}]. '+_promptLang()+'\n\nConversa:\n'+texto,key,'auto',600,{temperature:0.2});
+    const arr=JSON.parse((String(resp).match(/\[[\s\S]*\]/)||['[]'])[0]);
+    const total=Math.max(0,...us.map(u=>+u.end||0));
+    const ms=x=>{const m=String(x||'').match(/(?:(\d+):)?(\d+):(\d{1,2})/);return m?(((+m[1]||0)*3600)+(+m[2])*60+(+m[3]))*1000:NaN};
+    const caps=(Array.isArray(arr)?arr:[]).map(x=>({t:String(x&&x.titulo||'').trim().slice(0,40),ms:ms(x&&x.inicio)})).filter(x=>x.t&&isFinite(x.ms)&&x.ms>=0&&x.ms<=total+1000).sort((a,b)=>a.ms-b.ms).slice(0,10);
+    if(!caps.length)throw new Error(t('A IA não devolveu os assuntos. Tente de novo.'));
+    _encGravar(c,{capitulos:caps});
+    _encPintar(id);
+  }catch(e){
+    toast((e&&e.message&&!/JSON/.test(e.message))?_friendlyAIError(e).message:t('A IA não devolveu os assuntos. Tente de novo.'),true);
+    _encPintar(id);
+  }
 }
 // Repinta bolhas e fita (com marcas e vozes ignoradas) depois de qualquer mudança.
 function _encRefresh(id){
