@@ -1957,6 +1957,14 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .enc-dot{width:9px;height:9px;border-radius:50%;flex:none}
 .enc-leg-dir{margin-left:auto}
 .enc-mini{font:inherit;font-size:11.5px;color:var(--text3);background:none;border:0;cursor:pointer;text-decoration:underline;padding:2px}
+.vu-marca{flex:none;border:1.5px solid #d9921a;color:#b9770e;background:none;border-radius:999px;font-size:13px;font-weight:700;line-height:1;padding:3px 8px;cursor:pointer}
+.vu-marca:hover{background:color-mix(in srgb,#d9921a 14%,transparent)}
+@keyframes vuMarcaOk{0%{transform:scale(1)}40%{transform:scale(1.35);background:#d9921a;color:#fff}100%{transform:scale(1)}}
+.vu-marca.vu-marca-ok{animation:vuMarcaOk .5s ease-out}
+.enc-marca-pop{position:fixed;z-index:10002;display:flex;flex-wrap:wrap;gap:5px;align-items:center;max-width:min(92vw,420px);background:var(--text);color:var(--bg-card);border-radius:12px;padding:7px 9px;font-size:12px;font-weight:600;box-shadow:0 10px 26px rgba(0,0,0,.3)}
+.enc-marca-pop span{margin-right:4px;color:#f0b24a}
+.enc-marca-pop button{font:inherit;font-size:11.5px;font-weight:600;color:var(--bg-card);background:none;border:1px solid color-mix(in srgb,var(--bg-card) 45%,transparent);border-radius:999px;padding:2px 9px;cursor:pointer}
+.enc-marca-pop button:hover{background:color-mix(in srgb,var(--bg-card) 18%,transparent)}
 .enc-menu{position:fixed;z-index:2200;min-width:200px;background:var(--bg-card);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:5px;display:flex;flex-direction:column}
 .enc-menu button{font:inherit;font-size:13px;text-align:left;color:var(--text);background:none;border:0;border-radius:8px;padding:8px 10px;cursor:pointer}
 .enc-menu button:hover,.enc-menu button:focus-visible{background:var(--bg-input);outline:none}
@@ -8519,6 +8527,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div class="fstage-hint" id="fsHint"></div>
     </div>
     <div class="vu-wrap" id="vuWrap" onclick="if(isRec)stopRec()" title="Parar gravação" data-i18n-title>
+      <button type="button" class="vu-marca" id="vuMarcaBtn" onclick="event.stopPropagation();_encMarcar()" title="Marcar este momento (tecla M)" aria-label="Marcar este momento (tecla M)" data-i18n-title hidden>★</button>
       <span class="vu-lbl">REC</span>
       <canvas id="vuCanvas" class="vu-canvas" width="600" height="26"></canvas>
       <div class="vu-meta">
@@ -9911,7 +9920,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.9';
+const VOX_VERSION='2026.10.16.10';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11405,6 +11414,11 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Marcar este momento (tecla M)":"Mark this moment (M key)",
+"Marcado em {t}":"Marked at {t}",
+"Importante":"Important",
+"Retomar":"Revisit",
+"Frase dela":"Their words",
 "Marcado":"Marked",
 "Ir para a marca":"Go to the mark",
 "Quem falou quando":"Who spoke when",
@@ -34265,7 +34279,7 @@ async function startRec(targetCardId=null,targetTA=null){
     // voz (32 kbps, ~15 MB por hora) e cópia de segurança a cada minuto.
     _gravDiarInteira=!targetCardId&&!targetTA&&_diarVaiRodar();
     MR=makeRecorder(stream,_gravDiarInteira?32000:0);
-    MR.start(100);recStart=Date.now();isRec=true;
+    MR.start(100);recStart=Date.now();isRec=true;_encGravNova();
     // Feedback tátil ao iniciar (Android; iOS/desktop ignoram silenciosamente).
     // Era um toque seco de 30ms; agora são dois, curto→longo (14ms, pausa de
     // 26, 34ms) — a mesma diferença entre "tec" e "ta-TUM". Combina com o
@@ -34321,6 +34335,7 @@ function stopRec(){
   localStorage.setItem('vox_rec_count',String(parseInt(localStorage.getItem('vox_rec_count')||'0',10)+1));
   _maybeShowLpHint();
   const elapsed=Math.floor((Date.now()-recStart)/1000);
+  _encGravFim();
   clearInterval(recTimer);stopVU();
   if(segTimer){clearInterval(segTimer);segTimer=null}
   // A gravação vai pra fila do aparelho (processAudio) na hora: a cópia de segurança sai.
@@ -34404,6 +34419,7 @@ function setSegCardLive(id,on){
 function cancelRec(){
   if(!isRec||!MR)return;
   _flAbrirNoProximoCard=false; // cancelou: o próximo card a nascer não tem nada a ver com esta gravação
+  _encGrav=null;_encPendente=null;document.getElementById('encMarcaPop')?.remove();
   if(segTimer){clearInterval(segTimer);segTimer=null}
   _gravBackupDesarmar(true);
   try{MR.stop()}catch(e){}stopCapture();clearInterval(recTimer);stopVU();chunks=[];
@@ -34419,6 +34435,7 @@ function resetUI(){
   if(segTimer){clearInterval(segTimer);segTimer=null}
   document.getElementById('itxt').disabled=false;document.getElementById('itxt').placeholder=t('Digite ou 📎 anexe um áudio…');
   document.getElementById('ibox').classList.remove('rec');document.getElementById('vuWrap').classList.remove('on');
+  const _vm=document.getElementById('vuMarcaBtn');if(_vm)_vm.hidden=true;
   document.getElementById('recTimer').textContent='00:00';document.getElementById('docRecChip').style.display='none';
   document.getElementById('btnRec').style.display='flex';document.getElementById('btnAttach').style.display='flex';document.getElementById('btnSend').style.display='flex';
   document.getElementById('btnAudioCfg').style.display='flex';
@@ -35039,6 +35056,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       requestAnimationFrame(()=>_flAbrirCard(id,_org));
     }
   }
+  if(save)_encAplicarPendente(id);
   if(save)_csDonoTalvez(id);
   return id;
 }
@@ -35116,6 +35134,75 @@ function _encPintar(id){
   const ler=c.dataset.view==='bolhas';
   box.innerHTML=`<div class="enc-fita-w">${pinos?`<div class="enc-pinos">${pinos}</div>`:''}<div class="enc-fita" role="img" aria-label="${escHtml(t('Quem falou quando'))}">${seg}</div><div class="enc-dur"><span>0:00</span><span>${fmtMs(total)}</span></div></div>
     <div class="enc-leg">${leg}<span class="enc-leg-dir"><button type="button" class="enc-mini" onclick="toggleDiarView('${escJs(id)}');_encPintar('${escJs(id)}')">${escHtml(ler?t('Editar o texto'):t('Ver a conversa'))}</button></span></div>`;
+}
+// ── Marcar o momento (proposta 2) ──
+// Durante a gravação, um toque (ou a tecla M) marca os últimos 30 segundos. Uma
+// etiqueta opcional diz o porquê. As marcas vão para o card que nascer desta
+// gravação: estrela na conversa e na fita, e entram no "Fechar atendimento"
+// como trechos que não podem faltar.
+let _encGrav=null,_encPendente=null;
+const _ENC_MARCA_MS=30000;
+const _ENC_ROTULOS=['Importante','Combinado','Retomar','Frase dela'];
+function _encGravNova(){
+  _encGrav={marcas:[],rabiscos:[],modo:sessionMode};_encPendente=null;
+  const b=document.getElementById('vuMarcaBtn');if(b)b.hidden=false;
+}
+function _encGravFim(){
+  document.getElementById('encMarcaPop')?.remove();
+  if(_encGrav&&(_encGrav.marcas.length||_encGrav.rabiscos.length))_encPendente={..._encGrav,em:Date.now()};
+  _encGrav=null;
+}
+function _encMarcar(rot){
+  if(!isRec||!recStart||!_encGrav)return;
+  const ms=Date.now()-recStart;
+  const m={de:Math.max(0,ms-_ENC_MARCA_MS),ate:ms};if(rot)m.rot=rot;
+  _encGrav.marcas.push(m);
+  try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}
+  const b=document.getElementById('vuMarcaBtn');if(b){b.classList.remove('vu-marca-ok');void b.offsetWidth;b.classList.add('vu-marca-ok')}
+  _encMarcaPop(m);
+  document.dispatchEvent(new CustomEvent('vox-marca',{detail:m}));
+}
+// Logo depois de marcar: "Marcado 12:40 · por quê?" com as etiquetas. Some sozinho.
+function _encMarcaPop(m){
+  document.getElementById('encMarcaPop')?.remove();
+  const p=document.createElement('div');p.id='encMarcaPop';p.className='enc-marca-pop';p.setAttribute('role','status');
+  p.innerHTML=`<span>★ ${escHtml(t('Marcado em {t}').replace('{t}',fmtMs(m.ate)))}</span>`+_ENC_ROTULOS.map(r=>`<button type="button">${escHtml(t(r))}</button>`).join('');
+  p.querySelectorAll('button').forEach((b,i)=>b.onclick=ev=>{ev.stopPropagation();m.rot=t(_ENC_ROTULOS[i]);p.remove()});
+  const ancora=document.getElementById('encOv')?.classList.contains('on')?document.getElementById('encMarcaBtn'):document.getElementById('vuWrap');
+  document.body.appendChild(p);
+  if(ancora){const r=ancora.getBoundingClientRect();p.style.top=Math.round(Math.max(8,r.top-p.offsetHeight-8))+'px';p.style.left=Math.round(Math.max(8,Math.min(r.left+r.width/2-p.offsetWidth/2,innerWidth-p.offsetWidth-8)))+'px'}
+  setTimeout(()=>p.remove(),5000);
+}
+document.addEventListener('keydown',e=>{
+  if(!isRec||!_encGrav||e.ctrlKey||e.metaKey||e.altKey||(e.key!=='m'&&e.key!=='M'))return;
+  const a=document.activeElement;
+  if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return;
+  e.preventDefault();_encMarcar();
+});
+// O card que nasce da gravação recebe as marcas (e os rabiscos) dela.
+function _encAplicarPendente(id){
+  const c=document.getElementById(id);
+  if(!c||!_encPendente||c.dataset.type!=='gravacao'||Date.now()-_encPendente.em>30*60000)return;
+  const p=_encPendente;_encPendente=null;
+  const e=_encLer(c);
+  _encGravar(c,{marcas:(e.marcas||[]).concat(p.marcas),rabiscos:(e.rabiscos||[]).concat(p.rabiscos)},true);
+  _encRefresh(id);saveHistory();
+}
+// O que vai junto para a IA no "Fechar atendimento": os trechos marcados e os rabiscos.
+function _encFoco(c){
+  const e=_encLer(c);let us=[];try{us=JSON.parse(c.dataset.utterances||'[]')}catch(er){}
+  let sp={};try{sp=JSON.parse(c.dataset.speakers||'{}')}catch(er){}
+  const partes=[];
+  if((e.marcas||[]).length){
+    partes.push('trechos que quem atende MARCOU como importantes durante o encontro (precisam aparecer na nota): '+e.marcas.map(m=>{
+      const falas=us.filter(u=>(+u.end||0)>=m.de&&(+u.start||0)<=m.ate).map(u=>(sp[u.speaker]||u.speaker)+': '+u.text).join(' / ').slice(0,400);
+      return '['+fmtMs(m.ate)+(m.rot?' · '+m.rot:'')+'] '+(falas||'(sem fala nesse minuto)');
+    }).join(' | '));
+  }
+  if((e.rabiscos||[]).length){
+    partes.push('anotações rápidas que quem atende escreveu durante o encontro, com o minuto (desenvolva cada uma com o que foi dito perto daquele minuto; mantenha as palavras de quem anotou em **negrito** e o que você acrescentar em texto normal): '+e.rabiscos.map(r=>'['+fmtMs(r.ms)+'] '+r.txt).join(' | '));
+  }
+  return partes.join('. ');
 }
 // Repinta bolhas e fita (com marcas e vozes ignoradas) depois de qualquer mudança.
 function _encRefresh(id){
@@ -40160,7 +40247,8 @@ async function _fecharGerar(id){
   if(!ks.length)return;
   const card=document.getElementById(id);if(!card)return;
   // Em sequência (não em paralelo): a chave grátis do Groq estoura com várias de uma vez.
-  for(const k of ks)await runLens(id,k,'',null,{pasta:card.dataset.folder||''});
+  const foco=_encFoco(card);
+  for(const k of ks)await runLens(id,k,foco,null,{pasta:card.dataset.folder||''});
 }
 // Meu modelo: nome + tópicos marcáveis (começa pelos do ofício) + instrução opcional.
 function _modeloNovo(id){
@@ -40425,6 +40513,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       requestAnimationFrame(()=>_flAbrirCard(id,_org));
     }
   }
+  if(save)_encAplicarPendente(id);
   if(save)_csDonoTalvez(id);
   return id;
 }
