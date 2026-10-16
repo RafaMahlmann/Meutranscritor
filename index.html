@@ -1937,6 +1937,37 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
    40px: o rótulo longo fica onde cabe (Lista, Documento) e vira o curto na
    grade — mesmo padrão de rótulo alternado que o badge do modo já usa. */
 .conversa-bar{display:flex;gap:6px;padding:8px 10px;background:var(--cat,transparent)}
+/* Encontro (consulta, reunião, entrevista): a conversa no centro */
+.card.encontro .spk-stats,.card.encontro .spk-rename-row{display:none}
+.enc-topo{padding:8px 14px 6px;display:flex;flex-direction:column;gap:7px;background:var(--cat,transparent)}
+.enc-fita-w{position:relative;display:flex;flex-direction:column;gap:3px}
+.enc-fita{position:relative;height:10px;border-radius:5px;background:var(--border);overflow:hidden}
+.enc-fita i{position:absolute;top:0;bottom:0;cursor:pointer;opacity:.9}
+.enc-fita i:hover{opacity:1;filter:brightness(1.15)}
+.enc-dur{display:flex;justify-content:space-between;font-size:10px;color:var(--text4);font-variant-numeric:tabular-nums}
+.enc-pinos{position:relative;height:16px}
+.enc-pino{position:absolute;top:0;transform:translateX(-50%);background:none;border:0;padding:0 2px;font-size:13px;line-height:16px;color:#d9921a;cursor:pointer}
+.enc-pino:focus-visible{outline:2px solid var(--accent);border-radius:4px}
+.enc-leg{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.enc-voz{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:600;color:var(--text);background:var(--bg-input);border:1px solid transparent;border-radius:999px;padding:3px 10px 3px 8px;cursor:pointer;max-width:100%}
+.enc-voz:hover{border-color:var(--accent)}
+.enc-voz small{font-weight:500;color:var(--text3);font-variant-numeric:tabular-nums}
+.enc-voz.ign .enc-voz-n{text-decoration:line-through;color:var(--text3)}
+.enc-voz-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+.enc-dot{width:9px;height:9px;border-radius:50%;flex:none}
+.enc-leg-dir{margin-left:auto}
+.enc-mini{font:inherit;font-size:11.5px;color:var(--text3);background:none;border:0;cursor:pointer;text-decoration:underline;padding:2px}
+.enc-menu{position:fixed;z-index:2200;min-width:200px;background:var(--bg-card);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:5px;display:flex;flex-direction:column}
+.enc-menu button{font:inherit;font-size:13px;text-align:left;color:var(--text);background:none;border:0;border-radius:8px;padding:8px 10px;cursor:pointer}
+.enc-menu button:hover,.enc-menu button:focus-visible{background:var(--bg-input);outline:none}
+.enc-acoes .conversa-btn{height:34px;font-size:12px}
+.card.encontro .bbl-wrap{padding-top:4px}
+.bbl.bbl-ign{opacity:.45}
+.bbl.bbl-ign .bbl-text{background:var(--bg-input)!important;font-style:italic}
+.bbl.bbl-marca .bbl-text{box-shadow:inset 0 0 0 1.5px #d9921a}
+.bbl-selo{margin-left:6px;color:#b9770e;font-weight:700;text-transform:none;letter-spacing:0}
+@keyframes bblFlash{0%{box-shadow:0 0 0 0 var(--accent)}30%{box-shadow:0 0 0 4px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+.bbl.bbl-flash .bbl-text{animation:bblFlash 1.4s ease-out}
 /* Entrada única do dock ao nascer um card de verdade (não em cards
    restaurados do histórico — ver o "if(save)" que aplica esta classe).
    Só transform+opacity (nunca layout), nasce de scale(.95), nunca de 0. */
@@ -9880,7 +9911,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.8';
+const VOX_VERSION='2026.10.16.9';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11374,6 +11405,19 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Marcado":"Marked",
+"Ir para a marca":"Go to the mark",
+"Quem falou quando":"Who spoke when",
+"não é daqui":"not from here",
+"Editar o texto":"Edit the text",
+"Ver a conversa":"See the conversation",
+"Trocar os papéis":"Swap the roles",
+"É alguém daqui":"It's someone from here",
+"Não é ninguém daqui (vídeo, TV, ruído)":"Not anyone from here (video, TV, noise)",
+"Copiar as falas":"Copy the lines",
+"Apagar as falas":"Delete the lines",
+"Essa voz ficou de fora: não conta no texto nem nas notas.":"That voice is left out: it doesn't count in the text or the notes.",
+"A voz voltou para o texto.":"The voice is back in the text.",
 "Perguntar ao Vox":"Ask Vox",
 "sobre como usar o app":"about using the app",
 "Onde fica o que combinei da última vez?":"Where is what we agreed last time?",
@@ -24703,6 +24747,7 @@ function _restaurarEtiqueta(id,it){
     if(it.origem.lente)el.dataset.origemLente=String(it.origem.lente);
   }
   if(el&&Array.isArray(it.depende)&&it.depende.length)el.dataset.depende=JSON.stringify(it.depende.map(String).slice(0,40));
+  if(el&&it.encontro&&typeof it.encontro==='object'&&!Array.isArray(it.encontro)){el.dataset.encontro=JSON.stringify(it.encontro);_encRefresh(id)}
 }
 // Os nomes das etiquetas são do dono do aparelho, não nossos. O padrão é a cor
 // ("Verde"), mas quem usa quase sempre quer o SIGNIFICADO ("Urgente", "Cliente").
@@ -26625,6 +26670,7 @@ function swapSpeakers(id){
   const ta=card.querySelector('.roteiro-view textarea');
   if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes);autoR(ta)}
   const bbl=document.getElementById('bbl-'+id);if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,withTimes);
+  _encRefresh(id);
   saveHistory();toast(t('Papéis trocados: {a} e {b}.').replace('{a}',speakers[a]).replace('{b}',speakers[b]));
 }
 // Pessoas e palavras do trabalho vão junto pra AssemblyAI (só no modo Consulta).
@@ -31552,6 +31598,8 @@ function saveHistory(){
       ...(c.dataset.origemDt?{origem:{dt:c.dataset.origemDt,lente:c.dataset.origemLente||''}}:{}),
       // Dependência (plano 30, lote 3): os dt das notas que vêm ANTES desta
       // ("Depende de:"). Viaja junto no backup e na transferência entre mundos.
+      // O que é do encontro (vozes de fora, marcas, rabiscos, capítulos, revisão).
+      ...(c.dataset.encontro?{encontro:(()=>{try{return JSON.parse(c.dataset.encontro)}catch(e){return undefined}})()}:{}),
       ...(c.dataset.depende?{depende:(()=>{try{const a=JSON.parse(c.dataset.depende);return Array.isArray(a)?a:[]}catch(e){return []}})()}:{})
     };
     if(c.dataset.diarized==='true'){
@@ -34844,6 +34892,9 @@ async function autoRenameSpeakers(utterances,mode,currentSpeakers){
 // ── DIARIZED CARD ──
 function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,forceDt=null,tags=[],sn='',mode='livre',pinned=false,view='roteiro',folder='',chatHistory='[]'){
   showCards();
+  // Consulta, reunião e entrevista: a conversa vem primeiro, em bolhas com a hora.
+  const _enc=_ENC_MODOS.includes(mode);
+  if(save&&_enc&&view==='roteiro')view='bolhas';
   if(save&&!folder&&activeFolderId)folder=activeFolderId;
   const ci=forceCI!==null?forceCI:colorIdx;if(forceCI===null)colorIdx++;
   const cc=`c${ci%PALETTE}`;
@@ -34876,7 +34927,8 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
 
   const chAberto=_chPadraoAberto();
   const el=document.createElement('div');
-  el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-header-open ch-footer-open':''}`;el.id=id;
+  el.className=`card ${cc}${pinned?' pinned-card':''}${chAberto?' ch-header-open ch-footer-open':''}${_enc?' encontro':''}`;el.id=id;
+  if(_enc)el.dataset.showtimes='true';
   el.dataset.type='gravacao';el.dataset.prov=provStr;el.dataset.cost=costUSD;
   el.dataset.ci=ci%PALETTE;el.dataset.dt=dt;el.dataset.tags=tags.join(',');
   el.dataset.diarized='true';el.dataset.utterances=JSON.stringify(utterances);
@@ -34897,7 +34949,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar('${id}')" onpointercancel="cdotCancelar('${id}')" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <button type="button" class="ch-del-btn" onclick="event.stopPropagation();askDel('${id}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.close}</button>
           <span class="badge${badgeCls}">${provLabel}</span>
-          <span class="badge diar"><span class="svgi">${ICO.msgs}</span> ${t('Diarizado')}</span>
+          <span class="badge diar"><span class="svgi">${ICO.msgs}</span> ${t('Vozes separadas')}</span>
           <button type="button" class="badge ch-mode-badge" onclick="event.stopPropagation();toggleChCollapse('${id}')" aria-expanded="${chAberto}" aria-label="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}" title="${chAberto?t('Recolher cabeçalho do card'):t('Expandir cabeçalho do card')}"><span class="ch-mode-badge-label">${_modeIco(mode)}${modeLabel}</span><span class="ch-mode-badge-menu" data-i18n>Menu</span><span class="ch-mode-chev" aria-hidden="true"><i></i><i></i><i></i></span></button>
           <button type="button" class="icon-btn icon-btn-copy ch-copy-btn" onclick="event.stopPropagation();copyCard('${id}')" title="${t('Copiar para a área de transferência')}" aria-label="${t('Copiar para a área de transferência')}">${ICO.copy}</button>
           <span class="sname-badge${sn?'':' sname-badge-empty'}" title="${sn?escHtml(sn):t('Clique para nomear este card')}" onclick="event.stopPropagation();renameSname('${id}')">${sn?'<span class="svgi">'+ICO.pinOutline+'</span> '+escHtml(sn):t('+ nome')}</span>
@@ -34938,18 +34990,16 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       </div>
       <div class="lens-panel" id="exp-menu-${id}"></div>
       <div class="adv-panel" id="adv-${id}"></div>
-      ${mode==='consulta'?_csFaixaHtml(id,folder,sn,dt):''}<div class="spk-stats">${statsHtml}</div>
-      <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}"><span class="svgi">${ICO.clock}</span></button></div>
-      <div class="conversa-bar" id="convbar-${id}">
-        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">${ICO.messageCircle}<span class="conversa-lbl-curto">${t('Conversar')}</span><span class="conversa-lbl-longo">${t('Conversar sobre este texto')}</span></button>
-        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">${ICO.magicWand}${t('Transformar')}</button>
-      </div>
+      ${mode==='consulta'?_csFaixaHtml(id,folder,sn,dt):''}${_enc?`<div class="enc-topo" id="enc-${id}"></div>`:''}<div class="spk-stats">${statsHtml}</div>
+      <div class="spk-rename-row">${diarSpeakerControls(id,speakerKeys,speakers)}<button class="spk-rename-btn spk-times${_enc?' on':''}" id="tt-${id}" onclick="toggleDiarTimes('${id}')" title="${t('Mostrar/ocultar tempos')}"><span class="svgi">${ICO.clock}</span></button></div>
+      ${_enc?'':_convBarHtml(id)}
       <div class="cb roteiro-view" id="roteiro-${id}" style="${view==='bolhas'?'display:none':''}">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)">${escHtml(roteiroText)}</textarea>
       </div>
       <div class="bbl-wrap" id="bbl-${id}" style="${view!=='bolhas'?'display:none':''}">
-        ${renderBubbles(utterances,speakers)}
+        ${renderBubbles(utterances,speakers,_enc)}
       </div>
+      ${_enc?_convBarHtml(id,mode):''}
       ${tagsHtml}
       <div class="cf">
         <span id="cf-${id}">${utterances.length} ${t('turnos')} · ${roteiroText.split(/\s+/).filter(w=>w).length} ${t('pal.')}</span>
@@ -34959,6 +35009,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
 
 
   document.getElementById('cardsList').prepend(el);
+  if(_enc)_encPintar(id);
   // Entrada 1x do dock só em card genuinamente novo (save=true) — cards
   // restaurados do histórico (loadHistory chama com save=false) aparecem
   // direto, sem animação, senão tocaria toda vez que a página recarrega.
@@ -35005,17 +35056,123 @@ function buildRoteiro(utterances,speakers,withTimes){
     return withTimes?`[${fmtMs(u.start)}] ${nm}: ${u.text}`:`${nm}: ${u.text}`;
   }).join('\n');
 }
-function renderBubbles(utterances,speakers,withTimes){
+// ex (opcional, cards de encontro): {ignorar:[vozes que não são ninguém daqui], marcas:[{de,ate,rot}]}
+function renderBubbles(utterances,speakers,withTimes,ex){
   const spkKeys=[...new Set(utterances.map(u=>u.speaker))];
   const bblClasses=['bbl-left','bbl-right','bbl-c','bbl-d'];
   const clsMap={};spkKeys.forEach((s,i)=>{clsMap[s]=bblClasses[i%4]});
+  const ign=new Set((ex&&ex.ignorar)||[]),marcas=(ex&&ex.marcas)||[];
   return utterances.map(u=>{
     const cls=clsMap[u.speaker]||'bbl-left';
     const align=cls==='bbl-right'?'bbl-right':'';
     const name=speakers[u.speaker]||u.speaker;
     const ts=withTimes?`<span class="bbl-ts">${fmtMs(u.start)}</span>`:'';
-    return `<div class="bbl ${cls} ${align}"><span class="bbl-name">${escHtml(name)}${ts}</span><div class="bbl-text">${escHtml(u.text)}</div></div>`;
+    const mk=marcas.find(m=>(+u.end||0)>=m.de&&(+u.start||0)<=m.ate);
+    const extra=(ign.has(u.speaker)?' bbl-ign':'')+(mk?' bbl-marca':'');
+    const selo=mk?`<span class="bbl-selo">★ ${escHtml(mk.rot||t('Marcado'))}</span>`:'';
+    return `<div class="bbl ${cls} ${align}${extra}" data-ms="${+u.start||0}"><span class="bbl-name">${escHtml(name)}${ts}${selo}</span><div class="bbl-text">${escHtml(u.text)}</div></div>`;
   }).join('');
+}
+// ── O encontro (consulta, reunião, entrevista): a conversa no centro ──
+// Proposta 1 do estudo "Durante e depois do encontro": bolhas com a hora, uma
+// fita fina mostrando QUANDO cada voz falou (no lugar das barras grandes), as
+// vozes como legenda que abre um menu (renomear, trocar, "não é ninguém daqui")
+// e as ações numa barra só, depois da conversa. Tudo o que é do encontro e não
+// cabe nos campos de sempre mora em dataset.encontro (JSON), salvo e restaurado
+// junto com o card.
+const _ENC_MODOS=['consulta','reuniao','entrevista'];
+const _ENC_CORES=['#3b82f6','#10b981','#a78bfa','#f97316'];
+function _encEh(c){return !!c&&c.dataset.diarized==='true'&&_ENC_MODOS.includes(c.dataset.mode)}
+function _encLer(c){try{const v=JSON.parse((c&&c.dataset.encontro)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
+function _encGravar(c,patch,semSalvar){
+  const v={..._encLer(c),...patch};
+  Object.keys(v).forEach(k=>{if(v[k]==null||v[k]===''||(Array.isArray(v[k])&&!v[k].length))delete v[k]});
+  if(Object.keys(v).length)c.dataset.encontro=JSON.stringify(v);else delete c.dataset.encontro;
+  if(!semSalvar)saveHistory();
+}
+function _convBarHtml(id,mode){
+  if(mode)return `<div class="conversa-bar enc-acoes" id="convbar-${id}">
+    <button class="conversa-btn primary" onclick="openConversaMode('${id}')">${ICO.messageCircle}${t('Conversar')}</button>
+    <button class="conversa-btn" onclick="toggleLensMenu('${id}')">${ICO.magicWand}${t('Transformar')}</button></div>`;
+  return `<div class="conversa-bar" id="convbar-${id}">
+        <button class="conversa-btn primary" onclick="openConversaMode('${id}')">${ICO.messageCircle}<span class="conversa-lbl-curto">${t('Conversar')}</span><span class="conversa-lbl-longo">${t('Conversar sobre este texto')}</span></button>
+        <button class="conversa-btn" onclick="toggleLensMenu('${id}')">${ICO.magicWand}${t('Transformar')}</button>
+      </div>`;
+}
+function _encPintar(id){
+  const c=document.getElementById(id);if(!_encEh(c))return;
+  const box=document.getElementById('enc-'+id);if(!box)return;
+  let us=[],sp={};try{us=JSON.parse(c.dataset.utterances||'[]');sp=JSON.parse(c.dataset.speakers||'{}')}catch(e){}
+  const e=_encLer(c),ign=new Set(e.ignorar||[]);
+  const keys=[...new Set(us.map(u=>u.speaker))];
+  const cor=k=>ign.has(k)?'var(--text4)':_ENC_CORES[Math.max(0,keys.indexOf(k))%4];
+  const total=Math.max(1,...us.map(u=>+u.end||0));
+  const tempo={};us.forEach(u=>{tempo[u.speaker]=(tempo[u.speaker]||0)+Math.max(0,(+u.end||0)-(+u.start||0))});
+  const soma=keys.filter(k=>!ign.has(k)).reduce((a,k)=>a+(tempo[k]||0),0)||1;
+  const pct=v=>(Math.min(100,Math.max(0,v))).toFixed(2)+'%';
+  const seg=us.map(u=>`<i style="left:${pct((+u.start||0)/total*100)};width:${pct(Math.max(.5,((+u.end||0)-(+u.start||0))/total*100))};background:${cor(u.speaker)}" onclick="_encIr('${escJs(id)}',${+u.start||0})" title="${escHtml((sp[u.speaker]||u.speaker)+' · '+fmtMs(u.start))}"></i>`).join('');
+  const pinos=(e.marcas||[]).map(m=>`<button type="button" class="enc-pino" style="left:${pct((+m.de||0)/total*100)}" onclick="_encIr('${escJs(id)}',${+m.de||0})" title="${escHtml((m.rot||t('Marcado'))+' · '+fmtMs(m.de))}" aria-label="${escHtml(t('Ir para a marca')+' '+fmtMs(m.de))}">★</button>`).join('');
+  const leg=keys.map(k=>`<button type="button" class="enc-voz${ign.has(k)?' ign':''}" onclick="event.stopPropagation();_encVozMenu('${escJs(id)}','${escJs(k)}',this)" aria-haspopup="menu"><span class="enc-dot" style="background:${cor(k)}"></span><span class="enc-voz-n">${escHtml(sp[k]||k)}</span><small>${ign.has(k)?escHtml(t('não é daqui')):Math.round((tempo[k]||0)/soma*100)+'%'}</small></button>`).join('');
+  const ler=c.dataset.view==='bolhas';
+  box.innerHTML=`<div class="enc-fita-w">${pinos?`<div class="enc-pinos">${pinos}</div>`:''}<div class="enc-fita" role="img" aria-label="${escHtml(t('Quem falou quando'))}">${seg}</div><div class="enc-dur"><span>0:00</span><span>${fmtMs(total)}</span></div></div>
+    <div class="enc-leg">${leg}<span class="enc-leg-dir"><button type="button" class="enc-mini" onclick="toggleDiarView('${escJs(id)}');_encPintar('${escJs(id)}')">${escHtml(ler?t('Editar o texto'):t('Ver a conversa'))}</button></span></div>`;
+}
+// Repinta bolhas e fita (com marcas e vozes ignoradas) depois de qualquer mudança.
+function _encRefresh(id){
+  const c=document.getElementById(id);if(!_encEh(c))return;
+  let us=[],sp={};try{us=JSON.parse(c.dataset.utterances||'[]');sp=JSON.parse(c.dataset.speakers||'{}')}catch(e){}
+  const e=_encLer(c),withTimes=c.dataset.showtimes==='true';
+  if(e.ignorar&&e.ignorar.length){
+    const ta=c.querySelector('.roteiro-view textarea');
+    if(ta){ta.value=buildRoteiro(us.filter(u=>!e.ignorar.includes(u.speaker)),sp,false);autoR(ta)}
+  }
+  const bbl=document.getElementById('bbl-'+id);
+  if(bbl)bbl.innerHTML=renderBubbles(us,sp,withTimes,e);
+  _encPintar(id);
+}
+function _encIr(id,ms){
+  const c=document.getElementById(id);if(!c)return;
+  if(c.dataset.view!=='bolhas'){toggleDiarView(id);_encPintar(id)}
+  const bs=[...c.querySelectorAll('.bbl[data-ms]')];
+  let alvo=bs[0];bs.forEach(b=>{if(+b.dataset.ms<=ms)alvo=b});
+  if(!alvo)return;
+  alvo.scrollIntoView({behavior:_voxReduzMov()?'auto':'smooth',block:'center'});
+  alvo.classList.remove('bbl-flash');void alvo.offsetWidth;alvo.classList.add('bbl-flash');
+}
+function _encVozMenu(id,k,btn){
+  document.getElementById('encMenu')?.remove();
+  const c=document.getElementById(id);if(!c)return;
+  let us=[];try{us=JSON.parse(c.dataset.utterances||'[]')}catch(e){}
+  const n=new Set(us.map(u=>u.speaker)).size,ign=(_encLer(c).ignorar||[]).includes(k);
+  const m=document.createElement('div');m.id='encMenu';m.className='enc-menu';m.setAttribute('role','menu');
+  const it=(rot,fn)=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','menuitem');b.textContent=rot;b.onclick=()=>{m.remove();fn()};m.appendChild(b)};
+  it(t('Renomear'),()=>promptRename(id,k));
+  if(n===2)it(t('Trocar os papéis'),()=>swapSpeakers(id));
+  it(ign?t('É alguém daqui'):t('Não é ninguém daqui (vídeo, TV, ruído)'),()=>_encIgnorar(id,k));
+  it(t('Copiar as falas'),()=>copySpeaker(id,k));
+  it(t('Apagar as falas'),()=>deleteSpeaker(id,k));
+  document.body.appendChild(m);
+  const r=btn.getBoundingClientRect();
+  m.style.top=Math.round(Math.min(r.bottom+4,innerHeight-m.offsetHeight-8))+'px';
+  m.style.left=Math.round(Math.max(8,Math.min(r.left,innerWidth-m.offsetWidth-8)))+'px';
+  m.querySelector('button')?.focus();
+  setTimeout(()=>{const fora=ev=>{if(!m.contains(ev.target)){m.remove();document.removeEventListener('pointerdown',fora,true)}};document.addEventListener('pointerdown',fora,true)},0);
+  m.addEventListener('keydown',ev=>{if(ev.key==='Escape'){m.remove();btn.focus()}});
+}
+// Voz que não é de ninguém do encontro (o vídeo tocando, a TV): fica em cinza,
+// sai da conta de quem falou mais e sai do texto que as lentes e a IA leem.
+function _encIgnorar(id,k){
+  const c=document.getElementById(id);if(!c)return;
+  const e=_encLer(c),l=new Set(e.ignorar||[]);
+  const ign=!l.has(k);ign?l.add(k):l.delete(k);
+  pushCardHistory(id);
+  _encGravar(c,{ignorar:[...l]},true);
+  if(!l.size){
+    let us=[],sp={};try{us=JSON.parse(c.dataset.utterances||'[]');sp=JSON.parse(c.dataset.speakers||'{}')}catch(er){}
+    const ta=c.querySelector('.roteiro-view textarea');if(ta){ta.value=buildRoteiro(us,sp,false);autoR(ta)}
+  }
+  _encRefresh(id);saveHistory();
+  toast(ign?t('Essa voz ficou de fora: não conta no texto nem nas notas.'):t('A voz voltou para o texto.'));
 }
 // Liga/desliga os tempos no roteiro E nas bolhas do card diarizado
 function toggleDiarTimes(id){
@@ -35029,6 +35186,7 @@ function toggleDiarTimes(id){
   const bbl=document.getElementById('bbl-'+id);
   if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,on);
   const btn=document.getElementById('tt-'+id);if(btn)btn.classList.toggle('on',on);
+  _encRefresh(id);
   saveHistory();
 }
 // Remove um locutor (suas falas somem do card)
@@ -35049,6 +35207,7 @@ function deleteSpeaker(id,speaker){
   if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes);autoR(ta)}
   const bbl=document.getElementById('bbl-'+id);
   if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,withTimes);
+  _encRefresh(id);
   saveHistory();toast(t('🗑️ "{name}" removido').replace('{name}',nm));
   // re-render dos controles de locutor (stats/rename/copiar)
   if(typeof refreshDiarControls==='function')refreshDiarControls(id);
@@ -37102,6 +37261,7 @@ function promptRename(id,speaker){
   if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes);autoR(ta)}
   const bbl=document.getElementById('bbl-'+id);
   if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,withTimes);
+  _encRefresh(id);
   saveHistory();toast(t('✏️ Renomeado para "{name}"').replace('{name}',novo));
 }
 
