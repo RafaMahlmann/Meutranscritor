@@ -7224,6 +7224,16 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .pn-vazio li.ok .pn-ck{border-color:#1b9a5a;background:#1b9a5a;color:#fff}
 .pn-vazio li.ok span:not(.pn-ck){color:var(--text3);text-decoration:line-through}
 .pn-sempes{grid-column:1/-1;border-color:#d9921a}
+.cs-dono{display:flex;flex-direction:column;gap:7px;margin:4px 2px 8px;padding:10px 12px;border-radius:12px;background:var(--bg-input);border:1px solid var(--accent)}
+.cs-dono-t{font-size:13.5px;color:var(--text)}
+.cs-dono-l{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cs-dono-p{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:600;color:var(--text);background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:3px 10px 3px 3px;cursor:pointer}
+.cs-dono-p:hover{border-color:var(--accent)}
+.cs-dono-p .pn-av{width:22px;height:22px;font-size:9.5px;grid-row:auto}
+.cs-dono-n{display:inline-flex;gap:4px;margin:0}
+.cs-dono-n input{font:inherit;font-size:12.5px;width:150px;max-width:46vw;color:var(--text);background:var(--bg-card);border:1px dashed var(--border2);border-radius:999px;padding:4px 10px}
+.cs-dono-n button{font:inherit;font-size:12px;border:1px solid var(--accent);color:var(--accent);background:none;border-radius:999px;padding:3px 10px;cursor:pointer}
+.cs-dono-d{font:inherit;font-size:12px;background:none;border:0;color:var(--text3);cursor:pointer;text-decoration:underline;margin-left:auto}
 .pn-guarda{display:inline-flex;align-items:center;gap:5px;margin-left:auto;font-size:12px;color:var(--text3)}
 .pn-guarda select{font:inherit;font-size:12px;max-width:170px;color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:7px;padding:3px 6px}
 .pn-ficha{margin-bottom:12px}
@@ -9834,7 +9844,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.2';
+const VOX_VERSION='2026.10.16.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11259,6 +11269,12 @@ let I18N_EN={
 "Sessões gravadas sem escolher com quem era. Diga de quem é cada uma e ela entra na ficha da pessoa.":"Sessions recorded without choosing who they were with. Say whose each one is and it joins that person's file.",
 "+ Nova pessoa…":"+ New person…",
 "Escolha a pessoa…":"Choose the person…",
+"De quem é esta consulta?":"Whose session is this?",
+"Nome de uma pessoa nova":"Name of a new person",
+"Criar":"Create",
+"Guardada na ficha de {n}.":"Saved to {n}'s file.",
+"Com quem é este atendimento?":"Who is this session with?",
+"Gravar sem escolher":"Record without choosing",
 "e mais {n}":"and {n} more",
 "ficha, sem sessões":"file, no sessions",
 "Ficha":"File",
@@ -26373,6 +26389,58 @@ function _csFaixaHtml(id,folder,sn,dt){
     <label class="cs-faixa-p"><span>${escHtml(t('Guardar em'))}</span><select onchange="assignCardToFolder('${escJs(id)}',this.value)">${_csPastasOpts(folder||'')}</select></label>
     <button type="button" class="cs-faixa-b cs-ficha" onclick="_csVerFicha('${escJs(id)}')"${fp?'':' hidden'}>${escHtml(_csFichaRotulo(fp))}</button></div>`;
 }
+// ── "De quem é esta consulta?" (camada de guia, proposta 1) ──
+// A sessão que nasce sem pessoa pergunta, no próprio card, assim que a gravação
+// termina. Antes de gravar atrasaria o atendimento; ao parar, a pessoa já está
+// pensando nisso. Quem fecha com "Depois" acha a sessão em "Sem pessoa definida".
+function _csDonoRecentes(){
+  const vistos=new Set(),r=[];
+  const add=f=>{if(f&&!f.del&&!f.arch&&!vistos.has(f.id)&&r.length<4){vistos.add(f.id);r.push(f)}};
+  _csPessoasLista().forEach(p=>add(p.f));
+  folders.filter(f=>f.ficha).forEach(add);
+  folders.filter(f=>!f.parentId).forEach(add);
+  return r;
+}
+// acao: código com {f} no lugar do id da pasta; depois: código do botão de saída;
+// alvo: id do card, ou '' para o painel (usado pela pessoa nova, criada pelo formulário).
+function _csDonoHtml(acao,depois,rotDepois,titulo,alvo){
+  const bt=f=>`<button type="button" class="cs-dono-p" onclick="${escHtml(acao.replace('{f}',escJs(f.id)))}"><span class="pn-av" style="--pn-c:${safeColor(f.color||'')}">${escHtml(_csIniciais(f.name))}</span>${escHtml(f.name)}</button>`;
+  return `<b class="cs-dono-t">${escHtml(titulo||t('De quem é esta consulta?'))}</b>
+    <div class="cs-dono-l">${_csDonoRecentes().map(bt).join('')}
+      <form class="cs-dono-n" onsubmit="event.preventDefault();_csDonoNova(this)" data-alvo="${escHtml(alvo||'')}"><input type="text" maxlength="80" placeholder="${escHtml(t('Nome de uma pessoa nova'))}" aria-label="${escHtml(t('Nome de uma pessoa nova'))}"><button type="submit">${escHtml(t('Criar'))}</button></form>
+      <button type="button" class="cs-dono-d" onclick="${escHtml(depois)}">${escHtml(rotDepois||t('Depois'))}</button></div>`;
+}
+function _csDonoNova(form){
+  const inp=form.querySelector('input'),nome=(inp.value||'').trim();
+  if(!nome){inp.focus();return}
+  const nova=_mapaNovaPasta(null,nome);if(!nova)return;
+  const alvo=form.dataset.alvo;
+  if(alvo)_csDonoEscolher(alvo,nova.id);else _painelComecar(nova.id);
+}
+function _csDonoTalvez(id){
+  const c=document.getElementById(id);
+  if(!c||!_csEhSessao(c)||folders.some(f=>f.id===(c.dataset.folder||'')))return;
+  if(typeof isRec!=='undefined'&&isRec){   // gravação longa: o card nasce no meio; pergunta só no fim
+    const iv=setInterval(()=>{if(!document.getElementById(id)){clearInterval(iv);return}if(!isRec){clearInterval(iv);_csDonoTalvez(id)}},1500);
+    return;
+  }
+  if(c.querySelector('.cs-dono'))return;
+  const d=document.createElement('div');d.className='cs-dono';
+  d.innerHTML=_csDonoHtml(`_csDonoEscolher('${escJs(id)}','{f}')`,`this.closest('.cs-dono').remove()`,'','',id);
+  const ch=c.querySelector('.ch');if(ch)ch.after(d);else c.prepend(d);
+}
+function _csDonoEscolher(id,fid){
+  const c=document.getElementById(id),f=folders.find(x=>x.id===fid);if(!c||!f)return;
+  c.querySelector('.cs-dono')?.remove();
+  assignCardToFolder(id,fid,true);
+  if(!c.dataset.sessionName){
+    const n=_csCards().filter(x=>(x.dataset.folder||'')===fid).length;
+    _aplicarSname(id,f.name+' · '+t('Sessão {n}').replace('{n}',n),true);
+  }
+  saveHistory();renderFolders();applyFolderFilter();
+  toast(t('Guardada na ficha de {n}.').replace('{n}',f.name));
+  if(document.getElementById('painelOv')?.classList.contains('on'))_painelPintar();
+}
 function _csFichaRotulo(f){return f?t('Ver ficha de {n}').replace('{n}',f.name):''}
 // Guardou em outra pasta (pela faixa, pelo painel ou arrastando): a faixa mostra a pessoa certa.
 function _csFaixaSinc(card){
@@ -34765,6 +34833,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
       requestAnimationFrame(()=>_flAbrirCard(id,_org));
     }
   }
+  if(save)_csDonoTalvez(id);
   return id;
 }
 
@@ -39350,11 +39419,20 @@ function _painelGuardar(id,sel){
   assignCardToFolder(id,fid);
   _painelPintar();
 }
-function _painelComecar(fid){
+// Começar sem pessoa escolhida: o painel pergunta antes (aqui a pessoa está
+// justamente escolhendo quem atender). "Gravar sem escolher" passa direto.
+function _painelComecar(fid,semPerguntar){
+  if(!fid&&!semPerguntar){_painelQuem();return}
   fecharPainel();
   setMode('consulta');
   if(fid)_csComQuem(fid);
   setTimeout(()=>startRec(),150);
+}
+function _painelQuem(){
+  const ov=document.getElementById('painelOv');if(!ov)return;
+  ov.innerHTML=`<div class="pn-wrap"><header class="pn-cab"><div><button type="button" class="pn-volta" onclick="_painelPintar()">← ${escHtml(t('Painel'))}</button><b>${escHtml(t('Com quem é este atendimento?'))}</b></div>
+    <div class="pn-cab-bts"><button type="button" class="pn-x" onclick="fecharPainel()" aria-label="${escHtml(t('Fechar'))}">×</button></div></header>
+    <section class="pn-bloco pn-agora">${_csDonoHtml("_painelComecar('{f}')","_painelComecar('',true)",t('Gravar sem escolher'),t('Com quem é este atendimento?'))}</section></div>`;
 }
 // ── Personalizar este mundo: seis quadros desenhados, cada um abre a escolha ──
 function _mundoPersonalizar(){
@@ -39750,6 +39828,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       requestAnimationFrame(()=>_flAbrirCard(id,_org));
     }
   }
+  if(save)_csDonoTalvez(id);
   return id;
 }
 
