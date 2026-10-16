@@ -82,7 +82,10 @@ function servidor() {
     if (dica) { await foto('dica-painel'); await page.click('#dicaBalao .dica-ok'); }
     // 3. Grava sem escolher ninguém, como o leigo faria
     await page.click('#btnRec'); await page.waitForTimeout(2500);
-    await page.click('#vuCanvas'); await page.waitForTimeout(9000);   // a pílula vermelha da gravação para
+    ok(await ver(() => document.getElementById('encOv')?.classList.contains('on')), 'gravando uma consulta, abre a tela de atendimento');
+    await foto('tela-atendimento');
+    await page.click('#encMarcaBtn'); await page.waitForTimeout(400);
+    await page.click('.eo-parar'); await page.waitForTimeout(9000);   // "Parar e guardar", na própria tela
     await foto('gravou');
     const card = await ver(() => { const c = [...document.querySelectorAll('#cardsList .card')].find(x => x.dataset.type === 'gravacao'); return c && { id: c.id, pergunta: !!c.querySelector('.cs-dono') }; });
     ok(card && card.pergunta, 'ao parar, o card pergunta de quem é a consulta');
