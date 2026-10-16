@@ -9834,7 +9834,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.1';
+const VOX_VERSION='2026.10.16.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -39195,9 +39195,10 @@ function _painelBotao(){
   if(!pc.guiado){_meGuia();return}
   abrirPainel();
 }
-// Sessão = a gravação da consulta. As notas que nascem dela (Fechar atendimento,
-// lentes) herdam o modo Consulta mas têm origemDt: não contam como sessão.
-function _csEhSessao(c){return c.dataset.mode==='consulta'&&!c.dataset.origemDt}
+// Sessão = a gravação da consulta (gravada aqui ou áudio anexado). As notas que
+// nascem dela (Fechar atendimento, lentes) têm origemDt; nota digitada e o cartão
+// de boas-vindas são texto: nada disso conta como sessão.
+function _csEhSessao(c){const ty=c.dataset.type;return c.dataset.mode==='consulta'&&!c.dataset.origemDt&&(ty==='gravacao'||ty==='arquivo')}
 function _csCards(){return _flCardsVivos().filter(_csEhSessao)}
 function _csFilhas(c){return c.dataset.dt?_flCardsVivos().filter(x=>x.dataset.origemDt===c.dataset.dt):[]}
 function _csPessoasLista(){
