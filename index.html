@@ -7225,6 +7225,8 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .pn-vazio li.ok span:not(.pn-ck){color:var(--text3);text-decoration:line-through}
 .pn-sempes{grid-column:1/-1;border-color:#d9921a}
 .pn-mapa{gap:12px}
+.pn-exemplo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:9px 14px;border-radius:12px;border:1px dashed #d9921a;background:color-mix(in srgb,#d9921a 10%,var(--bg-card));font-size:13.5px;color:var(--text)}
+.pn-ex-bt{justify-self:start;width:max-content}
 .mp-n{border:1.5px solid var(--accent);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .mp-pessoa{border-color:#2f6fd0;background:color-mix(in srgb,#2f6fd0 9%,var(--bg-card))}
 .mp-pessoa[role=button]{cursor:pointer}
@@ -9869,7 +9871,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.6';
+const VOX_VERSION='2026.10.16.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11340,6 +11342,29 @@ let I18N_EN={
 "é a recepção: não guarda nada próprio, só olha tudo isso e mostra o que vem agora, o que ficou pendente e quem são as pessoas.":"is the front desk: it keeps nothing of its own, it just looks at all this and shows what's next, what's pending and who the people are.",
 "Na prática:":"In practice:",
 "dizer de quem é":"say whose it is",
+"Este mundo está trancado: entre com a senha primeiro.":"This world is locked: enter the password first.",
+"Ana Exemplo da Silva":"Ana Example Smith",
+"Dormir melhor e chegar menos ansiosa às provas.":"Sleep better and feel less anxious before exams.",
+"Prefere ser chamada de Aninha.":"Prefers to be called Annie.",
+"Toma café depois das 18h.":"Drinks coffee after 6 pm.",
+"A cada 15 dias":"Every 15 days",
+"O que te trouxe aqui?":"What brought you here?",
+"Não consigo dormir antes das provas. Fico rolando na cama até de madrugada.":"I can't sleep before exams. I toss and turn until the small hours.",
+"Vamos anotar como foram as noites desta semana.":"Let's write down how your nights go this week.",
+"Como foi o diário do sono?":"How did the sleep diary go?",
+"Anotei todas as noites. Dormi melhor nos dias sem café à tarde.":"I wrote every night. I slept better on days without afternoon coffee.",
+"Ótimo. Vamos manter e tirar as telas depois das 22h.":"Great. Let's keep it up and drop screens after 10 pm.",
+"Queixa":"Complaint",
+"dificuldade para dormir antes das provas.":"trouble sleeping before exams.",
+"diário do sono por uma semana.":"sleep diary for one week.",
+"Nota da sessão":"Session note",
+"Manter o diário do sono.":"Keep the sleep diary.",
+"Sem café depois das 16h.":"No coffee after 4 pm.",
+"Sem telas depois das 22h.":"No screens after 10 pm.",
+"O exemplo saiu. Suas notas continuam onde estavam.":"The example is gone. Your notes are where they were.",
+"{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
+"Tirar o exemplo":"Remove the example",
+"Me mostra com um exemplo":"Show me with an example",
 "e mais {n}":"and {n} more",
 "ficha, sem sessões":"file, no sessions",
 "Ficha":"File",
@@ -39407,9 +39432,11 @@ function _painelPintar(){
   const vazio=!_csCards().length;
   const linha=(c,extra)=>`<button type="button" class="pn-lin" onclick="_painelVerPessoa('${escJs(c.dataset.folder||'')}')"><span class="pn-hora">${escHtml(c.dataset.quandoHora||_csData(c.dataset.quando+'T12:00:00'))}</span><span class="pn-nome">${escHtml(_csPastaNome(c))}</span>${extra||''}</button>`;
   const passo=(okk,txt,acao,rot)=>`<li class="${okk?'ok':''}"><span class="pn-ck">${okk?'✓':''}</span><span>${escHtml(txt)}</span>${!okk&&acao?`<button type="button" class="pn-mini" onclick="${acao}">${escHtml(rot)}</button>`:''}</li>`;
+  const ex=_exemploPasta();
   ov.innerHTML=`<div class="pn-wrap">
     <header class="pn-cab"><div><b>${titulo}</b><small>${dataHoje}</small></div>
       <div class="pn-cab-bts"><button type="button" class="pn-bt pn-mapa-bt" onclick="_painelMapa()">${escHtml(t('Como o Vox guarda'))}</button><button type="button" class="pn-bt" onclick="_mundoPersonalizar()">${escHtml(t('Personalizar'))}</button><button type="button" class="pn-x" onclick="fecharPainel()" aria-label="${escHtml(t('Fechar'))}">×</button></div></header>
+    ${ex?`<div class="pn-exemplo"><span>${escHtml(t('{n} é de mentira, para você ver o painel cheio.').replace('{n}',ex.name))}</span><button type="button" class="pn-mini" onclick="_exemploTirar()">${escHtml(t('Tirar o exemplo'))}</button></div>`:''}
     ${vazio?`<section class="pn-bloco pn-vazio"><h3>${escHtml(t('Seu primeiro atendimento em 3 passos'))}</h3><ol>
       ${passo(!!o,t('Diga que atendimento você faz'),'_oficioPerguntar(_painelPintar)',t('Escolher'))}
       ${passo(!!cfg.apiKeyAssembly,t('Deixe a AssemblyAI pronta para separar as vozes'),'fecharPainel();openModalToDiar()',t('Pegar a chave grátis'))}
@@ -39435,7 +39462,7 @@ function _painelPintar(){
         ${semPessoa.length>8?`<span class="pn-sub">${escHtml(t('e mais {n}').replace('{n}',semPessoa.length-8))}</span>`:''}
       </section>`:''}
       <section class="pn-bloco pn-pessoas"><span class="pn-k">${escHtml(t('Pessoas'))} <small>${pessoas.length+soFicha.length}</small></span>
-        <div class="pn-pess">${pessoas.map(p=>`<button type="button" class="pn-pes" onclick="_painelVerPessoa('${escJs(p.f.id)}')" title="${escHtml(p.f.name)}"><span class="pn-av" style="--pn-c:${safeColor(p.f.color||'')}">${escHtml(_csIniciais(p.f.name))}</span><span class="pn-pn">${escHtml(p.f.name)}</span><small>${escHtml(t('{n} sessões').replace('{n}',p.ses.length))} · ${escHtml(_csData(p.ultima.dataset.dt))}</small></button>`).join('')}${soFicha.map(f=>`<button type="button" class="pn-pes" onclick="_painelVerPessoa('${escJs(f.id)}')" title="${escHtml(f.name)}"><span class="pn-av" style="--pn-c:${safeColor(f.color||'')}">${escHtml(_csIniciais(f.name))}</span><span class="pn-pn">${escHtml(f.name)}</span><small>${escHtml(t('ficha, sem sessões'))}</small></button>`).join('')}${pessoas.length||soFicha.length?'':`<span class="pn-sub">${escHtml(t('Cada pessoa tem uma pasta com ficha. Quando você grava, o Vox pergunta de quem é a consulta.'))}</span>`}</div>
+        <div class="pn-pess">${pessoas.map(p=>`<button type="button" class="pn-pes" onclick="_painelVerPessoa('${escJs(p.f.id)}')" title="${escHtml(p.f.name)}"><span class="pn-av" style="--pn-c:${safeColor(p.f.color||'')}">${escHtml(_csIniciais(p.f.name))}</span><span class="pn-pn">${escHtml(p.f.name)}</span><small>${escHtml(t('{n} sessões').replace('{n}',p.ses.length))} · ${escHtml(_csData(p.ultima.dataset.dt))}</small></button>`).join('')}${soFicha.map(f=>`<button type="button" class="pn-pes" onclick="_painelVerPessoa('${escJs(f.id)}')" title="${escHtml(f.name)}"><span class="pn-av" style="--pn-c:${safeColor(f.color||'')}">${escHtml(_csIniciais(f.name))}</span><span class="pn-pn">${escHtml(f.name)}</span><small>${escHtml(t('ficha, sem sessões'))}</small></button>`).join('')}${pessoas.length||soFicha.length?'':`<span class="pn-sub">${escHtml(t('Cada pessoa tem uma pasta com ficha. Quando você grava, o Vox pergunta de quem é a consulta.'))}</span><button type="button" class="pn-bt pn-ex-bt" onclick="_exemploCriar()">${escHtml(t('Me mostra com um exemplo'))}</button>`}</div>
       </section>
     </div>
     <nav class="pn-vis" aria-label="${escHtml(t('As mesmas notas, de outro jeito'))}"><span>${escHtml(t('As mesmas notas, de outro jeito:'))}</span>
@@ -39525,6 +39552,49 @@ function _painelComecar(fid,semPerguntar){
   setMode('consulta');
   if(fid)_csComQuem(fid);
   setTimeout(()=>startRec(),150);
+}
+// ── Pessoa de exemplo (camada de guia, proposta 6) ──
+// Uma Ana de mentira com ficha, duas sessões, notas, combinados e o próximo
+// atendimento marcado: o leigo vê o painel cheio antes de ter o próprio.
+// Tudo dela leva a etiqueta "exemplo" (e "demo", que já diz ao app que não é
+// nota da pessoa); "Tirar o exemplo" apaga só o que tem essa marca.
+const _EXEMPLO_TAG='exemplo';
+function _exemploPasta(){return folders.find(f=>f.exemplo&&!f.del)||null}
+function _exemploCriar(){
+  const ja=_exemploPasta();if(ja){_painelVerPessoa(ja.id);return}
+  if(_mundoTrancado(_mundoAtivo)&&!_cofreChave){toast(t('Este mundo está trancado: entre com a senha primeiro.'),true);return}
+  const fid='f_ex'+Date.now().toString(36);
+  const nome=t('Ana (exemplo)');
+  folders.push({id:fid,name:nome,color:'#3cc4c8',parentId:null,exemplo:true,ficha:{
+    nome:t('Ana Exemplo da Silva'),objetivo:t('Dormir melhor e chegar menos ansiosa às provas.'),
+    lembrar:t('Prefere ser chamada de Aninha.')+'\n'+t('Toma café depois das 18h.'),retorno:t('A cada 15 dias')}});
+  saveFolders();
+  const [eu,outro]=_consultaPapeis(),sp={A:eu,B:outro},dia=d=>new Date(Date.now()-d*864e5).toISOString();
+  const tags=[_EXEMPLO_TAG,'demo'];
+  const s1=dia(21),s2=dia(7);
+  const u1=[{speaker:'A',text:t('O que te trouxe aqui?'),start:0,end:2500},{speaker:'B',text:t('Não consigo dormir antes das provas. Fico rolando na cama até de madrugada.'),start:2600,end:7000},{speaker:'A',text:t('Vamos anotar como foram as noites desta semana.'),start:7100,end:9500}];
+  const u2=[{speaker:'A',text:t('Como foi o diário do sono?'),start:0,end:2000},{speaker:'B',text:t('Anotei todas as noites. Dormi melhor nos dias sem café à tarde.'),start:2100,end:6500},{speaker:'A',text:t('Ótimo. Vamos manter e tirar as telas depois das 22h.'),start:6600,end:9200}];
+  addDiarCard(u1,sp,0,'exemplo',true,null,s1,tags,nome+' · '+t('Sessão {n}').replace('{n}',1),'consulta',false,'roteiro',fid);
+  addDiarCard(u2,sp,0,'exemplo',true,null,s2,tags,nome+' · '+t('Sessão {n}').replace('{n}',2),'consulta',false,'roteiro',fid);
+  const nota=(txt,sn,quando,pai)=>{const id=addCard(txt,null,0,'texto','exemplo',true,null,quando,tags,sn,'consulta',false,fid);const c=document.getElementById(id);if(c)c.dataset.origemDt=pai;return c};
+  nota('**'+t('Queixa')+':** '+t('dificuldade para dormir antes das provas.')+'\n**'+t('Combinado')+':** '+t('diário do sono por uma semana.'),t('Nota da sessão')+' — '+t('Sessão {n}').replace('{n}',1),dia(20.9),s1);
+  const comb=nota('**'+t('Combinado')+':**\n- '+t('Manter o diário do sono.')+'\n- '+t('Sem café depois das 16h.')+'\n- '+t('Sem telas depois das 22h.'),t('Combinados até a próxima')+' — '+t('Sessão {n}').replace('{n}',2),dia(6.9),s2);
+  // O próximo atendimento marcado no calendário, como a pessoa faria arrastando a nota.
+  if(comb){comb.dataset.quando=_calChave(new Date(Date.now()+7*864e5));comb.dataset.quandoHora='14:00'}
+  saveHistory();renderFolders();applyFolderFilter();
+  _painelPintar();   // a faixa do exemplo, no topo do painel, já diz que ela é de mentira
+}
+function _exemploTirar(){
+  const f=_exemploPasta();
+  _flTodosCards().filter(c=>(c.dataset.tags||'').split(',').includes(_EXEMPLO_TAG)).forEach(c=>doDelete(c.id));
+  // A pasta só sai se ficou vazia: se a pessoa guardou algo dela ali, fica.
+  if(f&&!_flTodosCards().some(c=>(c.dataset.folder||'')===f.id)){
+    folders=folders.filter(x=>x.id!==f.id);folderExpanded.delete(f.id);
+    if(activeFolderId===f.id)activeFolderId=null;
+  }
+  saveFolders();renderFolders();applyFolderFilter();
+  toast(t('O exemplo saiu. Suas notas continuam onde estavam.'));
+  if(document.getElementById('painelOv')?.classList.contains('on'))_painelPintar();
 }
 // ── "Como o Vox guarda" (camada de guia, proposta 4) ──
 // O mesmo desenho da página de propostas: consultório > pessoa (ficha) > sessões
