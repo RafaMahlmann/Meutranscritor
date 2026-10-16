@@ -7269,7 +7269,17 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .mg-op:hover{border-color:var(--accent)}
 .mao-aponta{position:fixed;z-index:2100;width:26px;height:26px;pointer-events:none;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35))}
 .mao-aponta svg{width:26px;height:26px;fill:#fff;stroke:#1d1d1f;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transform:rotate(180deg)}
-.mao-frase{position:fixed;z-index:2100;max-width:min(86vw,300px);background:var(--text);color:var(--bg-card);font-family:var(--font);font-size:12.5px;font-weight:600;line-height:1.35;padding:8px 12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.3);pointer-events:none}
+.dica{position:fixed;z-index:2100;max-width:min(88vw,300px);background:var(--text);color:var(--bg-card);font-family:var(--font);border-radius:12px;padding:10px 12px 10px;box-shadow:0 10px 28px rgba(0,0,0,.32);display:flex;flex-direction:column;gap:6px;--seta:24px}
+.dica::before{content:"";position:absolute;left:calc(var(--seta) - 7px);top:-7px;border:7px solid transparent;border-top:0;border-bottom-color:var(--text)}
+.dica.cima::before{top:auto;bottom:-7px;border-bottom:0;border-top:7px solid var(--text)}
+.dica-k{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.65}
+.dica p{margin:0;font-size:13px;font-weight:500;line-height:1.4}
+.dica-bts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:2px}
+.dica-bts button{font:inherit;font-size:12px;font-weight:700;border-radius:8px;padding:5px 11px;cursor:pointer;border:1px solid color-mix(in srgb,var(--bg-card) 45%,transparent);background:none;color:var(--bg-card)}
+.dica-bts .dica-ok{background:var(--bg-card);color:var(--text);border-color:var(--bg-card)}
+.dica-bts button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dica-alvo{outline:2px solid var(--accent);outline-offset:3px;border-radius:10px}
+.mao-aponta.cima svg{transform:none}
 .fa-lista{display:flex;flex-direction:column;gap:6px;margin:12px 0 8px}
 .fa-it{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:10px;padding:9px 11px;cursor:pointer;font-size:13.5px;color:var(--text)}
 .fa-it input{width:17px;height:17px;accent-color:var(--accent)}
@@ -9844,7 +9854,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.4';
+const VOX_VERSION='2026.10.16.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11290,6 +11300,13 @@ let I18N_EN={
 "O botão Painel, lá em cima, mostra quem você atende, o que vem agora e o que ficou pendente.":"The Panel button, up top, shows who you see, what's next and what's pending.",
 "Pronto: {x} grava no modo Consulta. O Painel, lá em cima, mostra quem você atende.":"Done: {x} records in Appointment mode. The Panel, up top, shows who you see.",
 "Cada pessoa tem uma pasta com ficha. Quando você grava, o Vox pergunta de quem é a consulta.":"Each person has a folder with a file. When you record, Vox asks whose session it is.",
+"Dica":"Tip",
+"Aqui fica o seu consultório: quem você atende, o que vem agora e o que ficou pendente. Toque para abrir.":"Your practice lives here: who you see, what's next and what's pending. Tap to open.",
+"Cada consulta fica guardada com a pessoa atendida. Escolha de quem é, ou crie a pessoa aqui mesmo.":"Each session is kept with the person you saw. Choose whose it is, or create the person right here.",
+"Quando terminar o atendimento, toque aqui: o Vox escreve a nota do seu ofício e o que ficou combinado para a próxima vez.":"When the session is over, tap here: Vox writes your profession's note and what was agreed for next time.",
+"Estas sessões foram gravadas sem dizer de quem eram. Escolha a pessoa e a sessão entra na ficha dela.":"These sessions were recorded without saying whose they were. Choose the person and the session joins their file.",
+"Cada pessoa tem uma ficha. Toque no nome para ver as sessões, o que combinaram da última vez e o que anotou sobre ela.":"Each person has a file. Tap the name to see the sessions, what you agreed last time and your notes about them.",
+"Esta é a ficha. O objetivo e o que você quer sempre lembrar ficam aqui, à mão, toda vez que abrir esta pessoa.":"This is the file. The goal and what you always want to remember stay here, at hand, every time you open this person.",
 "e mais {n}":"and {n} more",
 "ficha, sem sessões":"file, no sessions",
 "Ficha":"File",
@@ -26442,7 +26459,8 @@ function _csDonoNova(form){
 }
 function _csDonoTalvez(id){
   const c=document.getElementById(id);
-  if(!c||!_csEhSessao(c)||folders.some(f=>f.id===(c.dataset.folder||'')))return;
+  if(!c||!_csEhSessao(c))return;
+  if(folders.some(f=>f.id===(c.dataset.folder||''))){_dicaFecharAtendimento(c);return}
   if(typeof isRec!=='undefined'&&isRec){   // gravação longa: o card nasce no meio; pergunta só no fim
     const iv=setInterval(()=>{if(!document.getElementById(id)){clearInterval(iv);return}if(!isRec){clearInterval(iv);_csDonoTalvez(id)}},1500);
     return;
@@ -26451,6 +26469,8 @@ function _csDonoTalvez(id){
   const d=document.createElement('div');d.className='cs-dono';
   d.innerHTML=_csDonoHtml(`_csDonoEscolher('${escJs(id)}','{f}')`,`this.closest('.cs-dono').remove()`,'','',id);
   const ch=c.querySelector('.ch');if(ch)ch.after(d);else c.prepend(d);
+  _dica({id:'cs-dono',alvo:()=>c.querySelector('.cs-dono'),
+    frase:t('Cada consulta fica guardada com a pessoa atendida. Escolha de quem é, ou crie a pessoa aqui mesmo.')});
 }
 function _csDonoEscolher(id,fid){
   const c=document.getElementById(id),f=folders.find(x=>x.id===fid);if(!c||!f)return;
@@ -26463,13 +26483,18 @@ function _csDonoEscolher(id,fid){
   saveHistory();renderFolders();applyFolderFilter();
   toast(t('Guardada na ficha de {n}.').replace('{n}',f.name));
   if(document.getElementById('painelOv')?.classList.contains('on'))_painelPintar();
+  _dicaFecharAtendimento(c);
+}
+function _dicaFecharAtendimento(c){
+  if(!c||_csFilhas(c).length)return;
+  _dica({id:'fechar',alvo:()=>c.querySelector('.cs-fechar'),
+    frase:t('Quando terminar o atendimento, toque aqui: o Vox escreve a nota do seu ofício e o que ficou combinado para a próxima vez.')});
 }
 // No mundo de Consultas a pasta é a pessoa: a tela diz "pessoa". Por dentro continua pasta.
 function _csSemDono(){return _mundoEhConsulta()?t('Sem pessoa'):''}
 function _vozConsultaSinc(){
   const c=_mundoEhConsulta();
-  const tit=document.querySelector('#foldersBar .folder-head-title span');
-  if(tit)tit.textContent=c?t('Pessoas'):t('Pastas');
+  ['#foldersBar .folder-head-title span','#btnFolders span'].forEach(q=>{const el=document.querySelector(q);if(el)el.textContent=c?t('Pessoas'):t('Pastas')});
 }
 function _csFichaRotulo(f){return f?t('Ver ficha de {n}').replace('{n}',f.name):''}
 // Guardou em outra pasta (pela faixa, pelo painel ou arrastando): a faixa mostra a pessoa certa.
@@ -39384,6 +39409,10 @@ function _painelPintar(){
       <button type="button" onclick="fecharPainel();abrirFluxograma()">${escHtml(t('Fluxograma'))}</button><button type="button" onclick="fecharPainel();abrirOrbital()">${escHtml(t('Órbita'))}</button><button type="button" onclick="fecharPainel();abrirCalendario()">${escHtml(t('Calendário'))}</button>
     </nav>
   </div>`;
+  if(semPessoa.length)_dica({id:'sempessoa',alvo:()=>document.querySelector('#painelOv.on .pn-sempes select'),
+    frase:t('Estas sessões foram gravadas sem dizer de quem eram. Escolha a pessoa e a sessão entra na ficha dela.')});
+  if(pessoas.length||soFicha.length)_dica({id:'pessoas',alvo:()=>document.querySelector('#painelOv.on .pn-pes'),
+    frase:t('Cada pessoa tem uma ficha. Toque no nome para ver as sessões, o que combinaram da última vez e o que anotou sobre ela.')});
 }
 // Ficha da pessoa: tudo calculado das notas; "Da última vez" sem IA, só do que já foi escrito.
 function _painelVerPessoa(fid,editar){
@@ -39412,6 +39441,8 @@ function _painelVerPessoa(fid,editar){
     </div>
     <nav class="pn-vis"><button type="button" onclick="fecharPainel();selectFolder('${escJs(fid)}')">${escHtml(t('Ver todas as notas desta pessoa'))}</button></nav>
   </div>`;
+  if(!editar)_dica({id:'ficha',alvo:()=>document.querySelector('#painelOv.on .pn-ficha'),
+    frase:t('Esta é a ficha. O objetivo e o que você quer sempre lembrar ficam aqui, à mão, toda vez que abrir esta pessoa.')});
 }
 // Ficha editável da pessoa: mora no próprio objeto da pasta, então o backup leva junto
 // e, com o mundo trancado, vai cifrada com os nomes (vox_nomes) — nunca em claro.
@@ -39540,36 +39571,112 @@ function _meGuiaDepois(){
   abrirPainel();
 }
 // ── A mãozinha nas primeiras entradas de um mundo de Consulta ──
-let _maoT=null;
-function _maoParar(){clearTimeout(_maoT);document.getElementById('maoAponta')?.remove();document.getElementById('maoFrase')?.remove();document.removeEventListener('pointerdown',_maoParar,true)}
-function _maoApontar(el,frase){
-  if(!el||!el.getBoundingClientRect().width)return;
-  _maoParar();
+// ── Dicas de primeira vez (camada de guia, proposta 3) ──
+// Um balão por vez, numa fila. Só aparece quando nada mais disputa a atenção:
+// sem gravação, sem aviso (toast) na tela, sem janela por cima e com o alvo
+// realmente visível. Obedece a "Dicas pelo caminho" (cfg.assist). Cada dica
+// aparece uma vez por aparelho; fechar de qualquer jeito conta como vista.
+// d = {id, alvo:()=>elemento, frase, mao?, acao?:{rot,fn}}
+const _DICA_VISTAS='vox_dicas_vistas';
+let _dicaFila=[],_dicaAtual=null,_dicaTimer=null;
+function _dicaVistas(){try{const v=JSON.parse(VOX_LS.get(_DICA_VISTAS)||'[]');return Array.isArray(v)?v:[]}catch(e){return []}}
+function _dicaMarcar(id){const v=_dicaVistas();if(!v.includes(id)){v.push(id);try{VOX_LS.set(_DICA_VISTAS,JSON.stringify(v))}catch(e){}}}
+function _dicaLigadas(){return cfg.assist!==false}
+function _dica(d){
+  if(!_dicaLigadas()||_dicaVistas().includes(d.id))return;
+  if((_dicaAtual&&_dicaAtual.id===d.id)||_dicaFila.some(x=>x.id===d.id))return;
+  d.tent=0;_dicaFila.push(d);_dicaTentar();
+}
+function _dicaLivre(){
+  if(typeof isRec!=='undefined'&&isRec)return false;
+  if(document.getElementById('toastWrap')?.classList.contains('on'))return false;
+  if(document.querySelector('.tx-overlay.on,#galaxia.on,#micOverlay.on'))return false;
+  return true;
+}
+// Visível de verdade: o ponto do meio do alvo não está coberto por outra coisa.
+function _dicaAlvoVisivel(el){
+  if(!el||!el.isConnected)return false;
   const r=el.getBoundingClientRect();
-  const f=document.createElement('div');f.id='maoFrase';f.className='mao-frase';f.setAttribute('role','status');f.textContent=frase;
-  document.body.appendChild(f);
-  f.style.top=Math.round(r.bottom+46)+'px';
-  f.style.left=Math.round(Math.max(12,Math.min(r.left+r.width/2-f.offsetWidth/2,innerWidth-f.offsetWidth-12)))+'px';
-  if(!_voxReduzMov()){
-    const m=document.createElement('div');m.id='maoAponta';m.className='mao-aponta';m.setAttribute('aria-hidden','true');
+  if(!r.width||!r.height||r.bottom<0||r.top>innerHeight)return false;
+  const x=Math.min(Math.max(r.left+Math.min(r.width/2,40),1),innerWidth-1),y=Math.min(Math.max(r.top+Math.min(r.height/2,14),1),innerHeight-1);
+  const topo=document.elementFromPoint(x,y);
+  return !!topo&&(topo===el||el.contains(topo));
+}
+function _dicaTentar(){
+  clearTimeout(_dicaTimer);
+  if(_dicaAtual||!_dicaFila.length)return;
+  if(!_dicaLivre()||!_dicaLigadas()){_dicaTimer=setTimeout(_dicaTentar,700);return}
+  const d=_dicaFila[0],el=d.alvo&&d.alvo();
+  if(!_dicaAlvoVisivel(el)){
+    // O alvo pode estar entrando na tela (rolagem, painel abrindo): espera um
+    // pouco; se não aparecer, desiste sem marcar como vista.
+    if(++d.tent>12){_dicaFila.shift();_dicaTentar();return}
+    _dicaTimer=setTimeout(_dicaTentar,700);return;
+  }
+  _dicaFila.shift();_dicaMostrar(d,el);
+}
+function _dicaMostrar(d,el){
+  _dicaAtual=d;d.el=el;
+  const b=document.createElement('div');b.id='dicaBalao';b.className='dica';b.setAttribute('role','dialog');b.setAttribute('aria-label',t('Dica'));
+  b.innerHTML=`<span class="dica-k">${escHtml(t('Dica'))}</span><p>${escHtml(d.frase)}</p><div class="dica-bts">${d.acao?`<button type="button" class="dica-acao">${escHtml(d.acao.rot)}</button>`:''}<button type="button" class="dica-ok">${escHtml(t('Entendi'))}</button></div>`;
+  document.body.appendChild(b);
+  b.querySelector('.dica-ok').onclick=()=>_dicaFechar();
+  if(d.acao)b.querySelector('.dica-acao').onclick=()=>{_dicaFechar();d.acao.fn()};
+  if(d.mao&&!_voxReduzMov()){
+    const m=document.createElement('div');m.id='dicaMao';m.className='mao-aponta';m.setAttribute('aria-hidden','true');
     m.innerHTML='<svg viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>';
-    m.style.left=Math.round(r.left+r.width/2-11)+'px';m.style.top=Math.round(r.bottom+6)+'px';
     document.body.appendChild(m);
     m.animate([{transform:'translateY(0)'},{transform:'translateY(-8px)'},{transform:'translateY(0)'}],{duration:900,iterations:6,easing:'ease-in-out'});
   }
-  _maoT=setTimeout(_maoParar,7000);
-  setTimeout(()=>document.addEventListener('pointerdown',_maoParar,true),0);
+  el.classList.add('dica-alvo');
+  _dicaPosicionar();
+  d.desde=Date.now();
+  d.vigia=setInterval(()=>{
+    // Um aviso que chega depois espera o balão sair do caminho; o alvo que some fecha a dica.
+    if(!el.isConnected||!el.getBoundingClientRect().width){_dicaFechar(true);return}
+    b.style.visibility=document.getElementById('toastWrap')?.classList.contains('on')?'hidden':'';
+    _dicaPosicionar();
+  },400);
+  d.fora=e=>{
+    if(Date.now()-d.desde<700||b.contains(e.target))return;
+    _dicaFechar();
+  };
+  setTimeout(()=>document.addEventListener('pointerdown',d.fora,true),0);
+  addEventListener('resize',_dicaPosicionar);addEventListener('scroll',_dicaPosicionar,true);
 }
+function _dicaPosicionar(){
+  const d=_dicaAtual,b=document.getElementById('dicaBalao');if(!d||!b)return;
+  const r=d.el.getBoundingClientRect(),m=document.getElementById('dicaMao');
+  const folga=m?40:12,h=b.offsetHeight,w=b.offsetWidth;
+  const embaixo=r.bottom+folga+h<innerHeight-8||r.top-folga-h<8;
+  const top=embaixo?r.bottom+folga:r.top-folga-h;
+  const left=Math.max(12,Math.min(r.left+Math.min(r.width,160)/2-w/2,innerWidth-w-12));
+  b.style.top=Math.round(top)+'px';b.style.left=Math.round(left)+'px';
+  b.classList.toggle('cima',!embaixo);
+  b.style.setProperty('--seta',Math.round(Math.min(Math.max(r.left+Math.min(r.width,160)/2-left,16),w-16))+'px');
+  if(m){m.style.left=Math.round(r.left+Math.min(r.width,160)/2-13)+'px';m.style.top=Math.round(embaixo?r.bottom+6:r.top-32)+'px';m.classList.toggle('cima',!embaixo)}
+}
+// semMarcar: o alvo sumiu sozinho (não foi a pessoa que fechou).
+function _dicaFechar(semMarcar){
+  const d=_dicaAtual;if(!d)return;
+  clearInterval(d.vigia);document.removeEventListener('pointerdown',d.fora,true);
+  removeEventListener('resize',_dicaPosicionar);removeEventListener('scroll',_dicaPosicionar,true);
+  d.el?.classList.remove('dica-alvo');
+  document.getElementById('dicaBalao')?.remove();document.getElementById('dicaMao')?.remove();
+  if(!semMarcar)_dicaMarcar(d.id);
+  _dicaAtual=null;
+  _dicaTimer=setTimeout(_dicaTentar,600);
+}
+// Tocar no Painel é a resposta à dica dele: fecha e conta como vista.
+function _maoParar(){if(_dicaAtual&&_dicaAtual.id==='painel')_dicaFechar()}
 function _painelAoIniciar(){
   _painelBotaoSinc();
   if(!_mundoEhConsulta())return;
   const pc=_painelCfg();
   if(pc.guiado&&pc.abreEm==='painel'&&_temNotaDaPessoa()&&!_telaAtual()){abrirPainel();return}
   if(pc.guiado)return;
-  const n=(_painelLer().entradas||0);
-  if(n>=3)return;
-  _painelGravar({entradas:n+1});
-  setTimeout(()=>{if(!document.querySelector('.tx-overlay.on,#galaxia.on'))_maoApontar(document.getElementById('btnPainel'),t('Você pode configurar este painel e ter muito mais. Toque aqui.'))},1200);
+  _dica({id:'painel',mao:true,alvo:()=>document.getElementById('btnPainel'),
+    frase:t('Aqui fica o seu consultório: quem você atende, o que vem agora e o que ficou pendente. Toque para abrir.')});
 }
 window.addEventListener('load',()=>setTimeout(()=>{try{_painelAoIniciar()}catch(e){}},2200));
 // "Fechar atendimento": a folha já vem marcada pro ofício e gera tudo na pasta da pessoa.
