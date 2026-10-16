@@ -7224,6 +7224,21 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .pn-vazio li.ok .pn-ck{border-color:#1b9a5a;background:#1b9a5a;color:#fff}
 .pn-vazio li.ok span:not(.pn-ck){color:var(--text3);text-decoration:line-through}
 .pn-sempes{grid-column:1/-1;border-color:#d9921a}
+.pn-mapa{gap:12px}
+.mp-n{border:1.5px solid var(--accent);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.mp-pessoa{border-color:#2f6fd0;background:color-mix(in srgb,#2f6fd0 9%,var(--bg-card))}
+.mp-pessoa[role=button]{cursor:pointer}
+.mp-pessoa[role=button]:hover{box-shadow:0 0 0 2px #2f6fd0}
+.mp-sessao{border-color:#2e9d6a;background:var(--bg-card)}
+.mp-nota{border-style:dashed;border-color:var(--text3);background:var(--bg-input)}
+.mp-nota.mp-falta{border-color:#d9921a}
+.mp-ses{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:8px}
+.mp-rot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--text3)}
+.mp-rot b{color:var(--text);font-size:14px}
+.mp-rot .pn-av{width:26px;height:26px;font-size:10px;grid-row:auto}
+.mp-recep{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;background:var(--bg-input);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text2)}
+.mp-recep b{color:var(--accent)}
+.mp-passo{background:var(--bg-input);border-radius:8px;padding:3px 9px;color:var(--text)}
 .cs-dono{display:flex;flex-direction:column;gap:7px;margin:4px 2px 8px;padding:10px 12px;border-radius:12px;background:var(--bg-input);border:1px solid var(--accent)}
 .cs-dono-t{font-size:13.5px;color:var(--text)}
 .cs-dono-l{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -9854,7 +9869,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.5';
+const VOX_VERSION='2026.10.16.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11307,6 +11322,24 @@ let I18N_EN={
 "Estas sessões foram gravadas sem dizer de quem eram. Escolha a pessoa e a sessão entra na ficha dela.":"These sessions were recorded without saying whose they were. Choose the person and the session joins their file.",
 "Cada pessoa tem uma ficha. Toque no nome para ver as sessões, o que combinaram da última vez e o que anotou sobre ela.":"Each person has a file. Tap the name to see the sessions, what you agreed last time and your notes about them.",
 "Esta é a ficha. O objetivo e o que você quer sempre lembrar ficam aqui, à mão, toda vez que abrir esta pessoa.":"This is the file. The goal and what you always want to remember stay here, at hand, every time you open this person.",
+"Como o Vox guarda":"How Vox keeps things",
+"Primeira vez aqui? Um desenho de uma tela mostra onde fica cada coisa: pessoa, sessão e nota.":"First time here? A one-screen drawing shows where everything lives: person, session and note.",
+"Ver o desenho":"See the drawing",
+"Ana (exemplo)":"Ana (example)",
+"com as suas pessoas":"with your people",
+"exemplo":"example",
+"Ver o exemplo":"See the example",
+"Ver com as minhas pessoas":"See it with my people",
+"o seu consultório. Tudo daqui fica longe dos outros mundos e pode ter senha.":"your practice. Everything here stays away from the other worlds and can have a password.",
+"uma pessoa = uma pasta, com a ficha (objetivo, sempre lembrar, retorno).":"one person = one folder, with the file (goal, always remember, follow-up).",
+"a consulta gravada, com as vozes separadas.":"the recorded session, with the voices separated.",
+"Notas da sessão":"Session notes",
+"Ainda sem nota":"No note yet",
+"nasceram do \"Fechar atendimento\" e ficam presas a esta sessão.":"came from \"Close session\" and stay attached to this session.",
+"toque em \"Fechar atendimento\" no card da sessão.":"tap \"Close session\" on the session card.",
+"é a recepção: não guarda nada próprio, só olha tudo isso e mostra o que vem agora, o que ficou pendente e quem são as pessoas.":"is the front desk: it keeps nothing of its own, it just looks at all this and shows what's next, what's pending and who the people are.",
+"Na prática:":"In practice:",
+"dizer de quem é":"say whose it is",
 "e mais {n}":"and {n} more",
 "ficha, sem sessões":"file, no sessions",
 "Ficha":"File",
@@ -39334,7 +39367,8 @@ function _csPessoasLista(){
     return {f,ses,ultima:ses[ses.length-1]};
   }).filter(Boolean).sort((a,b)=>String(b.ultima.dataset.dt).localeCompare(String(a.ultima.dataset.dt)));
 }
-function _csIniciais(n){return String(n||'').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?'}
+// Só letras e números: "Ana (exemplo)" dá "AE", não "A(".
+function _csIniciais(n){return String(n||'').split(/\s+/).map(x=>(x.match(/[\p{L}\p{N}]/u)||[''])[0]).filter(Boolean).slice(0,2).join('').toUpperCase()||'?'}
 function _csData(dt,op){try{return new Date(dt).toLocaleDateString(getLocale(),op||{day:'2-digit',month:'2-digit'})}catch(e){return ''}}
 function _csPastaNome(c){const f=folders.find(x=>x.id===(c.dataset.folder||''));return f?f.name:t('Sessão sem pessoa')}
 function _csAgenda(){
@@ -39375,7 +39409,7 @@ function _painelPintar(){
   const passo=(okk,txt,acao,rot)=>`<li class="${okk?'ok':''}"><span class="pn-ck">${okk?'✓':''}</span><span>${escHtml(txt)}</span>${!okk&&acao?`<button type="button" class="pn-mini" onclick="${acao}">${escHtml(rot)}</button>`:''}</li>`;
   ov.innerHTML=`<div class="pn-wrap">
     <header class="pn-cab"><div><b>${titulo}</b><small>${dataHoje}</small></div>
-      <div class="pn-cab-bts"><button type="button" class="pn-bt" onclick="_mundoPersonalizar()">${escHtml(t('Personalizar'))}</button><button type="button" class="pn-x" onclick="fecharPainel()" aria-label="${escHtml(t('Fechar'))}">×</button></div></header>
+      <div class="pn-cab-bts"><button type="button" class="pn-bt pn-mapa-bt" onclick="_painelMapa()">${escHtml(t('Como o Vox guarda'))}</button><button type="button" class="pn-bt" onclick="_mundoPersonalizar()">${escHtml(t('Personalizar'))}</button><button type="button" class="pn-x" onclick="fecharPainel()" aria-label="${escHtml(t('Fechar'))}">×</button></div></header>
     ${vazio?`<section class="pn-bloco pn-vazio"><h3>${escHtml(t('Seu primeiro atendimento em 3 passos'))}</h3><ol>
       ${passo(!!o,t('Diga que atendimento você faz'),'_oficioPerguntar(_painelPintar)',t('Escolher'))}
       ${passo(!!cfg.apiKeyAssembly,t('Deixe a AssemblyAI pronta para separar as vozes'),'fecharPainel();openModalToDiar()',t('Pegar a chave grátis'))}
@@ -39409,6 +39443,9 @@ function _painelPintar(){
       <button type="button" onclick="fecharPainel();abrirFluxograma()">${escHtml(t('Fluxograma'))}</button><button type="button" onclick="fecharPainel();abrirOrbital()">${escHtml(t('Órbita'))}</button><button type="button" onclick="fecharPainel();abrirCalendario()">${escHtml(t('Calendário'))}</button>
     </nav>
   </div>`;
+  _dica({id:'mapa',alvo:()=>document.querySelector('#painelOv.on .pn-mapa-bt'),
+    frase:t('Primeira vez aqui? Um desenho de uma tela mostra onde fica cada coisa: pessoa, sessão e nota.'),
+    acao:{rot:t('Ver o desenho'),fn:()=>_painelMapa()}});
   if(semPessoa.length)_dica({id:'sempessoa',alvo:()=>document.querySelector('#painelOv.on .pn-sempes select'),
     frase:t('Estas sessões foram gravadas sem dizer de quem eram. Escolha a pessoa e a sessão entra na ficha dela.')});
   if(pessoas.length||soFicha.length)_dica({id:'pessoas',alvo:()=>document.querySelector('#painelOv.on .pn-pes'),
@@ -39488,6 +39525,38 @@ function _painelComecar(fid,semPerguntar){
   setMode('consulta');
   if(fid)_csComQuem(fid);
   setTimeout(()=>startRec(),150);
+}
+// ── "Como o Vox guarda" (camada de guia, proposta 4) ──
+// O mesmo desenho da página de propostas: consultório > pessoa (ficha) > sessões
+// > notas, e o Painel como recepção. Primeiro com um exemplo; "Ver com as minhas
+// pessoas" troca pelos nomes de verdade deste mundo, e aí cada caixa abre.
+function _painelMapa(real){
+  const ov=document.getElementById('painelOv');if(!ov)return;
+  const pes=_csPessoasLista(),tem=pes.length>0;
+  if(real&&!tem)real=false;
+  const mundo=escHtml((_mundoAtual()||{}).nome||t('Consultas'));
+  let pessoa,sessoes;
+  if(real){
+    const p=pes[0];
+    pessoa={nome:p.f.name,cor:p.f.color,fid:p.f.id,ficha:!!p.f.ficha};
+    sessoes=p.ses.slice(-2).map((c,i,a)=>({rot:t('Sessão {n}').replace('{n}',p.ses.length-a.length+i+1),data:_csData(c.dataset.dt),nota:_csFilhas(c).length>0}));
+  }else{
+    pessoa={nome:t('Ana (exemplo)'),cor:'#3cc4c8',fid:'',ficha:true};
+    sessoes=[{rot:t('Sessão {n}').replace('{n}',1),data:'02/10',nota:true},{rot:t('Sessão {n}').replace('{n}',2),data:'16/10',nota:false}];
+  }
+  const abre=pessoa.fid?` onclick="_painelVerPessoa('${escJs(pessoa.fid)}')" role="button" tabindex="0"`:'';
+  ov.innerHTML=`<div class="pn-wrap"><header class="pn-cab"><div><button type="button" class="pn-volta" onclick="_painelPintar()">← ${escHtml(t('Painel'))}</button><b>${escHtml(t('Como o Vox guarda'))}</b><small>${escHtml(real?t('com as suas pessoas'):t('exemplo'))}</small></div>
+    <div class="pn-cab-bts">${tem?`<button type="button" class="pn-bt" onclick="_painelMapa(${real?'false':'true'})">${escHtml(real?t('Ver o exemplo'):t('Ver com as minhas pessoas'))}</button>`:''}<button type="button" class="pn-x" onclick="fecharPainel()" aria-label="${escHtml(t('Fechar'))}">×</button></div></header>
+    <section class="pn-bloco pn-mapa">
+      <div class="mp-n mp-mundo"><div class="mp-rot"><b>${mundo}</b><span>${escHtml(t('o seu consultório. Tudo daqui fica longe dos outros mundos e pode ter senha.'))}</span></div>
+        <div class="mp-n mp-pessoa"${abre}><div class="mp-rot"><span class="pn-av" style="--pn-c:${safeColor(pessoa.cor||'')}">${escHtml(_csIniciais(pessoa.nome))}</span><b>${escHtml(pessoa.nome)}</b><span>${escHtml(t('uma pessoa = uma pasta, com a ficha (objetivo, sempre lembrar, retorno).'))}</span></div>
+          <div class="mp-ses">${sessoes.map(x=>`<div class="mp-n mp-sessao"><div class="mp-rot"><b>${escHtml(x.rot)}</b><span>${escHtml(x.data)} · ${escHtml(t('a consulta gravada, com as vozes separadas.'))}</span></div>
+            <div class="mp-n mp-nota${x.nota?'':' mp-falta'}"><div class="mp-rot"><b>${escHtml(x.nota?t('Notas da sessão'):t('Ainda sem nota'))}</b><span>${escHtml(x.nota?t('nasceram do "Fechar atendimento" e ficam presas a esta sessão.'):t('toque em "Fechar atendimento" no card da sessão.'))}</span></div></div></div>`).join('')}</div>
+        </div>
+      </div>
+      <div class="mp-recep"><b>${escHtml(t('Painel'))}</b><span>${escHtml(t('é a recepção: não guarda nada próprio, só olha tudo isso e mostra o que vem agora, o que ficou pendente e quem são as pessoas.'))}</span></div>
+    </section>
+    <nav class="pn-vis"><span>${escHtml(t('Na prática:'))}</span><span class="mp-passo">${escHtml(t('Gravar'))}</span>→<span class="mp-passo">${escHtml(t('dizer de quem é'))}</span>→<span class="mp-passo">${escHtml(t('Fechar atendimento'))}</span></nav></div>`;
 }
 function _painelQuem(){
   const ov=document.getElementById('painelOv');if(!ov)return;
@@ -39606,14 +39675,14 @@ function _dicaTentar(){
   clearTimeout(_dicaTimer);
   if(_dicaAtual||!_dicaFila.length)return;
   if(!_dicaLivre()||!_dicaLigadas()){_dicaTimer=setTimeout(_dicaTentar,700);return}
-  const d=_dicaFila[0],el=d.alvo&&d.alvo();
-  if(!_dicaAlvoVisivel(el)){
-    // O alvo pode estar entrando na tela (rolagem, painel abrindo): espera um
-    // pouco; se não aparecer, desiste sem marcar como vista.
-    if(++d.tent>12){_dicaFila.shift();_dicaTentar();return}
-    _dicaTimer=setTimeout(_dicaTentar,700);return;
+  // A primeira da fila cujo alvo está à vista. As outras esperam um pouco (o alvo
+  // pode estar entrando na tela); se não aparecerem, saem sem contar como vistas.
+  for(let i=0;i<_dicaFila.length;i++){
+    const d=_dicaFila[i],el=d.alvo&&d.alvo();
+    if(_dicaAlvoVisivel(el)){_dicaFila.splice(i,1);_dicaMostrar(d,el);return}
   }
-  _dicaFila.shift();_dicaMostrar(d,el);
+  _dicaFila=_dicaFila.filter(d=>++d.tent<=12);
+  if(_dicaFila.length)_dicaTimer=setTimeout(_dicaTentar,700);
 }
 function _dicaMostrar(d,el){
   _dicaAtual=d;d.el=el;
@@ -39634,7 +39703,12 @@ function _dicaMostrar(d,el){
   d.vigia=setInterval(()=>{
     // Um aviso que chega depois espera o balão sair do caminho; o alvo que some fecha a dica.
     if(!el.isConnected||!el.getBoundingClientRect().width){_dicaFechar(true);return}
-    b.style.visibility=document.getElementById('toastWrap')?.classList.contains('on')?'hidden':'';
+    const aviso=document.getElementById('toastWrap')?.classList.contains('on');
+    b.style.visibility=aviso?'hidden':'';
+    // Algo abriu por cima do alvo (o próprio Painel, uma janela): o balão sai sem
+    // contar como visto e volta pra fila, pra quando o alvo reaparecer.
+    d.oculto=!aviso&&!_dicaAlvoVisivel(el)?(d.oculto||0)+1:0;
+    if(d.oculto>2){_dicaFechar(true);d.tent=0;d.oculto=0;_dicaFila.unshift(d);return}
     _dicaPosicionar();
   },400);
   d.fora=e=>{
