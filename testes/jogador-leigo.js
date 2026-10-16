@@ -118,6 +118,14 @@ function servidor() {
     await page.click('.pn-ficha .pn-bt'); await page.fill('#fi_objetivo', 'Dormir melhor'); await page.click('.pn-ficha-ed .pn-p'); await page.waitForTimeout(500);
     await foto('ficha');
     ok(await ver(() => /Dormir melhor/.test(document.querySelector('.pn-fdl')?.textContent || '')), 'a ficha da Ana guarda o objetivo');
+    // 6. Perguntar ao Vox, como quem esqueceu onde ficava
+    await page.click('#painelOv .pn-volta'); await page.waitForTimeout(800);
+    if (await ver(() => !!_dicaAtual)) await page.click('#dicaBalao .dica-ok');
+    await page.click('.pn-perg-bt'); await page.fill('#pgInput', 'Onde fica o que a Ana precisa lembrar?'); await page.press('#pgInput', 'Enter');
+    await page.waitForTimeout(400); await foto('pergunta');
+    await page.click('.pg-resp .pn-p'); await page.waitForTimeout(1500);
+    ok(await ver(() => document.querySelector('.pn-cab b')?.textContent === 'Ana' && !!_dicaAtual), '"Perguntar ao Vox" responde e o "Me leva lá" abre a ficha da Ana');
+    if (await ver(() => !!_dicaAtual)) await page.click('#dicaBalao .dica-ok');
     const viol = await ver(() => window.__leigo || []);
     ok(!viol.length, 'nunca dois balões, nunca balão em cima de aviso, nunca balão durante gravação ' + JSON.stringify([...new Set(viol)]));
   } catch (e) {
