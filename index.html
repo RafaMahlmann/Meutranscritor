@@ -9954,7 +9954,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.11';
+const VOX_VERSION='2026.10.16.12';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -26731,7 +26731,7 @@ function swapSpeakers(id){
   [a,b].forEach(k=>{const e1=document.getElementById(`spkname-${id}-${k}`);if(e1)e1.textContent=speakers[k];const e2=document.getElementById(`srnm-${id}-${k}`);if(e2)e2.textContent=speakers[k]});
   const withTimes=card.dataset.showtimes==='true';
   const ta=card.querySelector('.roteiro-view textarea');
-  if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes);autoR(ta)}
+  if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes&&!_encEh(card));autoR(ta)}
   const bbl=document.getElementById('bbl-'+id);if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,withTimes);
   _encRefresh(id);
   saveHistory();toast(t('Papéis trocados: {a} e {b}.').replace('{a}',speakers[a]).replace('{b}',speakers[b]));
@@ -35386,7 +35386,7 @@ function toggleDiarTimes(id){
   const utterances=JSON.parse(card.dataset.utterances||'[]');
   const speakers=JSON.parse(card.dataset.speakers||'{}');
   const ta=card.querySelector('.roteiro-view textarea');
-  if(ta){ta.value=buildRoteiro(utterances,speakers,on);autoR(ta)}
+  if(ta&&!_encEh(card)){ta.value=buildRoteiro(utterances,speakers,on);autoR(ta)}
   const bbl=document.getElementById('bbl-'+id);
   if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,on);
   const btn=document.getElementById('tt-'+id);if(btn)btn.classList.toggle('on',on);
@@ -35408,7 +35408,7 @@ function deleteSpeaker(id,speaker){
   card.dataset.speakers=JSON.stringify(speakers);
   const withTimes=card.dataset.showtimes==='true';
   const ta=card.querySelector('.roteiro-view textarea');
-  if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes);autoR(ta)}
+  if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes&&!_encEh(card));autoR(ta)}
   const bbl=document.getElementById('bbl-'+id);
   if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,withTimes);
   _encRefresh(id);
@@ -37462,7 +37462,7 @@ function promptRename(id,speaker){
   const utterances=JSON.parse(card.dataset.utterances||'[]');
   const withTimes=card.dataset.showtimes==='true';
   const ta=card.querySelector('.roteiro-view textarea');
-  if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes);autoR(ta)}
+  if(ta){pushCardHistory(id);ta.value=buildRoteiro(utterances,speakers,withTimes&&!_encEh(card));autoR(ta)}
   const bbl=document.getElementById('bbl-'+id);
   if(bbl)bbl.innerHTML=renderBubbles(utterances,speakers,withTimes);
   _encRefresh(id);
