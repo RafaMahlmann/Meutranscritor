@@ -1,0 +1,37 @@
+# Jogador leigo: abre o Vox do zero num Chromium de verdade e faz o caminho de
+# quem nunca viu o app (céu → Consultas → gravar → dizer de quem é → Painel →
+# ficha). Falha se uma trava conhecida voltar. As fotos de cada passo ficam
+# como artefato da execução, para ver onde travou.
+# Não bloqueia o deploy (static.yml): é um aviso. Ver testes/jogador-leigo.js.
+name: Jogador leigo
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  leigo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar o Chromium do teste
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Caminho do leigo
+        run: node testes/jogador-leigo.js fotos-leigo
+      - name: Fotos de cada passo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fotos-do-jogador-leigo
+          path: fotos-leigo
+          retention-days: 14
