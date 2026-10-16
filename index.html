@@ -1949,6 +1949,9 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .enc-pino{position:absolute;top:0;transform:translateX(-50%);background:none;border:0;padding:0 2px;font-size:13px;line-height:16px;color:#d9921a;cursor:pointer}
 .enc-pino:focus-visible{outline:2px solid var(--accent);border-radius:4px}
 .enc-leg{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.enc-ouvir{font:inherit;font-size:12px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:999px;padding:2px 10px;cursor:pointer;margin-right:6px}
+.card.tem-audio .bbl-ts{cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+.bbl.bbl-tocando .bbl-text{box-shadow:inset 0 0 0 2px var(--accent)}
 .es-modal{max-width:560px}
 .es-largo{max-width:min(980px,96vw)}
 .es-bloco{display:flex;flex-direction:column;gap:6px;margin-top:14px}
@@ -10006,7 +10009,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.15';
+const VOX_VERSION='2026.10.16.16';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11500,6 +11503,13 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Pausar":"Pause",
+"Ouvir":"Listen",
+"Não deu para guardar o áudio desta sessão neste aparelho.":"Couldn't save this session's audio on this device.",
+"O áudio desta sessão não está disponível: já foi apagado ou o mundo está trancado.":"This session's audio isn't available: it was deleted or the world is locked.",
+"Áudio da sessão":"Session audio",
+"Guarda {n} dias":"Keeps {n} days",
+"Não guarda":"Doesn't keep",
 "O essencial":"The essentials",
 "Combinados":"Agreements",
 "Ainda não há nota de combinados desta sessão.":"There's no agreements note for this session yet.",
@@ -34856,7 +34866,7 @@ async function doDiarizeLocal(file,durSec,fromRec,sn,mode){
     document.getElementById(pid)?.remove();
     const words=utterances.reduce((a,u)=>a+u.text.split(/\s+/).filter(w=>w).length,0);
     stats.count++;stats.sec+=durSec;stats.words=(stats.words||0)+words;
-    addDiarCard(utterances,speakers,0,'local',true,null,null,[],sn,mode,false);
+    _encAudioGuardar(addDiarCard(utterances,speakers,0,'local',true,null,null,[],sn,mode,false),file,fromRec);
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Vozes separadas, sem sair do seu computador.'));
     return true;
   }catch(err){
@@ -34911,7 +34921,7 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
     document.getElementById(pid)?.remove();
     const words=utterances.reduce((a,u)=>a+u.text.split(/\s+/).filter(w=>w).length,0);
     stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
-    addDiarCard(utterances,speakers,cost,cfg.provider==='groqwhisper'?'groq':cfg.provider,true,null,null,[],sn,mode,false);
+    _encAudioGuardar(addDiarCard(utterances,speakers,cost,cfg.provider==='groqwhisper'?'groq':cfg.provider,true,null,null,[],sn,mode,false),file,fromRec);
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Vozes separadas!'));
     return true;
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true);return false}
@@ -34961,7 +34971,7 @@ async function doDiarizeGladia(file,durSec,fromRec,sn,mode){
     try{speakers=await autoRenameSpeakers(utterances,mode,speakers)}catch(e){console.warn('Auto-rename falhou:',e)}
     const words=utterances.reduce((a,u)=>a+u.text.split(/\s+/).filter(w=>w).length,0);
     stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
-    addDiarCard(utterances,speakers,0,cfg.provider==='groqwhisper'?'groq':cfg.provider,true,null,null,[],sn,mode,false);
+    _encAudioGuardar(addDiarCard(utterances,speakers,0,cfg.provider==='groqwhisper'?'groq':cfg.provider,true,null,null,[],sn,mode,false),file,fromRec);
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Vozes separadas!'));
     return true;
   }catch(err){document.getElementById(pid)?.remove();setStatus('Erro','err');toast('❌ '+err.message,true)}
@@ -35003,7 +35013,7 @@ async function doDiarizeOpenAI(file,durSec,fromRec,sn,mode){
     document.getElementById(pid)?.remove();
     let speakers=buildDefaultSpeakers(utterances,mode);
     try{speakers=await autoRenameSpeakers(utterances,mode,speakers)}catch(e){}
-    addDiarCard(utterances,speakers,cost,cfg.provider,true,null,null,[],sn,mode,false);
+    _encAudioGuardar(addDiarCard(utterances,speakers,cost,cfg.provider,true,null,null,[],sn,mode,false),file,fromRec);
     stats.count++;stats.sec+=durSec;
     updateStats();saveHistory();setStatus('Pronto','ready');toast(t('✅ Vozes separadas!'));
     return true;
@@ -35273,6 +35283,7 @@ function _encPintar(id){
   const pinos=(e.marcas||[]).map(m=>`<button type="button" class="enc-pino" style="left:${pct((+m.de||0)/total*100)}" onclick="_encIr('${escJs(id)}',${+m.de||0})" title="${escHtml((m.rot||t('Marcado'))+' · '+fmtMs(m.de))}" aria-label="${escHtml(t('Ir para a marca')+' '+fmtMs(m.de))}">★</button>`).join('');
   const leg=keys.map(k=>`<button type="button" class="enc-voz${ign.has(k)?' ign':''}" onclick="event.stopPropagation();_encVozMenu('${escJs(id)}','${escJs(k)}',this)" aria-haspopup="menu"><span class="enc-dot" style="background:${cor(k)}"></span><span class="enc-voz-n">${escHtml(sp[k]||k)}</span><small>${ign.has(k)?escHtml(t('não é daqui')):Math.round((tempo[k]||0)/soma*100)+'%'}</small></button>`).join('');
   const ler=c.dataset.view==='bolhas';
+  c.classList.toggle('tem-audio',!!(e.audio&&e.audio.k));
   const caps=(e.capitulos||[]).filter(x=>x&&x.t);
   const cortes=caps.map(x=>`<b class="enc-corte" style="left:${pct((+x.ms||0)/total*100)}"></b>`).join('');
   const capsHtml=caps.length
@@ -35281,7 +35292,7 @@ function _encPintar(id){
   const rabs=(e.rabiscos||[]).filter(r=>r&&r.txt);
   const rabHtml=rabs.length?`<div class="enc-rabs"><span>${escHtml(t('Rabiscos'))}</span>${rabs.map(r=>`<button type="button" onclick="_encIr('${escJs(id)}',${+r.ms||0})"><i>${escHtml(fmtMs(r.ms))}</i>${escHtml(r.txt)}</button>`).join('')}</div>`:'';
   box.innerHTML=`<div class="enc-fita-w">${pinos?`<div class="enc-pinos">${pinos}</div>`:''}<div class="enc-fita" role="img" aria-label="${escHtml(t('Quem falou quando'))}">${seg}${cortes}</div><div class="enc-dur"><span>0:00</span><span>${fmtMs(total)}</span></div></div>${capsHtml}
-    ${rabHtml}<div class="enc-leg">${leg}<span class="enc-leg-dir"><button type="button" class="enc-mini" onclick="toggleDiarView('${escJs(id)}');_encPintar('${escJs(id)}')">${escHtml(ler?t('Editar o texto'):t('Ver a conversa'))}</button></span></div>`;
+    ${rabHtml}<div class="enc-leg">${leg}<span class="enc-leg-dir">${e.audio&&e.audio.k?`<button type="button" class="enc-ouvir" id="encOuvir-${escHtml(id)}" onclick="_encTocar('${escJs(id)}')">${_encAudio&&_encAudio.id===id&&!_encAudio.el.paused?'❚❚ '+escHtml(t('Pausar')):'▶ '+escHtml(t('Ouvir'))}</button>`:''}<button type="button" class="enc-mini" onclick="toggleDiarView('${escJs(id)}');_encPintar('${escJs(id)}')">${escHtml(ler?t('Editar o texto'):t('Ver a conversa'))}</button></span></div>`;
 }
 // ── Marcar o momento (proposta 2) ──
 // Durante a gravação, um toque (ou a tecla M) marca os últimos 30 segundos. Uma
@@ -35461,6 +35472,67 @@ async function _encCapitulos(id){
     _encPintar(id);
   }
 }
+// ── Ouvir o trecho (proposta 8 do estudo) ──
+// Só quando a pessoa liga em Personalizar ("Áudio da sessão"): o áudio da
+// consulta, reunião ou entrevista fica guardado NESTE aparelho, cifrado pelo
+// mesmo cofre das fotos (com a senha do mundo, quando houver), e se apaga
+// sozinho no prazo escolhido. Tocar na hora de uma fala toca dali em diante.
+let _encAudio=null;
+function _encAudioGuardar(id,file,fromRec){
+  const c=id&&document.getElementById(id);
+  if(!c||!fromRec||!file||!_encEh(c))return id;
+  const dias=+(_painelCfg().audioDias||0);if(!dias)return id;
+  imgSalvar(file).then(k=>{if(!document.getElementById(id)){imgApagar(k).catch(()=>{});return}_encGravar(c,{audio:{k,em:new Date().toISOString(),dias}});_encPintar(id)}).catch(()=>toast(t('Não deu para guardar o áudio desta sessão neste aparelho.'),true));
+  return id;
+}
+async function _encTocar(id,ms){
+  const c=document.getElementById(id);const a=c&&_encLer(c).audio;if(!a||!a.k)return;
+  if(_encAudio&&_encAudio.id===id){
+    if(ms==null){if(_encAudio.el.paused)_encAudio.el.play();else _encAudio.el.pause();return}
+    _encAudio.el.currentTime=ms/1000;_encAudio.el.play();return;
+  }
+  _encParar();
+  let blob=null;try{blob=await imgCarregar(a.k)}catch(e){}
+  if(!blob){toast(t('O áudio desta sessão não está disponível: já foi apagado ou o mundo está trancado.'),true);return}
+  const url=URL.createObjectURL(blob),el=new Audio(url);
+  _encAudio={id,el,url};
+  const pinta=()=>{const b=document.getElementById('encOuvir-'+id);if(b)b.textContent=el.paused?'▶ '+t('Ouvir'):'❚❚ '+t('Pausar')};
+  el.addEventListener('play',pinta);el.addEventListener('pause',pinta);
+  el.addEventListener('ended',()=>{pinta();c.querySelectorAll('.bbl-tocando').forEach(x=>x.classList.remove('bbl-tocando'))});
+  el.addEventListener('timeupdate',()=>{
+    const agora=el.currentTime*1000;let alvo=null;
+    c.querySelectorAll('.bbl[data-ms]').forEach(b=>{if(+b.dataset.ms<=agora)alvo=b});
+    c.querySelectorAll('.bbl-tocando').forEach(x=>{if(x!==alvo)x.classList.remove('bbl-tocando')});
+    if(alvo)alvo.classList.add('bbl-tocando');
+  });
+  el.addEventListener('loadedmetadata',()=>{if(ms)el.currentTime=ms/1000});
+  if(ms)try{el.currentTime=ms/1000}catch(e){}
+  el.play().catch(()=>{});
+}
+function _encParar(){
+  if(!_encAudio)return;
+  try{_encAudio.el.pause()}catch(e){}URL.revokeObjectURL(_encAudio.url);
+  const c=document.getElementById(_encAudio.id);c?.querySelectorAll('.bbl-tocando').forEach(x=>x.classList.remove('bbl-tocando'));
+  const b=document.getElementById('encOuvir-'+_encAudio.id);_encAudio=null;if(b)b.textContent='▶ '+t('Ouvir');
+}
+// Tocar na hora de uma fala ouve dali em diante (só em card que tem áudio guardado).
+document.addEventListener('click',ev=>{
+  const ts=ev.target.closest&&ev.target.closest('.card.encontro .bbl-ts');if(!ts)return;
+  const c=ts.closest('.card'),b=ts.closest('.bbl');
+  if(!c||!b||!(_encLer(c).audio||{}).k)return;
+  ev.stopPropagation();_encTocar(c.id,+b.dataset.ms||0);
+});
+// Faxina: áudio que passou do prazo some do aparelho.
+function _encAudioFaxina(){
+  let mudou=false;
+  _flTodosCards().forEach(c=>{
+    const a=_encLer(c).audio;if(!a||!a.k)return;
+    const vence=Date.parse(a.em||'')+(+a.dias||0)*864e5;
+    if(!isFinite(vence)||Date.now()>vence){imgApagar(a.k).catch(()=>{});_encGravar(c,{audio:null},true);_encPintar(c.id);mudou=true}
+  });
+  if(mudou)saveHistory();
+}
+window.addEventListener('load',()=>setTimeout(()=>{try{_encAudioFaxina()}catch(e){}},5000));
 // ── Cada encontro com a sua cara (proposta 7 do estudo) ──
 // "O essencial" mostra primeiro o que importa naquele tipo de encontro:
 //  · consulta: os combinados (da nota de combinados) para ticar e a próxima data;
@@ -40463,12 +40535,14 @@ function _mundoPersonalizar(){
       ${q('<rect x="21" y="3" width="18" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M25 10h10M25 15h10M25 20h6" stroke="currentColor" stroke-width="2"/>',t('Nota depois'),principal,"_modeloNovo('')",true)}
       ${q('<rect x="8" y="5" width="20" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="32" y="5" width="20" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="32" y="17" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>',t('Abre em'),pc.abreEm==='painel'?t('Painel'):t('Mural'),'_pzAbreEm()',pc.abreEm==='painel')}
       ${q('<rect x="14" y="4" width="32" height="22" rx="3" fill="#10181d" stroke="currentColor" stroke-width="1.5"/><circle cx="21" cy="10" r="2" fill="#e5484d"/><path d="M20 19h20" stroke="#f0b24a" stroke-width="2"/>',t('Ao gravar'),pc.telaAtendimento===false?t('Só a pílula'):t('Tela de atendimento'),'_pzTelaAtendimento()',pc.telaAtendimento!==false)}
+      ${q('<path d="M12 18v-6M17 21V9M22 18v-6M27 24V6M32 18v-6M37 21V9M42 18v-6M47 15v0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',t('Áudio da sessão'),+(pc.audioDias||0)?t('Guarda {n} dias').replace('{n}',pc.audioDias):t('Não guarda'),'_pzAudio()',!!+(pc.audioDias||0))}
       ${q('<rect x="21" y="13" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M25 13V9a5 5 0 0 1 10 0v4" fill="none" stroke="currentColor" stroke-width="2"/>',t('Proteção'),tranc?t('Com senha'):t('Sem senha'),"closeTxOverlay();fecharPainel();abrirGalaxia();toast(t('Na ficha deste mundo, toque em Proteger com senha.'))",tranc)}
     </div>
     <div class="fa-pe"><button type="button" class="conv-s" onclick="_meGuia()">${escHtml(t('Me ajuda a configurar'))}</button><button type="button" class="conv-p" onclick="closeTxOverlay();if(document.getElementById('painelOv')?.classList.contains('on'))_painelPintar()">${escHtml(t('Pronto'))}</button></div>
   </div>`;
   ov.classList.add('on');
 }
+function _pzAudio(){const pc=_painelCfg(),seq=[0,7,30],i=seq.indexOf(+(pc.audioDias||0));_painelGravar({audioDias:seq[(i+1)%seq.length]});_mundoPersonalizar()}
 function _pzTelaAtendimento(){const pc=_painelCfg();_painelGravar({telaAtendimento:pc.telaAtendimento===false});_mundoPersonalizar()}
 function _pzAbreEm(){const pc=_painelCfg();_painelGravar({abreEm:pc.abreEm==='painel'?'mural':'painel'});_mundoPersonalizar()}
 // ── Me guia: primeiro a AssemblyAI, depois o painel (rápido, detalhado ou depois) ──
@@ -40979,6 +41053,7 @@ function doDelete(id){
   const _c=document.getElementById(id);
   if(_c){
     try{_imagesGet(_c).forEach(im=>{imgApagar(im.k).catch(()=>{});_imgRevoke(im.k)})}catch(e){}
+    try{const _a=_encLer(_c).audio;if(_a&&_a.k)imgApagar(_a.k).catch(()=>{})}catch(e){}
   }
   _c?.remove();
   stats.count=Math.max(0,stats.count-1);updateStats();saveHistory();
