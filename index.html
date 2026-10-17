@@ -1939,7 +1939,39 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .conversa-bar{display:flex;gap:6px;padding:8px 10px;background:var(--cat,transparent)}
 /* Super Diário: a faixa do Diário embaixo do texto (sempre à vista, diferente da conversa-bar) */
 .dio-bar{display:flex;gap:6px;flex-wrap:wrap;padding:2px 12px 8px}
-.card[data-origem-dt] .dio-bar,.card.proc-card .dio-bar{display:none}
+.card[data-origem-dt] .dio-bar,.card.proc-card .dio-bar,body.dio-sem-ia .dio-espelho{display:none}
+.dio-topo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;border:1px solid var(--border);border-radius:14px;background:var(--bg-card)}
+.dio-topo[hidden]{display:none}
+.dio-hoje{display:flex;flex-direction:column;gap:1px;min-width:0;margin-right:auto}
+.dio-k{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#c98a1c}
+.dio-hoje b{font-size:15px;color:var(--text)}
+.dio-soseu{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:700;color:var(--text2);background:var(--bg-input);border:1px solid var(--border);border-radius:999px;padding:5px 12px;cursor:pointer}
+.dio-soseu.on{color:#1b7a4a;border-color:rgba(27,122,74,.35)}
+.dio-soseu:focus-visible{outline:2px solid #c98a1c;outline-offset:2px}
+.dio-ov{position:fixed;inset:0;z-index:10003;background:rgba(10,14,18,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.dio-caixa{width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;background:var(--bg-card);color:var(--text);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.dio-cab{display:flex;align-items:center;gap:10px}
+.dio-cab b{font-size:18px;margin-right:auto}
+.dio-x{font:inherit;font-size:22px;line-height:1;border:0;background:transparent;color:var(--text3);cursor:pointer;width:34px;height:34px;border-radius:50%}
+.dio-lead{margin:0;font-size:14px;color:var(--text2);line-height:1.5}
+.dio-linha{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.dio-linha.dio-col{grid-template-columns:26px minmax(0,1fr)}
+.dio-col .dio-seg{grid-column:1/-1}
+.dio-ic{font-size:18px;text-align:center}
+.dio-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dio-tx b{font-size:14px}
+.dio-tx small{font-size:12.5px;color:var(--text3);line-height:1.4}
+.dio-acao,.dio-ok{font:inherit;font-size:13px;font-weight:700;border-radius:999px;padding:6px 14px;cursor:pointer;border:1px solid var(--border2,var(--border));background:var(--bg-input);color:var(--text)}
+.dio-ok{background:#c98a1c;border-color:#c98a1c;color:#fff;padding:8px 20px}
+.dio-pe{display:flex;justify-content:flex-end}
+.dio-sw{position:relative;width:42px;height:24px;border-radius:999px;border:0;background:var(--border2,#ccc);cursor:pointer;flex:0 0 auto;transition:background .2s}
+.dio-sw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .22s cubic-bezier(.34,1.56,.64,1)}
+.dio-sw.on{background:#c98a1c}.dio-sw.on i{left:21px}
+.dio-seg{display:flex;gap:4px;flex-wrap:wrap}
+.dio-seg button{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);border-radius:999px;padding:5px 12px;cursor:pointer}
+.dio-seg button.on{background:#c98a1c;border-color:#c98a1c;color:#fff}
+.dio-sw:focus-visible,.dio-seg button:focus-visible,.dio-acao:focus-visible,.dio-ok:focus-visible,.dio-x:focus-visible{outline:2px solid #c98a1c;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.dio-sw i{transition:none}}
 .dio-bt{display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:12.5px;font-weight:600;color:var(--text2);background:var(--bg-input);border:1px solid var(--border2,var(--border));border-radius:999px;padding:4px 11px;cursor:pointer;transition:transform .12s,border-color .15s}
 .dio-bt .svgi,.dio-bt svg{width:14px;height:14px}
 .dio-bt:hover{border-color:#c98a1c;color:var(--text)}
@@ -8558,6 +8590,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div class="convite" id="voxConvite" style="display:none"></div>
       <div class="lembrete" id="voxLembrete" style="display:none"></div>
       <aside class="dv-nav" id="dvNav" aria-label="Navegação do documento" data-i18n-aria hidden></aside>
+      <div class="dio-topo" id="dioTopo" hidden></div>
       <div class="cards" id="cardsList" style="display:none"></div>
     </div>
     <aside class="folders-bar" id="foldersBar">
@@ -10049,7 +10082,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.17.3';
+const VOX_VERSION='2026.10.17.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11543,6 +11576,33 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"A IA está desligada neste Diário. Dá pra ligar em \"Só seu\", no alto do Diário.":"AI is off in this Journal. You can turn it on in \"Just yours\", at the top of the Journal.",
+"Senha, IA, humor e exportar":"Password, AI, mood and export",
+"Trancado":"Locked",
+"Só seu":"Just yours",
+"Cinco carinhas":"Five faces",
+"Três cores":"Three colors",
+"Sem humor":"No mood",
+"Este diário é só seu":"This journal is just yours",
+"O que você fala aqui é o mais íntimo que existe. Escolha como ele fica guardado. Dá pra mudar depois no botão Só seu, no alto do Diário.":"What you say here is as personal as it gets. Choose how it is kept. You can change this later with the Just yours button at the top of the Journal.",
+"Trancado com senha":"Locked with a password",
+"Trancar com senha":"Lock with a password",
+"Pede a senha ao abrir o Diário e criptografa as notas e as fotos.":"Asks for the password when you open the Journal and encrypts your notes and photos.",
+"Gerenciar":"Manage",
+"Trancar":"Lock",
+"IA de texto no Diário":"Text AI in the Journal",
+"Espelho, Gratidão, Para amanhã e Meu dia. Desligada, o Diário continua: o texto, o humor e o calendário não usam IA.":"Mirror, Gratitude, For tomorrow and My day. With it off, the Journal keeps working: text, mood and calendar don't use AI.",
+"O áudio não fica guardado":"The audio is not kept",
+"A fala vira texto no serviço que você escolheu e o áudio vai embora. Fica só o texto, neste aparelho.":"Your speech becomes text on the service you chose and the audio is discarded. Only the text stays, on this device.",
+"Como marcar o dia":"How to mark the day",
+"Ao fechar o dia, um toque diz como foi. Ele colore o calendário.":"When you close the day, one tap says how it went. It colors the calendar.",
+"Levar tudo com você":"Take everything with you",
+"Todos os dias do Diário em texto, num arquivo só. Sem assinatura.":"Every day of the Journal as text, in a single file. No subscription.",
+"IA ligada neste Diário.":"AI is on in this Journal.",
+"IA desligada neste Diário. Nada do que você fala aqui vai para a IA de texto.":"AI is off in this Journal. Nothing you say here goes to the text AI.",
+"O Diário ainda está vazio.":"The Journal is still empty.",
+"Sem dia":"No day",
+"Diário exportado: um arquivo com todos os dias.":"Journal exported: one file with every day.",
 "Espelho, gratidão e o que ficou para amanhã":"Mirror, gratitude and what's left for tomorrow",
 "Gratidão":"Gratitude",
 "Três coisas boas do dia, com as suas palavras":"Three good things from the day, in your own words",
@@ -28818,6 +28878,7 @@ function _friendlyAIError(err,tgt){
   return new Error('❌ '+t('{p} não respondeu corretamente agora. Toque em "Testar conexão" nas Configurações.').replace('{p}',name));
 }
 async function callAI(prompt,key,provider='auto',maxTokens=800,opts={}){
+  if(_dioSemIA())throw new Error(t('A IA está desligada neste Diário. Dá pra ligar em "Só seu", no alto do Diário.'));
   // Lente por nossa conta: um alvo só, a ponte. Ela responde no formato do
   // OpenAI, então o resto desta função trata igual a qualquer provedor.
   const targets=key===_CORTESIA_CHAVE?[_cortesiaAlvoTexto()]:_txtAITargets(provider);
@@ -40378,6 +40439,92 @@ function _diarioVozesEscolha(on){
   if(on){try{VOX_LS.rem('vox_diar_devolver')}catch(e){}}
 }
 window.addEventListener('load',()=>setTimeout(_diarioVozesAoIniciar,700));
+// ── Super Diário, proposta 8: só seu, e você vê que é ──
+// O que é do Diário na configuração do mundo (vox_painel, um por mundo):
+// diarioIA (false = sem IA de texto), diarioHumor ('5' carinhas, '3' cores, '0'
+// sem humor), diarioSoSeu (a tela da primeira vez já foi vista).
+function _dioSemIA(){return _mundoEhDiario()&&_painelLer().diarioIA===false}
+function _dioHumorModo(){const h=String(_painelLer().diarioHumor||'5');return ['5','3','0'].includes(h)?h:'5'}
+function _dioDataLonga(d){try{return _calMaiuscula(d.toLocaleDateString(getLocale(),{weekday:"long",day:"numeric",month:"long"}))}catch(e){return _calChave(d)}}
+function _dioTopoPintar(){
+  const el=document.getElementById('dioTopo');if(!el)return;
+  if(!_mundoEhDiario()){el.hidden=true;return}
+  document.body.classList.toggle('dio-sem-ia',_dioSemIA());
+  const tranc=_mundoTrancado(_mundoAtivo);
+  el.innerHTML=`<div class="dio-hoje"><span class="dio-k">${escHtml(t('Hoje'))}</span><b>${escHtml(_dioDataLonga(new Date()))}</b></div>
+    <button type="button" class="dio-soseu${tranc?' on':''}" onclick="_dioSoSeuAbrir()" title="${escHtml(t('Senha, IA, humor e exportar'))}"><span aria-hidden="true">🔒</span>${escHtml(tranc?t('Trancado'):t('Só seu'))}</button>`;
+  el.hidden=false;
+}
+function _dioSoSeuAbrir(){
+  document.getElementById('dioSoSeuOv')?.remove();
+  const pc=_painelLer(),tranc=_mundoTrancado(_mundoAtivo),ia=pc.diarioIA!==false,hm=_dioHumorModo();
+  const ov=document.createElement('div');ov.id='dioSoSeuOv';ov.className='dio-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-labelledby','dioSoSeuT');
+  const humor=[['5',t('Cinco carinhas')],['3',t('Três cores')],['0',t('Sem humor')]];
+  ov.innerHTML=`<div class="dio-caixa">
+    <div class="dio-cab"><b id="dioSoSeuT">${escHtml(t('Este diário é só seu'))}</b><button type="button" class="dio-x" aria-label="${escHtml(t('Fechar'))}">×</button></div>
+    <p class="dio-lead">${escHtml(t('O que você fala aqui é o mais íntimo que existe. Escolha como ele fica guardado. Dá pra mudar depois no botão Só seu, no alto do Diário.'))}</p>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🔒</span><span class="dio-tx"><b>${escHtml(tranc?t('Trancado com senha'):t('Trancar com senha'))}</b><small>${escHtml(t('Pede a senha ao abrir o Diário e criptografa as notas e as fotos.'))}</small></span>
+      <button type="button" class="dio-acao" data-a="senha">${escHtml(tranc?t('Gerenciar'):t('Trancar'))}</button></div>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">✨</span><span class="dio-tx"><b>${escHtml(t('IA de texto no Diário'))}</b><small>${escHtml(t('Espelho, Gratidão, Para amanhã e Meu dia. Desligada, o Diário continua: o texto, o humor e o calendário não usam IA.'))}</small></span>
+      <button type="button" class="dio-sw${ia?' on':''}" role="switch" aria-checked="${ia}" data-a="ia" aria-label="${escHtml(t('IA de texto no Diário'))}"><i></i></button></div>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🎙️</span><span class="dio-tx"><b>${escHtml(t('O áudio não fica guardado'))}</b><small>${escHtml(t('A fala vira texto no serviço que você escolheu e o áudio vai embora. Fica só o texto, neste aparelho.'))}</small></span></div>
+    <div class="dio-linha dio-col"><span class="dio-ic" aria-hidden="true">🙂</span><span class="dio-tx"><b>${escHtml(t('Como marcar o dia'))}</b><small>${escHtml(t('Ao fechar o dia, um toque diz como foi. Ele colore o calendário.'))}</small></span>
+      <div class="dio-seg" role="radiogroup" aria-label="${escHtml(t('Como marcar o dia'))}">${humor.map(([v,r])=>`<button type="button" role="radio" aria-checked="${v===hm}" class="${v===hm?'on':''}" data-a="humor" data-v="${v}">${escHtml(r)}</button>`).join('')}</div></div>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">⬇️</span><span class="dio-tx"><b>${escHtml(t('Levar tudo com você'))}</b><small>${escHtml(t('Todos os dias do Diário em texto, num arquivo só. Sem assinatura.'))}</small></span>
+      <button type="button" class="dio-acao" data-a="exportar">${escHtml(t('Exportar'))}</button></div>
+    <div class="dio-pe"><button type="button" class="dio-ok">${escHtml(t('Pronto'))}</button></div></div>`;
+  const fechar=()=>{ov.remove();document.removeEventListener('keydown',tecla,true);_painelGravar({diarioSoSeu:1});_dioTopoPintar()};
+  const tecla=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();fechar()}};
+  ov.addEventListener('click',e=>{
+    if(e.target===ov||e.target.closest('.dio-x,.dio-ok')){fechar();return}
+    const b=e.target.closest('[data-a]');if(!b)return;
+    const a=b.dataset.a;
+    if(a==='ia'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioIA:on});_dioTopoPintar();
+      toast(on?t('IA ligada neste Diário.'):t('IA desligada neste Diário. Nada do que você fala aqui vai para a IA de texto.'))}
+    else if(a==='humor'){_painelGravar({diarioHumor:b.dataset.v});ov.querySelectorAll('[data-a="humor"]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-checked',String(on))})}
+    else if(a==='exportar')_dioExportar();
+    else if(a==='senha'){fechar();_dioTrancar()}
+  });
+  document.addEventListener('keydown',tecla,true);
+  document.body.appendChild(ov);ov.querySelector('.dio-ok').focus();
+}
+// O mesmo cofre da ficha do mundo no céu: o céu abre e a tela de senha vem
+// por cima (o cofre mora no céu e precisa dele montado). Fechando, volta-se ao Diário.
+function _dioTrancar(){
+  try{abrirGalaxia()}catch(e){}
+  setTimeout(()=>{try{_mundoTrancado(_mundoAtivo)?protecaoMundoUI():trancarMundoUI()}catch(e){}},700);
+}
+// Todos os dias em Markdown, do mais antigo ao mais novo. O que nasceu de uma
+// lente vai junto, com o nome dela, logo depois do dia.
+function _dioExportar(){
+  if(_cofreImpedeSaida())return;
+  const cards=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')].filter(c=>c.dataset.del!=='1');
+  if(!cards.length){toast(t('O Diário ainda está vazio.'),true);return}
+  const dia=c=>c.dataset.quando||_calChaveDoIso(c.dataset.dt)||'';
+  const hora=c=>c.dataset.quandoHora||(()=>{const d=new Date(c.dataset.dt);return isNaN(d)?'':String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')})();
+  cards.sort((a,b)=>(dia(a)+hora(a)+(a.dataset.dt||'')).localeCompare(dia(b)+hora(b)+(b.dataset.dt||'')));
+  let md='# '+(_mundoAtual().nome||t('Diário'))+'\n',ult='';
+  cards.forEach(c=>{
+    const k=dia(c);
+    if(k!==ult){ult=k;md+='\n## '+(k?_dioDataLonga(_calDaChave(k)):t('Sem dia'))+'\n'}
+    const txt=(c.querySelector('textarea')||(c._cchatEditor&&c._cchatEditor.querySelector('textarea')))?.value||'';
+    const lente=c.dataset.origemLente&&LENSES[c.dataset.origemLente]?' · '+LENSES[c.dataset.origemLente].label:'';
+    md+='\n**'+(hora(c)||'—')+lente+'**\n\n'+txt.trim()+'\n';
+  });
+  dl(md,'diario_'+_calChave(new Date())+'.md','text/markdown;charset=utf-8');
+  toast(t('Diário exportado: um arquivo com todos os dias.'));
+}
+// A primeira vez no Diário: a tela "só seu" aparece uma vez, quando nada mais
+// disputa a atenção (sem gravação, sem janela, sem aviso na tela).
+function _dioSoSeuPrimeira(tent){
+  if(!_mundoEhDiario()||_painelLer().diarioSoSeu)return;
+  tent=tent||0;if(tent>40)return;
+  const ocupado=(typeof isRec!=='undefined'&&isRec)||document.getElementById('toastWrap')?.classList.contains('on')
+    ||document.querySelector('.tx-overlay.on,#galaxia.on,#micOverlay.on,.overlay.on,#dioSoSeuOv,#dicaBalao');
+  if(ocupado){setTimeout(()=>_dioSoSeuPrimeira(tent+1),1500);return}
+  _dioSoSeuAbrir();
+}
+window.addEventListener('load',()=>setTimeout(()=>{try{_dioTopoPintar();setTimeout(_dioSoSeuPrimeira,2500)}catch(e){}},900));
 function _painelBotaoSinc(){const b=document.getElementById('btnPainel');if(b)b.hidden=!_mundoEhConsulta();_vozConsultaSinc()}
 function _painelBotao(){
   _maoParar();
