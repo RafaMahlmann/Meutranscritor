@@ -1937,6 +1937,14 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
    40px: o rótulo longo fica onde cabe (Lista, Documento) e vira o curto na
    grade — mesmo padrão de rótulo alternado que o badge do modo já usa. */
 .conversa-bar{display:flex;gap:6px;padding:8px 10px;background:var(--cat,transparent)}
+/* Super Diário: a faixa do Diário embaixo do texto (sempre à vista, diferente da conversa-bar) */
+.dio-bar{display:flex;gap:6px;flex-wrap:wrap;padding:2px 12px 8px}
+.card[data-origem-dt] .dio-bar,.card.proc-card .dio-bar{display:none}
+.dio-bt{display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:12.5px;font-weight:600;color:var(--text2);background:var(--bg-input);border:1px solid var(--border2,var(--border));border-radius:999px;padding:4px 11px;cursor:pointer;transition:transform .12s,border-color .15s}
+.dio-bt .svgi,.dio-bt svg{width:14px;height:14px}
+.dio-bt:hover{border-color:#c98a1c;color:var(--text)}
+.dio-bt:active{transform:scale(.95)}
+.dio-bt:focus-visible{outline:2px solid #c98a1c;outline-offset:2px}
 /* Encontro (consulta, reunião, entrevista): a conversa no centro */
 .card.encontro .spk-stats,.card.encontro .spk-rename-row{display:none}
 .enc-topo{padding:8px 14px 6px;display:flex;flex-direction:column;gap:7px;background:var(--cat,transparent)}
@@ -10041,7 +10049,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.17.2';
+const VOX_VERSION='2026.10.17.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11535,6 +11543,14 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Espelho, gratidão e o que ficou para amanhã":"Mirror, gratitude and what's left for tomorrow",
+"Gratidão":"Gratitude",
+"Três coisas boas do dia, com as suas palavras":"Three good things from the day, in your own words",
+"Para amanhã":"For tomorrow",
+"O que você disse que quer fazer, em caixinhas":"What you said you want to do, as checkboxes",
+"Este é o seu Diário. Toque no botão vermelho e conte como foi o dia, do jeito que vier: a fala vira texto e já fica guardada no dia de hoje, no Calendário. Depois, toque em {l}, embaixo do texto.":"This is your Journal. Tap the red button and tell how your day went, however it comes out: your speech becomes text and is already saved on today, in the Calendar. Then tap {l}, below the text.",
+"Abre onde você parou e grava no último modo usado.":"Opens where you left off and records in the last mode you used.",
+"O jeito marcado já vem pronto para este mundo. Dá pra escolher outro.":"The marked way is already set up for this world. You can pick another.",
 "Para que serve cada etiqueta":"What each label is for",
 "Como usar a estrela":"How to use the star",
 "Como usar o rabisco":"How to use the scribble",
@@ -15473,7 +15489,7 @@ function _1aCardBoasVindas(m,p){
   const abertura={
     reunioes:'Este é o Mural de {x}. Grave a próxima reunião no botão vermelho: a fala vira texto sozinha. Depois, a lente {l} ajuda a separar o que foi decidido do que ficou pra fazer.',
     consultas:'Este é o seu consultório. Cada pessoa que você atende tem uma pasta com ficha, e cada consulta gravada vira uma sessão dela. Quando a gravação termina, o Vox pergunta de quem é.',
-    diario:'Este é o Mural de {x}. Toque no botão vermelho e conte como foi o dia, do jeito que vier: a fala vira texto sozinha. Depois, experimente a lente {l}.',
+    diario:'Este é o seu Diário. Toque no botão vermelho e conte como foi o dia, do jeito que vier: a fala vira texto e já fica guardada no dia de hoje, no Calendário. Depois, toque em {l}, embaixo do texto.',
     aulas:'Este é o Mural de {x}. Grave a aula ou o que você estudou no botão vermelho: a fala vira texto sozinha. Depois, a lente {l} transforma o texto em cartões de estudo.'
   }[sid]||(m.mundo===VOX_MUNDO_RAIZ||_mundoAtivo===VOX_MUNDO_RAIZ
     ?'Aqui é o seu Mural. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque numa lente (os botões coloridos da nota) pra transformar o texto. Comece pela lente {l}.'
@@ -24793,6 +24809,7 @@ function _calTirarDoDia(cid){
   // horário que ninguém mais vê.
   const antes={q:card.dataset.quando,h:card.dataset.quandoHora,d:card.dataset.quandoDur};
   delete card.dataset.quando;delete card.dataset.quandoHora;delete card.dataset.quandoDur;
+  if(_mundoEhDiario()){const o=_dioLer(card);o.fora=1;_dioGravar(card,o)}
   saveHistory();
   _calPintar();
   // Nada some no Vox sem volta — e tirar do dia é justamente o gesto que a
@@ -25002,6 +25019,7 @@ function _restaurarEtiqueta(id,it){
     if(it.origem.lente)el.dataset.origemLente=String(it.origem.lente);
   }
   if(el&&Array.isArray(it.depende)&&it.depende.length)el.dataset.depende=JSON.stringify(it.depende.map(String).slice(0,40));
+  if(el&&it.diario&&typeof it.diario==='object'&&!Array.isArray(it.diario))el.dataset.diario=JSON.stringify(it.diario);
   if(el&&it.encontro&&typeof it.encontro==='object'&&!Array.isArray(it.encontro)){el.dataset.encontro=JSON.stringify(it.encontro);_encRefresh(id)}
   if(el&&el.dataset.origemDt)_notaFaixaSinc(el);
 }
@@ -26685,8 +26703,14 @@ const LENTES_ENTREVISTA=[
       return r.length?'Para cada pergunta do roteiro abaixo, escreva a pergunta em negrito e, embaixo, um resumo fiel da resposta (ou "não respondida"):\n'+r.map((x,i)=>(i+1)+'. '+x).join('\n')
         :'Liste as perguntas feitas na entrevista em negrito e, embaixo de cada uma, um resumo fiel da resposta.'}}
 ];
+const LENTES_DIARIO=[
+  {k:'di_gratidao',nome:'Gratidão',desc:'Três coisas boas do dia, com as suas palavras',
+    p:'Encontre no texto até três coisas boas do dia (pessoas, momentos, pequenas vitórias). Liste cada uma com um título curto em negrito e, embaixo, a frase da própria pessoa que fala disso, entre aspas. Se o texto não trouxer nenhuma, diga isso com gentileza, sem inventar.'},
+  {k:'di_amanha',nome:'Para amanhã',desc:'O que você disse que quer fazer, em caixinhas',
+    p:'Liste só o que a pessoa disse que quer ou precisa fazer depois, cada item como tarefa "- [ ] " curta, no imperativo. Não invente tarefas. Se não houver nenhuma, responda apenas: Nada para amanhã neste dia.'}
+];
 function _tipoLentesRegistrar(){
-  Object.keys(LENSES).filter(k=>k.startsWith('of_')||k.startsWith('en_')).forEach(k=>delete LENSES[k]);
+  Object.keys(LENSES).filter(k=>k.startsWith('of_')||k.startsWith('en_')||k.startsWith('di_')).forEach(k=>delete LENSES[k]);
   const m=_mundosLista().find(x=>x.id===_mundoAtivo),tipo=m&&m.tipo;
   const reg=(lista,cat,titulo,desc,cor)=>{
     LENS_CATS[cat]={title:titulo,desc,color:cor};
@@ -26696,6 +26720,13 @@ function _tipoLentesRegistrar(){
   };
   if(tipo==='oficina')reg(LENTES_OFICINA,'oficina','Oficina','Pedido pra IA, bug, regra, decisão, changelog','#6a3fc2');
   if(tipo==='entrevista')reg(LENTES_ENTREVISTA,'entrevista','Entrevista','Pergunta e resposta, aspas, perfil, temas','#d9480f');
+  if(_mundoEhDiario()){
+    reg(LENTES_DIARIO,'diario','Diário','Espelho, gratidão e o que ficou para amanhã','#c98a1c');
+    // O Espelho entra no grupo do Diário, e o grupo sobe para o topo da lista.
+    if(LENSES.espelho)LENSES.espelho.cat='diario';
+    const resto=Object.assign({},LENS_CATS);Object.keys(LENS_CATS).forEach(k=>delete LENS_CATS[k]);
+    LENS_CATS.diario=resto.diario;delete resto.diario;Object.assign(LENS_CATS,resto);
+  }
 }
 // Oficina recém-criada: nasce com as pastas do jeito de trabalhar (a de "Prompts" incluída).
 function _oficinaSemente(){
@@ -27093,10 +27124,10 @@ function toggleDiarQuick(){
   const hasKey=cfg.apiKeyGladia||cfg.apiKeyAssembly||cfg.apiKeyPyannote||(cfg.diarProvider==='openai'&&cfg.apiKey);
   if(!cfg.diarEnabled){
     if(!hasKey){openModalToDiar();return} // sem chave → abre setup na aba certa
-    cfg.diarEnabled=true;localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+    cfg.diarEnabled=true;localStorage.setItem('vox_cfg',JSON.stringify(cfg));_diarioVozesEscolha(true);
     updateDiarStatus();toast(t('🔮 Diarização ativada'));
   }else{
-    cfg.diarEnabled=false;localStorage.setItem('vox_cfg',JSON.stringify(cfg));
+    cfg.diarEnabled=false;localStorage.setItem('vox_cfg',JSON.stringify(cfg));_diarioVozesEscolha(false);
     updateDiarStatus();toast(t('🔮 Diarização desativada'));
   }
 }
@@ -31805,7 +31836,9 @@ function saveHistory(){
      Esta linha vale mais que o resto do cofre inteiro. */
   if(_mundoTrancado(_mundoAtivo)&&!_cofreChave)return;
   const items=[];
+  const dio=_mundoEhDiario();
   document.querySelectorAll('.card:not(.proc-card)').forEach(c=>{
+    _diarioDatar(c,dio);
     // Com o Modo Conversa aberto, o editor do card mora DENTRO da tela da
     // conversa (c._cchatEditor), não no card. Sem procurar lá, o card era
     // pulado: qualquer salvamento nesse meio-tempo tirava a nota original do
@@ -31855,6 +31888,7 @@ function saveHistory(){
       // Dependência (plano 30, lote 3): os dt das notas que vêm ANTES desta
       // ("Depende de:"). Viaja junto no backup e na transferência entre mundos.
       // O que é do encontro (vozes de fora, marcas, rabiscos, capítulos, revisão).
+      ...(c.dataset.diario?{diario:(()=>{try{return JSON.parse(c.dataset.diario)}catch(e){return undefined}})()}:{}),
       ...(c.dataset.encontro?{encontro:(()=>{try{return JSON.parse(c.dataset.encontro)}catch(e){return undefined}})()}:{}),
       ...(c.dataset.depende?{depende:(()=>{try{const a=JSON.parse(c.dataset.depende);return Array.isArray(a)?a:[]}catch(e){return []}})()}:{})
     };
@@ -40298,6 +40332,52 @@ function _mundoEhConsulta(){
   const m=_mundosLista().find(x=>x.id===_mundoAtivo);
   return !!(m&&m.tipo==='consulta')||(_mundoAtivo===VOX_MUNDO_RAIZ&&!!_painelLer().oficio);
 }
+// ── Super Diário, proposta 1 (17/10/2026): o Diário vira Diário de verdade ──
+// Mundo nascido do planeta Diário ganha tipo:'diario'. Mundo antigo, nascido
+// antes disso, só tem sid:'diario' e vale igual. O mundo nunca muda sem
+// recarregar a página, então a resposta fica guardada.
+var _dioEh=null;
+function _mundoEhDiario(){
+  if(_dioEh===null){const m=_mundosLista().find(x=>x.id===_mundoAtivo);_dioEh=!!(m&&(m.tipo==='diario'||(!m.tipo&&m.sid==='diario')))}
+  return _dioEh;
+}
+// O que é do Diário em cada nota (tirada do dia, e depois humor e selo) mora num
+// campo só, dataset.diario, que só existe quando tem algo.
+function _dioLer(c){try{const o=JSON.parse(c.dataset.diario||'{}');return o&&typeof o==='object'&&!Array.isArray(o)?o:{}}catch(e){return {}}}
+function _dioGravar(c,o){
+  Object.keys(o).forEach(k=>{if(o[k]===undefined||o[k]===null||o[k]==='')delete o[k]});
+  if(Object.keys(o).length)c.dataset.diario=JSON.stringify(o);else delete c.dataset.diario;
+}
+// No Diário cada nota mora no dia (e na hora) em que nasceu, sem arrastar. Quem
+// tira a nota do dia de propósito (fora:1) é respeitado: ela não volta sozinha.
+function _diarioDatar(c,dio){
+  if(!(dio===undefined?_mundoEhDiario():dio)||!c||c.dataset.quando||c.dataset.del==='1'||_dioLer(c).fora)return false;
+  const d=new Date(c.dataset.dt||'');if(isNaN(d))return false;
+  c.dataset.quando=_calChave(d);
+  c.dataset.quandoHora=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return true;
+}
+// Num diário só você fala: "Separar vozes" começa desligado aqui, sem mexer na
+// escolha dos outros mundos. A chave vox_diar_devolver (global) lembra de religar
+// ao sair. Se a pessoa liga de propósito neste diário, vale a escolha dela.
+function _diarioVozesAoIniciar(){
+  try{
+    const salvar=()=>{localStorage.setItem('vox_cfg',JSON.stringify(cfg));updateDiarStatus()};
+    if(_mundoEhDiario()){
+      if(_painelLer().diarioVozes)return;
+      if(cfg.diarEnabled){cfg.diarEnabled=false;VOX_LS.set('vox_diar_devolver','1');salvar()}
+    }else if(VOX_LS.get('vox_diar_devolver')==='1'){
+      VOX_LS.rem('vox_diar_devolver');
+      if(!cfg.diarEnabled){cfg.diarEnabled=true;salvar()}
+    }
+  }catch(e){}
+}
+function _diarioVozesEscolha(on){
+  if(!_mundoEhDiario())return;
+  _painelGravar({diarioVozes:!!on});
+  if(on){try{VOX_LS.rem('vox_diar_devolver')}catch(e){}}
+}
+window.addEventListener('load',()=>setTimeout(_diarioVozesAoIniciar,700));
 function _painelBotaoSinc(){const b=document.getElementById('btnPainel');if(b)b.hidden=!_mundoEhConsulta();_vozConsultaSinc()}
 function _painelBotao(){
   _maoParar();
@@ -41044,6 +41124,8 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
     el.dataset.quando=_calDiaProxCard;
     if(_calHoraProxCard)el.dataset.quandoHora=_calHoraProxCard;
   }
+  // Exceção do Diário (Super Diário, proposta 1): lá o mundo inteiro é "dia por dia".
+  if(save)_diarioDatar(el);
   if(chAberto){chHeaderOpenCards.add(id);chFooterOpenCards.add(id);}
 
   el.innerHTML=`
@@ -41123,7 +41205,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       <div class="cb">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
         <div class="md-preview" id="mdp-${id}" style="display:none"></div>
-      </div>
+      </div>${_mundoEhDiario()?`<div class="dio-bar"><button type="button" class="dio-bt dio-espelho" onclick="runLens('${id}','espelho')" title="${t('Como você pensa: padrões, contradições e convicções')}">${ICO.eye}<span>${t('Espelho')}</span></button></div>`:''}
       ${tagsHtml}
       <div class="cf">
         <span id="cf-${id}">${wc} ${t('car.')} · ${ww} ${t('pal.')}</span>
@@ -44739,7 +44821,7 @@ function adotarSugestao(sid){
 /* O que o mundo nasce sendo, venha a sugestao do "Usar este" ou da primeira
    entrada no ceu: sem o tipo, Consultas nascia sem Painel nem ficha. */
 function _sugExtra(sid){
-  var tipo={consultas:'consulta',entrevistas:'entrevista',oficina:'oficina'}[sid];
+  var tipo={consultas:'consulta',entrevistas:'entrevista',oficina:'oficina',diario:'diario'}[sid];
   if(sid==='oficina'){try{VOX_LS.set('vox_oficina_nova','1')}catch(e){}}
   return tipo?{sid:sid,tipo:tipo}:{sid:sid};
 }
@@ -44967,7 +45049,7 @@ function criar(){
   /* Veio de um modelo da bancada: o mundo nasce com o jeito dele (perfil, tipo). */
   var sid=_bancadaSid,extra=null;
   if(sid){
-    var tipo={consultas:'consulta',entrevistas:'entrevista',oficina:'oficina'}[sid];
+    var tipo={consultas:'consulta',entrevistas:'entrevista',oficina:'oficina',diario:'diario'}[sid];
     extra=tipo?{sid:sid,tipo:tipo}:{sid:sid};
     var pf=ABRE_PERFIL_DA_SUGESTAO[sid];
     if(pf){try{VOX_LS.set('vox_perfil_novo',pf)}catch(e){}}
@@ -44985,9 +45067,11 @@ function _1aMarcado(w){
   if(_1aEscolhidos[w.id])return _1aEscolhidos[w.id];
   return (w.sug&&ABRE_PERFIL_DA_SUGESTAO[w.sid])||'jeito';
 }
-function _1aBotao(w,pid,marcado){
+function _1aBotao(w,pid,marcado,outroMarcado){
   var p=_abrePerfil(pid);if(!p)return '';
-  var desc=pid==='jeito'?t('Na dúvida, este. Abre onde você parou e grava no último modo usado.'):t(p.desc);
+  /* Com o jeito da sugestão marcado, o "Do meu jeito" não pode dizer "na dúvida, este":
+     seriam duas recomendações na mesma ficha (achado do jogador leigo, 17/10/2026). */
+  var desc=pid==='jeito'?(outroMarcado?t('Abre onde você parou e grava no último modo usado.'):t('Na dúvida, este. Abre onde você parou e grava no último modo usado.')):t(p.desc);
   return '<button type="button" class="d1a-jeito'+(marcado?' on':'')+'" data-mundo="'+esc(w.id)+'" data-perfil="'+esc(pid)+'"'
     +' aria-label="'+esc(t('Entrar em {x}, jeito {p}').replace('{x}',w.nome).replace('{p}',t(p.nome)))+'">'
     +'<b>'+esc(t(p.nome))+(marcado?'<i>'+esc(t('marcado'))+'</i>':'')+'</b>'
@@ -45004,8 +45088,8 @@ function _1aFicha(w){
     +'<div class="dd">'+esc(raiz?t('Um lugar pra tudo. Na dúvida, comece aqui.'):w.desc)+'</div>'
     +(raiz?'<div class="dm">'+esc(t('Vazio, esperando a primeira nota'))+'</div>':'')
     +'<div class="d1a-q" aria-live="polite">'+esc(tit)+'</div>'
-    +'<div class="d1a-sub">'+esc(t('Não tem resposta errada. Na dúvida, escolha Do meu jeito e vá usando.'))+'</div>'
-    +princ.map(function(id){return _1aBotao(w,id,id===marc)}).join('')
+    +'<div class="d1a-sub">'+esc(marc!=='jeito'?t('O jeito marcado já vem pronto para este mundo. Dá pra escolher outro.'):t('Não tem resposta errada. Na dúvida, escolha Do meu jeito e vá usando.'))+'</div>'
+    +princ.map(function(id){return _1aBotao(w,id,id===marc,marc!=='jeito')}).join('')
     +'<details class="d1a-mais"><summary>'+esc(raiz?t('Já sei como vou usar'):t('Outro jeito'))+'</summary>'
     +resto.map(function(id){return _1aBotao(w,id,false)}).join('')+'</details>'
     +'<div class="dnota">'+esc(t('Dá pra trocar depois, em Configurações.'))+'</div>';
