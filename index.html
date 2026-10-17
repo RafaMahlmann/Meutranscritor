@@ -1960,6 +1960,25 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .dio-trilhas button{font:inherit;font-size:12px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);border-radius:999px;padding:3px 10px;cursor:pointer}
 .dio-trilhas button.on{background:rgba(201,138,28,.14);border-color:#c98a1c;color:#a8700f}
 .dio-trilhas button:focus-visible{outline:2px solid #c98a1c;outline-offset:2px}
+.dio-abajur{position:fixed;inset:0;z-index:9990;display:none;align-items:center;justify-content:center;background:radial-gradient(120% 90% at 50% 18%,#22303a 0%,#0d1418 70%);color:#c9d6dc;padding:max(20px,env(safe-area-inset-top,0px)) 16px max(20px,env(safe-area-inset-bottom,0px))}
+.dio-abajur.on{display:flex;animation:daEntra .6s ease-out}
+@keyframes daEntra{from{opacity:0}to{opacity:1}}
+.da-wrap{width:min(640px,100%);display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
+.da-sub{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:#7f949e}
+.da-rec{width:8px;height:8px;border-radius:50%;background:#e5484d;animation:daPulso 2.6s ease-in-out infinite}
+@keyframes daPulso{0%,100%{opacity:1}50%{opacity:.45}}
+.da-q{margin:0;font-size:clamp(22px,4.6vw,32px);font-weight:700;line-height:1.25;color:#eef4f6;text-wrap:balance}
+.da-q-livre{font-weight:600;color:#c9d6dc}
+.da-onda{width:min(560px,100%);height:110px}
+.da-mut{font-size:13px;color:#7f949e}
+.da-bts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.da-bt{font:inherit;font-size:15px;font-weight:700;border-radius:999px;padding:12px 22px;border:1px solid #33454f;background:transparent;color:#d7e3e8;cursor:pointer;min-height:48px}
+.da-bt.da-p{background:#eef4f6;border-color:#eef4f6;color:#0d1418}
+.da-bt:focus-visible,.da-link:focus-visible{outline:2px solid #8fd3d8;outline-offset:3px}
+.da-marcas{min-height:18px;color:#f0b24a;letter-spacing:4px}
+.da-pe{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.da-link{font:inherit;font-size:13px;color:#7f949e;background:none;border:0;cursor:pointer;padding:6px}
+@media (prefers-reduced-motion:reduce){.dio-abajur.on{animation:none}.da-rec{animation:none}}
 .dio-qc{margin:2px 16px 0;font-size:13px;font-style:italic;color:#a8700f}
 .dio-qc[hidden]{display:none}
 @media (max-width:560px){.dio-perg{grid-template-columns:1fr}.dio-falar{grid-column:1;grid-row:auto;justify-self:start}}
@@ -10098,7 +10117,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.17.5';
+const VOX_VERSION='2026.10.17.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11592,6 +11611,17 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Gravando no Diário":"Recording in the Journal",
+"de manhã":"in the morning",
+"à tarde":"in the afternoon",
+"à noite":"in the evening",
+"Conte como foi, do jeito que vier.":"Tell how it went, however it comes out.",
+"silêncio também vale · pense à vontade":"silence is fine too · take your time",
+"Isso importa":"This matters",
+"Tela do diário":"Journal screen",
+"Pronto: no Diário a gravação fica só na pílula. Dá para voltar em Só seu.":"Done: in the Journal, recording stays in the pill only. You can turn it back on in Just yours.",
+"Tela calma ao gravar":"Calm screen while recording",
+"A tela escurece como um abajur, com a pergunta e a onda da sua voz.":"The screen dims like a lamp, with the question and the wave of your voice.",
 "O que faria hoje valer a pena?":"What would make today worth it?",
 "Como você acordou, de verdade?":"How did you really wake up today?",
 "O que está na sua cabeça agora?":"What's on your mind right now?",
@@ -35580,7 +35610,7 @@ function _encGravNova(){
   const b=document.getElementById('vuMarcaBtn');if(b)b.hidden=false;
 }
 function _encGravFim(){
-  document.getElementById('encMarcaPop')?.remove();_encTelaFechar();
+  document.getElementById('encMarcaPop')?.remove();_encTelaFechar();_dioTelaFechar();
   if(_encGrav&&(_encGrav.marcas.length||_encGrav.rabiscos.length))_encPendente={..._encGrav,em:Date.now()};
   if(_dioPendente)_dioPendente.em=Date.now();
   _encGrav=null;
@@ -35659,6 +35689,7 @@ function _encAjuda(qual){
 let _encTelaT=null;
 function _encTelaLigada(){return _painelCfg().telaAtendimento!==false}
 function _encTelaAbrir(){
+  if(isRec&&_encGrav&&_mundoEhDiario()){_dioTelaAbrir();return}
   if(!isRec||!_encGrav||!_ENC_MODOS.includes(_encGrav.modo)||!_encTelaLigada())return;
   let ov=document.getElementById('encOv');
   if(!ov){ov=document.createElement('div');ov.id='encOv';ov.className='enc-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',t('Tela de atendimento'));document.body.appendChild(ov)}
@@ -35732,6 +35763,7 @@ function _encTelaNunca(){
   toast(t('Pronto: a gravação fica só na pílula. Dá para voltar em Personalizar.'));
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('encOv')?.classList.contains('on')){e.preventDefault();_encTelaMinimizar()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('dioOv')?.classList.contains('on')){e.preventDefault();_dioTelaMinimizar()}});
 // O card que nasce da gravação recebe as marcas (e os rabiscos) dela.
 function _encAplicarPendente(id){
   _dioAplicarPendente(id);
@@ -40551,6 +40583,89 @@ function _dioCardSinc(c){
   const o=_dioLer(c);
   q.hidden=!o.perg;q.textContent=o.perg?'“'+o.perg+'”':'';
 }
+// ── Super Diário, proposta 3: a tela do diário (o abajur) ──
+// Gravar no Diário escurece a tela como um abajur: a pergunta no alto, a onda
+// da voz respirando e dois botões claros. Sem relógio grande e sem o texto
+// aparecendo ao vivo, porque falar sozinho não precisa de plateia. Liga pelo
+// mesmo gancho da tela de atendimento (por cima da gravação, sem tocar no motor).
+var _dioOndaRaf=0;
+function _dioTelaLigada(){return _painelLer().diarioTela!==false}
+function _dioTelaAbrir(){
+  if(!isRec||!_dioTelaLigada())return;
+  let ov=document.getElementById('dioOv');
+  if(!ov){ov=document.createElement('div');ov.id='dioOv';ov.className='dio-abajur';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',t('Gravando no Diário'));document.body.appendChild(ov)}
+  const d=new Date(),mom={manha:t('de manhã'),tarde:t('à tarde'),noite:t('à noite')}[_dioMomento(d)];
+  let dia='';try{dia=_calMaiuscula(d.toLocaleDateString(getLocale(),{weekday:'long'}))}catch(e){}
+  const perg=(_dioPendente&&_dioPendente.perg)||_dioPergAtual||'';
+  ov.innerHTML=`<div class="da-wrap">
+    <span class="da-sub"><i class="da-rec" aria-hidden="true"></i>${escHtml(t('Diário'))} · ${escHtml(dia)} ${escHtml(mom)}</span>
+    ${perg?`<p class="da-q">${escHtml(perg)}</p>`:`<p class="da-q da-q-livre">${escHtml(t('Conte como foi, do jeito que vier.'))}</p>`}
+    <canvas class="da-onda" id="dioOnda" width="600" height="120" aria-hidden="true"></canvas>
+    <span class="da-mut" id="dioOndaTx">${escHtml(t('silêncio também vale · pense à vontade'))}</span>
+    <div class="da-bts">
+      <button type="button" class="da-bt" id="dioImporta" onclick="_dioImporta()">★ ${escHtml(t('Isso importa'))}</button>
+      <button type="button" class="da-bt da-p" onclick="stopRec()">${escHtml(t('Parar e guardar'))}</button>
+    </div>
+    <span class="da-marcas" id="dioMarcas" aria-live="polite"></span>
+    <div class="da-pe"><button type="button" class="da-link" onclick="_dioTelaNunca()">${escHtml(t('Não abrir esta tela'))}</button><button type="button" class="da-link" onclick="_dioTelaMinimizar()">↧ ${escHtml(t('Minimizar'))}</button></div>
+  </div>`;
+  ov.classList.add('on');document.body.classList.add('enc-tela-on');document.getElementById('encVolta')?.remove();
+  try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}
+  _dioOndaLigar();
+  ov.querySelector('.da-p').focus();
+}
+// A onda: o nível da voz (o mesmo analisador do medidor da pílula), suavizado.
+// Depois de 3 s de silêncio vira um fio que respira, sem número nenhum.
+function _dioOndaLigar(){
+  cancelAnimationFrame(_dioOndaRaf);
+  const cv=document.getElementById('dioOnda');if(!cv)return;
+  const g=cv.getContext('2d'),buf=new Uint8Array(512),reduz=_voxReduzMov();
+  let nivel=0,quieto=0,ult=0,fase=0;
+  const passo=ts=>{
+    if(!document.getElementById('dioOv')?.classList.contains('on')||!isRec)return;
+    _dioOndaRaf=requestAnimationFrame(passo);
+    if(ts-ult<(reduz?250:33))return;
+    const dt=ult?ts-ult:33;ult=ts;
+    let rms=0;
+    if(analyser){try{analyser.getByteTimeDomainData(buf);let sm=0;for(let i=0;i<buf.length;i++){const v=(buf[i]-128)/128;sm+=v*v}rms=Math.sqrt(sm/buf.length)}catch(e){}}
+    nivel+=(Math.min(1,rms*4)-nivel)*0.25;
+    quieto=nivel<0.04?quieto+dt:0;
+    const W=cv.width,H=cv.height;g.clearRect(0,0,W,H);
+    g.lineCap='round';g.strokeStyle='#8fd3d8';
+    if(reduz){g.globalAlpha=.85;g.lineWidth=6;g.beginPath();g.moveTo(W*.1,H/2);g.lineTo(W*.1+W*.8*Math.max(.04,nivel),H/2);g.stroke();return}
+    fase+=dt*0.004;
+    const amp=quieto>3000?3+2*Math.sin(ts/900):6+nivel*H*0.4;
+    [[1,5,1],[.35,2.5,1.6]].forEach(([al,lw,k])=>{
+      g.globalAlpha=al;g.lineWidth=lw;g.beginPath();
+      for(let x=0;x<=W;x+=6){const y=H/2+Math.sin(x/W*Math.PI*4*k+fase*k)*amp*Math.sin(x/W*Math.PI);x?g.lineTo(x,y):g.moveTo(x,y)}
+      g.stroke();
+    });
+  };
+  _dioOndaRaf=requestAnimationFrame(passo);
+}
+function _dioImporta(){
+  _encMarcar('Importante');
+  const b=document.getElementById('dioImporta');if(b&&!_voxReduzMov())b.animate([{transform:'scale(1)'},{transform:'scale(1.12)'},{transform:'scale(.96)'},{transform:'scale(1)'}],{duration:320,easing:'cubic-bezier(.34,1.56,.64,1)'});
+  const m=document.getElementById('dioMarcas');if(m&&_encGrav)m.textContent='★'.repeat(Math.min(_encGrav.marcas.length,12));
+}
+function _dioTelaFechar(){
+  cancelAnimationFrame(_dioOndaRaf);
+  const ov=document.getElementById('dioOv');if(ov){ov.classList.remove('on');ov.innerHTML=''}
+  if(!document.getElementById('encOv')?.classList.contains('on'))document.body.classList.remove('enc-tela-on');
+  if(document.getElementById('encVolta')?.dataset.dio)document.getElementById('encVolta').remove();
+}
+function _dioTelaMinimizar(){
+  cancelAnimationFrame(_dioOndaRaf);
+  document.getElementById('dioOv')?.classList.remove('on');document.body.classList.remove('enc-tela-on');
+  if(!isRec)return;
+  const b=document.createElement('button');b.type='button';b.id='encVolta';b.className='enc-volta';b.dataset.dio='1';b.textContent='⤢ '+t('Tela do diário');
+  b.onclick=()=>{b.remove();_dioTelaAbrir()};document.body.appendChild(b);
+}
+function _dioTelaNunca(){
+  _painelGravar({diarioTela:false});
+  _dioTelaMinimizar();document.getElementById('encVolta')?.remove();
+  toast(t('Pronto: no Diário a gravação fica só na pílula. Dá para voltar em Só seu.'));
+}
 // ── Super Diário, proposta 8: só seu, e você vê que é ──
 // O que é do Diário na configuração do mundo (vox_painel, um por mundo):
 // diarioIA (false = sem IA de texto), diarioHumor ('5' carinhas, '3' cores, '0'
@@ -40580,6 +40695,8 @@ function _dioSoSeuAbrir(){
       <button type="button" class="dio-acao" data-a="senha">${escHtml(tranc?t('Gerenciar'):t('Trancar'))}</button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">✨</span><span class="dio-tx"><b>${escHtml(t('IA de texto no Diário'))}</b><small>${escHtml(t('Espelho, Gratidão, Para amanhã e Meu dia. Desligada, o Diário continua: o texto, o humor e o calendário não usam IA.'))}</small></span>
       <button type="button" class="dio-sw${ia?' on':''}" role="switch" aria-checked="${ia}" data-a="ia" aria-label="${escHtml(t('IA de texto no Diário'))}"><i></i></button></div>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🌙</span><span class="dio-tx"><b>${escHtml(t('Tela calma ao gravar'))}</b><small>${escHtml(t('A tela escurece como um abajur, com a pergunta e a onda da sua voz.'))}</small></span>
+      <button type="button" class="dio-sw${_dioTelaLigada()?' on':''}" role="switch" aria-checked="${_dioTelaLigada()}" data-a="tela" aria-label="${escHtml(t('Tela calma ao gravar'))}"><i></i></button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🎙️</span><span class="dio-tx"><b>${escHtml(t('O áudio não fica guardado'))}</b><small>${escHtml(t('A fala vira texto no serviço que você escolheu e o áudio vai embora. Fica só o texto, neste aparelho.'))}</small></span></div>
     <div class="dio-linha dio-col"><span class="dio-ic" aria-hidden="true">🙂</span><span class="dio-tx"><b>${escHtml(t('Como marcar o dia'))}</b><small>${escHtml(t('Ao fechar o dia, um toque diz como foi. Ele colore o calendário.'))}</small></span>
       <div class="dio-seg" role="radiogroup" aria-label="${escHtml(t('Como marcar o dia'))}">${humor.map(([v,r])=>`<button type="button" role="radio" aria-checked="${v===hm}" class="${v===hm?'on':''}" data-a="humor" data-v="${v}">${escHtml(r)}</button>`).join('')}</div></div>
@@ -40594,6 +40711,7 @@ function _dioSoSeuAbrir(){
     const a=b.dataset.a;
     if(a==='ia'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioIA:on});_dioTopoPintar();
       toast(on?t('IA ligada neste Diário.'):t('IA desligada neste Diário. Nada do que você fala aqui vai para a IA de texto.'))}
+    else if(a==='tela'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioTela:on})}
     else if(a==='humor'){_painelGravar({diarioHumor:b.dataset.v});ov.querySelectorAll('[data-a="humor"]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-checked',String(on))})}
     else if(a==='exportar')_dioExportar();
     else if(a==='senha'){fechar();_dioTrancar()}
