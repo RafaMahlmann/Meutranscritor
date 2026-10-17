@@ -2045,6 +2045,12 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .dio-padroes{margin:0;padding-left:18px;font-size:13.5px;color:var(--text2);display:flex;flex-direction:column;gap:4px}
 .dio-padroes-v{margin:0;font-size:13px;color:var(--text3);text-align:center}
 @media (prefers-reduced-motion:reduce){.dio-mos.acende .dio-cel.cheio{animation:none}}
+.dio-neste{flex:1 1 100%}
+.dio-neste-f{background:linear-gradient(180deg,rgba(240,178,74,.10),rgba(240,178,74,.04));border:1px solid rgba(201,138,28,.35);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;transform-origin:50% 50%;backface-visibility:hidden}
+.dio-neste .dio-k{color:#a8700f}
+.dio-neste q{font-size:14.5px;font-style:italic;color:var(--text);line-height:1.45}
+.dio-neste-bts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.dio-neste-bts .dio-link{margin-left:auto}
 .dio-qc{margin:2px 16px 0;font-size:13px;font-style:italic;color:#a8700f}
 .dio-qc[hidden]{display:none}
 @media (max-width:560px){.dio-perg{grid-template-columns:1fr}.dio-falar{grid-column:1;grid-row:auto;justify-self:start}}
@@ -10183,7 +10189,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.17.8';
+const VOX_VERSION='2026.10.17.9';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11677,6 +11683,12 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Há 1 ano":"1 year ago",
+"Há 1 mês":"1 month ago",
+"Há 1 semana":"1 week ago",
+"Abrir o dia":"Open the day",
+"Responder ao eu de antes":"Answer your past self",
+"O que você diria hoje para o você de {d}?":"What would you say today to the you of {d}?",
 "Que bom te ouvir de novo.":"Good to hear from you again.",
 "dia falado":"day spoken",
 "dias falados":"days spoken",
@@ -40992,6 +41004,57 @@ function _dioPadroesHtml(D){
   if(!l.length)return `<p class="dio-padroes-v">${escHtml(t('Ainda sem padrão claro. Continue selando os dias.'))}</p>`;
   return `<ul class="dio-padroes">${l.map(([e,d])=>`<li>${escHtml((d>0?t('Nos dias com {e}, você sela mais leve.'):t('Nos dias com {e}, você sela mais pesado.')).replace('{e}',t(e)))}</li>`).join('')}</ul>`;
 }
+// ── Super Diário, proposta 7: neste dia ──
+// Ao abrir o Diário, quando existir, UM cartão: "Há 1 ano / 1 mês / 1 semana você
+// disse…", com uma frase da própria pessoa. Calculado no aparelho, sem IA.
+// "Depois" guarda para amanhã; "Responder ao eu de antes" grava um dia novo.
+var _dioNesteDia=null;
+function _dioFraseDe(c){
+  const tx=(c.querySelector('textarea')?.value||'').replace(/\s+/g,' ').trim();
+  const fr=(tx.match(/[^.!?…]+[.!?…]*/g)||[]).map(x=>x.trim()).filter(x=>x.split(' ').length>=5);
+  const f=fr.sort((a,b)=>Math.abs(a.length-110)-Math.abs(b.length-110))[0]||tx;
+  return f.length>200?f.slice(0,197).replace(/\s+\S*$/,'')+'…':f;
+}
+function _dioNesteDiaAchar(){
+  const hoje=new Date(),D=_dioDados();
+  const alvos=[[1,'ano'],[0,'mes'],[0,'semana']].map(([,q])=>{const d=new Date(hoje);if(q==='ano')d.setFullYear(d.getFullYear()-1);else if(q==='mes')d.setMonth(d.getMonth()-1);else d.setDate(d.getDate()-7);return [q,_calChave(d)]});
+  for(const [q,k] of alvos){
+    const x=D.dias[k];if(!x)continue;
+    const cs=x.ids.map(id=>document.getElementById(id)).filter(Boolean);
+    // Prefere a nota marcada como importante, depois a selada mais leve.
+    cs.sort((a,b)=>(_encLer(b).marcas||[]).length-(_encLer(a).marcas||[]).length||(_dioLer(b).humor||0)-(_dioLer(a).humor||0));
+    const c=cs[0];if(!c)continue;const f=_dioFraseDe(c);if(!f)continue;
+    return {q,k,id:c.id,f};
+  }
+  return null;
+}
+function _dioNesteDiaHtml(){
+  const hoje=_calChave(new Date());
+  if(_painelLer().diarioNesteDiaFora===hoje){_dioNesteDia=null;return ''}
+  const n=_dioNesteDia=_dioNesteDiaAchar();if(!n)return '';
+  const rot={ano:t('Há 1 ano'),mes:t('Há 1 mês'),semana:t('Há 1 semana')}[n.q];
+  let data='';try{data=_calDaChave(n.k).toLocaleDateString(getLocale(),{day:'numeric',month:'long'})}catch(e){}
+  return `<div class="dio-neste" data-q="${n.q}"><div class="dio-neste-f">
+    <span class="dio-k">${escHtml(rot)} · ${escHtml(data)}</span>
+    <q>${escHtml(n.f)}</q>
+    <div class="dio-neste-bts"><button type="button" class="dio-bt" onclick="_dioIrDia('${escJs(n.k)}')">${escHtml(t('Abrir o dia'))}</button><button type="button" class="dio-bt" onclick="_dioResponderAntes()">${escHtml(t('Responder ao eu de antes'))}</button><button type="button" class="dio-link" onclick="_dioNesteDiaDepois()">${escHtml(t('Depois'))}</button></div></div></div>`;
+}
+// O cartão vira do verso para a frente; no primeiro "há 1 ano", faíscas discretas.
+function _dioNesteDiaAnimar(){
+  const el=document.querySelector('#dioTopo .dio-neste-f');if(!el||_voxReduzMov())return;
+  const hoje=_calChave(new Date());if(_painelLer().diarioNesteVisto===hoje)return;
+  _painelGravar({diarioNesteVisto:hoje});
+  el.animate([{transform:'perspective(700px) rotateY(-180deg)',opacity:0},{transform:'perspective(700px) rotateY(-90deg)',opacity:.4,offset:.45},{transform:'perspective(700px) rotateY(0)',opacity:1}],{duration:480,easing:'cubic-bezier(.3,.7,.3,1)'});
+  if(_dioNesteDia&&_dioNesteDia.q==='ano'&&!_painelLer().diarioAniv){_painelGravar({diarioAniv:1});setTimeout(()=>{try{_telaFaiscas(el,['#f0b24a','#ef8a5c'])}catch(e){}},480)}
+}
+function _dioNesteDiaDepois(){_painelGravar({diarioNesteDiaFora:_calChave(new Date())});_dioTopoPintar()}
+function _dioResponderAntes(){
+  const n=_dioNesteDia;if(!n)return;
+  let quando='';try{quando=_calDaChave(n.k).toLocaleDateString(getLocale(),{day:'numeric',month:'long'})}catch(e){}
+  _dioPergAtual=t('O que você diria hoje para o você de {d}?').replace('{d}',quando);
+  const q=document.querySelector('#dioTopo .dio-q span');if(q)q.textContent=_dioPergAtual;
+  _dioResponder();
+}
 // ── Super Diário, proposta 8: só seu, e você vê que é ──
 // O que é do Diário na configuração do mundo (vox_painel, um por mundo):
 // diarioIA (false = sem IA de texto), diarioHumor ('5' carinhas, '3' cores, '0'
@@ -41007,8 +41070,9 @@ function _dioTopoPintar(){
   el.innerHTML=`<div class="dio-hoje"><span class="dio-k">${escHtml(t('Hoje'))}</span><b>${escHtml(_dioDataLonga(new Date()))}</b></div>
     <button type="button" class="dio-soseu${tranc?' on':''}" onclick="_dioSoSeuAbrir()" title="${escHtml(t('Senha, IA, humor e exportar'))}"><span aria-hidden="true">🔒</span>${escHtml(tranc?t('Trancado'):t('Só seu'))}</button>
     ${_dioColeHtml()}
+    ${_dioNesteDiaHtml()}
     ${_dioPergHtml()}`;
-  _dioColeAnimar();
+  _dioColeAnimar();_dioNesteDiaAnimar();
   el.hidden=false;
 }
 function _dioSoSeuAbrir(){
