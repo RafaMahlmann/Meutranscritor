@@ -84,6 +84,11 @@ function servidor() {
     await page.click('#btnRec'); await page.waitForTimeout(2500);
     ok(await ver(() => document.getElementById('encOv')?.classList.contains('on')), 'gravando uma consulta, abre a tela de atendimento');
     await foto('tela-atendimento');
+    // Não sabe para que serve a estrela: toca no "?" ao lado dela.
+    await page.click('#encOv .eo-linha .eo-q'); await page.waitForTimeout(400);
+    ok(await ver(() => document.querySelectorAll('#encAjudaOv .ea-q').length === 4 && isRec), 'o "?" da estrela explica as 4 etiquetas com exemplos, sem parar a gravação');
+    await foto('ajuda-estrela');
+    await page.click('#encAjudaOv .ea-ok'); await page.waitForTimeout(200);
     await page.click('#encMarcaBtn'); await page.waitForTimeout(400);
     await page.click('.eo-parar'); await page.waitForTimeout(9000);   // "Parar e guardar", na própria tela
     await foto('gravou');
