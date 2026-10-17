@@ -1979,6 +1979,31 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .da-pe{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
 .da-link{font:inherit;font-size:13px;color:#7f949e;background:none;border:0;cursor:pointer;padding:6px}
 @media (prefers-reduced-motion:reduce){.dio-abajur.on{animation:none}.da-rec{animation:none}}
+:root{--dh0:#9aa6ae;--dh1:#6f7f9e;--dh2:#93abd8;--dh3:#c9bf9c;--dh4:#f0b24a;--dh5:#ef8a5c}
+.dio-selo{margin:4px 10px 2px;padding:10px 8px;border:1px dashed var(--border2,var(--border));border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.dio-selo[hidden]{display:none}
+.dio-sk{font-size:12.5px;font-weight:700;color:var(--text2)}
+.dio-humores{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+.dio-humores button{width:34px;height:34px;border-radius:50%;border:2px solid transparent;background:var(--dc);font-size:17px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:transform .15s}
+.dio-humores button.on{border-color:var(--text);transform:scale(1.12)}
+.dio-humores button:focus-visible{outline:2px solid #c98a1c;outline-offset:2px}
+.dio-etq{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.dio-etq button{font:inherit;font-size:11.5px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text3);border-radius:999px;padding:2px 9px;cursor:pointer}
+.dio-etq button.on{background:rgba(201,138,28,.14);border-color:#c98a1c;color:#a8700f}
+.dio-segura{position:relative;overflow:hidden;font:inherit;font-size:13px;font-weight:700;color:var(--text);background:var(--bg-input);border:1px solid var(--border2,var(--border));border-radius:999px;padding:9px 18px;min-height:40px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none}
+.dio-segura i{position:absolute;inset:0;width:0;background:rgba(240,178,74,.38);transition:width .25s cubic-bezier(.34,1.56,.64,1)}
+.dio-segura.enchendo i{width:100%;transition:width .9s linear}
+.dio-segura span{position:relative}
+.dio-segura:focus-visible{outline:2px solid #c98a1c;outline-offset:2px}
+.dio-selado{flex-direction:row;justify-content:flex-start;border-style:solid;border-color:transparent;padding:4px 0}
+.dio-carimbo{flex:0 0 auto;width:62px;height:62px;border-radius:50%;border:3px double var(--dc);color:var(--dc);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-9deg);line-height:1.15}
+.dio-carimbo small{font-size:8.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.dio-carimbo b{font-size:18px}
+.dio-voo{position:fixed;z-index:10002;pointer-events:none;margin:0}
+.dio-etqs{display:flex;gap:4px;flex-wrap:wrap}
+.dio-etqs span{font-size:11px;font-weight:600;color:var(--text3);border:1px solid var(--border);border-radius:999px;padding:1px 8px}
+.dio-link{font:inherit;font-size:12px;color:var(--text3);background:none;border:0;cursor:pointer;margin-left:auto;text-decoration:underline}
+@media (prefers-reduced-motion:reduce){.dio-segura.enchendo i{transition:width .9s linear}.dio-humores button{transition:none}}
 .dio-qc{margin:2px 16px 0;font-size:13px;font-style:italic;color:#a8700f}
 .dio-qc[hidden]{display:none}
 @media (max-width:560px){.dio-perg{grid-template-columns:1fr}.dio-falar{grid-column:1;grid-row:auto;justify-self:start}}
@@ -10117,7 +10142,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.17.6';
+const VOX_VERSION='2026.10.17.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11611,6 +11636,24 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Pesado":"Heavy",
+"Difícil":"Hard",
+"Ok":"Okay",
+"Bom":"Good",
+"Leve":"Light",
+"trabalho":"work",
+"família":"family",
+"amigos":"friends",
+"exercício":"exercise",
+"descanso":"rest",
+"estudo":"study",
+"saúde":"health",
+"casa":"home",
+"Dia selado":"Day sealed",
+"selado":"sealed",
+"Como foi o dia?":"How was the day?",
+"Do que o dia teve":"What the day had",
+"Segure para selar":"Hold to seal",
 "Gravando no Diário":"Recording in the Journal",
 "de manhã":"in the morning",
 "à tarde":"in the afternoon",
@@ -40577,11 +40620,103 @@ function _dioAplicarPendente(id){
   _dioPendente=null;
   const o=_dioLer(c);if(p.perg)o.perg=p.perg;_dioGravar(c,o);_dioCardSinc(c);saveHistory();
 }
-// Pinta o que é do Diário dentro de um card (a pergunta, e depois o selo).
+// Pinta o que é do Diário dentro de um card (a pergunta e o selo).
 function _dioCardSinc(c){
-  const q=c&&c.querySelector('.dio-qc');if(!q)return;
-  const o=_dioLer(c);
-  q.hidden=!o.perg;q.textContent=o.perg?'“'+o.perg+'”':'';
+  if(!c)return;
+  const o=_dioLer(c),q=c.querySelector('.dio-qc');
+  if(q){q.hidden=!o.perg;q.textContent=o.perg?'“'+o.perg+'”':''}
+  _dioSeloPintar(c);
+}
+// ── Super Diário, proposta 4: selar o dia ──
+// Ao terminar, um toque diz como foi (cinco carinhas, três cores ou nada, como a
+// pessoa escolheu em Só seu) e segurar "Selar" fecha a página com um carimbo
+// na cor do humor. Pular também vale: a nota fica salva do mesmo jeito.
+// Só a nota de HOJE pergunta; nota antiga sem selo fica quieta.
+const DIO_HUMORES=[[1,'😞','Pesado','--dh1'],[2,'😕','Difícil','--dh2'],[3,'😐','Ok','--dh3'],[4,'🙂','Bom','--dh4'],[5,'😄','Leve','--dh5']];
+const DIO_ETQ=[['trabalho',/trabalh|reuni|chefe|escritóri|client|projet|\bwork|meeting|boss|office/i],
+  ['família',/\bmãe|\bpai\b|filh|irmã|irmão|famíli|marido|esposa|\bavó|\bavô|\bmom\b|\bdad\b|family|son\b|daughter|wife|husband/i],
+  ['amigos',/amig|festa|\bfriend|party/i],
+  ['exercício',/caminh|corri|correr|academi|trein|bike|nadar|nadei|yoga|\bwalk|\brun\b|\bgym|workout|swim/i],
+  ['descanso',/descans|dormi|sono|cochil|\brest|sleep|\bnap/i],
+  ['estudo',/estud|aula|prova|livro|curso|\bstud|class|exam|book/i],
+  ['saúde',/médic|\bdor\b|remédi|doente|saúde|terapi|doctor|pain|health|therap/i],
+  ['casa',/\bcasa\b|limpe|cozinh|faxin|\bhome\b|clean|cook/i]];
+function _dioHumorCor(h){return h?'var(--dh'+Math.min(5,Math.max(1,h))+')':'var(--dh0)'}
+function _dioHumorEmoji(h){const x=DIO_HUMORES.find(m=>m[0]===h);return x?x[1]:'✓'}
+function _dioEtqSugeridas(c){
+  const txt=(c.querySelector('textarea')?.value||'');
+  return DIO_ETQ.filter(([,re])=>re.test(txt)).map(([k])=>k).slice(0,3);
+}
+function _dioEhEntrada(c){return !!c&&!c.dataset.origemDt&&!(c.dataset.tags||'').split(',').includes(t('demo'))}
+function _dioSeloPintar(c){
+  const box=c.querySelector('.dio-selo');if(!box)return;
+  const o=_dioLer(c),hoje=_calChave(new Date()),id=c.id;
+  if(o.selado){
+    box.className='dio-selo dio-selado';box.hidden=false;
+    box.innerHTML=`<span class="dio-carimbo" style="--dc:${_dioHumorCor(o.humor)}" title="${escHtml(t('Dia selado'))}"><small>${escHtml(_dioSeloData(c))}</small><b aria-hidden="true">${_dioHumorEmoji(o.humor)}</b><small>${escHtml(t('selado'))}</small></span>
+      <span class="dio-etqs">${(o.etq||[]).map(e=>`<span>${escHtml(t(e))}</span>`).join('')}</span>
+      <button type="button" class="dio-link" onclick="_dioReabrir('${escJs(id)}')">${escHtml(t('Mudar'))}</button>`;
+    return;
+  }
+  if((c.dataset.quando!==hoje&&c.dataset.dioAberto!=='1')||!_dioEhEntrada(c)||c.dataset.type==='texto'&&!(c.querySelector('textarea')?.value||'').trim()){box.hidden=true;box.innerHTML='';return}
+  const modo=_dioHumorModo();
+  const humores=modo==='5'?DIO_HUMORES:modo==='3'?[DIO_HUMORES[0],DIO_HUMORES[2],DIO_HUMORES[4]]:[];
+  const sug=o.etq||_dioEtqSugeridas(c);
+  const etq=[...new Set(sug.concat(DIO_ETQ.map(e=>e[0])))].slice(0,6);
+  box.className='dio-selo';box.hidden=false;
+  box.innerHTML=`${humores.length?`<span class="dio-sk">${escHtml(t('Como foi o dia?'))}</span>
+    <div class="dio-humores" role="radiogroup" aria-label="${escHtml(t('Como foi o dia?'))}">${humores.map(([v,e,r])=>`<button type="button" role="radio" aria-checked="${o.humor===v}" aria-label="${escHtml(t(r))}" title="${escHtml(t(r))}" class="${o.humor===v?'on':''}" style="--dc:${_dioHumorCor(v)}" onclick="_dioHumor('${escJs(id)}',${v})">${modo==='3'?'':e}</button>`).join('')}</div>`:''}
+    <div class="dio-etq" aria-label="${escHtml(t('Do que o dia teve'))}">${etq.map(k=>`<button type="button" aria-pressed="${sug.includes(k)}" class="${sug.includes(k)?'on':''}" onclick="_dioEtq('${escJs(id)}','${escJs(k)}')">${escHtml(t(k))}</button>`).join('')}</div>
+    <button type="button" class="dio-segura" onpointerdown="_dioSeguraIni(event,'${escJs(id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_dioSelar('${escJs(id)}')}"><i aria-hidden="true"></i><span>${escHtml(t('Segure para selar'))}</span></button>`;
+}
+function _dioSeloData(c){try{return _calDaChave(c.dataset.quando||_calChaveDoIso(c.dataset.dt)).toLocaleDateString(getLocale(),{day:'numeric',month:'short'}).replace('.','').replace(' de ',' ')}catch(e){return ''}}
+function _dioHumor(id,v){
+  const c=document.getElementById(id);if(!c)return;
+  const o=_dioLer(c);o.humor=o.humor===v?undefined:v;if(!o.etq)o.etq=_dioEtqSugeridas(c);_dioGravar(c,o);saveHistory();_dioSeloPintar(c);
+  const b=c.querySelector('.dio-humores .on');if(b&&!_voxReduzMov())b.animate([{transform:'scale(.7)'},{transform:'scale(1.25)'},{transform:'scale(1.12)'}],{duration:420,easing:'cubic-bezier(.34,1.56,.64,1)'});
+  try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}
+}
+function _dioEtq(id,k){
+  const c=document.getElementById(id);if(!c)return;
+  const o=_dioLer(c),l=o.etq||_dioEtqSugeridas(c);
+  o.etq=l.includes(k)?l.filter(x=>x!==k):l.concat(k);_dioGravar(c,o);saveHistory();_dioSeloPintar(c);
+}
+// Segurar 900 ms enche o botão (o mesmo gesto do "segure para confirmar" do Vox).
+// Soltar antes desfaz em silêncio, sem bronca.
+var _dioSeguraT=null;
+function _dioSeguraIni(e,id){
+  const b=e.currentTarget;if(!b)return;
+  e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(er){}
+  b.classList.add('enchendo');
+  const solta=()=>{clearTimeout(_dioSeguraT);b.classList.remove('enchendo');b.removeEventListener('pointerup',solta);b.removeEventListener('pointercancel',solta);b.removeEventListener('lostpointercapture',solta)};
+  b.addEventListener('pointerup',solta);b.addEventListener('pointercancel',solta);b.addEventListener('lostpointercapture',solta);
+  clearTimeout(_dioSeguraT);_dioSeguraT=setTimeout(()=>{solta();_dioSelar(id)},900);
+}
+function _dioSelar(id){
+  const c=document.getElementById(id);if(!c)return;
+  const o=_dioLer(c);o.selado=new Date().toISOString();if(!o.etq)o.etq=_dioEtqSugeridas(c);
+  _dioGravar(c,o);saveHistory();_dioSeloPintar(c);
+  const st=c.querySelector('.dio-carimbo');
+  try{navigator.vibrate&&navigator.vibrate([8,40,14])}catch(e){}
+  if(st&&!_voxReduzMov()){
+    st.animate([{transform:'rotate(-9deg) scale(1.7)',opacity:0},{transform:'rotate(-9deg) scale(.94)',opacity:1,offset:.6},{transform:'rotate(-9deg) scale(1)'}],{duration:420,easing:'cubic-bezier(.34,1.56,.64,1)'});
+    // A página "voa" até o dia de hoje, no alto do Diário, que pulsa ao receber.
+    const alvo=document.querySelector('#dioTopo .dio-hoje');
+    if(alvo){setTimeout(()=>{
+      const r0=st.getBoundingClientRect(),r1=alvo.getBoundingClientRect();
+      const g=st.cloneNode(true);g.classList.add('dio-voo');g.style.left=r0.left+'px';g.style.top=r0.top+'px';document.body.appendChild(g);
+      g.animate([{transform:'translate(0,0) rotate(-9deg) scale(1)',opacity:1},{transform:`translate(${r1.left+20-r0.left}px,${r1.top-r0.top}px) rotate(-9deg) scale(.35)`,opacity:.2}],{duration:560,easing:'cubic-bezier(.5,0,.2,1)'}).onfinish=()=>{g.remove();alvo.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:320,easing:'cubic-bezier(.34,1.56,.64,1)'})};
+    },460)}
+  }
+  document.dispatchEvent(new CustomEvent('vox-dio-selou',{detail:{id}}));
+}
+function _dioReabrir(id){
+  const c=document.getElementById(id);if(!c)return;
+  const o=_dioLer(c);delete o.selado;_dioGravar(c,o);saveHistory();
+  // Nota antiga reaberta também pode mudar o humor: o selo volta a perguntar ali mesmo.
+  const box=c.querySelector('.dio-selo');
+  if(c.dataset.quando!==_calChave(new Date())&&box){c.dataset.dioAberto='1'}
+  _dioSeloPintar(c);
 }
 // ── Super Diário, proposta 3: a tela do diário (o abajur) ──
 // Gravar no Diário escurece a tela como um abajur: a pergunta no alto, a onda
@@ -41504,6 +41639,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   }
   // Exceção do Diário (Super Diário, proposta 1): lá o mundo inteiro é "dia por dia".
   if(save)_diarioDatar(el);
+  if(_mundoEhDiario())setTimeout(()=>_dioCardSinc(el),0);
   if(chAberto){chHeaderOpenCards.add(id);chFooterOpenCards.add(id);}
 
   el.innerHTML=`
@@ -41583,7 +41719,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       <div class="cb">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
         <div class="md-preview" id="mdp-${id}" style="display:none"></div>
-      </div>${_mundoEhDiario()?`<div class="dio-bar"><button type="button" class="dio-bt dio-espelho" onclick="runLens('${id}','espelho')" title="${t('Como você pensa: padrões, contradições e convicções')}">${ICO.eye}<span>${t('Espelho')}</span></button></div>`:''}
+      </div>${_mundoEhDiario()&&!tags.includes(t('demo'))?`<div class="dio-selo" id="dsel-${id}"></div><div class="dio-bar"><button type="button" class="dio-bt dio-espelho" onclick="runLens('${id}','espelho')" title="${t('Como você pensa: padrões, contradições e convicções')}">${ICO.eye}<span>${t('Espelho')}</span></button></div>`:''}
       ${tagsHtml}
       <div class="cf">
         <span id="cf-${id}">${wc} ${t('car.')} · ${ww} ${t('pal.')}</span>
