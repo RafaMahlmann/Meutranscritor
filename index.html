@@ -10009,7 +10009,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.16.16';
+const VOX_VERSION='2026.10.17.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11503,6 +11503,15 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"A AssemblyAI não ouviu fala nesta gravação. Ela ficou guardada no alto da lista: dá para ouvir e transformar sem separar as vozes.":"AssemblyAI didn't hear speech in this recording. It's saved at the top of the list: you can listen and transcribe without separating voices.",
+"Não consegui transformar em texto agora ({x}). Sua gravação ficou guardada no alto da lista.":"I couldn't turn it into text right now ({x}). Your recording is saved at the top of the list.",
+"A AssemblyAI não ouviu fala nesta gravação.":"AssemblyAI didn't hear speech in this recording.",
+"a AssemblyAI não ouviu fala nesta gravação":"AssemblyAI didn't hear speech in this recording",
+"A AssemblyAI não ouviu fala nesta gravação. Ouça para conferir se o microfone pegou a sua voz; se pegou, transforme sem separar as vozes.":"AssemblyAI didn't hear speech in this recording. Listen to check whether the mic picked up your voice; if it did, transcribe without separating voices.",
+"Ainda não deu: sem internet. Confira a conexão e toque de novo.":"Not yet: no internet. Check the connection and tap again.",
+"Ainda não deu: {x}. Toque de novo; se continuar, baixe o áudio para não perder.":"Not yet: {x}. Tap again; if it keeps failing, download the audio so you don't lose it.",
+"Transformar sem separar vozes":"Transcribe without separating voices",
+"Não deu para tocar este áudio aqui. Baixe para ouvir.":"Couldn't play this audio here. Download it to listen.",
 "Pausar":"Pause",
 "Ouvir":"Listen",
 "Não deu para guardar o áudio desta sessão neste aparelho.":"Couldn't save this session's audio on this device.",
@@ -13998,7 +14007,20 @@ const _pendOcupadas=new Set();
 // Pendência é deste mundo? (item antigo, sem mundo, vale em qualquer um — era assim)
 function _pendDoMundo(p){return !p.mundo||p.mundo===_mundoAtivo}
 async function _pendBuf(p){return p.cifrado?await _cofreDecifrarBuf(p.buf):p.buf}
-async function _pendentesProcessar(manual){
+// Ouvir a gravação guardada aqui mesmo, para conferir se o microfone pegou a voz.
+let _pendAudio=null;
+async function _pendOuvir(bt){
+  if(_pendAudio){_pendAudio.pause();URL.revokeObjectURL(_pendAudio.src);_pendAudio=null;if(bt)bt.textContent=t('Ouvir');return}
+  let lista=[];try{lista=((await _idbGetBruto(_PEND_IDB))||[]).filter(_pendDoMundo)}catch(e){}
+  const p=lista[0];if(!p)return;
+  const buf=await _pendBuf(p);if(!buf){toast(t('Este mundo está trancado: entre com a senha primeiro.'),true);return}
+  _pendAudio=new Audio(URL.createObjectURL(new Blob([buf],{type:p.tipo})));
+  _pendAudio.onended=()=>{URL.revokeObjectURL(_pendAudio.src);_pendAudio=null;if(bt)bt.textContent=t('Ouvir')};
+  _pendAudio.play().catch(()=>toast(t('Não deu para tocar este áudio aqui. Baixe para ouvir.'),true));
+  if(bt)bt.textContent=t('Parar');
+}
+// semVozes: a pessoa pediu para transcrever sem separar as vozes (a AssemblyAI não ouviu fala).
+async function _pendentesProcessar(manual,semVozes){
   if(_pendentesRodando)return;
   if(!_chaveDoProvedorAtual()){if(manual===true){toast(t('Falta a sua chave de transcrição. Coloque nas Configurações e toque de novo.'),true);openModal()}return}
   if(manual!==true&&localStorage.getItem('vox_tem_pendente')!=='1')return;
@@ -14027,7 +14049,7 @@ async function _pendentesProcessar(manual){
       // ele era colado dentro dela e a gravação saía do cofre (achado 14/10).
       // Gravada pra separar vozes: volta pelo mesmo caminho (AssemblyAI e cia.), não pelo
       // texto simples — senão a consulta recuperada perdia as vozes.
-      try{ok=p.diar&&_diarVaiRodar()
+      try{ok=p.diar&&!semVozes&&_diarVaiRodar()
         ?await _processAudio(file,p.dur,true,{sn:p.sn,mode:p.mode,opts:{novaNota:true}})
         :await doTranscribe(file,p.dur,true,p.sn,p.mode,{novaNota:true})}finally{_gravNaFilaId=null}
       if(ok)await _pendenteTirar(p.id);
@@ -14036,6 +14058,7 @@ async function _pendentesProcessar(manual){
   }catch(e){_pendErro=_pendMotivo(e&&e.message||'')}finally{_pendentesRodando=false;_pendPintar()}
 }
 function _pendMotivo(m){
+  if(/não ouviu fala|no spoken audio|language_detection/i.test(m))return t('a AssemblyAI não ouviu fala nesta gravação');
   if(/fetch|network|rede|internet|NAME_NOT_RESOLVED|Load failed|offline/i.test(m))return t('sem internet');
   if(/401|403|invalid|inválid|chave|key/i.test(m))return t('a chave foi recusada');
   return String(m).replace(/^❌\s*/,'').slice(0,80)||t('não sei o motivo');
@@ -14059,12 +14082,17 @@ async function _pendPintar(){
   const quando=(()=>{const n=parseInt(String(lista[0].id).slice(1,14),10);if(!n)return '';const d=new Date(n);return d.toLocaleString(getLocale(),{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})();
   const tit=lista.length===1?t('Uma gravação de {m} min ficou guardada').replace('{m}',min):t('{n} gravações ({m} min) ficaram guardadas').replace('{n}',lista.length).replace('{m}',min);
   const sub=_pendentesRodando?t('Transformando em texto… a nota nova aparece aqui embaixo.')
-    :_pendErro?t('Ainda não deu: {x}. Confira a internet e toque de novo.').replace('{x}',_pendErro)
+    :_pendErro===t('a AssemblyAI não ouviu fala nesta gravação')?t('A AssemblyAI não ouviu fala nesta gravação. Ouça para conferir se o microfone pegou a sua voz; se pegou, transforme sem separar as vozes.')
+    :_pendErro===t('sem internet')?t('Ainda não deu: sem internet. Confira a conexão e toque de novo.')
+    :_pendErro?t('Ainda não deu: {x}. Toque de novo; se continuar, baixe o áudio para não perder.').replace('{x}',_pendErro)
     :t('Ela está salva neste aparelho desde {q}. Toque pra virar texto agora.').replace('{q}',quando);
   el.innerHTML=`<span class="ic-b"><span class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/></svg></span></span>`+
     `<span class="txt"><b>${escHtml(tit)}</b><span${_pendErro&&!_pendentesRodando?' class="pend-erro"':''}>${escHtml(sub)}</span></span>`+
     `<span class="lemb-bts">`+
-    `<button type="button" class="conv-p" onclick="_pendentesProcessar(true)"${_pendentesRodando?' disabled':''}>${escHtml(_pendentesRodando?t('Transformando…'):t('Transformar em texto'))}</button>`+
+    (_pendErro===t('a AssemblyAI não ouviu fala nesta gravação')&&!_pendentesRodando
+      ?`<button type="button" class="conv-s" onclick="_pendOuvir(this)">${escHtml(t('Ouvir'))}</button>`+
+       `<button type="button" class="conv-p" onclick="_pendentesProcessar(true,true)">${escHtml(t('Transformar sem separar vozes'))}</button>`
+      :`<button type="button" class="conv-p" onclick="_pendentesProcessar(true)"${_pendentesRodando?' disabled':''}>${escHtml(_pendentesRodando?t('Transformando…'):t('Transformar em texto'))}</button>`)+
     `<button type="button" class="conv-s" onclick="_pendBaixar()">${escHtml(t('Baixar o áudio'))}</button>`+
     `</span>`;
   if(el.style.display==='none'||!el.style.display){el.style.display='flex';if(typeof _jz==='function')_jz(el,'pend-chega',430)}
@@ -34644,7 +34672,15 @@ async function processAudio(file,durSec,fromRec){
   try{if(ok===true)await _pendenteTirar(id)}
   finally{_pendOcupadas.delete(id)}
   if(ok===true)_pendentesProcessar();
-  else{_pendPintar();if(!_gravJaAvisada)toast(t('Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.'),true)}
+  else{
+    // O aviso diz o motivo de verdade (antes, tudo virava "quando a internet voltar").
+    const mot=_pendMotivo((document.getElementById('toastMsg')||{}).textContent||'');
+    _pendErro=mot===t('a AssemblyAI não ouviu fala nesta gravação')?mot:'';
+    _pendPintar();
+    if(!_gravJaAvisada)toast(_pendErro?t('A AssemblyAI não ouviu fala nesta gravação. Ela ficou guardada no alto da lista: dá para ouvir e transformar sem separar as vozes.')
+      :mot===t('sem internet')?t('Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.')
+      :t('Não consegui transformar em texto agora ({x}). Sua gravação ficou guardada no alto da lista.').replace('{x}',mot),true);
+  }
   return ok;
 }
 async function _processAudio(file,durSec,fromRec,ctx){
@@ -34898,20 +34934,31 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
     // Algum extra não vale pro modelo/idioma da conta: refaz sem eles, em vez de falhar.
     if(subRes.status===400&&Object.keys(extras).length)subRes=await pedir(body);
     if(!subRes.ok)throw new Error(t('Submit falhou:')+' '+subRes.status);
-    const{id}=await subRes.json();
+    let{id}=await subRes.json();
     let data;
     // Consulta inteira de 60 min pode passar dos 6 min de espera antigos: a espera
     // cresce com a duração (metade do áudio + 2 min de folga, nunca menos de 6 min).
     const voltas=Math.max(120,Math.ceil(((durSec||0)*0.5+120)/3));
+    let comIdioma=!!body.language_code;
     for(let i=0;i<voltas;i++){
       await new Promise(r=>setTimeout(r,3000));
       const pollRes=await fetch(`https://api.assemblyai.com/v2/transcript/${id}`,{headers:{authorization:key}});
       data=await pollRes.json();
       setPL(pid,t('Processando ({status})…').replace('{status}',data.status));
       if(data.status==='completed')break;
-      if(data.status==='error')throw new Error('AssemblyAI: '+data.error);
+      if(data.status==='error'){
+        // Idioma em "automático": a AssemblyAI tenta adivinhar o idioma e recusa
+        // quando ouve pouca fala ("no spoken audio"). Uma vez, refaz dizendo o idioma.
+        if(!comIdioma&&/no spoken audio|language_detection/i.test(data.error||'')){
+          comIdioma=true;
+          const r2=await pedir(Object.assign({},body,{language_code:_aaiIdioma()}));
+          if(r2.ok){id=(await r2.json()).id;continue}
+        }
+        throw _aaiErro(data.error);
+      }
     }
     if(!data||data.status!=='completed')throw new Error(t('Timeout na diarização'));
+    if(!(data.utterances||[]).length)throw _aaiErro('no spoken audio');
     const utterances=(data.utterances||[]).map(u=>({speaker:u.speaker,text:u.text,start:u.start,end:u.end}));
     const actualSec=Math.ceil((data.audio_duration||durSec));
     const cost=Math.max(1,Math.ceil(actualSec/60))*0.006;
@@ -34928,6 +34975,15 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
   finally{isProc=false;lockUI(false);recTargetTA=null;recTargetCard=null}
 }
 
+// O idioma para mandar quando o automático falha: o escolhido, senão o da tela.
+function _aaiIdioma(){const l=String(cfg.lang||getLocale()||'pt').toLowerCase();return l.startsWith('pt')?'pt':l.startsWith('es')?'es':l.startsWith('en')?'en':l.slice(0,2)}
+// "No spoken audio" vira uma explicação, com marca própria para a fila saber o que oferecer.
+function _aaiErro(msg){
+  if(/no spoken audio|language_detection/i.test(msg||'')){
+    const e=new Error(t('A AssemblyAI não ouviu fala nesta gravação.'));e.semFala=true;e.jaAmigavel=true;return e;
+  }
+  return new Error('AssemblyAI: '+msg);
+}
 // ── GLADIA DIARIZATION (10 h/mês grátis · endpoints confirmados em docs.gladia.io) ──
 async function doDiarizeGladia(file,durSec,fromRec,sn,mode){
   const key=cfg.apiKeyGladia;
