@@ -1939,7 +1939,7 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .conversa-bar{display:flex;gap:6px;padding:8px 10px;background:var(--cat,transparent)}
 /* Super Diário: a faixa do Diário embaixo do texto (sempre à vista, diferente da conversa-bar) */
 .dio-bar{display:flex;gap:6px;flex-wrap:wrap;padding:2px 12px 8px}
-.card[data-origem-dt] .dio-bar,.card.proc-card .dio-bar,body.dio-sem-ia .dio-espelho{display:none}
+.card[data-origem-dt] .dio-bar,.card.proc-card .dio-bar,body.dio-sem-ia .dio-espelho,body.dio-sem-ia .dio-meudia{display:none}
 .dio-topo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;border:1px solid var(--border);border-radius:14px;background:var(--bg-card)}
 .dio-topo[hidden]{display:none}
 .dio-hoje{display:flex;flex-direction:column;gap:1px;min-width:0;margin-right:auto}
@@ -2051,6 +2051,10 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .dio-neste q{font-size:14.5px;font-style:italic;color:var(--text);line-height:1.45}
 .dio-neste-bts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .dio-neste-bts .dio-link{margin-left:auto}
+.dio-volta-cx{margin:6px 12px 0;padding:9px 11px;border:1px dashed #0e7c82;border-radius:10px;background:rgba(14,124,130,.07);display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--text)}
+.dio-volta-bts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dio-volta-bts .dio-falar{padding:6px 12px;font-size:12.5px}
+.dio-volta-bts .dio-link{margin-left:0}
 .dio-qc{margin:2px 16px 0;font-size:13px;font-style:italic;color:#a8700f}
 .dio-qc[hidden]{display:none}
 @media (max-width:560px){.dio-perg{grid-template-columns:1fr}.dio-falar{grid-column:1;grid-row:auto;justify-self:start}}
@@ -10189,7 +10193,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.17.9';
+const VOX_VERSION='2026.10.17.10';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11683,6 +11687,11 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Meu dia":"My day",
+"O que você falou, arrumado: como foi, o que sentiu, gente e amanhã":"What you said, tidied up: how it went, how you felt, people and tomorrow",
+"O Vox pergunta de volta:":"Vox asks back:",
+"O Vox pergunta de volta":"Vox asks back",
+"Depois do Meu dia, uma pergunta curta para você continuar falando. Usa a IA.":"After My day, a short question so you can keep talking. Uses AI.",
 "Há 1 ano":"1 year ago",
 "Há 1 mês":"1 month ago",
 "Há 1 semana":"1 week ago",
@@ -26969,6 +26978,8 @@ const LENTES_ENTREVISTA=[
         :'Liste as perguntas feitas na entrevista em negrito e, embaixo de cada uma, um resumo fiel da resposta.'}}
 ];
 const LENTES_DIARIO=[
+  {k:'di_meudia',nome:'Meu dia',desc:'O que você falou, arrumado: como foi, o que sentiu, gente e amanhã',
+    p:'Arrume este diário falado em quatro partes, nesta ordem e com estes títulos em negrito: **Como foi**, **O que senti**, **Gente**, **Para amanhã**. Use as PALAVRAS DA PRÓPRIA PESSOA sempre que der e coloque essas palavras em **negrito**; o que você acrescentar para ligar as ideias fica em texto normal. Tire vícios de fala (é, tipo, né, hã) sem mudar o sentido. Em Gente, só nomes ditos no texto. Em Para amanhã, cada item como "- [ ] " curto. Parte sem conteúdo: escreva "—". Não invente nada.'},
   {k:'di_gratidao',nome:'Gratidão',desc:'Três coisas boas do dia, com as suas palavras',
     p:'Encontre no texto até três coisas boas do dia (pessoas, momentos, pequenas vitórias). Liste cada uma com um título curto em negrito e, embaixo, a frase da própria pessoa que fala disso, entre aspas. Se o texto não trouxer nenhuma, diga isso com gentileza, sem inventar.'},
   {k:'di_amanha',nome:'Para amanhã',desc:'O que você disse que quer fazer, em caixinhas',
@@ -40704,6 +40715,38 @@ function _dioCardSinc(c){
   const o=_dioLer(c),q=c.querySelector('.dio-qc');
   if(q){q.hidden=!o.perg;q.textContent=o.perg?'“'+o.perg+'”':''}
   _dioSeloPintar(c);
+  if(c.dataset.origemLente&&!c.dataset.previewOn&&_mundoEhDiario()&&(c.querySelector('.cb textarea')?.value||'').trim())toggleCardPreview(c.id).then(()=>document.getElementById('mdTut-'+c.id)?.remove(),()=>{}); // aqui é leitura, não aula de Markdown
+  _dioVoltaPintar(c);
+}
+// ── Super Diário, proposta 5: Meu dia ──
+// A lente Meu dia arruma o monólogo em Como foi / O que senti / Gente / Para
+// amanhã. Opcional (começa desligada, decisão C): o Vox faz UMA pergunta de volta,
+// e a resposta falada entra como mais uma nota do mesmo dia.
+function _dioVoltaLigada(){return _painelLer().diarioVolta===true}
+async function _dioMeuDiaPronto(id){
+  const c=document.getElementById(id);if(!c)return;
+  _dioCardSinc(c);
+  if(!_dioVoltaLigada()||_dioSemIA())return;
+  try{
+    const txt=(c.querySelector('.cb textarea')?.value||'').slice(0,4000);
+    let q=await callAI('Leia o diário abaixo e faça UMA pergunta curta e gentil (até 20 palavras) que ajude a pessoa a ir mais fundo em algo que ela mesma mencionou. Responda só com a pergunta, sem aspas. '+_promptLang()+'\n\n'+txt,aiKey(),'auto',80,{temperature:0.7});
+    q=String(q||'').replace(/^["“'\s]+|["”'\s]+$/g,'').split('\n')[0].slice(0,200);
+    if(!q)return;
+    const o=_dioLer(c);o.volta=q;_dioGravar(c,o);saveHistory();_dioVoltaPintar(c);
+  }catch(e){}
+}
+function _dioVoltaPintar(c){
+  const o=_dioLer(c);let b=c.querySelector('.dio-volta-cx');
+  if(!o.volta||o.voltaFeita){b?.remove();return}
+  if(!b){b=document.createElement('div');b.className='dio-volta-cx';const ref=c.querySelector('.dio-qc')||c.querySelector('.cb');ref.parentNode.insertBefore(b,ref)}
+  b.innerHTML=`<span><b>${escHtml(t('O Vox pergunta de volta:'))}</b> ${escHtml(o.volta)}</span>
+    <div class="dio-volta-bts"><button type="button" class="dio-falar" onclick="_dioVoltaResponder('${escJs(c.id)}')"><i aria-hidden="true"></i>${escHtml(t('Responder falando'))}</button><button type="button" class="dio-link" onclick="_dioVoltaFechar('${escJs(c.id)}')">${escHtml(t('Agora não'))}</button></div>`;
+}
+function _dioVoltaFechar(id){const c=document.getElementById(id);if(!c)return;const o=_dioLer(c);o.voltaFeita=1;_dioGravar(c,o);saveHistory();_dioVoltaPintar(c)}
+function _dioVoltaResponder(id){
+  const c=document.getElementById(id);if(!c)return;
+  _dioPergAtual=_dioLer(c).volta||_dioPergAtual;
+  _dioVoltaFechar(id);_dioResponder();
 }
 // ── Super Diário, proposta 4: selar o dia ──
 // Ao terminar, um toque diz como foi (cinco carinhas, três cores ou nada, como a
@@ -41087,6 +41130,8 @@ function _dioSoSeuAbrir(){
       <button type="button" class="dio-acao" data-a="senha">${escHtml(tranc?t('Gerenciar'):t('Trancar'))}</button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">✨</span><span class="dio-tx"><b>${escHtml(t('IA de texto no Diário'))}</b><small>${escHtml(t('Espelho, Gratidão, Para amanhã e Meu dia. Desligada, o Diário continua: o texto, o humor e o calendário não usam IA.'))}</small></span>
       <button type="button" class="dio-sw${ia?' on':''}" role="switch" aria-checked="${ia}" data-a="ia" aria-label="${escHtml(t('IA de texto no Diário'))}"><i></i></button></div>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">💬</span><span class="dio-tx"><b>${escHtml(t('O Vox pergunta de volta'))}</b><small>${escHtml(t('Depois do Meu dia, uma pergunta curta para você continuar falando. Usa a IA.'))}</small></span>
+      <button type="button" class="dio-sw${_dioVoltaLigada()?' on':''}" role="switch" aria-checked="${_dioVoltaLigada()}" data-a="volta" aria-label="${escHtml(t('O Vox pergunta de volta'))}"><i></i></button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🌙</span><span class="dio-tx"><b>${escHtml(t('Tela calma ao gravar'))}</b><small>${escHtml(t('A tela escurece como um abajur, com a pergunta e a onda da sua voz.'))}</small></span>
       <button type="button" class="dio-sw${_dioTelaLigada()?' on':''}" role="switch" aria-checked="${_dioTelaLigada()}" data-a="tela" aria-label="${escHtml(t('Tela calma ao gravar'))}"><i></i></button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🎙️</span><span class="dio-tx"><b>${escHtml(t('O áudio não fica guardado'))}</b><small>${escHtml(t('A fala vira texto no serviço que você escolheu e o áudio vai embora. Fica só o texto, neste aparelho.'))}</small></span></div>
@@ -41103,6 +41148,7 @@ function _dioSoSeuAbrir(){
     const a=b.dataset.a;
     if(a==='ia'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioIA:on});_dioTopoPintar();
       toast(on?t('IA ligada neste Diário.'):t('IA desligada neste Diário. Nada do que você fala aqui vai para a IA de texto.'))}
+    else if(a==='volta'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioVolta:on})}
     else if(a==='tela'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioTela:on})}
     else if(a==='humor'){_painelGravar({diarioHumor:b.dataset.v});ov.querySelectorAll('[data-a="humor"]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-checked',String(on))})}
     else if(a==='exportar')_dioExportar();
@@ -41843,6 +41889,7 @@ async function runLens(id,lensKey,focus='',sel=null,opts=null){
       if(estavaAqui&&_docCardId()!==id){const i=getFocusCards().findIndex(c=>c.id===id);if(i>=0){focusCardIdx=i;_dvCardAtual=id;_dvModo=modoAntes;applyFocusCard()}}
       if(viewMode==='doc')_dvNavAgenda();
       setLastAICard(novo);
+      if(lensKey==='di_meudia')_dioMeuDiaPronto(novo);
       toast(L.label+' '+t('gerado! Ctrl+Z desfaz.'));
       if(viaCortesia&&_cortesiaLenteUltima)_cortesiaNotaUltima(novo,'lente');
     }
@@ -41976,7 +42023,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       <div class="cb">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
         <div class="md-preview" id="mdp-${id}" style="display:none"></div>
-      </div>${_mundoEhDiario()&&!tags.includes(t('demo'))?`<div class="dio-selo" id="dsel-${id}"></div><div class="dio-bar"><button type="button" class="dio-bt dio-espelho" onclick="runLens('${id}','espelho')" title="${t('Como você pensa: padrões, contradições e convicções')}">${ICO.eye}<span>${t('Espelho')}</span></button></div>`:''}
+      </div>${_mundoEhDiario()&&!tags.includes(t('demo'))?`<div class="dio-selo" id="dsel-${id}"></div><div class="dio-bar"><button type="button" class="dio-bt dio-meudia" onclick="runLens('${id}','di_meudia')" title="${t('O que você falou, arrumado: como foi, o que sentiu, gente e amanhã')}">✦<span>${t('Meu dia')}</span></button><button type="button" class="dio-bt dio-espelho" onclick="runLens('${id}','espelho')" title="${t('Como você pensa: padrões, contradições e convicções')}">${ICO.eye}<span>${t('Espelho')}</span></button></div>`:''}
       ${tagsHtml}
       <div class="cf">
         <span id="cf-${id}">${wc} ${t('car.')} · ${ww} ${t('pal.')}</span>
