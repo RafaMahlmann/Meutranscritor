@@ -10193,7 +10193,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.18.1';
+const VOX_VERSION='2026.10.18.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -15743,7 +15743,7 @@ function _1aChegarNoMural(){
   const p=m.perfil?_abrePerfil(m.perfil):null;
   if(p){
     _lsPor('vox_perfil',p.id);
-    _abreGravar(p.abre);
+    _abreGravar(p.abre);_lsPor('vox_abre_do_jeito','1');
     if(p.modo&&p.modo!==sessionMode)setTimeout(()=>setMode(p.modo),420);
   }
   if(!_temNotaDaPessoa())_1aCardBoasVindas(m,p);
@@ -15838,7 +15838,7 @@ function _abrePerfilPendente(){
   if(!p||_lsLer('vox_perfil'))return;
   _lsPor('vox_perfil',p.id);
   if(p.modo)_lsPor('vox_modo',p.modo);
-  _abreGravar(p.abre);
+  _abreGravar(p.abre);_lsPor('vox_abre_do_jeito','1');
 }
 function _abreAoIniciar(){
   _abrePerfilPendente();
@@ -15858,6 +15858,8 @@ function _abreAoIniciar(){
   if(/^#voxk?=/.test(location.hash))return;
   const esc=_abreEscolha();
   let alvo=esc==='last'?_lsLer('vox_ultima_tela'):esc;
+  // Parou no Painel da Consulta: volta pra ele (não é uma das telas de ABRE_OPCOES).
+  if(alvo==='painel'){alvo='';if(_mundoEhConsulta())setTimeout(()=>{try{abrirPainel()}catch(e){}},300)}
   if(alvo==='list'||alvo==='masonry'||alvo==='doc'){if(viewMode!==alvo)setViewMode(alvo);alvo=''}
   const avisos=+_lsLer('vox_abre_avisos')||0;
   let msg='';
@@ -15998,7 +16000,7 @@ function _abreEscolher(id,el){
   const pn=document.getElementById('abrePainel');
   const antes=pn&&pn.querySelector('.abre-porta.on .abre-selo');
   const de=antes?antes.getBoundingClientRect():null;
-  _abreGravar(id);
+  _abreGravar(id);_lsPor('vox_abre_do_jeito',null);
   _abreResumo();
   // Só troca a marcação (sem refazer o HTML): refazer redesenhava a grade
   // inteira e o cartão escolhido piscava deformado no primeiro quadro.
@@ -16068,15 +16070,27 @@ function _abrePerguntaEscolher(pid,calado){
   const p=_abrePerfil(pid);if(!p)return;
   _lsPor('vox_perfil',p.id);
   if(p.modo&&p.modo!==sessionMode)setMode(p.modo);
-  _abreGravar(p.abre);
+  _abreGravar(p.abre);_lsPor('vox_abre_do_jeito','1');
   if(calado)return;
   // Não troca de tela agora: o texto promete "da próxima vez" (lote 13).
   toast(t('{p} neste mundo: ').replace('{p}',t(p.nome))+t(p.desc));
 }
 
 // ── VIEW ──
+// O "abre em" que veio do jeito do mundo (ex.: Consulta abre no Documento) é só o
+// começo: quando a pessoa troca de tela por conta própria, o Vox passa a abrir
+// onde ela parou. Antes o jeito valia pra sempre, e o Rafa via o app "entrar
+// sozinho no Documento" depois de três avisos que já tinham sumido (18/10/2026).
+function _abreJeitoCede(){
+  // Quem já usava antes desta marca: o "abre em" igual ao do jeito, sem escolha
+  // feita em Configurações, também veio do jeito.
+  const per=_abrePerfilAtual(),antigo=per&&_lsLer('vox_abre_em')===per.abre&&!_lsLer('vox_abre_guia_ok');
+  if(_lsLer('vox_abre_do_jeito')!=='1'&&!antigo)return;
+  _lsPor('vox_abre_do_jeito',null);_abreGravar('last');
+}
 function toggleView(){
   const modes=['list','masonry','doc'];
+  _abreJeitoCede();
   setViewMode(modes[(modes.indexOf(viewMode)+1)%modes.length]);
   _viewJuice();
 }
@@ -41252,8 +41266,10 @@ function abrirPainel(){
   _painelPintar();
   ov.classList.add('on');
   document.addEventListener('keydown',_painelTecla,true);
+  _abreJeitoCede();_telaMarcar('painel');
 }
 function fecharPainel(){
+  _telaDesmarcar('painel');
   document.getElementById('painelOv')?.classList.remove('on');
   document.removeEventListener('keydown',_painelTecla,true);
 }
