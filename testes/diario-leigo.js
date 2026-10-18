@@ -112,7 +112,7 @@ function servidor() {
     ok(md && /<strong>Como foi<\/strong>/.test(md) && !/\*\*/.test(md), 'Meu dia nasce arrumado, sem ** aparecendo');
     await foto('meu-dia');
     // 7. Só seu: sem IA, nada sai para a IA de texto
-    await page.locator('#dioTopo .dio-soseu').click(); await page.waitForTimeout(300);
+    await page.locator('#dioTopo .dio-soseu:not(.dio-esconder):not(.dio-tranca-ja)').click(); await page.waitForTimeout(300);
     await page.getByRole('switch', { name: 'IA de texto no Diário' }).click(); await page.keyboard.press('Escape');
     const antes = chamadas.filter(u => u.includes('chat/completions')).length;
     await ver(() => callAI('teste', 'x').catch(() => {}));
