@@ -2088,6 +2088,8 @@ body.dio-fechado #cardsList,body.dio-fechado .empty-state,body.dio-fechado #empt
 .dio-sw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .22s cubic-bezier(.34,1.56,.64,1)}
 .dio-sw.on{background:#c98a1c}.dio-sw.on i{left:21px}
 .dio-seg{display:flex;gap:4px;flex-wrap:wrap}
+.dio-nomes{grid-column:1/-1;font:inherit;font-size:14px;color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:8px 10px;resize:vertical;min-height:44px}
+.dio-nomes:focus-visible{outline:2px solid #c98a1c;outline-offset:1px}
 .dio-seg button{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);border-radius:999px;padding:5px 12px;cursor:pointer}
 .dio-seg button.on{background:#c98a1c;border-color:#c98a1c;color:#fff}
 .dio-sw:focus-visible,.dio-seg button:focus-visible,.dio-acao:focus-visible,.dio-ok:focus-visible,.dio-x:focus-visible{outline:2px solid #c98a1c;outline-offset:2px}
@@ -10202,7 +10204,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.18.6';
+const VOX_VERSION='2026.10.18.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11706,6 +11708,9 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Meus nomes e meu jeito de falar":"My names and my way of talking",
+"Nomes de quem aparece no seu diário e palavras que você usa. O Vox passa a escrever do seu jeito. Separe por vírgula.":"Names of people in your journal and words you use. Vox starts writing your way. Separate with commas.",
+"Ex.: Pedro, Júlia, mano, aff, simulado":"E.g.: Pedro, Júlia, bro, ugh, mock exam",
 "Uma gravação foi interrompida no meio. Ela ficou guardada: toque no aviso pra virar texto.":"A recording was interrupted halfway. It was saved: tap the notice to turn it into text.",
 "Uma gravação de {m} ficou guardada":"A {m} recording was saved",
 "{n} gravações ({m}) ficaram guardadas":"{n} recordings ({m}) were saved",
@@ -27006,7 +27011,12 @@ let bannerDismissed=false;
 function _txDica(fd){
   try{
     const pc=_painelCfg(),o=(sessionMode==='consulta')?_oficioAtual():null;
-    const ps=String(pc.palavras||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean).concat(o?o.termos:[]);
+    // No Diário vão primeiro os nomes e o jeito de falar da pessoa ("Pedro" virava
+    // "pedo", "brigamos" virava "begamos" no teste com a persona Bia), e as palavras
+    // que ela já ensinou ao Vox (dicionário e "sempre trocar" do Revisar texto).
+    const dio=typeof _mundoEhDiario==='function'&&_mundoEhDiario()?String(_painelLer().diarioNomes||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean):[];
+    const aprendidas=(typeof _personalDict!=='undefined'?_personalDict:[]).concat((typeof _learnedRules!=='undefined'?_learnedRules:[]).map(r=>r.to));
+    const ps=dio.concat(String(pc.palavras||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean),o?o.termos:[],aprendidas).filter(x=>x&&x.length<40);
     const u=[...new Set(ps)];if(!u.length)return;
     let txt='';for(const p of u){if((txt+p).length>600)break;txt+=(txt?', ':'')+p}
     fd.append('prompt',txt+'.');
@@ -40823,10 +40833,20 @@ function _dioPergTrocar(){
 function _dioTrilhaEscolher(k){if(!DIO_PERGUNTAS[k])return;_painelGravar({diarioTrilha:k});_dioPergN=0;_dioTopoPintar()}
 function _dioResponder(){if(typeof isRec!=='undefined'&&isRec)return;if(_cofreFechado()){_cofreDestrancar();return}startRec()}
 // A gravação que terminou leva a pergunta que estava na tela quando começou.
+// As correções que a pessoa ensinou ("sempre trocar" no Revisar texto) valem
+// sozinhas na fala nova do Diário.
+function _dioCorrigir(c){
+  if(!c||typeof _learnedRules==='undefined'||!_learnedRules.length)return;
+  const ta=c.querySelector('.cb textarea');if(!ta)return;
+  let v=ta.value;
+  _learnedRules.forEach(r=>{if(!r||!r.from||!r.to)return;const esc=r.from.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');v=v.replace(new RegExp('(^|[^\\p{L}])('+esc+')(?=$|[^\\p{L}])','giu'),(m,a)=>a+r.to)});
+  if(v!==ta.value){ta.value=v;try{autoR(ta)}catch(e){}}
+}
 function _dioAplicarPendente(id){
   const c=document.getElementById(id),p=_dioPendente;
   if(!c||!p||!p.em||c.dataset.type!=='gravacao'||Date.now()-p.em>30*60000)return;
   _dioPendente=null;
+  _dioCorrigir(c);
   const o=_dioLer(c);if(p.perg)o.perg=p.perg;_dioGravar(c,o);_dioCardSinc(c);saveHistory();
 }
 // Pinta o que é do Diário dentro de um card (a pergunta e o selo).
@@ -41276,6 +41296,8 @@ function _dioSoSeuAbrir(){
       <button type="button" class="dio-sw${_dioVoltaLigada()?' on':''}" role="switch" aria-checked="${_dioVoltaLigada()}" data-a="volta" aria-label="${escHtml(t('O Vox pergunta de volta'))}"><i></i></button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🌙</span><span class="dio-tx"><b>${escHtml(t('Tela calma ao gravar'))}</b><small>${escHtml(t('A tela escurece como um abajur, com a pergunta e a onda da sua voz.'))}</small></span>
       <button type="button" class="dio-sw${_dioTelaLigada()?' on':''}" role="switch" aria-checked="${_dioTelaLigada()}" data-a="tela" aria-label="${escHtml(t('Tela calma ao gravar'))}"><i></i></button></div>
+    <div class="dio-linha dio-col"><span class="dio-ic" aria-hidden="true">🗣️</span><span class="dio-tx"><b>${escHtml(t('Meus nomes e meu jeito de falar'))}</b><small>${escHtml(t('Nomes de quem aparece no seu diário e palavras que você usa. O Vox passa a escrever do seu jeito. Separe por vírgula.'))}</small></span>
+      <textarea class="dio-nomes" rows="2" data-a="nomes" placeholder="${escHtml(t('Ex.: Pedro, Júlia, mano, aff, simulado'))}" aria-label="${escHtml(t('Meus nomes e meu jeito de falar'))}">${escHtml(pc.diarioNomes||'')}</textarea></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🎙️</span><span class="dio-tx"><b>${escHtml(t('O áudio some quando você fecha o Vox'))}</b><small>${escHtml(t('A fala vira texto no serviço que você escolheu. Enquanto o app está aberto, dá pra ouvir a gravação na nota; ao fechar, fica só o texto, neste aparelho.'))}</small></span></div>
     <div class="dio-linha dio-col"><span class="dio-ic" aria-hidden="true">🙂</span><span class="dio-tx"><b>${escHtml(t('Como marcar o dia'))}</b><small>${escHtml(t('Ao fechar o dia, um toque diz como foi. Ele colore o calendário.'))}</small></span>
       <div class="dio-seg" role="radiogroup" aria-label="${escHtml(t('Como marcar o dia'))}">${humor.map(([v,r])=>`<button type="button" role="radio" aria-checked="${v===hm}" class="${v===hm?'on':''}" data-a="humor" data-v="${v}">${escHtml(r)}</button>`).join('')}</div></div>
@@ -41298,6 +41320,7 @@ function _dioSoSeuAbrir(){
     else if(a==='exportar')_dioExportar();
     else if(a==='senha'){fechar();_dioTrancar()}
   });
+  ov.querySelector('.dio-nomes')?.addEventListener('input',e=>_painelGravar({diarioNomes:e.target.value.slice(0,600)}));
   document.addEventListener('keydown',tecla,true);
   document.body.appendChild(ov);
   // Abre no topo: o foco no "Pronto" rolava a caixa até o fim, e o título e o
