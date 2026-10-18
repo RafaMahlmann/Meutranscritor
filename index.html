@@ -1939,7 +1939,7 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .conversa-bar{display:flex;gap:6px;padding:8px 10px;background:var(--cat,transparent)}
 /* Super Diário: a faixa do Diário embaixo do texto (sempre à vista, diferente da conversa-bar) */
 .dio-bar{display:flex;gap:6px;flex-wrap:wrap;padding:2px 12px 8px}
-.card[data-origem-dt] .dio-bar,.card.proc-card .dio-bar,body.dio-sem-ia .dio-espelho,body.dio-sem-ia .dio-meudia{display:none}
+.card[data-origem-dt] .dio-bar .dio-meudia,.card[data-origem-dt] .dio-bar .dio-espelho,.card.proc-card .dio-bar,body.dio-sem-ia .dio-espelho,body.dio-sem-ia .dio-meudia{display:none}
 .dio-topo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;border:1px solid var(--border);border-radius:14px;background:var(--bg-card)}
 .dio-topo[hidden]{display:none}
 .dio-hoje{display:flex;flex-direction:column;gap:1px;min-width:0;margin-right:auto}
@@ -2087,7 +2087,7 @@ body.dio-fechado #cardsList,body.dio-fechado .empty-state,body.dio-fechado #empt
 .dio-tx small{font-size:12.5px;color:var(--text3);line-height:1.4}
 .dio-acao,.dio-ok{font:inherit;font-size:13px;font-weight:700;border-radius:999px;padding:6px 14px;cursor:pointer;border:1px solid var(--border2,var(--border));background:var(--bg-input);color:var(--text)}
 .dio-ok{background:#c98a1c;border-color:#c98a1c;color:#fff;padding:8px 20px}
-.dio-pe{display:flex;justify-content:flex-end}
+.dio-pe{display:flex;justify-content:flex-end;gap:8px}
 .dio-sw{position:relative;width:42px;height:24px;border-radius:999px;border:0;background:var(--border2,#ccc);cursor:pointer;flex:0 0 auto;transition:background .2s}
 .dio-sw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .22s cubic-bezier(.34,1.56,.64,1)}
 .dio-sw.on{background:#c98a1c}.dio-sw.on i{left:21px}
@@ -10208,7 +10208,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.18.8';
+const VOX_VERSION='2026.10.18.9';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11712,6 +11712,14 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Mandar pra alguém, conferindo o texto antes":"Send to someone, checking the text first",
+"Mandar":"Send",
+"Mandar este trecho":"Send this part",
+"Confira o que vai sair do seu diário. Dá pra apagar o que não é pra mandar.":"Check what will leave your journal. You can delete anything you don't want to send.",
+"Texto que vai ser mandado":"Text that will be sent",
+"Copiar pra mandar":"Copy to send",
+"Copiado. Cole na conversa.":"Copied. Paste it in the chat.",
+"Não deu pra copiar. Selecione o texto e copie.":"Couldn't copy. Select the text and copy it.",
 "Mostrar":"Show",
 "Some com o texto da tela na hora (com senha, tranca)":"Hides the text from the screen right away (with a password, it locks)",
 "Esconder":"Hide",
@@ -40799,6 +40807,31 @@ setInterval(()=>{
   }catch(e){}
 },30000);
 window.addEventListener('load',()=>setTimeout(_cofreVivo,500));
+// ── Mandar pra amiga (persona Bia: tentou compartilhar e só achou o "copiar") ──
+// O compartilhar do celular, a um toque, mas com o texto à vista antes de sair:
+// dá pra cortar o que não é pra mandar. No Diário vai sem a assinatura do Vox.
+function _dioMandar(id){
+  const c=document.getElementById(id);const txt=(c&&c.querySelector('.cb textarea')?.value||'').trim();
+  if(!txt){toast(t('ℹ️ Card vazio'),true);return}
+  document.getElementById('dioMandarOv')?.remove();
+  const ov=document.createElement('div');ov.id='dioMandarOv';ov.className='dio-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-labelledby','dioMandarT');
+  ov.innerHTML=`<div class="dio-caixa"><div class="dio-cab"><b id="dioMandarT">${escHtml(t('Mandar este trecho'))}</b><button type="button" class="dio-x" aria-label="${escHtml(t('Fechar'))}">×</button></div>
+    <p class="dio-lead">${escHtml(t('Confira o que vai sair do seu diário. Dá pra apagar o que não é pra mandar.'))}</p>
+    <textarea class="dio-nomes dio-mandar-tx" rows="8" aria-label="${escHtml(t('Texto que vai ser mandado'))}">${escHtml(txt)}</textarea>
+    <div class="dio-pe"><button type="button" class="dio-acao dio-cancela">${escHtml(t('Cancelar'))}</button><button type="button" class="dio-ok dio-vai">${escHtml(navigator.share?t('Mandar'):t('Copiar pra mandar'))}</button></div></div>`;
+  const fechar=()=>{ov.remove();document.removeEventListener('keydown',tecla,true)};
+  const tecla=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();fechar()}};
+  ov.addEventListener('click',async e=>{
+    if(e.target===ov||e.target.closest('.dio-x,.dio-cancela')){fechar();return}
+    if(!e.target.closest('.dio-vai'))return;
+    const v=ov.querySelector('.dio-mandar-tx').value.trim();if(!v)return;
+    if(navigator.share){try{await navigator.share({text:v});fechar();return}catch(er){if(er&&er.name==='AbortError')return}}
+    try{await navigator.clipboard.writeText(v);toast(t('Copiado. Cole na conversa.'))}catch(er){toast(t('Não deu pra copiar. Selecione o texto e copie.'),true);return}
+    fechar();
+  });
+  document.addEventListener('keydown',tecla,true);
+  document.body.appendChild(ov);ov.querySelector('.dio-x').focus({preventScroll:true});
+}
 // ── Esconder rápido (persona Bia: o irmão olhando por cima do ombro) ──
 // "Ocultar o texto na lista" (Só seu) deixa as notas borradas até a pessoa tocar
 // numa delas. "Esconder" no alto faz isso na hora; com senha, tranca de vez.
@@ -42232,7 +42265,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
       <div class="cb">
         <textarea onbeforeinput="cardTypeBeforeInput('${id}',this)" oninput="autoR(this);updateFooter('${id}');cardTypeInput('${id}')" onfocus="trackFocus(this)" placeholder="${t('Edite aqui…')}">${escHtml(text)}</textarea>
         <div class="md-preview" id="mdp-${id}" style="display:none"></div>
-      </div>${_mundoEhDiario()&&!tags.includes(t('demo'))?`<div class="dio-selo" id="dsel-${id}"></div><div class="dio-bar"><button type="button" class="dio-bt dio-meudia" onclick="runLens('${id}','di_meudia')" title="${t('O que você falou, arrumado: como foi, o que sentiu, gente e amanhã')}">✦<span>${t('Meu dia')}</span></button><button type="button" class="dio-bt dio-espelho" onclick="runLens('${id}','espelho')" title="${t('Como você pensa: padrões, contradições e convicções')}">${ICO.eye}<span>${t('Espelho')}</span></button></div>`:''}
+      </div>${_mundoEhDiario()&&!tags.includes(t('demo'))?`<div class="dio-selo" id="dsel-${id}"></div><div class="dio-bar"><button type="button" class="dio-bt dio-mandar" onclick="_dioMandar('${id}')" title="${t('Mandar pra alguém, conferindo o texto antes')}">↗<span>${t('Mandar')}</span></button><button type="button" class="dio-bt dio-meudia" onclick="runLens('${id}','di_meudia')" title="${t('O que você falou, arrumado: como foi, o que sentiu, gente e amanhã')}">✦<span>${t('Meu dia')}</span></button><button type="button" class="dio-bt dio-espelho" onclick="runLens('${id}','espelho')" title="${t('Como você pensa: padrões, contradições e convicções')}">${ICO.eye}<span>${t('Espelho')}</span></button></div>`:''}
       ${tagsHtml}
       <div class="cf">
         <span id="cf-${id}">${wc} ${t('car.')} · ${ww} ${t('pal.')}</span>
