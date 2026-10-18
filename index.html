@@ -10202,7 +10202,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.18.5';
+const VOX_VERSION='2026.10.18.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11706,6 +11706,7 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Uma gravação foi interrompida no meio. Ela ficou guardada: toque no aviso pra virar texto.":"A recording was interrupted halfway. It was saved: tap the notice to turn it into text.",
 "Uma gravação de {m} ficou guardada":"A {m} recording was saved",
 "{n} gravações ({m}) ficaram guardadas":"{n} recordings ({m}) were saved",
 "O áudio some quando você fecha o Vox":"The audio goes away when you close Vox",
@@ -34822,11 +34823,16 @@ function stopCapture(){
 // Ao abrir o app, uma cópia que sobrou vira item da fila de pendentes — a mesma do
 // cartão "ficou guardada" — e é transformada em texto com as vozes.
 const _GRAV_BACKUP_IDB='vox_gravacao_em_andamento';
-let _gravDiarInteira=false,_gravBackupIv=null,_gravBackupId='',_gravWake=null;
+let _gravDiarInteira=false,_gravBackupIv=null,_gravBackupPrim=null,_gravBackupId='',_gravWake=null;
+// Saindo da página (recarregar, fechar, trocar de app no celular) com gravação: salva já.
+addEventListener('pagehide',()=>{try{_gravBackupSalvar()}catch(e){}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')try{_gravBackupSalvar()}catch(e){}});
 function _gravBackupArmar(){
   _gravBackupId='p'+Date.now()+Math.random().toString(36).slice(2,6);
-  clearInterval(_gravBackupIv);
-  _gravBackupIv=setInterval(_gravBackupSalvar,60000);
+  clearInterval(_gravBackupIv);clearTimeout(_gravBackupPrim);
+  // A primeira cópia sai aos 5 s (uma fala curta também conta); depois, a cada 30 s.
+  _gravBackupPrim=setTimeout(_gravBackupSalvar,5000);
+  _gravBackupIv=setInterval(_gravBackupSalvar,30000);
   // Tela apagada no celular pode pausar a gravação: pede pra manter acesa.
   try{navigator.wakeLock?.request('screen').then(w=>{_gravWake=w}).catch(()=>{})}catch(e){}
 }
@@ -34837,12 +34843,14 @@ async function _gravBackupSalvar(){
     let buf=await new Blob(MR._buf,{type:tipo}).arrayBuffer();
     const cifrado=!!(_mundoTrancado(_mundoAtivo)&&_cofreChave);
     if(cifrado)buf=await _cofreCifrarBuf(buf);
+    // Sem Separar vozes a gravação é cortada em pedaços (os anteriores já viraram
+    // texto): a cópia guarda o pedaço atual, com a duração dele.
     await _idbSetBruto(_GRAV_BACKUP_IDB,{id:_gravBackupId,buf,tipo,nome:'gravacao.'+(tipo.includes('mp4')?'mp4':'webm'),
-      dur:Math.floor((Date.now()-recStart)/1000),sn:segSn||'',mode:segMode||'livre',mundo:_mundoAtivo,cifrado,diar:true});
+      dur:Math.floor((Date.now()-recStart)/1000)-(_gravDiarInteira?0:segTotalSec),sn:segSn||'',mode:segMode||'livre',mundo:_mundoAtivo,cifrado,diar:_gravDiarInteira});
   }catch(e){}
 }
 function _gravBackupDesarmar(apagar){
-  clearInterval(_gravBackupIv);_gravBackupIv=null;_gravBackupId='';_gravDiarInteira=false;
+  clearInterval(_gravBackupIv);clearTimeout(_gravBackupPrim);_gravBackupIv=null;_gravBackupId='';_gravDiarInteira=false;
   try{_gravWake&&_gravWake.release()}catch(e){}_gravWake=null;
   if(apagar)_idbSetBruto(_GRAV_BACKUP_IDB,null).catch(()=>{});
 }
@@ -34853,12 +34861,12 @@ async function _gravBackupRecuperar(){
     if(!b||!b.buf||isRec)return;
     const lista=(await _idbGetBruto(_PEND_IDB))||[];
     if(!lista.some(p=>p.id===b.id)){
-      lista.push({id:b.id,buf:b.buf,nome:b.nome,tipo:b.tipo,dur:b.dur||0,sn:b.sn||'',mode:b.mode||'livre',mundo:b.mundo,cifrado:!!b.cifrado,diar:true});
+      lista.push({id:b.id,buf:b.buf,nome:b.nome,tipo:b.tipo,dur:b.dur||0,sn:b.sn||'',mode:b.mode||'livre',mundo:b.mundo,cifrado:!!b.cifrado,diar:b.diar!==false});
       await _idbSetBruto(_PEND_IDB,lista);
       localStorage.setItem('vox_tem_pendente','1');
     }
     await _idbSetBruto(_GRAV_BACKUP_IDB,null);
-    if(!b.mundo||b.mundo===_mundoAtivo)toast(t('Uma gravação foi interrompida no meio. Ela ficou guardada e vai virar texto com as vozes separadas.'));
+    if(!b.mundo||b.mundo===_mundoAtivo)toast(b.diar!==false?t('Uma gravação foi interrompida no meio. Ela ficou guardada e vai virar texto com as vozes separadas.'):t('Uma gravação foi interrompida no meio. Ela ficou guardada: toque no aviso pra virar texto.'));
     _pendPintar();
   }catch(e){}
 }
@@ -34942,7 +34950,10 @@ async function startRec(targetCardId=null,targetTA=null){
     segSn=document.getElementById('snameInput').value.trim();segMode=sessionMode;segProv=cfg.provider;
     if(segTimer){clearInterval(segTimer);segTimer=null}
     if(!targetCardId&&!_gravDiarInteira)segTimer=setInterval(rotateSegment,SEG_MS); // só o botão principal rotaciona
-    if(_gravDiarInteira)_gravBackupArmar();
+    // Cópia de segurança em TODA gravação (antes só com Separar vozes): recarregar ou
+    // fechar a aba no meio perdia a fala sem aviso (persona Bia, 18/10/2026; motor
+    // de gravação liberado pelo Rafa). A caixinha do chat (targetTA) fica de fora.
+    if(!targetTA)_gravBackupArmar();
     document.getElementById('itxt').placeholder=t('🎙️ Gravando…');document.getElementById('itxt').disabled=true;
     document.getElementById('ibox').classList.add('rec');document.getElementById('vuWrap').classList.add('on');
     document.getElementById('docRecChip').style.display='inline-flex';
