@@ -10193,7 +10193,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.17.10';
+const VOX_VERSION='2026.10.18.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11171,7 +11171,7 @@ let I18N_EN={
 "Arrastar pra mover":"Drag to move",
 "nota direto aqui — toque pra ver sem entrar":"note right here — tap to peek without going in",
 "notas direto aqui — toque pra ver sem entrar":"notes right here — tap to peek without going in",
-"toque numa bolinha pra entrar · toque no numero pra ver sem entrar":"tap a bubble to go in · tap the number to peek without going in",
+"toque numa bolinha pra entrar · toque no número pra ver sem entrar":"tap a bubble to go in · tap the number to peek without going in",
 "arraste a alça pra mover · role a roda (ou belisque) pra aumentar e diminuir":"drag the handle to move it · scroll the wheel (or pinch) to grow and shrink it",
 "Este mundo está trancado. Destranque antes de exportar.":"This world is locked. Unlock it before exporting.",
 "Fechar o cofre agora":"Close the vault now",
@@ -11687,6 +11687,9 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"nenhuma pasta aqui dentro":"no folders in here",
+"{n} ideias deste texto":"{n} ideas from this text",
+"A IA separa as ideias deste texto":"The AI splits the ideas from this text",
 "Meu dia":"My day",
 "O que você falou, arrumado: como foi, o que sentiu, gente e amanhã":"What you said, tidied up: how it went, how you felt, people and tomorrow",
 "O Vox pergunta de volta:":"Vox asks back:",
@@ -12850,8 +12853,8 @@ let I18N_EN={
 "Resuma os pontos principais":"Summarize the main points","Quais decisões foram tomadas?":"What decisions were made?","Liste as próximas ações":"List next actions","Corrija a pontuação":"Fix punctuation",
 "Pergunte sobre esta conversa…":"Ask about this conversation…","Pergunte sobre este texto…":"Ask about this text…","Enviar":"Send",
 "Ditar pergunta":"Dictate question","Texto original":"Original text",
-"💬 Pergunte algo sobre este texto ou use um dos atalhos abaixo.":"💬 Ask something about this text or use one of the shortcuts below.",
-"💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.":"💬 Ask something about this conversation or use one of the shortcuts below.",
+"💬 Pergunte algo sobre este texto ou toque num dos atalhos prontos.":"💬 Ask something about this text or tap one of the ready-made shortcuts.",
+"💬 Pergunte algo sobre esta conversa ou toque num dos atalhos prontos.":"💬 Ask something about this conversation or tap one of the ready-made shortcuts.",
 "❌ Não foi possível obter resposta: ":"❌ Could not get a response: ","✓ Aplicar sugestão":"✓ Apply suggestion","✅ Sugestão aplicada. Ctrl+Z desfaz.":"✅ Suggestion applied. Ctrl+Z undoes.","Usuário":"User",
 // FASE 3/4 — painel interativo de revisão de repetições
 "Revisar palavras repetidas ou fora de contexto":"Review repeated or out-of-context words",
@@ -20516,6 +20519,9 @@ function _orbDesenhar(){
 
   _orbLinhas(pos);
   _orbTrilha();
+  // Sem pastas dentro, mas com notas: dizer "nada aqui dentro" contradizia o
+  // "3 notas aqui" logo acima (jogador leigo, 17/10/2026).
+  if(fs.length===0){const n=cards.filter(c=>(c.dataset.folder||'')===(_orbFoco===null?'':_orbFoco)).length;_orbVazioEl.textContent=n?t('nenhuma pasta aqui dentro'):t('nada aqui dentro ainda')}
   _orbVazioEl.classList.toggle('on',fs.length===0);
   _orbSubindo=false;
   // O mural se ancora no maior vão ENTRE os satélites — precisa saber onde
@@ -21665,7 +21671,7 @@ function abrirOrbital(){
         <div class="orb-vazio" id="orbVazio">${escHtml(t('nada aqui dentro ainda'))}</div>
         <svg class="orb-mural-fio" id="orbMuralFio"></svg>
         <div class="orb-mural" id="orbMural"></div>
-        <div class="orb-dica-wrap"><span class="orb-dica" id="orbDica">${escHtml(t('toque numa bolinha pra entrar · toque no numero pra ver sem entrar'))}</span></div>
+        <div class="orb-dica-wrap"><span class="orb-dica" id="orbDica">${escHtml(t('toque numa bolinha pra entrar · toque no número pra ver sem entrar'))}</span></div>
       </div>
     </div>`;
     document.body.appendChild(ov);
@@ -27734,7 +27740,20 @@ function toggleSearch(){
   const sw=document.getElementById('searchWrap');
   sw.classList.toggle('visible',searchActive);
   document.getElementById('btnSearch').classList.toggle('on-accent',searchActive);
-  if(searchActive)document.getElementById('searchInput').focus();
+  if(searchActive){
+    const inp=document.getElementById('searchInput');inp.focus({preventScroll:true});
+    // Com a página já rolada, a caixa abria escondida sob o cabeçalho fixo e a
+    // pessoa não via onde digitar (jogador leigo, 17/10/2026). Coberta? Rola até ela.
+    requestAnimationFrame(()=>{
+      const r=inp.getBoundingClientRect(),x=Math.min(Math.max(r.left+12,1),innerWidth-1),y=Math.min(Math.max(r.top+r.height/2,1),innerHeight-1);
+      const topo=document.elementFromPoint(x,y);
+      if(r.top<0||!topo||(topo!==inp&&!sw.contains(topo))){
+        // A caixa mora no topo do conteúdo: o que cobre é o cabeçalho; rola o bastante pra sair debaixo dele.
+        const cobre=topo&&!sw.contains(topo)?topo.getBoundingClientRect().bottom:0;
+        scrollBy({top:r.top-Math.max(cobre,0)-12,behavior:_voxReduzMov()?'auto':'smooth'});
+      }
+    });
+  }
   else clearSearch();
 }
 // Ignora acento e caixa na comparação — "nao" acha "não" (o bug real que o
@@ -36688,7 +36707,7 @@ let _cchatAbasCache=null,_ilhaLevarId=null;
 function _cchatCorDe(lensKey){const L=LENSES[lensKey];return (L&&LENS_CATS[L.cat]&&LENS_CATS[L.cat].color)||'var(--text3)'}
 function _cchatTitulo(id){
   const card=document.getElementById(id);
-  return (card?.dataset.sessionName||card?.querySelector('.sname-badge')?.textContent||'').trim()||fmtDt(card?.dataset.dt||'');
+  return (card?.dataset.sessionName||card?.querySelector('.sname-badge:not(.sname-badge-empty)')?.textContent||'').trim()||fmtDt(card?.dataset.dt||'');
 }
 function _cchatAbasMapa(){
   if(_cchatAbasCache)return Promise.resolve(_cchatAbasCache);
@@ -37385,7 +37404,8 @@ function _ilhaCartaoIdeias(id){
   const f=_ideiasFonte(id),lista=_ideiasDaLista(f.texto);
   const amostra=(lista.length?lista:_ideiasDeFrases(f.texto)).slice(0,6);
   const chips=amostra.map((p,i)=>`<rect class="ilha-peca" style="--i:${i}" x="${16+(i%3)*44}" y="${18+Math.floor(i/3)*34}" width="38" height="24" rx="6" fill="${IDEIA_TIPOS[p.tipo].cor}"/>`).join('');
-  const sub=lista.length?t('{n} ideias de {a}').replace('{n}',lista.length).replace('{a}',f.aba):t('A IA separa as ideias de {a}').replace('{a}',f.aba);
+  const sub=f.fonte==='original'?(lista.length?t('{n} ideias deste texto').replace('{n}',lista.length):t('A IA separa as ideias deste texto'))
+    :lista.length?t('{n} ideias de {a}').replace('{n}',lista.length).replace('{a}',f.aba):t('A IA separa as ideias de {a}').replace('{a}',f.aba);
   return `<button type="button" class="ilha-cartao" data-acao="ideias"><span class="ilha-prev"><svg viewBox="0 0 160 100" aria-hidden="true" focusable="false">${chips||'<rect x="40" y="35" width="80" height="30" rx="8" fill="var(--border2)"/>'}</svg></span><b>${escHtml(t('Separar em ideias'))}</b><small>${escHtml(sub)}</small></button>`;
 }
 async function _ideiasAbrir(id){
@@ -37866,7 +37886,8 @@ function openConversaMode(id){
   const overlay=document.createElement('div');
   overlay.id='cchat-overlay';
   overlay.dataset.cardId=id; // pro ⠿ flutuante saber a qual card este overlay pertence
-  const title=(card.dataset.sessionName||card.querySelector('.sname-badge')?.textContent||'').trim()||fmtDt(card.dataset.dt||'');
+  // O "+ nome" do card sem nome é convite, não nome: não pode virar título (jogador leigo, 17/10/2026).
+  const title=(card.dataset.sessionName||card.querySelector('.sname-badge:not(.sname-badge-empty)')?.textContent||'').trim()||fmtDt(card.dataset.dt||'');
   overlay.innerHTML=`
     <div class="cchat-header">
       <span class="cchat-title">💬 ${escHtml(title)}</span>
@@ -38125,8 +38146,8 @@ async function renderCchat(id){
     ?`<div class="cchat-msg cchat-assistant cchat-source"><div class="cchat-meta">📄 ${t('Texto original')}</div>${escHtml(sourceText)}</div>`
     :'';
   const emptyKey=card&&card.dataset.diarized==='true'
-    ?'💬 Pergunte algo sobre esta conversa ou use um dos atalhos abaixo.'
-    :'💬 Pergunte algo sobre este texto ou use um dos atalhos abaixo.';
+    ?'💬 Pergunte algo sobre esta conversa ou toque num dos atalhos prontos.'
+    :'💬 Pergunte algo sobre este texto ou toque num dos atalhos prontos.';
   if(!history.length){msgs.innerHTML=sourceHtml+`<div class="cchat-empty">${escHtml(t(emptyKey))}</div>`;return}
   try{await _loadMarkdownLibs()}catch(e){}
   const canMd=!!(window.marked&&window.DOMPurify);
@@ -46048,7 +46069,13 @@ function abrirGalaxia(e,opts){
 
   _mundosMontar();
   selId=ativoId;
-  medirCeu();escalar();_enquadrarConjunto();montar();_conferirNaTela();
+  medirCeu();escalar();_enquadrarConjunto();montar();
+  /* A camera volta ao zero ANTES de medir: medida com a camera da visita
+     anterior (girada ou aproximada), a caixa dos planetas saia gigante, o
+     arranjo encolhia ate o piso e ficava num canto, com o "Um mundo novo"
+     fora da tela (jogador leigo, 17/10/2026: reabrir o ceu pelo chip). */
+  cam.yaw=0;cam.pitch=0;cam.dolly=dollyBase;aplicarCam();
+  _conferirNaTela();
   _mundosContar();
   cam.yaw=0;cam.pitch=0;cam.dolly=dollyBase;vel.yaw=0;vel.pitch=0;alvo=null;camSuja=true;
   galaxia.setAttribute('aria-hidden','false');
