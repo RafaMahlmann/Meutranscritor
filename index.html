@@ -1948,6 +1948,10 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .dio-soseu{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:700;color:var(--text2);background:var(--bg-input);border:1px solid var(--border);border-radius:999px;padding:5px 12px;cursor:pointer}
 .dio-soseu.on{color:#1b7a4a;border-color:rgba(27,122,74,.35)}
 .dio-tranca-ja{color:#1b7a4a;border-color:rgba(27,122,74,.35)}
+body.dio-oculto #cardsList .card:not(.dio-ver) .cb,body.dio-oculto #cardsList .card:not(.dio-ver) .dio-qc,body.dio-oculto #cardsList .card:not(.dio-ver) .md-preview,body.dio-oculto #cardsList .card:not(.dio-ver) .dio-volta-cx{filter:blur(7px);user-select:none;pointer-events:none}
+body.dio-oculto #cardsList .card:not(.dio-ver){cursor:pointer}
+body.dio-oculto #cardsList .card:not(.dio-ver) .sname-badge{filter:blur(4px)}
+@media (prefers-reduced-motion:no-preference){body.dio-oculto #cardsList .card .cb{transition:filter .2s}}
 .dio-tranc{flex:1 1 100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
 .dio-tranc-ic{font-size:26px}
 .dio-tranc .dio-destrancar{grid-column:3;grid-row:1;justify-self:end;align-self:center}
@@ -10204,7 +10208,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.18.7';
+const VOX_VERSION='2026.10.18.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11708,6 +11712,11 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Mostrar":"Show",
+"Some com o texto da tela na hora (com senha, tranca)":"Hides the text from the screen right away (with a password, it locks)",
+"Esconder":"Hide",
+"Ocultar o texto na lista":"Hide the text in the list",
+"As notas aparecem borradas até você tocar numa delas. Bom pra quem olha por cima do ombro.":"Notes look blurred until you tap one. Good against people looking over your shoulder.",
 "Meus nomes e meu jeito de falar":"My names and my way of talking",
 "Nomes de quem aparece no seu diário e palavras que você usa. O Vox passa a escrever do seu jeito. Separe por vírgula.":"Names of people in your journal and words you use. Vox starts writing your way. Separate with commas.",
 "Ex.: Pedro, Júlia, mano, aff, simulado":"E.g.: Pedro, Júlia, bro, ugh, mock exam",
@@ -40790,6 +40799,26 @@ setInterval(()=>{
   }catch(e){}
 },30000);
 window.addEventListener('load',()=>setTimeout(_cofreVivo,500));
+// ── Esconder rápido (persona Bia: o irmão olhando por cima do ombro) ──
+// "Ocultar o texto na lista" (Só seu) deixa as notas borradas até a pessoa tocar
+// numa delas. "Esconder" no alto faz isso na hora; com senha, tranca de vez.
+var _dioEscondido=false;
+function _dioEsconder(){
+  if(_mundoTrancado(_mundoAtivo)&&_cofreChave){_cofreTrancarAgora();return}
+  if(_dioEscondido){_dioEscondido=false;_dioTopoPintar();return}   // o mesmo botão mostra de novo
+  _dioEscondido=true;
+  document.querySelectorAll('.tx-overlay.on,#dioAnoOv,#dioSoSeuOv').forEach(e=>{if(e.id)e.remove();else e.classList.remove('on')});
+  try{document.activeElement&&document.activeElement.blur()}catch(e){}
+  document.querySelectorAll('#cardsList .card.dio-ver').forEach(c=>c.classList.remove('dio-ver'));
+  document.body.classList.add('dio-oculto');scrollTo({top:0});_dioTopoPintar();
+}
+// Tocar numa nota borrada mostra só aquela; sair dela (foco em outro lugar) borra de novo.
+document.addEventListener('pointerdown',e=>{
+  if(!document.body.classList.contains('dio-oculto'))return;
+  const c=e.target.closest&&e.target.closest('#cardsList .card');
+  document.querySelectorAll('#cardsList .card.dio-ver').forEach(x=>{if(x!==c)x.classList.remove('dio-ver')});
+  if(c&&!c.classList.contains('dio-ver')){c.classList.add('dio-ver');e.preventDefault()}
+},true);
 // ── Super Diário, proposta 2: a pergunta do dia ──
 // Uma pergunta no lugar da página em branco. Vem de uma lista no próprio
 // aparelho (sem IA), muda com a hora do dia e com a trilha escolhida, e um
@@ -41267,8 +41296,10 @@ function _dioTopoPintar(){
     el.hidden=false;document.body.classList.add('dio-fechado');return;
   }
   document.body.classList.remove('dio-fechado');
+  document.body.classList.toggle('dio-oculto',_painelLer().diarioOcultar===true||_dioEscondido);
   el.innerHTML=`<div class="dio-hoje"><span class="dio-k">${escHtml(t('Hoje'))}</span><b>${escHtml(_dioDataLonga(new Date()))}</b></div>
     ${tranc?`<button type="button" class="dio-soseu dio-tranca-ja" onclick="_cofreTrancarAgora()" title="${escHtml(t('Fecha o Diário agora; pra abrir de novo, só com a senha'))}"><span aria-hidden="true">🔒</span>${escHtml(t('Trancar agora'))}</button>`:''}
+    <button type="button" class="dio-soseu dio-esconder" onclick="_dioEsconder()" title="${escHtml(t('Some com o texto da tela na hora (com senha, tranca)'))}"><span aria-hidden="true">${_dioEscondido?'👁️':'🙈'}</span>${escHtml(_dioEscondido?t('Mostrar'):t('Esconder'))}</button>
     <button type="button" class="dio-soseu" onclick="_dioSoSeuAbrir()" title="${escHtml(t('Senha, IA, humor e exportar'))}"><span aria-hidden="true">${tranc?'🛡️':'🔒'}</span>${escHtml(t('Só seu'))}</button>
     ${_dioColeHtml()}
     ${_dioNesteDiaHtml()}
@@ -41290,6 +41321,8 @@ function _dioSoSeuAbrir(){
       <div class="dio-seg" role="radiogroup" aria-label="${escHtml(t('Trancar sozinho'))}">${[['5',t('5 minutos')],['60',t('1 hora')],['0',t('Só no botão')]].map(([v,r])=>`<button type="button" role="radio" aria-checked="${String(_cofreLimiteMin())===v}" class="${String(_cofreLimiteMin())===v?'on':''}" data-a="tempo" data-v="${v}">${escHtml(r)}</button>`).join('')}</div></div>`:''}
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">✨</span><span class="dio-tx"><b>${escHtml(t('IA de texto no Diário'))}</b><small>${escHtml(t('Só quando você toca em Espelho, Meu dia, Gratidão ou Para amanhã. Nada vai pra IA sozinho. Desligada, o Diário continua: o texto, o humor e o calendário não usam IA.'))}</small></span>
       <button type="button" class="dio-sw${ia?' on':''}" role="switch" aria-checked="${ia}" data-a="ia" aria-label="${escHtml(t('IA de texto no Diário'))}"><i></i></button></div>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🙈</span><span class="dio-tx"><b>${escHtml(t('Ocultar o texto na lista'))}</b><small>${escHtml(t('As notas aparecem borradas até você tocar numa delas. Bom pra quem olha por cima do ombro.'))}</small></span>
+      <button type="button" class="dio-sw${pc.diarioOcultar===true?' on':''}" role="switch" aria-checked="${pc.diarioOcultar===true}" data-a="ocultar" aria-label="${escHtml(t('Ocultar o texto na lista'))}"><i></i></button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">📋</span><span class="dio-tx"><b>${escHtml(t('Copiar sozinho ao gravar'))}</b><small>${escHtml(t('Desligado, o texto não vai pra área de transferência do celular. Pra mandar, use o botão Mandar da nota.'))}</small></span>
       <button type="button" class="dio-sw${pc.diarioCopiar===true?' on':''}" role="switch" aria-checked="${pc.diarioCopiar===true}" data-a="copiar" aria-label="${escHtml(t('Copiar sozinho ao gravar'))}"><i></i></button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">💬</span><span class="dio-tx"><b>${escHtml(t('O Vox pergunta de volta'))}</b><small>${escHtml(t('Depois do Meu dia, uma pergunta curta para você continuar falando. Usa a IA.'))}</small></span>
@@ -41313,6 +41346,7 @@ function _dioSoSeuAbrir(){
     if(a==='ia'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioIA:on});_dioTopoPintar();
       toast(on?t('IA ligada neste Diário.'):t('IA desligada neste Diário. Nada do que você fala aqui vai para a IA de texto.'))}
     else if(a==='tempo'){try{localStorage.setItem('vox_cofre_minutos',b.dataset.v)}catch(er){}_cofreVivo();ov.querySelectorAll('[data-a="tempo"]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-checked',String(on))})}
+    else if(a==='ocultar'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioOcultar:on});if(!on)_dioEscondido=false}
     else if(a==='copiar'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioCopiar:on})}
     else if(a==='volta'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioVolta:on})}
     else if(a==='tela'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioTela:on})}
