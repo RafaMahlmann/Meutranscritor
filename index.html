@@ -10193,7 +10193,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.18.2';
+const VOX_VERSION='2026.10.18.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11687,6 +11687,9 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Copiar sozinho ao gravar":"Copy automatically when recording",
+"Desligado, o texto não vai pra área de transferência do celular. Pra mandar, use o botão Mandar da nota.":"When off, the text doesn't go to your phone's clipboard. To send it, use the note's Send button.",
+"Só quando você toca em Espelho, Meu dia, Gratidão ou Para amanhã. Nada vai pra IA sozinho. Desligada, o Diário continua: o texto, o humor e o calendário não usam IA.":"Only when you tap Mirror, My day, Gratitude or For tomorrow. Nothing goes to the AI on its own. With it off, the Journal keeps working: text, mood and calendar don't use AI.",
 "nenhuma pasta aqui dentro":"no folders in here",
 "{n} ideias deste texto":"{n} ideas from this text",
 "A IA separa as ideias deste texto":"The AI splits the ideas from this text",
@@ -35231,13 +35234,15 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       const insertCard=insertTA.closest('.card')?.id;cardAlvo=insertCard;
       if(insertCard)pushCardHistory(insertCard);
       insertTA.value=cur.slice(0,s)+sep+text+cur.slice(en);
-      autoR(insertTA);navigator.clipboard.writeText(text).then(()=>toast(t('Inserido + copiado!')));
+      autoR(insertTA);if(_dioCopiaSozinho())navigator.clipboard.writeText(text).then(()=>toast(t('Inserido + copiado!')));
       updateFooter(insertCard);saveHistory();activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;
     }else{
       const cid=addCard(text,fromRec?file:file,cost,fromRec?'gravacao':'arquivo',prov,true,null,null,[],sn,mode,false);cardAlvo=cid;
-      navigator.clipboard.writeText(text).catch(()=>{});
-      toast(t('Copiado para a área de transferência!'));
-      if(cid&&(cfg.apiKeyGroq||cfg.apiKey))setTimeout(()=>suggestTags(cid,true),400);
+      // Diário e mundo trancado (liberado pelo Rafa, 18/10/2026): o texto não vai
+      // sozinho pra área de transferência nem pra IA sugerir tags. Era o desabafo
+      // inteiro pronto pra ser colado sem querer (teste com a persona Bia, 16).
+      if(_dioCopiaSozinho()){navigator.clipboard.writeText(text).catch(()=>{});toast(t('Copiado para a área de transferência!'))}
+      if(cid&&(cfg.apiKeyGroq||cfg.apiKey)&&!_mundoEhDiario())setTimeout(()=>suggestTags(cid,true),400);
     }
     const words=text.split(/\s+/).filter(w=>w).length;
     stats.count++;stats.sec+=actualSec;stats.words=(stats.words||0)+words;
@@ -41137,6 +41142,12 @@ function _dioResponderAntes(){
 // O que é do Diário na configuração do mundo (vox_painel, um por mundo):
 // diarioIA (false = sem IA de texto), diarioHumor ('5' carinhas, '3' cores, '0'
 // sem humor), diarioSoSeu (a tela da primeira vez já foi vista).
+// Copiar sozinho ao terminar de gravar: sim fora do Diário (como sempre foi), não
+// em mundo trancado, e no Diário só se a pessoa ligar em "Só seu".
+function _dioCopiaSozinho(){
+  if(_mundoEhDiario())return _painelLer().diarioCopiar===true;
+  return !_mundoTrancado(_mundoAtivo);
+}
 function _dioSemIA(){return _mundoEhDiario()&&_painelLer().diarioIA===false}
 function _dioHumorModo(){const h=String(_painelLer().diarioHumor||'5');return ['5','3','0'].includes(h)?h:'5'}
 function _dioDataLonga(d){try{return _calMaiuscula(d.toLocaleDateString(getLocale(),{weekday:"long",day:"numeric",month:"long"}))}catch(e){return _calChave(d)}}
@@ -41163,8 +41174,10 @@ function _dioSoSeuAbrir(){
     <p class="dio-lead">${escHtml(t('O que você fala aqui é o mais íntimo que existe. Escolha como ele fica guardado. Dá pra mudar depois no botão Só seu, no alto do Diário.'))}</p>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🔒</span><span class="dio-tx"><b>${escHtml(tranc?t('Trancado com senha'):t('Trancar com senha'))}</b><small>${escHtml(t('Pede a senha ao abrir o Diário e criptografa as notas e as fotos.'))}</small></span>
       <button type="button" class="dio-acao" data-a="senha">${escHtml(tranc?t('Gerenciar'):t('Trancar'))}</button></div>
-    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">✨</span><span class="dio-tx"><b>${escHtml(t('IA de texto no Diário'))}</b><small>${escHtml(t('Espelho, Gratidão, Para amanhã e Meu dia. Desligada, o Diário continua: o texto, o humor e o calendário não usam IA.'))}</small></span>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">✨</span><span class="dio-tx"><b>${escHtml(t('IA de texto no Diário'))}</b><small>${escHtml(t('Só quando você toca em Espelho, Meu dia, Gratidão ou Para amanhã. Nada vai pra IA sozinho. Desligada, o Diário continua: o texto, o humor e o calendário não usam IA.'))}</small></span>
       <button type="button" class="dio-sw${ia?' on':''}" role="switch" aria-checked="${ia}" data-a="ia" aria-label="${escHtml(t('IA de texto no Diário'))}"><i></i></button></div>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">📋</span><span class="dio-tx"><b>${escHtml(t('Copiar sozinho ao gravar'))}</b><small>${escHtml(t('Desligado, o texto não vai pra área de transferência do celular. Pra mandar, use o botão Mandar da nota.'))}</small></span>
+      <button type="button" class="dio-sw${pc.diarioCopiar===true?' on':''}" role="switch" aria-checked="${pc.diarioCopiar===true}" data-a="copiar" aria-label="${escHtml(t('Copiar sozinho ao gravar'))}"><i></i></button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">💬</span><span class="dio-tx"><b>${escHtml(t('O Vox pergunta de volta'))}</b><small>${escHtml(t('Depois do Meu dia, uma pergunta curta para você continuar falando. Usa a IA.'))}</small></span>
       <button type="button" class="dio-sw${_dioVoltaLigada()?' on':''}" role="switch" aria-checked="${_dioVoltaLigada()}" data-a="volta" aria-label="${escHtml(t('O Vox pergunta de volta'))}"><i></i></button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🌙</span><span class="dio-tx"><b>${escHtml(t('Tela calma ao gravar'))}</b><small>${escHtml(t('A tela escurece como um abajur, com a pergunta e a onda da sua voz.'))}</small></span>
@@ -41183,6 +41196,7 @@ function _dioSoSeuAbrir(){
     const a=b.dataset.a;
     if(a==='ia'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioIA:on});_dioTopoPintar();
       toast(on?t('IA ligada neste Diário.'):t('IA desligada neste Diário. Nada do que você fala aqui vai para a IA de texto.'))}
+    else if(a==='copiar'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioCopiar:on})}
     else if(a==='volta'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioVolta:on})}
     else if(a==='tela'){const on=!b.classList.contains('on');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));_painelGravar({diarioTela:on})}
     else if(a==='humor'){_painelGravar({diarioHumor:b.dataset.v});ov.querySelectorAll('[data-a="humor"]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-checked',String(on))})}
