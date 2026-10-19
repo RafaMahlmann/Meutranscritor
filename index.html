@@ -2252,6 +2252,22 @@ body.enc-tela-on .ibar.rec-on{z-index:9980}
 .ea-seta{color:var(--text4);text-align:center}
 .ea-dica{margin:0;font-size:12.5px;color:var(--text3)}
 .ea-pe{display:flex;justify-content:flex-end}
+.truque-selo{position:fixed;left:16px;bottom:110px;z-index:2050;display:flex;align-items:center;gap:10px;background:var(--bg-card);color:var(--text);border:1px solid color-mix(in srgb,#eab308 55%,var(--border));border-radius:14px;padding:9px 14px 9px 10px;box-shadow:0 12px 32px rgba(0,0,0,.22);font:inherit;cursor:pointer;max-width:calc(100vw - 32px)}
+.truque-selo .ts-ic{font-size:22px;line-height:1}
+.truque-selo b{display:block;font-size:13px}
+.truque-selo small{display:block;font-size:11.5px;color:var(--text3)}
+.truque-selo.in{animation:truqueMola .5s cubic-bezier(.3,1.6,.5,1)}
+.truque-selo.out{opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s}
+@keyframes truqueMola{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
+.tq-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.tq-s{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:12px 8px;border-radius:14px;border:1px dashed var(--border2,var(--border));color:var(--text3);font-size:12px;min-width:0}
+.tq-s .tq-e{font-size:26px;filter:grayscale(1);opacity:.35}
+.tq-s.on{border-style:solid;border-color:color-mix(in srgb,#eab308 60%,var(--border));background:color-mix(in srgb,#eab308 9%,transparent);color:var(--text);font-weight:600}
+.tq-s.on .tq-e{filter:none;opacity:1}
+.tq-cont{font-size:13px;color:var(--text3);font-weight:600}
+.tq-cont b{font-size:20px;color:var(--text)}
+.tq-prox{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg-input);border-radius:12px;padding:10px 12px;font-size:13px}
+.tq-prox button{font:inherit;font-size:13px;font-weight:700;color:#fff;background:var(--accent);border:0;border-radius:10px;padding:8px 12px;cursor:pointer;flex:none}
 .tela-vazia{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:30;width:min(380px,calc(100% - 32px));background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,.25);padding:14px 16px;display:flex;flex-direction:column;gap:10px;text-align:center;animation:fadeDown .2s ease}
 .tela-vazia p{margin:0;font-size:14px;font-weight:600}
 .tela-vazia small{font-size:12px;color:var(--text3);font-weight:400}
@@ -9557,6 +9573,13 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
           <span></span>
         </label>
       </div>
+      <div class="diar-toggle-row abre-row" onclick="if(!event.target.closest('button'))_truquesAbrir()">
+        <div>
+          <p data-i18n>Seus truques</p>
+          <small><span id="gvTruquesN"></span> · <span data-i18n>cada função nova acende um selo</span></small>
+        </div>
+        <button type="button" class="abre-mudar" onclick="_truquesAbrir()" data-i18n>Ver</button>
+      </div>
       <!-- Plano 22: só aparece depois que existe chave do Groq. -->
       <div class="diar-toggle-row" id="rowPularPortaSimples" style="display:none">
         <div>
@@ -10280,7 +10303,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.13';
+const VOX_VERSION='2026.10.19.14';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10759,6 +10782,7 @@ function _mundoApagarDeVez(id){
   }).catch(()=>{});
 }
 function _mundoCriar(nome,desc,extra){
+  try{_truque('mundo')}catch(e){}
   const l=_mundosLista();
   const id='m'+Date.now().toString(36);
   // extra: {sid,tipo} quando o mundo nasce de uma sugestão (Consultas, Entrevistas…).
@@ -11784,6 +11808,35 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Gravar uma fala":"Record something",
+"Transformar um texto":"Transform a text",
+"Conversar com um texto":"Chat with a text",
+"Ver no Calendário":"See it on the Calendar",
+"Ver no Mapa":"See it on the Map",
+"Buscar nas notas":"Search your notes",
+"Fixar um card no topo":"Pin a card to the top",
+"Abrir o \"?\" de uma tela":"Open a screen's \"?\"",
+"Montar um exemplo":"Build an example",
+"Criar um mundo novo":"Create a new world",
+"Toque no botão vermelho e fale. A fala vira uma nota.":"Tap the red button and talk. What you say becomes a note.",
+"Crie uma pasta aqui; dentro dela, \"Trazer notas\" leva as notas pra lá.":"Create a folder here; inside it, \"Bring notes\" moves notes there.",
+"Toque aqui pra fixar este card no topo.":"Tap here to pin this card to the top.",
+"No menu ⋮ do card, toque em Fixar.":"In the card's ⋮ menu, tap Pin.",
+"Cada tela tem um \"?\" com três quadrinhos.":"Every screen has a \"?\" with three panels.",
+"O exemplo aparece quando o mapa está vazio.":"The example shows up when the map is empty.",
+"Grave ou escreva uma nota primeiro.":"Record or write a note first.",
+"Truque novo: {x}":"New trick: {x}",
+"{n} de {m} na sua caderneta":"{n} of {m} in your notebook",
+"{n} de {m}":"{n} of {m}",
+"Seus truques":"Your tricks",
+"de {m}":"of {m}",
+"aprendido":"learned",
+"ainda não":"not yet",
+"O próximo:":"Next up:",
+"Você já conhece todos os truques. Eles continuam aqui.":"You know all the tricks. They stay here.",
+"É uma coleção, não uma sequência: nada se perde se você ficar uns dias sem usar.":"It's a collection, not a streak: nothing is lost if you take a few days off.",
+"cada função nova acende um selo":"every new feature lights up a badge",
+"Ver":"View",
 "Seu Calendário ainda está vazio.":"Your Calendar is still empty.",
 "Seu Mapa ainda está vazio.":"Your Map is still empty.",
 "Sua Órbita ainda está vazia.":"Your Orbit is still empty.",
@@ -20516,7 +20569,7 @@ const FC_NEW_CARD_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="no
 const FC_FLOAT_TOGGLE_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
 
 function abrirFluxograma(){
-  _telaMarcar('fluxo');_telaDica('fluxo');setTimeout(_telaVaziaSinc,350);
+  _telaMarcar('fluxo');_telaDica('fluxo');try{_truque('fluxo')}catch(e){}setTimeout(_telaVaziaSinc,350);
   let ov=document.getElementById('fcOverlay');
   if(!ov){
     ov=document.createElement('div');
@@ -21897,7 +21950,7 @@ function _orbEnquadrar(){
 }
 
 function abrirOrbital(){
-  _telaMarcar('orbital');_telaDica('orbital');setTimeout(_telaVaziaSinc,350);
+  _telaMarcar('orbital');_telaDica('orbital');try{_truque('orbital')}catch(e){}setTimeout(_telaVaziaSinc,350);
   let ov=document.getElementById('orbOverlay');
   if(!ov){
     ov=document.createElement('div');
@@ -22351,7 +22404,7 @@ function _calCardsDoCalendario(){
 
 // ── abrir / fechar ──
 function abrirCalendario(){
-  _telaMarcar('cal');_telaDica('cal');setTimeout(_telaVaziaSinc,350);
+  _telaMarcar('cal');_telaDica('cal');try{_truque('cal')}catch(e){}setTimeout(_telaVaziaSinc,350);
   let ov=document.getElementById('calOverlay');
   if(!ov){
     ov=document.createElement('div');
@@ -26299,6 +26352,7 @@ function _pastaTrazerMontar(msg,btn){
     const ids=[...tz.querySelectorAll('input:checked')].map(i=>i.value);if(!ids.length)return;
     const antes=ids.map(id=>[id,document.getElementById(id)?.dataset.folder||'']);
     ids.forEach(id=>assignCardToFolder(id,fid,true));
+    try{_truque('pasta')}catch(e){}
     saveHistory();renderFolders();applyFolderFilter();
     const nome=folders.find(f=>f.id===fid)?.name||t('pasta');
     toastDesfazer((ids.length===1?t('1 nota veio para "{p}"'):t('{n} notas vieram para "{p}"').replace('{n}',ids.length)).replace('{p}',nome),()=>{
@@ -27153,6 +27207,7 @@ function assignCardToFolder(cardId,fid,silencioso){
   card.dataset.folder=fid;
   _csFaixaSinc(card);
   if(silencioso)return;
+  if(fid)try{_truque('pasta')}catch(e){}
   saveHistory();renderFolders();applyFolderFilter();
   const fname=fid?(folders.find(f=>f.id===fid)?.name||t('pasta')):t('Tudo');
   toast(t('📁 Movido para "')+fname+'"');
@@ -28059,6 +28114,7 @@ function toggleSearch(){
   sw.classList.toggle('visible',searchActive);
   document.getElementById('btnSearch').classList.toggle('on-accent',searchActive);
   if(searchActive){
+    try{_truque('busca')}catch(e){}
     const inp=document.getElementById('searchInput');inp.focus({preventScroll:true});
     // Com a página já rolada, a caixa abria escondida sob o cabeçalho fixo e a
     // pessoa não via onde digitar (jogador leigo, 17/10/2026). Coberta? Rola até ela.
@@ -29606,6 +29662,7 @@ function _gvPintar(){
   const gp=$('gvPalavras');if(gp)gp.hidden=!np;
   if($('gvResPalavras'))$('gvResPalavras').textContent=np===1?t('1 palavra ou correção'):t('{n} palavras e correções').replace('{n}',np);
   if($('gvResSocorro'))$('gvResSocorro').textContent=t('Destravar, espaço, recomeçar');
+  _gvTruquesSinc();
 }
 // Carlos (28/09/2026): quem entra nas avançadas pelo botão, ou já pula a porta
 // simples, cai primeiro na Geral — é onde moram chaves, cópias e espaço, que
@@ -33927,6 +33984,7 @@ function togglePin(id){
   const card=document.getElementById(id);if(!card)return;
   const pinned=card.dataset.pinned!=='true';
   card.dataset.pinned=pinned?'true':'false';
+  if(pinned)try{_truque('fixar')}catch(e){}
   card.classList.toggle('pinned-card',pinned);
   const btn=card.querySelector('.pin-btn');
   if(btn)btn.classList.toggle('pinned',pinned);
@@ -36367,6 +36425,74 @@ function _mapaExemploTirar(k){
   saveFolders();renderFolders();applyFolderFilter();_telaRepintar(k||_telaAtual());_telaVaziaSinc();
   toast(t('O exemplo saiu. Suas notas continuam onde estavam.'));
 }
+// ── A caderneta de truques (proposta 7) ──
+// Cada função usada pela primeira vez acende um selo. É uma coleção, nunca
+// uma sequência: nada se perde, nada cobra. A caderneta sugere o próximo
+// truque com "Me leva lá".
+const TRUQUES=[
+  {id:'gravar',e:'🎙️',n:'Gravar uma fala',leva:()=>_dica({id:'tq-gravar',sempre:true,mao:true,alvo:()=>document.getElementById('btnRec'),frase:t('Toque no botão vermelho e fale. A fala vira uma nota.')})},
+  {id:'transformar',e:'✨',n:'Transformar um texto',leva:()=>{const c=_tqPrimeiroCard();if(!c)return _tqSemNota();c.scrollIntoView({block:'center'});toggleLensMenu(c.id)}},
+  {id:'conversar',e:'💬',n:'Conversar com um texto',leva:()=>{const c=_tqPrimeiroCard();if(!c)return _tqSemNota();openConversaMode(c.id)}},
+  {id:'pasta',e:'📁',n:'Guardar numa pasta',leva:()=>{if(!document.getElementById('foldersBar')?.classList.contains('open'))toggleFolders();setTimeout(()=>_dica({id:'tq-pasta',sempre:true,mao:true,alvo:()=>document.getElementById('btnFolderNova'),frase:t('Crie uma pasta aqui; dentro dela, "Trazer notas" leva as notas pra lá.')}),400)}},
+  {id:'cal',e:'📅',n:'Ver no Calendário',leva:()=>abrirCalendario()},
+  {id:'fluxo',e:'🗺️',n:'Ver no Mapa',leva:()=>abrirFluxograma()},
+  {id:'orbital',e:'🪐',n:'Ver em Órbita',leva:()=>abrirOrbital()},
+  {id:'busca',e:'🔍',n:'Buscar nas notas',leva:()=>{if(!searchActive)toggleSearch()}},
+  {id:'fixar',e:'📌',n:'Fixar um card no topo',leva:()=>{const c=_tqPrimeiroCard();if(!c)return _tqSemNota();c.scrollIntoView({block:'center'});const b=c.querySelector('[onclick*="togglePin"]');if(b&&b.getBoundingClientRect().width)_dica({id:'tq-fixar',sempre:true,mao:true,alvo:()=>b,frase:t('Toque aqui pra fixar este card no topo.')});else toast(t('No menu ⋮ do card, toque em Fixar.'))}},
+  {id:'ajuda',e:'❓',n:'Abrir o "?" de uma tela',leva:()=>{abrirOrbital();setTimeout(()=>_dica({id:'tq-ajuda',sempre:true,mao:true,alvo:()=>document.querySelector('#orbOverlay.on .tela-ajuda-btn'),frase:t('Cada tela tem um "?" com três quadrinhos.')}),500)}},
+  {id:'exemplo',e:'🧪',n:'Montar um exemplo',leva:()=>{abrirOrbital();setTimeout(()=>{if(!document.querySelector('#orbOverlay .tv-ex-bt'))toast(t('O exemplo aparece quando o mapa está vazio.'))},700)}},
+  {id:'mundo',e:'🌌',n:'Criar um mundo novo',leva:()=>abrirGalaxia()}
+];
+const _TQ_K='vox_truques';
+function _tqFeitos(){try{return JSON.parse(VOX_LS.get(_TQ_K)||'{}')||{}}catch(e){return {}}}
+function _tqPrimeiroCard(){return [...document.querySelectorAll('#cardsList .card:not(.proc-card):not(.folder-hidden)')].find(c=>(c.querySelector('textarea')?.value||'').trim())||null}
+function _tqSemNota(){toast(t('Grave ou escreva uma nota primeiro.'))}
+function _truque(id){
+  const T=TRUQUES.find(x=>x.id===id);if(!T)return;
+  const f=_tqFeitos();if(f[id])return;
+  f[id]=Date.now();try{VOX_LS.set(_TQ_K,JSON.stringify(f))}catch(e){}
+  const n=TRUQUES.filter(x=>f[x.id]).length;
+  // O selo espera a gravação acabar e nunca cobre um aviso.
+  const mostrar=tent=>{
+    if(tent>20)return;
+    if((typeof isRec!=='undefined'&&isRec)||document.getElementById('toastWrap')?.classList.contains('on')){setTimeout(()=>mostrar(tent+1),900);return}
+    document.getElementById('truqueSelo')?.remove();
+    const b=document.createElement('button');b.type='button';b.id='truqueSelo';b.className='truque-selo';
+    b.innerHTML=`<span class="ts-ic" aria-hidden="true">${T.e}</span><span><b>${escHtml(t('Truque novo: {x}').replace('{x}',t(T.n)))}</b><small>${escHtml(t('{n} de {m} na sua caderneta').replace('{n}',n).replace('{m}',TRUQUES.length))}</small></span>`;
+    b.onclick=()=>{b.remove();_truquesAbrir()};
+    document.body.appendChild(b);
+    if(!_voxReduzMov()){b.classList.add('in');try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}}
+    setTimeout(()=>{b.classList.add('out');setTimeout(()=>b.remove(),300)},3200);
+  };
+  setTimeout(()=>mostrar(0),700);
+  _gvTruquesSinc();
+}
+function _gvTruquesSinc(){const el=document.getElementById('gvTruquesN');if(el){const f=_tqFeitos();el.textContent=t('{n} de {m}').replace('{n}',TRUQUES.filter(x=>f[x.id]).length).replace('{m}',TRUQUES.length)}}
+function _truquesAbrir(){
+  // O que já está no app conta: quem já gravou ou já tem pasta não começa do zero.
+  if(document.querySelector('#cardsList .card[data-type="gravacao"]:not([data-tags*="demo"])'))_tqMarcarQuieto('gravar');
+  if(folders.some(f=>!f.del&&!f.exemplo&&!f.exemploMapa))_tqMarcarQuieto('pasta');
+  if(document.querySelector('#cardsList .card[data-pinned="true"]'))_tqMarcarQuieto('fixar');
+  const f=_tqFeitos(),n=TRUQUES.filter(x=>f[x.id]).length,prox=TRUQUES.find(x=>!f[x.id]);
+  document.getElementById('encAjudaOv')?.remove();
+  const ov=document.createElement('div');ov.id='encAjudaOv';ov.className='enc-ajuda-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-labelledby','eaTit');
+  ov.innerHTML=`<div class="ea-caixa"><div class="ea-cab"><b id="eaTit">${escHtml(t('Seus truques'))}</b><button type="button" class="ea-x" aria-label="${escHtml(t('Fechar'))}">×</button></div>
+    <span class="tq-cont"><b class="tq-odo" data-n="${n}">${n}</b> ${escHtml(t('de {m}').replace('{m}',TRUQUES.length))}</span>
+    <div class="tq-grade">${TRUQUES.map(x=>`<div class="tq-s${f[x.id]?' on':''}" role="img" aria-label="${escHtml(t(x.n)+' · '+(f[x.id]?t('aprendido'):t('ainda não')))}"><span class="tq-e" aria-hidden="true">${x.e}</span>${escHtml(t(x.n))}</div>`).join('')}</div>
+    ${prox?`<div class="tq-prox"><span>${escHtml(t('O próximo:'))} <b>${escHtml(t(prox.n))}</b></span><button type="button" class="tq-leva">${escHtml(t('Me leva lá'))}</button></div>`:`<p class="ea-dica">${escHtml(t('Você já conhece todos os truques. Eles continuam aqui.'))}</p>`}
+    <p class="ea-dica">${escHtml(t('É uma coleção, não uma sequência: nada se perde se você ficar uns dias sem usar.'))}</p>
+    <div class="ea-pe"><button type="button" class="ea-ok">${escHtml(t('Fechar'))}</button></div></div>`;
+  const fechar=()=>{ov.remove();document.removeEventListener('keydown',tecla,true)};
+  const tecla=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();fechar()}};
+  ov.querySelector('.ea-x').onclick=fechar;ov.querySelector('.ea-ok').onclick=fechar;
+  ov.querySelector('.tq-leva')?.addEventListener('click',()=>{fechar();try{closeModal()}catch(e){}try{fecharPainel()}catch(e){}setTimeout(()=>prox.leva(),250)});
+  ov.addEventListener('click',e=>{if(e.target===ov)fechar()});
+  document.addEventListener('keydown',tecla,true);
+  document.body.appendChild(ov);ov.querySelector('.ea-ok').focus();
+  const odo=ov.querySelector('.tq-odo');
+  if(odo&&n&&!_voxReduzMov()){const t0=performance.now(),dur=Math.min(600,150+n*40);const fr=ts=>{const p=Math.min(1,(ts-t0)/dur);odo.textContent=String(Math.round(n*(1-Math.pow(1-p,3))));if(p<1)requestAnimationFrame(fr)};odo.textContent='0';requestAnimationFrame(fr)}
+}
+function _tqMarcarQuieto(id){const f=_tqFeitos();if(!f[id]){f[id]=Date.now();try{VOX_LS.set(_TQ_K,JSON.stringify(f))}catch(e){}}}
 // ── Tela de atendimento (proposta 3) ──
 // Ao gravar uma consulta, reunião ou entrevista, o Vox vira uma tela calma e
 // escura: com quem é, o relógio, o que ajuda NAQUELE tipo de encontro (o "Da
@@ -38398,7 +38524,7 @@ function applyDiarChatEdit(id,raw){
 
 // ── MODO CONVERSA UNIVERSAL (overlay tela cheia) ──
 function openConversaMode(id){
-  _telaDica('conversar');
+  _telaDica('conversar');try{_truque('conversar')}catch(e){}
   if(_precisaConfigurar())return;
   const card=document.getElementById(id);if(!card)return;
   // Origem visual da animação de abertura: o overlay "nasce" a partir do
@@ -42172,6 +42298,7 @@ function _painelPerguntar(q){
       <form class="pg-form" onsubmit="event.preventDefault();_guiaResponder(this.querySelector('input').value)"><input id="pgInput" type="text" maxlength="300" autocomplete="off" placeholder="${escHtml(t('Ex.: onde fica a ficha da pessoa?'))}" aria-label="${escHtml(t('Sua pergunta'))}"><button type="submit" class="pn-bt pn-p">${escHtml(t('Perguntar'))}</button></form>
       <div class="pg-sug">${sug.map(x=>`<button type="button" class="pg-chip" onclick="_guiaResponder(${escHtml(JSON.stringify(x))})">${escHtml(x)}</button>`).join('')}</div>
       <div id="pgResp" aria-live="polite"></div>
+      <button type="button" class="pg-chip" onclick="_truquesAbrir()">✨ ${escHtml(t('Seus truques'))}</button>
       <span class="pn-sub">${escHtml(t('As respostas comuns vêm do próprio Vox, sem internet. Só quando ele não sabe, a pergunta (e nada das suas notas) vai para a IA que você configurou.'))}</span>
     </section></div>`;
   const inp=document.getElementById('pgInput');
@@ -42651,6 +42778,7 @@ async function runLens(id,lensKey,focus='',sel=null,opts=null){
       // Diz ONDE o resultado ficou: antes ele aparecia no topo sem aviso e
       // a pessoa achava que nada tinha acontecido.
       toastDesfazer(t('{x} pronto: virou um card novo, no topo.').replace('{x}',L.label),()=>_cardIrAte(novo),t('Ir até lá'));
+      try{_truque('transformar')}catch(e){}
       if(viaCortesia&&_cortesiaLenteUltima)_cortesiaNotaUltima(novo,'lente');
     }
   }catch(e){
