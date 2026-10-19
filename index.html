@@ -10272,7 +10272,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.11';
+const VOX_VERSION='2026.10.19.12';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11776,6 +11776,14 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Me mostra":"Show me",
+"Cada nota mora no dia em que nasceu. Arraste pelo ⠿ para outro dia.":"Each note lives on the day it was made. Drag it by its ⠿ to another day.",
+"Este é o mapa das suas pastas. Toque numa pasta para ver as notas; o + cria uma pasta ali.":"This is the map of your folders. Tap a folder to see its notes; the + creates a folder there.",
+"Toque na bolinha para entrar na pasta. O número mostra as notas sem entrar.":"Tap a circle to go into the folder. The number shows its notes without going in.",
+"Cada mundo é um Vox separado. Toque num planeta para ver o que tem dentro.":"Each world is a separate Vox. Tap a planet to see what's inside.",
+"Pergunte sobre este texto com as suas palavras, ou toque num dos atalhos.":"Ask about this text in your own words, or tap one of the shortcuts.",
+"Comece por aqui: cada lente cria um card novo e o original fica como está.":"Start here: each lens creates a new card and the original stays as it is.",
+"As mesmas notas, de outros jeitos: no calendário, num mapa ou em órbita.":"The same notes, other ways: on a calendar, as a map or in orbit.",
 "Exemplo:":"Example:",
 "O que é":"What it is",
 "Como se usa":"How to use it",
@@ -15739,6 +15747,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(!_keysHasAny()){
     restoreKeysFromCredentialVault(true).then(ok=>{if(ok){loadCfg();toast(t('🔒 Chaves restauradas do cofre do navegador!'))}});
   }
+  setTimeout(()=>{if(document.getElementById('foldersBar')?.classList.contains('open'))_telaDica('pastas')},5000);
   loadLearningData();await loadHistory();updateStats();checkSend();applyView();loadFontSize();
   // A faxina desceu pra DEPOIS do loadFolders() (01/09/2026): desde que pasta
   // também tem prazo de 30 dias, ela precisa de folders[] na mão — rodando
@@ -20483,7 +20492,7 @@ const FC_NEW_CARD_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="no
 const FC_FLOAT_TOGGLE_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
 
 function abrirFluxograma(){
-  _telaMarcar('fluxo');
+  _telaMarcar('fluxo');_telaDica('fluxo');
   let ov=document.getElementById('fcOverlay');
   if(!ov){
     ov=document.createElement('div');
@@ -21864,7 +21873,7 @@ function _orbEnquadrar(){
 }
 
 function abrirOrbital(){
-  _telaMarcar('orbital');
+  _telaMarcar('orbital');_telaDica('orbital');
   let ov=document.getElementById('orbOverlay');
   if(!ov){
     ov=document.createElement('div');
@@ -22318,7 +22327,7 @@ function _calCardsDoCalendario(){
 
 // ── abrir / fechar ──
 function abrirCalendario(){
-  _telaMarcar('cal');
+  _telaMarcar('cal');_telaDica('cal');
   let ov=document.getElementById('calOverlay');
   if(!ov){
     ov=document.createElement('div');
@@ -27131,7 +27140,7 @@ function toggleFolders(){
   document.getElementById('foldersBackdrop').classList.toggle('on',open&&window.innerWidth<=640);
   document.getElementById('btnFolders').classList.toggle('folders-on',open);
   localStorage.setItem('vox_folders_open',open?'1':'0');
-  if(open)_ajustarAlturaPastas();
+  if(open){_ajustarAlturaPastas();_telaDica('pastas')}
   // A porta dos Mundos dá um cintilo quando a barra abre — no máximo 1 a
   // cada 45 s, pra nunca virar pisca-pisca.
   if(open&&Date.now()-(toggleFolders._cint||0)>45000){
@@ -36242,6 +36251,28 @@ function _telaAjuda(k){
   document.body.appendChild(ov);ov.querySelector('.ea-ok').focus();
   try{_truque&&_truque('ajuda')}catch(e){}
 }
+// ── Balão na primeira vez de cada tela (proposta 5) ──
+// Um por tela, só na primeira vez, na fila do motor de dicas (nunca dois
+// juntos, nunca em cima de aviso, nunca durante a gravação). "Me mostra"
+// abre os quadrinhos daquela tela.
+const TELA_DICA={
+  cal:{alvo:()=>document.querySelector('#calOverlay.on .tela-ajuda-btn'),frase:'Cada nota mora no dia em que nasceu. Arraste pelo ⠿ para outro dia.'},
+  fluxo:{alvo:()=>document.querySelector('#fcOverlay.on .tela-ajuda-btn'),frase:'Este é o mapa das suas pastas. Toque numa pasta para ver as notas; o + cria uma pasta ali.'},
+  orbital:{alvo:()=>document.querySelector('#orbOverlay.on .tela-ajuda-btn'),frase:'Toque na bolinha para entrar na pasta. O número mostra as notas sem entrar.'},
+  mundos:{alvo:()=>document.querySelector('#galaxia.on #btGxAjuda'),frase:'Cada mundo é um Vox separado. Toque num planeta para ver o que tem dentro.'},
+  conversar:{alvo:()=>[...document.querySelectorAll('.cchat-ajuda')].find(b=>b.getBoundingClientRect().width),frase:'Pergunte sobre este texto com as suas palavras, ou toque num dos atalhos.'},
+  transformar:{alvo:()=>document.querySelector('.lens-panel.on .lens-comece-b'),frase:'Comece por aqui: cada lente cria um card novo e o original fica como está.',sem:true},
+  pastas:{alvo:()=>{const e=document.getElementById('folderVerComo');return e&&document.getElementById('foldersBar')?.classList.contains('open')?e:null},frase:'As mesmas notas, de outros jeitos: no calendário, num mapa ou em órbita.',sem:true,fundo:true}
+};
+function _telaDica(k){
+  const D=TELA_DICA[k];if(!D)return;
+  // O céu da primeira vez já tem o seu guia; a dica dele é pra quem volta.
+  // A das Pastas fala de "as mesmas notas": sem nota nenhuma ainda, ela só
+  // atrapalharia as boas-vindas (o "só seu" do Diário, por exemplo).
+  if((k==='mundos'||k==='pastas')&&!(typeof _temNotaDaPessoa==='function'&&_temNotaDaPessoa()))return;
+  setTimeout(()=>_dica({id:'tela-'+k,tela:!D.fundo,mao:!D.sem,alvo:D.alvo,frase:t(D.frase),
+    acao:TELA_AJUDA[k]?{rot:t('Me mostra'),fn:()=>_telaAjuda(k)}:null}),900);
+}
 // ── Tela de atendimento (proposta 3) ──
 // Ao gravar uma consulta, reunião ou entrevista, o Vox vira uma tela calma e
 // escura: com quem é, o relógio, o que ajuda NAQUELE tipo de encontro (o "Da
@@ -38273,6 +38304,7 @@ function applyDiarChatEdit(id,raw){
 
 // ── MODO CONVERSA UNIVERSAL (overlay tela cheia) ──
 function openConversaMode(id){
+  _telaDica('conversar');
   if(_precisaConfigurar())return;
   const card=document.getElementById(id);if(!card)return;
   // Origem visual da animação de abertura: o overlay "nasce" a partir do
@@ -40654,6 +40686,7 @@ function _renderLensListPanel(id){
     `</button>`;
   p.innerHTML=html;
   p.classList.add('on');
+  _telaDica('transformar');
   setTimeout(()=>document.addEventListener('click',_lensPanelAway),0);
 }
 // Fecha o menu de lentes ao clicar fora dele (e fora do botão que o abriu) —
@@ -42245,9 +42278,17 @@ function _dica(d){
   d.tent=0;_dicaFila.push(d);_dicaTentar();
 }
 function _dicaLivre(){
+  if(!_dicaLivreBase())return false;
+  if(document.querySelector('.tx-overlay.on,#galaxia.on'))return false;
+  return true;
+}
+// O mínimo pra qualquer balão: sem gravação, sem aviso, sem ajuda aberta.
+// As dicas de tela (d.tela) moram DENTRO do Calendário, do Mapa, da Órbita,
+// do céu e do Conversar, então essas janelas não contam como "por cima".
+function _dicaLivreBase(){
   if(typeof isRec!=='undefined'&&isRec)return false;
   if(document.getElementById('toastWrap')?.classList.contains('on'))return false;
-  if(document.querySelector('.tx-overlay.on,#galaxia.on,#micOverlay.on'))return false;
+  if(document.querySelector('#micOverlay.on,#encAjudaOv,#dioOv.on,#encOv.on'))return false;
   return true;
 }
 // Visível de verdade: o ponto do meio do alvo não está coberto por outra coisa.
@@ -42262,15 +42303,19 @@ function _dicaAlvoVisivel(el){
 function _dicaTentar(){
   clearTimeout(_dicaTimer);
   if(_dicaAtual||!_dicaFila.length)return;
-  if(!_dicaLivre()){_dicaTimer=setTimeout(_dicaTentar,700);return}
+  if(!_dicaLivreBase()){_dicaTimer=setTimeout(_dicaTentar,700);return}
   if(!_dicaLigadas())_dicaFila=_dicaFila.filter(d=>d.sempre);
+  // Com uma tela aberta por cima, só as dicas DAQUELA tela concorrem; as do
+  // fundo esperam sem gastar tentativa.
+  const cheia=!_dicaLivre();
   // A primeira da fila cujo alvo está à vista. As outras esperam um pouco (o alvo
   // pode estar entrando na tela); se não aparecerem, saem sem contar como vistas.
   for(let i=0;i<_dicaFila.length;i++){
-    const d=_dicaFila[i],el=d.alvo&&d.alvo();
+    const d=_dicaFila[i];if(cheia&&!d.tela)continue;
+    const el=d.alvo&&d.alvo();
     if(_dicaAlvoVisivel(el)){_dicaFila.splice(i,1);_dicaMostrar(d,el);return}
   }
-  _dicaFila=_dicaFila.filter(d=>++d.tent<=12);
+  _dicaFila=_dicaFila.filter(d=>(cheia&&!d.tela)||++d.tent<=12);
   if(_dicaFila.length)_dicaTimer=setTimeout(_dicaTentar,700);
 }
 function _dicaMostrar(d,el){
@@ -44755,8 +44800,12 @@ function toast(msg,err=false){
   document.getElementById('toastEl').className='toast '+(err?'err':'ok');
   const u=document.getElementById('toastUndo');if(u){u.hidden=true;u.onclick=null}
   clearTimeout(_toastT);
+  _dicaSaiDoAviso();
   w.classList.add('on');_toastT=setTimeout(()=>w.classList.remove('on'),3200);
 }
+// O aviso chega e o balão sai do caminho no mesmo instante; a vigia do balão
+// devolve ele quando o aviso some.
+function _dicaSaiDoAviso(){const b=document.getElementById('dicaBalao');if(b)b.style.visibility='hidden'}
 // Toast com botão de desfazer. É o par obrigatório de toda ação frequente que
 // mexe em card (arquivar, mandar pra lixeira): a regra de ações reversíveis
 // diz que quanto mais frequente a ação, mais leve tem que ser a recuperação —
@@ -44775,6 +44824,7 @@ function toastDesfazer(msg,aoDesfazer,label){
     u.textContent=label||t('Desfazer');
     u.onclick=()=>{clearTimeout(_toastT);w.classList.remove('on');u.hidden=true;u.onclick=null;aoDesfazer()};
   }
+  _dicaSaiDoAviso();
   w.classList.add('on');
   _toastT=setTimeout(()=>{w.classList.remove('on');if(u){u.hidden=true;u.onclick=null}},6000);
 }
@@ -46701,6 +46751,7 @@ window.addEventListener('resize',function(){
   },140);
 });
 function abrirGalaxia(e,opts){
+  try{_telaDica('mundos')}catch(_){}
   if(e)e.stopPropagation();
   if(aberta)return;
   aberta=true;
