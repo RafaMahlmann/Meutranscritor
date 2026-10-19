@@ -1950,6 +1950,7 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .dio-tranca-ja{color:#1b7a4a;border-color:rgba(27,122,74,.35)}
 body.dio-oculto #cardsList .card:not(.dio-ver) .cb,body.dio-oculto #cardsList .card:not(.dio-ver) .dio-qc,body.dio-oculto #cardsList .card:not(.dio-ver) .md-preview,body.dio-oculto #cardsList .card:not(.dio-ver) .dio-volta-cx{filter:blur(7px);user-select:none;pointer-events:none}
 body.dio-oculto #cardsList .card:not(.dio-ver){cursor:pointer}
+body.dio-oculto #dioAnoOv .dio-sem-dia li .tx,body.dio-oculto #dioTopo .dio-neste q{filter:blur(6px);user-select:none}
 body.dio-oculto #cardsList .card:not(.dio-ver) .sname-badge{filter:blur(4px)}
 @media (prefers-reduced-motion:no-preference){body.dio-oculto #cardsList .card .cb{transition:filter .2s}}
 .dio-tranc{flex:1 1 100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
@@ -10210,7 +10211,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.1';
+const VOX_VERSION='2026.10.19.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11714,6 +11715,10 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Grava no modo Livre e abre no seu Diário, com a pergunta do dia.":"Records in Free mode and opens in your Journal, with the question of the day.",
+"Pede a senha ao abrir o Diário e criptografa as notas e as fotos. Tranca sozinho depois de 5 minutos parado (dá pra mudar aqui).":"Asks for the password when you open the Journal and encrypts your notes and photos. Locks itself after 5 idle minutes (you can change this here).",
+"Nomes de quem aparece no seu diário e palavras que você usa, separados por vírgula. Se o Vox errar sempre uma palavra, ensine assim: pedo = Pedro.":"Names of people in your journal and words you use, separated by commas. If Vox keeps getting a word wrong, teach it like this: pedo = Pedro.",
+"Ex.: Pedro, Júlia, mano, aff, pedo = Pedro":"E.g.: Pedro, Júlia, bro, ugh, pedo = Pedro",
 "Proteger esta cópia":"Protect this backup",
 "Este mundo é trancado, então a cópia também sai protegida. Escolha uma senha pra este arquivo (pode ser a mesma do mundo). Sem ela, ninguém abre a cópia, nem você.":"This world is locked, so the backup is protected too. Choose a password for this file (it can be the same as the world's). Without it, nobody can open the backup, not even you.",
 "Cópia não salva.":"Backup not saved.",
@@ -15775,7 +15780,7 @@ const ABRE_PERFIS=[
   {id:'consulta',  nome:'Consulta',          modo:'consulta',  abre:'doc',  desc:'Grava no modo Consulta. Da próxima vez, abre no Documento.'},
   {id:'fluido',    nome:'Pensamento fluido', modo:'livre',     abre:'fluxo',desc:'Grava no modo Livre. Da próxima vez, abre no Fluxograma.'},
   {id:'entrevista',nome:'Entrevista',        modo:'entrevista',abre:'list', desc:'Grava no modo Entrevista. Da próxima vez, abre na Lista.'},
-  {id:'diario',    nome:'Diário',            modo:'livre',     abre:'cal',  desc:'Grava no modo Livre. Da próxima vez, abre no Calendário, dia por dia.'},
+  {id:'diario',    nome:'Diário',            modo:'livre',     abre:'last', desc:'Grava no modo Livre e abre no seu Diário, com a pergunta do dia.'},
   {id:'estudo',    nome:'Estudo',            modo:'livre',     abre:'doc',  desc:'Grava no modo Livre. Da próxima vez, abre no Documento.'},
   {id:'jeito',     nome:'Do meu jeito',      modo:null,        abre:'last', desc:'Abre onde você parou, no último modo que usou.'}
 ];
@@ -15923,6 +15928,9 @@ function _abrePerfilPendente(){
 }
 function _abreAoIniciar(){
   _abrePerfilPendente();
+  // Diário criado quando o jeito abria no Calendário: passa a abrir onde a pessoa
+  // parou (a pergunta do dia e o selo moram no Mural; persona Bia, rodada 2).
+  if(_lsLer('vox_perfil')==='diario'&&_lsLer('vox_abre_em')==='cal'&&!_lsLer('vox_abre_guia_ok'))_abreGravar('last');
   const modo=_lsLer('vox_modo');
   if(modo&&modo!==sessionMode&&document.querySelector('.smode-btn[data-m="'+modo+'"]'))setMode(modo,true);
   // Primeira vez: o vídeo e o céu mandam. Antes esta linha exigia também
@@ -27046,7 +27054,7 @@ function _txDica(fd){
     // No Diário vão primeiro os nomes e o jeito de falar da pessoa ("Pedro" virava
     // "pedo", "brigamos" virava "begamos" no teste com a persona Bia), e as palavras
     // que ela já ensinou ao Vox (dicionário e "sempre trocar" do Revisar texto).
-    const dio=typeof _mundoEhDiario==='function'&&_mundoEhDiario()?String(_painelLer().diarioNomes||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean):[];
+    const dio=typeof _mundoEhDiario==='function'&&_mundoEhDiario()?String(_painelLer().diarioNomes||'').split(/[,;\n]/).map(x=>x.split(/\s*(?:=|→|->)\s*/).pop().trim()).filter(Boolean):[];
     const aprendidas=(typeof _personalDict!=='undefined'?_personalDict:[]).concat((typeof _learnedRules!=='undefined'?_learnedRules:[]).map(r=>r.to));
     const ps=dio.concat(String(pc.palavras||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean),o?o.termos:[],aprendidas).filter(x=>x&&x.length<40);
     const u=[...new Set(ps)];if(!u.length)return;
@@ -27720,7 +27728,7 @@ function _maybeShowLpHint(){
   if(txt)txt.textContent=t('💡 Segure o botão de gravar pra escolher a fonte: microfone, som interno ou os dois');
   hint.style.display='block';
 }
-function _dismissLpHint(){_hideLpHint()}
+function _dismissLpHint(){try{localStorage.setItem('vox_lp_hint_shown','3')}catch(e){}_hideLpHint()}   // "Entendi" vale de vez
 function _hideLpHint(){
   const hint=document.getElementById('lpHint');if(hint)hint.style.display='none';
 }
@@ -27895,6 +27903,9 @@ function _matchScore(textoNorm,qNorm){
     const budget=_typoBudget(qNorm.length);
     if(!budget)return 0;
     const palavras=textoNorm.split(/[^\p{L}\p{N}]+/u);
+    // Mesma raiz: "briga" acha "brigou", "brigamos" (persona Bia, rodada 2).
+    const raiz=qNorm.length>=5?qNorm.replace(/[aeiou]+$/,''):'';
+    if(raiz.length>=4&&palavras.some(w=>w.length>raiz.length&&w.startsWith(raiz)))return 0.75;
     for(const w of palavras){
       if(!w||Math.abs(w.length-qNorm.length)>budget)continue;
       if(_levenshtein(w,qNorm)<=budget)return 0.5;
@@ -40871,7 +40882,9 @@ window.addEventListener('load',()=>setTimeout(_cofreVivo,500));
 // O compartilhar do celular, a um toque, mas com o texto à vista antes de sair:
 // dá pra cortar o que não é pra mandar. No Diário vai sem a assinatura do Vox.
 function _dioMandar(id){
-  const c=document.getElementById(id);const txt=(c&&c.querySelector('.cb textarea')?.value||'').trim();
+  const c=document.getElementById(id);
+  // O que nasce de lente vem em Markdown: vai sem os ** e com ☐ no lugar de "- [ ]".
+  const txt=(c&&c.querySelector('.cb textarea')?.value||'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/^\s*-\s*\[\s\]\s*/gm,'☐ ').replace(/^\s*-\s*\[x\]\s*/gim,'☑ ').replace(/^#+\s*/gm,'').trim();
   if(!txt){toast(t('ℹ️ Card vazio'),true);return}
   document.getElementById('dioMandarOv')?.remove();
   const ov=document.createElement('div');ov.id='dioMandarOv';ov.className='dio-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-labelledby','dioMandarT');
@@ -40960,11 +40973,17 @@ function _dioResponder(){if(typeof isRec!=='undefined'&&isRec)return;if(_cofreFe
 // A gravação que terminou leva a pergunta que estava na tela quando começou.
 // As correções que a pessoa ensinou ("sempre trocar" no Revisar texto) valem
 // sozinhas na fala nova do Diário.
+// "errado = certo" no campo "Meus nomes" também vira correção (o Revisar texto só
+// ensina trocas de repetição, e a Bia não achou como ensinar uma troca).
+function _dioRegrasDoCampo(){
+  return String(_painelLer().diarioNomes||'').split(/[,;\n]/).map(x=>x.split(/\s*(?:=|→|->)\s*/)).filter(p=>p.length===2&&p[0].trim()&&p[1].trim()).map(p=>({from:p[0].trim(),to:p[1].trim()}));
+}
 function _dioCorrigir(c){
-  if(!c||typeof _learnedRules==='undefined'||!_learnedRules.length)return;
+  const regras=(typeof _learnedRules!=='undefined'?_learnedRules:[]).concat(_dioRegrasDoCampo());
+  if(!c||!regras.length)return;
   const ta=c.querySelector('.cb textarea');if(!ta)return;
   let v=ta.value;
-  _learnedRules.forEach(r=>{if(!r||!r.from||!r.to)return;const esc=r.from.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');v=v.replace(new RegExp('(^|[^\\p{L}])('+esc+')(?=$|[^\\p{L}])','giu'),(m,a)=>a+r.to)});
+  regras.forEach(r=>{if(!r||!r.from||!r.to)return;const esc=r.from.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');v=v.replace(new RegExp('(^|[^\\p{L}])('+esc+')(?=$|[^\\p{L}])','giu'),(m,a)=>a+r.to)});
   if(v!==ta.value){ta.value=v;try{autoR(ta)}catch(e){}}
 }
 function _dioAplicarPendente(id){
@@ -40972,6 +40991,9 @@ function _dioAplicarPendente(id){
   if(!c||!p||!p.em||c.dataset.type!=='gravacao'||Date.now()-p.em>30*60000)return;
   _dioPendente=null;
   _dioCorrigir(c);
+  c.classList.add('dio-ver');   // a fala que acabou de gravar aparece, mesmo com a lista borrada
+  // A nota de antes, do mesmo dia, para de perguntar "Como foi o dia?".
+  document.querySelectorAll('#cardsList .card').forEach(x=>{if(x!==c&&x.querySelector('.dio-selo'))_dioSeloPintar(x)});
   const o=_dioLer(c);if(p.perg)o.perg=p.perg;_dioGravar(c,o);_dioCardSinc(c);saveHistory();
 }
 // Pinta o que é do Diário dentro de um card (a pergunta e o selo).
@@ -41044,13 +41066,17 @@ function _dioSeloPintar(c){
       <button type="button" class="dio-link" onclick="_dioReabrir('${escJs(id)}')">${escHtml(t('Mudar'))}</button>`;
     return;
   }
-  if((c.dataset.quando!==hoje&&c.dataset.dioAberto!=='1')||!_dioEhEntrada(c)||c.dataset.type==='texto'&&!(c.querySelector('textarea')?.value||'').trim()){box.hidden=true;box.innerHTML='';return}
+  // Várias notas no mesmo dia: só a mais nova pergunta (o dia é um só).
+  const maisNova=c.dataset.dioAberto==='1'||![...document.querySelectorAll('#cardsList .card')].some(x=>x!==c&&x.dataset.quando===hoje&&_dioEhEntrada(x)&&x.dataset.del!=='1'&&(x.dataset.dt||'')>(c.dataset.dt||''));
+  if((c.dataset.quando!==hoje&&c.dataset.dioAberto!=='1')||!maisNova||!_dioEhEntrada(c)||c.dataset.type==='texto'&&!(c.querySelector('textarea')?.value||'').trim()){box.hidden=true;box.innerHTML='';return}
   const modo=_dioHumorModo();
   const humores=modo==='5'?DIO_HUMORES:modo==='3'?[DIO_HUMORES[0],DIO_HUMORES[2],DIO_HUMORES[4]]:[];
   // Escolhidas = só o que a pessoa tocou. As tiradas da fala aparecem tracejadas,
   // como sugestão, e vêm primeiro (antes vinham marcadas e o toque desmarcava).
   const esc=o.etq||[],sug=_dioEtqSugeridas(c);
-  const etq=[...new Set(esc.concat(sug,DIO_ETQ.map(e=>e[0])))].slice(0,6);
+  // Ordem estável: sugeridas, depois as de sempre, depois as escolhidas fora delas
+  // (antes a tocada pulava pro começo da fileira).
+  const etq=[...new Set(sug.concat(DIO_ETQ.map(e=>e[0])).slice(0,6).concat(esc))];
   box.className='dio-selo';box.hidden=false;
   box.innerHTML=`${humores.length?`<span class="dio-sk">${escHtml(t('Como foi o dia?'))}</span>
     <div class="dio-humores" role="radiogroup" aria-label="${escHtml(t('Como foi o dia?'))}">${humores.map(([v,e,r])=>`<button type="button" role="radio" aria-checked="${o.humor===v}" aria-label="${escHtml(t(r))}" title="${escHtml(t(r))}" class="${o.humor===v?'on':''}" style="--dc:${_dioHumorCor(v)}" onclick="_dioHumor('${escJs(id)}',${v})">${modo==='3'?'':e}</button>`).join('')}</div>`:''}
@@ -41411,7 +41437,7 @@ function _dioSoSeuAbrir(){
   ov.innerHTML=`<div class="dio-caixa">
     <div class="dio-cab"><b id="dioSoSeuT">${escHtml(t('Este diário é só seu'))}</b><button type="button" class="dio-x" aria-label="${escHtml(t('Fechar'))}">×</button></div>
     <p class="dio-lead">${escHtml(t('O que você fala aqui é o mais íntimo que existe. Escolha como ele fica guardado. Dá pra mudar depois no botão Só seu, no alto do Diário.'))}</p>
-    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🔒</span><span class="dio-tx"><b>${escHtml(tranc?t('Trancado com senha'):t('Trancar com senha'))}</b><small>${escHtml(t('Pede a senha ao abrir o Diário e criptografa as notas e as fotos.'))}</small></span>
+    <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🔒</span><span class="dio-tx"><b>${escHtml(tranc?t('Trancado com senha'):t('Trancar com senha'))}</b><small>${escHtml(t('Pede a senha ao abrir o Diário e criptografa as notas e as fotos. Tranca sozinho depois de 5 minutos parado (dá pra mudar aqui).'))}</small></span>
       <button type="button" class="dio-acao" data-a="senha">${escHtml(tranc?t('Gerenciar'):t('Trancar'))}</button></div>
     ${tranc?`<div class="dio-linha dio-col"><span class="dio-ic" aria-hidden="true">⏱️</span><span class="dio-tx"><b>${escHtml(t('Trancar sozinho'))}</b><small>${escHtml(t('Depois desse tempo sem mexer, o Diário tranca e pede a senha de novo, mesmo com a aba aberta.'))}</small></span>
       <div class="dio-seg" role="radiogroup" aria-label="${escHtml(t('Trancar sozinho'))}">${[['5',t('5 minutos')],['60',t('1 hora')],['0',t('Só no botão')]].map(([v,r])=>`<button type="button" role="radio" aria-checked="${String(_cofreLimiteMin())===v}" class="${String(_cofreLimiteMin())===v?'on':''}" data-a="tempo" data-v="${v}">${escHtml(r)}</button>`).join('')}</div></div>`:''}
@@ -41425,8 +41451,8 @@ function _dioSoSeuAbrir(){
       <button type="button" class="dio-sw${_dioVoltaLigada()?' on':''}" role="switch" aria-checked="${_dioVoltaLigada()}" data-a="volta" aria-label="${escHtml(t('O Vox pergunta de volta'))}"><i></i></button></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🌙</span><span class="dio-tx"><b>${escHtml(t('Tela calma ao gravar'))}</b><small>${escHtml(t('A tela escurece como um abajur, com a pergunta e a onda da sua voz.'))}</small></span>
       <button type="button" class="dio-sw${_dioTelaLigada()?' on':''}" role="switch" aria-checked="${_dioTelaLigada()}" data-a="tela" aria-label="${escHtml(t('Tela calma ao gravar'))}"><i></i></button></div>
-    <div class="dio-linha dio-col"><span class="dio-ic" aria-hidden="true">🗣️</span><span class="dio-tx"><b>${escHtml(t('Meus nomes e meu jeito de falar'))}</b><small>${escHtml(t('Nomes de quem aparece no seu diário e palavras que você usa. O Vox passa a escrever do seu jeito. Separe por vírgula.'))}</small></span>
-      <textarea class="dio-nomes" rows="2" data-a="nomes" placeholder="${escHtml(t('Ex.: Pedro, Júlia, mano, aff, simulado'))}" aria-label="${escHtml(t('Meus nomes e meu jeito de falar'))}">${escHtml(pc.diarioNomes||'')}</textarea></div>
+    <div class="dio-linha dio-col"><span class="dio-ic" aria-hidden="true">🗣️</span><span class="dio-tx"><b>${escHtml(t('Meus nomes e meu jeito de falar'))}</b><small>${escHtml(t('Nomes de quem aparece no seu diário e palavras que você usa, separados por vírgula. Se o Vox errar sempre uma palavra, ensine assim: pedo = Pedro.'))}</small></span>
+      <textarea class="dio-nomes" rows="2" data-a="nomes" placeholder="${escHtml(t('Ex.: Pedro, Júlia, mano, aff, pedo = Pedro'))}" aria-label="${escHtml(t('Meus nomes e meu jeito de falar'))}">${escHtml(pc.diarioNomes||'')}</textarea></div>
     <div class="dio-linha"><span class="dio-ic" aria-hidden="true">🎙️</span><span class="dio-tx"><b>${escHtml(t('O áudio some quando você fecha o Vox'))}</b><small>${escHtml(t('A fala vira texto no serviço que você escolheu. Enquanto o app está aberto, dá pra ouvir a gravação na nota; ao fechar, fica só o texto, neste aparelho.'))}</small></span></div>
     <div class="dio-linha dio-col"><span class="dio-ic" aria-hidden="true">🙂</span><span class="dio-tx"><b>${escHtml(t('Como marcar o dia'))}</b><small>${escHtml(t('Ao fechar o dia, um toque diz como foi. Ele colore o calendário.'))}</small></span>
       <div class="dio-seg" role="radiogroup" aria-label="${escHtml(t('Como marcar o dia'))}">${humor.map(([v,r])=>`<button type="button" role="radio" aria-checked="${v===hm}" class="${v===hm?'on':''}" data-a="humor" data-v="${v}">${escHtml(r)}</button>`).join('')}</div></div>
