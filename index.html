@@ -10210,7 +10210,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.18.10';
+const VOX_VERSION='2026.10.19.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11714,6 +11714,16 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Proteger esta cópia":"Protect this backup",
+"Este mundo é trancado, então a cópia também sai protegida. Escolha uma senha pra este arquivo (pode ser a mesma do mundo). Sem ela, ninguém abre a cópia, nem você.":"This world is locked, so the backup is protected too. Choose a password for this file (it can be the same as the world's). Without it, nobody can open the backup, not even you.",
+"Cópia não salva.":"Backup not saved.",
+"Cópia protegida":"Protected backup",
+"Esta cópia foi salva com senha. Digite a senha do arquivo.":"This backup was saved with a password. Type the file's password.",
+"Senha errada, ou o arquivo chegou cortado.":"Wrong password, or the file was cut off.",
+"Senha (6 letras ou mais)":"Password (6 characters or more)",
+"Use pelo menos 6 letras ou números.":"Use at least 6 letters or numbers.",
+"As duas senhas não estão iguais.":"The two passwords don't match.",
+"Tudo o que está aqui existe só neste aparelho. A cópia sai protegida com uma senha que você escolhe.":"Everything here exists only on this device. The backup is protected with a password you choose.",
 "Mandar pra alguém, conferindo o texto antes":"Send to someone, checking the text first",
 "Mandar":"Send",
 "Mandar este trecho":"Send this part",
@@ -15463,7 +15473,7 @@ const VOX_LEMBRETE_TXT={
     p:t('Foi há {n} dias. Você andou gravando bastante — vale guardar uma cópia.').replace('{n}',Math.floor(dias))}),
   primeiro:()=>({ic:'escudo',
     t:t('Você ainda não tem nenhuma cópia do seu Vox'),
-    p:t('Tudo o que está aqui existe só neste aparelho. Um arquivo resolve isso em dois segundos.')})
+    p:_mundoTrancado(_mundoAtivo)?t('Tudo o que está aqui existe só neste aparelho. A cópia sai protegida com uma senha que você escolhe.'):t('Tudo o que está aqui existe só neste aparelho. Um arquivo resolve isso em dois segundos.')})
 };
 function _voxCheckLembreteBackup(){
   if(isRec||isProc)return; // nunca em cima de uma gravação em andamento
@@ -32463,8 +32473,17 @@ async function exportProject(){
     learnedRules:JSON.parse(localStorage.getItem('vox_learned_rules')||'null'),
     tagNomes:_nomesCofreAtivo()&&_nomesProntos?_tagNomesLer():JSON.parse(localStorage.getItem('vox_tag_nomes')||'null')
   };
-  const json=JSON.stringify(data);
-  dl(json,`vox_projeto_${new Date().toISOString().slice(0,10)}.json`);
+  let json=JSON.stringify(data),protegido=false;
+  // Mundo trancado: a cópia sai protegida por uma senha, nunca em texto puro.
+  // Antes o "Salvar agora" baixava o diário inteiro legível pra pasta Downloads,
+  // onde qualquer pessoa da casa abre (persona Bia, rodada 2, 19/10/2026).
+  if(_mundoTrancado(_mundoAtivo)){
+    const pass=await _senhaModal({titulo:t('Proteger esta cópia'),texto:t('Este mundo é trancado, então a cópia também sai protegida. Escolha uma senha pra este arquivo (pode ser a mesma do mundo). Sem ela, ninguém abre a cópia, nem você.'),dupla:true});
+    if(!pass){toast(t('Cópia não salva.'));return}
+    const u8=await _txEncrypt(new TextEncoder().encode(json),pass);
+    json=JSON.stringify({app:'vox-protegido',v:1,d:_b64uEnc(u8)});protegido=true;
+  }
+  dl(json,`vox_projeto_${new Date().toISOString().slice(0,10)}${protegido?'_protegido':''}.json`);
   toast(t('Cópia de segurança salva ({n} {itemword}). Guarde o arquivo .json num lugar seguro.').replace('{n}',history.length).replace('{itemword}',t(history.length===1?'nota':'notas')));
   document.getElementById('expDrop')?.classList.remove('on');
   // Etapa 2 do plano de armazenamento durável: todo backup gerado com
@@ -32490,7 +32509,8 @@ function _importFile(file){
   reader.onload=()=>{
     const content=reader.result;
     const name=file.name.toLowerCase();
-    if(name.endsWith('.json')){
+    // Celular às vezes renomeia o download (sem .json): uma cópia do Vox se reconhece pelo conteúdo.
+    if(name.endsWith('.json')||/^\s*\{"app":"vox/.test(String(content).slice(0,40))){
       // Arquivo de 0 KB: acontece quando o download do backup e interrompido. Dizer isso claramente
       // poupa a pessoa de achar que o app e que errou.
       if(!String(content).trim()){toast(t('Este arquivo está vazio (0 KB). Ele não guardou nada — gere a cópia de novo.'),true);return}
@@ -32498,6 +32518,7 @@ function _importFile(file){
       try{data=JSON.parse(content)}catch(err){toast(t('Este arquivo não é uma cópia do Vox, ou chegou cortado no download.'),true);return}
       try{
         if(data&&data.app==='vox-pasta'){_txpArquivoRecebido(data);return}
+        if(data&&data.app==='vox-protegido'){_restaurarProtegido(data);return}
         // O backup das CHAVES tem outro caminho (pede senha). Em vez de errar, manda pro lugar certo.
         if(data&&data.app==='vox-keys'){toast(t('Esta é a cópia das suas chaves — restaurando as chaves.'));_restaurarChavesDoObjeto(data);return}
         if(!data||!Array.isArray(data.history))throw new Error(t('não é uma cópia do Vox'));
@@ -32513,6 +32534,40 @@ function _importFile(file){
     }
   };
   reader.readAsText(file);
+}
+// Cópia protegida (mundo trancado): pede a senha do arquivo e restaura.
+async function _restaurarProtegido(env){
+  const pass=await _senhaModal({titulo:t('Cópia protegida'),texto:t('Esta cópia foi salva com senha. Digite a senha do arquivo.')});
+  if(!pass)return;
+  let data;
+  try{data=JSON.parse(new TextDecoder().decode(await _txDecrypt(_b64uDec(env.d),pass)))}catch(e){toast(t('Senha errada, ou o arquivo chegou cortado.'),true);return}
+  if(!data||!Array.isArray(data.history)){toast(t('Este arquivo não é uma cópia do Vox, ou chegou cortado no download.'),true);return}
+  _restoreProject(data);
+}
+// Uma caixinha de senha (com confirmação, quando dupla). Devolve a senha ou null.
+function _senhaModal(o){
+  return new Promise(res=>{
+    document.getElementById('senhaOv')?.remove();
+    const ov=document.createElement('div');ov.id='senhaOv';ov.className='dio-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-labelledby','senhaT');
+    ov.innerHTML=`<form class="dio-caixa" novalidate><div class="dio-cab"><b id="senhaT">${escHtml(o.titulo)}</b><button type="button" class="dio-x" aria-label="${escHtml(t('Fechar'))}">×</button></div>
+      <p class="dio-lead">${escHtml(o.texto)}</p>
+      <input type="password" class="dio-nomes" id="senhaA" autocomplete="new-password" aria-label="${escHtml(t('Senha'))}" placeholder="${escHtml(t('Senha (6 letras ou mais)'))}">
+      ${o.dupla?`<input type="password" class="dio-nomes" id="senhaB" autocomplete="new-password" aria-label="${escHtml(t('Repita a senha'))}" placeholder="${escHtml(t('Repita a senha'))}">`:''}
+      <p class="dio-lead" id="senhaErro" style="color:#b3342a;min-height:1em"></p>
+      <div class="dio-pe"><button type="button" class="dio-acao dio-cancela">${escHtml(t('Cancelar'))}</button><button type="submit" class="dio-ok">${escHtml(t('Pronto'))}</button></div></form>`;
+    const fim=v=>{ov.remove();document.removeEventListener('keydown',tecla,true);res(v)};
+    const tecla=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();fim(null)}};
+    ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('.dio-x,.dio-cancela'))fim(null)});
+    ov.querySelector('form').addEventListener('submit',e=>{
+      e.preventDefault();const a=ov.querySelector('#senhaA').value,b=ov.querySelector('#senhaB');
+      const er=ov.querySelector('#senhaErro');
+      if(a.length<6){er.textContent=t('Use pelo menos 6 letras ou números.');return}
+      if(b&&b.value!==a){er.textContent=t('As duas senhas não estão iguais.');return}
+      fim(a);
+    });
+    document.addEventListener('keydown',tecla,true);
+    document.body.appendChild(ov);ov.querySelector('#senhaA').focus();
+  });
 }
 async function _restoreProject(data){
   // Restaurar centenas de notas trava a tela por dezenas de segundos (cada nota vira um card montado na hora).
@@ -40842,7 +40897,10 @@ function _dioMandar(id){
 // numa delas. "Esconder" no alto faz isso na hora; com senha, tranca de vez.
 var _dioEscondido=false;
 function _dioEsconder(){
-  if(_mundoTrancado(_mundoAtivo)&&_cofreChave){_cofreTrancarAgora();return}
+  const gravando=typeof isRec!=='undefined'&&isRec;
+  // Gravando não dá pra trancar (perderia a fala): esconde mesmo assim, sem parar.
+  if(gravando){try{_dioTelaMinimizar()}catch(e){}}
+  if(!gravando&&_mundoTrancado(_mundoAtivo)&&_cofreChave){_cofreTrancarAgora();return}
   if(_dioEscondido){_dioEscondido=false;_dioTopoPintar();return}   // o mesmo botão mostra de novo
   _dioEscondido=true;
   document.querySelectorAll('.tx-overlay.on,#dioAnoOv,#dioSoSeuOv').forEach(e=>{if(e.id)e.remove();else e.classList.remove('on')});
