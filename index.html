@@ -10303,7 +10303,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.14';
+const VOX_VERSION='2026.10.19.15';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -22948,6 +22948,8 @@ function _telaBalAbrir(btn){
   if(_telaBalOcupado)return;
   if(_telaBalAberto){_telaBalFechar();return}
   const bal=_telaBalMontar();
+  // A dica da tela sai do caminho: o balão âmbar abre exatamente embaixo dela.
+  if(typeof _dicaAtual!=='undefined'&&_dicaAtual)_dicaFechar();
   _telaBalBtn=btn;_telaBalAberto=true;
   _telaBalPintar();
   btn.setAttribute('aria-expanded','true');
@@ -42509,7 +42511,8 @@ function _dicaLivre(){
 function _dicaLivreBase(){
   if(typeof isRec!=='undefined'&&isRec)return false;
   if(document.getElementById('toastWrap')?.classList.contains('on'))return false;
-  if(document.querySelector('#micOverlay.on,#encAjudaOv,#dioOv.on,#encOv.on'))return false;
+  // O balão âmbar do "Ver como" aberto também conta: a dica caía em cima das opções dele.
+  if(document.querySelector('#micOverlay.on,#encAjudaOv,#dioOv.on,#encOv.on,#telaBal:not([hidden]),.lens-panel.on .lens-recipe'))return false;
   return true;
 }
 // Visível de verdade: o ponto do meio do alvo não está coberto por outra coisa.
