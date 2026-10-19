@@ -10213,7 +10213,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.6';
+const VOX_VERSION='2026.10.19.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11717,6 +11717,7 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"trancado":"locked",
 "Grava no modo Livre e abre no seu Diário, com a pergunta do dia.":"Records in Free mode and opens in your Journal, with the question of the day.",
 "Pede a senha ao abrir o Diário e criptografa as notas e as fotos. Tranca sozinho depois de 5 minutos parado (dá pra mudar aqui).":"Asks for the password when you open the Journal and encrypts your notes and photos. Locks itself after 5 idle minutes (you can change this here).",
 "Nomes de quem aparece no seu diário e palavras que você usa, separados por vírgula. Se o Vox errar sempre uma palavra, ensine assim: pedo = Pedro.":"Names of people in your journal and words you use, separated by commas. If Vox keeps getting a word wrong, teach it like this: pedo = Pedro.",
@@ -13748,7 +13749,9 @@ function updateSpeedBadge(){
   // linha 1: modelo (local) ou vazio
   line1.textContent=isLocal?(cfg.localModel||'small'):'';
   if(line1.textContent)line1.textContent+=' · ';
-  if(s&&s.count>0&&s.totalAudioSec>0){
+  if(_contagemTrancada()){
+    badge.style.display='none';
+  }else if(s&&s.count>0&&s.totalAudioSec>0){
     const spm=s.totalProcSec/(s.totalAudioSec/60);
     const color=_speedColor(spm);
     line2.innerHTML=`<span class="svgi">${ICO.clock}</span> <span style="color:${color}">${Math.round(spm)}s/min</span> · ${s.count} ${s.count===1?t('gravação'):t('gravações')}`;
@@ -44375,7 +44378,19 @@ function showCards(){
 }
 
 // ── STATS ──
+// Mundo trancado e ainda fechado: as notas nem foram lidas, então "0
+// gravações" assustava (parecia que tudo sumiu) e o selo de velocidade
+// contava as gravações pra quem pegasse o aparelho. Mostra só o cadeado.
+function _contagemTrancada(){try{return typeof _cofreFechado==='function'&&_cofreFechado()}catch(e){return false}}
 function updateStats(){
+  if(_contagemTrancada()){
+    const tr='🔒 '+t('trancado');
+    document.getElementById('sc').textContent='🔒';
+    document.getElementById('stime').textContent='';
+    const bt=document.getElementById('bstime'),bc=document.getElementById('bsc');
+    if(bc)bc.textContent=tr;if(bt)bt.textContent='';
+    return;
+  }
   document.getElementById('sc').textContent=stats.count;
   document.getElementById('stime').textContent=Math.ceil(stats.sec/60)+' '+t('min');
   const bstime=document.getElementById('bstime');
@@ -45008,6 +45023,9 @@ function _mundosMontar(){
     try{pastas=(JSON.parse(VOX_LS.get('vox_folders'+suf)||'[]')||[]).length}catch(e){}
     var notas=null;
     if(m.id===_mundoAtivo)notas=document.querySelectorAll('#cardsList .card:not(.proc-card)').length;
+    /* Ativo mas trancado: os cards nem foram abertos, entao o "0 notas"
+       seria mentira. Fica como os outros trancados. */
+    if(m.id===_mundoAtivo&&_mundoTrancado(m.id)&&typeof _cofreChave!=='undefined'&&!_cofreChave)notas=-1;
     /* vazio = sem nota E sem pasta. Do mundo ativo da pra saber na hora;
        dos outros vale a lembranca ate o banco responder. */
     var vazio=(notas===null)?(!!lembrados[m.id]&&pastas===0):(notas===0&&pastas===0);
