@@ -2252,6 +2252,14 @@ body.enc-tela-on .ibar.rec-on{z-index:9980}
 .ea-seta{color:var(--text4);text-align:center}
 .ea-dica{margin:0;font-size:12.5px;color:var(--text3)}
 .ea-pe{display:flex;justify-content:flex-end}
+.tela-vazia{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:30;width:min(380px,calc(100% - 32px));background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,.25);padding:14px 16px;display:flex;flex-direction:column;gap:10px;text-align:center;animation:fadeDown .2s ease}
+.tela-vazia p{margin:0;font-size:14px;font-weight:600}
+.tela-vazia small{font-size:12px;color:var(--text3);font-weight:400}
+.tela-vazia-bts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.tela-vazia-bts button{font:inherit;font-size:13px;font-weight:700;border-radius:10px;padding:8px 14px;cursor:pointer;border:1px solid var(--border);background:var(--bg-card);color:var(--text)}
+.tela-vazia-bts .tv-p{background:var(--accent);border-color:var(--accent);color:#fff}
+.tela-vazia.tv-ex{flex-direction:row;align-items:center;justify-content:space-between;text-align:left;padding:9px 12px;bottom:auto;top:84px}
+.tela-vazia.tv-ex p{font-size:12.5px;font-weight:600}
 .tela-ajuda-btn{font:inherit;font-size:14px;font-weight:800;width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:var(--bg-card);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .tela-ajuda-btn:hover{color:var(--accent);border-color:var(--accent)}
 .cchat-ajuda{width:26px;height:26px;font-size:13px;margin-left:6px}
@@ -10272,7 +10280,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.12';
+const VOX_VERSION='2026.10.19.13';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11776,6 +11784,21 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Seu Calendário ainda está vazio.":"Your Calendar is still empty.",
+"Seu Mapa ainda está vazio.":"Your Map is still empty.",
+"Sua Órbita ainda está vazia.":"Your Orbit is still empty.",
+"Um exemplo pequeno mostra como fica, e sai com um toque.":"A small example shows how it looks, and goes away with one tap.",
+"Isto é um exemplo, para você brincar.":"This is an example for you to play with.",
+"Criar uma pasta":"Create a folder",
+"Trabalho":"Work",
+"Clientes":"Clients",
+"Reunião do time: fechamos o cronograma do site. Leo manda o orçamento até sexta.":"Team meeting: we closed the website schedule. Leo sends the budget by Friday.",
+"Reunião do time":"Team meeting",
+"A cliente Marta pediu a proposta em inglês até o fim do mês.":"Our client Marta asked for the proposal in English by the end of the month.",
+"Pedido da Marta":"Marta's request",
+"Ideia: uma reunião curta toda sexta para revisar a semana.":"Idea: a short meeting every Friday to review the week.",
+"Ideia para as sextas":"Idea for Fridays",
+"Pronto: \"Trabalho\" com 2 pastas e 3 notas de exemplo.":"Done: \"Work\" with 2 folders and 3 example notes.",
 "Me mostra":"Show me",
 "Cada nota mora no dia em que nasceu. Arraste pelo ⠿ para outro dia.":"Each note lives on the day it was made. Drag it by its ⠿ to another day.",
 "Este é o mapa das suas pastas. Toque numa pasta para ver as notas; o + cria uma pasta ali.":"This is the map of your folders. Tap a folder to see its notes; the + creates a folder there.",
@@ -17638,6 +17661,7 @@ function getFolderCounts(){
   return counts;
 }
 function renderFolders(){
+  setTimeout(_telaVaziaSinc,0);
   if(_voxLote)return;   // lote em curso: quem abriu redesenha uma vez só, no fim
   document.querySelectorAll('.card .cs-faixa').forEach(fx=>_csFaixaSinc(fx.closest('.card')));
   // O filtro de etiquetas vive no mesmo painel e muda pelas mesmas razões
@@ -20492,7 +20516,7 @@ const FC_NEW_CARD_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="no
 const FC_FLOAT_TOGGLE_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
 
 function abrirFluxograma(){
-  _telaMarcar('fluxo');_telaDica('fluxo');
+  _telaMarcar('fluxo');_telaDica('fluxo');setTimeout(_telaVaziaSinc,350);
   let ov=document.getElementById('fcOverlay');
   if(!ov){
     ov=document.createElement('div');
@@ -21873,7 +21897,7 @@ function _orbEnquadrar(){
 }
 
 function abrirOrbital(){
-  _telaMarcar('orbital');_telaDica('orbital');
+  _telaMarcar('orbital');_telaDica('orbital');setTimeout(_telaVaziaSinc,350);
   let ov=document.getElementById('orbOverlay');
   if(!ov){
     ov=document.createElement('div');
@@ -22327,7 +22351,7 @@ function _calCardsDoCalendario(){
 
 // ── abrir / fechar ──
 function abrirCalendario(){
-  _telaMarcar('cal');_telaDica('cal');
+  _telaMarcar('cal');_telaDica('cal');setTimeout(_telaVaziaSinc,350);
   let ov=document.getElementById('calOverlay');
   if(!ov){
     ov=document.createElement('div');
@@ -36272,6 +36296,76 @@ function _telaDica(k){
   if((k==='mundos'||k==='pastas')&&!(typeof _temNotaDaPessoa==='function'&&_temNotaDaPessoa()))return;
   setTimeout(()=>_dica({id:'tela-'+k,tela:!D.fundo,mao:!D.sem,alvo:D.alvo,frase:t(D.frase),
     acao:TELA_AJUDA[k]?{rot:t('Me mostra'),fn:()=>_telaAjuda(k)}:null}),900);
+}
+// ── "Me mostra com um exemplo" nas telas vazias (proposta 6) ──
+// Tela vazia não é tela em branco: um toque monta "Trabalho" com 2 pastas e
+// 3 notas de exemplo, pra brincar sem medo. Tudo leva a etiqueta
+// "exemplo-mapa" (e "demo", que já diz ao app que não é nota da pessoa);
+// "Tirar o exemplo" apaga só o que tem essa marca.
+const _MAPA_EX_TAG='exemplo-mapa';
+const TELA_OV={cal:'calOverlay',fluxo:'fcOverlay',orbital:'orbOverlay'};
+function _mapaExemploTem(){return folders.some(f=>f.exemploMapa)||_flTodosCards().some(c=>(c.dataset.tags||'').split(',').includes(_MAPA_EX_TAG))}
+function _telaVazia(k){
+  if(k==='cal')return !_temNotaDaPessoa();
+  return !folders.some(f=>!f.del&&!f.exemploMapa)&&!_mapaExemploTem();
+}
+function _telaVaziaSinc(){
+  Object.entries(TELA_OV).forEach(([k,id])=>{
+    const ov=document.getElementById(id);if(!ov)return;
+    let el=ov.querySelector(':scope > .tela-vazia');
+    if(!ov.classList.contains('on')){el?.remove();return}
+    const pode=!_mundoEhDiario()&&!(_mundoTrancado(_mundoAtivo)&&!_cofreChave);
+    const tem=_mapaExemploTem(),vazia=pode&&!tem&&_telaVazia(k);
+    if(!vazia&&!tem){el?.remove();return}
+    const modo=tem?'ex':'vazia';
+    if(el&&el.dataset.modo===modo)return;
+    el?.remove();
+    el=document.createElement('div');el.className='tela-vazia'+(tem?' tv-ex':'');el.dataset.modo=modo;
+    const nome={cal:'Seu Calendário ainda está vazio.',fluxo:'Seu Mapa ainda está vazio.',orbital:'Sua Órbita ainda está vazia.'}[k];
+    el.innerHTML=tem
+      ?`<p>${escHtml(t('Isto é um exemplo, para você brincar.'))}</p><div class="tela-vazia-bts"><button type="button" class="tv-tirar">${escHtml(t('Tirar o exemplo'))}</button></div>`
+      :`<p>${escHtml(t(nome))}<br><small>${escHtml(t('Um exemplo pequeno mostra como fica, e sai com um toque.'))}</small></p><div class="tela-vazia-bts"><button type="button" class="tv-p tv-ex-bt">${escHtml(t('Me mostra com um exemplo'))}</button>${k==='cal'?'':`<button type="button" class="tv-pasta">${escHtml(t('Criar uma pasta'))}</button>`}</div>`;
+    el.querySelector('.tv-ex-bt')?.addEventListener('click',()=>_mapaExemploCriar(k));
+    el.querySelector('.tv-tirar')?.addEventListener('click',()=>_mapaExemploTirar(k));
+    el.querySelector('.tv-pasta')?.addEventListener('click',()=>{
+      const bts=el.querySelector('.tela-vazia-bts');
+      bts.innerHTML=`<form class="tv-form" style="display:flex;gap:8px;width:100%"><input type="text" maxlength="60" placeholder="${escHtml(t('Nome da pasta'))}" aria-label="${escHtml(t('Nome da pasta'))}" style="flex:1;min-width:0;font:inherit;font-size:14px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--bg-input);color:var(--text)"><button type="submit" class="tv-p">${escHtml(t('Criar'))}</button></form>`;
+      const f=bts.querySelector('form'),inp=f.querySelector('input');inp.focus();
+      f.onsubmit=e=>{e.preventDefault();if(_mapaNovaPasta(null,inp.value)){renderFolders();applyFolderFilter();_telaRepintar(k);_telaVaziaSinc()}};
+    });
+    ov.appendChild(el);
+  });
+}
+function _telaRepintar(k){
+  try{if(k==='fluxo')_fcRender();else if(k==='orbital')_orbDesenhar();else if(k==='cal')_calPintar()}catch(e){}
+}
+function _mapaExemploCriar(k){
+  if(_mapaExemploTem())return;
+  const b=Date.now().toString(36),tr='f_mx'+b,re='f_mxr'+b,cl='f_mxc'+b;
+  folders.push({id:tr,name:t('Trabalho'),color:FOLDER_COLORS[1],parentId:null,exemploMapa:true},
+    {id:re,name:t('Reuniões'),color:FOLDER_COLORS[0],parentId:tr,exemploMapa:true},
+    {id:cl,name:t('Clientes'),color:FOLDER_COLORS[3],parentId:tr,exemploMapa:true});
+  folderExpanded.add(tr);saveFolders();
+  const tags=[_MAPA_EX_TAG,'demo'];
+  const nota=(txt,sn,dias,fid)=>{const d=new Date(Date.now()-dias*864e5);const id=addCard(txt,null,0,'texto','exemplo',true,null,d.toISOString(),tags,sn,'livre',false,fid);const c=document.getElementById(id);if(c)c.dataset.quando=_calChave(d)};
+  nota(t('Reunião do time: fechamos o cronograma do site. Leo manda o orçamento até sexta.'),t('Reunião do time'),2,re);
+  nota(t('A cliente Marta pediu a proposta em inglês até o fim do mês.'),t('Pedido da Marta'),1,cl);
+  nota(t('Ideia: uma reunião curta toda sexta para revisar a semana.'),t('Ideia para as sextas'),0,tr);
+  saveHistory();renderFolders();applyFolderFilter();_telaRepintar(k);_telaVaziaSinc();
+  toast(t('Pronto: "Trabalho" com 2 pastas e 3 notas de exemplo.'));
+  try{_truque('exemplo')}catch(e){}
+}
+function _mapaExemploTirar(k){
+  // Sem o doDelete: ele desconta da contagem de gravações, e exemplo nunca contou.
+  _flTodosCards().filter(c=>(c.dataset.tags||'').split(',').includes(_MAPA_EX_TAG)).forEach(c=>{try{revokeBlob(c.id)}catch(e){}c.remove()});
+  // As pastas de exemplo só saem se ficaram vazias: o que a pessoa guardou nelas fica.
+  for(let i=0;i<3;i++){
+    const vazias=folders.filter(f=>f.exemploMapa&&!_flTodosCards().some(c=>(c.dataset.folder||'')===f.id)&&!folders.some(x=>x.parentId===f.id));
+    vazias.forEach(f=>{folderExpanded.delete(f.id);if(activeFolderId===f.id)activeFolderId=null});
+    folders=folders.filter(f=>!vazias.includes(f));
+  }
+  saveFolders();renderFolders();applyFolderFilter();_telaRepintar(k||_telaAtual());_telaVaziaSinc();
+  toast(t('O exemplo saiu. Suas notas continuam onde estavam.'));
 }
 // ── Tela de atendimento (proposta 3) ──
 // Ao gravar uma consulta, reunião ou entrevista, o Vox vira uma tela calma e
