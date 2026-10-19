@@ -6141,6 +6141,21 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .lens-card-ico{width:26px;height:26px;border-radius:9px;background:color-mix(in srgb,var(--cat,var(--accent)) 18%,transparent);color:var(--cat,var(--accent));display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .lens-card-ico svg{width:14px;height:14px}
 .lens-card-lbl{font-size:12.5px;font-weight:600;color:var(--text)}
+.lens-jarg{font-weight:500;color:var(--text3);font-size:11px}
+/* "Comece por uma destas": três lentes com o antes → depois à vista */
+.lens-comece{padding:8px 8px 10px;margin:0 2px 6px;border-radius:12px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.lens-comece-hd{font-size:11px;font-weight:700;color:var(--text2);padding:0 4px 6px}
+.lens-comece-l{display:flex;flex-direction:column;gap:5px}
+.lens-comece-b{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font:inherit;cursor:pointer;transition:transform .12s,border-color .15s}
+.lens-comece-b:hover{border-color:var(--accent)}
+.lens-comece-b:active{transform:scale(.97)}
+.lens-comece-b .svgi,.lens-comece-b svg{width:16px;height:16px;flex:none;color:var(--accent)}
+.lens-comece-b b{font-size:12.5px;font-weight:600}
+.lens-comece-b small{display:block;font-size:11px;color:var(--text3);margin-top:1px}
+/* O card que uma lente acabou de criar pulsa uma vez quando a pessoa vai até ele */
+@keyframes cardChegou{0%{box-shadow:0 0 0 0 rgba(234,179,8,.0)}30%{box-shadow:0 0 0 4px rgba(234,179,8,.85)}100%{box-shadow:0 0 0 0 rgba(234,179,8,0)}}
+.card.card-chegou{animation:cardChegou 1.1s ease-out 2}
+@media (prefers-reduced-motion:reduce){.card.card-chegou{animation:none;outline:3px solid rgba(234,179,8,.85)}}
 .lens-card-d{font-size:12px;color:var(--text2);line-height:1.4}
 .lens-star{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1;background:var(--bg-input);color:var(--text4);border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.1);cursor:pointer;flex-shrink:0;transition:all var(--transition)}
 .lens-copy{position:absolute;top:8px;right:34px;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-input);color:#eab308;border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.1);cursor:pointer;flex-shrink:0;transition:all var(--transition)}
@@ -10213,7 +10228,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.7';
+const VOX_VERSION='2026.10.19.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11717,6 +11732,23 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"nota clínica":"clinical note",
+"para estudar":"for studying",
+"forças e riscos":"strengths and risks",
+"achar a causa":"find the cause",
+"o que é urgente":"what is urgent",
+"o que pode dar errado":"what could go wrong",
+"para o app Obsidian":"for the Obsidian app",
+"várias opiniões":"several opinions",
+"para pensar melhor":"to think it through",
+"quem discorda":"someone who disagrees",
+"apresentar rápido":"pitch it fast",
+"cartões de estudo":"study cards",
+"5 min de fala → 5 linhas":"5 min of speech → 5 lines",
+"o que ficou combinado e quem faz":"what was agreed and who does it",
+"o mesmo texto, sem erros":"the same text, without mistakes",
+"{x} pronto: virou um card novo, no topo.":"{x} is ready: it became a new card, at the top.",
+"Ir até lá":"Go there",
 "trancado":"locked",
 "Grava no modo Livre e abre no seu Diário, com a pergunta do dia.":"Records in Free mode and opens in your Journal, with the question of the day.",
 "Pede a senha ao abrir o Diário e criptografa as notas e as fotos. Tranca sozinho depois de 5 minutos parado (dá pra mudar aqui).":"Asks for the password when you open the Journal and encrypts your notes and photos. Locks itself after 5 idle minutes (you can change this here).",
@@ -40172,11 +40204,20 @@ function deleteUserRecipe(i,cardId){
 // contexto decidir o que acontece ao rodar a lente / marcar favorito.
 // Gera UM card de lente — usado pela grade normal, pela Trilha e pelas Bolhas,
 // pra não ter 3 cópias do mesmo template divergindo com o tempo.
+// Nome de método (SOAP, Cornell, SWOT…) não diz nada a quem nunca viu: cada um
+// ganha, ao lado do nome, para que serve em duas ou três palavras.
+const LENS_JARGAO={soap:'nota clínica',cornell:'para estudar',swot:'forças e riscos',porques:'achar a causa',eisenhower:'o que é urgente',premortem:'o que pode dar errado',obsidian:'para o app Obsidian',mesa:'várias opiniões',socraticas:'para pensar melhor',advogado:'quem discorda',pitch:'apresentar rápido',flashcards:'cartões de estudo'};
+// As três lentes por onde começar, com o que entra e o que sai.
+const LENS_COMECE=[['resumo','5 min de fala → 5 linhas'],['decisoes','o que ficou combinado e quem faz'],['corretor','o mesmo texto, sem erros']];
+function _lensComeceHtml(id){
+  const it=LENS_COMECE.filter(([k])=>LENSES[k]).map(([k,ex])=>`<button type="button" class="lens-comece-b" data-lk="${k}" onclick="runLens('${id}','${k}')"><span class="svgi">${LENSES[k].icon}</span><span><b>${escHtml(LENSES[k].label)}</b><small>${escHtml(t(ex))}</small></span></button>`).join('');
+  return `<div class="lens-comece"><div class="lens-comece-hd">${escHtml(t('Comece por uma destas'))}</div><div class="lens-comece-l">${it}</div></div>`;
+}
 function _lensCardHtml(k,L,isFav,runFn,starFn,idx){
   const style=idx==null?'':` style="--i:${Math.min(idx,12)}"`;
   return `<button class="lens-card${isFav?' is-fav':''}" data-lk="${k}"${style} onclick="${runFn(k)}">`+
     `<span class="lens-card-ico">${L.icon}</span>`+
-    `<span class="lens-card-lbl">${escHtml(L.label)}</span><span class="lens-card-d">${escHtml(L.desc)}</span>`+
+    `<span class="lens-card-lbl">${escHtml(L.label)}${LENS_JARGAO[k]?` <small class="lens-jarg">· ${escHtml(t(LENS_JARGAO[k]))}</small>`:''}</span><span class="lens-card-d">${escHtml(L.desc)}</span>`+
     `<span class="lens-copy" data-lk="${k}" onclick="event.stopPropagation();copyLensPrompt('${k}',this)" title="${t('Copiar prompt mestre — cole em outra IA (ChatGPT, Claude, Gemini…)')}">${ICO.copy}</span>`+
     `<span class="lens-star${isFav?' on':''}" data-lk="${k}" onclick="event.stopPropagation();${starFn(k)}" title="${t('Usar como padrão')}">${isFav?'<span class="svgi">'+ICO.starFill+'</span>':'<span class="svgi">'+ICO.star+'</span>'}</span>`+
   `</button>`;
@@ -40384,6 +40425,7 @@ function _renderLensListPanel(id){
   document.querySelectorAll('.lens-panel.on').forEach(x=>{x.classList.remove('on');x.innerHTML=''});
   const favs=cfg.favLenses||[];
   let html=_lensStyleSwitchHtml(id,'list');
+  html+=_lensComeceHtml(id);
   html+=_lensCatsGridHtml(k=>`runLens('${id}','${k}')`,k=>`toggleFavLens('${k}','${id}')`);
   html+=`<div class="lens-hd" style="border-top:1px solid var(--border);margin-top:4px;padding-top:9px">${t('⚡ Receitas')}</div><div class="lens-grid">`;
   RECIPES_FACTORY.forEach(r=>{
@@ -42166,6 +42208,13 @@ function _modeloSalvar(id){
   toast(t('Modelo "{n}" salvo. Ele aparece em Fechar atendimento e nas lentes.').replace('{n}',nome));
   if(id)fecharAtendimento(id);else closeTxOverlay();
 }
+function _cardIrAte(id){
+  const c=document.getElementById(id);if(!c)return;
+  c.scrollIntoView({behavior:_voxReduzMov()?'auto':'smooth',block:'center'});
+  // Com "reduzir movimento" o _jz não anima: fica só o contorno, por 2 s.
+  if(_voxReduzMov()){c.classList.add('card-chegou');setTimeout(()=>c.classList.remove('card-chegou'),2000)}
+  else _jz(c,'card-chegou',2300);
+}
 async function runLens(id,lensKey,focus='',sel=null,opts=null){
   // Sem chave de IA: as primeiras lentes podem ir por nossa conta (ponte), pra
   // pessoa sentir o "o Vox pensa com você" antes do passo da chave. Traduzir
@@ -42233,7 +42282,9 @@ async function runLens(id,lensKey,focus='',sel=null,opts=null){
       if(viewMode==='doc')_dvNavAgenda();
       setLastAICard(novo);
       if(lensKey==='di_meudia')_dioMeuDiaPronto(novo);
-      toast(L.label+' '+t('gerado! Ctrl+Z desfaz.'));
+      // Diz ONDE o resultado ficou: antes ele aparecia no topo sem aviso e
+      // a pessoa achava que nada tinha acontecido.
+      toastDesfazer(t('{x} pronto: virou um card novo, no topo.').replace('{x}',L.label),()=>_cardIrAte(novo),t('Ir até lá'));
       if(viaCortesia&&_cortesiaLenteUltima)_cortesiaNotaUltima(novo,'lente');
     }
   }catch(e){
