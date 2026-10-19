@@ -854,6 +854,18 @@ main{flex:1;padding:20px 0 110px;display:flex;flex-direction:column}
 .filter-empty p{font-size:13.5px;color:var(--text2);line-height:1.7;max-width:340px}
 .filter-empty-btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:background var(--transition)}
 .filter-empty-btn:hover{background:var(--accent2)}
+/* Pasta vazia que traz as notas: as mais recentes pra marcar, sem precisar arrastar */
+.fe-trazer{width:min(360px,100%);display:flex;flex-direction:column;gap:6px;text-align:left}
+.fe-trazer label{display:flex;align-items:center;gap:9px;padding:8px 11px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);font-size:13px;color:var(--text);cursor:pointer}
+.fe-trazer label span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.fe-trazer input{accent-color:var(--accent);width:16px;height:16px;flex:none}
+.fe-trazer .fe-ou{font-size:12px;color:var(--text3);text-align:center;margin-top:2px}
+.filter-empty-btn:disabled{opacity:.45;cursor:default}
+.filter-empty-sec{background:none;border:none;color:var(--text3);font:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer}
+/* A pasta de cada card, vista em "Tudo": antes o card movido não dizia onde estava */
+.card-pasta{display:inline-flex;align-items:center;gap:4px;margin:0 14px 2px;padding:2px 8px;border-radius:99px;border:none;background:color-mix(in srgb,var(--pc,var(--accent)) 14%,transparent);color:var(--text2);font:inherit;font-size:11px;font-weight:600;cursor:pointer;max-width:calc(100% - 28px);align-self:flex-start}
+.card-pasta[hidden]{display:none}
+.card-pasta span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── CARDS LAYOUT ──
    Lista é coluna única (sempre foi) — o que mudou é a LARGURA do
@@ -8668,6 +8680,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
            gravações quando era só o filtro de cor somado ao de pasta. -->
       <div class="filter-empty" id="filterEmptyState" hidden>
         <p id="filterEmptyMsg"></p>
+        <div class="fe-trazer" id="filterEmptyTrazer" hidden></div>
         <button type="button" class="filter-empty-btn" id="filterEmptyBtn"></button>
       </div>
       <!-- MODO DOCUMENTO: barra de ferramentas estilo Word/Docs. Reaproveita as MESMAS
@@ -10248,7 +10261,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.9';
+const VOX_VERSION='2026.10.19.10';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11752,6 +11765,15 @@ let I18N_EN={
 "{n} é de mentira, para você ver o painel cheio.":"{n} is made up, so you can see a full panel.",
 "Tirar o exemplo":"Remove the example",
 "Me mostra com um exemplo":"Show me with an example",
+"Arrastar para uma pasta ou para outro card":"Drag to a folder or onto another card",
+"Esta pasta ainda está vazia. Quer trazer notas para cá?":"This folder is still empty. Want to bring some notes here?",
+"Ou arraste pelo ⠿ de qualquer card.":"Or drag any card by its ⠿.",
+"Trazer 1 nota":"Bring 1 note",
+"Trazer {n} notas":"Bring {n} notes",
+"Marque as notas pra trazer":"Check the notes to bring",
+"1 nota veio para \"{p}\"":"1 note moved to \"{p}\"",
+"{n} notas vieram para \"{p}\"":"{n} notes moved to \"{p}\"",
+"Abrir a pasta \"{p}\"":"Open the folder \"{p}\"",
 "nota clínica":"clinical note",
 "para estudar":"for studying",
 "forças e riscos":"strengths and risks",
@@ -26131,6 +26153,7 @@ function applyFolderFilter(){
     const naCor=corFiltroAtivo===null||(c.dataset.tc!==undefined&&+c.dataset.tc===corFiltroAtivo);
     if(inFolder){semCor++;if(naCor)comCor++}
     c.classList.toggle('folder-hidden',!(inFolder&&naCor));
+    if(inFolder&&naCor)_cardPastaChip(c,activeFolderId===null);
   });
   _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix);
   _atualizaAvisoCorEscondidos(corFiltroAtivo!==null?semCor-comCor:0);
@@ -26151,6 +26174,7 @@ function _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix){
   const msg=document.getElementById('filterEmptyMsg');
   const btn=document.getElementById('filterEmptyBtn');
   if(!box||!msg||!btn)return;
+  btn.disabled=false;
   // Sem cards nenhum no app: quem fala é o #emptyState (primeira gravação).
   // Modo Documento tem o próprio jeito de reagir a lista vazia — não mexe.
   if(totalCards===0||comCor>0||viewMode==='doc'){box.hidden=true;return}
@@ -26172,9 +26196,56 @@ function _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix){
     btn.textContent=t('Ver todos os cards');
     btn.onclick=()=>selectFolder(null);
     box.hidden=(activeFolderId===null); // "Tudo" vazio de verdade já é o #emptyState
+    if(!naArq&&!naLix&&activeFolderId!==null)_pastaTrazerMontar(msg,btn);
   }else{
     box.hidden=true;
   }
+  if(box.hidden||semCor!==0||naArq||naLix||activeFolderId===null){const tz=document.getElementById('filterEmptyTrazer');if(tz){tz.hidden=true;tz.innerHTML=''}}
+}
+// Pasta nova entrava vazia dizendo "arraste um pra cá" sem nenhum card à
+// vista pra arrastar. Agora ela oferece as notas mais recentes pra marcar.
+function _pastaTrazerMontar(msg,btn){
+  const tz=document.getElementById('filterEmptyTrazer');if(!tz)return;
+  const fid=activeFolderId;
+  const cands=[...document.querySelectorAll('#cardsList .card:not(.proc-card)')]
+    .filter(c=>(c.dataset.folder||'')!==fid&&!_cardArquivado(c)&&!_cardNaLixeira(c)&&(c.querySelector('textarea')?.value||'').trim())
+    .sort((a,b)=>String(b.dataset.dt||'').localeCompare(String(a.dataset.dt||''))).slice(0,6);
+  if(!cands.length){tz.hidden=true;tz.innerHTML='';return}
+  msg.textContent=t('Esta pasta ainda está vazia. Quer trazer notas para cá?');
+  tz.innerHTML=cands.map(c=>{
+    const tit=(c.dataset.sessionName||'').trim()||(c.querySelector('textarea').value.trim().split('\n')[0]).slice(0,70);
+    return `<label><input type="checkbox" value="${escHtml(c.id)}"><span>${escHtml(tit)}</span></label>`;
+  }).join('')+`<div class="fe-ou">${escHtml(t('Ou arraste pelo ⠿ de qualquer card.'))}</div>`;
+  tz.hidden=false;
+  const sinc=()=>{const n=tz.querySelectorAll('input:checked').length;btn.disabled=!n;btn.textContent=n===1?t('Trazer 1 nota'):n?t('Trazer {n} notas').replace('{n}',n):t('Marque as notas pra trazer')};
+  tz.onchange=sinc;sinc();
+  btn.onclick=()=>{
+    const ids=[...tz.querySelectorAll('input:checked')].map(i=>i.value);if(!ids.length)return;
+    const antes=ids.map(id=>[id,document.getElementById(id)?.dataset.folder||'']);
+    ids.forEach(id=>assignCardToFolder(id,fid,true));
+    saveHistory();renderFolders();applyFolderFilter();
+    const nome=folders.find(f=>f.id===fid)?.name||t('pasta');
+    toastDesfazer((ids.length===1?t('1 nota veio para "{p}"'):t('{n} notas vieram para "{p}"').replace('{n}',ids.length)).replace('{p}',nome),()=>{
+      antes.forEach(([id,f])=>assignCardToFolder(id,f,true));saveHistory();renderFolders();applyFolderFilter();
+    });
+  };
+}
+function _cardPastaChip(c,mostrar){
+  let ch=c.querySelector('.card-pasta');
+  const f=mostrar&&!c.querySelector('.cs-faixa')?folders.find(x=>x.id===(c.dataset.folder||'')):null;
+  if(!f){if(ch)ch.hidden=true;return}
+  if(!ch){
+    ch=document.createElement('button');ch.type='button';ch.className='card-pasta';
+    ch.onclick=e=>{e.stopPropagation();const id=ch.dataset.f;if(folders.some(x=>x.id===id))selectFolder(id)};
+    const hd=c.querySelector('.ch');if(hd)hd.after(ch);else c.prepend(ch);
+  }
+  if(ch.dataset.f!==f.id||ch.dataset.n!==f.name){
+    ch.dataset.f=f.id;ch.dataset.n=f.name;
+    ch.innerHTML=`<span aria-hidden="true">📁</span><span></span>`;ch.lastChild.textContent=f.name;
+    ch.title=t('Abrir a pasta "{p}"').replace('{p}',f.name);
+  }
+  if(f.color)ch.style.setProperty('--pc',f.color);
+  ch.hidden=false;
 }
 // ── Bolinha de cor da pasta (P2+P3, 25/08) ──
 // Mesmo desenho da bolinha do card: toque curto cicla, segurar abre a
@@ -35800,7 +35871,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
     <div class="diar-main-col">
       <div class="ch">
         <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span><span class="cbx-n"></span></button>
-        <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}"><span class="svgi">${ICO.grip}</span></div>
+        <div class="drag-handle" title="${t('Arrastar para uma pasta ou para outro card')}"><span class="svgi">${ICO.grip}</span></div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar('${id}')" onpointercancel="cdotCancelar('${id}')" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <button type="button" class="ch-del-btn" onclick="event.stopPropagation();askDel('${id}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.close}</button>
@@ -42406,7 +42477,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
     <div class="diar-main-col">
       <div class="ch">
         <button type="button" class="card-cbx" onclick="event.stopPropagation();selAlterna('${id}')" aria-label="${t('Marcar este card')}"><span class="svgi">${ICO.check}</span><span class="cbx-n"></span></button>
-        <div class="drag-handle" title="${t('Arrastar para mesclar com outro card')}"><span class="svgi">${ICO.grip}</span></div>
+        <div class="drag-handle" title="${t('Arrastar para uma pasta ou para outro card')}"><span class="svgi">${ICO.grip}</span></div>
         <div class="ch-left" onclick="toggleChCollapse('${id}')">
           <span class="cdot-wrap"><button type="button" class="cdot-btn" onpointerdown="event.stopPropagation();cdotDown('${id}')" onpointerup="event.stopPropagation();cdotUp('${id}')" onpointerleave="cdotCancelar('${id}')" onpointercancel="cdotCancelar('${id}')" oncontextmenu="return false" onclick="event.stopPropagation()" title="${t('Toque para trocar a cor · segure para escolher')}" aria-label="${t('Etiqueta de cor')}"></button><div class="cdot-pop" id="cdotPop-${id}"></div></span>
           <button type="button" class="ch-del-btn" onclick="event.stopPropagation();askDel('${id}')" title="${t('Excluir')}" aria-label="${t('Excluir')}">${ICO.close}</button>
