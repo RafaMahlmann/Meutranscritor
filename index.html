@@ -1632,6 +1632,62 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
   .aud-pil,.aud-ondas i,.aud-fio,.aud-fio b{transition:none!important}
   .aud-vel.pula{animation:none}
 }
+/* ── Karaokê: enquanto a voz da nota toca, o texto vira leitura ──
+   A camada cobre o textarea (que fica invisível, mas segura o tamanho), na
+   mesma fonte e quebra de linha: a frase dita acende, as palavras enchem. */
+.card.kar-on .cb{position:relative}
+.card.kar-on .cb textarea{visibility:hidden}
+.kar-ler{display:none}
+.card.kar-on .kar-ler{display:block;position:absolute;z-index:1;box-sizing:border-box;padding:2px;margin:0;
+  white-space:pre-wrap;overflow-wrap:break-word;overflow-y:auto;overscroll-behavior:contain;
+  font-size:var(--cf-sz,14px);font-family:var(--font);line-height:1.75;color:var(--text);
+  cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y;
+  -webkit-tap-highlight-color:transparent;outline:none;animation:karEntra .22s ease-out}
+.card[data-tc] .kar-ler{color:var(--tc-txt)}
+.kar-ler:focus-visible{box-shadow:0 0 0 2px var(--accent-glow);border-radius:8px}
+@keyframes karEntra{from{opacity:.4}to{opacity:1}}
+.kar-f{border-radius:5px;padding:1px 0;transition:background-color .18s ease;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.kar-f.agora{background:var(--accent-glow)}
+.kar-f.agora .kar-p{color:var(--text3);transition:color .18s ease}
+.kar-f.agora .kar-p.dita{color:inherit}
+/* card colorido: o tom do texto é dele; a palavra que falta só esmaece */
+.card[data-tc] .kar-f.agora .kar-p{color:inherit;opacity:.5;transition:opacity .18s ease}
+.card[data-tc] .kar-f.agora .kar-p.dita{opacity:1}
+.kar-f.so{background:var(--accent-glow);box-shadow:inset 0 -2px 0 var(--ca,var(--accent))}
+.kar-f.citada{text-decoration:underline;text-decoration-color:#a855f7;text-decoration-thickness:2px;text-underline-offset:4px}
+@media (hover:hover){.kar-f:not(.agora):not(.citada):hover{text-decoration:underline dotted;text-decoration-color:var(--text4);text-underline-offset:4px}}
+.kar-ler[data-aprox]::before{content:attr(data-aprox);float:right;margin:0 0 4px 8px;padding:1px 8px;border:1px solid var(--border2);border-radius:999px;
+  font-size:10.5px;line-height:1.7;color:var(--text3);background:var(--bg-card)}
+.kar-menu{position:fixed;z-index:430;min-width:210px;max-width:min(300px,calc(100vw - 24px));padding:6px;background:var(--bg-card);
+  border:1px solid var(--border2);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.22);animation:karMenu .16s ease-out}
+@keyframes karMenu{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:none}}
+.kar-menu .kar-m-tit{display:block;padding:6px 10px 8px;font-size:12px;line-height:1.4;color:var(--text3);border-bottom:1px solid var(--border);margin-bottom:4px;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.kar-menu .kar-m-tit b{font-weight:600;color:var(--text2);font-variant-numeric:tabular-nums}
+.kar-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:none;background:none;border-radius:9px;
+  font:500 13.5px/1.2 var(--font);color:var(--text);text-align:left;cursor:pointer}
+.kar-menu button:hover,.kar-menu button:focus-visible{background:var(--bg-input);outline:none}
+.kar-menu button .svgi{width:16px;height:16px;color:var(--text3);flex:none}
+@media (prefers-reduced-motion:reduce){
+  .card.kar-on .kar-ler,.kar-menu{animation:none}
+  .kar-f,.kar-f.agora .kar-p,.card[data-tc] .kar-f.agora .kar-p{transition:none}
+}
+/* Faixa das citações com a voz (embaixo do texto da nota). */
+.kar-cits{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}
+.kar-cit{display:inline-flex;align-items:center;gap:6px;max-width:100%;min-height:30px;padding:2px 4px 2px 3px;border-radius:999px;
+  border:1px solid color-mix(in srgb,#a855f7 35%,var(--border));background:color-mix(in srgb,#a855f7 7%,transparent);font-size:12.5px;color:var(--text2)}
+.kar-cit.novo{animation:karCitEntra .26s cubic-bezier(.34,1.56,.64,1)}
+@keyframes karCitEntra{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+.kar-cit-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(320px,52vw);font-style:italic}
+.kar-cit small{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
+.kar-cit button{display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;border:none;border-radius:50%;background:none;color:var(--text3);cursor:pointer;padding:0}
+.kar-cit .kar-cit-play{background:#a855f7;color:#fff}
+.kar-cit .kar-cit-play .svgi{width:11px;height:11px;margin-left:1px}
+.kar-cit .kar-cit-x svg{width:12px;height:12px}
+.kar-cit button:hover,.kar-cit button:focus-visible{outline:none;box-shadow:0 0 0 2px var(--accent-glow)}
+.kar-cit .kar-cit-x:hover{color:var(--text)}
+.cards.masonry.masonry-preview .kar-cits{display:none}
+@media (prefers-reduced-motion:reduce){.kar-cit.novo{animation:none}}
 .ts{font-size:11px;color:var(--text3);font-weight:500}
 /* FAIXA 2 · bandeja de ferramentas. flex-basis:100% joga ela pra própria
    linha; nowrap garante que ela nunca embrulhe — se um dia faltar espaço,
@@ -10523,7 +10579,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.21.5';
+const VOX_VERSION='2026.10.21.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -14085,7 +14141,23 @@ let I18N_EN={
 "1 áudio apagado de vez.":"1 audio clip deleted for good.",
 "{n} áudios apagados de vez.":"{n} audio clips deleted for good.",
 "Seus áudios":"Your audio",
-"Ouvir, baixar e cuidar das gravações":"Play, download and look after your recordings"
+"Ouvir, baixar e cuidar das gravações":"Play, download and look after your recordings",
+// ── Karaokê (21/10/2026) ──
+"Texto da nota enquanto a voz toca. Toque numa frase para ouvir dali, dois toques para editar.":"Note text while the voice plays. Tap a sentence to listen from there, double tap to edit.",
+"aproximado":"approximate",
+"Esta nota não tem os tempos da transcrição: as frases seguem uma estimativa.":"This note doesn't have the transcription timings: the sentences follow an estimate.",
+"Frase da nota":"Note sentence",
+"Ouvir daqui":"Listen from here",
+"Ouvir só esta frase":"Listen to this sentence only",
+"Citar com a voz":"Quote with the voice",
+"Tirar a citação":"Remove the quote",
+"Citação tirada":"Quote removed",
+"Citação guardada com a voz · {t}":"Quote saved with the voice · {t}",
+"Toque numa frase para ouvir dali · segure para mais":"Tap a sentence to listen from there · hold for more",
+"Clique numa frase para ouvir dali · botão direito para mais":"Click a sentence to listen from there · right-click for more",
+// ── Karaokê: citações (21/10/2026) ──
+"Citações com a voz":"Quotes with the voice",
+"Ouvir a citação":"Listen to the quote"
 };
 
 // ── STATE ──
@@ -35926,7 +35998,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
   const pid='proc_'+Date.now();addProcCard(pid,file.name,durSec,fromRec?'gravacao':'arquivo');
   const _t0=Date.now();
   try{
-    let text,actualSec=durSec,cortouArquivo=false;
+    let text,actualSec=durSec,cortouArquivo=false,segs=null;
     if(!fromRec&&!voxPro()&&!opts.semLimiteArquivo&&_arqHoje()>=LIM_ARQ_DIA){
       const c=await _cortarInicio(file,LIM_ARQ_EXTRA_SEG,pid);
       // Arquivo extra que já cabe nos minutos do grátis vai inteiro, sem aviso.
@@ -35961,7 +36033,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       }else{
         r=await splitChunks(file,pid,key,fromRec?durSec:0);
       }
-      text=r.text;actualSec=r.sec;
+      text=r.text;actualSec=r.sec;segs=r.segs||null;
       // Aqui a duração é MEDIDA (o áudio foi decodificado pra ser fatiado),
       // então vale mais que o palpite pelo tamanho do arquivo.
       _armarDurAudio(actualSec);
@@ -35973,13 +36045,21 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       setPL(pid,t('Transcrevendo…'));
       if(viaCortesia){cortesiaRes=await _cortesiaTranscrever(file);text=cortesiaRes.texto}
       else{
-        const fd=new FormData();fd.append('file',file);let res;
-        if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
-        else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
-        else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd})}
-        else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
+        // Karaokê (21/10/2026): pede os trechos com início e fim (verbose_json).
+        // Provedor que recusar o formato (400) é pedido de novo em texto puro.
+        let res;
+        for(const fmt of cfg.provider==='grok'?['text']:['verbose_json','text']){
+          const fd=new FormData();fd.append('file',file);
+          if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
+          else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format',fmt);_txDica(fd);res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
+          else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format',fmt);_txDica(fd);res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd})}
+          else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format',fmt);_txDica(fd);res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
+          if(res.status===400&&fmt==='verbose_json')continue;
+          break;
+        }
         if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||'Erro '+res.status)}
-        text=cfg.provider==='grok'?(await res.json()).text||'':await res.text();
+        if(cfg.provider==='grok')text=(await res.json()).text||'';
+        else{const r=await _txLerResposta(res);text=r.text;segs=r.segs}
       }
     }
     const cpm=cfg.provider==='grok'?COST_G:cfg.provider==='groqwhisper'?COST_GQ:COST_W;
@@ -35988,6 +36068,8 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
     if(opts.prefixo)text=opts.prefixo+'\n\n'+(text||'');
     // Nota cortada nunca pode se passar por completa.
     if(cortouArquivo)text=(text||'').trimEnd()+'\n\n⚠️ '+t('Só os primeiros {n} minutos deste arquivo foram transcritos (plano grátis: 1 arquivo inteiro por dia). O Pro transcreve o arquivo inteiro.').replace('{n}',LIM_ARQ_EXTRA_SEG/60);
+    // Os trechos com tempo vão junto do áudio (Karaokê: tocar numa frase ouve dali).
+    if(segs&&segs.length&&file){const m=_audPend.get(file)||{};m.tr=segs;_audPend.set(file,m)}
     let cardAlvo=null;
     document.getElementById(pid)?.remove();
     // "Gravar aqui"/"Anexar aqui" travam o alvo (recTargetTA) — usa ele de
@@ -43383,6 +43465,7 @@ function _audCinco(o){
 }
 function _audPintar(c){
   if(!c)return;
+  try{_karCitsPintar(c)}catch(e){}
   const left=c.querySelector('.ch-left');if(!left)return;
   const vivos=_audFila(c),todos=_audLista(c);
   c.classList.toggle('tem-aud',todos.length>0);
@@ -43441,10 +43524,10 @@ function _audEl(){
   if(_audElem)return _audElem;
   const el=_audElem=new Audio();el.preload='auto';
   el.addEventListener('ended',()=>{if(_audP)_audProximo()});
-  el.addEventListener('pause',()=>{if(_audP)_audPilEstado(_audP.c)});
-  el.addEventListener('play',()=>{if(_audP){_audPilEstado(_audP.c);_audLaco()}});
-  // Pular silêncio também com a aba escondida (requestAnimationFrame para lá).
-  el.addEventListener('timeupdate',()=>{if(_audP)_audPularSilencio()});
+  el.addEventListener('pause',()=>{if(_audP){_audPilEstado(_audP.c);_karSinc(_audP.c)}});
+  el.addEventListener('play',()=>{if(_audP){_audPilEstado(_audP.c);_audLaco();_karSinc(_audP.c)}});
+  // Pular silêncio (e parar no fim da frase) também com a aba escondida (requestAnimationFrame para lá).
+  el.addEventListener('timeupdate',()=>{if(_audP){_audPularSilencio();_audAte()}});
   return el;
 }
 // Posição (s) no total da nota → item da fila e deslocamento dentro dele.
@@ -43467,7 +43550,7 @@ async function _audAbrirItem(i,off){
   const u=a&&await _audUrlDe(a);
   if(!u){toast(_mundoTrancado(_mundoAtivo)&&!_cofreChave?t('Este mundo está trancado: entre com a senha para ouvir.'):t('Este áudio não está mais neste aparelho.'),true);return false}
   const el=_audEl();
-  if(_audP.c&&_audP.c!==it.c){_audP.c.classList.remove('aud-on');const ant=_audP.c;_audP.c=it.c;_audPilEstado(ant)}
+  if(_audP.c&&_audP.c!==it.c){_audP.c.classList.remove('aud-on');const ant=_audP.c;_audP.c=it.c;_audPilEstado(ant);_karSinc(ant,true)}
   _audP.i=i;_audP.c=it.c;
   if(_audP.k!==it.k||el.src!==u){_audP.k=it.k;el.src=u}
   el.playbackRate=_audVel;
@@ -43490,13 +43573,14 @@ async function _audTocarDe(c,seg){
   try{_encParar()}catch(e){}
   const mesma=_audP&&_audP.c===c&&_audP.fila.length===l.length&&_audP.fila.every((x,j)=>x.c===c&&x.k===l[j].k);
   if(!mesma){_audParar();_audP={fila:l.map(a=>({c,k:a.k})),i,c,k:null}}
+  _audP.ate=null;
   await _audAbrirItem(i,off);
 }
 // Um áudio só (gaveta e painel), fora da fila da nota.
 async function _audTocarUm(c,k,off){await _audTocarFila([{c,k}],off)}
 function _audAlternar(c){
   const el=_audEl();
-  if(_audP&&_audP.c===c){if(el.paused){c.classList.add('aud-on');el.play().catch(()=>{})}else el.pause();return}
+  if(_audP&&_audP.c===c){if(el.paused){_audP.ate=null;c.classList.add('aud-on');el.play().catch(()=>{})}else el.pause();return}
   _audTocarDe(c,0);
 }
 function _audProximo(){
@@ -43507,13 +43591,13 @@ function _audProximo(){
   _audP=null;
   if(f&&!_voxReduzMov()){f.classList.add('recolhe');setTimeout(()=>{f.classList.remove('recolhe');if(!_audP||_audP.c!==c)c.classList.remove('aud-on')},330)}
   else c.classList.remove('aud-on');
-  _audPilEstado(c);try{_gavTick()}catch(e){}try{_rastroTick&&_rastroTick()}catch(e){}
+  _audPilEstado(c);_karSinc(c);try{_gavTick()}catch(e){}try{_rastroTick&&_rastroTick()}catch(e){}
 }
 function _audParar(){
   if(!_audP)return;const c=_audP.c;
   try{_audEl().pause()}catch(e){}
   if(_audP.raf)cancelAnimationFrame(_audP.raf);
-  _audP=null;c.classList.remove('aud-on','aud-arrasta');_audPilEstado(c);
+  _audP=null;c.classList.remove('aud-on','aud-arrasta');_audPilEstado(c);_karSinc(c,true);
   try{_gavTick()}catch(e){}
 }
 function _audPularSilencio(){
@@ -43539,7 +43623,7 @@ function _audLaco(){
     if(_audP!==P){return}
     const c=P.c;
     if(!c.isConnected){_audParar();return}
-    _audPularSilencio();
+    _audPularSilencio();_audAte();_karTick();
     const p=Math.min(1,_audPos()/Math.max(.1,_audTotAtual()));
     const f=c.querySelector(':scope>.aud-fio');if(f&&!c.classList.contains('aud-arrasta'))f.style.setProperty('--p',p.toFixed(4));
     if(!c.classList.contains('aud-arrasta')){const s=_audFmt(_audPos());c.querySelectorAll('.ch-left .aud-pil .aud-t,:scope>.aud-selo .aud-t').forEach(tt=>{if(tt.textContent!==s)tt.textContent=s})}
@@ -43906,6 +43990,11 @@ async function _audRecortar(c,a,iniS,fimS,tira){
   const out=mp4?'recorte.m4a':'recorte.webm';
   try{
     const f=[`atrim=start=${iniS.toFixed(3)}:end=${fimS.toFixed(3)}`,'asetpts=PTS-STARTPTS'];
+    let cortes=[],trOk=true;
+    if(tira){
+      cortes=(a.s||[]).filter(([x,y])=>y/1000>iniS&&x/1000<fimS).map(([x,y])=>[Math.max(x/1000,iniS),Math.min(y/1000,fimS)]);
+      trOk=cortes.length>0;
+    }
     if(tira){
       const sil=(a.s||[]).filter(([x,y])=>y/1000>iniS&&x/1000<fimS).map(([x,y])=>`between(t,${(Math.max(x/1000,iniS)-iniS).toFixed(3)},${(Math.min(y/1000,fimS)-iniS).toFixed(3)})`);
       if(sil.length)f.push(`aselect='not(${sil.join('+')})'`,'asetpts=N/SR/TB');
@@ -43920,12 +44009,437 @@ async function _audRecortar(c,a,iniS,fimS,tira){
     try{const ctx=new (window.AudioContext||window.webkitAudioContext)();try{d=(await ctx.decodeAudioData(await novo.arrayBuffer())).duration}finally{ctx.close()}}catch(e){}
     // O recorte aponta pra quem ele recortou: na fila da nota, o mais novo
     // de cada original toma o lugar dos anteriores (ver _audFila).
-    _audAnexar(c,novo,{d,de:a.k});
+    _audAnexar(c,novo,{d,de:a.k,tr:trOk?_audTrRecorte(a.tr,iniS,fimS,cortes):null});
     if(_audCfg().excluir)_audExcluir(c,a.k);
     return d;
   }finally{
     await ff.deleteFile(out).catch(()=>{});await ent.fechar();
   }
+}
+
+// ── Karaokê (proposta 5) ──
+// Enquanto a voz da nota toca, o texto dela vira leitura: a frase dita acende,
+// as palavras enchem, tocar numa frase ouve dali. Os tempos vêm da transcrição
+// (verbose_json, guardados em a.tr) e casam com o texto palavra por palavra;
+// editar a nota não quebra, porque o que não casa é interpolado entre as
+// palavras que casaram. Nota sem tempos (ou já reescrita pela IA) segue uma
+// estimativa pelo tamanho das frases, e a leitura avisa "aproximado".
+// Dois toques voltam a editar, com o cursor no lugar; pausou, em 3 s o texto
+// volta a ser editável sozinho. Segurar uma frase (ou o botão direito) abre
+// "Ouvir daqui", "Ouvir só esta frase" e "Citar com a voz".
+let _kar=null;
+const _KAR_PAL=/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu;
+const _KAR_ICO_SO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>';
+function _karNorm(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
+function _karHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+// Frases: termina em . ! ? … (seguido de espaço) ou na quebra de linha. Frase
+// muito comprida (fala sem ponto) quebra na vírgula, pra caber no dedo.
+function _karFrases(txt){
+  const fr=[],n=txt.length;
+  const fecha=(a,b)=>{
+    while(a<b&&/\s/.test(txt[a]))a++;while(b>a&&/\s/.test(txt[b-1]))b--;
+    while(b-a>220){
+      let corte=-1;
+      for(let k=a+60;k<Math.min(b-40,a+220);k++){if(',;:—'.includes(txt[k])&&/\s/.test(txt[k+1]||'')){corte=k+1;if(k>=a+120)break}}
+      if(corte<0)break;
+      fr.push({a,b:corte});a=corte;while(a<b&&/\s/.test(txt[a]))a++;
+    }
+    if(b>a)fr.push({a,b});
+  };
+  let a=0;
+  for(let i=0;i<n;i++){
+    const ch=txt[i];
+    if(ch==='\n'){fecha(a,i);a=i+1;continue}
+    if('.!?…'.includes(ch)){
+      let j=i+1;while(j<n&&'.!?…"\'”’»)]'.includes(txt[j]))j++;
+      if(j>=n||/\s/.test(txt[j])){fecha(a,j);a=j;i=j-1}
+    }
+  }
+  fecha(a,n);
+  return fr;
+}
+// Mapa da nota: frases com início/fim (s, no total da fila) e as palavras.
+function _karMapa(c){
+  const ta=c.querySelector('.cb textarea');if(!ta)return null;
+  const fila=_audFila(c);if(!fila.length)return null;
+  const txt=ta.value;
+  const chave=fila.map(a=>a.k+':'+(+a.d||0)+':'+(a.tr?a.tr.length:0)).join(',')+'|'+txt.length+'|'+_karHash(txt);
+  if(c._karM&&c._karM.chave===chave)return c._karM;
+  const T=Math.max(.1,fila.reduce((s,a)=>s+(+a.d||0),0));
+  const W=[];let m;_KAR_PAL.lastIndex=0;
+  while((m=_KAR_PAL.exec(txt)))W.push({a:m.index,b:m.index+m[0].length,w:_karNorm(m[0]),t:null});
+  // Referência: cada palavra dita, com o tempo estimado dentro do trecho dela.
+  const R=[];let acc=0;
+  const ref=(ini,fim,x)=>{
+    const xs=String(x||''),L=Math.max(1,xs.length),re=new RegExp(_KAR_PAL.source,'gu');let mm;
+    while((mm=re.exec(xs)))R.push({w:_karNorm(mm[0]),t:acc+(ini+(fim-ini)*(mm.index/L))/1000,te:acc+(ini+(fim-ini)*((mm.index+mm[0].length)/L))/1000});
+  };
+  fila.forEach(a=>{(a.tr||[]).forEach(([s,e,x])=>ref(+s||0,+e||0,x));acc+=+a.d||0});
+  // Encontro (diarizado) sem a.tr: as falas já têm início e fim.
+  if(!R.length&&fila.length===1){
+    let us=[];try{us=JSON.parse(c.dataset.utterances||'[]')}catch(e){}
+    acc=0;us.forEach(u=>{if(u&&isFinite(u.start)&&isFinite(u.end))ref(+u.start,+u.end,u.text)});
+  }
+  let casou=0;
+  if(R.length){
+    let j=0;
+    for(const p of W){
+      // Palavra curta ("e", "a", "de") só casa perto: senão pula meia nota.
+      const jan=p.w.length<=2?4:30;
+      for(let k=j;k<Math.min(R.length,j+jan);k++){if(R[k].w===p.w){p.t=R[k].t;p.te=R[k].te;j=k+1;casou++;break}}
+    }
+  }
+  const aprox=!W.length||casou/W.length<.35;
+  if(aprox)W.forEach(p=>{p.t=null;p.te=null});
+  // O que não casou fica entre as âncoras, pela posição no texto.
+  const anc=[{a:0,t:0}];W.forEach(p=>{if(p.t!=null)anc.push({a:p.a,t:p.t})});anc.push({a:txt.length,t:T});
+  let k=0;
+  W.forEach(p=>{
+    if(p.t!=null)return;
+    while(k<anc.length-2&&anc[k+1].a<=p.a)k++;
+    const A=anc[k],B=anc[k+1];p.t=A.t+(B.t-A.t)*((p.a-A.a)/Math.max(1,B.a-A.a));
+  });
+  for(let i=0;i<W.length;i++){W[i].t=Math.min(T,Math.max(0,W[i].t,i?W[i-1].t:0))}
+  W.forEach((p,i)=>{p.te=Math.min(T,Math.max(p.t,p.te!=null?p.te:(i+1<W.length?W[i+1].t:T)))});
+  const F=[];let w=0;
+  _karFrases(txt).forEach(f=>{
+    while(w<W.length&&W[w].a<f.a)w++;
+    const pal=[];while(w<W.length&&W[w].b<=f.b)pal.push(W[w++]);
+    if(pal.length)F.push({a:f.a,b:f.b,pal,ini:pal[0].t});
+  });
+  // Fim = fim da última palavra (+ um respiro), sem passar do começo da próxima.
+  F.forEach((f,i)=>{const prox=i+1<F.length?Math.max(f.ini,F[i+1].ini):T;f.fim=Math.max(f.ini,Math.min(prox,f.pal[f.pal.length-1].te+.25))});
+  return c._karM={chave,frases:F,aprox,T};
+}
+function _karCitacoes(c){return (_encLer(c).marcas||[]).filter(x=>x&&x.voz)}
+function _karCitada(cits,f){return cits.some(x=>(+x.de||0)<f.fim*1000-50&&(+x.ate||0)>f.ini*1000+50)}
+function _karHtml(c,mp,txt){
+  const cits=_karCitacoes(c);
+  let h='',p=0;
+  mp.frases.forEach((f,i)=>{
+    if(f.a>p)h+=escHtml(txt.slice(p,f.a));
+    let q=f.a,d='';
+    f.pal.forEach(x=>{if(x.a>q)d+=escHtml(txt.slice(q,x.a));d+='<span class="kar-p">'+escHtml(txt.slice(x.a,x.b))+'</span>';q=x.b});
+    if(f.b>q)d+=escHtml(txt.slice(q,f.b));
+    h+='<span class="kar-f'+(_karCitada(cits,f)?' citada':'')+'" data-f="'+i+'">'+d+'</span>';p=f.b;
+  });
+  return h+escHtml(txt.slice(p));
+}
+function _karTocando(c){return !!(c&&_audP&&_audP.c===c&&!_audEl().paused&&_audFila(c).some(a=>a.k===_audP.k))}
+// Chamado quando a voz da nota toca, pausa ou para.
+function _karSinc(c,ja){
+  if(!c)return;
+  if(_karTocando(c)){clearTimeout(c._karT);c._karT=null;_karLigar(c);return}
+  if(!c.classList.contains('kar-on'))return;
+  if(ja){clearTimeout(c._karT);c._karT=null;_karDesligar(c);return}
+  if(c._karT)return;
+  const espera=()=>{
+    c._karT=null;
+    if(_karTocando(c))return;
+    // Menu da frase aberto: espera ele fechar.
+    const mn=document.getElementById('karMenu');if(mn&&mn._c===c){c._karT=setTimeout(espera,1500);return}
+    _karDesligar(c);
+  };
+  c._karT=setTimeout(espera,3000);
+}
+function _karPode(c){
+  if(!c||!c.isConnected||c._karEditar)return null;
+  if(c.classList.contains('focus-active')||c.closest('.masonry-preview'))return null;
+  const ta=c.querySelector('.cb textarea');
+  if(!ta||ta.offsetParent===null||document.activeElement===ta)return null;
+  return ta;
+}
+function _karLigar(c){
+  if(c.classList.contains('kar-on')){if(_kar&&_kar.c===c)_karTick(true);return}
+  const ta=_karPode(c);if(!ta)return;
+  const mp=_karMapa(c);if(!mp||!mp.frases.length)return;
+  if(_kar&&_kar.c!==c)_karDesligar(_kar.c);
+  let el=c.querySelector('.cb>.kar-ler');
+  if(!el){
+    el=document.createElement('div');el.className='kar-ler';el.tabIndex=0;
+    el.setAttribute('role','document');
+    el.addEventListener('pointerdown',_karDown);
+    el.addEventListener('contextmenu',_karCtx);
+    el.addEventListener('keydown',_karTecla);
+    el.addEventListener('wheel',()=>{if(_kar)_kar.mexeu=Date.now()},{passive:true});
+    el.addEventListener('touchmove',()=>{if(_kar)_kar.mexeu=Date.now()},{passive:true});
+    ta.after(el);
+  }
+  el.setAttribute('aria-label',t('Texto da nota enquanto a voz toca. Toque numa frase para ouvir dali, dois toques para editar.'));
+  if(el._chave!==mp.chave||el._cit!==JSON.stringify(_karCitacoes(c))){el.innerHTML=_karHtml(c,mp,ta.value);el._chave=mp.chave;el._cit=JSON.stringify(_karCitacoes(c))}
+  if(mp.aprox){el.dataset.aprox=t('aproximado');el.title=t('Esta nota não tem os tempos da transcrição: as frases seguem uma estimativa.')}
+  else{delete el.dataset.aprox;el.removeAttribute('title')}
+  _kar={c,el,mp,cur:-1,pal:-1,mexeu:0,fe:[...el.querySelectorAll('.kar-f')],geo:'',len:ta.value.length};
+  _karGeo();
+  el.scrollTop=ta.scrollTop;
+  c.classList.add('kar-on');
+  _karTick(true);
+  _karDica();
+}
+function _karDesligar(c){
+  if(!c)return;
+  clearTimeout(c._karT);c._karT=null;
+  const el=c.querySelector('.cb>.kar-ler'),ta=c.querySelector('.cb textarea');
+  if(c.classList.contains('kar-on')&&el&&ta){c.classList.remove('kar-on');ta.scrollTop=el.scrollTop}
+  c.classList.remove('kar-on');
+  if(_kar&&_kar.c===c)_kar=null;
+  const mn=document.getElementById('karMenu');if(mn&&mn._c===c)_karMenuFechar();
+}
+// A camada fica exatamente em cima do textarea (que segura o tamanho).
+function _karGeo(){
+  const K=_kar;if(!K)return;
+  const ta=K.c.querySelector('.cb textarea');if(!ta)return;
+  const g=ta.offsetTop+','+ta.offsetLeft+','+ta.offsetWidth+','+ta.offsetHeight;
+  if(g===K.geo)return;K.geo=g;
+  const s=K.el.style;s.top=ta.offsetTop+'px';s.left=ta.offsetLeft+'px';s.width=ta.offsetWidth+'px';s.height=ta.offsetHeight+'px';
+}
+// A cada quadro do laço do player: acende a frase e enche as palavras.
+function _karTick(forca){
+  const K=_kar;if(!K)return;
+  if(!K.c.isConnected||!K.c.classList.contains('kar-on')){_kar=null;return}
+  if(!_audP||_audP.c!==K.c)return;
+  // O texto mudou por fora (ex.: IA reescreveu) enquanto lia: refaz a camada.
+  const ta=K.c.querySelector('.cb textarea');
+  if(ta&&ta.value.length!==K.len){_karDesligar(K.c);_karLigar(K.c);return}
+  _karGeo();
+  const pos=_audPos(),fr=K.mp.frases;
+  let i=K.cur<0?0:K.cur;
+  while(i<fr.length-1&&pos>=fr[i+1].ini)i++;
+  while(i>0&&pos<fr[i].ini)i--;
+  if(i!==K.cur||forca){
+    const ant=K.fe[K.cur];
+    if(ant){ant.classList.remove('agora');ant.querySelectorAll('.kar-p.dita').forEach(x=>x.classList.remove('dita'))}
+    K.cur=i;K.pal=-1;
+    const fe=K.fe[i];if(fe){fe.classList.add('agora');K.pe=fe.querySelectorAll('.kar-p');_karSegue(fe,forca)}
+  }
+  const ps=fr[i].pal;let w=K.pal;
+  while(w+1<ps.length&&pos>=ps[w+1].t)w++;
+  while(w>=0&&pos<ps[w].t)w--;
+  if(w!==K.pal&&K.pe){
+    const lo=Math.min(w,K.pal)+1,hi=Math.max(w,K.pal);
+    for(let j=Math.max(0,lo);j<=hi&&j<K.pe.length;j++)K.pe[j].classList.toggle('dita',j<=w);
+    K.pal=w;
+  }
+}
+// A frase que toca fica no terço de cima da leitura (se a pessoa não estiver rolando).
+function _karSegue(fe,ja){
+  const K=_kar,el=K&&K.el;if(!el||el.scrollHeight<=el.clientHeight+2)return;
+  if(Date.now()-K.mexeu<4000)return;
+  const topo=fe.offsetTop,base=topo+fe.offsetHeight,v0=el.scrollTop,v1=v0+el.clientHeight;
+  if(topo>=v0+8&&base<=v0+el.clientHeight*.72)return;
+  const alvo=Math.max(0,topo-el.clientHeight/3);
+  try{el.scrollTo({top:alvo,behavior:ja||_voxReduzMov()?'auto':'smooth'})}catch(e){el.scrollTop=alvo}
+}
+function _karFraseDe(t0){const f=t0&&t0.closest&&t0.closest('.kar-f');return f?+f.dataset.f:-1}
+// Posição no texto (caractere) de um ponto da tela: o texto da camada é o
+// mesmo do textarea, letra por letra.
+function _karOffset(el,x,y){
+  let no=null,of=0;
+  if(document.caretPositionFromPoint){const p=document.caretPositionFromPoint(x,y);if(p){no=p.offsetNode;of=p.offset}}
+  else if(document.caretRangeFromPoint){const r=document.caretRangeFromPoint(x,y);if(r){no=r.startContainer;of=r.startOffset}}
+  if(!no||!el.contains(no))return null;
+  const tw=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let n,soma=0;
+  while((n=tw.nextNode())){if(n===no)return soma+of;soma+=n.nodeValue.length}
+  return null;
+}
+let _karG=null;
+function _karDown(e){
+  if(e.button>0)return;
+  const el=e.currentTarget,c=el.closest('.card');if(!c)return;
+  const fi=_karFraseDe(e.target);
+  const g=_karG={c,el,fi,x0:e.clientX,y0:e.clientY,id:e.pointerId,segurou:false};
+  g.hold=setTimeout(()=>{
+    if(_karG!==g||g.fi<0)return;
+    g.segurou=true;try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}
+    _karMenu(c,g.fi,g.x0,g.y0);
+  },450);
+  const mv=ev=>{if(ev.pointerId!==g.id)return;if(Math.hypot(ev.clientX-g.x0,ev.clientY-g.y0)>8){g.mexeu=true;clearTimeout(g.hold)}};
+  const fim=ev=>{
+    if(ev.pointerId!==g.id)return;
+    clearTimeout(g.hold);el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',fim);el.removeEventListener('pointercancel',fim);
+    if(_karG===g)_karG=null;
+    if(ev.type==='pointercancel'||g.mexeu){if(g.mexeu&&_kar)_kar.mexeu=Date.now();return}
+    if(g.segurou)return;
+    const agora=Date.now(),u=el._karUlt;
+    // Dois toques: volta a editar, com o cursor onde o dedo caiu.
+    if(u&&agora-u.t<320&&Math.hypot(ev.clientX-u.x,ev.clientY-u.y)<28){el._karUlt=null;_karEditar(c,_karOffset(el,ev.clientX,ev.clientY));return}
+    el._karUlt={t:agora,x:ev.clientX,y:ev.clientY};
+    if(g.fi>=0){if(ev.pointerType==='touch')try{navigator.vibrate&&navigator.vibrate(6)}catch(_){}_karOuvir(c,g.fi,false)}
+  };
+  el.addEventListener('pointermove',mv);el.addEventListener('pointerup',fim);el.addEventListener('pointercancel',fim);
+}
+function _karCtx(e){
+  e.preventDefault();
+  const el=e.currentTarget,c=el.closest('.card'),fi=_karFraseDe(e.target);
+  if(_karG){clearTimeout(_karG.hold);if(_karG.segurou){_karG=null;return}_karG.segurou=true}
+  if(c&&fi>=0)_karMenu(c,fi,e.clientX,e.clientY);
+}
+function _karTecla(e){
+  const c=e.currentTarget.closest('.card'),K=_kar;if(!c)return;
+  if(e.key==='Enter'){e.preventDefault();const f=K&&K.c===c&&K.mp.frases[Math.max(0,K.cur)];_karEditar(c,f?f.a:null);return}
+  if(e.key===' '){e.preventDefault();_audAlternar(c);return}
+  if((e.key==='ArrowDown'||e.key==='ArrowUp')&&K&&K.c===c){e.preventDefault();const i=Math.min(K.mp.frases.length-1,Math.max(0,K.cur+(e.key==='ArrowDown'?1:-1)));_karOuvir(c,i,false);return}
+  if(e.key==='ContextMenu'&&K&&K.c===c){e.preventDefault();const fe=K.fe[Math.max(0,K.cur)];const r=fe?fe.getBoundingClientRect():e.currentTarget.getBoundingClientRect();_karMenu(c,Math.max(0,K.cur),r.left+12,r.bottom)}
+}
+async function _karOuvir(c,fi,so){
+  const mp=c._karM||_karMapa(c);const f=mp&&mp.frases[fi];if(!f)return;
+  await _audTocarDe(c,f.ini);
+  if(_audP&&_audP.c===c){_audP.ate=so?f.fim:null;if(_kar&&_kar.c===c)_karTick(true)}
+  const fe=_kar&&_kar.c===c&&_kar.fe[fi];
+  document.querySelectorAll('.kar-f.so').forEach(x=>x.classList.remove('so'));
+  if(so&&fe)fe.classList.add('so');
+}
+// "Ouvir só esta frase": para sozinho no fim dela (laço e timeupdate).
+function _audAte(){
+  const P=_audP;if(!P||P.ate==null)return;
+  if(_audPos()>=P.ate-.03){P.ate=null;try{_audEl().pause()}catch(e){}document.querySelectorAll('.kar-f.so').forEach(x=>x.classList.remove('so'))}
+}
+function _karEditar(c,off){
+  const ta=c.querySelector('.cb textarea');if(!ta)return;
+  const el=c.querySelector('.cb>.kar-ler');
+  const sc=el?el.scrollTop:ta.scrollTop;
+  c._karEditar=true;_karDesligar(c);
+  ta.scrollTop=sc;
+  try{ta.focus({preventScroll:true})}catch(e){ta.focus()}
+  if(off!=null){try{ta.setSelectionRange(off,off)}catch(e){}}
+  // Saiu de editar: se a voz ainda toca, a leitura volta.
+  ta.addEventListener('blur',()=>{c._karEditar=false;setTimeout(()=>_karSinc(c),0)},{once:true});
+}
+function _karMenu(c,fi,x,y){
+  _karMenuFechar();
+  const mp=c._karM||_karMapa(c),f=mp&&mp.frases[fi];if(!f)return;
+  const ta=c.querySelector('.cb textarea'),txt=ta?ta.value.slice(f.a,f.b):'';
+  const cit=_karCitada(_karCitacoes(c),f);
+  const mn=document.createElement('div');mn.id='karMenu';mn.className='kar-menu';mn.setAttribute('role','menu');
+  mn.setAttribute('aria-label',t('Frase da nota'));mn._c=c;mn._fi=fi;
+  mn.innerHTML=`<span class="kar-m-tit"><b>${escHtml(_audFmt(f.ini))}</b> · ${escHtml(txt.length>90?txt.slice(0,88)+'…':txt)}</span>
+    <button type="button" role="menuitem" data-a="daqui"><span class="svgi">${ICO.play}</span>${escHtml(t('Ouvir daqui'))}</button>
+    <button type="button" role="menuitem" data-a="so"><span class="svgi">${_KAR_ICO_SO}</span>${escHtml(t('Ouvir só esta frase'))}</button>
+    <button type="button" role="menuitem" data-a="citar"><span class="svgi">${cit?ICO.close:ICO.quote}</span>${escHtml(cit?t('Tirar a citação'):t('Citar com a voz'))}</button>`;
+  mn.addEventListener('click',e=>{
+    const b=e.target.closest('button[data-a]');if(!b)return;
+    const a=b.dataset.a;_karMenuFechar();
+    if(a==='daqui')_karOuvir(c,fi,false);
+    else if(a==='so')_karOuvir(c,fi,true);
+    else _karCitar(c,fi);
+  });
+  mn.addEventListener('keydown',e=>{
+    const bs=[...mn.querySelectorAll('button')],i=bs.indexOf(document.activeElement);
+    if(e.key==='Escape'){e.preventDefault();_karMenuFechar();c.querySelector('.cb>.kar-ler')?.focus();return}
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();bs[(i+(e.key==='ArrowDown'?1:bs.length-1))%bs.length].focus()}
+  });
+  document.body.appendChild(mn);
+  const r=mn.getBoundingClientRect(),vw=innerWidth,vh=innerHeight;
+  let L=Math.min(Math.max(12,x-r.width/2),vw-r.width-12),T=y+14;
+  if(T+r.height>vh-12)T=Math.max(12,y-r.height-14);
+  mn.style.left=L+'px';mn.style.top=T+'px';
+  setTimeout(()=>{
+    document.addEventListener('pointerdown',_karMenuFora,true);
+    window.addEventListener('scroll',_karMenuRola,true);
+  },0);
+  if(!matchMedia('(pointer:coarse)').matches)mn.querySelector('button')?.focus({preventScroll:true});
+}
+function _karMenuFora(e){const mn=document.getElementById('karMenu');if(mn&&!e.composedPath().includes(mn))_karMenuFechar()}
+function _karMenuRola(e){const mn=document.getElementById('karMenu');if(mn&&!(e.target instanceof Node&&mn.contains(e.target)))_karMenuFechar()}
+function _karMenuFechar(){
+  document.getElementById('karMenu')?.remove();
+  document.removeEventListener('pointerdown',_karMenuFora,true);
+  window.removeEventListener('scroll',_karMenuRola,true);
+}
+// "Citar com a voz": a frase vira uma marca da nota (a estrela do encontro),
+// com o trecho exato do áudio. Aparece sublinhada na leitura e conta no painel.
+function _karCitar(c,fi){
+  const mp=c._karM||_karMapa(c),f=mp&&mp.frases[fi];if(!f)return;
+  const cits=_karCitacoes(c),marcas=(_encLer(c).marcas||[]).slice();
+  const de=Math.round(f.ini*1000),ate=Math.round(f.fim*1000);
+  if(_karCitada(cits,f)){
+    const resto=marcas.filter(x=>!(x&&x.voz&&(+x.de||0)<ate-50&&(+x.ate||0)>de+50));
+    _encGravar(c,{marcas:resto});toast(t('Citação tirada'));
+    _karCitsPintar(c);
+  }else{
+    const ta=c.querySelector('.cb textarea'),nova={de,ate,rot:t('Citação'),voz:1,txt:ta?ta.value.slice(f.a,f.b).slice(0,400):''};
+    marcas.push(nova);
+    _encGravar(c,{marcas});
+    _karCitsPintar(c,nova);
+    toast(t('Citação guardada com a voz · {t}').replace('{t}',_audFmt(f.ini)));
+  }
+  _karCitRepintar(c);
+  try{_rastroTick&&_rastroTick()}catch(e){}
+}
+function _karDica(){
+  let n=0;try{n=+localStorage.getItem('vox_kar_dica')||0}catch(e){}
+  if(n>=2)return;
+  try{localStorage.setItem('vox_kar_dica',String(n+1))}catch(e){}
+  toast(matchMedia('(pointer:coarse)').matches?t('Toque numa frase para ouvir dali · segure para mais'):t('Clique numa frase para ouvir dali · botão direito para mais'));
+}
+// Recorte: os tempos da transcrição acompanham o corte (o que saiu some e o
+// resto encosta). Sem saber o que o silenceremove tirou, a nota fica sem eles.
+function _audTrRecorte(tr,iniS,fimS,cortes){
+  if(!tr||!tr.length)return null;
+  const ini=iniS*1000,fim=fimS*1000,cs=(cortes||[]).map(([x,y])=>[x*1000,y*1000]).sort((p,q)=>p[0]-q[0]);
+  const map=v=>{v=Math.min(Math.max(v,ini),fim);let r=v-ini;for(const [x,y] of cs){if(v>=y)r-=y-x;else if(v>x){r-=v-x;break}}return Math.max(0,Math.round(r))};
+  const out=tr.filter(([s,e])=>e>ini&&s<fim).map(([s,e,x])=>[map(s),map(e),x]).filter(([s,e])=>e>s);
+  return out.length?out:null;
+}
+
+// A faixa das citações: embaixo do texto, cada citação com a voz vira um
+// chip (a frase, o minuto e um play). Entra com mola; o × tira a citação.
+function _karCitsPintar(c,nova){
+  if(!c)return;
+  const cits=_karCitacoes(c).slice().sort((a,b)=>(+a.de||0)-(+b.de||0));
+  let fx=c.querySelector('.kar-cits');
+  if(!cits.length||!_audFila(c).length){fx&&fx.remove();return}
+  const chave=JSON.stringify(cits);
+  if(fx&&fx._k===chave&&!nova)return;
+  if(!fx){
+    const cb=c.querySelector('.cb');if(!cb)return;
+    fx=document.createElement('div');fx.className='kar-cits';fx.setAttribute('role','list');
+    fx.addEventListener('click',_karCitClique);
+    cb.after(fx);
+  }
+  fx._k=chave;fx.setAttribute('aria-label',t('Citações com a voz'));
+  fx.innerHTML=cits.map(m=>{
+    const de=+m.de||0,ate=+m.ate||0,tx=_karCitTexto(c,m);
+    return `<div class="kar-cit${nova&&nova.de===de&&nova.ate===ate?' novo':''}" role="listitem" data-de="${de}" data-ate="${ate}">
+      <button type="button" class="kar-cit-play" aria-label="${escHtml(t('Ouvir a citação')+' '+_audFmt(de/1000))}"><span class="svgi">${ICO.play}</span></button>
+      <span class="kar-cit-txt">${escHtml(tx)}</span><small>${escHtml(_audFmt(de/1000))}</small>
+      <button type="button" class="kar-cit-x" aria-label="${escHtml(t('Tirar a citação'))}" title="${escHtml(t('Tirar a citação'))}">${ICO.close}</button></div>`;
+  }).join('');
+}
+// A frase guardada na hora de citar; marca antiga sem ela usa a frase de agora.
+function _karCitTexto(c,m){
+  if(m.txt)return m.txt;
+  const mp=_karMapa(c),ta=c.querySelector('.cb textarea');
+  const f=mp&&ta&&mp.frases.find(f=>f.fim*1000>(+m.de||0)+50&&f.ini*1000<(+m.ate||0)-50);
+  return f?ta.value.slice(f.a,f.b):_audFmt((+m.de||0)/1000);
+}
+function _karCitClique(e){
+  const it=e.target.closest('.kar-cit');if(!it)return;
+  const c=it.closest('.card'),de=+it.dataset.de,ate=+it.dataset.ate;
+  if(e.target.closest('.kar-cit-x')){
+    const marcas=(_encLer(c).marcas||[]).filter(x=>!(x&&x.voz&&(+x.de||0)===de&&(+x.ate||0)===ate));
+    _encGravar(c,{marcas});_karCitsPintar(c);_karCitRepintar(c);toast(t('Citação tirada'));return;
+  }
+  if(e.target.closest('.kar-cit-play'))_karOuvirTrecho(c,de/1000,ate/1000);
+}
+async function _karOuvirTrecho(c,de,ate){
+  await _audTocarDe(c,de);
+  if(_audP&&_audP.c===c)_audP.ate=ate;
+}
+// Repinta o sublinhado das frases citadas na leitura (se ela estiver de pé).
+function _karCitRepintar(c){
+  const el=c.querySelector('.cb>.kar-ler'),mp=c._karM;if(!el||!mp)return;
+  const nc=_karCitacoes(c);
+  el.querySelectorAll('.kar-f').forEach(x=>{const ff=mp.frases[+x.dataset.f];x.classList.toggle('citada',!!ff&&_karCitada(nc,ff))});
+  el._cit=JSON.stringify(nc);
+}
+// Exportar leva as citações: a frase entre aspas e o minuto da voz.
+function _karCitsExport(c,fmt){
+  const cits=_karCitacoes(c).slice().sort((a,b)=>(+a.de||0)-(+b.de||0));if(!cits.length)return '';
+  const it=cits.map(m=>({tx:_karCitTexto(c,m),min:_audFmt((+m.de||0)/1000)}));
+  if(fmt==='md')return '\n## '+t('Citações com a voz')+'\n\n'+it.map(x=>'> “'+x.tx+'” ('+x.min+')').join('\n\n')+'\n';
+  if(fmt==='html')return '<h2>'+escHtml(t('Citações com a voz'))+'</h2>'+it.map(x=>'<blockquote>“'+escHtml(x.tx)+'” <small>('+escHtml(x.min)+')</small></blockquote>').join('');
+  return '\n'+t('Citações com a voz')+':\n'+it.map(x=>'“'+x.tx+'” ('+x.min+')').join('\n')+'\n';
 }
 
 // ── Rastro: o painel de áudios (proposta 3) ──
@@ -45100,7 +45614,7 @@ function _selRestaurarUm(id){
     const card=e.target.closest?.('#cardsList .card:not(.proc-card)');
     if(!card)return;
     // não sequestra quem está mexendo em controle ou escrevendo
-    if(e.target.closest('button,textarea,input,select,a,.ca-wrap,.cdot-wrap,.drag-handle,.ctags'))return;
+    if(e.target.closest('button,textarea,input,select,a,.ca-wrap,.cdot-wrap,.drag-handle,.ctags,.kar-ler'))return;
     alvo=card;x0=e.clientX;y0=e.clientY;
     tmr=setTimeout(()=>{
       if(!alvo)return;
@@ -45209,7 +45723,7 @@ function _faxinaLixeira(){
     const card=e.target.closest?.('#cardsList .card:not(.proc-card)');
     if(!card||card.classList.contains('focus-active'))return;
     // Não sequestra gesto de quem está mexendo em controle ou escrevendo.
-    if(e.target.closest('button,textarea,input,.ca-wrap,.cdot-wrap,.drag-handle,.ctags'))return;
+    if(e.target.closest('button,textarea,input,.ca-wrap,.cdot-wrap,.drag-handle,.ctags,.kar-ler'))return;
     alvo=card;x0=e.touches[0].clientX;y0=e.touches[0].clientY;dx=0;decidiu=false;horizontal=false;
   },{passive:true});
   document.addEventListener('touchmove',e=>{
@@ -45410,7 +45924,7 @@ function cardMarkdown(id){
   const fmTags=tags.length?`\ntags: [${tags.map(x=>x.trim().replace(/\s+/g,'-')).join(', ')}]`:'';
   const fmMarcado=_calMetaFrontmatter(c);
   const notaFotos=_notaFotosExport(c);
-  let out=`---\ndate: ${isoDt}${fmMarcado?'\nmarked: '+fmMarcado:''}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n# ${name}\n\n${txt}\n${notaFotos?'\n'+notaFotos+'\n':''}`;
+  let out=`---\ndate: ${isoDt}${fmMarcado?'\nmarked: '+fmMarcado:''}\nmode: ${mode}\napi: ${prov}${fmTags}\n---\n\n# ${name}\n\n${txt}\n${notaFotos?'\n'+notaFotos+'\n':''}${_karCitsExport(c,'md')}`;
   const hist=getDiarChatHistory(id);
   if(hist.length){
     out+='\n## '+t('Conversa')+'\n\n';
@@ -45497,10 +46011,10 @@ function exportCard(id,fmt){
     ext='html';
     const tagsHtml=tags.length?`<div class="tags">${tags.map(x=>`<span class="tag">#${escHtml(x)}</span>`).join('')}</div>`:'';
     const notaHtml=notaFotos?`<p class="card-nota-fotos" style="color:#6b7280;font-size:13px">${escHtml(notaFotos)}</p>`:'';
-    out=`<!DOCTYPE html><html lang="${getLocale()}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(name)} — Vox</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:760px;margin:40px auto;padding:20px;color:#1a1a1a;line-height:1.75}h1{font-size:22px;border-bottom:2px solid #e5e7eb;padding-bottom:10px;margin-bottom:4px}.meta{color:#6b7280;font-size:13px;margin-bottom:24px}.card-text{white-space:pre-wrap;font-size:15px}.tags{margin-top:16px;display:flex;gap:6px;flex-wrap:wrap}.tag{background:#ede9fe;color:#7c3aed;border-radius:20px;padding:2px 10px;font-size:12px}</style></head><body><h1>${escHtml(name)}</h1><div class="meta">${dt} · ${mode} · ${prov}${escHtml(marcadoTxt)}</div><div class="card-text">${escHtml(txt)}</div>${notaHtml}${tagsHtml}</body></html>`;
+    out=`<!DOCTYPE html><html lang="${getLocale()}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(name)} — Vox</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:760px;margin:40px auto;padding:20px;color:#1a1a1a;line-height:1.75}h1{font-size:22px;border-bottom:2px solid #e5e7eb;padding-bottom:10px;margin-bottom:4px}.meta{color:#6b7280;font-size:13px;margin-bottom:24px}.card-text{white-space:pre-wrap;font-size:15px}.tags{margin-top:16px;display:flex;gap:6px;flex-wrap:wrap}.tag{background:#ede9fe;color:#7c3aed;border-radius:20px;padding:2px 10px;font-size:12px}</style></head><body><h1>${escHtml(name)}</h1><div class="meta">${dt} · ${mode} · ${prov}${escHtml(marcadoTxt)}</div><div class="card-text">${escHtml(txt)}</div>${_karCitsExport(c,'html')}${notaHtml}${tagsHtml}</body></html>`;
   }else{
     ext='txt';
-    out=`${name}\n${dt} · ${mode} · ${prov}${marcadoTxt}${tags.length?'\n'+t('Tags:')+' '+tags.join(', '):''}\n${'='.repeat(40)}\n\n${txt}\n${notaFotos?'\n'+notaFotos+'\n':''}`;
+    out=`${name}\n${dt} · ${mode} · ${prov}${marcadoTxt}${tags.length?'\n'+t('Tags:')+' '+tags.join(', '):''}\n${'='.repeat(40)}\n\n${txt}\n${notaFotos?'\n'+notaFotos+'\n':''}${_karCitsExport(c,'txt')}`;
   }
   dl(out,`vox_${safe}.${ext}`);
   toast(t('📥 Baixado (.{ext})').replace('{ext}',ext));
@@ -46695,7 +47209,7 @@ async function splitChunks(file,pid,key,durSec){
     const sr=ab2.sampleRate,tot=ab2.length,realSec=Math.ceil(tot/sr);
     const spc=CHUNK_SEC*sr,nc=Math.ceil(tot/spc),nch=ab2.numberOfChannels;
     const chs=[];for(let c=0;c<nch;c++)chs.push(ab2.getChannelData(c));
-    const res=[];
+    const res=[],segsTot=[];
     for(let i=0;i<nc;i++){
       setPL(pid,t('Transcrevendo {i}/{n}…').replace('{i}',i+1).replace('{n}',nc));
       const s=i*spc,e=Math.min(s+spc,tot),l=e-s;const mono=new Float32Array(l);
@@ -46703,6 +47217,7 @@ async function splitChunks(file,pid,key,durSec){
       const wf=encWAV(mono,sr);const cf=new File([wf],`p${i+1}.wav`,{type:'audio/wav'});
       try{
         res.push((await txChunk(cf,key)).trim());
+        const off=Math.round(s/sr*1000);if(_txUltSegs)_txUltSegs.forEach(([a,b,x])=>segsTot.push([a+off,b+off,x]));
       }catch(chunkErr){
         // ACHADO 04/09/2026: se o bloco 8 de 12 falhasse mesmo depois das novas
         // tentativas do txChunk, os 7 blocos já transcritos eram jogados fora —
@@ -46717,7 +47232,7 @@ async function splitChunks(file,pid,key,durSec){
         throw chunkErr;
       }
     }
-    return{text:res.join(' '),sec:realSec};
+    return{text:res.join(' '),sec:realSec,segs:segsTot};
   }catch(e){
     if(e.partial)throw e;   // já é a falha parcial montada acima — não tenta de novo do zero via FFmpeg
     // Decodificação nativa falhou (ex: OGG grande no Safari, ou formato raro) —
@@ -46745,13 +47260,14 @@ async function splitChunksFFmpeg(file,pid,key){
   await ff.exec(['-i',ent.caminho,'-ar',String(CHUNK_SR),'-ac','1','-c:a','libmp3lame','-b:a','64k','-f','segment','-segment_time',String(CHUNK_SEC),'p%03d.mp3']);
   const list=(await ff.listDir('.')).filter(f=>/^p\d+\.mp3$/.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name));
   if(!list.length)throw new Error(t('Não foi possível processar este arquivo de áudio.'));
-  const res=[];
+  const res=[],segsTot=[];
   for(let i=0;i<list.length;i++){
     setPL(pid,t('Transcrevendo {i}/{n}…').replace('{i}',i+1).replace('{n}',list.length));
     const data=await ff.readFile(list[i].name);
     const cf=new File([data.buffer],`p${i+1}.mp3`,{type:'audio/mp3'});
     try{
       res.push((await txChunk(cf,key)).trim());
+      const off=i*CHUNK_SEC*1000;if(_txUltSegs)_txUltSegs.forEach(([a,b,x])=>segsTot.push([a+off,b+off,x]));
     }catch(chunkErr){
       // Mesmo cuidado do splitChunks: bloco que falha não apaga os anteriores.
       if(res.length){
@@ -46766,12 +47282,27 @@ async function splitChunksFFmpeg(file,pid,key){
   await ent.fechar();
   // FFmpeg não devolve duração total direto — soma pelo tamanho dos blocos (aprox.)
   const realSec=list.length*CHUNK_SEC;
-  return{text:res.join(' '),sec:realSec};
+  return{text:res.join(' '),sec:realSec,segs:segsTot};
 }
 // Espera exponencial + jitter pra falha de rede/servidor — 1,5s, 3s, 6s (+ até
 // 500ms aleatório, pra várias abas/tentativas não baterem no provedor juntas
 // no mesmo instante). Prática padrão de retry, não inventada aqui.
 function _txBackoffMs(attempt){return Math.min(15000,1500*Math.pow(2,attempt)+Math.random()*500)}
+// verbose_json: o texto e os trechos com início e fim, em ms ([ini,fim,texto]).
+// Quem não devolve JSON (provedor ou servidor que ignorou o formato) segue como texto.
+let _txUltSegs=null;
+async function _txLerResposta(res){
+  const tx=await res.text();
+  try{
+    const j=JSON.parse(tx);
+    if(j&&typeof j.text==='string'){
+      const segs=Array.isArray(j.segments)?j.segments.filter(x=>x&&isFinite(x.start)&&isFinite(x.end)&&String(x.text||'').trim())
+        .map(x=>[Math.round(x.start*1000),Math.round(x.end*1000),String(x.text).trim()]):null;
+      return {text:j.text.trim(),segs:segs&&segs.length?segs:null};
+    }
+  }catch(e){}
+  return {text:tx.trim(),segs:null};
+}
 async function txChunk(file,key){
   // Mesma espera automática do callAI: 429 (limite por minuto/hora de áudio do
   // provedor) lê o "try again in Xs" e refaz — áudios de horas não quebram no meio.
@@ -46787,6 +47318,8 @@ async function txChunk(file,key){
   // espera o navegador desistir sozinho) + falha de rede E erro 5xx entram no
   // mesmo retry de espera crescente que o 429 já tinha.
   const MAX=4;
+  // verbose_json traz os trechos com tempo (Karaokê); quem recusar (400) vai em texto.
+  let fmt=cfg.provider==='grok'?'text':'verbose_json';_txUltSegs=null;
   for(let attempt=0;attempt<MAX;attempt++){
     const fd=new FormData();fd.append('file',file);
     const ctrl=new AbortController();
@@ -46794,9 +47327,9 @@ async function txChunk(file,key){
     let res;
     try{
       if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
-      else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
-      else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd,signal:ctrl.signal})}
-      else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
+      else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format',fmt);_txDica(fd);res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
+      else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format',fmt);_txDica(fd);res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd,signal:ctrl.signal})}
+      else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format',fmt);_txDica(fd);res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
     }catch(netErr){
       clearTimeout(to);
       if(attempt<MAX-1){
@@ -46822,8 +47355,10 @@ async function txChunk(file,key){
       await new Promise(r=>setTimeout(r,wait));
       continue;
     }
+    if(res.status===400&&fmt==='verbose_json'){fmt='text';attempt--;continue}
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+res.status)}
-    return cfg.provider==='grok'?(await res.json()).text||'':await res.text();
+    if(cfg.provider==='grok')return (await res.json()).text||'';
+    const r=await _txLerResposta(res);_txUltSegs=r.segs;return r.text;
   }
   throw new Error(t('limite de uso da IA — tente novamente em instantes'));
 }
