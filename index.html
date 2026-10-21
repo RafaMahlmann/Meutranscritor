@@ -1535,6 +1535,85 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .ca-menu.ca-folha::before{content:'';display:block;width:36px;height:4px;border-radius:2px;background:var(--border2);margin:0 auto 8px}
 .ca-menu.ca-folha .aud-gav{max-width:none;min-width:0}
 .ca-menu.ca-folha .ca-mi{height:44px}
+/* ── Rastro: o painel de áudios (proposta 3) ── */
+.rs-ov{position:fixed;inset:0;z-index:420;background:rgba(0,0,0,.32);display:none;align-items:center;justify-content:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.rs-ov.on{display:flex;animation:rsFundo .2s linear}
+@keyframes rsFundo{from{background:rgba(0,0,0,0)}}
+.rs-caixa{position:relative;display:flex;flex-direction:column;width:min(920px,100%);height:min(760px,100%);background:var(--bg);border-radius:22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;animation:rsSobe .28s cubic-bezier(.22,1,.36,1)}
+@keyframes rsSobe{from{transform:translateY(18px) scale(.98);opacity:0}}
+.rs-cab{display:flex;align-items:center;gap:10px;padding:16px 18px 8px}
+.rs-cab b{flex:1;font-size:20px;font-weight:800;color:var(--text)}
+.rs-bt{border:none;background:var(--bg-input);color:var(--text);border-radius:10px;height:32px;padding:0 12px;font:600 13px/1 var(--font);cursor:pointer}
+.rs-x{border:none;background:none;width:32px;height:32px;border-radius:10px;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.rs-x:hover{background:var(--bg-input);color:var(--text)}
+.rs-x svg{width:16px;height:16px}
+.rs-alc{display:flex;gap:4px;margin:0 18px;padding:3px;background:var(--bg-input);border-radius:12px;overflow-x:auto;scrollbar-width:none}
+.rs-alc button{flex:1;white-space:nowrap;border:none;background:none;border-radius:9px;height:30px;padding:0 10px;font:600 12.5px/1 var(--font);color:var(--text2);cursor:pointer}
+.rs-alc button.on{background:var(--bg-card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.rs-alc .rs-lix small{color:var(--text3);font-weight:700}
+.rs-resumo{display:flex;align-items:center;gap:10px;padding:10px 18px 4px;font-size:12.5px;color:var(--text3)}
+.rs-num{flex:1;min-width:0;font-variant-numeric:tabular-nums}
+.rs-num.rola{animation:rsRola .16s cubic-bezier(.22,1,.36,1)}
+@keyframes rsRola{from{transform:translateY(8px);opacity:0}}
+.rs-ordem{border:none;background:none;color:var(--text2);font:600 12px/1 var(--font);cursor:pointer;padding:6px 4px;border-radius:8px}
+.rs-ordem:hover{color:var(--text)}
+.rs-grade{flex:1;min-height:0;overflow:auto;padding:2px 18px 18px;overscroll-behavior:contain;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.rs-mes{content-visibility:auto;contain-intrinsic-size:auto 260px}
+.rs-mes h3{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin:12px 2px 8px}
+.rs-mes h3 small{font-weight:600;margin-left:4px;letter-spacing:0}
+.rs-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.rs-it{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:10px 9px 9px;
+  border:1.5px solid transparent;border-radius:14px;background:color-mix(in srgb,var(--ca) 13%,var(--bg-card));color:var(--text);
+  text-align:left;cursor:pointer;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;font-family:var(--font);
+  transition:transform 160ms cubic-bezier(.34,1.56,.64,1),border-color 120ms linear}
+.rs-it:hover{border-color:color-mix(in srgb,var(--ca) 50%,transparent)}
+.rs-it:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rs-onda{display:flex;align-items:center;gap:1.5px;height:26px;width:100%;color:var(--ca)}
+.rs-onda i{flex:1;min-width:1px;height:calc(var(--h)*100%);border-radius:1px;background:currentColor;opacity:.85}
+.rs-pe{display:flex;align-items:center;gap:6px;width:100%}
+.rs-dur{font:700 13px/1.1 var(--font);font-variant-numeric:tabular-nums}
+.rs-est{display:inline-flex;align-items:center;gap:2px;font:700 10.5px/1 var(--font);color:var(--warning)}
+.rs-est svg{width:10px;height:10px}
+.rs-nome{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rs-ck{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);background:var(--bg-card);
+  display:none;align-items:center;justify-content:center;color:#fff}
+.rs-caixa.modo .rs-ck{display:flex;animation:rsCk .22s cubic-bezier(.34,1.56,.64,1) backwards;animation-delay:calc(var(--ord,0)*22ms)}
+@keyframes rsCk{from{transform:scale(0);opacity:0}}
+.rs-ck svg{width:12px;height:12px;opacity:0;transform:scale(.3);transition:transform 220ms cubic-bezier(.34,1.56,.64,1),opacity 120ms linear}
+.rs-it.marcado{transform:scale(.9);border-color:var(--ca)}
+.rs-it.marcado .rs-ck{background:var(--ca);border-color:var(--ca)}
+.rs-it.marcado .rs-ck svg{opacity:1;transform:none}
+.rs-prog{position:absolute;left:10px;right:10px;bottom:4px;height:2px;border-radius:2px;background:var(--ca);transform-origin:0 50%;transform:scaleX(var(--p,0));opacity:0}
+.rs-it.tocando .rs-prog{opacity:1}
+.rs-it.tocando{border-color:var(--ca)}
+.rs-anel{position:absolute;bottom:7px;right:7px;width:22px;height:22px;color:var(--ca);display:flex;align-items:center;justify-content:center}
+.rs-anel svg{position:absolute;inset:0}
+.rs-anel b{position:relative;font:700 8.5px/1 var(--font);color:var(--text2)}
+.rs-it.na-lixeira{background:var(--bg-card);border:1.5px dashed var(--border2)}
+.rs-it.na-lixeira.marcado{border-style:solid;border-color:var(--ca)}
+.rs-vazio{padding:40px 10px;text-align:center;color:var(--text3);font-size:13.5px;line-height:1.5}
+.rs-acoes{display:flex;gap:4px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);background:var(--bg-card);animation:rsAcoes .24s cubic-bezier(.22,1,.36,1)}
+@keyframes rsAcoes{from{transform:translateY(100%)}}
+.rs-ac{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;padding:6px 2px;border-radius:10px;
+  color:var(--text);font:600 11px/1.2 var(--font);cursor:pointer;position:relative;overflow:hidden;text-align:center}
+.rs-ac:hover:not(:disabled){background:var(--bg-input)}
+.rs-ac:disabled{color:var(--text4);cursor:default}
+.rs-ac .svgi{width:18px;height:18px}
+.rs-ac.rs-perigo{color:var(--danger);-webkit-user-select:none;user-select:none;touch-action:none;-webkit-touch-callout:none}
+.rs-enche{position:absolute;inset:0;background:rgba(255,59,48,.14);transform:scaleX(0);transform-origin:0 50%;transition:transform 200ms var(--saida,ease)}
+.rs-ac.enchendo .rs-enche{transform:scaleX(1);transition:transform var(--seg,700ms) linear}
+.rs-ac>*:not(.rs-enche){position:relative}
+@media (max-width:640px){
+  .rs-ov{padding:0}
+  .rs-caixa{width:100%;height:100%;border-radius:0;padding-top:env(safe-area-inset-top,0px)}
+  .rs-lista{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){
+  .rs-ov.on,.rs-caixa,.rs-num.rola,.rs-caixa.modo .rs-ck,.rs-acoes{animation:none}
+  .rs-it,.rs-ck svg{transition:none}
+}
 /* ── Configurações › espaço: quanto é áudio e o interruptor de excluir ── */
 .aud-cfg-uso{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:4px 0 12px}
 .aud-cfg-uso b{font-size:13px;font-variant-numeric:tabular-nums;color:var(--text)}
@@ -8650,6 +8729,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
                 <span class="hdm-txt"><span class="hdm-t" data-i18n>Resgatar nota antiga</span><span class="hdm-sub" data-i18n>Traz de volta o que você esqueceu</span></span>
               </button>
             </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnAudios" onclick="_hdMoreFechar();_rastroAbrir('mundo')">
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Seus áudios</span><span class="hdm-sub" data-i18n>Ouvir, baixar e cuidar das gravações</span></span>
+              </button>
+            </div>
           </div>
           <div class="hdm-grupo" style="--i:2;--hm-cor:var(--hm-cofre)">
             <div class="hdm-cab" data-i18n>Cópias e outros aparelhos</div>
@@ -10438,7 +10523,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.21.4';
+const VOX_VERSION='2026.10.21.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13969,7 +14054,38 @@ let I18N_EN={
 "Não deu para recortar este áudio ({x}). O original continua igual.":"Could not trim this audio ({x}). The original is unchanged.",
 "áudio não encontrado":"audio not found",
 "o recorte saiu vazio":"the trim came out empty",
-"Os áudios deste mundo ocupam {x}.":"The audio in this world takes up {x}."
+"Os áudios deste mundo ocupam {x}.":"The audio in this world takes up {x}.",
+// ── Áudio guardado: painel de áudios (21/10/2026) ──
+"Áudios":"Audio",
+"Alcance":"Scope",
+"Estas pastas":"These folders",
+"Este mundo":"This world",
+"Mais novos primeiro":"Newest first",
+"Maiores primeiro":"Largest first",
+"A lixeira de áudio está vazia.":"The audio trash is empty.",
+"Esta nota ainda não tem áudio guardado.":"This note has no saved audio yet.",
+"Nenhum áudio guardado aqui ainda. Toda gravação nova guarda a voz junto da nota.":"No saved audio here yet. Every new recording saves the voice with the note.",
+"Do maior para o menor":"Largest to smallest",
+"Na lixeira de áudio":"In the audio trash",
+"Sem data":"No date",
+"Faltam {n} dias":"{n} days left",
+"1 selecionado":"1 selected",
+"{n} selecionados":"{n} selected",
+"na lixeira de áudio":"in the audio trash",
+"nesta nota":"in this note",
+"nestas pastas":"in these folders",
+"Segure para apagar de vez":"Hold to delete for good",
+"Segure para esvaziar a lixeira":"Hold to empty the trash",
+"Ouvir em fila":"Play in a row",
+"Manter":"Keep",
+"Segure para excluir":"Hold to delete",
+"Esses áudios ficam guardados, sem prazo nenhum.":"These audio clips stay saved, with no time limit.",
+"Para excluir áudios, ligue \"Permitir excluir áudios\" em Configurações › Avançado.":"To delete audio, turn on \"Allow deleting audio\" in Settings › Advanced.",
+"{n} áudios foram para a lixeira de áudio. O texto das notas continua.":"{n} audio clips went to the audio trash. The notes' text stays.",
+"1 áudio apagado de vez.":"1 audio clip deleted for good.",
+"{n} áudios apagados de vez.":"{n} audio clips deleted for good.",
+"Seus áudios":"Your audio",
+"Ouvir, baixar e cuidar das gravações":"Play, download and look after your recordings"
 };
 
 // ── STATE ──
@@ -33365,6 +33481,8 @@ function toggleCardMore(id){
   // card no rodapé da tela abriria o menu fora da área visível.
   const r=btn.getBoundingClientRect();
   const alt=menu.offsetHeight||220,larg=menu.offsetWidth||200;
+  // Botão escondido (aberto pelo painel de áudios, ou card sem cabeçalho): no meio da tela.
+  if(!r.width){menu.style.top=Math.max(8,(window.innerHeight-alt)/2)+'px';menu.style.left=Math.max(8,(window.innerWidth-larg)/2)+'px';menu.style.transformOrigin='50% 50%';return}
   const cabeAbaixo=r.bottom+4+alt<=window.innerHeight-8;
   menu.style.top=(cabeAbaixo?r.bottom+4:Math.max(8,r.top-4-alt))+'px';
   menu.style.left=Math.max(8,Math.min(r.right-larg,window.innerWidth-larg-8))+'px';
@@ -43518,9 +43636,10 @@ function _audExcluir(c,k){
   a.del=new Date().toISOString();
   try{navigator.vibrate&&navigator.vibrate([20,40,20])}catch(e){}
   const b=c.querySelector('.ch-left .aud-pil'),ultimo=_audFila(c).length<=1;
-  const fim=()=>{_audGravar(c,l);saveHistory();_audPintar(c)};
-  // As barrinhas caem 12 px e somem, uma depois da outra, antes do tracejado.
-  if(b&&ultimo&&!_voxReduzMov()){b.classList.add('cai');setTimeout(fim,300)}else fim();
+  // Grava já (o painel de áudios redesenha logo em seguida); só o desenho da
+  // pílula espera as barrinhas caírem 12 px, uma depois da outra.
+  _audGravar(c,l);saveHistory();
+  if(b&&ultimo&&!_voxReduzMov()){b.classList.add('cai');setTimeout(()=>_audPintar(c),300)}else _audPintar(c);
   toast(t('O áudio foi para a lixeira de áudio. O texto da nota continua aqui.'));
   return true;
 }
@@ -43807,6 +43926,349 @@ async function _audRecortar(c,a,iniS,fimS,tira){
   }finally{
     await ff.deleteFile(out).catch(()=>{});await ent.fechar();
   }
+}
+
+// ── Rastro: o painel de áudios (proposta 3) ──
+// Miniaturas de todos os áudios, em três alcances: este card, estas pastas,
+// este mundo. Pra escolher vários, é só correr por cima, como nas Fotos do
+// iPhone: no computador, aperta o botão do mouse numa miniatura e passa pelas
+// outras (o modo Selecionar liga sozinho na segunda); no celular, no modo
+// Selecionar, deslizar pro lado marca e pra cima/baixo rola; fora dele,
+// segurar 350 ms numa miniatura já entra no modo e começa a marcar. O rastro
+// segue a ordem de leitura, do primeiro até onde o dedo está; voltar desmarca
+// o que saiu dele. Começou numa marcada? O rastro desmarca.
+let _rs=null;
+function _rastroAbrir(alcance,cardId){
+  _caFecharTodos();
+  const temPasta=!!(activeFolderId&&folders.some(f=>f.id===activeFolderId));
+  _rs={alcance:alcance==='card'&&cardId?'card':alcance==='pastas'&&temPasta?'pastas':'mundo',cardId:cardId||null,ordem:'data',lix:false,sel:new Set(),modo:false,g:null};
+  let ov=document.getElementById('rastroOv');
+  if(!ov){
+    ov=document.createElement('div');ov.id='rastroOv';ov.className='rs-ov';
+    ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-labelledby','rsTit');
+    ov.addEventListener('click',e=>{if(e.target===ov)_rastroFechar()});
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML=`<div class="rs-caixa">
+    <div class="rs-cab"><b id="rsTit">${escHtml(t('Áudios'))}</b>
+      <button type="button" class="rs-bt rs-modo" onclick="_rastroModo()">${escHtml(t('Selecionar'))}</button>
+      <button type="button" class="rs-x" onclick="_rastroFechar()" aria-label="${escHtml(t('Fechar'))}">${ICO.close}</button></div>
+    <div class="rs-alc" role="tablist" aria-label="${escHtml(t('Alcance'))}"></div>
+    <div class="rs-resumo"><span class="rs-num" aria-live="polite"></span><button type="button" class="rs-ordem" onclick="_rastroOrdem()"></button></div>
+    <div class="rs-grade" id="rsGrade"></div>
+    <div class="rs-acoes" id="rsAcoes" hidden></div>
+  </div>`;
+  const grade=ov.querySelector('#rsGrade');
+  grade.addEventListener('pointerdown',_rastroDown);
+  grade.addEventListener('touchstart',_rastroToqueIni,{passive:true});
+  grade.addEventListener('touchmove',_rastroToqueMove,{passive:false});
+  grade.addEventListener('touchend',_rastroToqueFim);
+  grade.addEventListener('touchcancel',_rastroToqueFim);
+  grade.addEventListener('click',_rastroClique);
+  grade.addEventListener('contextmenu',e=>{if(e.target.closest('.rs-it'))e.preventDefault()});
+  ov.classList.add('on');document.body.classList.add('rs-aberto');
+  document.addEventListener('keydown',_rastroTecla,true);
+  _rastroPintar();
+  setTimeout(()=>ov.querySelector('.rs-x')?.focus(),30);
+}
+function _rastroFechar(){
+  const ov=document.getElementById('rastroOv');if(!ov)return;
+  ov.classList.remove('on');document.body.classList.remove('rs-aberto');
+  document.removeEventListener('keydown',_rastroTecla,true);
+  _rastroAutoParar();_rs=null;
+}
+function _rastroTecla(e){
+  if(e.key!=='Escape'||!_rs)return;
+  e.preventDefault();e.stopPropagation();
+  if(_rs.modo)_rastroModo(false);else _rastroFechar();
+}
+function _rastroCards(){
+  const r=_rs;let cards=_flTodosCards().filter(c=>!_cardNaLixeira(c));
+  if(r.alcance==='card')cards=cards.filter(c=>c.id===r.cardId);
+  else if(r.alcance==='pastas'&&activeFolderId){
+    const ids=new Set([activeFolderId,..._folderDescendentes(activeFolderId).map(f=>f.id)]);
+    cards=cards.filter(c=>ids.has(c.dataset.folder||''));
+  }
+  return cards;
+}
+function _rastroItens(lix){
+  const r=_rs,it=[],ver=lix===undefined?r.lix:lix;
+  _rastroCards().forEach(c=>_audLista(c).forEach(a=>{
+    if(_audTmp(a.k)&&!_audUrls.has(a.k))return;
+    if(!!a.del!==ver)return;
+    // Agrupa pela data da nota (é a que a pessoa reconhece); na lixeira, pela data em que saiu.
+    it.push({c,a,key:c.id+'|'+a.k,dt:a.del&&ver?a.del:(c.dataset.dt||a.em||'')});
+  }));
+  it.sort(r.ordem==='tamanho'?(x,y)=>(+y.a.b||0)-(+x.a.b||0):(x,y)=>String(y.dt).localeCompare(String(x.dt)));
+  return it;
+}
+function _rastroNome(c){
+  const sn=(c.dataset.sessionName||'').trim();if(sn)return sn;
+  const tx=(c.querySelector('textarea')?.value||'').replace(/\s+/g,' ').trim();
+  return tx?tx.split(' ').slice(0,6).join(' '):fmtDt(c.dataset.dt||'');
+}
+function _rastroMes(iso){
+  const d=new Date(iso);if(isNaN(d))return t('Sem data');
+  const s=d.toLocaleDateString(getLocale(),{month:'long',year:d.getFullYear()===new Date().getFullYear()?undefined:'numeric'});
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+function _rastroPintar(){
+  const ov=document.getElementById('rastroOv');if(!ov||!_rs)return;
+  const r=_rs,temPasta=!!(activeFolderId&&folders.some(f=>f.id===activeFolderId));
+  const nPasta=temPasta?(folders.find(f=>f.id===activeFolderId)||{}).name:'';
+  const nLix=_rastroItens(true).length;
+  if(r.lix&&!nLix)r.lix=false;
+  const alc=[r.cardId?['card',t('Este card')]:null,temPasta?['pastas',t('Estas pastas')]:null,['mundo',t('Este mundo')]].filter(Boolean);
+  ov.querySelector('.rs-alc').innerHTML=alc.map(([k,n])=>`<button type="button" role="tab" aria-selected="${!r.lix&&r.alcance===k}" class="${!r.lix&&r.alcance===k?'on':''}" ${k==='pastas'?`title="${escHtml(nPasta)}"`:''} onclick="_rastroAlcance('${k}')">${escHtml(n)}</button>`).join('')
+    +(nLix?`<button type="button" role="tab" aria-selected="${r.lix}" class="rs-lix${r.lix?' on':''}" onclick="_rastroLixeira()">${escHtml(t('Lixeira'))} <small>${nLix}</small></button>`:'');
+  ov.querySelector('.rs-ordem').textContent=r.ordem==='tamanho'?t('Mais novos primeiro'):t('Maiores primeiro');
+  ov.querySelector('.rs-ordem').hidden=r.lix;
+  ov.querySelector('.rs-modo').textContent=r.modo?t('Cancelar'):t('Selecionar');
+  ov.querySelector('.rs-caixa').classList.toggle('modo',r.modo);
+  const itens=_rastroItens();r.itens=itens;
+  // Seleção que ficou de fora (trocou o alcance): sai.
+  const chaves=new Set(itens.map(x=>x.key));r.sel.forEach(k=>{if(!chaves.has(k))r.sel.delete(k)});
+  const grade=ov.querySelector('#rsGrade');
+  if(!itens.length){
+    grade.innerHTML=`<div class="rs-vazio">${escHtml(r.lix?t('A lixeira de áudio está vazia.'):r.alcance==='card'?t('Esta nota ainda não tem áudio guardado.'):t('Nenhum áudio guardado aqui ainda. Toda gravação nova guarda a voz junto da nota.'))}</div>`;
+  }else{
+    const grupos=[];
+    if(r.ordem==='tamanho'&&!r.lix)grupos.push([t('Do maior para o menor'),itens]);
+    else itens.forEach(x=>{const m=r.lix?t('Na lixeira de áudio'):_rastroMes(x.dt);const g=grupos[grupos.length-1];if(g&&g[0]===m)g[1].push(x);else grupos.push([m,[x]])});
+    let n=0;
+    grade.innerHTML=grupos.map(([m,l])=>`<section class="rs-mes"><h3>${escHtml(m)} <small>${l.length}</small></h3><div class="rs-lista">${l.map(x=>_rastroTile(x,n++)).join('')}</div></section>`).join('');
+  }
+  _rastroResumo();_rastroAcoes();_rastroTick();
+}
+function _rastroTile(x,i){
+  const {c,a}=x,cor=getComputedStyle(c).getPropertyValue('--ca').trim();
+  const o=Array.isArray(a.o)&&a.o.length?a.o:Array.from({length:_AUD_ONDA_N},(_,j)=>35+Math.round(25*Math.sin(j/2.1)));
+  const barras=[];for(let j=0;j<24;j++){const v=Math.max(o[j*2]||0,o[j*2+1]||0);barras.push(`<i style="--h:${Math.max(.14,v/99).toFixed(2)}"></i>`)}
+  const est=((_encLer(c).marcas)||[]).length;
+  const sel=_rs.sel.has(x.key);
+  const ring=a.del?(()=>{const d=_audCfg().dias,f=_audDiasRestam(a)/d,C=2*Math.PI*9;return `<span class="rs-anel" title="${escHtml(t('Faltam {n} dias').replace('{n}',_audDiasRestam(a)))}"><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" stroke-opacity=".2" stroke-width="2.5"/><circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="${(C*f).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 11 11)" stroke-linecap="round"/></svg><b>${_audDiasRestam(a)}</b></span>`})():'';
+  return `<button type="button" class="rs-it${sel?' marcado':''}${a.del?' na-lixeira':''}" data-key="${escHtml(x.key)}" data-i="${i}" style="--ca:${escHtml(cor||'var(--accent)')};--ord:${Math.min(i,40)}" aria-pressed="${sel}" aria-label="${escHtml(_rastroNome(c)+' · '+_audFmt(a.d))}">
+    <span class="rs-onda" aria-hidden="true">${barras.join('')}</span>
+    ${ring}<span class="rs-pe"><span class="rs-dur">${escHtml(_audFmt(a.d))}</span>${est?`<span class="rs-est" aria-hidden="true"><span class="svgi">${ICO.starFill}</span>${est}</span>`:''}</span><span class="rs-nome">${escHtml(_rastroNome(c))}</span>
+    <span class="rs-ck" aria-hidden="true"><span class="svgi">${ICO.check}</span></span><span class="rs-prog" aria-hidden="true"></span>
+  </button>`;
+}
+function _rastroResumo(){
+  const ov=document.getElementById('rastroOv');if(!ov||!_rs)return;
+  const r=_rs,el=ov.querySelector('.rs-num');
+  const it=r.itens||[];let txt;
+  if(r.modo&&r.sel.size){
+    const b=it.filter(x=>r.sel.has(x.key)).reduce((s,x)=>s+(+x.a.b||0),0);
+    txt=(r.sel.size===1?t('1 selecionado'):t('{n} selecionados').replace('{n}',r.sel.size))+' · '+_fmtBytes(b);
+  }else{
+    const b=it.reduce((s,x)=>s+(+x.a.b||0),0);
+    const onde=r.lix?t('na lixeira de áudio'):r.alcance==='card'?t('nesta nota'):r.alcance==='pastas'?t('nestas pastas'):t('neste mundo');
+    txt=(it.length===1?t('1 áudio'):t('{n} áudios').replace('{n}',it.length))+' · '+_fmtBytes(b)+' '+onde;
+  }
+  if(el.textContent!==txt){
+    el.textContent=txt;
+    // O número rola: sobe 8 px em 160 ms.
+    if(!_voxReduzMov()){el.classList.remove('rola');void el.offsetWidth;el.classList.add('rola')}
+  }
+}
+function _rastroAcoes(){
+  const ov=document.getElementById('rastroOv');if(!ov||!_rs)return;
+  const r=_rs,bar=ov.querySelector('#rsAcoes'),n=r.sel.size,cf=_audCfg();
+  const mostra=r.modo&&n>0||r.lix;
+  bar.hidden=!mostra;ov.querySelector('.rs-caixa').classList.toggle('com-acoes',mostra);
+  if(!mostra)return;
+  const b=(ac,ico,txt,extra)=>`<button type="button" class="rs-ac" data-ac="${ac}" ${extra||''}><span class="svgi">${ico}</span><span>${escHtml(txt)}</span></button>`;
+  if(r.lix){
+    bar.innerHTML=(n?b('restaurar',ICO.undo,t('Restaurar')):'')
+      +`<button type="button" class="rs-ac rs-perigo" data-ac="esvaziar" onpointerdown="_rastroSegura(this,event,1200,_rastroEsvaziar)"><i class="rs-enche" aria-hidden="true"></i><span class="svgi">${ICO.trash}</span><span>${escHtml(n?t('Segure para apagar de vez'):t('Segure para esvaziar a lixeira'))}</span></button>`;
+  }else{
+    bar.innerHTML=b('fila',ICO.play,t('Ouvir em fila'))
+      +b('editar',_GAV_ICO_TESOURA,t('Editar'),n===1?'':'disabled')
+      +b('manter',_RS_ICO_ESCUDO,t('Manter'))
+      +b('baixar',ICO.download,t('Baixar'))
+      +(cf.excluir?`<button type="button" class="rs-ac rs-perigo" data-ac="excluir" onpointerdown="_rastroSegura(this,event,700,_rastroExcluir)"><i class="rs-enche" aria-hidden="true"></i><span class="svgi">${ICO.trash}</span><span>${escHtml(t('Segure para excluir'))}</span></button>`
+        :b('trava',_GAV_ICO_CADEADO,t('Excluir'),'aria-describedby="rsTravaDica"'));
+  }
+  bar.onclick=e=>{const a=e.target.closest('.rs-ac');if(!a||a.disabled)return;_rastroAcao(a.dataset.ac)};
+}
+const _RS_ICO_ESCUDO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>';
+function _rastroSel(){const r=_rs;return (r.itens||[]).filter(x=>r.sel.has(x.key))}
+function _rastroAcao(ac){
+  const r=_rs;if(!r)return;const sel=_rastroSel();
+  if(ac==='fila'){_audTocarFila(sel.map(x=>({c:x.c,k:x.a.k})));return}
+  if(ac==='editar'&&sel.length===1){
+    const {c,a}=sel[0];_rastroFechar();
+    // Rolagem instantânea: o menu fecha sozinho quando a página rola, e a suave
+    // ainda estaria rolando quando ele abrisse.
+    c.scrollIntoView({block:'center'});
+    _gavIdx[c.id]=Math.max(0,_gavItens(c).findIndex(x=>x.k===a.k));
+    setTimeout(()=>toggleCardMore(c.id),80);return;
+  }
+  if(ac==='manter'){
+    // Manter: sem prazo nenhum (nem o do Personalizar) e, se estava na lixeira, de volta.
+    let n=0;sel.forEach(({c,a})=>{const l=_audLista(c),e=l.find(x=>x.k===a.k);if(e&&(e.vence||e.del)){delete e.vence;delete e.del;n++;_audGravar(c,l);_audPintar(c)}});
+    if(n)saveHistory();
+    toast(t('Esses áudios ficam guardados, sem prazo nenhum.'));
+    _rastroModo(false);return;
+  }
+  if(ac==='baixar'){sel.forEach((x,i)=>setTimeout(()=>_audBaixar(x.c.id,x.a.k),i*450));return}
+  if(ac==='trava'){toast(t('Para excluir áudios, ligue "Permitir excluir áudios" em Configurações › Avançado.'),true);return}
+  if(ac==='restaurar'){sel.forEach(({c,a})=>_audRestaurar(c,a.k));r.sel.clear();_rastroPintar();return}
+}
+function _rastroExcluir(){
+  const r=_rs;if(!r)return;let n=0;
+  _rastroSel().forEach(({c,a})=>{if(_audExcluir(c,a.k))n++});
+  r.sel.clear();r.modo=false;_rastroPintar();
+  if(n>1)toast(t('{n} áudios foram para a lixeira de áudio. O texto das notas continua.').replace('{n}',n));
+}
+function _rastroEsvaziar(){
+  const r=_rs;if(!r)return;
+  const alvo=r.sel.size?_rastroSel():_rastroItens(true);let n=0;
+  const porCard=new Map();alvo.forEach(x=>{if(!porCard.has(x.c))porCard.set(x.c,new Set());porCard.get(x.c).add(x.a.k)});
+  porCard.forEach((ks,c)=>{const l=_audLista(c),fica=l.filter(a=>{if(a.del&&ks.has(a.k)){imgApagar(a.k).catch(()=>{});n++;return false}return true});_audGravar(c,fica);_audPintar(c)});
+  saveHistory();r.sel.clear();
+  try{navigator.vibrate&&navigator.vibrate([20,40,20])}catch(e){}
+  toast(n===1?t('1 áudio apagado de vez.'):t('{n} áudios apagados de vez.').replace('{n}',n));
+  _rastroPintar();
+}
+// Segurar: a faixa enche no tempo pedido; soltar antes desiste.
+function _rastroSegura(b,e,ms,fn){
+  if(e.button>0||b._seg)return;e.preventDefault();
+  b.classList.add('enchendo');b.style.setProperty('--seg',ms+'ms');
+  const solta=()=>{clearTimeout(b._seg);b._seg=null;b.classList.remove('enchendo');document.removeEventListener('pointerup',solta,true);document.removeEventListener('pointercancel',solta,true)};
+  document.addEventListener('pointerup',solta,true);document.addEventListener('pointercancel',solta,true);
+  b._seg=setTimeout(()=>{solta();fn()},ms);
+}
+function _rastroAlcance(k){if(!_rs)return;_rs.alcance=k;_rs.lix=false;_rastroPintar()}
+function _rastroLixeira(){if(!_rs)return;_rs.lix=!_rs.lix;_rs.sel.clear();_rs.modo=_rs.lix;_rastroPintar()}
+function _rastroOrdem(){if(!_rs)return;_rs.ordem=_rs.ordem==='tamanho'?'data':'tamanho';_rastroPintar()}
+function _rastroModo(on){
+  if(!_rs)return;
+  _rs.modo=on===undefined?!_rs.modo:!!on;
+  if(!_rs.modo){_rs.sel.clear();if(_rs.lix)_rs.lix=false}
+  const ov=document.getElementById('rastroOv');
+  ov.querySelector('.rs-caixa').classList.toggle('modo',_rs.modo);
+  ov.querySelector('.rs-modo').textContent=_rs.modo?t('Cancelar'):t('Selecionar');
+  ov.querySelectorAll('.rs-it').forEach(el=>{const m=_rs.sel.has(el.dataset.key);el.classList.toggle('marcado',m);el.setAttribute('aria-pressed',String(m))});
+  if(_rs.lix)_rastroPintar();
+  _rastroResumo();_rastroAcoes();
+}
+function _rastroTiles(){return [...document.querySelectorAll('#rsGrade .rs-it')]}
+function _rastroTileEm(x,y){const el=document.elementFromPoint(x,y);return el&&el.closest?el.closest('#rsGrade .rs-it'):null}
+let _rsTic=0;
+function _rastroMarca(el,on){
+  const k=el.dataset.key,ja=_rs.sel.has(k);if(ja===on)return false;
+  if(on)_rs.sel.add(k);else _rs.sel.delete(k);
+  el.classList.toggle('marcado',on);el.setAttribute('aria-pressed',String(on));
+  // Cada item faz tic (no máximo um a cada 30 ms, pra não virar zumbido).
+  if(Date.now()-_rsTic>30){_rsTic=Date.now();try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}}
+  return true;
+}
+// O rastro: do item onde começou até o item sob o dedo, em ordem de leitura.
+function _rastroAplicar(g,alvo){
+  if(!alvo)return;
+  const tiles=_rastroTiles(),j=tiles.indexOf(alvo);if(j<0)return;
+  g.ult=j;
+  const a=Math.min(g.ini,j),b=Math.max(g.ini,j);let mudou=false;
+  tiles.forEach((el,i)=>{const dentro=i>=a&&i<=b;const quer=dentro?g.acao:g.base.has(el.dataset.key);if(_rastroMarca(el,quer))mudou=true});
+  if(mudou){_rastroResumo();_rastroAcoes()}
+}
+function _rastroComeca(g){
+  if(!_rs.modo){_rs.modo=true;const ov=document.getElementById('rastroOv');ov.querySelector('.rs-caixa').classList.add('modo');ov.querySelector('.rs-modo').textContent=t('Cancelar')}
+  g.marcando=true;g.base=new Set(_rs.sel);g.acao=!_rs.sel.has(g.el.dataset.key);
+  _rastroAplicar(g,g.el);_rastroAutoLigar(g);
+}
+// A 48 px da borda a grade rola sozinha, até 14 px por quadro.
+function _rastroAutoLigar(g){
+  _rastroAutoParar();
+  const grade=document.getElementById('rsGrade');if(!grade)return;
+  const passo=()=>{
+    if(!_rs||_rs.g!==g||!g.marcando)return;
+    const R=grade.getBoundingClientRect();let v=0;
+    if(g.y<R.top+48)v=-14*Math.min(1,(R.top+48-g.y)/48);else if(g.y>R.bottom-48)v=14*Math.min(1,(g.y-(R.bottom-48))/48);
+    if(v){grade.scrollTop+=v;_rastroAplicar(g,_rastroTileEm(g.x,Math.max(R.top+4,Math.min(R.bottom-4,g.y))))}
+    _rs.raf=requestAnimationFrame(passo);
+  };
+  _rs.raf=requestAnimationFrame(passo);
+}
+function _rastroAutoParar(){if(_rs&&_rs.raf){cancelAnimationFrame(_rs.raf);_rs.raf=null}}
+// Mouse (e caneta): aperta e corre por cima.
+function _rastroDown(e){
+  if(e.pointerType==='touch'||e.button>0||!_rs)return;
+  const el=e.target.closest('.rs-it');if(!el)return;
+  e.preventDefault();
+  const tiles=_rastroTiles();
+  const g=_rs.g={el,ini:tiles.indexOf(el),x:e.clientX,y:e.clientY,marcando:false,moveu:false};
+  if(_rs.modo)_rastroComeca(g);
+  const mv=ev=>{
+    if(!_rs||_rs.g!==g)return;g.x=ev.clientX;g.y=ev.clientY;
+    const alvo=_rastroTileEm(ev.clientX,ev.clientY);
+    if(!g.marcando&&alvo&&alvo!==el){g.moveu=true;_rastroComeca(g)}
+    if(g.marcando){g.moveu=true;_rastroAplicar(g,alvo)}
+  };
+  const up=()=>{
+    document.removeEventListener('pointermove',mv,true);document.removeEventListener('pointerup',up,true);
+    if(!_rs||_rs.g!==g)return;
+    _rastroAutoParar();_rs.g=null;
+    if(!g.moveu)_rastroToque(el,!g.marcando);
+  };
+  document.addEventListener('pointermove',mv,true);document.addEventListener('pointerup',up,true);
+}
+// Um toque sem arrastar: no modo marca/desmarca; fora dele, ouve.
+function _rastroToque(el,decidir){
+  if(!_rs)return;
+  if(_rs.lix&&!_rs.modo)_rs.modo=true;
+  if(_rs.modo){if(decidir){_rastroMarca(el,!_rs.sel.has(el.dataset.key));_rastroResumo();_rastroAcoes()}return}
+  const x=(_rs.itens||[]).find(i=>i.key===el.dataset.key);if(!x)return;
+  if(_audP&&_audP.k===x.a.k){const au=_audEl();if(au.paused)au.play().catch(()=>{});else au.pause();}
+  else _audTocarUm(x.c,x.a.k,0);
+  setTimeout(_rastroTick,80);
+}
+// Toque (celular): os primeiros 8 px decidem entre marcar e rolar.
+function _rastroToqueIni(e){
+  if(!_rs||e.touches.length!==1)return;
+  const el=e.target.closest('.rs-it');if(!el)return;
+  const p=e.touches[0];
+  const g=_rs.g={el,ini:_rastroTiles().indexOf(el),x:p.clientX,y:p.clientY,x0:p.clientX,y0:p.clientY,marcando:false,moveu:false,decidiu:false,toque:true};
+  if(!_rs.modo)g.longo=setTimeout(()=>{
+    if(!_rs||_rs.g!==g||g.moveu)return;
+    try{navigator.vibrate&&navigator.vibrate(14)}catch(_){}
+    g.decidiu=true;_rastroComeca(g);
+  },350);
+}
+function _rastroToqueMove(e){
+  const g=_rs&&_rs.g;if(!g||!g.toque)return;
+  const p=e.touches[0];g.x=p.clientX;g.y=p.clientY;
+  const dx=p.clientX-g.x0,dy=p.clientY-g.y0;
+  if(!g.decidiu){
+    if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
+    g.decidiu=true;g.moveu=true;clearTimeout(g.longo);
+    if(_rs.modo&&Math.abs(dx)>Math.abs(dy)){e.preventDefault();_rastroComeca(g)}
+    else{_rs.g=null;return}   // é rolagem: o navegador cuida
+  }
+  if(g.marcando){e.preventDefault();g.moveu=true;_rastroAplicar(g,_rastroTileEm(p.clientX,p.clientY))}
+}
+function _rastroToqueFim(e){
+  const g=_rs&&_rs.g;if(!g||!g.toque)return;
+  clearTimeout(g.longo);_rastroAutoParar();_rs.g=null;
+  if(e.type==='touchend'&&!g.moveu){
+    e.preventDefault();   // sem o clique sintético depois
+    _rastroToque(g.el,!g.marcando);
+  }
+}
+// Teclado: Enter/Espaço numa miniatura (o clique de mouse/toque já foi tratado).
+function _rastroClique(e){
+  if(e.detail!==0)return;const el=e.target.closest('.rs-it');if(el)_rastroToque(el,true);
+}
+// Chamado pelo laço do player: a miniatura que toca mostra o progresso.
+function _rastroTick(){
+  const ov=document.getElementById('rastroOv');if(!ov||!ov.classList.contains('on'))return;
+  const k=_audP&&!_audEl().paused?_audP.c.id+'|'+_audP.k:'';
+  ov.querySelectorAll('.rs-it.tocando').forEach(el=>{if(el.dataset.key!==k)el.classList.remove('tocando')});
+  if(!k)return;
+  const el=ov.querySelector('.rs-it[data-key="'+CSS.escape(k)+'"]');if(!el)return;
+  el.classList.add('tocando');
+  const a=_audEntrada(_audP.c,_audP.k);el.style.setProperty('--p',Math.min(1,_audEl().currentTime/Math.max(.1,+(a&&a.d)||1)).toFixed(3));
 }
 
 function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null,tags=[],sn='',mode='livre',pinned=false,folder='',chatHistory='[]',images=[],links=[],textosImagem={}){
