@@ -1408,6 +1408,57 @@ body.doc-mode.dv-digitando .card.focus-active .overtype-toolbar{opacity:.25;tran
 .sname-badge{font-size:11px;font-weight:600;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-radius:6px;padding:1px 4px;margin:-1px -4px}
 .sname-badge:hover{background:var(--bg-hover,rgba(0,0,0,.06));color:var(--text1)}
 .sname-badge-empty{opacity:.55;font-weight:500;font-style:italic}
+/* ── Áudio guardado: a pílula e o fio (proposta "Fio", 21/10/2026) ──
+   Mora no cabeçalho, logo depois do nome, aberto ou recolhido. 28 px de
+   altura pro olho, 44 px de área de toque pro dedo (o ::before). Tocando,
+   as cinco barrinhas viram pausa e a pílula alarga pra caber o tempo corrido. */
+.card .ch-left .aud-pil{order:3}
+.aud-pil{position:relative;display:inline-flex;align-items:center;gap:5px;height:28px;min-width:64px;padding:0 10px 0 9px;
+  border:none;border-radius:999px;background:var(--bg-input);color:var(--text2);font:600 12px/1 var(--font);
+  font-variant-numeric:tabular-nums;cursor:pointer;flex-shrink:0;touch-action:pan-y;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
+  transition:transform 90ms var(--saida,ease),background 120ms linear,min-width 240ms var(--saida,ease),color 120ms linear}
+.aud-pil::before{content:'';position:absolute;inset:-8px -4px}
+.aud-pil:hover{background:var(--accent-glow)}
+.aud-pil.afunda{transform:scale(.965)}
+.aud-pil:not(.afunda){transition-timing-function:cubic-bezier(.34,1.56,.64,1),linear,var(--saida,ease),linear}
+.aud-pil:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.aud-pil.ativa{min-width:84px;color:var(--ca,var(--accent))}
+.aud-ondas{display:inline-flex;align-items:center;gap:2px;height:14px}
+.aud-ondas i{display:block;width:2px;border-radius:1px;background:currentColor;height:calc(var(--h,.6)*100%);
+  transition:height 260ms cubic-bezier(.34,1.56,.64,1),width 160ms linear,opacity 160ms linear}
+/* Tocando: as barrinhas 1, 3 e 5 somem e a 2 e a 4 viram o sinal de pausa. */
+.aud-pil.tocando .aud-ondas i:nth-child(odd){width:0;opacity:0}
+.aud-pil.tocando .aud-ondas i:nth-child(even){height:100%;width:3px}
+.aud-mais{font-size:10.5px;color:var(--text3);font-weight:700}
+.aud-vel{font-size:10.5px;font-weight:700;color:var(--ca,var(--accent))}
+.aud-vel:empty{display:none}
+.aud-vel.pula{animation:audPula 240ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes audPula{0%{transform:translateY(6px);opacity:0}100%{transform:none;opacity:1}}
+/* O fio: 2 px na borda de cima do card, na cor da nota. O pino (arrastando)
+   é um traço de 10 px que desce do fio. */
+.aud-fio{position:absolute;left:14px;right:14px;top:0;height:2px;pointer-events:none;opacity:0;z-index:4;transition:opacity 120ms linear}
+.aud-fio i{position:absolute;inset:0;border-radius:2px;background:var(--ca,var(--accent));transform-origin:0 50%;transform:scaleX(var(--p,0))}
+.aud-fio b{position:absolute;top:0;left:calc(var(--q,0)*100%);width:2px;height:10px;margin-left:-1px;border-radius:2px;background:var(--ca,var(--accent));opacity:0;transition:opacity 120ms linear}
+.card.aud-on>.aud-fio{opacity:1}
+.card.aud-arrasta>.aud-fio b{opacity:1}
+.aud-fio.recolhe i{transform-origin:100% 50%;transform:scaleX(0);transition:transform 320ms var(--saida,ease)}
+/* O selinho do Mural de toque: só existe lá (miniatura sem cabeçalho). */
+.aud-selo{display:none}
+.cards.masonry.masonry-preview .card>.aud-selo{display:inline-flex;position:absolute;right:8px;bottom:8px;z-index:2;align-items:center;gap:4px;
+  height:24px;padding:0 8px;border:none;border-radius:999px;background:var(--bg-input);color:var(--text2);
+  font:600 11px/1 var(--font);font-variant-numeric:tabular-nums;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  -webkit-tap-highlight-color:transparent;transition:transform 90ms var(--saida,ease)}
+.cards.masonry.masonry-preview .card>.aud-selo::before{content:'';position:absolute;inset:-10px -6px}
+.cards.masonry.masonry-preview .card>.aud-selo:active{transform:scale(.965)}
+.aud-selo .aud-ondas{height:11px}
+.aud-selo.tocando{color:var(--ca,var(--accent))}
+.aud-selo.tocando .aud-ondas i:nth-child(2){height:0;width:0;opacity:0}
+.aud-selo.tocando .aud-ondas i{height:100%;width:3px}
+@media (prefers-reduced-motion:reduce){
+  .aud-pil,.aud-ondas i,.aud-fio,.aud-fio b{transition:none!important}
+  .aud-vel.pula{animation:none}
+}
 .ts{font-size:11px;color:var(--text3);font-weight:500}
 /* FAIXA 2 · bandeja de ferramentas. flex-basis:100% joga ela pra própria
    linha; nowrap garante que ela nunca embrulhe — se um dia faltar espaço,
@@ -10288,7 +10339,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.21.2';
+const VOX_VERSION='2026.10.21.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10522,8 +10573,11 @@ async function _cofreChavesDeFoto(id){
   const chaves=[];
   (Array.isArray(claro)?claro:[]).forEach(function(it){
     (it.images||[]).forEach(function(im){if(im&&im.k)chaves.push(im.k)});
+    // Os áudios moram no mesmo cofre das fotos: trancar leva eles junto.
+    chaves.push.apply(chaves,_audChavesDoItem(it));
+    if(it.encontro&&it.encontro.audio&&it.encontro.audio.k)chaves.push(it.encontro.audio.k);
   });
-  return chaves;
+  return chaves.filter(function(k,i){return chaves.indexOf(k)===i});
 }
 async function _cofreMetaDaFoto(k){
   if(k.startsWith('opfs_')){
@@ -10749,7 +10803,7 @@ function _mundoApagarFotos(id){
   return idbGet('!vox_history__'+id).then(h=>{
     if(!h||!h.length)return;
     const chaves=[];
-    h.forEach(it=>{(it.images||[]).forEach(im=>{if(im&&im.k)chaves.push(im.k)})});
+    h.forEach(it=>{(it.images||[]).forEach(im=>{if(im&&im.k)chaves.push(im.k)});chaves.push(..._audChavesDoItem(it))});
     /* imgApagar cuida dos dois lugares possiveis, e apagar chave que nao
        existe nao da erro. A chave da foto e um id aleatorio global, nao
        leva sufixo de mundo -- entao serve de qualquer mundo. */
@@ -10835,6 +10889,15 @@ async function _mundoColetarPacoteComEscopo(idsPasta,dts){
         fotos.push({kAntiga:img.k,buf:await blob.arrayBuffer(),mime:blob.type||'image/jpeg',w:img.w,h:img.h});
       }catch(e){}
     }
+    // Os áudios viajam pelo mesmo caminho das fotos (decifra aqui, cifra lá).
+    for(const a of (it.audios||[])){
+      if(!a||!a.k||_audTmp(a.k))continue;
+      try{
+        const blob=await imgCarregar(a.k);
+        if(!blob)continue;
+        fotos.push({kAntiga:a.k,buf:await blob.arrayBuffer(),mime:blob.type||a.t||'audio/webm',w:0,h:0});
+      }catch(e){}
+    }
   }
   return {v:1,origem:_mundoAtivo,pastas,itens,corNomes,fotos};
 }
@@ -10875,6 +10938,7 @@ async function _mundoImportarPacote(pacote){
   pacote.itens.forEach(it=>{
     const folder=(it.folder&&remap[it.folder])?remap[it.folder]:(it.folder||'');
     const images=(it.images||[]).map(img=>({...img,k:kMap[img.k]||img.k}));
+    if(Array.isArray(it.audios))it={...it,audios:it.audios.map(a=>({...a,k:kMap[a.k]||a.k}))};
     // Plano 30: a transferência entre mundos perdia cor, dia do calendário,
     // duração do áudio, arquivado e procedência — o carregamento normal e a
     // importação de backup restauram isso por _restaurarEtiqueta; aqui não.
@@ -13737,7 +13801,23 @@ let I18N_EN={
 "Você está aqui":"You are here",
 "Levar esta nota":"Take this note",
 "A nota vira uma pasta nova, sai deste mundo e viaja. Lá, o Vox pergunta onde guardar.":"The note becomes a new folder, leaves this world and travels. There, Vox asks where to keep it.",
-"Nota":"Note"
+"Nota":"Note",
+// ── Áudio guardado (21/10/2026) ──
+"Ouvir o áudio ({t})":"Play the audio ({t})",
+"Toque para ouvir · arraste para os lados para avançar · segure para mudar a velocidade":"Tap to play · drag sideways to skip · hold to change the speed",
+"Este áudio não coube no aparelho. Baixe agora para não perder.":"This audio did not fit on the device. Download it now so you don't lose it.",
+"Este mundo está trancado: entre com a senha para ouvir.":"This world is locked: enter the password to listen.",
+"Este áudio não está mais neste aparelho.":"This audio is no longer on this device.",
+"Velocidade {v}":"Speed {v}",
+"Áudio das gravações":"Recording audio",
+"Apaga depois de {n} dias":"Deleted after {n} days",
+"Guarda sempre":"Always kept",
+"Levar os áudios na cópia?":"Include the audio in the backup?",
+"Os áudios das notas somam {mb}: grande demais para caber numa cópia só. A cópia leva o texto, e os áudios você baixa pelo painel de áudios.":"The audio in your notes adds up to {mb}: too big for a single backup. The backup keeps the text, and you can download the audio from the audio panel.",
+"Os áudios das notas somam {mb}. Com eles a cópia fica completa; sem eles fica leve, e as notas voltam com o texto.":"The audio in your notes adds up to {mb}. With it the backup is complete; without it the backup stays light and the notes come back with their text.",
+"Salvar só o texto":"Save the text only",
+"Só o texto":"Text only",
+"Levar os áudios ({mb})":"Include the audio ({mb})"
 };
 
 // ── STATE ──
@@ -25607,6 +25687,10 @@ function _restaurarEtiqueta(id,it){
   if(el&&Array.isArray(it.depende)&&it.depende.length)el.dataset.depende=JSON.stringify(it.depende.map(String).slice(0,40));
   if(el&&it.diario&&typeof it.diario==='object'&&!Array.isArray(it.diario)){el.dataset.diario=JSON.stringify(it.diario);_dioCardSinc(el)}
   if(el&&it.encontro&&typeof it.encontro==='object'&&!Array.isArray(it.encontro)){el.dataset.encontro=JSON.stringify(it.encontro);_encRefresh(id)}
+  if(el&&Array.isArray(it.audios)&&it.audios.length){
+    _audGravar(el,it.audios.filter(a=>a&&a.k&&!_audTmp(a.k)));_audPintar(el);
+    if(it.encontro)_encRefresh(id);
+  }
   if(el&&el.dataset.origemDt)_notaFaixaSinc(el);
 }
 // Os nomes das etiquetas são do dono do aparelho, não nossos. O padrão é a cor
@@ -32558,7 +32642,9 @@ function saveHistory(){
       // O que é do encontro (vozes de fora, marcas, rabiscos, capítulos, revisão).
       ...(c.dataset.diario?{diario:(()=>{try{return JSON.parse(c.dataset.diario)}catch(e){return undefined}})()}:{}),
       ...(c.dataset.encontro?{encontro:(()=>{try{return JSON.parse(c.dataset.encontro)}catch(e){return undefined}})()}:{}),
-      ...(c.dataset.depende?{depende:(()=>{try{const a=JSON.parse(c.dataset.depende);return Array.isArray(a)?a:[]}catch(e){return []}})()}:{})
+      ...(c.dataset.depende?{depende:(()=>{try{const a=JSON.parse(c.dataset.depende);return Array.isArray(a)?a:[]}catch(e){return []}})()}:{}),
+      // Áudio guardado (21/10/2026): só o que já chegou ao cofre.
+      ...(c.dataset.audios&&_audGuardaveis(c).length?{audios:_audGuardaveis(c)}:{})
     };
     if(c.dataset.diarized==='true'){
       items.push({...base,diarized:true,utterances:c.dataset.utterances||'[]',speakers:c.dataset.speakers||'{}',view:c.dataset.view||'roteiro',chatHistory:c.dataset.chatHistory||'[]',text:ta.value});
@@ -32732,6 +32818,23 @@ async function exportProject(){
     }));
     return{...it,images};
   }));
+  // Áudios (21/10/2026): a cópia pergunta antes, com o tamanho escrito —
+  // um ano de Diário falado passa de 400 MB, e nem toda cópia precisa disso.
+  const audB=history.reduce((s,it)=>s+(it.audios||[]).reduce((x,a)=>x+(+a.b||0),0),0);
+  if(audB>0){
+    const leva=await _audCopiaModal(audB);
+    if(leva===null){toast(t('Cópia não salva.'));return}
+    if(leva){
+      for(let i=0;i<history2.length;i++){
+        const it=history2[i];if(!it.audios||!it.audios.length)continue;
+        const audios=[];
+        for(const a of it.audios){
+          try{const blob=await imgCarregar(a.k);audios.push(blob?{...a,data:await _blobParaDataURL(_audComTipo(blob,a.t))}:a)}catch(e){audios.push(a)}
+        }
+        history2[i]={...it,audios};
+      }
+    }
+  }
   const data={
     app:'vox',version:1,exportedAt:new Date().toISOString(),
     history:history2,
@@ -32880,6 +32983,21 @@ async function _restoreProject(data){
     // volta no IndexedDB DESTE aparelho, com a MESMA chave, antes de montar
     // o card. Sem isso o card nasceria apontando pra um Blob que só existe
     // no aparelho de origem.
+    // Áudios da cópia: voltam pro cofre DESTE aparelho com a mesma chave. Cópia
+    // sem os áudios (a pessoa escolheu só o texto) mantém só os que ainda
+    // existem aqui — pílula que não toca seria pior que nenhuma.
+    if(Array.isArray(it.audios)&&it.audios.length){
+      const fica=[];
+      for(const a of it.audios){
+        if(!a||!a.k)continue;
+        const{data:dAud,...semDados}=a;
+        try{
+          if(dAud){await imgSalvar(await _dataURLParaBlob(dAud),0,0,a.k);fica.push(semDados)}
+          else if(await _audExiste(a.k))fica.push(semDados);
+        }catch(e){}
+      }
+      it.audios=fica;
+    }
     let imgsRestauradas=it.images||[];
     if(imgsRestauradas.length){
       imgsRestauradas=await Promise.all(imgsRestauradas.map(async im=>{
@@ -35248,6 +35366,7 @@ function makeRecorder(stream,bps){
 }
 async function startRec(targetCardId=null,targetTA=null){
   if(isRec||isProc||stagedFile)return;
+  try{_audParar()}catch(e){}
   if(_precisaConfigurar(true))return;
   // Botão principal/atalho de espaço chegam aqui sem alvo explícito. Se existe um card
   // com o cursor piscando (activeTA/activeTACard — rastreados em Lista, Masonry e também
@@ -35321,7 +35440,7 @@ async function startRec(targetCardId=null,targetTA=null){
     document.getElementById('btnRec').style.display='none';document.getElementById('btnAttach').style.display='none';document.getElementById('btnAudioCfg').style.display='none';
     document.getElementById('btnSend').style.display='none';document.getElementById('btnStop').style.display='none';document.getElementById('btnCancel').style.display='none';
     recTimer=setInterval(()=>{const el=Math.floor((Date.now()-recStart)/1000);const s=String(Math.floor(el/60)).padStart(2,'0')+':'+String(el%60).padStart(2,'0');document.getElementById('recTimer').textContent=s;const dt=document.getElementById('docRecTimer');if(dt)dt.textContent=s},1000);
-    initVU(stream);setStatus('Gravando…','rec');
+    initVU(stream);_audEnvIniciar();setStatus('Gravando…','rec');
     _gravLimiteArmar();_gravAvisoDoDia();_diarAvisoInicio();
   }catch(err){
     stopCapture();
@@ -35343,6 +35462,7 @@ function stopRec(){
   _maybeShowLpHint();
   const elapsed=Math.floor((Date.now()-recStart)/1000);
   _encGravFim();
+  const _env=_audEnvParar(elapsed);
   clearInterval(recTimer);stopVU();
   // A cópia de segurança para de ser atualizada, mas só sai do aparelho quando
   // a gravação já estiver na fila de pendentes (processAudio → _gravBackupSoltar).
@@ -35355,13 +35475,14 @@ function stopRec(){
   const mime=MR.mimeType||'audio/webm';const ext=mime.includes('mp4')?'mp4':'webm';
   const blob=new Blob(MR._buf,{type:mime});
   const file=new File([blob],'rec_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.'+ext,{type:mime});
+  if(_env)_audPend.set(file,_env);
   resetUI();processAudio(file,elapsed,true,bkId);
 }
 function cancelRec(){
   if(!isRec||!MR)return;
   _flAbrirNoProximoCard=false; // cancelou: o próximo card a nascer não tem nada a ver com esta gravação
   _encGrav=null;_encPendente=null;document.getElementById('encMarcaPop')?.remove();_encTelaFechar();
-  _gravBackupDesarmar(true);
+  _gravBackupDesarmar(true);_audEnvParar(0);
   try{MR.stop()}catch(e){}stopCapture();clearInterval(recTimer);stopVU();chunks=[];
   document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
   resetUI();activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;toast(t('🚫 Gravação cancelada.'));
@@ -35434,6 +35555,7 @@ async function processAudio(file,durSec,fromRec,bkId){
   finally{_gravNaFilaId=null}
   // A fila recusou guardar (aparelho cheio): a cópia segue sendo a única garantia
   // até virar texto — se não virar, o próximo boot a recupera.
+  if(ok===true)await _audEsperar(file);
   if(!id){if(ok===true)_gravBackupSoltar(bkId);return ok}
   try{if(ok===true)await _pendenteTirar(id)}
   finally{_pendOcupadas.delete(id)}
@@ -35586,8 +35708,11 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       const sep=cur.length>0&&cur[cur.length-1]!=='\n'?'\n':'';
       const insertCard=insertTA.closest('.card')?.id;cardAlvo=insertCard;
       if(insertCard)pushCardHistory(insertCard);
+      // Toda gravação guarda a voz: a que entrou numa nota que já existia
+      // vira mais um áudio dela (a pílula mostra "+1" e toca em fila).
+      if(insertCard&&fromRec)_audAnexar(document.getElementById(insertCard),file,{d:actualSec});
       insertTA.value=cur.slice(0,s)+sep+text+cur.slice(en);
-      autoR(insertTA);if(_dioCopiaSozinho())navigator.clipboard.writeText(text).then(()=>toast(t('Inserido + copiado!')));
+      autoR(insertTA);if(_dioCopiaSozinho())navigator.clipboard.writeText(text).then(()=>toast(t('Inserido + copiado!'))).catch(()=>{});
       updateFooter(insertCard);saveHistory();activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;
     }else{
       const cid=addCard(text,fromRec?file:file,cost,fromRec?'gravacao':'arquivo',prov,true,null,null,[],sn,mode,false);cardAlvo=cid;
@@ -36107,7 +36232,8 @@ function _encPintar(id){
   const pinos=(e.marcas||[]).map(m=>`<button type="button" class="enc-pino" style="left:${pct((+m.de||0)/total*100)}" onclick="_encIr('${escJs(id)}',${+m.de||0})" title="${escHtml((m.rot||t('Marcado'))+' · '+fmtMs(m.de))}" aria-label="${escHtml(t('Ir para a marca')+' '+fmtMs(m.de))}">★</button>`).join('');
   const leg=keys.map(k=>`<button type="button" class="enc-voz${ign.has(k)?' ign':''}" onclick="event.stopPropagation();_encVozMenu('${escJs(id)}','${escJs(k)}',this)" aria-haspopup="menu"><span class="enc-dot" style="background:${cor(k)}"></span><span class="enc-voz-n">${escHtml(sp[k]||k)}</span><small>${ign.has(k)?escHtml(t('não é daqui')):Math.round((tempo[k]||0)/soma*100)+'%'}</small></button>`).join('');
   const ler=c.dataset.view==='bolhas';
-  c.classList.toggle('tem-audio',!!(e.audio&&e.audio.k));
+  const _encK=_encAudioK(c);
+  c.classList.toggle('tem-audio',!!_encK);
   const caps=(e.capitulos||[]).filter(x=>x&&x.t);
   const cortes=caps.map(x=>`<b class="enc-corte" style="left:${pct((+x.ms||0)/total*100)}"></b>`).join('');
   const capsHtml=caps.length
@@ -36116,7 +36242,7 @@ function _encPintar(id){
   const rabs=(e.rabiscos||[]).filter(r=>r&&r.txt);
   const rabHtml=rabs.length?`<div class="enc-rabs"><span>${escHtml(t('Rabiscos'))}</span>${rabs.map(r=>`<button type="button" onclick="_encIr('${escJs(id)}',${+r.ms||0})"><i>${escHtml(fmtMs(r.ms))}</i>${escHtml(r.txt)}</button>`).join('')}</div>`:'';
   box.innerHTML=`<div class="enc-fita-w">${pinos?`<div class="enc-pinos">${pinos}</div>`:''}<div class="enc-fita" role="img" aria-label="${escHtml(t('Quem falou quando'))}">${seg}${cortes}</div><div class="enc-dur"><span>0:00</span><span>${fmtMs(total)}</span></div></div>${capsHtml}
-    ${rabHtml}<div class="enc-leg">${leg}<span class="enc-leg-dir">${e.audio&&e.audio.k?`<button type="button" class="enc-ouvir" id="encOuvir-${escHtml(id)}" onclick="_encTocar('${escJs(id)}')">${_encAudio&&_encAudio.id===id&&!_encAudio.el.paused?'❚❚ '+escHtml(t('Pausar')):'▶ '+escHtml(t('Ouvir'))}</button>`:''}<button type="button" class="enc-mini" onclick="toggleDiarView('${escJs(id)}');_encPintar('${escJs(id)}')">${escHtml(ler?t('Editar o texto'):t('Ver a conversa'))}</button></span></div>`;
+    ${rabHtml}<div class="enc-leg">${leg}<span class="enc-leg-dir">${_encK?`<button type="button" class="enc-ouvir" id="encOuvir-${escHtml(id)}" onclick="_encTocar('${escJs(id)}')">${_encAudio&&_encAudio.id===id&&!_encAudio.el.paused?'❚❚ '+escHtml(t('Pausar')):'▶ '+escHtml(t('Ouvir'))}</button>`:''}<button type="button" class="enc-mini" onclick="toggleDiarView('${escJs(id)}');_encPintar('${escJs(id)}')">${escHtml(ler?t('Editar o texto'):t('Ver a conversa'))}</button></span></div>`;
 }
 // ── Marcar o momento (proposta 2) ──
 // Durante a gravação, um toque (ou a tecla M) marca os últimos 30 segundos. Uma
@@ -36567,22 +36693,27 @@ async function _encCapitulos(id){
 // sozinho no prazo escolhido. Tocar na hora de uma fala toca dali em diante.
 let _encAudio=null;
 function _encAudioGuardar(id,file,fromRec){
+  // Desde 21/10/2026 toda gravação guarda a voz (ver ÁUDIO GUARDADO), e a
+  // sessão com vozes também: mesmo cofre, mesma pílula. O "Áudio da sessão" do
+  // Personalizar virou prazo de apagar (vence), não mais condição de guardar.
   const c=id&&document.getElementById(id);
-  if(!c||!fromRec||!file||!_encEh(c))return id;
-  const dias=+(_painelCfg().audioDias||0);if(!dias)return id;
-  imgSalvar(file).then(k=>{if(!document.getElementById(id)){imgApagar(k).catch(()=>{});return}_encGravar(c,{audio:{k,em:new Date().toISOString(),dias}});_encPintar(id)}).catch(()=>toast(t('Não deu para guardar o áudio desta sessão neste aparelho.'),true));
+  if(c&&file)_audAnexar(c,file);
   return id;
 }
+// Chave do áudio que a conversa toca: a do encontro (sessões antigas, de antes
+// do áudio guardado) ou o primeiro áudio da nota.
+function _encAudioK(c){const a=_encLer(c).audio;if(a&&a.k)return a.k;const v=_audVivos(c)[0];return v?v.k:''}
 async function _encTocar(id,ms){
-  const c=document.getElementById(id);const a=c&&_encLer(c).audio;if(!a||!a.k)return;
+  const c=document.getElementById(id);const k=c&&_encAudioK(c);if(!k)return;
   if(_encAudio&&_encAudio.id===id){
     if(ms==null){if(_encAudio.el.paused)_encAudio.el.play();else _encAudio.el.pause();return}
     _encAudio.el.currentTime=ms/1000;_encAudio.el.play();return;
   }
-  _encParar();
-  let blob=null;try{blob=await imgCarregar(a.k)}catch(e){}
-  if(!blob){toast(t('O áudio desta sessão não está disponível: já foi apagado ou o mundo está trancado.'),true);return}
-  const url=URL.createObjectURL(blob),el=new Audio(url);
+  _encParar();try{_audParar()}catch(e){}
+  const v=_audVivos(c).find(x=>x.k===k)||{k,t:''};
+  let url=null;try{url=await _audUrlDe(v)}catch(e){}
+  if(!url){toast(t('O áudio desta sessão não está disponível: já foi apagado ou o mundo está trancado.'),true);return}
+  const el=new Audio(url);
   _encAudio={id,el,url};
   const pinta=()=>{const b=document.getElementById('encOuvir-'+id);if(b)b.textContent=el.paused?'▶ '+t('Ouvir'):'❚❚ '+t('Pausar')};
   el.addEventListener('play',pinta);el.addEventListener('pause',pinta);
@@ -36599,7 +36730,7 @@ async function _encTocar(id,ms){
 }
 function _encParar(){
   if(!_encAudio)return;
-  try{_encAudio.el.pause()}catch(e){}URL.revokeObjectURL(_encAudio.url);
+  try{_encAudio.el.pause()}catch(e){}
   const c=document.getElementById(_encAudio.id);c?.querySelectorAll('.bbl-tocando').forEach(x=>x.classList.remove('bbl-tocando'));
   const b=document.getElementById('encOuvir-'+_encAudio.id);_encAudio=null;if(b)b.textContent='▶ '+t('Ouvir');
 }
@@ -36607,7 +36738,7 @@ function _encParar(){
 document.addEventListener('click',ev=>{
   const ts=ev.target.closest&&ev.target.closest('.card.encontro .bbl-ts');if(!ts)return;
   const c=ts.closest('.card'),b=ts.closest('.bbl');
-  if(!c||!b||!(_encLer(c).audio||{}).k)return;
+  if(!c||!b||!_encAudioK(c))return;
   ev.stopPropagation();_encTocar(c.id,+b.dataset.ms||0);
 });
 // Faxina: áudio que passou do prazo some do aparelho.
@@ -42349,7 +42480,7 @@ function _mundoPersonalizar(){
       ${q('<rect x="21" y="3" width="18" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M25 10h10M25 15h10M25 20h6" stroke="currentColor" stroke-width="2"/>',t('Nota depois'),principal,"_modeloNovo('')",true)}
       ${q('<rect x="8" y="5" width="20" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="32" y="5" width="20" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="32" y="17" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>',t('Abre em'),pc.abreEm==='painel'?t('Painel'):t('Mural'),'_pzAbreEm()',pc.abreEm==='painel')}
       ${q('<rect x="14" y="4" width="32" height="22" rx="3" fill="#10181d" stroke="currentColor" stroke-width="1.5"/><circle cx="21" cy="10" r="2" fill="#e5484d"/><path d="M20 19h20" stroke="#f0b24a" stroke-width="2"/>',t('Ao gravar'),pc.telaAtendimento===false?t('Só a pílula'):t('Tela de atendimento'),'_pzTelaAtendimento()',pc.telaAtendimento!==false)}
-      ${q('<path d="M12 18v-6M17 21V9M22 18v-6M27 24V6M32 18v-6M37 21V9M42 18v-6M47 15v0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',t('Áudio da sessão'),+(pc.audioDias||0)?t('Guarda {n} dias').replace('{n}',pc.audioDias):t('Não guarda'),'_pzAudio()',!!+(pc.audioDias||0))}
+      ${q('<path d="M12 18v-6M17 21V9M22 18v-6M27 24V6M32 18v-6M37 21V9M42 18v-6M47 15v0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',t('Áudio das gravações'),+(pc.audioDias||0)?t('Apaga depois de {n} dias').replace('{n}',pc.audioDias):t('Guarda sempre'),'_pzAudio()',!!+(pc.audioDias||0))}
       ${q('<rect x="21" y="13" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M25 13V9a5 5 0 0 1 10 0v4" fill="none" stroke="currentColor" stroke-width="2"/>',t('Proteção'),tranc?t('Com senha'):t('Sem senha'),"closeTxOverlay();fecharPainel();abrirGalaxia();toast(t('Na ficha deste mundo, toque em Proteger com senha.'))",tranc)}
     </div>
     <div class="fa-pe"><button type="button" class="conv-s" onclick="_meGuia()">${escHtml(t('Me ajuda a configurar'))}</button><button type="button" class="conv-p" onclick="closeTxOverlay();if(document.getElementById('painelOv')?.classList.contains('on'))_painelPintar()">${escHtml(t('Pronto'))}</button></div>
@@ -42719,6 +42850,407 @@ async function runLens(id,lensKey,focus='',sel=null,opts=null){
 }
 
 // ── REGULAR CARD ──
+// ════════════════════════════════════════════════════════════════════════
+// ÁUDIO GUARDADO (21/10/2026) — base + "Fio" (proposta 1 do agente game)
+//
+// Até aqui o áudio de uma nota só vivia na memória da aba (o <audio controls>
+// largo, com o Blob no blobReg): recarregar a página e ele sumia. Só a sessão
+// com vozes guardava, e só com "Áudio da sessão" ligado no Personalizar.
+// Agora toda gravação guarda a voz no mesmo cofre das fotos (imgSalvar: OPFS
+// ou IndexedDB, cifrado quando o mundo está trancado) e a nota guarda pouco:
+//   dataset.audios = [{k, d, t, b, em, o, s, ...}]
+//     k  chave no cofre ('tmp_…' enquanto o Blob ainda está sendo gravado)
+//     d  duração em segundos · t tipo · b bytes · em quando nasceu
+//     o  48 números (0–99) da forma da onda · s silêncios [[ini,fim],…] em ms
+//     vence  apagar nesta data (só se o mundo pediu, em Personalizar)
+// Áudio com chave 'tmp_' não vai pro histórico: só o que chegou ao cofre fica.
+// ════════════════════════════════════════════════════════════════════════
+const _AUD_ONDA_N=48,_AUD_ENV_MS=50,_AUD_SIL_MIN=700;
+// Medida feita durante a gravação (stopRec) e tempos da transcrição, por File.
+const _audPend=new WeakMap();
+// Promessa do Blob indo pro cofre, por File: processAudio espera ela antes de
+// tirar a gravação da fila de pendentes — a voz nunca fica sem cópia.
+const _audSalvando=new WeakMap();
+// Object URLs da sessão, por chave do cofre.
+const _audUrls=new Map();
+function _audLista(c){try{const a=JSON.parse((c&&c.dataset.audios)||'[]');return Array.isArray(a)?a.filter(x=>x&&x.k):[]}catch(e){return[]}}
+function _audGravar(c,l){if(!c)return;if(l&&l.length)c.dataset.audios=JSON.stringify(l);else delete c.dataset.audios}
+function _audVivos(c){return _audLista(c).filter(a=>!a.del)}
+function _audTmp(k){return String(k||'').startsWith('tmp_')}
+function _audGuardaveis(c){return _audLista(c).filter(a=>!_audTmp(a.k))}
+function _audTot(c){return _audVivos(c).reduce((s,a)=>s+(+a.d||0),0)}
+function _audFmt(seg){
+  const s=Math.max(0,Math.round(seg||0)),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),x=s%60;
+  return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`;
+}
+// ── A voz medida enquanto grava ──
+// O medidor da pílula (drawVU) roda em requestAnimationFrame, que para com a
+// aba escondida. Este roda no processador de áudio, que continua gravando.
+// Sem AudioWorklet, plano B: amostra o mesmo analisador a cada 50 ms.
+let _audEnv=null;
+function _audEnvIniciar(){
+  const env=_audEnv={niveis:[]};
+  const ctx=audioCtx,src=streamSrc;if(!ctx||!src)return;
+  const planoB=()=>{if(_audEnv!==env||env.iv)return;env.iv=setInterval(()=>{
+    if(_audEnv!==env||!analyser||!dataArr)return;
+    analyser.getByteTimeDomainData(dataArr);let s=0;for(let i=0;i<dataArr.length;i++){const v=(dataArr[i]-128)/128;s+=v*v}
+    env.niveis.push(Math.sqrt(s/dataArr.length));
+  },_AUD_ENV_MS)};
+  try{
+    if(!ctx.audioWorklet||typeof AudioWorkletNode==='undefined'){planoB();return}
+    const cod='class M extends AudioWorkletProcessor{constructor(){super();this.s=0;this.n=0;this.lim=Math.round(sampleRate*'+_AUD_ENV_MS+'/1000)}'
+      +'process(e){const c=e[0]&&e[0][0];if(c){for(let k=0;k<c.length;k++)this.s+=c[k]*c[k];this.n+=c.length;'
+      +'if(this.n>=this.lim){this.port.postMessage(Math.sqrt(this.s/this.n));this.s=0;this.n=0}}return true}}registerProcessor("vox-nivel",M)';
+    const url=URL.createObjectURL(new Blob([cod],{type:'text/javascript'}));
+    ctx.audioWorklet.addModule(url).then(()=>{
+      URL.revokeObjectURL(url);
+      if(_audEnv!==env||ctx.state==='closed')return;
+      const no=new AudioWorkletNode(ctx,'vox-nivel'),g=ctx.createGain();
+      no.port.onmessage=e=>{if(_audEnv===env)env.niveis.push(e.data)};
+      // Nó sem saída ligada pode não ser processado: sai por um ganho zero.
+      g.gain.value=0;src.connect(no);no.connect(g);g.connect(ctx.destination);env.no=no;
+    }).catch(planoB);
+  }catch(e){planoB()}
+}
+// Para a medida e devolve {d,o,s} — ou só {d} se não deu pra medir.
+function _audEnvParar(durSec){
+  const env=_audEnv;_audEnv=null;
+  if(!env)return null;
+  clearInterval(env.iv);try{env.no&&env.no.disconnect()}catch(e){}
+  const r={d:durSec||0};
+  if(env.niveis.length>=8)Object.assign(r,_audAnalisarNiveis(env.niveis,(durSec||0)*1000));
+  return r;
+}
+// Níveis (RMS de janelas iguais) → 48 barras e os trechos de silêncio.
+function _audAnalisarNiveis(niv,durMs){
+  const n=niv.length,passo=(durMs||n*_AUD_ENV_MS)/n;
+  const ord=[...niv].sort((a,b)=>a-b),pct=q=>ord[Math.min(n-1,Math.floor(q*n))];
+  const teto=Math.max(pct(.98),1e-4);
+  const o=[];
+  for(let i=0;i<_AUD_ONDA_N;i++){
+    const a=Math.floor(i*n/_AUD_ONDA_N),b=Math.max(a+1,Math.floor((i+1)*n/_AUD_ONDA_N));
+    let m=0;for(let j=a;j<b&&j<n;j++)if(niv[j]>m)m=niv[j];
+    o.push(Math.max(4,Math.min(99,Math.round(Math.sqrt(m/teto)*99))));
+  }
+  // Silêncio: abaixo do dobro do chão de ruído (com piso e teto), por 700 ms
+  // ou mais. Fica uma folga de 120 ms de cada lado pra não comer o fim da fala.
+  const lim=Math.min(.05,Math.max(.006,pct(.15)*2));
+  const s=[];let ini=-1;
+  for(let i=0;i<=n;i++){
+    const quieto=i<n&&niv[i]<lim;
+    if(quieto&&ini<0)ini=i;
+    if(!quieto&&ini>=0){
+      const a=ini*passo,b=i*passo;
+      if(b-a>=_AUD_SIL_MIN)s.push([Math.round(a+120),Math.round(b-120)]);
+      ini=-1;
+    }
+  }
+  return {o,s};
+}
+// Áudio sem medida (anexado, recuperado da fila, nota antiga): decodifica uma
+// vez, em 8 kHz, e mede igual. Só até 15 min — acima disso o PCM pesaria
+// demais no celular, e a pílula fica com a onda padrão.
+const _audFila=[];let _audAnalisando=false;
+function _audAnalisarDepois(c,k){if(!_audFila.some(x=>x[1]===k))_audFila.push([c,k]);_audAnalisarProx()}
+async function _audAnalisarProx(){
+  if(_audAnalisando||!_audFila.length)return;
+  _audAnalisando=true;
+  const [c,k]=_audFila.shift();
+  try{
+    const l=_audLista(c),a=l.find(x=>x.k===k);
+    if(a&&!a.o&&c.isConnected&&(!a.d||a.d<=900)){
+      const u=await _audUrlDe(a);
+      const ab=u?await (await fetch(u)).arrayBuffer():null;
+      if(ab){
+        const Ctx=window.AudioContext||window.webkitAudioContext;
+        let ctx;try{ctx=new Ctx({sampleRate:8000})}catch(e){ctx=new Ctx()}
+        try{
+          const buf=await ctx.decodeAudioData(ab);
+          if(buf.duration<=900){
+            const ch=buf.getChannelData(0),jan=Math.round(buf.sampleRate*_AUD_ENV_MS/1000),niv=[];
+            for(let i=0;i+jan<=ch.length;i+=jan){let s=0;for(let j=i;j<i+jan;j++)s+=ch[j]*ch[j];niv.push(Math.sqrt(s/jan))}
+            const l2=_audLista(c),a2=l2.find(x=>x.k===k);
+            if(a2&&niv.length>=8){Object.assign(a2,_audAnalisarNiveis(niv,buf.duration*1000));if(!a2.d)a2.d=Math.round(buf.duration*10)/10;_audGravar(c,l2);saveHistory();_audPintar(c)}
+          }
+        }finally{try{ctx.close()}catch(e){}}
+      }
+    }
+  }catch(e){}
+  _audAnalisando=false;
+  setTimeout(_audAnalisarProx,200);
+}
+// ── Guardar ──
+// Grava o File no cofre e pendura na nota. Volta na hora (a pílula já aparece
+// tocando do File em memória) e troca a chave provisória pela do cofre quando
+// a gravação termina. Vídeo e arquivo gigante ficam só na sessão, como antes.
+function _audAnexar(c,file,extra){
+  if(!c||!file)return null;
+  const meta=Object.assign({},_audPend.get(file)||{},extra||{});
+  const tmp='tmp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const ent={k:tmp,d:Math.round((+meta.d||0)*10)/10,t:file.type||'audio/webm',b:file.size||0,em:new Date().toISOString()};
+  if(meta.o)ent.o=meta.o;if(meta.s&&meta.s.length)ent.s=meta.s;if(meta.tr&&meta.tr.length)ent.tr=meta.tr;
+  const dias=+(_painelCfg().audioDias||0);if(dias>0)ent.vence=new Date(Date.now()+dias*864e5).toISOString();
+  const l=_audLista(c);l.push(ent);_audGravar(c,l);
+  try{_audUrls.set(tmp,URL.createObjectURL(file))}catch(e){}
+  _audPintar(c);
+  const soSessao=(file.type||'').startsWith('video/')||file.size>200*1024*1024;
+  if(soSessao)return tmp;
+  const p=imgSalvar(file).then(k=>{
+    const l2=_audLista(c),e=l2.find(x=>x.k===tmp);
+    // A nota (ou o áudio) saiu enquanto gravava: não deixa Blob órfão.
+    if(!e||!c.isConnected){imgApagar(k).catch(()=>{});return null}
+    e.k=k;_audGravar(c,l2);
+    const u=_audUrls.get(tmp);if(u){_audUrls.delete(tmp);_audUrls.set(k,u)}
+    if(_audP&&_audP.k===tmp)_audP.k=k;
+    saveHistory();_audPintar(c);
+    // Primeiro áudio guardado é um sinal real de uso: pede ao navegador pra não apagar.
+    if(localStorage.getItem('vox_storage_persisted')!=='1')_requestPersistentStorage();
+    if(!e.o)_audAnalisarDepois(c,k);
+    return k;
+  }).catch(()=>{
+    toast(t('Este áudio não coube no aparelho. Baixe agora para não perder.'),true);
+    return null;
+  });
+  _audSalvando.set(file,p);
+  return tmp;
+}
+// processAudio espera o áudio chegar ao cofre (com teto: se travar, a
+// gravação continua na fila e nada se perde).
+function _audEsperar(file){
+  const p=file&&_audSalvando.get(file);if(!p)return Promise.resolve();
+  return Promise.race([p,new Promise(r=>setTimeout(r,30000))]).catch(()=>{});
+}
+async function _audUrlDe(a){
+  if(!a||!a.k)return null;
+  if(_audUrls.has(a.k))return _audUrls.get(a.k);
+  if(_audTmp(a.k))return null;
+  let blob=null;try{blob=await imgCarregar(a.k)}catch(e){}
+  if(!blob)return null;
+  blob=_audComTipo(blob,a.t);
+  const u=URL.createObjectURL(blob);_audUrls.set(a.k,u);
+  // Guarda só uns poucos na memória: Blob de sessão longa pesa.
+  if(_audUrls.size>6){for(const [kk,uu] of _audUrls){if(_audUrls.size<=6)break;if(!_audTmp(kk)&&(!_audP||_audP.k!==kk)){URL.revokeObjectURL(uu);_audUrls.delete(kk)}}}
+  return u;
+}
+// Apaga do cofre todos os áudios da nota (nota apagada de vez).
+function _audApagarTodos(c){
+  _audLista(c).forEach(a=>{if(!_audTmp(a.k))imgApagar(a.k).catch(()=>{});const u=_audUrls.get(a.k);if(u){URL.revokeObjectURL(u);_audUrls.delete(a.k)}});
+  if(_audP&&_audP.c===c)_audParar();
+}
+// A chave ainda tem Blob neste aparelho? (barato: não lê os bytes)
+async function _audExiste(k){
+  try{
+    if(String(k).startsWith('opfs_')&&_temOpfs()){try{const root=await navigator.storage.getDirectory();await root.getFileHandle(k);return true}catch(e){}}
+    const db=await _openIDB();
+    return await new Promise(r=>{const q=db.transaction(IDB_IMG_STORE,'readonly').objectStore(IDB_IMG_STORE).count(k);q.onsuccess=()=>r(q.result>0);q.onerror=()=>r(false)});
+  }catch(e){return false}
+}
+// Levar os áudios na cópia? true = leva, false = só o texto, null = desistiu.
+function _audCopiaModal(bytes){
+  const mb=_fmtBytes(bytes),grande=bytes>150*1024*1024;
+  return new Promise(res=>{
+    document.getElementById('audCopiaOv')?.remove();
+    const ov=document.createElement('div');ov.id='audCopiaOv';ov.className='dio-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-labelledby','audCopiaT');
+    ov.innerHTML=`<div class="dio-caixa"><div class="dio-cab"><b id="audCopiaT">${escHtml(t('Levar os áudios na cópia?'))}</b><button type="button" class="dio-x" aria-label="${escHtml(t('Fechar'))}">×</button></div>
+      <p class="dio-lead">${escHtml(grande?t('Os áudios das notas somam {mb}: grande demais para caber numa cópia só. A cópia leva o texto, e os áudios você baixa pelo painel de áudios.').replace('{mb}',mb):t('Os áudios das notas somam {mb}. Com eles a cópia fica completa; sem eles fica leve, e as notas voltam com o texto.').replace('{mb}',mb))}</p>
+      <div class="dio-pe"><button type="button" class="dio-acao" data-v="0">${escHtml(grande?t('Salvar só o texto'):t('Só o texto'))}</button>${grande?'':`<button type="button" class="dio-ok" data-v="1">${escHtml(t('Levar os áudios ({mb})').replace('{mb}',mb))}</button>`}</div></div>`;
+    const fim=v=>{ov.remove();document.removeEventListener('keydown',tecla,true);res(v)};
+    const tecla=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();fim(null)}};
+    ov.addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b){fim(b.dataset.v==='1');return}if(e.target===ov||e.target.closest('.dio-x'))fim(null)});
+    document.addEventListener('keydown',tecla,true);
+    document.body.appendChild(ov);(ov.querySelector('.dio-ok')||ov.querySelector('.dio-acao')).focus();
+  });
+}
+// Arquivo do OPFS volta sem tipo: o tipo certo mora na nota.
+function _audComTipo(blob,tipo){return tipo&&(!blob.type||blob.type==='application/octet-stream')?new Blob([blob],{type:tipo}):blob}
+function _audChavesDoItem(it){return (Array.isArray(it&&it.audios)?it.audios:[]).map(a=>a&&a.k).filter(k=>k&&!_audTmp(k))}
+// Faxina: só o que o mundo pediu pra apagar (Personalizar › Áudio).
+function _audFaxina(){
+  let mudou=false;const agora=Date.now();
+  _flTodosCards().forEach(c=>{
+    const l=_audLista(c),fica=l.filter(a=>{
+      const v=Date.parse(a.vence||'');
+      if(a.vence&&isFinite(v)&&agora>v){if(!_audTmp(a.k))imgApagar(a.k).catch(()=>{});return false}
+      return true;
+    });
+    if(fica.length!==l.length){_audGravar(c,fica);_audPintar(c);mudou=true}
+  });
+  if(mudou)saveHistory();
+}
+window.addEventListener('load',()=>setTimeout(()=>{try{_audFaxina()}catch(e){}},5200));
+
+// ── Fio: a pílula no cabeçalho e o fio na borda de cima ──
+// 28 px de altura, onda de cinco barrinhas e a duração. Toque toca e pausa;
+// arrastar pros lados avança (a largura do card é a duração inteira); segurar
+// 450 ms troca a velocidade. Tocando, um fio de 2 px corre na borda do card.
+function _audCinco(o){
+  if(!Array.isArray(o)||o.length<5)return [.45,.8,1,.65,.4];
+  const r=[];for(let i=0;i<5;i++){const a=Math.floor(i*o.length/5),b=Math.floor((i+1)*o.length/5);let m=0;for(let j=a;j<b;j++)m=Math.max(m,o[j]);r.push(Math.max(.25,Math.min(1,m/99)))}
+  return r;
+}
+function _audPintar(c){
+  if(!c)return;
+  const left=c.querySelector('.ch-left');if(!left)return;
+  const vivos=_audVivos(c);
+  let b=left.querySelector('.aud-pil');
+  if(!vivos.length){b&&b.remove();c.querySelector(':scope>.aud-fio')?.remove();c.querySelector(':scope>.aud-selo')?.remove();if(_audP&&_audP.c===c)_audParar();return}
+  if(!b){
+    b=document.createElement('button');b.type='button';b.className='aud-pil';
+    b.setAttribute('onpointerdown','_audPilDown(this,event)');
+    b.setAttribute('onclick','event.stopPropagation();_audPilClique(this,event)');
+    b.setAttribute('onkeydown','_audPilTecla(this,event)');
+    b.setAttribute('oncontextmenu','return false');
+    const sn=left.querySelector('.sname-badge');if(sn)sn.after(b);else left.appendChild(b);
+  }
+  if(!c.querySelector(':scope>.aud-fio')){const f=document.createElement('span');f.className='aud-fio';f.setAttribute('aria-hidden','true');f.innerHTML='<i></i><b></b>';c.appendChild(f)}
+  // No Mural de toque o card é miniatura sem cabeçalho: o áudio aparece num
+  // selinho no canto de baixo, que toca sem abrir a nota.
+  let se=c.querySelector(':scope>.aud-selo');
+  if(!se){se=document.createElement('button');se.type='button';se.className='aud-selo';se.setAttribute('onpointerdown','event.stopPropagation()');se.setAttribute('onclick','event.stopPropagation();_audAlternar(this.closest(\'.card\'))');c.appendChild(se)}
+  const tot=_audTot(c);
+  se.innerHTML=`<span class="aud-ondas" aria-hidden="true">${_audCinco(vivos[0].o).slice(1,4).map(h=>`<i style="--h:${h.toFixed(2)}"></i>`).join('')}</span><span class="aud-t">${_audFmt(tot)}</span>`;
+  se.setAttribute('aria-label',t('Ouvir o áudio ({t})').replace('{t}',_audFmt(tot)));
+  b.innerHTML=`<span class="aud-ondas" aria-hidden="true">${_audCinco(vivos[0].o).map(h=>`<i style="--h:${h.toFixed(2)}"></i>`).join('')}</span><span class="aud-t">${_audFmt(tot)}</span>${vivos.length>1?`<span class="aud-mais">+${vivos.length-1}</span>`:''}<span class="aud-vel"></span>`;
+  b.setAttribute('aria-label',t('Ouvir o áudio ({t})').replace('{t}',_audFmt(tot)));
+  b.title=t('Toque para ouvir · arraste para os lados para avançar · segure para mudar a velocidade');
+  _audPilEstado(c);
+}
+let _audP=null,_audElem=null,_audVel=1;
+try{_audVel=+localStorage.getItem('vox_aud_vel')||1}catch(e){}
+function _audEl(){
+  if(_audElem)return _audElem;
+  const el=_audElem=new Audio();el.preload='auto';
+  el.addEventListener('ended',()=>{if(_audP)_audProximo()});
+  el.addEventListener('pause',()=>{if(_audP)_audPilEstado(_audP.c)});
+  el.addEventListener('play',()=>{if(_audP){_audPilEstado(_audP.c);_audLaco()}});
+  return el;
+}
+// Posição (s) no total da nota → item da fila e deslocamento dentro dele.
+function _audOnde(c,seg){
+  const l=_audVivos(c);let i=0,acc=0;
+  while(i<l.length-1&&seg>=acc+(+l[i].d||0)){acc+=+l[i].d||0;i++}
+  return {i,off:Math.max(0,seg-acc),acc};
+}
+function _audPos(){if(!_audP)return 0;const l=_audVivos(_audP.c);let acc=0;for(let j=0;j<_audP.i&&j<l.length;j++)acc+=+l[j].d||0;return acc+(_audEl().currentTime||0)}
+async function _audTocarDe(c,seg){
+  const l=_audVivos(c);if(!l.length)return;
+  const {i,off}=_audOnde(c,seg||0),a=l[i];
+  const u=await _audUrlDe(a);
+  if(!u){toast(_mundoTrancado(_mundoAtivo)&&!_cofreChave?t('Este mundo está trancado: entre com a senha para ouvir.'):t('Este áudio não está mais neste aparelho.'),true);return}
+  if(_audP&&_audP.c!==c)_audParar();
+  try{_encParar()}catch(e){}
+  const el=_audEl();
+  if(!_audP||_audP.k!==a.k){if(_audP&&_audP.raf)cancelAnimationFrame(_audP.raf);el.src=u;_audP={c,i,k:a.k}}
+  el.playbackRate=_audVel;
+  try{el.currentTime=off}catch(e){}
+  c.classList.add('aud-on');c.querySelector(':scope>.aud-fio')?.classList.remove('recolhe');
+  try{await el.play()}catch(e){}
+  _audPilEstado(c);_audLaco();
+}
+function _audAlternar(c){
+  const el=_audEl();
+  if(_audP&&_audP.c===c){if(el.paused){c.classList.add('aud-on');el.play().catch(()=>{})}else el.pause();return}
+  _audTocarDe(c,0);
+}
+function _audProximo(){
+  const c=_audP.c,l=_audVivos(c);
+  if(_audP.i+1<l.length){let acc=0;for(let j=0;j<=_audP.i;j++)acc+=+l[j].d||0;_audP.k=null;_audTocarDe(c,acc+.01);return}
+  // Fim: o fio recolhe pra direita e a pílula volta à duração.
+  const f=c.querySelector(':scope>.aud-fio');
+  if(f&&!_voxReduzMov()){f.classList.add('recolhe');setTimeout(()=>{f.classList.remove('recolhe');if(!_audP||_audP.c!==c)c.classList.remove('aud-on')},330)}
+  else c.classList.remove('aud-on');
+  _audP=null;_audPilEstado(c);
+}
+function _audParar(){
+  if(!_audP)return;const c=_audP.c;
+  try{_audEl().pause()}catch(e){}
+  _audP=null;c.classList.remove('aud-on','aud-arrasta');_audPilEstado(c);
+}
+function _audPilEstado(c){
+  const b=c&&c.querySelector('.ch-left .aud-pil');if(!b)return;
+  const meu=_audP&&_audP.c===c,toca=meu&&!_audEl().paused;
+  const se=c.querySelector(':scope>.aud-selo');
+  if(se){se.classList.toggle('tocando',!!toca);const st=se.querySelector('.aud-t');if(st)st.textContent=_audFmt(meu?_audPos():_audTot(c))}
+  b.classList.toggle('tocando',!!toca);b.classList.toggle('ativa',!!meu);
+  b.setAttribute('aria-pressed',toca?'true':'false');
+  const tt=b.querySelector('.aud-t');if(tt)tt.textContent=_audFmt(meu?_audPos():_audTot(c));
+  const v=b.querySelector('.aud-vel');if(v)v.textContent=_audVel!==1?String(_audVel).replace('.',currentLang==='pt'?',':'.')+'×':'';
+}
+function _audLaco(){
+  if(!_audP||_audP.raf)return;
+  const passo=()=>{
+    if(!_audP){return}
+    const c=_audP.c;
+    if(!c.isConnected){_audParar();return}
+    const tot=_audTot(c)||1,p=Math.min(1,_audPos()/tot);
+    const f=c.querySelector(':scope>.aud-fio');if(f&&!c.classList.contains('aud-arrasta'))f.style.setProperty('--p',p.toFixed(4));
+    if(!c.classList.contains('aud-arrasta')){const s=_audFmt(_audPos());c.querySelectorAll('.ch-left .aud-pil .aud-t,:scope>.aud-selo .aud-t').forEach(tt=>{if(tt.textContent!==s)tt.textContent=s})}
+    if(_audEl().paused){_audP.raf=null;return}
+    _audP.raf=requestAnimationFrame(passo);
+  };
+  _audP.raf=requestAnimationFrame(passo);
+}
+let _audG=null;
+function _audPilDown(b,e){
+  e.stopPropagation();
+  if(e.button>0)return;
+  const c=b.closest('.card');if(!c)return;
+  try{b.setPointerCapture(e.pointerId)}catch(_){}
+  b.classList.add('afunda');
+  const g=_audG={b,c,x0:e.clientX,y0:e.clientY,modo:'toque',quinto:null,ultVib:0};
+  g.hold=setTimeout(()=>{
+    if(_audG!==g||g.modo!=='toque')return;
+    g.modo='vel';_audVelProx(c);
+  },450);
+  b.onpointermove=ev=>{
+    if(_audG!==g)return;
+    const dx=ev.clientX-g.x0,dy=ev.clientY-g.y0;
+    if(g.modo==='toque'&&Math.abs(dx)>6&&Math.abs(dx)>Math.abs(dy)){g.modo='arrasta';clearTimeout(g.hold);c.classList.add('aud-on','aud-arrasta')}
+    if(g.modo==='arrasta')_audArrasta(g,ev.clientX);
+  };
+  const fim=ev=>{
+    if(_audG!==g)return;
+    clearTimeout(g.hold);b.classList.remove('afunda');b.onpointermove=b.onpointerup=b.onpointercancel=null;
+    _audG=null;g.fimEm=Date.now();b._audUlt=g;
+    if(ev.type==='pointercancel'){c.classList.remove('aud-arrasta');return}
+    if(g.modo==='arrasta'){c.classList.remove('aud-arrasta');_audTocarDe(c,g.seg||0);return}
+    if(g.modo==='toque')_audAlternar(c);
+  };
+  b.onpointerup=fim;b.onpointercancel=fim;
+}
+// O clique que sobra do gesto já foi tratado; o do teclado (detail 0) não.
+function _audPilClique(b,e){
+  if(e.detail!==0)return;
+  const c=b.closest('.card');if(c)_audAlternar(c);
+}
+function _audPilTecla(b,e){
+  if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+  e.preventDefault();e.stopPropagation();
+  const c=b.closest('.card');if(!c)return;
+  const base=_audP&&_audP.c===c?_audPos():0;
+  _audTocarDe(c,Math.max(0,Math.min(_audTot(c)-.2,base+(e.key==='ArrowRight'?5:-5))));
+}
+function _audArrasta(g,x){
+  const r=g.c.getBoundingClientRect(),f=Math.max(0,Math.min(1,(x-r.left)/Math.max(1,r.width)));
+  const tot=_audTot(g.c);g.seg=f*tot;
+  const fio=g.c.querySelector(':scope>.aud-fio');if(fio){fio.style.setProperty('--p',f.toFixed(4));fio.style.setProperty('--q',f.toFixed(4))}
+  const tt=g.b.querySelector('.aud-t');if(tt)tt.textContent=_audFmt(g.seg);
+  // Um tic a cada 5 s cruzados (no máximo um a cada 30 ms).
+  const q=Math.floor(g.seg/5);
+  if(g.quinto!==null&&q!==g.quinto&&Date.now()-g.ultVib>30){try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}g.ultVib=Date.now()}
+  g.quinto=q;
+}
+function _audVelProx(c){
+  const seq=[1,1.5,2];_audVel=seq[(seq.indexOf(_audVel)+1)%seq.length];
+  try{localStorage.setItem('vox_aud_vel',String(_audVel))}catch(e){}
+  if(_audP)_audEl().playbackRate=_audVel;
+  try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}
+  _audPilEstado(c);
+  const v=c.querySelector('.ch-left .aud-pil .aud-vel');
+  if(v&&!_voxReduzMov()){v.classList.remove('pula');void v.offsetWidth;v.classList.add('pula')}
+  toast(t('Velocidade {v}').replace('{v}',String(_audVel).replace('.',currentLang==='pt'?',':'.')+'×'));
+}
+
 function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null,tags=[],sn='',mode='livre',pinned=false,folder='',chatHistory='[]',images=[],links=[],textosImagem={}){
   showCards();
   // Nota de lente nasce com [lente, modo]; na Entrevista os dois são "entrevista".
@@ -42734,8 +43266,9 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   const badgeCls=provStr==='grok'?' grok':provStr==='groqwhisper'?' groq':'';
   const provLabel=provStr==='grok'?'🟠 Grok':provStr==='groqwhisper'?'🟢 Groq':'<span class="svgi">'+ICO.bot+'</span> Whisper';
   const modeLabel=SESSION_MODES[mode]?.label||t('Livre');
-  let audioHtml='';
-  if(file&&type!=='texto'){try{const url=URL.createObjectURL(file);blobReg.set(id,url);audioHtml=`<div class="card-audio" style="padding:0 14px 8px"><audio controls src="${url}" style="width:100%;height:32px;border-radius:8px"></audio></div>`;updateRamBadge()}catch(e){}}
+  // O áudio não mora mais aqui como <audio controls>: vai pro cofre e vira a
+  // pílula do cabeçalho (_audAnexar, logo depois do card entrar na tela).
+  const audioHtml='';
   const wc=text.length,ww=text.split(/\s+/).filter(w=>w).length;
   const tagsHtml=tagsBlock(id,tags);
 
@@ -42862,6 +43395,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   }
   const ta=el.querySelector('textarea');if(ta)autoR(ta);
   initCardDrag(el);
+  if(file&&type!=='texto')_audAnexar(el,file,{d:+el.dataset.durAudio||0});
   el.scrollIntoView({behavior:'smooth',block:'center'});
   if(save){saveHistory();renderFolders();applyFolderFilter()}
   // Card nascido de uma gravação feita com o Fluxograma/Órbita aberto: em vez
@@ -42935,6 +43469,7 @@ function doDelete(id){
   if(_c){
     try{_imagesGet(_c).forEach(im=>{imgApagar(im.k).catch(()=>{});_imgRevoke(im.k)})}catch(e){}
     try{const _a=_encLer(_c).audio;if(_a&&_a.k)imgApagar(_a.k).catch(()=>{})}catch(e){}
+    try{_audApagarTodos(_c)}catch(e){}
   }
   _c?.remove();
   stats.count=Math.max(0,stats.count-1);updateStats();saveHistory();
