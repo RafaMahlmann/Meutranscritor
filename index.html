@@ -7337,8 +7337,10 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   /* --fit e --panx/--pany sao o ajuste FINAL, medido na tela (ver
      _conferirNaTela). Vem antes do 3D na declaracao, o que quer dizer que
      sao aplicados por ULTIMO: ajustam o resultado ja projetado, e por isso
-     funcionam igual num motor que aplica perspectiva e num que nao aplica. */
-  transform:translate(var(--panx,0px),var(--pany,0px)) scale(var(--fit,1))
+     funcionam igual num motor que aplica perspectiva e num que nao aplica.
+     --camty e da camera: sobe o planeta tocado pro meio da faixa livre
+     (ver _tyNaFaixa). */
+  transform:translate(var(--panx,0px),calc(var(--pany,0px) + var(--camty,0px))) scale(var(--fit,1))
     translateZ(var(--dolly,0px)) rotateX(var(--pitch,0deg)) rotateY(var(--yaw,0deg))}
 
 /* wrapper = posição no espaço. planeta = billboard (contra-rotação). */
@@ -10286,7 +10288,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.21.1';
+const VOX_VERSION='2026.10.21.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -45604,18 +45606,28 @@ function todos(){return worlds.concat([NOVO]);}
    Câmera — mesma ideia da Órbita (_orbCamX/_orbCamS/_orbEnquadrar),
    com uma dimensão a mais: em vez de arrastar o plano, gira a câmera.
    ============================================================ */
-var cam={yaw:0,pitch:0,dolly:0};
+var cam={yaw:0,pitch:0,dolly:0,ty:0};
 var alvo=null;            // {yaw,pitch,dolly,t0,dur,de:{...}} enquanto anima
 var vel={yaw:0,pitch:0};  // inércia
 var camSuja=true;
 var LUZ={x:-1150,y:-820,z:640};
 
 function grausLimpos(a){return a}
+/* O mesmo ângulo, escrito a no máximo meia volta de `ref`. Sem trava, a
+   câmera pode estar em 540°; voltar pro 0 não pode dar uma volta e meia. */
+function _angPerto(a,ref){return ref+((((a-ref)%360)+540)%360-180);}
+/* SEM TRAVA (21/10/2026). A inclinação parava em ±34°: puxando pra baixo, o
+   céu "travava" e, no celular, um planeta que caísse atrás da ficha ficava lá
+   pra sempre (relato do Rafa). Agora gira em qualquer direção, e qualquer
+   planeta passa pelo meio da tela. De cabeça pra baixo o arrasto lateral
+   inverteria; este sinal mantém os planetas da frente seguindo o dedo. */
+function _yawSentido(){return Math.cos(cam.pitch*Math.PI/180)<0?-1:1;}
 function aplicarCam(){
   orbe.style.setProperty('--yaw',cam.yaw.toFixed(2)+'deg');
   orbe.style.setProperty('--pitch',cam.pitch.toFixed(2)+'deg');
   orbe.style.setProperty('--dolly',cam.dolly.toFixed(1)+'px');
-  var longe=(Math.abs(cam.yaw)>14||Math.abs(cam.pitch)>9||Math.abs(cam.dolly-dollyBase)>60);
+  orbe.style.setProperty('--camty',cam.ty.toFixed(1)+'px');
+  var longe=(Math.abs(_angPerto(cam.yaw,0))>14||Math.abs(_angPerto(cam.pitch,0))>9||Math.abs(cam.dolly-dollyBase)>60||Math.abs(cam.ty)>24);
   btEnq.classList.toggle('viva',longe);
 }
 function rotY(v,a){var c=Math.cos(a),s=Math.sin(a);return {x:v.x*c+v.z*s,y:v.y,z:-v.x*s+v.z*c};}
@@ -45729,6 +45741,9 @@ function _conferirNaTela(){
      versao -- ela encolhia o arranjo de verdade, e o "+" (que e o mesmo
      objeto entre uma abertura e outra) ia encolhendo sem parar. */
   var fit=1,panX=0,panY=0,i;
+  /* Mede sem o deslocamento da camera (planeta tocado subido pra faixa livre):
+     o ajuste e do arranjo. O proximo aplicarCam() devolve o deslocamento. */
+  orbe.style.setProperty('--camty','0px');
   function aplicar(){
     orbe.style.setProperty('--fit',fit.toFixed(4));
     orbe.style.setProperty('--panx',panX.toFixed(1)+'px');
@@ -46011,11 +46026,11 @@ function laco(now){
     cam.yaw=alvo.de.yaw+(alvo.yaw-alvo.de.yaw)*e;
     cam.pitch=alvo.de.pitch+(alvo.pitch-alvo.de.pitch)*e;
     cam.dolly=alvo.de.dolly+(alvo.dolly-alvo.de.dolly)*e;
+    cam.ty=alvo.de.ty+(alvo.ty-alvo.de.ty)*e;
     mexeu=true;
     if(k>=1){var fim=alvo.fim;alvo=null;if(fim)fim();}
   }else if(!arrastando&&(Math.abs(vel.yaw)>0.012||Math.abs(vel.pitch)>0.012)){
     cam.yaw+=vel.yaw;cam.pitch+=vel.pitch;
-    cam.pitch=Math.max(-34,Math.min(34,cam.pitch));
     vel.yaw*=0.93;vel.pitch*=0.93;
     mexeu=true;
   }
@@ -46697,19 +46712,38 @@ function checaNome(){
 }
 
 /* ---------- selecionar / enquadrar / entrar ---------- */
-function irPara(y,p,d,dur,fim){
-  alvo={yaw:y,pitch:p,dolly:d,t0:performance.now(),dur:quieto?1:dur,
-        de:{yaw:cam.yaw,pitch:cam.pitch,dolly:cam.dolly},fim:fim};
+/* ty: deslocamento vertical da camera (ver _tyNaFaixa). Quem nao passa
+   volta pro zero: "Voltar pro centro" e o mergulho de entrar num mundo. */
+function irPara(y,p,d,dur,fim,ty){
+  alvo={yaw:y,pitch:p,dolly:d,ty:ty||0,t0:performance.now(),dur:quieto?1:dur,
+        de:{yaw:_angPerto(cam.yaw,y),pitch:_angPerto(cam.pitch,p),dolly:cam.dolly,ty:cam.ty},fim:fim};
   vel.yaw=0;vel.pitch=0;
   acordar();
 }
-function enquadrarNo(w,dist,dur,fim){
+/* Põe o planeta no eixo da câmera: o yaw zera o x dele, o pitch zera o y.
+   O pitch tinha o sinal trocado (e a trava de 34°): tocar num planeta de baixo
+   o empurrava MAIS pra baixo — no celular, pra trás da ficha (21/10/2026).
+   Depois dos dois giros ele fica a R do centro, na direção da câmera. */
+function enquadrarNo(w,dist,dur,fim,ty){
   var x=w.pos[0]*kx, y=w.pos[1]*ky, z=w.pos[2]*kz;
   var yy=Math.atan2(-x,z)*180/Math.PI;
   var r=Math.sqrt(x*x+z*z);
-  var pp=Math.atan2(-y,Math.max(40,r))*180/Math.PI;
-  pp=Math.max(-34,Math.min(34,pp));
-  irPara(yy,pp,dist-r,dur,fim);
+  var pp=Math.atan2(y,r)*180/Math.PI;
+  irPara(yy,pp,dist-Math.sqrt(r*r+y*y),dur,fim,ty);
+}
+/* No eixo da camera o planeta cai no MEIO DA TELA. No celular a ficha ocupa a
+   largura toda e cresce (editar, criar um mundo: num aparelho de 640px ela
+   cobre o meio), entao o planeta tocado sobe pro meio da faixa que sobra entre
+   o topo e a ficha. No computador a ficha fica num canto: nada muda. `dist` e
+   a profundidade em que o planeta vai parar; o deslocamento e aplicado antes
+   da perspectiva, por isso divide pelo k dela. */
+function _tyNaFaixa(dist){
+  var H=galaxia.clientHeight,W=galaxia.clientWidth;
+  if(!det.classList.contains('on')||det.offsetLeft>W/2||det.offsetLeft+det.offsetWidth<W/2)return 0;
+  var topo=document.querySelector('.gx-top'),t0=topo?topo.offsetTop+topo.offsetHeight:0;
+  var off=(t0+det.offsetTop)/2-H/2;
+  var pany=parseFloat(orbe.style.getPropertyValue('--pany'))||0;
+  return off*Math.max(60,PERSP-dist)/PERSP-pany;
 }
 function selecionar(id,mover){
   if(selId===id&&mover){ /* segundo toque no mesmo planeta = entrar */
@@ -46723,8 +46757,8 @@ function selecionar(id,mover){
   for(var i=0;i<els.length;i++)els[i].classList.toggle('sel',els[i].getAttribute('data-id')===id);
   pintarDet();
   if(mover){
-    var w=(id==='__novo__')?NOVO:W(id);
-    enquadrarNo(w,mob?150:190,480);
+    var w=(id==='__novo__')?NOVO:W(id),dist=mob?150:190;
+    enquadrarNo(w,dist,480,null,_tyNaFaixa(dist));
   }
   camSuja=true;acordar();
 }
@@ -46941,10 +46975,10 @@ function abrirGalaxia(e,opts){
      anterior (girada ou aproximada), a caixa dos planetas saia gigante, o
      arranjo encolhia ate o piso e ficava num canto, com o "Um mundo novo"
      fora da tela (jogador leigo, 17/10/2026: reabrir o ceu pelo chip). */
-  cam.yaw=0;cam.pitch=0;cam.dolly=dollyBase;aplicarCam();
+  cam.yaw=0;cam.pitch=0;cam.dolly=dollyBase;cam.ty=0;aplicarCam();
   _conferirNaTela();
   _mundosContar();
-  cam.yaw=0;cam.pitch=0;cam.dolly=dollyBase;vel.yaw=0;vel.pitch=0;alvo=null;camSuja=true;
+  cam.yaw=0;cam.pitch=0;cam.dolly=dollyBase;cam.ty=0;vel.yaw=0;vel.pitch=0;alvo=null;camSuja=true;
   galaxia.setAttribute('aria-hidden','false');
   galaxia.classList.add('abrindo');
   requestAnimationFrame(function(){
@@ -47037,9 +47071,9 @@ cena.addEventListener('pointermove',function(e){
   if(pan){
     var dx=e.clientX-pX, dy=e.clientY-pY;
     mexeuPx+=Math.abs(dx)+Math.abs(dy);
-    vel.yaw=dx*0.26;vel.pitch=-dy*0.20;
+    vel.yaw=dx*0.26*_yawSentido();vel.pitch=-dy*0.20;
     cam.yaw+=vel.yaw;
-    cam.pitch=Math.max(-34,Math.min(34,cam.pitch+vel.pitch));
+    cam.pitch+=vel.pitch;
     pX=e.clientX;pY=e.clientY;
     camSuja=true;acordar();
   }
@@ -47082,10 +47116,10 @@ document.addEventListener('keydown',function(e){
     return;
   }
   var pas=e.shiftKey?12:5;
-  if(k==='ArrowLeft'){cam.yaw-=pas;}
-  else if(k==='ArrowRight'){cam.yaw+=pas;}
-  else if(k==='ArrowUp'){cam.pitch=Math.max(-34,cam.pitch-pas*0.7);}
-  else if(k==='ArrowDown'){cam.pitch=Math.min(34,cam.pitch+pas*0.7);}
+  if(k==='ArrowLeft'){cam.yaw-=pas*_yawSentido();}
+  else if(k==='ArrowRight'){cam.yaw+=pas*_yawSentido();}
+  else if(k==='ArrowUp'){cam.pitch-=pas*0.7;}
+  else if(k==='ArrowDown'){cam.pitch+=pas*0.7;}
   else if(k==='+'||k==='='){cam.dolly=Math.min(dollyBase+430,cam.dolly+46);}
   else if(k==='-'||k==='_'){cam.dolly=Math.max(dollyBase-420,cam.dolly-46);}
   else return;
