@@ -3331,24 +3331,6 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
   border-radius:var(--radius-card);box-shadow:0 10px 40px rgba(0,0,0,0.28),0 2px 8px rgba(0,0,0,0.12);
   transition:box-shadow .15s ease,opacity .15s ease}
 .float-window .card{width:100%;height:100%;flex:1;margin:0;animation:none;display:flex;flex-direction:column}
-/* Janela sendo preenchida AO VIVO (gravação longa aberta aqui dentro).
-   Achado testando de verdade: o selo "🔴 gravando ao vivo" que o
-   setSegCardLive põe no card fica no CABEÇALHO — e a janela flutuante nasce
-   com o cabeçalho recolhido de propósito, então o único aviso de que aquele
-   card está sendo escrito neste instante não aparecia. A moldura respira no
-   mesmo compasso do ponto REC da barra (2,6s): é o mesmo sinal, na escala do
-   objeto. Só opacity — o quadro fica parado, o brilho é que vai e volta. */
-/* Amplitude medida, não chutada: a primeira versão oscilava a opacidade de
-   .9 a .28 sobre uma borda de alpha .55 — no vale dava 0,15 de alpha, ou
-   seja, a moldura SUMIA metade do tempo (visível no screenshot, não no
-   código). Agora a borda é mais firme (.72) e o respiro é mais curto
-   (1 → .58): no ponto mais fraco ainda sobra ~0,42 de alpha. */
-.float-window.fl-ao-vivo::after{content:'';position:absolute;inset:-3px;pointer-events:none;
-  border:2px solid rgba(255,59,48,.72);border-radius:calc(var(--radius-card) + 3px);
-  box-shadow:0 0 18px -5px rgba(255,59,48,.6);
-  animation:recRespiraJanela 2.6s cubic-bezier(.45,0,.55,1) infinite}
-@keyframes recRespiraJanela{0%,100%{opacity:1}50%{opacity:.58}}
-@media(prefers-reduced-motion:reduce){.float-window.fl-ao-vivo::after{animation:none;opacity:.75}}
 .float-window .cb{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .float-window .cb textarea{flex:1}
 .float-window-close{position:absolute;top:-10px;right:-10px;z-index:6;width:24px;height:24px;
@@ -10304,7 +10286,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.16';
+const VOX_VERSION='2026.10.21.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13775,8 +13757,15 @@ let colorIdx=0;
 const PALETTE=8;
 const COST_W=0.006,COST_G=0.10/60,COST_GQ=0.04/60;
 const CHUNK_SR=16000,CHUNK_SEC=600;
-const SEG_MS=10*60*1000; // gravação longa: rotaciona o gravador a cada 10 min
-let segTimer=null,segCard=null,segIndex=0,segTotalSec=0,segSn='',segMode='livre',segProv='';
+// Nome e modo da sessão no instante em que a gravação começou (vão na cópia de
+// segurança). Até 21/10/2026 o botão principal cortava a gravação a cada 10 min
+// e mandava cada pedaço sozinho pro Whisper, num card que nascia vazio no meio
+// da gravação — fora da fila de pendentes, sem áudio no card e sem tela de
+// processamento. Se o pedaço falhava, a fala sumia (relato do Rafa, 21/10: perdeu
+// uma gravação importante assim). Agora toda gravação vai inteira, como a de
+// Separar vozes já ia: na fila do aparelho primeiro, e o doTranscribe fatia em
+// blocos de 10 min quando o arquivo passa do limite do provedor.
+let segSn='',segMode='livre';
 let sessionMode='livre';
 // Quem chega pela primeira vez abre no Masonry (decisão do Rafa, plano 27),
 // e todo mundo criado daqui pra frente também. Quem já usava e nunca trocou
@@ -14611,12 +14600,12 @@ let _gravNaFilaId=null,_gravJaAvisada=false;
 // silencioso: é a rede de segurança ANTES de transcrever (processAudio). Nesse caso o
 // cartão "ficou guardada" não aparece — a gravação está sendo transcrita agora e,
 // se tudo der certo, sai da fila sozinha; ele só aparece se a transcrição falhar.
-async function _pendenteGuardar(file,durSec,sn,mode,silencioso){
+async function _pendenteGuardar(file,durSec,sn,mode,silencioso,idFixo){
   // Quem chama aqui já mostra o próprio aviso de "ficou guardada".
   if(_gravNaFilaId){_gravJaAvisada=true;return _gravNaFilaId}
   try{
     const lista=(await _idbGetBruto(_PEND_IDB))||[];
-    const id='p'+Date.now()+Math.random().toString(36).slice(2,6);
+    const id=idFixo||('p'+Date.now()+Math.random().toString(36).slice(2,6));
     // Mundo de origem + cifra do cofre: uma consulta de um mundo trancado não pode
     // ficar em claro no aparelho, nem virar nota em outro mundo.
     let buf=await file.arrayBuffer();
@@ -19544,10 +19533,6 @@ function _flAbrirCard(id,origemEl,posFixa){
   _flMontarAlcaCalendario(card);
   _flRotularAlcas(card);
   world.appendChild(win);
-  // O card pode chegar aqui JÁ ao vivo: na gravação longa ele nasce e é
-  // aberto no mesmo quadro, antes de setSegCardLive marcar a janela (que
-  // ainda não existia). O selo no card é a fonte da verdade dos dois lados.
-  if(document.getElementById('seglive-'+id))win.classList.add('fl-ao-vivo');
   // Janela flutuante nasce sempre recolhida (cabeçalho E rodapé) — título +
   // texto, o resto atrás dos dois triângulos — não importa o estado que o
   // card tinha na lista.
@@ -31325,7 +31310,6 @@ function forceReset(){
   document.querySelectorAll('.card audio').forEach(a=>{a.closest('.card-audio')?.remove()});
   // 2. Para gravação se estiver rolando
   if(MR){try{MR.stop()}catch(e){}}
-  if(segTimer){clearInterval(segTimer);segTimer=null}
   if(dispStream){try{dispStream.getTracks().forEach(t=>t.stop())}catch(e){}dispStream=null}
   if(mixCtx){try{mixCtx.close()}catch(e){}mixCtx=null}
   micRelease();
@@ -35208,16 +35192,25 @@ function _gravBackupArmar(){
 }
 async function _gravBackupSalvar(){
   if(!isRec||!MR||!_gravBackupId)return;
+  const id=_gravBackupId,dur=Math.floor((Date.now()-recStart)/1000);
   try{
     const tipo=MR.mimeType||'audio/webm';
     let buf=await new Blob(MR._buf,{type:tipo}).arrayBuffer();
     const cifrado=!!(_mundoTrancado(_mundoAtivo)&&_cofreChave);
     if(cifrado)buf=await _cofreCifrarBuf(buf);
-    // Sem Separar vozes a gravação é cortada em pedaços (os anteriores já viraram
-    // texto): a cópia guarda o pedaço atual, com a duração dele.
-    await _idbSetBruto(_GRAV_BACKUP_IDB,{id:_gravBackupId,buf,tipo,nome:'gravacao.'+(tipo.includes('mp4')?'mp4':'webm'),
-      dur:Math.floor((Date.now()-recStart)/1000)-(_gravDiarInteira?0:segTotalSec),sn:segSn||'',mode:segMode||'livre',mundo:_mundoAtivo,cifrado,diar:_gravDiarInteira});
+    // A gravação parou enquanto a cópia era montada: ela já está a caminho da
+    // fila de pendentes, e gravar a cópia agora a ressuscitaria depois de apagada
+    // (no próximo boot viraria uma segunda nota igual).
+    if(_gravBackupId!==id)return;
+    await _idbSetBruto(_GRAV_BACKUP_IDB,{id,buf,tipo,nome:'gravacao.'+(tipo.includes('mp4')?'mp4':'webm'),
+      dur,sn:segSn||'',mode:segMode||'livre',mundo:_mundoAtivo,cifrado,diar:_gravDiarInteira});
   }catch(e){}
+}
+// A cópia só sai quando a gravação já está na fila de pendentes (processAudio):
+// apagar no clique de Parar deixava um instante em que a fala não estava em
+// lugar nenhum. Se outra gravação já começou, a cópia é dela e fica.
+function _gravBackupSoltar(id){
+  if(id&&!_gravBackupId)_idbSetBruto(_GRAV_BACKUP_IDB,null).catch(()=>{});
 }
 function _gravBackupDesarmar(apagar){
   clearInterval(_gravBackupIv);clearTimeout(_gravBackupPrim);_gravBackupIv=null;_gravBackupId='';_gravDiarInteira=false;
@@ -35284,13 +35277,12 @@ async function startRec(targetCardId=null,targetTA=null){
   }
   try{
     const stream=await getCaptureStream();curStream=stream;
-    // Separação de vozes (AssemblyAI e cia.): a gravação vai INTEIRA, sem o corte de
-    // 10 min. O corte (28/06) existe pra gravação longa não estourar a memória e cabe
-    // no limite do Whisper — mas cortar aqui mandava cada pedaço pro Whisper, sem
-    // vozes, e a consulta longa nunca chegava na AssemblyAI. Em troca: qualidade de
-    // voz (32 kbps, ~15 MB por hora) e cópia de segurança a cada minuto.
+    // O botão principal grava INTEIRO, em qualidade de voz (32 kbps, ~15 MB por
+    // hora): uma hora cabe num envio só ao Whisper/Groq (limite de 25 MB) e na
+    // memória do celular. Com Separar vozes já era assim; sem, era cortado a cada
+    // 10 min e podia perder a fala (ver segSn). "Gravar aqui" segue como sempre.
     _gravDiarInteira=!targetCardId&&!targetTA&&_diarVaiRodar();
-    MR=makeRecorder(stream,_gravDiarInteira?32000:0);
+    MR=makeRecorder(stream,!targetCardId&&!targetTA?32000:0);
     MR.start(100);recStart=Date.now();isRec=true;_encGravNova();
     if(!targetCardId&&!targetTA)setTimeout(_encTelaAbrir,60);
     // Feedback tátil ao iniciar (Android; iOS/desktop ignoram silenciosamente).
@@ -35316,10 +35308,7 @@ async function startRec(targetCardId=null,targetTA=null){
     _flAbrirNoProximoCard=(!targetCardId&&!targetTA&&_mapaAberto());
     document.querySelector('.ibar')?.classList.add('rec-on');
     closeSheet(); // FASE 1: começar a gravar fecha o sheet recolhido (mobile) automaticamente
-    segCard=null;segIndex=0;segTotalSec=0;
-    segSn=document.getElementById('snameInput').value.trim();segMode=sessionMode;segProv=cfg.provider;
-    if(segTimer){clearInterval(segTimer);segTimer=null}
-    if(!targetCardId&&!_gravDiarInteira)segTimer=setInterval(rotateSegment,SEG_MS); // só o botão principal rotaciona
+    segSn=document.getElementById('snameInput').value.trim();segMode=sessionMode;
     // Cópia de segurança em TODA gravação (antes só com Separar vozes): recarregar ou
     // fechar a aba no meio perdia a fala sem aviso (persona Bia, 18/10/2026; motor
     // de gravação liberado pelo Rafa). A caixinha do chat (targetTA) fica de fora.
@@ -35353,93 +35342,25 @@ function stopRec(){
   const elapsed=Math.floor((Date.now()-recStart)/1000);
   _encGravFim();
   clearInterval(recTimer);stopVU();
-  if(segTimer){clearInterval(segTimer);segTimer=null}
-  // A gravação vai pra fila do aparelho (processAudio) na hora: a cópia de segurança sai.
-  _gravBackupDesarmar(true);
+  // A cópia de segurança para de ser atualizada, mas só sai do aparelho quando
+  // a gravação já estiver na fila de pendentes (processAudio → _gravBackupSoltar).
+  const bkId=_gravBackupId;
+  _gravBackupDesarmar(false);
   document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
-  if(segCard!==null){
-    // Gravação longa: transcreve o último segmento e finaliza o card em andamento
-    const finishCard=segCard;
-    const lastSec=Math.max(1,elapsed-segTotalSec);segTotalSec=elapsed;
-    const blob=new Blob(MR._buf,{type:MR.mimeType||'audio/webm'});
-    try{MR.stop()}catch(e){}
-    stopCapture();
-    handleSegment(blob,lastSec,finishCard,true);
-    segCard=null;resetUI();
-  }else{
-    // Gravação curta: fluxo normal (cria card ou insere no textarea ativo)
-    try{MR.stop()}catch(e){}stopCapture();
-    const mime=MR.mimeType||'audio/webm';const ext=mime.includes('mp4')?'mp4':'webm';
-    const blob=new Blob(MR._buf,{type:mime});
-    const file=new File([blob],'rec_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.'+ext,{type:mime});
-    resetUI();processAudio(file,elapsed,true);
-  }
-}
-function rotateSegment(){
-  if(!isRec||!MR||!curStream)return;
-  const now=Math.floor((Date.now()-recStart)/1000);
-  const thisSec=Math.max(1,now-segTotalSec);segTotalSec=now;
-  if(segCard===null){
-    segCard=addCard('',null,0,'gravacao',segProv,true,null,null,[],segSn,segMode,false);
-    setSegCardLive(segCard,true);
-    stats.count++;updateStats();
-  }
-  const old=MR;
-  const blob=new Blob(old._buf,{type:old.mimeType||'audio/webm'});
-  MR=makeRecorder(curStream);MR.start(100); // reinicia já capturando, mic nunca fecha
-  try{old.stop()}catch(e){}
-  handleSegment(blob,thisSec,segCard,false);
-}
-async function handleSegment(blob,durSec,cardId,isFinal){
-  const idx=++segIndex;
-  const key=segProv==='grok'?cfg.apiKeyGrok:segProv==='groqwhisper'?cfg.apiKeyGroq:segProv==='local'?'local':cfg.apiKey;
-  try{
-    setStatus(t('Transcrevendo parte {n}…').replace('{n}',idx),'proc');
-    const ext=blob.type.includes('mp4')?'mp4':'webm';
-    const file=new File([blob],'seg'+idx+'.'+ext,{type:blob.type});
-    const text=(await txChunk(file,key)).trim();
-    const cpm=segProv==='grok'?COST_G:segProv==='groqwhisper'?COST_GQ:COST_W;
-    const cost=Math.max(1,Math.ceil(durSec/60))*cpm;
-    appendSegmentText(cardId,text,cost,durSec);
-  }catch(e){
-    toast(t('❌ Parte {n} falhou:').replace('{n}',idx)+' '+e.message,true);
-  }finally{
-    if(isFinal){
-      setSegCardLive(cardId,false);
-      if(!isProc)setStatus('Pronto','ready');
-      if(cfg.apiKeyGroq||cfg.apiKey)setTimeout(()=>suggestTags(cardId,true),600);
-    }
-  }
-}
-function appendSegmentText(id,text,cost,durSec){
-  const card=document.getElementById(id);if(!card)return;
-  const ta=card.querySelector('textarea');
-  if(ta&&text){const cur=ta.value;const sep=cur&&!/\s$/.test(cur)?' ':'';ta.value=cur+sep+text;autoR(ta);}
-  const newCost=parseFloat(card.dataset.cost||'0')+cost;card.dataset.cost=newCost;
-  updateFooter(id);
-  const words=(text||'').split(/\s+/).filter(w=>w).length;
-  stats.sec+=durSec;stats.words=(stats.words||0)+words;
-  updateStats();saveHistory();
-}
-function setSegCardLive(id,on){
-  const card=document.getElementById(id);if(!card)return;
-  let b=document.getElementById('seglive-'+id);
-  if(on){
-    if(!b){b=document.createElement('span');b.className='badge proc';b.id='seglive-'+id;b.textContent=t('🔴 gravando ao vivo');card.querySelector('.ch-left')?.appendChild(b);}
-  }else if(b){b.remove();}
-  // Se este card estiver aberto como janela flutuante (gravação longa feita
-  // com o Fluxograma/Órbita aberto), a moldura dela é quem mostra o "ao vivo"
-  // — o selo acima mora no cabeçalho, que a janela recolhe ao nascer.
-  card.closest('.float-window')?.classList.toggle('fl-ao-vivo',!!on);
+  // Curta ou de uma hora, o caminho é um só: card com o áudio, ou o texto no
+  // textarea ativo. Nunca mais um card vazio no meio da gravação.
+  try{MR.stop()}catch(e){}stopCapture();
+  const mime=MR.mimeType||'audio/webm';const ext=mime.includes('mp4')?'mp4':'webm';
+  const blob=new Blob(MR._buf,{type:mime});
+  const file=new File([blob],'rec_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.'+ext,{type:mime});
+  resetUI();processAudio(file,elapsed,true,bkId);
 }
 function cancelRec(){
   if(!isRec||!MR)return;
   _flAbrirNoProximoCard=false; // cancelou: o próximo card a nascer não tem nada a ver com esta gravação
   _encGrav=null;_encPendente=null;document.getElementById('encMarcaPop')?.remove();_encTelaFechar();
-  if(segTimer){clearInterval(segTimer);segTimer=null}
   _gravBackupDesarmar(true);
   try{MR.stop()}catch(e){}stopCapture();clearInterval(recTimer);stopVU();chunks=[];
-  if(segCard!==null){const c=document.getElementById(segCard);if(c)c.remove();segCard=null;saveHistory()}
   document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
   resetUI();activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;toast(t('🚫 Gravação cancelada.'));
 }
@@ -35448,7 +35369,6 @@ function resetUI(){
   isRec=false;MR=null;curStream=null;chunks=[];recStart=null;
   _ibarDragDepth=0;_showAudioDrop(false);
   document.querySelector('.ibar')?.classList.remove('rec-on');
-  if(segTimer){clearInterval(segTimer);segTimer=null}
   document.getElementById('itxt').disabled=false;document.getElementById('itxt').placeholder=t('Digite ou 📎 anexe um áudio…');
   document.getElementById('ibox').classList.remove('rec');document.getElementById('vuWrap').classList.remove('on');
   const _vm=document.getElementById('vuMarcaBtn');if(_vm)_vm.hidden=true;
@@ -35498,16 +35418,21 @@ function sendTxt(){
 // errado, fica lá e é tentada de novo sozinha: ao abrir o app, ao voltar a
 // internet e ao salvar as configurações (_pendentesProcessar).
 // Arquivo anexado fica de fora: ele continua existindo no aparelho da pessoa.
-async function processAudio(file,durSec,fromRec){
+// bkId: a cópia de segurança desta gravação (stopRec). A fila guarda com o MESMO
+// id, então se a aba morrer entre uma e outra a recuperação não duplica a nota.
+async function processAudio(file,durSec,fromRec,bkId){
   if(!fromRec)return _processAudio(file,durSec,fromRec);
   const sn=document.getElementById('snameInput').value.trim();
-  const id=await _pendenteGuardar(file,durSec,sn,sessionMode,true);
+  const id=await _pendenteGuardar(file,durSec,sn,sessionMode,true,bkId);
+  if(id&&id===bkId)_gravBackupSoltar(bkId);
   let ok=false;
   _gravNaFilaId=id||null;_gravJaAvisada=false;
   if(id)_pendOcupadas.add(id);
   try{ok=await _processAudio(file,durSec,fromRec)}
   finally{_gravNaFilaId=null}
-  if(!id)return ok;
+  // A fila recusou guardar (aparelho cheio): a cópia segue sendo a única garantia
+  // até virar texto — se não virar, o próximo boot a recupera.
+  if(!id){if(ok===true)_gravBackupSoltar(bkId);return ok}
   try{if(ok===true)await _pendenteTirar(id)}
   finally{_pendOcupadas.delete(id)}
   if(ok===true)_pendentesProcessar();
@@ -35619,7 +35544,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
           r=await splitChunksFFmpeg(file,pid,key);
         }
       }else{
-        r=await splitChunks(file,pid,key);
+        r=await splitChunks(file,pid,key,fromRec?durSec:0);
       }
       text=r.text;actualSec=r.sec;
       // Aqui a duração é MEDIDA (o áudio foi decodificado pra ser fatiado),
@@ -42939,10 +42864,8 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
   if(save){saveHistory();renderFolders();applyFolderFilter()}
   // Card nascido de uma gravação feita com o Fluxograma/Órbita aberto: em vez
   // de ficar escondido na lista atrás do mapa, ele abre como janela flutuante
-  // ali mesmo (mesmo caminho do botão "+" da barra de cima). Serve aos dois
-  // fluxos de graça, porque os dois passam por aqui: a gravação curta (card
-  // pronto no fim) e a longa (card nasce vazio na 1ª rotação e vai sendo
-  // preenchido ao vivo, com o selo "🔴 gravando ao vivo" do setSegCardLive).
+  // ali mesmo (mesmo caminho do botão "+" da barra de cima), quando o texto
+  // chega no fim da gravação.
   // type==='gravacao' é a trava fina: se a pessoa criar um card pelo "+"
   // enquanto grava, a bandeira não é gasta com ele — aquele botão já abre a
   // própria janela sozinho.
@@ -45202,8 +45125,12 @@ async function extractAudioTrack(file,pid){
 // menos que isso) no caminho nativo, que e o rapido. So audio de hora ou mais
 // cai no FFmpeg: mais lento, porem seguro — e com barra de progresso.
 const PCM_NATIVO_MAX=32*1024*1024;
-async function splitChunks(file,pid,key){
-  if(file.size>PCM_NATIVO_MAX)return await splitChunksFFmpeg(file,pid,key);
+// A gravação do botão principal sai em 32 kbps (startRec): ali 32MB são mais de
+// 2 horas, e o PCM disso passaria de 450MB. Pra gravação, quem decide é a duração
+// medida: os mesmos ~35 min que 32MB representam num áudio comum.
+const PCM_NATIVO_MAX_SEG=35*60;
+async function splitChunks(file,pid,key,durSec){
+  if(file.size>PCM_NATIVO_MAX||(durSec||0)>PCM_NATIVO_MAX_SEG)return await splitChunksFFmpeg(file,pid,key);
   setPL(pid,t('Decodificando áudio…'));
   try{
     const ab=await file.arrayBuffer();const ac=new AudioContext({sampleRate:CHUNK_SR});
