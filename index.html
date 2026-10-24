@@ -5380,6 +5380,14 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 }
 @keyframes voxMaisBrilho{0%{box-shadow:0 0 0 0 rgba(255,204,0,0)}40%{box-shadow:0 0 0 4px rgba(255,204,0,.6)}100%{box-shadow:0 0 0 0 rgba(255,204,0,0)}}
 #btnNewCard.mais-pulo{animation:voxMaisPulo 420ms both}
+/* Botão "Colar o que você copiou" do card novo no toque (_botaoColarNoCard):
+   a mesma pastilha do "+", com o ícone amarelo. Altura mínima de 44px pro
+   dedo. Na miniatura do Mural não aparece: lá o card é só leitura. */
+.cb-colar{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;margin:2px 0 8px;min-height:44px;padding:10px 16px;border:0;border-radius:12px;background:#1d1d1f;color:#f5f5f7;font:600 14px var(--font);cursor:pointer;-webkit-user-select:none;user-select:none}
+.cb-colar .svgi{font-size:17px;color:#ffcc00}
+[data-theme="dark"] .cb-colar{background:#3a3a3c}
+[data-theme="dark"] .cb-colar .svgi{color:#ffd60a}
+.cards.masonry.masonry-preview .card .cb-colar{display:none}
 @media(prefers-reduced-motion:reduce){#btnNewCard.mais-pulo{animation:voxMaisBrilho 600ms ease-in-out both}}
 @media(max-width:640px){
   /* max-height:none PISA na regra de cima (calc(100vh - 150px)) — sem isto
@@ -10333,7 +10341,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.24.2';
+const VOX_VERSION='2026.10.24.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -12836,6 +12844,7 @@ let I18N_EN={
 "Baixar o áudio":"Download the audio",
 "Áudio baixado. Ele continua guardado aqui até virar texto.":"Audio downloaded. It stays saved here until it becomes text.",
 "Não consegui transformar em texto agora. Sua gravação ficou guardada: o botão no alto da lista transforma em texto quando a internet voltar.":"I couldn't turn it into text right now. Your recording was saved: the button at the top of the list turns it into text when the internet is back.",
+"Colar o que você copiou":"Paste what you copied",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -34217,21 +34226,41 @@ function _irParaCardNovo(cid){
 }
 // O "+" da barra de status. No mouse (Windows/Mac) é o de sempre,
 // newEmptyCard(). No toque (celular/iPad), pedido do Rafa em 23/10/2026
-// ("abrir o app, tocar no + e colar o link"): o card abre já com o cursor e o
-// app pede o que foi copiado — no iPhone aparece a bolha "Colar" do próprio
-// sistema (não dá pra pular). Tocou nela, o card ganha o link/texto/foto,
-// como o Ctrl+V do computador (_pasteSemCardCriaNovo). Não tocou, o card já
-// está pronto pra escrever.
-// Nada aqui pode ir pra um setTimeout/await antes do foco e da leitura: o
-// iPhone só abre o teclado e só deixa ler a área de transferência DENTRO do
-// toque. Era por isso que o card novo nascia sem teclado (o foco vinha 300 ms
-// depois, em _irParaCardNovo).
+// ("abrir o app, tocar no + e colar o link"): o card abre já com o cursor e,
+// dentro dele, o botão "Colar o que você copiou" (_botaoColarNoCard).
+// Na primeira versão (24/10) o "+" já pedia a área de transferência e o
+// iPhone mostrava a bolha "Colar" logo no toque — o Rafa achou confuso:
+// "nem todo mundo vai querer criar um card novo pra simplesmente colar".
+// Agora o "+" só abre o card; colar é escolha de quem quer.
+// O foco não pode ir pra um setTimeout: o iPhone só abre o teclado com o
+// foco DENTRO do toque. Era por isso que o card novo nascia sem teclado (o
+// foco vinha 300 ms depois, em _irParaCardNovo).
 function novoCardDoMais(){
   if(!_voxToque()){newEmptyCard();return}
   const cid=newEmptyCard(true);
+  _botaoColarNoCard(cid);
   _irParaCardNovoToque(cid);
   toast(t('✏️ Card novo criado — escreva, grave ou anexe!'));
-  _colarNoCardNovo(cid);
+}
+// Botão "Colar o que você copiou" no topo do card novo do toque. Some na
+// primeira letra digitada e quando a colagem entra. Não é salvo (saveHistory
+// lê o texto da caixa, não o HTML do card) e não aparece na miniatura do
+// Mural. Tocar nele pede a área de transferência: no iPhone ainda aparece a
+// bolha "Colar" do sistema por cima — é a regra da Apple pra ler o que veio
+// de outro app, não dá pra pular.
+function _botaoColarNoCard(cid){
+  const card=document.getElementById(cid);
+  const cb=card&&card.querySelector('.cb');
+  const ta=cb&&cb.querySelector('textarea');
+  if(!ta||cb.querySelector('.cb-colar'))return;
+  const b=document.createElement('button');
+  b.type='button';b.className='cb-colar';
+  b.innerHTML='<span class="svgi">'+ICO.clipboard+'</span>'+escHtml(t('Colar o que você copiou'));
+  // Sem isto o toque no botão tiraria o cursor da caixa e fecharia o teclado.
+  b.addEventListener('mousedown',e=>e.preventDefault());
+  b.addEventListener('click',e=>{e.stopPropagation();_colarNoCardNovo(cid,()=>b.remove())});
+  cb.insertBefore(b,cb.firstChild);
+  ta.addEventListener('input',()=>b.remove(),{once:true});
 }
 function _irParaCardNovoToque(cid){
   const el=document.getElementById(cid);if(!el)return;
@@ -34248,12 +34277,12 @@ function _irParaCardNovoToque(cid){
   if(ta)try{ta.focus({preventScroll:true})}catch(e){ta.focus()}
 }
 // Lê a área de transferência (precisa ser chamada dentro do toque) e põe no
-// card recém-criado: link solto vira etiqueta, texto vai pra caixa, foto vai
-// pra tira — mesma regra do colar no computador. Recusou, veio vazio ou o
-// navegador não deixa: não faz nada, o card continua aberto pra escrever.
+// card: link solto vira etiqueta, texto vai pra caixa, foto vai pra tira —
+// mesma regra do colar dentro de um card no computador. Recusou, veio vazio
+// ou o navegador não deixa: não faz nada, o card continua pronto pra escrever.
 // read() antes de readText() porque só ele traz foto; chamar os dois
 // mostraria a bolha duas vezes, então é um OU o outro.
-function _colarNoCardNovo(cid){
+function _colarNoCardNovo(cid,aoColar){
   const cb=navigator.clipboard;
   let leitura=null;
   try{
@@ -34281,14 +34310,8 @@ function _colarNoCardNovo(cid){
       ta.value=cur+sep+texto;
       autoR(ta);updateFooter(cid);saveHistory();
     }
-    if(img)_anexarUmaImagem(cid,img).then(()=>saveHistory());
-    // Colou: fecha o teclado pra pessoa ver o que entrou no card.
-    if(ta&&document.activeElement===ta)ta.blur();
-    toastDesfazer(t('📋 Card criado a partir do que você copiou'),()=>{
-      const naJanela=!!document.getElementById('floatwin-'+cid);
-      doDelete(cid);
-      if(naJanela)_flFecharJanela(cid);
-    });
+    if(img)_anexarUmaImagem(cid,img).then(chave=>{if(chave){_pulsarConfirmacaoFoto(cid);saveHistory()}});
+    if(aoColar)aoColar();
   }).catch(()=>{});
 }
 // Efeito de abertura do "+" (só no toque; CSS em #btnNewCard.mais-pulo).
