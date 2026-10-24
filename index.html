@@ -10304,7 +10304,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.19.16';
+const VOX_VERSION='2026.10.24.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -27870,10 +27870,19 @@ function _chromeAutoHideBlocked(){
 // baixo) e mostrar (>8px pra cima, ou perto do topo) fazem o gesto de voltar
 // parecer mais sensível que o de sumir, do jeito que se espera nesse padrão
 // de UI (bars que somem ao rolar).
-let _chLastY=window.scrollY,_chAccum=0,_chTicking=false;
+let _chLastY=window.scrollY,_chAccum=0,_chTicking=false,_chQuietoAte=0;
 function _chromeScrollTick(){
   _chTicking=false;
   const y=window.scrollY;
+  // Esconder/mostrar o topo muda a altura da página, e a rolagem se mexe
+  // sozinha: o navegador compensa (âncora de rolagem) ou a rolagem bate no fim
+  // da página que encolheu. Isso não é o dedo. Lido como dedo, esconder virava
+  // "rolou pra cima" → mostrar → "rolou pra baixo" → esconder… várias vezes
+  // por segundo — o tremido que o Rafa viu no iPhone (24/10/2026; medido no
+  // Chromium a 390px: 50 a 90 trocas numa rolagem de 2 s, desde que o topo
+  // passou de 41 pra 74px de altura). Enquanto o topo anima (250 ms), a
+  // rolagem é ignorada; ver _chQuieto.
+  if(performance.now()<_chQuietoAte){_chLastY=y;_chAccum=0;return}
   const dy=y-_chLastY;
   _chLastY=y;
   if(!window.matchMedia('(max-width:640px)').matches){
@@ -27888,13 +27897,24 @@ function _chromeScrollTick(){
   if((dy>0&&_chAccum<0)||(dy<0&&_chAccum>0))_chAccum=0; // mudou de direção
   _chAccum+=dy;
   const hidden=document.body.classList.contains('chrome-hidden');
-  if(!hidden&&dy>0&&_chAccum>24&&y>80&&!_chromeAutoHideBlocked()){
+  if(!hidden&&dy>0&&_chAccum>24&&y>80&&_chSobraPraEsconder()&&!_chromeAutoHideBlocked()){
     document.body.classList.add('chrome-hidden');
-    _chAccum=0;
+    _chAccum=0;_chQuieto();
   }else if(hidden&&((dy<0&&_chAccum<-8)||y<40)){
     document.body.classList.remove('chrome-hidden');
-    _chAccum=0;
+    _chAccum=0;_chQuieto();
   }
+}
+// Pausa a leitura da rolagem enquanto o topo anima e confere de novo no fim:
+// se a página encolheu e a rolagem foi parar lá em cima, o topo volta (sem
+// isto ficava escondido até o próximo gesto).
+function _chQuieto(){_chQuietoAte=performance.now()+400;setTimeout(_onChromeScroll,420)}
+// Página curta: com o topo escondido sobrariam menos de 120px pra rolar e a
+// rolagem bateria no topo, trazendo ele de volta — nem esconde.
+function _chSobraPraEsconder(){
+  let topo=0;
+  for(const q of ['header','.stats','#docBar']){const e=document.querySelector(q);if(e)topo+=e.offsetHeight}
+  return document.documentElement.scrollHeight-window.innerHeight-topo>120;
 }
 function _onChromeScroll(){
   if(_chTicking)return;
