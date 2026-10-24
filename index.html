@@ -5353,6 +5353,34 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .stat-folders-btn:hover{background:var(--border2);color:var(--text)}
 .stat-folders-btn.folders-on{background:var(--accent-glow);color:var(--accent)}
 #btnNewCard svg{color:#4f9dff}
+/* "+" do card novo no TOQUE (celular/iPad): pastilha escura com o "+"
+   amarelo (pedido do Rafa, 23/10/2026). Amarelo direto no fundo claro dá
+   1,3–1,5:1 e reprova o mínimo de ícone (3:1, WCAG 1.4.11); o azul de antes
+   também reprovava ali (2,2:1 sobre a pastilha cinza). Medido: #ffcc00 sobre
+   #1d1d1f dá 11,1:1. No escuro a pastilha clareia (#3a3a3c, senão some no
+   fundo #131315) e o #ffd60a dá 8,0:1. pointer:coarse é o mesmo teste do
+   _voxToque(): no mouse (Windows/Mac) nada muda — lá o "+" funciona e o Rafa
+   pediu pra não mexer. :hover entra junto porque no toque ele gruda depois
+   do toque e devolveria o cinza do .stat-folders-btn:hover. */
+@media(pointer:coarse){
+  #btnNewCard,#btnNewCard:hover{background:#1d1d1f;color:#f5f5f7}
+  #btnNewCard svg{color:#ffcc00}
+  [data-theme="dark"] #btnNewCard,[data-theme="dark"] #btnNewCard:hover{background:#3a3a3c}
+  [data-theme="dark"] #btnNewCard svg{color:#ffd60a}
+}
+/* Efeito de abertura (_maisPulo): cresce até 122% em 150 ms, encolhe pra 94%
+   em 110 ms e volta a 100% em 160 ms — 420 ms, uma vez ("gostosinho, mas
+   simples"). Com "Reduzir movimento" não cresce: um brilho amarelo de 4 px
+   acende e apaga em 600 ms. Números da proposta "O + que cola". */
+@keyframes voxMaisPulo{
+  0%{transform:scale(1);animation-timing-function:cubic-bezier(.2,.7,.3,1)}
+  35.7%{transform:scale(1.22);animation-timing-function:cubic-bezier(.4,0,.6,1)}
+  61.9%{transform:scale(.94);animation-timing-function:cubic-bezier(.2,.7,.3,1)}
+  100%{transform:scale(1)}
+}
+@keyframes voxMaisBrilho{0%{box-shadow:0 0 0 0 rgba(255,204,0,0)}40%{box-shadow:0 0 0 4px rgba(255,204,0,.6)}100%{box-shadow:0 0 0 0 rgba(255,204,0,0)}}
+#btnNewCard.mais-pulo{animation:voxMaisPulo 420ms both}
+@media(prefers-reduced-motion:reduce){#btnNewCard.mais-pulo{animation:voxMaisBrilho 600ms ease-in-out both}}
 @media(max-width:640px){
   /* max-height:none PISA na regra de cima (calc(100vh - 150px)) — sem isto
      a gaveta do celular, que já é top:0;bottom:0 (topo a fundo, moldura
@@ -7167,6 +7195,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
      pro dedo, é a área que responde ao toque. */
   .stat-folders-btn::after{content:'';position:absolute;inset:-10px}
 }
+@media(max-width:640px) and (pointer:coarse){#btnNewCard{padding:7px 10px}}
 
 /* ── FASE 2 — auto-esconder header/.stats/#docBar ao rolar pra baixo (só
    mobile). JS (ver "_onChromeScroll" no script principal) decide QUANDO
@@ -8668,7 +8697,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   <div class="stat" id="statAvg" style="display:none" title="Duração média de cada gravação" data-i18n-title><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg></span> <strong id="sAvg">—</strong> <span data-i18n>média</span></div>
   <div class="stat" id="statSaved" style="display:none">⚡ <strong id="sSaved">0 min</strong> <span data-i18n>economizados</span></div>
   <div class="stats-ctrls">
-    <button class="stat-folders-btn" id="btnNewCard" onclick="newEmptyCard()" title="Criar card novo em branco" data-i18n-title>
+    <button class="stat-folders-btn" id="btnNewCard" onclick="novoCardDoMais()" title="Criar card novo em branco" data-i18n-title>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span data-i18n>Novo card</span>
     </button>
@@ -10304,7 +10333,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.24.1';
+const VOX_VERSION='2026.10.24.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -34186,6 +34215,107 @@ function _irParaCardNovo(cid){
     if(el){el.scrollIntoView({behavior:'smooth',block:'center'});const ta=el.querySelector('textarea');if(ta)setTimeout(()=>ta.focus(),300)}
   }
 }
+// O "+" da barra de status. No mouse (Windows/Mac) é o de sempre,
+// newEmptyCard(). No toque (celular/iPad), pedido do Rafa em 23/10/2026
+// ("abrir o app, tocar no + e colar o link"): o card abre já com o cursor e o
+// app pede o que foi copiado — no iPhone aparece a bolha "Colar" do próprio
+// sistema (não dá pra pular). Tocou nela, o card ganha o link/texto/foto,
+// como o Ctrl+V do computador (_pasteSemCardCriaNovo). Não tocou, o card já
+// está pronto pra escrever.
+// Nada aqui pode ir pra um setTimeout/await antes do foco e da leitura: o
+// iPhone só abre o teclado e só deixa ler a área de transferência DENTRO do
+// toque. Era por isso que o card novo nascia sem teclado (o foco vinha 300 ms
+// depois, em _irParaCardNovo).
+function novoCardDoMais(){
+  if(!_voxToque()){newEmptyCard();return}
+  const cid=newEmptyCard(true);
+  _irParaCardNovoToque(cid);
+  toast(t('✏️ Card novo criado — escreva, grave ou anexe!'));
+  _colarNoCardNovo(cid);
+}
+function _irParaCardNovoToque(cid){
+  const el=document.getElementById(cid);if(!el)return;
+  if(viewMode==='doc'){_irParaCardNovo(cid);return}
+  const cl=document.getElementById('cardsList');
+  if(cl&&cl.classList.contains('masonry-preview')&&cl.contains(el)){
+    // Mural no toque: o card novo nasceria como miniatura só de leitura
+    // (CSS .masonry-preview) — e o cursor ia parar nela, num card que não
+    // aceita toque. Abre direto a janela, como o toque na miniatura faria.
+    _flAcoplarCamada(document.body);
+    _flAbrirCard(cid,el);
+  }else el.scrollIntoView({behavior:'smooth',block:'center'});
+  const ta=el.querySelector('textarea');
+  if(ta)try{ta.focus({preventScroll:true})}catch(e){ta.focus()}
+}
+// Lê a área de transferência (precisa ser chamada dentro do toque) e põe no
+// card recém-criado: link solto vira etiqueta, texto vai pra caixa, foto vai
+// pra tira — mesma regra do colar no computador. Recusou, veio vazio ou o
+// navegador não deixa: não faz nada, o card continua aberto pra escrever.
+// read() antes de readText() porque só ele traz foto; chamar os dois
+// mostraria a bolha duas vezes, então é um OU o outro.
+function _colarNoCardNovo(cid){
+  const cb=navigator.clipboard;
+  let leitura=null;
+  try{
+    if(cb&&cb.read)leitura=cb.read().then(async itens=>{
+      let img=null,texto='';
+      for(const it of itens){
+        const ti=it.types.find(x=>x.indexOf('image/')===0);
+        if(ti&&!img){const b=await it.getType(ti);img=new File([b],'colado.'+(ti.split('/')[1]||'png'),{type:ti})}
+        if(!texto&&it.types.includes('text/plain'))texto=await (await it.getType('text/plain')).text();
+      }
+      return {img,texto};
+    });
+    else if(cb&&cb.readText)leitura=cb.readText().then(texto=>({img:null,texto}));
+  }catch(e){}
+  if(!leitura)return;
+  leitura.then(({img,texto})=>{
+    const card=document.getElementById(cid);if(!card)return;
+    texto=(texto||'').trim();
+    if(!img&&!texto)return;
+    const ta=card.querySelector('textarea');
+    if(texto&&/^https?:\/\/\S+$/.test(texto))_anexarLink(cid,texto); // já chama saveHistory()
+    else if(texto&&ta){
+      pushCardHistory(cid);
+      const cur=ta.value;const sep=cur.length>0&&cur[cur.length-1]!=='\n'?'\n':'';
+      ta.value=cur+sep+texto;
+      autoR(ta);updateFooter(cid);saveHistory();
+    }
+    if(img)_anexarUmaImagem(cid,img).then(()=>saveHistory());
+    // Colou: fecha o teclado pra pessoa ver o que entrou no card.
+    if(ta&&document.activeElement===ta)ta.blur();
+    toastDesfazer(t('📋 Card criado a partir do que você copiou'),()=>{
+      const naJanela=!!document.getElementById('floatwin-'+cid);
+      doDelete(cid);
+      if(naJanela)_flFecharJanela(cid);
+    });
+  }).catch(()=>{});
+}
+// Efeito de abertura do "+" (só no toque; CSS em #btnNewCard.mais-pulo).
+// Espera a tela principal ficar livre — vídeo, céu de mundos, pedido do
+// microfone, balão, aviso, gravação, topo escondido pela rolagem — e roda
+// 300 ms depois (dois testes seguidos livres). Uma vez por abertura, e de novo
+// quando a pessoa volta pro app depois de 5 min fora (o Vox na tela inicial do
+// iPhone costuma voltar do fundo sem recarregar).
+let _maisPuloFora=0;
+function _maisPulo(tent,livreAntes){
+  if(!_voxToque())return;
+  tent=tent||0;if(tent>200)return;
+  const b=document.getElementById('btnNewCard');if(!b)return;
+  const ocupado=document.hidden||(typeof isRec!=='undefined'&&isRec)||!b.offsetParent
+    ||document.body.classList.contains('chrome-hidden')||_chromeAutoHideBlocked()
+    ||document.getElementById('toastWrap')?.classList.contains('on')
+    ||!!document.querySelector('#galaxia.on,#dicaBalao');
+  if(ocupado||!livreAntes){setTimeout(()=>_maisPulo(tent+1,!ocupado),300);return}
+  b.classList.remove('mais-pulo');void b.offsetWidth;b.classList.add('mais-pulo');
+  setTimeout(()=>b.classList.remove('mais-pulo'),700);
+}
+window.addEventListener('load',()=>_maisPulo());
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){_maisPuloFora=Date.now();return}
+  if(_maisPuloFora&&Date.now()-_maisPuloFora>=5*60*1000)_maisPulo();
+  _maisPuloFora=0;
+});
 // ── Anexar aqui: arquivo externo (áudio→transcreve, texto→insere) NO card ──
 function attachHere(cid){
   if(isRec||isProc||stagedFile)return;
