@@ -763,6 +763,9 @@ header.has-speed-badge{padding-bottom:18px}
 .medir-lista b{display:block;font-size:12.5px;color:var(--text);margin-bottom:4px}
 .medir-lista ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--text2);line-height:1.6}
 .medir-par{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+/* No celular a pergunta é mais alta que a janelinha e os dois botões sumiam
+   embaixo. Ficam presos no pé, à vista; o texto rola por trás (27/10/2026). */
+.ob-body .medir-par{position:sticky;bottom:0;z-index:1;background:var(--bg-card);padding-top:8px;box-shadow:0 24px 0 var(--bg-card)}
 .medir-op{background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:13px;padding:13px 8px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:border-color 140ms,transform 120ms cubic-bezier(0.22,1,0.36,1)}
 .medir-op:hover{border-color:var(--accent)}
 .medir-op:active{transform:scale(0.97)}
@@ -10360,7 +10363,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.27.1';
+const VOX_VERSION='2026.10.27.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -29305,7 +29308,11 @@ function toggleHdMore(){
   d.style.left=left+'px';
   d.style.right='auto';
   d.style.width=w+'px';
-  d.style.maxHeight=(window.innerHeight-br.bottom-24)+'px';
+  // Termina acima da barra de gravação: ela fica por cima do menu e escondia o
+  // último item ("Contar meu uso"), mesmo rolando até o fim (27/10/2026).
+  const ib=document.querySelector('.ibar-inner'),ibr=ib?ib.getBoundingClientRect():null;
+  const piso=ibr&&ibr.height&&ibr.top>br.bottom+160?ibr.top-8:window.innerHeight-16;
+  d.style.maxHeight=(piso-br.bottom-8)+'px';
   d.style.overflowY='auto';
   // Brotar: a escala nasce do centro do ⋯, onde quer que ele esteja
   d.style.setProperty('--hm-ox',(br.left+br.width/2-left)+'px');
