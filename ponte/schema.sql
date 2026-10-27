@@ -71,7 +71,10 @@ CREATE TABLE IF NOT EXISTS landing_dias (
   visitas INTEGER NOT NULL DEFAULT 0,
   visitantes INTEGER NOT NULL DEFAULT 0,
   clique_gratis INTEGER NOT NULL DEFAULT 0,
-  clique_assinar INTEGER NOT NULL DEFAULT 0
+  clique_assinar INTEGER NOT NULL DEFAULT 0,
+  -- Desde 08/10/2026: pessoas que clicaram (uma vez por visitante por dia).
+  pessoas_gratis INTEGER NOT NULL DEFAULT 0,
+  pessoas_assinar INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS landing_origens (
   dia TEXT NOT NULL,
@@ -83,5 +86,36 @@ CREATE TABLE IF NOT EXISTS landing_vis (
   dia TEXT NOT NULL,
   hash TEXT NOT NULL,
   eventos INTEGER NOT NULL DEFAULT 0,
+  alvos TEXT NOT NULL DEFAULT '', -- em que botões este visitante já clicou hoje
   PRIMARY KEY (dia, hash)
+);
+
+-- Medição opcional do uso do app (08/10/2026). Só de quem disse "sim" no app.
+-- `id` é um código sorteado só pra isto (não é o da cortesia). Nenhum texto,
+-- áudio, nome ou e-mail. As três primeiras tabelas somem 90 dias depois do
+-- último uso, e na hora se a pessoa desligar a medição no app.
+-- (A ponte também cria estas tabelas e colunas sozinha no primeiro uso.)
+CREATE TABLE IF NOT EXISTS uso_aparelhos (
+  id TEXT PRIMARY KEY,
+  primeiro TEXT NOT NULL,
+  ultimo TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS uso_ativos (
+  id TEXT NOT NULL,
+  dia TEXT NOT NULL,
+  n INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (id, dia)
+);
+CREATE TABLE IF NOT EXISTS uso_marcos (
+  id TEXT NOT NULL,
+  passo TEXT NOT NULL,
+  dia TEXT NOT NULL,
+  PRIMARY KEY (id, passo)
+);
+-- Totais por dia e por evento, de todo mundo somado (não dizem de quem são).
+CREATE TABLE IF NOT EXISTS uso_eventos (
+  dia TEXT NOT NULL,
+  evento TEXT NOT NULL,
+  n INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (dia, evento)
 );

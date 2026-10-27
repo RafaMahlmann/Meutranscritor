@@ -37,7 +37,9 @@ E informa ao app quantos **dias de Pro de presente** quem começa a usar ganha
 A landing (voxcharmai.com) avisa a ponte quando a página abre e quando alguém
 clica em "Comece grátis" ou "Assinar" (`POST /v1/landing/evento`). Sem cookie e
 sem código de terceiros. Fica guardado só:
-- totais por dia: visitas, visitantes únicos, cliques em cada botão;
+- totais por dia: visitas, visitantes únicos, cliques em cada botão e pessoas
+  que clicaram em cada botão (uma vez por visitante por dia, desde 08/10/2026:
+  antes, uma pessoa que clicava 3 vezes fazia a taxa passar de 100%);
 - de que site a visita veio (ou o `utm_source` do link), uma vez por visitante;
 - o endereço de internet embaralhado com o dia, pra contar visitante único e
   frear abuso (60 eventos por endereço por dia). Apagado no dia seguinte.
@@ -45,6 +47,30 @@ sem código de terceiros. Fica guardado só:
 Robôs conhecidos são ignorados. O painel junta isso com a cortesia num funil:
 visitaram → clicaram em "Comece grátis" → usaram a cortesia → conectaram a
 própria chave. As vendas ficam no painel do Freemius.
+
+## Medição opcional do uso do app (08/10/2026)
+
+Só de quem respondeu "sim" à pergunta do app ("Podemos contar como você usa o
+Vox?", com "Sim" e "Não" do mesmo tamanho; muda no menu ⋯ › "Contar meu uso").
+Sem cookie, sem Google, sem terceiros. O app manda `POST /v1/uso/eventos` só
+com **nomes** de eventos de uma lista fechada (a ponte confere de novo e
+ignora o resto) e o dia:
+`abriu`, `gravou`, `arquivo`, `lente:<nome da lente do app>` (lente criada pela
+pessoa vira `lente:propria`), `chave`, `presente_inicio`, `presente_fim`,
+`tela_pro`, `assinou`, `limite_gravacao`, `limite_arquivo`,
+`limite_diarizacao`, `limite_pasta`, `limite_recurso_pro`.
+
+O aparelho entra com um código sorteado só pra isto (não é o da cortesia). Fica:
+- `uso_aparelhos`: o código, o primeiro e o último dia contado;
+- `uso_ativos`: em que dias ele abriu o app (é o que mostra quem volta);
+- `uso_marcos`: a primeira vez em cada passo do funil;
+- `uso_eventos`: totais por dia e por evento, de todo mundo somado.
+
+As três primeiras somem 90 dias depois do último uso, e na hora se a pessoa
+desligar no app (`POST /v1/uso/apagar`). Os totais por dia ficam. O endereço de
+internet não é usado aqui. O painel mostra: quantos disseram sim, quem abriu em
+7 e 30 dias, onde as pessoas param no funil, quem volta na semana 1, 2 e 3,
+lentes mais usadas e limites do grátis batidos.
 
 ## Por que a conta não chega
 
@@ -100,6 +126,8 @@ Depois, o endereço publicado (`https://vox-ponte.<conta>.workers.dev`) entra em
 - `POST /v1/cortesia/formou` `{aparelho}` → "este aparelho conectou a própria chave".
 - `POST /v1/cortesia/lente` `{aparelho, messages, max_tokens, temperature}` → resposta no formato do OpenAI (`choices[0].message.content`) + `{restantes, ultima}`. Recusa: `esgotada` (402), `teto_dia`/`limite_ip`/`ocupado` (429), `grande` (413).
 - `POST /v1/landing/evento` `{tipo:"visita",origem}` ou `{tipo:"clique",alvo:"gratis"|"assinar"}` → medição da landing (só aceita a origem voxcharmai.com).
+- `POST /v1/uso/eventos` `{id, eventos:[{e, dia}]}` (até 50 por pedido, 400 por código por dia) → medição opcional do app.
+- `POST /v1/uso/apagar` `{id}` → apaga tudo deste código (a pessoa desligou a medição).
 - `GET /painel` → painel (com senha).
 
 Só aceita pedidos com `Origin` do app (`ORIGENS` no `wrangler.toml`) ou de
