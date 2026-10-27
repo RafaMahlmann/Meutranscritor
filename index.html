@@ -7410,6 +7410,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
                 <span class="hdm-txt"><span class="hdm-t">Vox Pro</span><span class="hdm-sub" id="proMenuSub"></span></span>
               </button>
             </div>
+            <div class="hdm-item">
+              <button class="hdm-linha" id="btnMedir" onclick="_hdMoreFechar();_medAlternar()" title="Contar meu uso (anônimo)" data-i18n-title>
+                <span class="hdm-bolha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg></span>
+                <span class="hdm-txt"><span class="hdm-t" data-i18n>Contar meu uso (anônimo)</span><span class="hdm-sub" id="medirMenuSub"></span></span>
+              </button>
+            </div>
           </div>
           <div class="hdm-grupo" style="--i:4;--hm-cor:var(--hm-ajuda)">
             <div class="hdm-sep"></div>
@@ -9124,7 +9130,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.07.8';
+const VOX_VERSION='2026.10.27.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -12302,6 +12308,73 @@ function _cortesiaGuardadaModal(motivo,guardou){
 // aqui já usou o Groq pela cortesia — a escolha óbvia é o próprio Groq. Uma
 // tela a menos entre "quero" e "colei" (achado da simulação de 07/10/2026).
 function _obAbrirNaChave(){_obOpen();_obData.pularEscolha=true;if(_obTemTela(2))_obGo(2)}
+// ── MEDIÇÃO OPCIONAL E ANÔNIMA (07/10/2026, decisão do Rafa) ──
+// Só com "sim" explícito (pergunta única, botões iguais). Conta NOMES do que a
+// pessoa faz ("gravou", "lente:decisoes", "abriu:gratis"), nunca conteúdo: sem
+// áudio, sem texto, sem nome de nota, sem chave. Sem cookie e sem terceiros:
+// vai só pra ponte do Vox (/v1/uso/evento), em lote. "Não" ou sem resposta =
+// nada é enviado. Desliga a qualquer hora no menu Mais. Explicado na
+// Privacidade (#usage).
+const _MED_CHAVE='vox_medir'; // 'sim' | 'nao' | ausente = ainda não perguntou
+function _medirLigado(){try{return localStorage.getItem(_MED_CHAVE)==='sim'}catch(e){return false}}
+let _medFila=[],_medTimer=null;
+function medir(ev){
+  if(!_medirLigado()||!_ponteUrl())return;
+  _medFila.push(String(ev).toLowerCase().replace(/[^a-z0-9_:]/g,'_').slice(0,55));
+  clearTimeout(_medTimer);_medTimer=setTimeout(_medEnviar,4000);
+}
+function _medEnviar(){
+  clearTimeout(_medTimer);
+  if(!_medFila.length)return;
+  if(!_medirLigado()){_medFila=[];return}
+  const eventos=_medFila.splice(0,40);
+  try{fetch(_ponteUrl()+'/v1/uso/evento',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({aparelho:_aparelhoId(),eventos})}).catch(()=>{})}catch(e){}
+  if(_medFila.length)_medTimer=setTimeout(_medEnviar,1000);
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_medEnviar()});
+function _medPlano(){return _proLicencaAtiva()?'pro':_presenteAtivo()?'presente':'gratis'}
+// "Abriu o app": uma vez por dia — é o que mostra quem volta.
+function _medAbriu(){
+  if(!_medirLigado())return;
+  const d=_diaLocal();if(localStorage.getItem('vox_medir_abriu')===d)return;
+  localStorage.setItem('vox_medir_abriu',d);medir('abriu:'+_medPlano());
+}
+// A pergunta vem uma vez, depois da 2ª transcrição que deu certo: a pessoa já
+// viu o app funcionar e entende o que está sendo pedido. Nunca por cima de outra janela.
+function _medTalvezPerguntar(){
+  if(localStorage.getItem(_MED_CHAVE))return;
+  const n=parseInt(localStorage.getItem('vox_medir_ok')||'0',10)+1;
+  localStorage.setItem('vox_medir_ok',String(n));
+  if(n<2)return;
+  setTimeout(()=>{
+    if(localStorage.getItem(_MED_CHAVE))return;
+    const aberto=[...document.querySelectorAll('.overlay')].some(o=>o.classList.contains('on')||getComputedStyle(o).display!=='none');
+    if(!aberto)_medPerguntar(); // tinha outra janela aberta: pergunta na próxima transcrição
+  },2500);
+}
+function _medPerguntar(){
+  _cortesiaModal(`<h2 class="ob-h">${t('Uma pergunta rápida')}</h2>
+    <p class="ob-p">${t('Podemos contar como você usa o Vox? Só os nomes do que você faz (por exemplo "gravou" ou "usou a lente Decisões & Ações") e se você está no grátis ou no Pro.')}</p>
+    <p class="ob-p">${t('Nunca o áudio, nunca o texto, nunca o seu nome. Sem cookie e sem empresa de fora: vai só para o Vox, e serve para saber o que melhorar. Você pode desligar quando quiser, no menu Mais.')}</p>
+    <p class="ob-note"><a href="privacy.html#usage" target="_blank" rel="noopener noreferrer">${t('O que exatamente é contado')}</a></p>
+    <div class="med-botoes"><button class="ob-btn-ghost med-btn" onclick="_medResponder('sim')">${t('Sim, pode contar')}</button><button class="ob-btn-ghost med-btn" onclick="_medResponder('nao')">${t('Não, obrigado')}</button></div>`);
+}
+function _medResponder(r){
+  localStorage.setItem(_MED_CHAVE,r==='sim'?'sim':'nao');
+  _cortesiaFechar();_medMenu();
+  if(r==='sim'){toast(t('Obrigado! Dá pra desligar quando quiser, no menu Mais.'));_medAbriu()}
+  else{_medFila=[];toast(t('Tudo bem: nada será contado.'))}
+}
+function _medAlternar(){
+  if(_medirLigado()){localStorage.setItem(_MED_CHAVE,'nao');_medFila=[];_medMenu();toast(t('Contagem desligada: nada mais será enviado.'))}
+  else _medPerguntar();
+}
+function _medMenu(){
+  const s=document.getElementById('medirMenuSub');if(!s)return;
+  const v=localStorage.getItem(_MED_CHAVE);
+  s.textContent=v==='sim'?t('Ligado · toque pra desligar'):v==='nao'?t('Desligado · toque pra ver e ligar'):t('Desligado · você ainda não respondeu');
+}
+
 // ── LENTES por nossa conta (07/10/2026) ──
 // O presente da cortesia passou a incluir algumas lentes: sem elas, quem chega
 // pela promessa "o Vox pensa com você" via só a transcrição (o que todo app faz)

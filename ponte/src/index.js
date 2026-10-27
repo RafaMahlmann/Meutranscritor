@@ -85,6 +85,7 @@ export default {
         if (url.pathname === '/v1/cortesia/transcrever') return await transcrever(request, env, origem);
         if (url.pathname === '/v1/cortesia/formou') return await formou(request, env, origem);
         if (url.pathname === '/v1/cortesia/lente') return await lente(request, env, origem);
+        if (url.pathname === '/v1/uso/evento') return await usoEvento(request, env, origem);
         // (A licença do Freemius NÃO passa por aqui: o app fala direto com a API deles.)
         return json({ ok: false, motivo: 'pedido_invalido' }, 404, origem);
       }
@@ -318,6 +319,93 @@ async function lente(request, env, origem) {
   return json({ ok: true, restantes, ultima: restantes === 0, choices: [{ message: { role: 'assistant', content: texto }, finish_reason: 'stop' }] }, 200, origem);
 }
 
+// ── Uso dentro do app: OPCIONAL e anônimo (07/10/2026, decisão do Rafa) ─────
+// Só chega aqui de quem respondeu "sim" à pergunta do app. Recebe NOMES de
+// evento ("gravou", "lente:decisoes", "abriu:gratis"…), nunca conteúdo: sem
+// áudio, sem texto, sem nome, sem e-mail. O aparelho é o mesmo código sorteado
+// da cortesia. O endereço de internet não é guardado. Serve pra responder:
+// quem volta na semana seguinte, que lentes valem, onde as pessoas travam.
+// Linhas de aparelho sem uso há mais de 400 dias são apagadas.
+const EVENTOS_USO = new Set(['abriu', 'gravou', 'lente', 'chave_conectada', 'presente_comecou', 'presente_acabou',
+  'trava', 'pro_aberto', 'assinar_clique', 'revisao', 'pergunta']);
+const RE_EVENTO = /^[a-z_]{2,24}(:[a-z0-9_]{1,30})?$/;
+const USO_MAX_DIA = 300; // eventos por aparelho por dia (passou disso, ignora calado)
+let _tabelasUsoOk = false;
+async function garantirTabelasUso(env) {
+  if (_tabelasUsoOk) return;
+  await env.DB.batch([
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS uso_dias (dia TEXT NOT NULL, evento TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (dia, evento))'),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS uso_aparelhos (id TEXT PRIMARY KEY, primeiro TEXT NOT NULL, ultimo TEXT NOT NULL,
+      dia_eventos TEXT, eventos_dia INTEGER NOT NULL DEFAULT 0)`),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS uso_ativos (id TEXT NOT NULL, dia TEXT NOT NULL, PRIMARY KEY (id, dia))'),
+  ]);
+  _tabelasUsoOk = true;
+}
+async function usoEvento(request, env, origem) {
+  const corpo = await request.json().catch(() => null);
+  const aparelho = String(corpo?.aparelho || '');
+  if (!RE_APARELHO.test(aparelho) || !Array.isArray(corpo?.eventos)) return json({ ok: false, motivo: 'pedido_invalido' }, 400, origem);
+  const evs = {};
+  let total = 0;
+  for (const e of corpo.eventos.slice(0, 40)) {
+    const t = String(e || '');
+    if (!RE_EVENTO.test(t) || !EVENTOS_USO.has(t.split(':')[0])) continue;
+    evs[t] = (evs[t] || 0) + 1;
+    total++;
+  }
+  if (!total) return json({ ok: true }, 200, origem);
+  await garantirTabelasUso(env);
+  const dia = hoje();
+  const ap = await env.DB.prepare('SELECT dia_eventos, eventos_dia FROM uso_aparelhos WHERE id = ?').bind(aparelho).first();
+  const jaHoje = ap && ap.dia_eventos === dia ? ap.eventos_dia : 0;
+  if (jaHoje + total > USO_MAX_DIA) return json({ ok: true }, 200, origem);
+  const stmts = [
+    env.DB.prepare(`INSERT INTO uso_aparelhos (id, primeiro, ultimo, dia_eventos, eventos_dia) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET ultimo = excluded.ultimo,
+        eventos_dia = CASE WHEN dia_eventos = excluded.dia_eventos THEN eventos_dia + excluded.eventos_dia ELSE excluded.eventos_dia END,
+        dia_eventos = excluded.dia_eventos`).bind(aparelho, dia, dia, dia, total),
+    env.DB.prepare('INSERT OR IGNORE INTO uso_ativos (id, dia) VALUES (?, ?)').bind(aparelho, dia),
+  ];
+  for (const [ev, n] of Object.entries(evs)) {
+    stmts.push(env.DB.prepare('INSERT INTO uso_dias (dia, evento, n) VALUES (?, ?, ?) ON CONFLICT(dia, evento) DO UPDATE SET n = n + excluded.n').bind(dia, ev, n));
+  }
+  // De vez em quando, apaga o que passou de 400 dias sem uso.
+  if (Math.random() < 0.02) {
+    const corte = new Date(Date.now() - 3 * 3600e3 - 400 * 864e5).toISOString().slice(0, 10);
+    stmts.push(env.DB.prepare('DELETE FROM uso_ativos WHERE dia < ?').bind(corte));
+    stmts.push(env.DB.prepare('DELETE FROM uso_aparelhos WHERE ultimo < ?').bind(corte));
+  }
+  await env.DB.batch(stmts);
+  return json({ ok: true }, 200, origem);
+}
+// Números do painel: quem disse sim, quem está ativo, quem volta (por semana de chegada).
+async function lerUso(env, dia) {
+  await garantirTabelasUso(env);
+  const d = (n) => new Date(Date.parse(dia + 'T12:00:00Z') - n * 864e5).toISOString().slice(0, 10);
+  const um = async (sql, ...b) => (await env.DB.prepare(sql).bind(...b).first()) || {};
+  const total = (await um('SELECT COUNT(*) AS n FROM uso_aparelhos')).n || 0;
+  const hojeN = (await um('SELECT COUNT(*) AS n FROM uso_ativos WHERE dia = ?', dia)).n || 0;
+  const n7 = (await um('SELECT COUNT(DISTINCT id) AS n FROM uso_ativos WHERE dia >= ?', d(6))).n || 0;
+  const n30 = (await um('SELECT COUNT(DISTINCT id) AS n FROM uso_ativos WHERE dia >= ?', d(29))).n || 0;
+  const eventos = (await env.DB.prepare('SELECT evento, SUM(n) AS n FROM uso_dias WHERE dia >= ? GROUP BY evento ORDER BY n DESC').bind(d(29)).all()).results || [];
+  // Volta por semana: de cada aparelho que chegou nas últimas 8 semanas, em quais semanas depois ele apareceu.
+  const linhas = (await env.DB.prepare(`SELECT a.id, a.primeiro, u.dia FROM uso_aparelhos a JOIN uso_ativos u ON u.id = a.id WHERE a.primeiro >= ?`).bind(d(55)).all()).results || [];
+  const porAp = {};
+  for (const r of linhas) {
+    const sem = Math.floor((Date.parse(r.dia) - Date.parse(r.primeiro)) / (7 * 864e5));
+    (porAp[r.id] ||= { primeiro: r.primeiro, semanas: new Set() }).semanas.add(sem);
+  }
+  const coortes = {};
+  for (const a of Object.values(porAp)) {
+    const ini = new Date(Date.parse(a.primeiro + 'T12:00:00Z'));
+    const seg = new Date(ini.getTime() - ((ini.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10); // segunda-feira da semana
+    const c = (coortes[seg] ||= { n: 0, volta: [0, 0, 0, 0] });
+    c.n++;
+    for (let k = 1; k <= 4; k++) if (a.semanas.has(k)) c.volta[k - 1]++;
+  }
+  return { total, hojeN, n7, n30, eventos, coortes };
+}
+
 // ── Medição da landing ──────────────────────────────────────────────────────
 // A landing (voxcharmai.com) avisa a ponte de duas coisas: "alguém abriu a
 // página" e "alguém clicou em Comece grátis / Assinar". Sem cookie e sem
@@ -430,10 +518,11 @@ async function painel(request, env, url) {
   const lentesHoje = (await env.DB.prepare('SELECT * FROM lentes_dias WHERE dia = ?').bind(dia).first()) || {};
   const lentes30 = (await env.DB.prepare('SELECT SUM(usos) AS usos, SUM(aparelhos) AS aparelhos FROM lentes_dias WHERE dia >= ?')
     .bind(new Date(Date.now() - 3 * 3600e3 - 29 * 864e5).toISOString().slice(0, 10)).first()) || {};
+  const uso = await lerUso(env, dia);
   const landing = (await env.DB.prepare('SELECT * FROM landing_dias ORDER BY dia DESC LIMIT 30').all()).results || [];
   const origens = (await env.DB.prepare("SELECT origem, SUM(n) AS n FROM landing_origens WHERE dia >= ? GROUP BY origem ORDER BY n DESC LIMIT 12")
     .bind(new Date(Date.now() - 3 * 3600e3 - 29 * 864e5).toISOString().slice(0, 10)).all()).results || [];
-  return new Response(htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, salvo: url.searchParams.has('salvo'), temChave: !!env.GROQ_KEY }), {
+  return new Response(htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, uso, salvo: url.searchParams.has('salvo'), temChave: !!env.GROQ_KEY }), {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
@@ -444,7 +533,47 @@ async function painel(request, env, url) {
   });
 }
 
-function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, salvo, temChave }) {
+// Nome que o Rafa lê no painel pra cada evento do app.
+const NOME_EVENTO = {
+  'abriu:gratis': 'Abriram o app (plano grátis)', 'abriu:presente': 'Abriram o app (no presente de Pro)', 'abriu:pro': 'Abriram o app (Pro pago)',
+  gravou: 'Gravações que viraram texto', chave_conectada: 'Conectaram a própria chave',
+  presente_comecou: 'Começaram o presente de Pro', presente_acabou: 'Presente de Pro acabou',
+  pro_aberto: 'Abriram a tela do Pro (pelo botão)', assinar_clique: 'Clicaram em "Assinar" dentro do app',
+  revisao: 'Usaram a Revisão (Pro)', pergunta: 'Usaram o Pergunte às suas notas (Pro)',
+};
+function nomeEvento(ev) {
+  if (NOME_EVENTO[ev]) return NOME_EVENTO[ev];
+  const [base, det] = ev.split(':');
+  if (base === 'lente') return `Lente: ${det}`;
+  if (base === 'trava') return `Bateram na trava do grátis: ${det}`;
+  if (base === 'pro_aberto') return `Abriram a tela do Pro (pela trava: ${det})`;
+  return ev;
+}
+function htmlUso(uso) {
+  const p = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—');
+  const br = (d) => String(d).split('-').reverse().join('/');
+  const coortes = Object.entries(uso.coortes).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  const linhasCoorte = coortes.map(([seg, c]) => `<tr><td>${esc(br(seg))}</td><td>${c.n}</td>${c.volta.map((v) => `<td>${p(v, c.n)}</td>`).join('')}</tr>`).join('')
+    || '<tr><td colspan="6" class="vazio">Ainda ninguém aceitou a medição.</td></tr>';
+  const linhasEv = uso.eventos.map((e) => `<tr><td>${esc(nomeEvento(e.evento))}</td><td>${e.n}</td></tr>`).join('')
+    || '<tr><td colspan="2" class="vazio">Sem dados ainda.</td></tr>';
+  return `<div class="card">
+  <h2>Uso dentro do app (só de quem disse "sim")</h2>
+  <div class="grid">
+    <div class="card"><div class="leg">Aceitaram a medição</div><div class="num">${uso.total}</div></div>
+    <div class="card"><div class="leg">Usaram hoje</div><div class="num">${uso.hojeN}</div></div>
+    <div class="card"><div class="leg">Usaram nos últimos 7 dias</div><div class="num">${uso.n7}</div></div>
+    <div class="card"><div class="leg">Usaram nos últimos 30 dias</div><div class="num">${uso.n30}</div></div>
+  </div>
+  <h2 style="margin-top:16px">Quem volta (por semana em que chegou)</h2>
+  <div class="rolar"><table><thead><tr><th>Chegou na semana de</th><th>Aparelhos</th><th>Voltou na 1ª semana</th><th>2ª</th><th>3ª</th><th>4ª</th></tr></thead><tbody>${linhasCoorte}</tbody></table></div>
+  <h2 style="margin-top:16px">O que fizeram (30 dias)</h2>
+  <div class="rolar"><table><thead><tr><th>O quê</th><th>Vezes</th></tr></thead><tbody>${linhasEv}</tbody></table></div>
+  <p class="leg" style="margin-top:12px"><strong>Como ler:</strong> "voltou na 1ª semana" é a pergunta mais importante do produto. Se pouca gente volta, o problema é a primeira experiência, não o preço. Só entra aqui quem respondeu "sim" no app; nenhum texto ou áudio é contado.</p>
+</div>`;
+}
+
+function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, uso, salvo, temChave }) {
   const minHoje = Math.round((hojeRow.segundos || 0) / 60);
   const pct = aj.teto_minutos_dia ? Math.min(100, Math.round((minHoje / aj.teto_minutos_dia) * 100)) : 100;
   const p = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—');
@@ -496,8 +625,8 @@ ${aj.ligada ? '' : '<div class="alerta">A cortesia está desligada. Ninguém nov
   <h2>O funil dos últimos 30 dias</h2>
   <div class="grid">
     <div class="card"><div class="leg">Visitaram a landing</div><div class="num">${fVis}</div></div>
-    <div class="card"><div class="leg">Clicaram em "Comece grátis"</div><div class="num">${fGratis}</div><div class="leg">${p(fGratis, fVis)} dos visitantes</div></div>
-    <div class="card"><div class="leg">Usaram a cortesia</div><div class="num">${fCortesia}</div><div class="leg">${p(fCortesia, fGratis)} dos cliques</div></div>
+    <div class="card"><div class="leg">Cliques em "Comece grátis"</div><div class="num">${fGratis}</div><div class="leg">a mesma pessoa pode clicar mais de uma vez</div></div>
+    <div class="card"><div class="leg">Usaram a cortesia</div><div class="num">${fCortesia}</div><div class="leg">${p(fCortesia, fVis)} dos visitantes</div></div>
     <div class="card"><div class="leg">Usaram uma lente (o "pensa com você")</div><div class="num">${lentes30.aparelhos || 0}</div><div class="leg">${p(lentes30.aparelhos || 0, fCortesia)} de quem usou a cortesia</div></div>
     <div class="card"><div class="leg">Conectaram a própria chave</div><div class="num">${fChave}</div><div class="leg">${p(fChave, fCortesia)} de quem usou</div></div>
     <div class="card"><div class="leg">Clicaram em "Assinar"</div><div class="num">${fAssinar}</div><div class="leg">${p(fAssinar, fVis)} dos visitantes</div></div>
@@ -511,6 +640,8 @@ ${aj.ligada ? '' : '<div class="alerta">A cortesia está desligada. Ninguém nov
   <div class="barra${pct >= 80 ? ' alto' : ''}"><i style="width:${pct}%"></i></div>
   <p class="leg">O Groq grátis dá até 480 minutos por dia e 120 por hora. Quando o teto chega, a ponte para e quem grava vê que a cortesia de hoje acabou. Não gera cobrança.</p>
 </div>
+
+${htmlUso(uso)}
 
 <div class="card">
   <h2>Lentes por nossa conta</h2>
