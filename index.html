@@ -2607,14 +2607,46 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    configurar, fluxograma, orbita, calendario, nova pasta, recolher --
    rola junto com a lista e sai de cena depois de uns 40px de rolagem,
    num painel que pode rolar centenas de px. Fica sem esses botoes na tela
-   quase o tempo todo. Ela precisa ficar fixa no topo. */
+   quase o tempo todo. Ela precisa ficar fixa no topo.
+   z-index 4, não 3: a bolinha de cor da pasta (.folder-dot-btn) também é 3
+   e, vindo depois, passava por cima do título ao rolar a lista — e podia
+   roubar o toque do "+" de criar pasta (achado em 28/10/2026). */
 .folder-head{display:flex;align-items:center;justify-content:space-between;
-  padding:2px 6px 9px;position:sticky;top:0;z-index:3;background:var(--bg-card)}
+  padding:2px 6px 9px;position:sticky;top:0;z-index:4;background:var(--bg-card)}
 .folder-head-title{font-size:12px;font-weight:700;letter-spacing:0.3px;color:var(--text3);text-transform:uppercase}
 .folder-head-link{border:none;background:none;font-family:inherit;padding:4px 6px;margin:-4px -6px;border-radius:8px;cursor:pointer;transition:color .15s,background .15s,transform .12s}
 .folder-head-link:hover{color:var(--accent);background:var(--accent-glow)}
 .folder-head-link:active{transform:scale(.94)}
 .folder-head-link:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* "+" de criar pasta colado no título (proposta "Título e voo", escolhida
+   pelo Rafa em 28/10/2026): a mesma pastilha escura com "+" amarelo do
+   "+ Novo card", em miniatura (20 px), no lugar onde Notion, Slack e Gmail
+   põem o "criar" de uma seção — e longe do globo dos Mundos. Contraste: no
+   claro o + dá 11,1:1 e a pastilha contra o painel 16,8:1; no escuro o +
+   dá 8,0:1 e o contorno 3,4:1. Com mouse, levanta 1 px e o + gira 90° com
+   mola; apertar afunda pra 92%; o clique dá a mola e a bolinha da pasta
+   nova voa até a linha (_folderVoaBolinha). A margem -6px do título com o
+   gap de 6px põe o + logo depois do respiro do título, sem sobrepor. */
+.folder-head-tgrp{display:inline-flex;align-items:center;gap:6px;flex:none}
+.folder-head-mais{flex:none;position:relative;width:20px;height:20px;padding:0;border:0;border-radius:6px;
+  background:#1d1d1f;color:#ffcc00;display:grid;place-items:center;cursor:pointer;
+  transition:background-color .18s var(--fc-curva),translate .18s var(--fc-curva),scale .08s ease-out,box-shadow .18s var(--fc-curva)}
+.folder-head-mais svg{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+[data-theme="dark"] .folder-head-mais{background:#3a3a3c;color:#ffd60a;box-shadow:inset 0 0 0 1px rgba(255,214,10,.45)}
+@media(hover:hover){
+  .folder-head-mais:hover{background:#2c2c2e;translate:0 -1px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  [data-theme="dark"] .folder-head-mais:hover{background:#48484a;box-shadow:inset 0 0 0 1px rgba(255,214,10,.45),0 2px 6px rgba(0,0,0,.45)}
+  .folder-head-mais:hover svg{transform:rotate(90deg)}
+}
+.folder-head-mais:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.folder-head-mais:focus-visible svg{transform:rotate(90deg)}
+.folder-head-mais:active{scale:.92}
+.folder-head-mais.mola{animation:mwMola .32s cubic-bezier(.34,1.56,.64,1)}
+/* No toque a área de toque cresce pra cima e pra baixo (44 px de altura);
+   pros lados não, senão roubaria o toque do título e do ícone vizinho. */
+@media(pointer:coarse){.folder-head-mais::after{content:'';position:absolute;inset:-12px 0}}
+.folder-voa-dot{position:fixed;width:11px;height:11px;border-radius:50%;z-index:10001;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.folder-cor-dot.espera{opacity:0}
 .folder-collapse-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px;display:flex;border-radius:7px;transition:all var(--transition)}
 .folder-collapse-btn:hover{background:var(--bg-input);color:var(--text2)}
 .folder-dl-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px;display:flex;border-radius:7px;transition:all var(--transition)}
@@ -5445,6 +5477,20 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    mostrava MENOS do nome da pasta numa tela maior (achado pelo Rafa). */
 @media(min-width:641px) and (max-width:1024px){
   .folders-bar{width:244px}
+  /* Com o "+" ao lado do título (28/10/2026) a fileira do topo não cabia
+     nos 244 px do painel: em inglês ("FOLDERS"), no mundo Consultas
+     ("PESSOAS") e quando a lista tem barra de rolagem (Windows, janela
+     estreita), o globo dos Mundos espremia e o "+" encostava no ícone de
+     baixar. O espaço vem do respiro dos lados (8 px) e de 4 px a menos em
+     cada ícone, fora o globo (24 px), que continua quadrado. Sobrando
+     espaço, o space-between devolve a folga entre os ícones. */
+  .folder-head{padding-left:2px;padding-right:2px}
+  .folder-head>button:not(#btnFolderMundos){padding-left:1px;padding-right:1px}
+}
+/* O mesmo no celular estreito (320 px): a gaveta tem 256 px. */
+@media(max-width:360px){
+  .folder-head{padding-left:2px;padding-right:2px}
+  .folder-head>button:not(#btnFolderMundos){padding-left:1px;padding-right:1px}
 }
 /* O TETO DE 1024px ERA O BURACO (medido em 19/08/2026): nenhum iPad moderno
    em paisagem tem 1024px ou menos — iPad 10.2" deitado dá 1080, o mini 1133,
@@ -8884,7 +8930,12 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <div class="folder-head">
         <!-- Plano 27: tocar em "Pastas" leva direto pra "Como o Vox abre"
              (Configurações → Geral → Experiência), com a prateleira aberta. -->
+        <span class="folder-head-tgrp">
         <button type="button" class="folder-head-title folder-head-link" onclick="_abreIrMudar()" title="Como o Vox abre" aria-label="Como o Vox abre" data-i18n-title><span data-i18n>Pastas</span></button>
+        <button type="button" class="folder-head-mais" id="btnFolderNova" onclick="_folderIrCriarNova()" title="Nova pasta" aria-label="Nova pasta" data-i18n-title>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        </span>
         <button class="folder-dl-btn" id="btnFolderDl" onclick="toggleFolderDlMode()" title="Baixar pastas" data-i18n-title>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="3" x2="12" y2="15"/><polyline points="7 10 12 15 17 10"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
         </button>
@@ -8903,9 +8954,6 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
         <button class="folder-fc-btn" id="btnFolderMundos" onclick="abrirGalaxia(event)" title="Ver todos os mundos" data-i18n-title aria-label="Ver todos os mundos">
           <span class="mw-hz" aria-hidden="true"></span><span class="mw-cint" aria-hidden="true"><svg viewBox="0 0 10 10"><path d="M5 0 6 4 10 5 6 6 5 10 4 6 0 5 4 4z" fill="currentColor"/></svg></span>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-18 12 12)"><circle cx="12" cy="12" r="8.6"/><path d="M12 3.4c3.1 2.3 3.1 14.9 0 17.2"/><path d="M12 3.4c-3.1 2.3-3.1 14.9 0 17.2"/><path d="M3.9 9.1c5 2 11.2 2 16.2 0"/></g></svg>
-        </button>
-        <button class="folder-fc-btn" id="btnFolderNova" onclick="_folderIrCriarNova()" title="Nova pasta" data-i18n-title>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
         </button>
         <button class="folder-collapse-btn" onclick="toggleFolders()" title="Recolher" aria-label="Recolher pastas" data-i18n-title>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
@@ -10388,7 +10436,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.28.1';
+const VOX_VERSION='2026.10.28.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -27099,7 +27147,7 @@ function trocarCorPasta(id,corIdx,contorno){
 // lista principal); criar SUBPASTA continua pelo menu ⋯ com createFolder(),
 // sem mudança — não há uma "linha fantasma" natural dentro de uma pasta
 // específica em qualquer lugar da árvore.
-function _folderNascePasta(el){
+function _folderNascePasta(el,voo){
   if(!el||el.classList.contains('virando'))return;
   el.classList.add('virando');
   const color=_folderNovaCorRaiz();
@@ -27112,8 +27160,11 @@ function _folderNascePasta(el){
   inp.focus();
   const dot=document.querySelector('#folderNovoNomeInput')?.closest('.folder-item')?.querySelector('.folder-cor-dot');
   if(dot&&!window.matchMedia('(prefers-reduced-motion:reduce)').matches){
-    dot.classList.add('soco');
-    dot.parentElement.querySelector('.folder-dot-anel')?.classList.add('abre');
+    const pousa=()=>{
+      dot.classList.remove('espera');dot.classList.add('soco');
+      dot.parentElement.querySelector('.folder-dot-anel')?.classList.add('abre');
+    };
+    if(voo)_folderVoaBolinha(voo,dot,color,pousa);else pousa();
   }
   // "Enter" firma e tira o foco, o que dispara blur logo em seguida —
   // sem a trava, firma() rodaria duas vezes e a segunda encontraria o
@@ -27145,16 +27196,40 @@ function _folderNascePasta(el){
   });
   inp.addEventListener('blur',firma);
 }
-// Acionado pelo ícone "Nova pasta" no topo do painel: rola até a linha
-// fantasma (que mora no fim da lista) antes de fazer ela nascer, pro olho
-// não perder de vista onde a pasta vai aparecer.
+// Acionado pelo "+" colado no título do painel (proposta "Título e voo",
+// 28/10/2026): a lista vai direto ao fim e a linha fantasma vira a pasta na
+// hora — dá pra digitar durante o voo — enquanto a bolinha da cor nova salta
+// do "+" e cai na linha. Antes a lista rolava suave e a pasta esperava 220 ms.
 function _folderIrCriarNova(){
   const fant=document.querySelector('#folderListInner .folder-fantasma');
   if(!fant)return;
+  const btn=document.getElementById('btnFolderNova');
+  _jz(btn,'mola',340);
   const bar=document.getElementById('foldersBar');
-  const semMov=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  if(bar)bar.scrollTo({top:bar.scrollHeight,behavior:semMov?'auto':'smooth'});
-  setTimeout(()=>_folderNascePasta(fant),semMov?0:220);
+  if(bar)bar.scrollTop=bar.scrollHeight;
+  _folderNascePasta(fant,btn);
+}
+// A bolinha sobe 16 px no primeiro terço (o salto), cai na linha nova em
+// 420 ms e aí a bolinha de verdade dá o soco e o anel (fim). Mora no <body>,
+// fixa, pra passar por cima da lista e da gaveta do celular. Linha fora da
+// tela ou navegador sem animate(): pousa direto, sem voo.
+function _folderVoaBolinha(btn,dot,cor,fim){
+  const rb=btn.getBoundingClientRect(),ra=dot.getBoundingClientRect();
+  if(!rb.width||!ra.width||!document.body.animate||ra.top>innerHeight||ra.bottom<0){fim();return}
+  const x0=rb.left+rb.width/2-5.5,y0=rb.top+rb.height/2-5.5;
+  const dx=ra.left+ra.width/2-5.5-x0,dy=ra.top+ra.height/2-5.5-y0;
+  const b=document.createElement('span');b.className='folder-voa-dot';b.setAttribute('aria-hidden','true');
+  b.style.cssText='left:'+x0+'px;top:'+y0+'px;background:'+safeColor(cor);
+  dot.classList.add('espera');
+  document.body.appendChild(b);
+  let feito=false;
+  const acaba=()=>{if(feito)return;feito=true;b.remove();fim()};
+  b.animate([
+    {transform:'translate(0px,0px) scale(.5)',opacity:0},
+    {transform:'translate('+(dx*.3)+'px,'+(Math.min(dy*.3,0)-16)+'px) scale(1.15)',opacity:1,offset:.3},
+    {transform:'translate('+dx+'px,'+dy+'px) scale(1)',opacity:1}
+  ],{duration:420,easing:'cubic-bezier(.22,1,.36,1)'}).onfinish=acaba;
+  setTimeout(acaba,650);
 }
 // Cor nova pra uma pasta de PRIMEIRO NÍVEL. Bug real achado pelo agente
 // de design (28/08): com a cor virando identidade de família, contar
@@ -27822,6 +27897,9 @@ function _csSemDono(){return _mundoEhConsulta()?t('Sem pessoa'):''}
 function _vozConsultaSinc(){
   const c=_mundoEhConsulta();
   ['#foldersBar .folder-head-title span','#btnFolders span'].forEach(q=>{const el=document.querySelector(q);if(el)el.textContent=c?t('Pessoas'):t('Pastas')});
+  // O "+" ao lado do título também fala "pessoa" (antes só a linha fantasma falava).
+  const nv=document.getElementById('btnFolderNova');
+  if(nv){const r=c?t('Nova pessoa'):t('Nova pasta');nv.title=r;nv.setAttribute('aria-label',r)}
 }
 function _csFichaRotulo(f){return f?t('Ver ficha de {n}').replace('{n}',f.name):''}
 // Guardou em outra pasta (pela faixa, pelo painel ou arrastando): a faixa mostra a pessoa certa.
