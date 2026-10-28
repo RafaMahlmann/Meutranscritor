@@ -10436,7 +10436,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.28.2';
+const VOX_VERSION='2026.10.28.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -18058,7 +18058,7 @@ function renderFolders(){
   // combina com "nascer".
   html+=`<button type="button" class="folder-new-btn folder-fantasma" onclick="_folderNascePasta(this)">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-    <span>${_mundoEhConsulta()?t('Nova pessoa'):t('Nova pasta')}</span>
+    <span>${_mundoFalaPessoa()?t('Nova pessoa'):t('Nova pasta')}</span>
   </button>`;
   // ── RODAPÉ FIXO: Arquivados e Lixeira ──
   // Não são pastas: não aceitam arrastar card pra dentro, não renomeiam, não
@@ -27828,7 +27828,7 @@ function _csFaixaHtml(id,folder,sn,dt){
   return `<div class="cs-faixa"><span class="cs-faixa-t"><b>${escHtml(t('Consulta'))}</b><small>${escHtml(quando)}</small></span>
     <button type="button" class="cs-faixa-b cs-fechar" onclick="fecharAtendimento('${escJs(id)}')" title="${escHtml(t('Nota do seu ofício, devolutiva e combinados'))}">${escHtml(t('Fechar atendimento'))}</button>
     <button type="button" class="cs-faixa-b" onclick="swapSpeakers('${escJs(id)}')" title="${escHtml(t('A IA inverteu quem é quem? Troque num toque.'))}">⇄ ${escHtml(t('Trocar papéis'))}</button>
-    <label class="cs-faixa-p"><span>${escHtml(_mundoEhConsulta()?t('Pessoa'):t('Guardar em'))}</span><select onchange="assignCardToFolder('${escJs(id)}',this.value)">${_csPastasOpts(folder||'',_csSemDono())}</select></label>
+    <label class="cs-faixa-p"><span>${escHtml(_mundoFalaPessoa()?t('Pessoa'):t('Guardar em'))}</span><select onchange="assignCardToFolder('${escJs(id)}',this.value)">${_csPastasOpts(folder||'',_csSemDono())}</select></label>
     <button type="button" class="cs-faixa-b cs-ficha" onclick="_csVerFicha('${escJs(id)}')"${fp?'':' hidden'}>${escHtml(_csFichaRotulo(fp))}</button></div>`;
 }
 // ── "De quem é esta consulta?" (camada de guia, proposta 1) ──
@@ -27893,9 +27893,20 @@ function _dicaFecharAtendimento(c){
     frase:t('Quando terminar o atendimento, toque aqui: o Vox escreve a nota do seu ofício e o que ficou combinado para a próxima vez.')});
 }
 // No mundo de Consultas a pasta é a pessoa: a tela diz "pessoa". Por dentro continua pasta.
-function _csSemDono(){return _mundoEhConsulta()?t('Sem pessoa'):''}
+// Só no mundo de Consultas de verdade — o Meu espaço continua dizendo "pasta"
+// mesmo com ofício. O _mundoEhConsulta() vale também pro Meu espaço com ofício
+// (lá ele liga o Painel), e o ofício é escolhido no primeiro toque no modo
+// Consulta: o Rafa viu o espaço principal inteiro virar "Pessoas" sem ter
+// pedido (28/10/2026). O tipo do mundo sozinho não basta: _oficioEscolher
+// grava tipo:'consulta' no Meu espaço também.
+function _mundoFalaPessoa(){
+  if(_mundoAtivo===VOX_MUNDO_RAIZ)return false;
+  const m=_mundosLista().find(x=>x.id===_mundoAtivo);
+  return !!(m&&m.tipo==='consulta');
+}
+function _csSemDono(){return _mundoFalaPessoa()?t('Sem pessoa'):''}
 function _vozConsultaSinc(){
-  const c=_mundoEhConsulta();
+  const c=_mundoFalaPessoa();
   ['#foldersBar .folder-head-title span','#btnFolders span'].forEach(q=>{const el=document.querySelector(q);if(el)el.textContent=c?t('Pessoas'):t('Pastas')});
   // O "+" ao lado do título também fala "pessoa" (antes só a linha fantasma falava).
   const nv=document.getElementById('btnFolderNova');
