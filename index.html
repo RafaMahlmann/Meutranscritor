@@ -5368,22 +5368,47 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .stat-folders-btn{flex-shrink:0;background:var(--bg-input);border:none;color:var(--text3);border-radius:8px;padding:5px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-size:11px;font-weight:600;transition:all var(--transition)}
 .stat-folders-btn:hover{background:var(--border2);color:var(--text)}
 .stat-folders-btn.folders-on{background:var(--accent-glow);color:var(--accent)}
-#btnNewCard svg{color:#4f9dff}
-/* "+" do card novo no TOQUE (celular/iPad): pastilha escura com o "+"
-   amarelo (pedido do Rafa, 23/10/2026). Amarelo direto no fundo claro dá
+/* "+ Novo card": pastilha escura com o "+" amarelo em TODO aparelho —
+   celular e iPad desde 23/10/2026, computador desde 28/10/2026 (pedido do
+   Rafa: "é padrão", onde o app abrir). Amarelo direto no fundo claro dá
    1,3–1,5:1 e reprova o mínimo de ícone (3:1, WCAG 1.4.11); o azul de antes
    também reprovava ali (2,2:1 sobre a pastilha cinza). Medido: #ffcc00 sobre
    #1d1d1f dá 11,1:1. No escuro a pastilha clareia (#3a3a3c, senão some no
-   fundo #131315) e o #ffd60a dá 8,0:1. pointer:coarse é o mesmo teste do
-   _voxToque(): no mouse (Windows/Mac) nada muda — lá o "+" funciona e o Rafa
-   pediu pra não mexer. :hover entra junto porque no toque ele gruda depois
-   do toque e devolveria o cinza do .stat-folders-btn:hover. */
-@media(pointer:coarse){
-  #btnNewCard,#btnNewCard:hover{background:#1d1d1f;color:#f5f5f7}
-  #btnNewCard svg{color:#ffcc00}
-  [data-theme="dark"] #btnNewCard,[data-theme="dark"] #btnNewCard:hover{background:#3a3a3c}
-  [data-theme="dark"] #btnNewCard svg{color:#ffd60a}
+   fundo #131315) e o #ffd60a dá 8,0:1. :hover entra junto porque no toque
+   ele gruda depois do toque e devolveria o cinza do .stat-folders-btn:hover.
+   Só a cara do botão muda: tamanho e lugar na barra .stats continuam os
+   mesmos (a barra é zona protegida, ver .clinerules). */
+:root{--nc-anel:rgba(255,204,0,.8)}
+[data-theme="dark"]{--nc-anel:rgba(255,214,10,.75)}
+#btnNewCard,#btnNewCard:hover{background:#1d1d1f;color:#f5f5f7}
+#btnNewCard svg{color:#ffcc00;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+[data-theme="dark"] #btnNewCard,[data-theme="dark"] #btnNewCard:hover{background:#3a3a3c}
+[data-theme="dark"] #btnNewCard svg{color:#ffd60a}
+/* O juice (proposta "Gêmeos", 28/10): com mouse, passar por cima levanta a
+   pastilha 1 px e o "+" gira 90° com mola (200 ms); apertar afunda pra 95%;
+   o clique dá a mola (mwMola) e uma onda amarela achatada (.jz-onda.larga,
+   ver novoCardDoMais) — a onda redonda de 2,2x numa pastilha de 90 px
+   viraria um aro de 200 px. hover:hover deixa o toque de fora: lá o :hover
+   gruda e o "+" ficaria girado depois do toque. */
+@media(hover:hover){
+  #btnNewCard:hover{background:#2c2c2e;translate:0 -1px;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+  [data-theme="dark"] #btnNewCard:hover{background:#48484a;box-shadow:0 3px 10px rgba(0,0,0,.45)}
+  #btnNewCard:hover svg{transform:rotate(90deg)}
 }
+#btnNewCard:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+#btnNewCard:focus-visible svg{transform:rotate(90deg)}
+#btnNewCard:active{scale:.95}
+#btnNewCard.mola{animation:mwMola .32s cubic-bezier(.34,1.56,.64,1)}
+.jz-onda.larga{animation-name:jzOndaLarga}
+@keyframes jzOndaLarga{from{transform:scale(1);opacity:.55}to{transform:scale(1.25,1.9);opacity:0}}
+/* O card nasce (_cardNasce): sobe 6 px e cresce de 96% em 260 ms, com um
+   anel amarelo que acende e apaga em 700 ms. translate/scale separados não
+   brigam com o left/top do Mural nem com o arrastar. Com "Reduzir
+   movimento", só o anel. */
+.card.card-nasce{animation:cardNasce .26s var(--fc-curva) both,cardNasceAnel .7s ease-out}
+@keyframes cardNasce{from{opacity:0;translate:0 6px;scale:.96}}
+@keyframes cardNasceAnel{0%,100%{box-shadow:var(--shadow-card)}30%{box-shadow:var(--shadow-card),0 0 0 3px var(--nc-anel)}}
+@media(prefers-reduced-motion:reduce){.card.card-nasce{animation:cardNasceAnel .7s ease-out}}
 /* Efeito de abertura (_maisPulo): cresce até 122% em 150 ms, encolhe pra 94%
    em 110 ms e volta a 100% em 160 ms — 420 ms, uma vez ("gostosinho, mas
    simples"). Com "Reduzir movimento" não cresce: um brilho amarelo de 4 px
@@ -10363,7 +10388,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.27.2';
+const VOX_VERSION='2026.10.28.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -19943,10 +19968,10 @@ function _jz(el,cls,ms){
   el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);
   clearTimeout(el['_jz_'+cls]);el['_jz_'+cls]=setTimeout(()=>el.classList.remove(cls),ms);
 }
-function _jzOnda(el,cor,raio){
+function _jzOnda(el,cor,raio,larga){
   if(!el||_voxReduzMov())return;
   const r=el.getBoundingClientRect();if(!r.width)return;
-  const o=document.createElement('span');o.className='jz-onda';
+  const o=document.createElement('span');o.className='jz-onda'+(larga?' larga':'');
   o.style.cssText='left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;border-radius:'+(raio||'50%')+';--jz-cor:'+cor;
   document.body.appendChild(o);setTimeout(()=>o.remove(),480);
 }
@@ -34414,12 +34439,30 @@ function _irParaCardNovo(cid){
 // O foco não pode ir pra um setTimeout: o iPhone só abre o teclado com o
 // foco DENTRO do toque. Era por isso que o card novo nascia sem teclado (o
 // foco vinha 300 ms depois, em _irParaCardNovo).
+// Desde 28/10/2026 o "+" dá o mesmo retorno em todo aparelho (pedido do
+// Rafa: "é padrão"): mola e onda amarela no botão — antes de criar, enquanto
+// o botão ainda está no lugar — e o card nasce com o anel amarelo. No toque,
+// quando o card abre como janela (Mural), quem anima é a janela.
 function novoCardDoMais(){
-  if(!_voxToque()){newEmptyCard();return}
-  const cid=newEmptyCard(true);
-  _botaoColarNoCard(cid);
-  _irParaCardNovoToque(cid);
-  toast(t('✏️ Card novo criado — escreva, grave ou anexe!'));
+  const b=document.getElementById('btnNewCard');
+  _jz(b,'mola',340);
+  _jzOnda(b,document.documentElement.getAttribute('data-theme')==='dark'?'#ffd60a':'#ffcc00','8px',true);
+  let cid;
+  if(!_voxToque())cid=newEmptyCard();
+  else{
+    cid=newEmptyCard(true);
+    _botaoColarNoCard(cid);
+    _irParaCardNovoToque(cid);
+    toast(t('✏️ Card novo criado — escreva, grave ou anexe!'));
+  }
+  const card=document.getElementById(cid);
+  if(card&&!card.closest('.float-window'))_cardNasce(card);
+}
+// Fora do _jz de propósito: com "Reduzir movimento" o anel continua (o CSS
+// tira só o movimento).
+function _cardNasce(card){
+  card.classList.remove('card-nasce');void card.offsetWidth;card.classList.add('card-nasce');
+  clearTimeout(card._nasce);card._nasce=setTimeout(()=>card.classList.remove('card-nasce'),760);
 }
 // Botão "Colar o que você copiou" no topo do card novo do toque. Some na
 // primeira letra digitada e quando a colagem entra. Não é salvo (saveHistory
@@ -34493,15 +34536,16 @@ function _colarNoCardNovo(cid,aoColar){
     if(aoColar)aoColar();
   }).catch(()=>{});
 }
-// Efeito de abertura do "+" (só no toque; CSS em #btnNewCard.mais-pulo).
+// Efeito de abertura do "+" (CSS em #btnNewCard.mais-pulo).
 // Espera a tela principal ficar livre — vídeo, céu de mundos, pedido do
 // microfone, balão, aviso, gravação, topo escondido pela rolagem — e roda
 // 300 ms depois (dois testes seguidos livres). Uma vez por abertura, e de novo
 // quando a pessoa volta pro app depois de 5 min fora (o Vox na tela inicial do
-// iPhone costuma voltar do fundo sem recarregar).
+// iPhone costuma voltar do fundo sem recarregar). No computador (desde
+// 28/10/2026) só na abertura: lá a gente troca de aba toda hora e 5 min fora
+// é rotina — ia pular várias vezes por dia.
 let _maisPuloFora=0;
 function _maisPulo(tent,livreAntes){
-  if(!_voxToque())return;
   tent=tent||0;if(tent>200)return;
   const b=document.getElementById('btnNewCard');if(!b)return;
   const ocupado=document.hidden||(typeof isRec!=='undefined'&&isRec)||!b.offsetParent
@@ -34515,7 +34559,7 @@ function _maisPulo(tent,livreAntes){
 window.addEventListener('load',()=>_maisPulo());
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){_maisPuloFora=Date.now();return}
-  if(_maisPuloFora&&Date.now()-_maisPuloFora>=5*60*1000)_maisPulo();
+  if(_voxToque()&&_maisPuloFora&&Date.now()-_maisPuloFora>=5*60*1000)_maisPulo();
   _maisPuloFora=0;
 });
 // ── Anexar aqui: arquivo externo (áudio→transcreve, texto→insere) NO card ──
