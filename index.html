@@ -2617,6 +2617,14 @@ body.enc-tela-on .ibar.rec-on{z-index:9980}
    arrasto começa puxando pra cima. */
 .tb-tg{touch-action:none}
 .tb-tg.tb-pega{opacity:.3}
+/* Fase 3: juntar, mudar o nome, apagar */
+.tb-lnk{border:0;background:none;padding:0;margin-left:4px;font:700 12px var(--font);color:var(--accent);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.tb-ren{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tb-ren input{flex:1 1 140px;min-width:0;border:1px solid var(--accent);background:var(--bg-input);color:var(--text);font:600 13px var(--font);padding:7px 10px;border-radius:10px;outline:none;box-shadow:0 0 0 3px var(--accent-glow)}
+.tb .segura-btn{margin-top:8px}
+@keyframes tbEngole{35%{scale:1.14}100%{scale:1}}
+.tb-tw.tb-engole .tb-tg{animation:tbEngole .42s var(--tb-mola)}
+@media (prefers-reduced-motion:reduce){.tb-tw.tb-engole .tb-tg{animation:none}}
 .tb-fantasma{position:fixed;z-index:10000;margin:0;pointer-events:none;rotate:-3deg;scale:1.06;box-shadow:0 10px 28px rgba(0,0,0,.22)!important;opacity:.96;transition:none!important}
 body.tb-arrastando{cursor:grabbing;user-select:none;-webkit-user-select:none}
 .card.tb-alvo{outline:2px dashed var(--accent);outline-offset:3px;translate:0 -2px;transition:translate .16s var(--tb-curva)}
@@ -10557,7 +10565,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.30.3';
+const VOX_VERSION='2026.10.30.4';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13073,6 +13081,18 @@ let I18N_EN={
 "Este card já tem #{tag}.":"This card already has #{tag}.",
 "Este card ganha #{tag}.":"This card gets #{tag}.",
 "Soltar numa pasta":"Drop on a folder",
+"Novo nome para #{tag}":"New name for #{tag}",
+"Muda em todas as notas. Se já existir uma tag com esse nome, as duas viram uma só.":"Changes it in every note. If a tag with that name already exists, the two become one.",
+"Juntar tudo em #{tag}":"Merge all into #{tag}",
+"Mudar o nome":"Rename",
+"Segure pra apagar #{tag} de 1 nota":"Hold to remove #{tag} from 1 note",
+"Segure pra apagar #{tag} de {n} notas":"Hold to remove #{tag} from {n} notes",
+"Apagar da Biblioteca":"Remove from the library",
+"Pronto: #{tag} numa grafia só, em {n}.":"Done: #{tag} now has one spelling, in {n}.",
+"#{a} juntou com #{b}, em {n}.":"#{a} merged into #{b}, in {n}.",
+"#{a} agora é #{b}, em {n}.":"#{a} is now #{b}, in {n}.",
+"#{tag} apagada de {n}.":"#{tag} removed from {n}.",
+"#{tag} apagada da Biblioteca.":"#{tag} removed from the library.",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -33605,7 +33625,8 @@ function renderTags(id,tags){
   gear.onclick=()=>openExtractPanel(id);ct.appendChild(gear);
   const vbtn=document.createElement('button');vbtn.className='ctag-voice-btn';vbtn.id='vtbtn-'+id;vbtn.title=t('Falar tags');vbtn.innerHTML='<span class="svgi">'+ICO.mic+'</span> '+escHtml(t('falar'));
   vbtn.onclick=()=>startVoiceTag(id);ct.appendChild(vbtn);
-  const inp=document.createElement('input');inp.className='ctag-input';inp.placeholder=t('tag manual');inp.maxLength=20;
+  const inp=document.createElement('input');inp.className='ctag-input';inp.placeholder=t('tag manual');inp.maxLength=40;
+  inp.setAttribute('list','tbLista');inp.autocomplete='off';
   inp.onkeydown=(e)=>handleTagInput(e,id);ct.appendChild(inp);
   // Porta da Biblioteca de tags (lote 16), a mesma do tagsBlock.
   const bib=document.createElement('button');bib.type='button';bib.className='tagbib-abrir';
@@ -33632,7 +33653,7 @@ function tagsBlock(id,tags){
     `<button class="ctag-suggest-btn" onclick="suggestTags('${id}')" title="${t('Sugerir tags com IA')}">${t('+ tag IA')}</button>`+
     `<button class="ctag-gear-btn" onclick="openExtractPanel('${id}')" title="${t('Extrair todos os termos do texto')}"><span class="svgi">${ICO.gear}</span> ${t('extrair')}</button>`+
     `<button class="ctag-voice-btn" id="vtbtn-${id}" onclick="startVoiceTag('${id}')" title="${t('Falar tags')}"><span class="svgi">${ICO.mic}</span> ${t('falar')}</button>`+
-    `<input class="ctag-input" placeholder="${t('tag manual')}" onkeydown="handleTagInput(event,'${id}')" maxlength="20">`+
+    `<input class="ctag-input" placeholder="${t('tag manual')}" onkeydown="handleTagInput(event,'${id}')" maxlength="40" list="tbLista" autocomplete="off">`+
     `<button type="button" class="tagbib-abrir" onclick="tagBibAbrir('${id}',this)" aria-expanded="false" title="${t('Ver, criar e arquivar suas tags')}">${_tbIcoLivro()}${t('Biblioteca')}</button>`+
     `</div></div>`+
     `<div class="tag-suggestions${isCollapsed?' collapsed':''}" id="tagsug-${id}"></div>`+
@@ -34031,17 +34052,31 @@ function _tbDetHtml(){
   let estado=g.n?(g.n===1?t('1 nota usa'):t('{n} notas usam').replace('{n}',g.n)):t('Ainda sem nota');
   if(g.nArq)estado+=' · '+t('{n} no arquivo').replace('{n}',g.nArq);
   if(g.arq)estado+=' · '+t('arquivada');
-  let s='<div class="tb-dt"><b>#'+escHtml(g.lab)+'</b><span>'+escHtml(estado)+'</span></div>';
+  let s;
+  if(TB.renomear===g.k){
+    s='<div class="tb-ren"><input type="text" id="tbRen" maxlength="40" autocomplete="off" spellcheck="false" value="'+escHtml(g.lab)+'" aria-label="'+escHtml(t('Novo nome para #{tag}').replace('{tag}',g.lab))+'">'+
+      '<button type="button" class="tb-b pri" data-ac="renSalvar" data-k="'+K+'">'+escHtml(t('Salvar'))+'</button><button type="button" class="tb-b" data-ac="renCancelar" data-k="'+K+'">'+escHtml(t('Cancelar'))+'</button></div>'+
+      '<p class="tb-dica">'+escHtml(t('Muda em todas as notas. Se já existir uma tag com esse nome, as duas viram uma só.'))+'</p>';
+    return s;
+  }
+  s='<div class="tb-dt"><b>#'+escHtml(g.lab)+'</b><span>'+escHtml(estado)+'</span></div>';
   if(g.n)s+='<ul class="tb-notas">'+g.ids.slice(0,4).map(id=>{const c=document.getElementById(id);return '<li><button type="button" data-ac="ver" data-id="'+escHtml(id)+'">'+escHtml(c?_calNomeDoCard(c):'')+'</button></li>'}).join('')+
     (g.n>4?'<li class="mais">'+escHtml(t('e mais {n}').replace('{n}',g.n-4))+'</li>':'')+'</ul>';
-  if(g.outras.length)s+='<p class="tb-var">'+escHtml(t('Também escrita: {lista}').replace('{lista}',g.outras.map(v=>'“'+v+'”').join(', ')))+'</p>';
+  if(g.outras.length)s+='<p class="tb-var">'+escHtml(t('Também escrita: {lista}').replace('{lista}',g.outras.map(v=>'“'+v+'”').join(', ')))+
+    '<button type="button" class="tb-lnk" data-ac="juntar" data-k="'+K+'">'+escHtml(t('Juntar tudo em #{tag}').replace('{tag}',g.lab))+'</button></p>';
   s+='<div class="tb-ac">';
   if(dest.length&&!dest.every(id=>_tbTem(id,g.k)))s+='<button type="button" class="tb-b pri" data-ac="por" data-k="'+K+'">'+escHtml(t('Pôr {destino}').replace('{destino}',_tbDestinoNome()))+'</button>';
   if(_tbPastasVivas().length)s+='<button type="button" class="tb-b" data-ac="pastas" data-k="'+K+'" aria-expanded="'+TB.pastas+'">'+escHtml(t('Pôr numa pasta…'))+'</button>';
-  s+='<button type="button" class="tb-b" data-ac="'+(g.arq?'desarq':'arq')+'" data-k="'+K+'">'+escHtml(g.arq?t('Desarquivar'):t('Arquivar'))+'</button></div>';
+  s+='<button type="button" class="tb-b" data-ac="'+(g.arq?'desarq':'arq')+'" data-k="'+K+'">'+escHtml(g.arq?t('Desarquivar'):t('Arquivar'))+'</button>';
+  s+='<button type="button" class="tb-b" data-ac="renomear" data-k="'+K+'">'+escHtml(t('Mudar o nome'))+'</button></div>';
   if(TB.pastas)s+=_tbPastasHtml(g);
   if(!g.arq)s+='<p class="tb-dica">'+escHtml(t('Arquivar leva #{tag} para Arquivadas e tira das sugestões da IA.').replace('{tag}',g.lab)+
     (g.n?' '+(g.n===1?t('A nota continua com ela.'):t('As {n} notas continuam com ela.').replace('{n}',g.n)):''))+'</p>';
+  // Apagar de todas as notas: só segurando (o "segure pra confirmar" do Vox), com o número antes e Desfazer depois.
+  const nTodas=g.n+g.nArq;
+  if(nTodas)s+='<button type="button" class="segura-btn" data-segura="tbApagar"><span class="segura-fill"></span><span class="segura-txt">'+
+    escHtml(nTodas===1?t('Segure pra apagar #{tag} de 1 nota').replace('{tag}',g.lab):t('Segure pra apagar #{tag} de {n} notas').replace('{tag}',g.lab).replace('{n}',nTodas))+'</span></button>';
+  else s+='<div class="tb-ac"><button type="button" class="tb-b" data-ac="apagar0" data-k="'+K+'">'+escHtml(t('Apagar da Biblioteca'))+'</button></div>';
   return s;
 }
 function _tbMedir(){const r={};if(TB.el)TB.el.querySelectorAll('.tb-tg').forEach(b=>{r[b.dataset.k]={r:b.getBoundingClientRect(),n:+((b.querySelector('.tb-n')||{}).textContent||0)}});return r}
@@ -34072,7 +34107,14 @@ function _tbRender(antes){
   TB.el.querySelector('.tb-det').innerHTML=_tbDetHtml();
   if(antes)_tbFlip(antes);
   if(TB.novo){const w=TB.el.querySelector('.tb-tw[data-k="'+CSS.escape(TB.novo)+'"]');if(w){_jz(w,'tb-nasce',400);w.scrollIntoView({block:'nearest',inline:'nearest'})}TB.novo=null}
-  if(fk){const el=[...TB.el.querySelectorAll('button')].find(b=>b.dataset.ac===fk.ac&&b.dataset.k===fk.k&&b.dataset.f===fk.f);if(el){try{el.focus({preventScroll:true})}catch(e){}}}
+  const ren=TB.el.querySelector('#tbRen');
+  if(ren){
+    ren.onkeydown=e=>{
+      if(e.key==='Enter'){e.preventDefault();e.stopPropagation();_tbRenomear(TB.renomear,ren.value)}
+      else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();TB.renomear=null;_tbRender()}
+    };
+    if(!fk||fk.ac!=='renSalvar'){try{ren.focus({preventScroll:true});ren.select()}catch(e){}}
+  }else if(fk){const el=[...TB.el.querySelectorAll('button')].find(b=>b.dataset.ac===fk.ac&&b.dataset.k===fk.k&&b.dataset.f===fk.f);if(el){try{el.focus({preventScroll:true})}catch(e){}}}
 }
 // A tag desliza do lugar velho pro novo (arquivar, desarquivar) e o número
 // rola como odômetro quando muda.
@@ -34096,7 +34138,12 @@ function _tbAcao(b){
     _tbPor(k,ids,b,null);return;
   }
   if(ac==='usar'){TB.q='';TB.el.querySelector('#tbBusca').value='';const ids=_tbDestinoIds();if(ids.length)_tbPor(k,ids,b,null);else{TB.det=k;_tbRender()}return}
-  if(ac==='det'){TB.det=TB.det===k?null:k;TB.pastas=false;_tbRender();_jz(TB.el.querySelector('.tb-det'),'tb-chega',300);return}
+  if(ac==='juntar'){_tbJuntar(k);return}
+  if(ac==='renomear'){TB.renomear=k;TB.pastas=false;_tbRender();return}
+  if(ac==='renSalvar'){const i=TB.el.querySelector('#tbRen');_tbRenomear(k,i?i.value:'');return}
+  if(ac==='renCancelar'){TB.renomear=null;_tbRender();return}
+  if(ac==='apagar0'){_tbApagar(k);return}
+  if(ac==='det'){TB.det=TB.det===k?null:k;TB.pastas=false;TB.renomear=null;_tbRender();_jz(TB.el.querySelector('.tb-det'),'tb-chega',300);return}
   if(ac==='pastas'){TB.pastas=!TB.pastas;_tbRender();return}
   if(ac==='porPasta'){
     const f=folders.find(x=>x.id===b.dataset.f);if(!f)return;
@@ -34317,6 +34364,80 @@ function _tbDevolve(gh,b){
   const an=gh.animate([{left:gh.style.left,top:gh.style.top},{left:r.left+'px',top:r.top+'px',rotate:'0deg',scale:'1'}],{duration:300,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'forwards'});
   an.onfinish=()=>gh.remove();setTimeout(()=>gh.remove(),700);
 }
+// ── Fase 3 (lote 16): juntar grafias, mudar o nome, apagar de todas ──
+// As três reescrevem a tag direto nas notas (fora da lixeira), numa gravação
+// só, e guardam o "antes" de cada nota pro Desfazer. Grafia juntada pelo
+// _tagNorm: a nota nunca fica com duas versões da mesma tag.
+function _tbReescreve(k,novo){
+  const antes=new Map();
+  _flTodosCards().forEach(c=>{
+    if(_cardNaLixeira(c))return;
+    const tg=(c.dataset.tags||'').split(',').filter(Boolean);
+    if(!tg.some(x=>_tagNorm(x)===k))return;
+    antes.set(c.id,c.dataset.tags||'');
+    const out=[];
+    tg.forEach(x=>{const v=_tagNorm(x)===k?novo:x;if(v&&!out.some(y=>_tagNorm(y)===_tagNorm(v)))out.push(v)});
+    c.dataset.tags=out.join(',');renderTags(c.id,out);
+  });
+  return antes;
+}
+function _tbRestaura(antes,bAntes){
+  antes.forEach((v,id)=>{const c=document.getElementById(id);if(!c)return;c.dataset.tags=v;renderTags(id,v.split(',').filter(Boolean))});
+  _tagBiblioGravar(bAntes);saveHistory();
+  if(TB.aberta)_tbRender(_tbMedir());
+}
+function _tbBiblioTroca(k,lab){
+  const b=_tagBiblioLer();
+  ['g','a'].forEach(s=>{b[s]=b[s].map(x=>_tagNorm(x)===k?lab:x)});
+  _tagBiblioGravar(b);
+}
+function _tbJuntar(k){
+  const g=_tagInventario().get(k);if(!g||!g.outras.length)return;
+  const bAntes=_tagBiblioLer(),antes=_tbReescreve(k,g.lab);
+  saveHistory();_tbBiblioTroca(k,g.lab);
+  _tbRender(_tbMedir());
+  const w=TB.el.querySelector('.tb-tw[data-k="'+CSS.escape(k)+'"]');if(w)_jz(w,'tb-engole',460);
+  _jzTato([6,30,10]);
+  toastDesfazer(t('Pronto: #{tag} numa grafia só, em {n}.').replace('{tag}',g.lab).replace('{n}',_tbNotas(antes.size)),()=>_tbRestaura(antes,bAntes));
+}
+function _tbRenomear(k,novo){
+  const g=_tagInventario().get(k);novo=_tbLimpa(novo);
+  if(!g){TB.renomear=null;_tbRender();return}
+  if(!novo){const i=TB.el.querySelector('#tbRen');if(i){_jz(i,'tb-treme',260);i.focus()}return}
+  const k2=_tagNorm(novo);
+  if(novo===g.lab&&!g.outras.length){TB.renomear=null;_tbRender();return}
+  const outra=k2!==k?_tagInventario().get(k2):null;
+  const lab=outra?outra.lab:novo;
+  const bAntes=_tagBiblioLer(),antes=_tbReescreve(k,lab);
+  saveHistory();_tbBiblioTroca(k,lab);
+  TB.renomear=null;TB.det=k2;
+  _tbRender(_tbMedir());
+  const w=TB.el.querySelector('.tb-tw[data-k="'+CSS.escape(k2)+'"]');if(w)_jz(w,outra?'tb-engole':'tb-nasce',460);
+  const msg=outra?t('#{a} juntou com #{b}, em {n}.'):t('#{a} agora é #{b}, em {n}.');
+  toastDesfazer(msg.replace('{a}',g.lab).replace('{b}',lab).replace('{n}',_tbNotas(antes.size)),()=>_tbRestaura(antes,bAntes));
+}
+function _tbApagar(k){
+  const g=_tagInventario().get(k);if(!g)return;
+  const bAntes=_tagBiblioLer(),antes=_tbReescreve(k,null);
+  saveHistory();
+  const b=_tagBiblioLer();b.g=b.g.filter(x=>_tagNorm(x)!==k);b.a=b.a.filter(x=>_tagNorm(x)!==k);_tagBiblioGravar(b);
+  TB.det=null;TB.renomear=null;
+  _tbRender(_tbMedir());
+  toastDesfazer((antes.size?t('#{tag} apagada de {n}.').replace('{n}',_tbNotas(antes.size)):t('#{tag} apagada da Biblioteca.')).replace('{tag}',g.lab),()=>_tbRestaura(antes,bAntes));
+}
+SEGURA_ACOES.tbApagar=()=>{if(TB.aberta&&TB.det)_tbApagar(TB.det)};
+// "tag manual" do card completa com as tags que já existem (as arquivadas
+// ficam de fora, e as que a nota já tem também). Datalist do navegador: no
+// celular aparece como sugestão em cima do teclado.
+document.addEventListener('focusin',e=>{
+  const i=e.target;if(!i||!i.classList||!i.classList.contains('ctag-input'))return;
+  let dl=document.getElementById('tbLista');
+  if(!dl){dl=document.createElement('datalist');dl.id='tbLista';document.body.appendChild(dl)}
+  const c=i.closest('.card'),tem=new Set(c?_cardTags(c.id).map(_tagNorm):[]);
+  dl.innerHTML=[..._tagInventario().values()].filter(g=>!g.arq&&g.lab&&!tem.has(g.k))
+    .sort((a,b)=>(b.n-a.n)||a.lab.localeCompare(b.lab)).slice(0,200)
+    .map(g=>'<option value="'+escHtml(g.lab)+'"></option>').join('');
+});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&TB.aberta&&!e.defaultPrevented&&!(TB.el&&TB.el.contains(e.target))&&!document.querySelector('.mapa-menu'))tagBibFechar()});
 
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
