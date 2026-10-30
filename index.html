@@ -2612,6 +2612,26 @@ body.enc-tela-on .ibar.rec-on{z-index:9980}
   body.tb-aberta{padding-bottom:var(--tb-alt,0px)}
 }
 @keyframes tbSobe{from{translate:0 24px;opacity:0}}
+/* Fase 2: arrastar o carimbo. No computador a tag não rola com o dedo
+   (touch-action:none); na gaveta do celular a fila rola de lado (pan-x) e o
+   arrasto começa puxando pra cima. */
+.tb-tg{touch-action:none}
+.tb-tg.tb-pega{opacity:.3}
+.tb-fantasma{position:fixed;z-index:10000;margin:0;pointer-events:none;rotate:-3deg;scale:1.06;box-shadow:0 10px 28px rgba(0,0,0,.22)!important;opacity:.96;transition:none!important}
+body.tb-arrastando{cursor:grabbing;user-select:none;-webkit-user-select:none}
+.card.tb-alvo{outline:2px dashed var(--accent);outline-offset:3px;translate:0 -2px;transition:translate .16s var(--tb-curva)}
+.folder-item.tb-alvo,.tb-fx.tb-alvo{background:var(--accent-glow)!important;outline:2px solid var(--accent);outline-offset:-2px}
+.tb-faixa{position:fixed;z-index:9998;left:16px;right:calc(28px + min(380px,calc(100vw - 32px)));display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-height:88px;overflow:hidden;padding:8px 10px;border-radius:14px;background:var(--bg-card);border:1px solid var(--border2);box-shadow:0 8px 24px rgba(0,0,0,.14);font:600 12px var(--font);color:var(--text);box-sizing:border-box}
+.tb-faixa-t{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text3);margin-right:2px}
+.tb-fx{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:10px;border:1px dashed var(--border2);background:var(--bg-input);white-space:nowrap}
+.tb-fx svg{width:13px;height:13px;color:var(--text3);flex:none}
+.tb-faixa.tb-faixa-chega{animation:tbEntra .22s var(--tb-curva)}
+.tb-prev{position:fixed;z-index:10000;max-width:260px;padding:8px 10px;border-radius:10px;background:var(--text);color:var(--bg-card);font:500 12px var(--font);box-shadow:0 8px 24px rgba(0,0,0,.2);pointer-events:none;box-sizing:border-box}
+.tb-prev b{display:block;font-weight:700}
+.tb-prev ul{margin:4px 0 0;padding:0 0 0 16px}
+.tb-prev li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:640px){.tb-tg{touch-action:pan-x}.tb-faixa{left:12px;right:12px}}
+@media (prefers-reduced-motion:reduce){.tb-fantasma{rotate:none;scale:1}.card.tb-alvo{translate:none}.tb-faixa.tb-faixa-chega{animation:none}}
 @media (prefers-reduced-motion:reduce){.tb.tb-abre,.tb.tb-abre .tb-tw,.tb-tw.tb-nasce,.ctag.tb-pousa,.tb-n.tb-sobe,.tb-n.tb-desce,.tb-pastas,.tb-det.tb-chega>*{animation:none}}
 .ctag-voice-btn{font-size:11px;padding:2px 8px;border-radius:20px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--font);font-weight:600;transition:all var(--transition)}
 .ctag-voice-btn:hover{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.08)}
@@ -10537,7 +10557,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.30.2';
+const VOX_VERSION='2026.10.30.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13049,6 +13069,10 @@ let I18N_EN={
 "#{tag} já existe.":"#{tag} already exists.",
 "#{tag} criada. Toque nela para pôr {destino}.":"#{tag} created. Tap it to put it {destino}.",
 "#{tag} criada.":"#{tag} created.",
+"Ou arraste até um card ou pasta.":"Or drag it onto a card or folder.",
+"Este card já tem #{tag}.":"This card already has #{tag}.",
+"Este card ganha #{tag}.":"This card gets #{tag}.",
+"Soltar numa pasta":"Drop on a folder",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -33909,6 +33933,7 @@ function _tbMontar(){
     '<div class="tb-corpo"></div><div class="tb-det" aria-live="polite"></div>';
   document.body.appendChild(el);TB.el=el;
   el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!el.contains(b)||b.disabled)return;_tbAcao(b)});
+  el.addEventListener('pointerdown',e=>{const b=e.target.closest('.tb-tg');if(b&&el.contains(b))_tbArrIniciar(e,b)});
   const inp=el.querySelector('#tbBusca');
   inp.addEventListener('input',()=>{TB.q=inp.value;_tbRender()});
   inp.addEventListener('keydown',e=>{
@@ -34031,7 +34056,7 @@ function _tbRender(antes){
   const alf=(a,b)=>a.lab.localeCompare(b.lab,currentLang==='en'?'en':'pt');
   secs.u.sort((a,b)=>(b.n-a.n)||alf(a,b));secs.g.sort(alf);secs.a.sort(alf);
   const dn=_tbDestinoNome();
-  TB.el.querySelector('.tb-sub').textContent=dn?t('Toque numa tag para pôr {destino}.').replace('{destino}',dn):t('Toque em ⋯ para ver as notas de uma tag.');
+  TB.el.querySelector('.tb-sub').textContent=(dn?t('Toque numa tag para pôr {destino}.').replace('{destino}',dn):t('Toque em ⋯ para ver as notas de uma tag.'))+' '+t('Ou arraste até um card ou pasta.');
   TB.el.querySelector('.tb-pare').innerHTML=_tbPareHtml();
   const exata=q&&inv.get(q);
   const cb=TB.el.querySelector('.tb-criar');cb.textContent=exata&&dest.length?t('Pôr'):t('Criar');
@@ -34065,6 +34090,7 @@ function _tbAcao(b){
   const ac=b.dataset.ac,k=b.dataset.k;
   if(ac==='fecha'){tagBibFechar();return}
   if(ac==='por'){
+    if(Date.now()-(TB.arrT||0)<400)return;   // o clique que sobra no fim de um arrasto
     const ids=_tbDestinoIds();
     if(!ids.length){TB.det=k;TB.pastas=false;_tbRender();return}
     _tbPor(k,ids,b,null);return;
@@ -34124,7 +34150,7 @@ function _tbVoo(r0,ids,lab,pasta){
     const chip=[...c.querySelectorAll('.ctag')].find(x=>x.firstChild&&x.firstChild.textContent==='#'+lab);
     if(chip)_jz(chip,'tb-pousa',400);
   });
-  if(pasta){
+  if(pasta&&pasta.fid){
     const fr=document.querySelector('.folder-item[data-fid="'+CSS.escape(pasta.fid)+'"]');
     if(fr){fr.classList.add('tb-pisca');setTimeout(()=>fr.classList.remove('tb-pisca'),900)}
   }
@@ -34172,6 +34198,124 @@ function _tbCriar(inp){
   const dn=_tbDestinoNome();
   toastDesfazer((dn?t('#{tag} criada. Toque nela para pôr {destino}.').replace('{destino}',dn):t('#{tag} criada.')).replace('{tag}',v),
     ()=>{_tagBiblioGravar(bAntes);if(TB.aberta)_tbRender(_tbMedir())});
+}
+// ── Fase 2 (lote 16): arrastar o carimbo até um card ou uma pasta ──
+// Pega a tag, o carimbo sai inclinado com sombra; perto do alvo ele é puxado
+// 30% pro centro (o ímã da proposta 3) e o alvo acende com a prévia do que vai
+// acontecer ("4 notas ganham #x", com os títulos). Soltar: o carimbo some
+// dentro do alvo e a tag entra pelas mesmas funções do toque (com Desfazer).
+// Soltar fora: volta pro lugar com mola. Uma faixa "Soltar numa pasta" aparece
+// no topo durante o arrasto, porque a lista de pastas pode estar fechada (no
+// celular quase sempre está). Teclado e toque simples têm o mesmo resultado
+// pelo ⋯ (Pôr em…, Pôr numa pasta…).
+function _tbArrIniciar(e,b){
+  if(e.button>0||!TB.aberta)return;
+  const st={k:b.dataset.k,b,x0:e.clientX,y0:e.clientY,id:e.pointerId,gh:null,alvo:null};
+  const mv=ev=>{
+    if(ev.pointerId!==st.id)return;
+    if(!st.gh){
+      const dx=ev.clientX-st.x0,dy=ev.clientY-st.y0;
+      if(dx*dx+dy*dy<64)return;
+      if(ev.pointerType==='touch'&&Math.abs(dx)>Math.abs(dy))return;   // de lado é rolar a fila
+      _tbArrComeca(st);
+    }
+    if(ev.cancelable)ev.preventDefault();
+    _tbArrMove(st,ev.clientX,ev.clientY);
+  };
+  const fim=ev=>{
+    if(ev.pointerId!==st.id)return;
+    document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',fim);document.removeEventListener('pointercancel',fim);
+    if(st.gh)_tbArrTermina(st,ev.type==='pointerup');
+  };
+  document.addEventListener('pointermove',mv,{passive:false});
+  document.addEventListener('pointerup',fim);document.addEventListener('pointercancel',fim);
+}
+function _tbArrComeca(st){
+  const r=st.b.getBoundingClientRect(),gh=st.b.cloneNode(true);
+  gh.classList.add('tb-fantasma');gh.removeAttribute('data-ac');gh.setAttribute('aria-hidden','true');gh.tabIndex=-1;
+  gh.style.left=r.left+'px';gh.style.top=r.top+'px';gh.style.width=r.width+'px';gh.style.height=r.height+'px';
+  document.body.appendChild(gh);
+  st.gh=gh;st.r=r;st.ox=st.x0-r.left;st.oy=st.y0-r.top;
+  st.b.classList.add('tb-pega');document.body.classList.add('tb-arrastando');
+  _tbFaixa(true);_jzTato(8);
+}
+function _tbAlvoEm(x,y){
+  const el=document.elementFromPoint(x,y);
+  if(!el||(TB.el&&TB.el.contains(el)))return null;
+  const fx=el.closest('[data-tb-fid]');if(fx)return {tipo:'pasta',el:fx,fid:fx.dataset.tbFid};
+  const fi=el.closest('.folder-item[data-fid]');if(fi&&fi.dataset.fid&&folders.some(f=>f.id===fi.dataset.fid))return {tipo:'pasta',el:fi,fid:fi.dataset.fid};
+  const c=el.closest('.card:not(.proc-card)');if(c&&c.id&&!_cardNaLixeira(c))return {tipo:'card',el:c,id:c.id};
+  return null;
+}
+function _tbArrMove(st,x,y){
+  const a=_tbAlvoEm(x,y);
+  if((a&&a.el)!==(st.alvo&&st.alvo.el)){
+    if(st.alvo)st.alvo.el.classList.remove('tb-alvo');
+    st.alvo=a;
+    if(a){a.el.classList.add('tb-alvo');_tbPrevAlvo(st.k,a);_jzTato(5)}else _tbPrevEsconde();
+  }
+  let px=x-st.ox,py=y-st.oy;
+  if(a&&!_voxReduzMov()){
+    const r=a.el.getBoundingClientRect();
+    px+=((r.left+r.width/2)-(px+st.r.width/2))*.3;
+    py+=((r.top+Math.min(r.height,64)/2)-(py+st.r.height/2))*.3;
+  }
+  st.gh.style.left=px+'px';st.gh.style.top=py+'px';
+}
+function _tbPrevAlvo(k,a){
+  const g=(TB.inv&&TB.inv.get(k))||_tagInventario().get(k);if(!g)return;
+  let txt,lista=[];
+  if(a.tipo==='card')txt=(_tbTem(a.id,k)?t('Este card já tem #{tag}.'):t('Este card ganha #{tag}.')).replace('{tag}',g.lab);
+  else{
+    const f=folders.find(x=>x.id===a.fid),r=_tbGanhamPasta(k,a.fid);
+    if(r.ganham.length){
+      txt=(r.ganham.length===1?t('1 nota ganha #{tag}'):t('{n} notas ganham #{tag}').replace('{n}',r.ganham.length)).replace('{tag}',g.lab);
+      lista=r.ganham.slice(0,3).map(id=>_tbCurto(_calNomeDoCard(document.getElementById(id))));
+      if(r.ganham.length>3)lista.push(t('e mais {n}').replace('{n}',r.ganham.length-3));
+    }else txt=r.total?t('Todas as notas da pasta {pasta} já têm #{tag}.').replace('{pasta}',f?f.name||'':'').replace('{tag}',g.lab):t('pasta vazia');
+  }
+  let p=document.getElementById('tbPrev');
+  if(!p){p=document.createElement('div');p.id='tbPrev';p.className='tb-prev';p.setAttribute('role','status');document.body.appendChild(p)}
+  p.innerHTML='<b>'+escHtml(txt)+'</b>'+(lista.length?'<ul>'+lista.map(s=>'<li>'+escHtml(s)+'</li>').join('')+'</ul>':'');
+  p.hidden=false;
+  const r=a.el.getBoundingClientRect(),w=p.offsetWidth,h=p.offsetHeight;
+  let y=r.bottom+8;if(y+h>innerHeight-8)y=Math.max(8,r.top-h-8);
+  p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=y+'px';
+}
+function _tbPrevEsconde(){const p=document.getElementById('tbPrev');if(p)p.hidden=true}
+function _tbFaixa(on){
+  const velha=document.getElementById('tbFaixa');if(velha)velha.remove();
+  if(!on)return;
+  const ps=_tbPastasVivas();if(!ps.length)return;
+  const fx=document.createElement('div');fx.id='tbFaixa';fx.className='tb-faixa';fx.setAttribute('aria-hidden','true');
+  fx.innerHTML='<span class="tb-faixa-t">'+escHtml(t('Soltar numa pasta'))+'</span>'+
+    ps.slice(0,14).map(({f})=>'<span class="tb-fx" data-tb-fid="'+escHtml(f.id)+'">'+_tbIcoPasta()+escHtml((f.name||'').length>22?(f.name||'').slice(0,21)+'…':(f.name||''))+'</span>').join('');
+  const hd=document.querySelector('header');
+  fx.style.top=Math.max(8,hd?hd.getBoundingClientRect().bottom+6:8)+'px';
+  document.body.appendChild(fx);_jz(fx,'tb-faixa-chega',300);
+}
+function _tbArrTermina(st,soltou){
+  const a=st.alvo,gh=st.gh,ra=a?a.el.getBoundingClientRect():null;
+  st.b.classList.remove('tb-pega');document.body.classList.remove('tb-arrastando');
+  if(a)a.el.classList.remove('tb-alvo');
+  _tbPrevEsconde();_tbFaixa(false);TB.arrT=Date.now();
+  if(soltou&&a){
+    _tbEngole(gh,ra);
+    if(a.tipo==='card')_tbPor(st.k,[a.id],null,null);
+    else{const f=folders.find(x=>x.id===a.fid);if(f)_tbPor(st.k,_tbGanhamPasta(st.k,f.id).ganham,null,{pasta:f.name||'',fid:f.id})}
+  }else _tbDevolve(gh,st.b);
+}
+function _tbEngole(gh,r){
+  if(_voxReduzMov()||!gh.animate||!r){gh.remove();return}
+  const w=gh.offsetWidth,h=gh.offsetHeight;
+  const an=gh.animate([{left:gh.style.left,top:gh.style.top,opacity:1,scale:'1.06'},{left:(r.left+r.width/2-w/2)+'px',top:(r.top+Math.min(r.height,64)/2-h/2)+'px',opacity:0,scale:'.3'}],{duration:260,easing:'cubic-bezier(.22,1,.36,1)',fill:'forwards'});
+  an.onfinish=()=>gh.remove();setTimeout(()=>gh.remove(),700);
+}
+function _tbDevolve(gh,b){
+  if(_voxReduzMov()||!gh.animate||!b.isConnected){gh.remove();return}
+  const r=b.getBoundingClientRect();
+  const an=gh.animate([{left:gh.style.left,top:gh.style.top},{left:r.left+'px',top:r.top+'px',rotate:'0deg',scale:'1'}],{duration:300,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'forwards'});
+  an.onfinish=()=>gh.remove();setTimeout(()=>gh.remove(),700);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&TB.aberta&&!e.defaultPrevented&&!(TB.el&&TB.el.contains(e.target))&&!document.querySelector('.mapa-menu'))tagBibFechar()});
 
