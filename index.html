@@ -5536,7 +5536,7 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    é presa abaixo da do "+ Novo card" (a linha mede 39 px no celular e 55 px
    no iPad/computador, antes e depois). Nome longo corta com reticências: a
    pílula encolhe antes de a linha rolar. */
-.pil{position:relative;flex:0 1 auto;min-width:0;max-width:300px;height:28px;margin-left:14px;padding:0 9px 0 3px;display:inline-flex;align-items:center;background:var(--bg-input);border:0;border-radius:9px;color:var(--text2);font-family:var(--font);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color .15s ease-out}
+.pil{position:relative;flex:0 1 auto;min-width:0;max-width:300px;height:28px;margin-left:14px;padding:0 9px 0 3px;display:inline-flex;align-items:center;background:var(--bg-input);border:0;border-radius:9px;color:var(--text2);font-family:var(--font);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .pil:hover{background:var(--border2)}
 .pil:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* Área de toque: a .stats tem overflow-x:auto, e com isso o eixo Y também
@@ -5554,7 +5554,32 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .pil-galhos{fill:none;stroke:currentColor;stroke-width:1;stroke-linecap:round;opacity:.75}
 .pil-galhos circle{fill:currentColor;stroke:none}
 .pil-galhos .pil-mais{stroke-dasharray:.6 1.6}
-.pil-ponto{fill:var(--pil-ouro)}
+.pil-ponto{fill:var(--pil-ouro);transform-box:fill-box;transform-origin:center}
+/* Efeitos (fase 3), todos com a mola do app e desligados em "reduzir
+   movimento". Ao abrir: a pílula assenta como carimbo, o ponto nasce e a
+   conta rola. Ao trocar de pasta: o ponto desliza até a pasta nova e a
+   pílula dá uma esticada. Gravando: o ponto fica aceso e bate devagar. */
+.pil-ponto-g{transition:transform .32s cubic-bezier(.34,1.56,.64,1)}
+.pil{transition:background-color .15s ease-out,transform .08s cubic-bezier(.22,1,.36,1)}
+.pil:active{transform:scale(.96)}
+.pil-abre{transition:max-width .32s cubic-bezier(.34,1.56,.64,1),margin-left .32s cubic-bezier(.34,1.56,.64,1),opacity .2s ease-out}
+.pil.pil-chega{animation:pilCarimbo .34s cubic-bezier(.34,1.56,.64,1)}
+.pil.pil-chega .pil-ponto{animation:pilNasce .32s cubic-bezier(.34,1.56,.64,1)}
+.pil.pil-chega .pil-conta,.pil.pil-troca .pil-conta{animation:jzRola .22s cubic-bezier(.22,1,.36,1) .1s backwards}
+.pil.pil-troca{animation:pilEstica .16s cubic-bezier(.34,1.56,.64,1)}
+.pil.pil-entra .pil-pasta{animation:jzRola .3s cubic-bezier(.22,1,.36,1) backwards}
+.stats.st-rec .pil-ponto{animation:pilBate 1.6s ease-in-out infinite}
+#stext.st-salta{display:inline-block;animation:stSalta .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pilCarimbo{from{transform:scale(1.03,.92)}}
+@keyframes pilEstica{from{transform:scale(1.03,.95)}}
+@keyframes pilNasce{0%{transform:scale(0)}60%{transform:scale(1.5)}100%{transform:scale(1)}}
+@keyframes pilBate{0%,100%{transform:scale(1);filter:none}50%{transform:scale(1.35);filter:drop-shadow(0 0 1.5px var(--pil-ouro))}}
+@keyframes stSalta{from{transform:scale(1.25)}}
+@media(prefers-reduced-motion:reduce){
+  .pil,.pil-abre,.pil-ponto-g{transition:none}
+  .pil:active{transform:none}
+  .pil.pil-chega,.pil.pil-troca,.pil.pil-chega .pil-ponto,.pil .pil-conta,.pil.pil-entra .pil-pasta,.stats.st-rec .pil-ponto,#stext.st-salta{animation:none}
+}
 .pil-abre{display:flex;align-items:center;gap:6px;min-width:0;max-width:260px;margin-left:7px;overflow:hidden}
 .pil-txt{display:flex;flex-direction:column;min-width:0;line-height:13px}
 .pil-mundo,.pil-pasta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -7477,7 +7502,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 @media(max-width:360px){.pil-mundo,.pil-onde{font-size:11.5px}}
 /* No iPad/computador o mais alto da linha é o seletor A A A (26 px): a pílula
    fica nos mesmos 26 px pra linha continuar com 55. */
-@media(min-width:641px){.pil{height:26px}.pil-txt{line-height:12.5px}}
+@media(min-width:641px){.pil{height:26px}.pil-txt{line-height:12.5px}.pil::after{top:-14px;bottom:-14px}}
 
 /* ── FASE 2 — auto-esconder header/.stats/#docBar ao rolar pra baixo (só
    mobile). JS (ver "_onChromeScroll" no script principal) decide QUANDO
@@ -10631,7 +10656,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.30.8';
+const VOX_VERSION='2026.10.30.9';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -18409,7 +18434,7 @@ const _PIL_CAD_MAPA='<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
 function _pilMapa(trancado){
   const box=document.getElementById('pilMapa');if(!box)return;
   if(trancado){if(box.dataset.m!=='cad'){box.dataset.m='cad';box.innerHTML=_PIL_CAD_MAPA}return}
-  if(box.dataset.m!=='arv'){box.dataset.m='arv';box.innerHTML='<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><g class="pil-galhos"></g><circle class="pil-ponto" r="2.1" cx="0" cy="0"/></svg>'}
+  if(box.dataset.m!=='arv'){box.dataset.m='arv';box.innerHTML='<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><g class="pil-galhos"></g><g class="pil-ponto-g"><circle class="pil-ponto" r="2.1" cx="0" cy="0"/></g></svg>'}
   const linhas=[];
   const desce=(pai,lvl)=>getFolderChildrenVisiveis(pai).forEach(f=>{linhas.push({id:f.id,lvl,pai});desce(f.id,lvl+1)});
   desce(null,0);
@@ -18433,11 +18458,12 @@ function _pilMapa(trancado){
     +(d?`<path d="${d}"/>`:'')+(mais?`<path class="pil-mais" d="M4 ${ultY+1.6}V19.5"/>`:'')+bol;
   const vista=activeFolderId===VISTA_ARQ||activeFolderId===VISTA_LIX;
   const aqui=vista?{x:4,y:19}:(activeFolderId&&onde[activeFolderId])||onde[''];
-  const pt=box.querySelector('.pil-ponto');
-  pt.style.transform=`translate(${aqui.x}px,${aqui.y}px)`;
+  box.querySelector('.pil-ponto-g').style.transform=`translate(${aqui.x}px,${aqui.y}px)`;
 }
 const _PIL_CAD='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
-function _pilPintar(){
+// "fresco" só vem de applyFolderFilter, que é quem sabe a conta nova: o
+// renderFolders roda antes dela, e anunciar dali leria a conta da pasta velha.
+function _pilPintar(fresco){
   const b=document.getElementById('btnFolders');if(!b||!b.classList.contains('pil'))return;
   const mundo=_mundoAtual().nome,pessoa=_mundoFalaPessoa();
   const vista=activeFolderId===VISTA_ARQ||activeFolderId===VISTA_LIX;
@@ -18474,14 +18500,27 @@ function _pilPintar(){
   b.setAttribute('aria-label',frase+' '+t(pessoa?'Abrir pessoas':'Abrir pastas'));
   b.title=trancado||oculto?rot:mundo+' › '+cam.map(p=>p.name).concat(cam.length?[]:[pasta]).join(' › ');
   const chave=_mundoAtivo+'|'+activeFolderId+'|'+corFiltroAtivo+'|'+trancado;
-  if(_pilChave!==null&&_pilChave!==chave)document.getElementById('pilVoz').textContent=frase;
-  if(_pilC)_pilChave=chave;
+  if(!fresco)return;
+  if(_pilChave!==null&&_pilChave!==chave){
+    document.getElementById('pilVoz').textContent=frase;
+    _jz(b,'pil-troca',260);_jzTato(8);
+  }else if(_pilChave===null)_jz(b,'pil-chega',720);   // abriu o app
+  _pilChave=chave;
 }
 // Ocupado (gravando, transcrevendo, erro): no celular a pílula se fecha no
 // mapinha e o texto do status aparece no lugar. No iPad/computador cabem os dois.
+// No fim, o "Pronto" salta e só depois de ~650 ms a pílula se abre e o nome
+// entra — dá tempo de ler que terminou antes de o texto sumir no celular.
 function _pilStatus(type){
   const st=document.querySelector('.stats');if(!st)return;
-  st.classList.toggle('st-ocupado',type==='rec'||type==='proc'||type==='err');
+  const ocupado=type==='rec'||type==='proc'||type==='err',estava=st.classList.contains('st-ocupado');
+  clearTimeout(_pilStatus._t);
+  st.classList.toggle('st-rec',type==='rec');
+  if(ocupado){st.classList.add('st-ocupado');return}
+  if(!estava)return;
+  _jz(document.getElementById('stext'),'st-salta',340);
+  const abre=()=>{st.classList.remove('st-ocupado');_jz(document.getElementById('btnFolders'),'pil-entra',420)};
+  if(_voxReduzMov())abre();else _pilStatus._t=setTimeout(abre,650);
 }
 function renderFolderTree(parentId,lvl,counts){
   const children=getFolderChildrenVisiveis(parentId);
@@ -18563,7 +18602,11 @@ function toggleFolderExpanded(id){
 function selectFolder(id){
   // Ir pra "Tudo" saindo de uma pasta guarda de onde veio: no painel, ela
   // ganha o "voltar" (o "Voltar a…" que antes ficava na linha).
-  if(id===null&&activeFolderId&&activeFolderId!==VISTA_ARQ&&activeFolderId!==VISTA_LIX)_pastaVolta=activeFolderId;
+  // As mães dela abrem, senão o "voltar" de uma subpasta ficaria escondido.
+  if(id===null&&activeFolderId&&activeFolderId!==VISTA_ARQ&&activeFolderId!==VISTA_LIX){
+    _pastaVolta=activeFolderId;
+    getFolderPath(activeFolderId).slice(0,-1).forEach(p=>folderExpanded.add(p.id));
+  }
   else if(id!==null)_pastaVolta=null;
   activeFolderId=id;
   saveFolders();renderFolders();applyFolderFilter();
@@ -26956,7 +26999,7 @@ function applyFolderFilter(){
   });
   _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix);
   _atualizaAvisoCorEscondidos(corFiltroAtivo!==null?semCor-comCor:0);
-  _pilC={aqui:comCor,total:vivos};_pilPintar();
+  _pilC={aqui:comCor,total:vivos};_pilPintar(true);
   if(viewMode==='doc')applyFocusCard();
   updateRecencyBadges();
   // A pílula "Restaurar" e a barra de seleção dependem da VISTA, e a vista
