@@ -10436,7 +10436,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.28.3';
+const VOX_VERSION='2026.10.30.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -10452,6 +10452,8 @@ const VOX_VERSION='2026.10.28.3';
 // Se toda a feature for removida um dia, o World original continua abrindo.
 const VOX_MUNDO_KEYS=new Set(['vox_history','vox_folders','vox_folders_expanded',
   'vox_active_folder','vox_tag_nomes','vox_tags_collapsed','vox_cal',
+  // Plano 30, lote 16: a Biblioteca de tags (guardadas e arquivadas) é de cada mundo.
+  'vox_tag_biblio',
   'vox_float_cards','vox_mesa_telas','vox_stats','vox_speed_stats','vox_rec_count','vox_ressurgidas',
   // Plano 27 (05/10/2026): "como o Vox abre" é de cada mundo — o mundo de
   // Consultas abre no Documento e grava em Consulta, o de Ideias abre no
@@ -12892,6 +12894,7 @@ let I18N_EN={
 "Boas-vindas":"Welcome",
 "Abriu em {x}: é o jeito {p} deste mundo.":"Opened in {x}: that's this world's {p} way.",
 "marcado":"selected",
+"#{tag} saiu da nota e continua guardada na Biblioteca de tags.":"#{tag} left the note and stays saved in the Tag library.",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -17909,7 +17912,7 @@ function getFolderCount(id, counts){
 // os nomes reais vão pro IndexedDB (cifrados pelo mesmo cofre das notas) e o
 // localStorage fica só com um marcador. Ao destrancar, voltam pra tela.
 const _NOME_OCULTO='•••';
-let _nomesProntos=false,_tagNomesCofre=null;
+let _nomesProntos=false,_tagNomesCofre=null,_tagBiblioCofre=null;
 function _nomesCofreAtivo(){return !!_cofreChave&&_mundoTrancado(_mundoAtivo)}
 function _tagNomesLerCru(){let a=[];try{a=JSON.parse(localStorage.getItem('vox_tag_nomes')||'[]')}catch(e){a=[]}return Array.isArray(a)?a:[]}
 function _tagNomesLer(){return Array.isArray(_tagNomesCofre)?_tagNomesCofre.slice():_tagNomesLerCru()}
@@ -17924,7 +17927,7 @@ function _tagNomesGravar(arr){
 function _nomesGuardar(){
   if(!_nomesProntos||!_nomesCofreAtivo())return Promise.resolve();
   const pastas={},fichas={};folders.forEach(f=>{pastas[f.id]=f.name;if(f.ficha)fichas[f.id]=f.ficha});
-  return idbSet('vox_nomes',{pastas,fichas,tags:_tagNomesCofre||[]}).catch(()=>{});
+  return idbSet('vox_nomes',{pastas,fichas,tags:_tagNomesCofre||[],biblio:_tagBiblioCofre||null}).catch(()=>{});
 }
 async function _nomesRestaurar(){
   if(!_mundoTrancado(_mundoAtivo)){_nomesProntos=false;return}
@@ -17933,7 +17936,12 @@ async function _nomesRestaurar(){
   if(v&&v.pastas){
     folders.forEach(f=>{if(v.pastas[f.id]!=null)f.name=v.pastas[f.id];if(v.fichas&&v.fichas[f.id])f.ficha=v.fichas[f.id]});
     _tagNomesCofre=Array.isArray(v.tags)?v.tags:null;
+    // Biblioteca de tags (lote 16): cofre gravado antes dela não tem o campo; o
+    // que estiver em claro no aparelho entra no cofre agora e sai do localStorage.
+    _tagBiblioCofre=v.biblio?_tagBiblioLimpa(v.biblio):_tagBiblioLerCru();
+    localStorage.setItem('vox_tag_biblio',JSON.stringify(_tagBiblioVazia()));
     _nomesProntos=true;
+    if(!v.biblio&&(_tagBiblioCofre.g.length||_tagBiblioCofre.a.length))_nomesGuardar();
     renderFolders();if(typeof renderFiltroCores==='function')renderFiltroCores();
     return;
   }
@@ -17948,13 +17956,16 @@ async function _nomesTrancar(){
   _tagNomesCofre=_tagNomesLerCru();
   saveFolders();
   localStorage.setItem('vox_tag_nomes',JSON.stringify(_tagNomesCofre.map(()=>'')));
+  _tagBiblioCofre=_tagBiblioLerCru();
+  localStorage.setItem('vox_tag_biblio',JSON.stringify(_tagBiblioVazia()));
   await _nomesGuardar();
 }
 async function _nomesDestrancar(){
   if(!_nomesProntos)return;
   localStorage.setItem('vox_folders',JSON.stringify(folders));
   if(Array.isArray(_tagNomesCofre))localStorage.setItem('vox_tag_nomes',JSON.stringify(_tagNomesCofre));
-  _tagNomesCofre=null;_nomesProntos=false;
+  if(_tagBiblioCofre)localStorage.setItem('vox_tag_biblio',JSON.stringify(_tagBiblioCofre));
+  _tagNomesCofre=null;_tagBiblioCofre=null;_nomesProntos=false;
   await idbDelete('vox_nomes').catch(()=>{});
 }
 // ── FOLDERS ──
@@ -28558,7 +28569,8 @@ function doSearch(q){
   let shown=0;
   const isTag=q.startsWith('#');
   const isSpeaker=q.startsWith('@');
-  const tagQ=isTag?_normSearch(q.slice(1)):'';
+  const tagQ=isTag?_tagNorm(q.slice(1)):'';
+  const tagExata=isTag&&!!tagQ&&tagQ===_buscaTagExata;
   const spkQ=isSpeaker?_normSearch(q.slice(1)):'';
   const qNorm=_normSearch(q);
   cards.forEach(card=>{
@@ -28567,7 +28579,10 @@ function doSearch(q){
     let score;
     if(!q){score=1}
     else if(isTag){
-      score=(card.dataset.tags||'').split(',').filter(t=>t).some(t=>_normSearch(t).includes(tagQ))?3:0;
+      // Tag inteira, não trecho: "#ia" achava "mídia" e "diário". Digitando, vale
+      // o começo de qualquer palavra da tag ("#cli" acha "reunião cliente");
+      // tocando numa tag (filterTag), só ela, em qualquer grafia.
+      score=(card.dataset.tags||'').split(',').map(_tagNorm).filter(Boolean).some(n=>!tagQ||n===tagQ||(!tagExata&&(' '+n).includes(' '+tagQ)))?3:0;
     }else if(isSpeaker){
       const spks=JSON.parse(card.dataset.speakers||'{}');
       score=Object.values(spks).some(s=>_normSearch(s).includes(spkQ))?3:0;
@@ -33104,7 +33119,9 @@ async function exportProject(){
     stats:JSON.parse(localStorage.getItem('vox_stats')||'{}'),
     personalDict:JSON.parse(localStorage.getItem('vox_personal_dict')||'null'),
     learnedRules:JSON.parse(localStorage.getItem('vox_learned_rules')||'null'),
-    tagNomes:_nomesCofreAtivo()&&_nomesProntos?_tagNomesLer():JSON.parse(localStorage.getItem('vox_tag_nomes')||'null')
+    tagNomes:_nomesCofreAtivo()&&_nomesProntos?_tagNomesLer():JSON.parse(localStorage.getItem('vox_tag_nomes')||'null'),
+    // Biblioteca de tags (lote 16): as guardadas e as arquivadas. Backup antigo não tem.
+    tagBiblio:_tagBiblioLer()
   };
   let json=JSON.stringify(data),protegido=false;
   // Mundo trancado: a cópia sai protegida por uma senha, nunca em texto puro.
@@ -33231,6 +33248,7 @@ async function _restoreProject(data){
   try{if(data.personalDict)localStorage.setItem('vox_personal_dict',JSON.stringify(data.personalDict))}catch(e){}
   try{if(data.learnedRules)localStorage.setItem('vox_learned_rules',JSON.stringify(data.learnedRules))}catch(e){}
   try{if(data.tagNomes)_tagNomesGravar(data.tagNomes)}catch(e){}
+  try{if(data.tagBiblio)_tagBiblioJuntar(data.tagBiblio)}catch(e){}
   if((data.personalDict||data.learnedRules)&&typeof loadLearningData==='function'){
     loadLearningData();
     if(typeof renderLearningPanel==='function')renderLearningPanel();
@@ -33277,6 +33295,101 @@ async function _restoreProject(data){
   if(added&&!_keysHasAny())setTimeout(()=>toast(t('As chaves não vêm na cópia das notas. Restaure a cópia das chaves em Configurações › Geral › Proteger e levar.')),3600);
 }
 
+// ── BIBLIOTECA DE TAGS: a base (plano 30, lote 16, fase 0 · 30/10/2026) ──
+// A tag continua morando dentro da nota (dataset.tags). A Biblioteca guarda só o
+// que a nota não sabe: as tags prontas que ainda não estão em nenhuma nota (g) e
+// as arquivadas (a), uma lista por mundo (VOX_MUNDO_KEYS). Mundo trancado: a
+// lista vai pro cofre junto com os nomes das pastas (_nomesGuardar), nunca em
+// texto puro. Grafia: "Reunião-cliente" (manual) e "reunião cliente" (IA e voz)
+// são a mesma tag — _tagNorm junta caixa, acento, espaço e hífen (o _idxNormTag
+// do ramo antigo do Índice, lote 9).
+function _tagNorm(s){return _normSearch(String(s||'')).replace(/[\s_-]+/g,' ').trim()}
+function _tagBiblioVazia(){return {g:[],a:[]}}
+function _tagBiblioLimpa(o){
+  const r=_tagBiblioVazia(),vistas=new Set();
+  // Arquivada ganha de guardada quando as duas listas trazem a mesma tag.
+  ['a','g'].forEach(k=>{
+    ((o&&Array.isArray(o[k]))?o[k]:[]).forEach(x=>{
+      if(typeof x!=='string')return;
+      const v=x.trim().replace(/,/g,'').slice(0,40),n=_tagNorm(v);
+      if(!n||vistas.has(n))return;
+      vistas.add(n);r[k].push(v);
+    });
+  });
+  return r;
+}
+function _tagBiblioLerCru(){let o=null;try{o=JSON.parse(localStorage.getItem('vox_tag_biblio')||'null')}catch(e){}return _tagBiblioLimpa(o)}
+function _tagBiblioLer(){return _tagBiblioCofre?_tagBiblioLimpa(_tagBiblioCofre):_tagBiblioLerCru()}
+function _tagBiblioGravar(o){
+  o=_tagBiblioLimpa(o);
+  // Trancado e sem a senha nesta sessão: não grava (a mesma trava do saveHistory).
+  if(_mundoTrancado(_mundoAtivo)&&!_cofreChave)return;
+  if(_nomesCofreAtivo()&&_nomesProntos){
+    _tagBiblioCofre=o;
+    localStorage.setItem('vox_tag_biblio',JSON.stringify(_tagBiblioVazia()));
+    _nomesGuardar();
+  }else localStorage.setItem('vox_tag_biblio',JSON.stringify(o));
+}
+// Backup restaurado: junta as listas, sem tirar nada do que já está aqui.
+function _tagBiblioJuntar(o){
+  const b=_tagBiblioLer(),c=_tagBiblioLimpa(o);
+  _tagBiblioGravar({g:b.g.concat(c.g),a:b.a.concat(c.a)});
+}
+function _tagArquivada(tag){const n=_tagNorm(tag);return !!n&&_tagBiblioLer().a.some(x=>_tagNorm(x)===n)}
+// Inventário ao vivo: cada tag (pela grafia juntada) com as notas vivas que a
+// usam (ids), quantas notas arquivadas a usam (nArq), a grafia mais usada como
+// rótulo (lab) e as outras grafias (outras). Lixeira não conta. Inclui as
+// guardadas sem nota e marca as arquivadas (arq).
+function _tagInventario(){
+  const G=new Map();
+  const pega=k=>{let g=G.get(k);if(!g){g={k,lab:'',vars:new Map(),ids:[],nArq:0,arq:false};G.set(k,g)}return g};
+  _flTodosCards().forEach(c=>{
+    if(_cardNaLixeira(c))return;
+    const arq=_cardArquivado(c),daNota=new Set();
+    (c.dataset.tags||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(v=>{
+      const k=_tagNorm(v);if(!k)return;
+      const g=pega(k);g.vars.set(v,(g.vars.get(v)||0)+1);
+      if(daNota.has(k))return;
+      daNota.add(k);
+      if(arq)g.nArq++;else if(!g.ids.includes(c.id))g.ids.push(c.id);
+    });
+  });
+  const b=_tagBiblioLer();
+  b.g.forEach(v=>{const g=pega(_tagNorm(v));if(!g.lab)g.lab=v});
+  b.a.forEach(v=>{const g=pega(_tagNorm(v));g.arq=true;if(!g.lab)g.lab=v});
+  G.forEach(g=>{
+    if(g.vars.size){const vs=[...g.vars].sort((x,y)=>y[1]-x[1]);g.lab=vs[0][0];g.outras=vs.slice(1).map(x=>x[0])}
+    else g.outras=[];
+    g.n=g.ids.length;
+  });
+  return G;
+}
+// O nome que a tag ganha ao entrar numa nota: se a mesma tag já existe com outra
+// grafia, fica a de sempre (a mais usada). Assim "reuniao cliente" digitado não
+// vira uma terceira tag ao lado de "Reunião-cliente".
+function _tagRotulo(tag){const g=_tagInventario().get(_tagNorm(tag));return g&&g.lab?g.lab:tag}
+// Tirar a tag da última nota não apaga a tag: ela fica na Biblioteca, em "Ainda
+// sem nota" (Things e Todoist fazem igual). Apagar de vez é uma ação própria.
+function _tagGuardaSeSumiu(tag){
+  const k=_tagNorm(tag);if(!k)return;
+  const g=_tagInventario().get(k);
+  if(g&&(g.n||g.nArq||g.arq))return;
+  const b=_tagBiblioLer();if(b.g.some(x=>_tagNorm(x)===k))return;
+  b.g.push(tag);_tagBiblioGravar(b);
+  toast(t('#{tag} saiu da nota e continua guardada na Biblioteca de tags.').replace('{tag}',tag));
+}
+// Sugestões da IA e da voz: com a grafia de sempre, sem repetir a que a nota já
+// tem (em qualquer grafia) e sem as arquivadas — arquivar é tirar das sugestões.
+function _tagFiltraSugestoes(id,tags){
+  const inv=_tagInventario(),tem=new Set(_cardTags(id).map(_tagNorm)),vistas=new Set(),r=[];
+  tags.forEach(v=>{
+    const k=_tagNorm(v);if(!k||tem.has(k)||vistas.has(k))return;
+    const g=inv.get(k);if(g&&g.arq)return;
+    vistas.add(k);r.push(g&&g.lab?g.lab:v);
+  });
+  return r;
+}
+
 // ── TAGS ──
 function handleTagInput(e,id){
   if(e.key==='Enter'||e.key===','){
@@ -33288,8 +33401,9 @@ function handleTagInput(e,id){
 }
 function addTagToCard(id,tag){
   const card=document.getElementById(id);if(!card)return;
+  tag=_tagRotulo(tag);
   const ex=(card.dataset.tags||'').split(',').filter(t=>t);
-  if(ex.includes(tag))return;
+  if(ex.some(x=>_tagNorm(x)===_tagNorm(tag)))return;
   card.dataset.tags=[...ex,tag].join(',');
   renderTags(id,(card.dataset.tags||'').split(',').filter(t=>t));saveHistory();
 }
@@ -33297,13 +33411,14 @@ function removeTag(id,tag){
   const card=document.getElementById(id);if(!card)return;
   card.dataset.tags=(card.dataset.tags||'').split(',').filter(t=>t&&t!==tag).join(',');
   renderTags(id,(card.dataset.tags||'').split(',').filter(t=>t));saveHistory();
+  _tagGuardaSeSumiu(tag);
 }
 function renderTags(id,tags){
   const ct=document.getElementById('ctags-'+id);if(!ct)return;
   ct.innerHTML='';
   tags.forEach(t=>{
     const btn=document.createElement('button');btn.className='ctag';
-    btn.innerHTML=`#${escHtml(t)}<span class="ctag-rm" onclick="event.stopPropagation();removeTag('${id}','${escHtml(t)}')">×</span>`;
+    btn.innerHTML=`#${escHtml(t)}<span class="ctag-rm" onclick="event.stopPropagation();removeTag('${id}','${escJs(t)}')">×</span>`;
     btn.onclick=()=>filterTag(t);ct.appendChild(btn);
   });
   const sg=document.createElement('button');sg.className='ctag-suggest-btn';sg.title=t('Sugerir tags com IA');sg.textContent=t('+ tag IA');
@@ -33315,7 +33430,10 @@ function renderTags(id,tags){
   const inp=document.createElement('input');inp.className='ctag-input';inp.placeholder=t('tag manual');inp.maxLength=20;
   inp.onkeydown=(e)=>handleTagInput(e,id);ct.appendChild(inp);
 }
-function filterTag(tag){if(!searchActive)toggleSearch();document.getElementById('searchInput').value='#'+tag;doSearch('#'+tag)}
+// Tocar numa tag busca SÓ ela (em qualquer grafia); digitar "#…" na busca acha
+// pelo começo das palavras. var, não let: o doSearch pode rodar antes desta linha.
+var _buscaTagExata='';
+function filterTag(tag){_buscaTagExata=_tagNorm(tag);if(!searchActive)toggleSearch();document.getElementById('searchInput').value='#'+tag;doSearch('#'+tag)}
 
 // ── TAG SUGGESTIONS (IA) ──
 function tagsBlock(id,tags){
@@ -33525,12 +33643,11 @@ function toggleTagsPanel(id){
   }
   localStorage.setItem('vox_tags_collapsed',nowCollapsed?'1':'0');
 }
+// As tags que a IA deve reaproveitar: as das notas (inclusive as abertas em
+// janela flutuante, que antes ficavam de fora) e as guardadas na Biblioteca, que
+// existem justamente pra isso. Arquivadas e lixeira ficam de fora.
 function getAllUsedTags(){
-  const set=new Set();
-  document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
-    (c.dataset.tags||'').split(',').filter(t=>t).forEach(t=>set.add(t));
-  });
-  return [...set];
+  return [..._tagInventario().values()].filter(g=>!g.arq&&g.lab).map(g=>g.lab);
 }
 // `silencioso=true` é o caminho automático (disparado sozinho ~600ms depois
 // de uma transcrição terminar, ver os dois `setTimeout(()=>suggestTags(...))`
@@ -33563,8 +33680,7 @@ async function suggestTags(id,silencioso){
 }
 function renderTagSuggestions(id,tags){
   const box=document.getElementById('tagsug-'+id);if(!box)return;
-  const existing=(document.getElementById(id)?.dataset.tags||'').split(',').filter(t=>t);
-  const fresh=[...new Set(tags)].filter(t=>!existing.includes(t));
+  const fresh=_tagFiltraSugestoes(id,tags);
   if(!fresh.length){box.innerHTML='';return}
   box.innerHTML=`<span class="tagsug-lbl"><span class="svgi">${ICO.sparkles}</span> ${t('sugestões:')}</span>`+
     fresh.map(tg=>`<button class="ctag-suggest" onclick="acceptTag('${id}','${escJs(tg)}',this)">+ ${escHtml(tg)}</button>`).join('')+
@@ -34322,8 +34438,7 @@ async function _vtTranscribe(blob){
 function _vtRenderResult(id,tags,transcript){
   const panel=document.getElementById('vtpanel-'+id);if(!panel)return;
   if(!tags.length){panel.classList.remove('on');panel.innerHTML='';toast(t('ℹ️ Nenhuma tag identificada na fala'),true);return;}
-  const existing=(document.getElementById(id)?.dataset.tags||'').split(',').filter(t=>t);
-  const fresh=tags.filter(t=>!existing.includes(t));
+  const fresh=_tagFiltraSugestoes(id,tags);
   if(!fresh.length){panel.classList.remove('on');panel.innerHTML='';toast(t('ℹ️ Todas as tags já existem no card'),true);return;}
   panel.innerHTML=
     `<div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.3px;margin-bottom:8px"><span class="svgi">${ICO.mic}</span> ${t('ouvi:')} <em style="font-weight:400;color:var(--text4)">"${escHtml(transcript.slice(0,120))}${transcript.length>120?'…':''}"</em></div>`+
