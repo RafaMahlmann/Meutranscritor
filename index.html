@@ -5546,6 +5546,15 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    inteira dela (39 px) e, na largura, pelo menos 44 px. */
 .pil::after{content:'';position:absolute;top:-5px;bottom:-5px;left:-6px;right:-6px;min-width:44px}
 .pil-mapa{flex:none;width:22px;height:22px;border-radius:7px;background:var(--bg-card);box-shadow:inset 0 0 0 1px var(--border);display:grid;place-items:center;color:var(--text3);overflow:hidden}
+/* O mapinha é desenhado com as pastas da própria pessoa (_pilMapa): galhos
+   finos na cor do texto apagado e um ponto dourado onde ela está. */
+:root{--pil-ouro:#d99a12}
+[data-theme="dark"]{--pil-ouro:#f5c242}
+.pil-mapa svg{display:block}
+.pil-galhos{fill:none;stroke:currentColor;stroke-width:1;stroke-linecap:round;opacity:.75}
+.pil-galhos circle{fill:currentColor;stroke:none}
+.pil-galhos .pil-mais{stroke-dasharray:.6 1.6}
+.pil-ponto{fill:var(--pil-ouro)}
 .pil-abre{display:flex;align-items:center;gap:6px;min-width:0;max-width:260px;margin-left:7px;overflow:hidden}
 .pil-txt{display:flex;flex-direction:column;min-width:0;line-height:13px}
 .pil-mundo,.pil-pasta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -10622,7 +10631,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.30.7';
+const VOX_VERSION='2026.10.30.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -18392,6 +18401,41 @@ function renderFolders(){
 // sumida. A pílula é o próprio botão de Pastas: mundo em cima, pasta + conta
 // embaixo. As contas vêm de applyFolderFilter (_pilC); o resto, daqui.
 var _pilC=null,_pilChave=null,_pastaVolta=null;   // var: setStatus pode chamar antes desta linha rodar
+// Mapinha: até 6 pastas desenha a árvore toda; com mais, só o galho de onde a
+// pessoa está e um pontilhado dizendo "tem mais". Só formas, nenhum nome —
+// e mundo trancado nem chega aqui: vira o cadeado. O ponto dourado é um nó
+// só, que sobrevive às trocas (é ele que desliza na fase de efeitos).
+const _PIL_CAD_MAPA='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+function _pilMapa(trancado){
+  const box=document.getElementById('pilMapa');if(!box)return;
+  if(trancado){if(box.dataset.m!=='cad'){box.dataset.m='cad';box.innerHTML=_PIL_CAD_MAPA}return}
+  if(box.dataset.m!=='arv'){box.dataset.m='arv';box.innerHTML='<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><g class="pil-galhos"></g><circle class="pil-ponto" r="2.1" cx="0" cy="0"/></svg>'}
+  const linhas=[];
+  const desce=(pai,lvl)=>getFolderChildrenVisiveis(pai).forEach(f=>{linhas.push({id:f.id,lvl,pai});desce(f.id,lvl+1)});
+  desce(null,0);
+  let rows=linhas,mais=false;
+  if(linhas.length>6){
+    mais=true;
+    const cam=activeFolderId?getFolderPath(activeFolderId):[];
+    rows=cam.length?cam.map((p,i)=>({id:p.id,lvl:i,pai:i?cam[i-1].id:null})):linhas.filter(l=>l.lvl===0).slice(0,3);
+  }
+  const passo=Math.min(3.4,15/Math.max(1,rows.length+(mais?1:0)));
+  const X=l=>Math.min(18,4+(l+1)*4.5);
+  const onde={};onde['']={x:4,y:4};
+  let d='',bol='',ultY=4;
+  rows.forEach((r,i)=>{
+    const y=+(4+(i+1)*passo).toFixed(2),x=X(r.lvl),pa=onde[r.pai||'']||onde[''];
+    d+=`M${pa.x} ${pa.y+1}V${y}H${x-1.3}`;
+    bol+=`<circle cx="${x}" cy="${y}" r="1.3"/>`;
+    onde[r.id]={x,y};ultY=y;
+  });
+  box.querySelector('.pil-galhos').innerHTML='<rect x="2.5" y="2.5" width="3" height="3" rx=".8"/>'
+    +(d?`<path d="${d}"/>`:'')+(mais?`<path class="pil-mais" d="M4 ${ultY+1.6}V19.5"/>`:'')+bol;
+  const vista=activeFolderId===VISTA_ARQ||activeFolderId===VISTA_LIX;
+  const aqui=vista?{x:4,y:19}:(activeFolderId&&onde[activeFolderId])||onde[''];
+  const pt=box.querySelector('.pil-ponto');
+  pt.style.transform=`translate(${aqui.x}px,${aqui.y}px)`;
+}
 const _PIL_CAD='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 function _pilPintar(){
   const b=document.getElementById('btnFolders');if(!b||!b.classList.contains('pil'))return;
@@ -18422,6 +18466,7 @@ function _pilPintar(){
     if(_pilC)conta=' · '+(aqui===total&&!activeFolderId?total:t('{n} de {t}').replace('{n}',aqui).replace('{t}',total));
     frase=t('Você está em {m}, {p}, {n} de {t} {notas}.').replace('{m}',mundo).replace('{p}',pasta).replace('{n}',aqui).replace('{t}',total).replace('{notas}',notas(total));
   }
+  _pilMapa(trancado);
   document.getElementById('pilMundo').innerHTML=escHtml(mundo);
   document.getElementById('pilPasta').innerHTML=pastaHtml;
   document.getElementById('pilConta').innerHTML=escHtml(conta);
