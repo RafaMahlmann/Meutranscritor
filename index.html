@@ -5524,8 +5524,42 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
    dentro de .content-area, que fica mais estreita quando a sidebar de
    pastas está aberta (182px + 14px de gap). Sem isso, esse grupo de botões
    ficava alinhado com a borda da PÁGINA, não com a borda do conteúdo — uns
-   196px mais à direita do que a barra logo abaixo dele. */
-.stats-ctrls:has(#btnFolders.folders-on){margin-right:196px}
+   196px mais à direita do que a barra logo abaixo dele.
+   Desde a Placa de bolso o #btnFolders mora fora do grupo, na esquerda da
+   linha; a conta continua a mesma. Só no computador: no celular o painel é
+   gaveta por cima, e 196px a mais fariam a linha rolar pro lado. */
+@media(min-width:641px){.stats:has(#btnFolders.folders-on)>.stats-ctrls{margin-right:196px}}
+/* ── PLACA DE BOLSO (30/10/2026) ──
+   O botão de Pastas virou a pílula "onde estou": mapinha, mundo em cima,
+   pasta em negrito + a conta embaixo, e a setinha. Pedido do Rafa:
+   aproveitar o espaço que já existe, não criar mais — por isso a altura
+   é presa abaixo da do "+ Novo card" (a linha mede 39 px no celular e 55 px
+   no iPad/computador, antes e depois). Nome longo corta com reticências: a
+   pílula encolhe antes de a linha rolar. */
+.pil{position:relative;flex:0 1 auto;min-width:0;max-width:300px;height:28px;margin-left:14px;padding:0 9px 0 3px;display:inline-flex;align-items:center;background:var(--bg-input);border:0;border-radius:9px;color:var(--text2);font-family:var(--font);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color .15s ease-out}
+.pil:hover{background:var(--border2)}
+.pil:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Área de toque: a .stats tem overflow-x:auto, e com isso o eixo Y também
+   recorta — um ::after com inset:-10px (o do botão antigo) era cortado na
+   borda da linha e ainda deixava a linha rolar 1-2 px pra cima e pra baixo.
+   Aqui a folga vai até a borda da linha e não passa: no celular dá a altura
+   inteira dela (39 px) e, na largura, pelo menos 44 px. */
+.pil::after{content:'';position:absolute;top:-5px;bottom:-5px;left:-6px;right:-6px;min-width:44px}
+.pil-mapa{flex:none;width:22px;height:22px;border-radius:7px;background:var(--bg-card);box-shadow:inset 0 0 0 1px var(--border);display:grid;place-items:center;color:var(--text3);overflow:hidden}
+.pil-abre{display:flex;align-items:center;gap:6px;min-width:0;max-width:260px;margin-left:7px;overflow:hidden}
+.pil-txt{display:flex;flex-direction:column;min-width:0;line-height:13px}
+.pil-mundo,.pil-pasta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pil-mundo{font-size:11px;color:var(--text3);font-weight:500}
+.pil-onde{display:flex;min-width:0;font-size:12px;color:var(--text)}
+.pil-pasta{flex:0 1 auto;min-width:0;font-weight:700}
+.pil-pasta svg{display:inline-block;vertical-align:-1px;margin-right:3px}
+.pil-conta{flex:none;color:var(--text3);font-weight:500;white-space:pre}
+.pil-seta{flex:none;color:var(--text3);transition:transform .2s ease-out}
+.pil.folders-on .pil-seta{transform:rotate(180deg)}
+.pil-voz{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* No painel de pastas: a pasta de onde a pessoa saiu pra "Tudo" ganha o
+   "voltar" — é o "Voltar a…" que antes morava na faixa. */
+.folder-volta{flex:none;margin-left:4px;padding:1px 6px;border-radius:6px;background:var(--accent-glow);color:var(--accent);font-size:10px;font-weight:700}
 .stat-folders-btn{flex-shrink:0;background:var(--bg-input);border:none;color:var(--text3);border-radius:8px;padding:5px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-size:11px;font-weight:600;transition:all var(--transition)}
 .stat-folders-btn:hover{background:var(--border2);color:var(--text)}
 .stat-folders-btn.folders-on{background:var(--accent-glow);color:var(--accent)}
@@ -7414,12 +7448,27 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   .stats-ctrls{gap:6px}
   .stat-folders-btn{padding:5px 8px;position:relative}
   .stat-folders-btn span{display:none}
+  /* Placa de bolso: no celular a pílula vem logo depois da bolinha (a ordem
+     do HTML é a do computador, com as contas antes dela). Em repouso o
+     "Pronto" some e sobra a bolinha; ocupado (gravando, transcrevendo, erro)
+     a pílula se fecha no mapinha e o texto do status ocupa o espaço aberto. */
+  .stats>.stat:first-child{order:-2}
+  .pil{order:-1;margin-left:8px;padding-right:8px}
+  .pil-mundo,.pil-onde{font-size:12px}
+  .stats:not(.st-ocupado) #stext{display:none}
+  .stats:not(.st-ocupado)>.stat:first-child{border-right:0;padding-right:0}
+  .stats.st-ocupado .pil{padding-right:3px}
+  .stats.st-ocupado .pil-abre{max-width:0;margin-left:0;opacity:0}
   /* Botão vira ícone-só (mais compacto), mas a área de TOQUE continua ≥44px
      via ::after (hit-slop invisível) — não é o tamanho visual que importa
      pro dedo, é a área que responde ao toque. */
   .stat-folders-btn::after{content:'';position:absolute;inset:-10px}
 }
 @media(max-width:640px) and (pointer:coarse){#btnNewCard{padding:7px 10px}}
+@media(max-width:360px){.pil-mundo,.pil-onde{font-size:11.5px}}
+/* No iPad/computador o mais alto da linha é o seletor A A A (26 px): a pílula
+   fica nos mesmos 26 px pra linha continuar com 55. */
+@media(min-width:641px){.pil{height:26px}.pil-txt{line-height:12.5px}}
 
 /* ── FASE 2 — auto-esconder header/.stats/#docBar ao rolar pra baixo (só
    mobile). JS (ver "_onChromeScroll" no script principal) decide QUANDO
@@ -8926,6 +8975,18 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
   <div class="stat" id="statTime"><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> <strong id="stime">0 min</strong></div>
   <div class="stat" id="statAvg" style="display:none" title="Duração média de cada gravação" data-i18n-title><span class="svgi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg></span> <strong id="sAvg">—</strong> <span data-i18n>média</span></div>
   <div class="stat" id="statSaved" style="display:none">⚡ <strong id="sSaved">0 min</strong> <span data-i18n>economizados</span></div>
+  <!-- Placa de bolso (30/10/2026): o antigo botão "Pastas" virou a pílula que
+       diz onde a pessoa está — mundo, pasta e a conta. Mesmo id e mesmo
+       toggleFolders(); a linha não cresce nada. Quem pinta é _pilPintar(). -->
+  <button type="button" class="pil" id="btnFolders" onclick="toggleFolders()" aria-label="Pastas">
+    <span class="pil-mapa" id="pilMapa" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>
+    <span class="pil-abre" aria-hidden="true">
+      <span class="pil-txt"><span class="pil-mundo" id="pilMundo"></span><span class="pil-onde"><b class="pil-pasta" id="pilPasta"></b><span class="pil-conta" id="pilConta"></span></span></span>
+      <svg class="pil-seta" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </span>
+    <span class="pil-rot" hidden>Pastas</span>
+  </button>
+  <span class="pil-voz" id="pilVoz" aria-live="polite"></span>
   <div class="stats-ctrls">
     <button class="stat-folders-btn" id="btnNewCard" onclick="novoCardDoMais()" title="Criar card novo em branco" data-i18n-title>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -8936,10 +8997,6 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
       <button class="font-sz-btn" id="fzM" onclick="setFontSize('m')" style="font-size:14px">A</button>
       <button class="font-sz-btn" id="fzG" onclick="setFontSize('g')" style="font-size:18px">A</button>
     </div>
-    <button class="stat-folders-btn" id="btnFolders" onclick="toggleFolders()" title="Mostrar/ocultar pastas" aria-label="Mostrar/ocultar pastas" data-i18n-title>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-      <span data-i18n>Pastas</span>
-    </button>
   </div>
 </div>
 
@@ -10565,7 +10622,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.30.6';
+const VOX_VERSION='2026.10.30.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13093,6 +13150,17 @@ let I18N_EN={
 "#{a} agora é #{b}, em {n}.":"#{a} is now #{b}, in {n}.",
 "#{tag} apagada de {n}.":"#{tag} removed from {n}.",
 "#{tag} apagada da Biblioteca.":"#{tag} removed from the library.",
+"Pasta trancada":"Locked folder",
+"Pessoa trancada":"Locked person",
+"Ainda sem notas":"No notes yet",
+"{n} de {t}":"{n} of {t}",
+"voltar":"back",
+"Abrir pastas":"Open folders",
+"Abrir pessoas":"Open people",
+"Você está em {m}. Destranque para ver.":"You are in {m}. Unlock to see.",
+"Você está em {m}, ainda sem notas.":"You are in {m}, no notes yet.",
+"Você está em {m}, {p}, {n} {notas}.":"You are in {m}, {p}, {n} {notas}.",
+"Você está em {m}, {p}, {n} de {t} {notas}.":"You are in {m}, {p}, {n} of {t} {notas}.",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -18316,6 +18384,59 @@ function renderFolders(){
   html+=`</div>`;
   list.innerHTML=html;
   _folderAtualizaPlaqueta();
+  _pilPintar();
+}
+// ── PLACA DE BOLSO: a pílula "onde estou" na linha de status ──
+// Abrir o app reabre o mundo e a pasta de antes em silêncio: com o painel
+// fechado nada dizia onde a pessoa estava, e "2 de 7" notas parecia nota
+// sumida. A pílula é o próprio botão de Pastas: mundo em cima, pasta + conta
+// embaixo. As contas vêm de applyFolderFilter (_pilC); o resto, daqui.
+var _pilC=null,_pilChave=null,_pastaVolta=null;   // var: setStatus pode chamar antes desta linha rodar
+const _PIL_CAD='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+function _pilPintar(){
+  const b=document.getElementById('btnFolders');if(!b||!b.classList.contains('pil'))return;
+  const mundo=_mundoAtual().nome,pessoa=_mundoFalaPessoa();
+  const vista=activeFolderId===VISTA_ARQ||activeFolderId===VISTA_LIX;
+  const trancado=_mundoTrancado(_mundoAtivo)&&!_cofreChave;
+  const cam=(!vista&&activeFolderId)?getFolderPath(activeFolderId):[];
+  const oculto=cam.some(p=>p.name===_NOME_OCULTO);
+  const aqui=_pilC?_pilC.aqui:0,total=_pilC?_pilC.total:0;
+  const notas=n=>t(n===1?'nota':'notas');
+  let pasta,pastaHtml,conta='',frase;
+  if(trancado||oculto){
+    // Trancado não revela nome nenhum de pasta, nem a conta.
+    pasta=activeFolderId?t(pessoa?'Pessoa trancada':'Pasta trancada'):t('Mundo trancado');
+    pastaHtml=_PIL_CAD+escHtml(pasta);
+    frase=t('Você está em {m}. Destranque para ver.').replace('{m}',mundo);
+  }else if(vista){
+    // Arquivados e Lixeira não são parte do todo: só o número, nunca "0 de 7".
+    pasta=t(activeFolderId===VISTA_ARQ?'Arquivados':'Lixeira');pastaHtml=escHtml(pasta);
+    if(_pilC)conta=' · '+aqui;
+    frase=t('Você está em {m}, {p}, {n} {notas}.').replace('{m}',mundo).replace('{p}',pasta).replace('{n}',aqui).replace('{notas}',notas(aqui));
+  }else if(_pilC&&!total){
+    pasta=t('Ainda sem notas');pastaHtml=escHtml(pasta);
+    frase=t('Você está em {m}, ainda sem notas.').replace('{m}',mundo);
+  }else{
+    pasta=cam.length?cam[cam.length-1].name:t('Todas as notas');pastaHtml=escHtml(pasta);
+    // O filtro de cor entra na conta: em "Todas", com cor ligada, vira "2 de 7".
+    if(_pilC)conta=' · '+(aqui===total&&!activeFolderId?total:t('{n} de {t}').replace('{n}',aqui).replace('{t}',total));
+    frase=t('Você está em {m}, {p}, {n} de {t} {notas}.').replace('{m}',mundo).replace('{p}',pasta).replace('{n}',aqui).replace('{t}',total).replace('{notas}',notas(total));
+  }
+  document.getElementById('pilMundo').innerHTML=escHtml(mundo);
+  document.getElementById('pilPasta').innerHTML=pastaHtml;
+  document.getElementById('pilConta').innerHTML=escHtml(conta);
+  const rot=t(pessoa?'Pessoas':'Pastas');
+  b.setAttribute('aria-label',frase+' '+t(pessoa?'Abrir pessoas':'Abrir pastas'));
+  b.title=trancado||oculto?rot:mundo+' › '+cam.map(p=>p.name).concat(cam.length?[]:[pasta]).join(' › ');
+  const chave=_mundoAtivo+'|'+activeFolderId+'|'+corFiltroAtivo+'|'+trancado;
+  if(_pilChave!==null&&_pilChave!==chave)document.getElementById('pilVoz').textContent=frase;
+  if(_pilC)_pilChave=chave;
+}
+// Ocupado (gravando, transcrevendo, erro): no celular a pílula se fecha no
+// mapinha e o texto do status aparece no lugar. No iPad/computador cabem os dois.
+function _pilStatus(type){
+  const st=document.querySelector('.stats');if(!st)return;
+  st.classList.toggle('st-ocupado',type==='rec'||type==='proc'||type==='err');
 }
 function renderFolderTree(parentId,lvl,counts){
   const children=getFolderChildrenVisiveis(parentId);
@@ -18344,6 +18465,7 @@ function renderFolderTree(parentId,lvl,counts){
     // Contador zero é ruído puro e custava 22px do nome — Things 3 e Apple
     // Notas escondem pelo mesmo motivo. Pasta vazia simplesmente não conta.
     html+=`<span class="folder-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span>
+      ${activeFolderId===null&&f.id===_pastaVolta?`<span class="folder-volta">${escHtml(t('voltar'))}</span>`:''}
       ${count?`<span class="folder-count">${count}</span>`:''}
       <span class="folder-menu-btn" onclick="event.stopPropagation();folderMenu('${escJs(f.id)}',event)" title="${t('Opções')}">⋯</span></div>`;
     if(isExpanded)html+=renderFolderTree(f.id,lvl+1,counts);
@@ -18394,6 +18516,10 @@ function toggleFolderExpanded(id){
   });
 }
 function selectFolder(id){
+  // Ir pra "Tudo" saindo de uma pasta guarda de onde veio: no painel, ela
+  // ganha o "voltar" (o "Voltar a…" que antes ficava na linha).
+  if(id===null&&activeFolderId&&activeFolderId!==VISTA_ARQ&&activeFolderId!==VISTA_LIX)_pastaVolta=activeFolderId;
+  else if(id!==null)_pastaVolta=null;
   activeFolderId=id;
   saveFolders();renderFolders();applyFolderFilter();
   clearSearch();
@@ -26765,10 +26891,11 @@ function applyFolderFilter(){
   // Conta pra decidir se some tudo sem explicação nenhuma — o susto que o
   // Rafa teve (achou que tinha perdido 7 gravações; era só o filtro de cor
   // somado ao de pasta, sem nenhum aviso na tela).
-  let semCor=0,comCor=0,totalCards=0;
+  let semCor=0,comCor=0,totalCards=0,vivos=0;
   document.querySelectorAll('#cardsList .card:not(.proc-card)').forEach(c=>{
     totalCards++;
     const arq=_cardArquivado(c),lix=_cardNaLixeira(c);
+    if(!arq&&!lix)vivos++;
     let inFolder;
     if(naLix)inFolder=lix;
     else if(naArq)inFolder=arq&&!lix;
@@ -26784,6 +26911,7 @@ function applyFolderFilter(){
   });
   _avisoFiltroVazio(totalCards,semCor,comCor,naArq,naLix);
   _atualizaAvisoCorEscondidos(corFiltroAtivo!==null?semCor-comCor:0);
+  _pilC={aqui:comCor,total:vivos};_pilPintar();
   if(viewMode==='doc')applyFocusCard();
   updateRecencyBadges();
   // A pílula "Restaurar" e a barra de seleção dependem da VISTA, e a vista
@@ -28116,10 +28244,11 @@ function _mundoFalaPessoa(){
 function _csSemDono(){return _mundoFalaPessoa()?t('Sem pessoa'):''}
 function _vozConsultaSinc(){
   const c=_mundoFalaPessoa();
-  ['#foldersBar .folder-head-title span','#btnFolders span'].forEach(q=>{const el=document.querySelector(q);if(el)el.textContent=c?t('Pessoas'):t('Pastas')});
+  ['#foldersBar .folder-head-title span','#btnFolders .pil-rot'].forEach(q=>{const el=document.querySelector(q);if(el)el.textContent=c?t('Pessoas'):t('Pastas')});
   // O "+" ao lado do título também fala "pessoa" (antes só a linha fantasma falava).
   const nv=document.getElementById('btnFolderNova');
   if(nv){const r=c?t('Nova pessoa'):t('Nova pasta');nv.title=r;nv.setAttribute('aria-label',r)}
+  _pilPintar();
 }
 function _csFichaRotulo(f){return f?t('Ver ficha de {n}').replace('{n}',f.name):''}
 // Guardou em outra pasta (pela faixa, pelo painel ou arrastando): a faixa mostra a pessoa certa.
@@ -46323,6 +46452,7 @@ function setStatus(txt,type){
   else if(type==='err')d.style.background='var(--danger)';
   else d.classList.add('off');
   _sincIndicadorProcSobreMapa(type,txtTraduzido);
+  _pilStatus(type);
 }
 // A pilulazinha de "transcrevendo" só existe pra reaparecer o aviso que uma
 // tela cheia cobre — na tela normal o cabeçalho já mostra isto, então ela
