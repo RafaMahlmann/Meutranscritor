@@ -13115,6 +13115,10 @@ let I18N_EN={
 "🔗 Cards juntados. O que você arrastou foi para a lixeira.":"🔗 Cards merged. The one you dragged went to the trash.",
 "↩ Cards separados de novo":"↩ Cards split apart again",
 "Este número não bate com a conversa: {x}. Confira.":"This number doesn't match the conversation: {x}. Check it.",
+"Dado de paciente: no crédito grátis, a AssemblyAI pode treinar com este áudio. Use um plano pago com contrato de saúde, ou o transcritor local.":"Patient data: on the free credit, AssemblyAI may train on this audio. Use a paid plan with a health-data agreement, or the local transcriber.",
+"Falta configurar a separação de vozes":"Voice separation isn't set up yet",
+"Separe as vozes com segurança: dado de paciente pede um plano pago com contrato de saúde, ou o transcritor local":"Separate voices safely: patient data calls for a paid plan with a health-data agreement, or the local transcriber",
+"Dado de paciente: use a AssemblyAI num plano pago, com contrato de saúde, ou o transcritor local. No crédito grátis, ela pode treinar com o áudio.":"Patient data: use AssemblyAI on a paid plan with a health-data agreement, or the local transcriber. On the free credit, it may train on the audio.",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -28016,7 +28020,7 @@ function _csPastasOpts(sel,vazio){
 function _csRota(){
   if(cfg.provider==='local'&&cfg.diarLocal)return {serv:t('seu computador'),aviso:''};
   const d=cfg.diarProvider;
-  if(cfg.diarEnabled&&d==='assemblyai'&&cfg.apiKeyAssembly)return {serv:'AssemblyAI',aviso:t('No crédito grátis da AssemblyAI o áudio pode ser usado para treinar o modelo. No plano pago dá para desligar, em Data Controls.')};
+  if(cfg.diarEnabled&&d==='assemblyai'&&cfg.apiKeyAssembly)return {serv:'AssemblyAI',aviso:t('Dado de paciente: no crédito grátis, a AssemblyAI pode treinar com este áudio. Use um plano pago com contrato de saúde, ou o transcritor local.')};
   if(cfg.diarEnabled&&d==='gladia'&&cfg.apiKeyGladia)return {serv:'Gladia',aviso:''};
   if(cfg.diarEnabled&&d==='openai'&&cfg.apiKey)return {serv:'OpenAI',aviso:''};
   return null;
@@ -28027,7 +28031,8 @@ function _csVozesHtml(){
     if(_diarExtraNaGravacao())return `<span class="cs-sem am"></span><span>${escHtml(t('Vozes nos 20 primeiros minutos (grátis)'))} · ${escHtml(r.serv)}</span>`;
     return `<span class="cs-sem v"></span><span>${escHtml(t('Pronto para separar as vozes'))} · ${escHtml(r.serv)}</span>`;
   }
-  return `<span class="cs-sem r"></span>${escHtml(t('Falta a chave da AssemblyAI'))} <button type="button" class="cs-link" onclick="_csFechar();openModalToDiar()">${escHtml(t('Pegar a chave grátis'))}</button>`;
+  // Lote 14.6: em consulta não se oferece mais o crédito grátis (ele pode treinar com o áudio).
+  return `<span class="cs-sem r"></span>${escHtml(t('Falta configurar a separação de vozes'))} <button type="button" class="cs-link" onclick="_csFechar();openModalToDiar()">${escHtml(t('Configurar'))}</button>`;
 }
 function _csAbrir(btn){
   const ja=document.getElementById('csPop');
@@ -43571,7 +43576,7 @@ function _painelPintar(){
     ${ex?`<div class="pn-exemplo"><span>${escHtml(t('{n} é de mentira, para você ver o painel cheio.').replace('{n}',ex.name))}</span><button type="button" class="pn-mini" onclick="_exemploTirar()">${escHtml(t('Tirar o exemplo'))}</button></div>`:''}
     ${vazio?`<section class="pn-bloco pn-vazio"><h3>${escHtml(t('Seu primeiro atendimento em 3 passos'))}</h3><ol>
       ${passo(!!o,t('Diga que atendimento você faz'),'_oficioPerguntar(_painelPintar)',t('Escolher'))}
-      ${passo(!!cfg.apiKeyAssembly,t('Deixe a AssemblyAI pronta para separar as vozes'),'fecharPainel();openModalToDiar()',t('Pegar a chave grátis'))}
+      ${passo(!!cfg.apiKeyAssembly,t('Separe as vozes com segurança: dado de paciente pede um plano pago com contrato de saúde, ou o transcritor local'),'fecharPainel();openModalToDiar()',t('Configurar'))}
       ${passo(false,t('Grave a primeira consulta com o botão Consulta'),'_painelComecar(\'\')',t('Gravar agora'))}
     </ol></section>`:''}
     <div class="pn-grade">
@@ -43924,8 +43929,8 @@ function _meGuia(passo){
       <div class="tx-sub">${escHtml(t('É ela que separa quem atende de quem é atendido, do começo ao fim da consulta.'))}</div>
       <div class="mg-ex"><span class="mut">${escHtml(t('Sem:'))} "${escHtml(t('bom dia como foi a semana foi difícil dormi mal'))}"</span><span>${escHtml(t('Com:'))} <b class="cs-va">${escHtml(_consultaPapeis()[0])}:</b> ${escHtml(t('Como foi a semana?'))} <b class="cs-vb">${escHtml(_consultaPapeis()[1])}:</b> ${escHtml(t('Foi difícil, dormi mal.'))}</span></div>
       ${ok?`<div class="mg-ok"><span class="cs-sem v"></span> ${escHtml(t('A AssemblyAI já está pronta neste aparelho.'))}</div>`
-        :`<div class="mg-falta"><span class="cs-sem am"></span> ${escHtml(t('Falta 1 chave grátis da AssemblyAI (US$ 50 de crédito, sem cartão). Leva uns 2 minutos.'))}</div>
-          <div class="fa-pe" style="justify-content:flex-start"><button type="button" class="conv-p" onclick="closeTxOverlay();openModalToDiar()">${escHtml(t('Pegar a chave grátis'))}</button><button type="button" class="conv-s" onclick="_meGuia(1)">${escHtml(t('Já colei a chave'))}</button></div>`}
+        :`<div class="mg-falta"><span class="cs-sem am"></span> ${escHtml(t('Dado de paciente: use a AssemblyAI num plano pago, com contrato de saúde, ou o transcritor local. No crédito grátis, ela pode treinar com o áudio.'))}</div>
+          <div class="fa-pe" style="justify-content:flex-start"><button type="button" class="conv-p" onclick="closeTxOverlay();openModalToDiar()">${escHtml(t('Configurar'))}</button><button type="button" class="conv-s" onclick="_meGuia(1)">${escHtml(t('Já colei a chave'))}</button></div>`}
       <div class="fa-pe"><button type="button" class="conv-s" onclick="_meGuia(2)">${escHtml(ok?t('Continuar'):t('Pular este passo'))}</button></div>`;
   }else if(passo===2){
     corpo=`<div class="mg-passo">${escHtml(t('Passo {a} de {b}').replace('{a}',2).replace('{b}',3))}</div>
