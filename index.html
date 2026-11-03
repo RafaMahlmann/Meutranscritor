@@ -13119,6 +13119,10 @@ let I18N_EN={
 "Falta configurar a separação de vozes":"Voice separation isn't set up yet",
 "Separe as vozes com segurança: dado de paciente pede um plano pago com contrato de saúde, ou o transcritor local":"Separate voices safely: patient data calls for a paid plan with a health-data agreement, or the local transcriber",
 "Dado de paciente: use a AssemblyAI num plano pago, com contrato de saúde, ou o transcritor local. No crédito grátis, ela pode treinar com o áudio.":"Patient data: use AssemblyAI on a paid plan with a health-data agreement, or the local transcriber. On the free credit, it may train on the audio.",
+"A separação de vozes usa a AssemblyAI. Ligue \"Separar vozes\", na barra de baixo. Para dado de paciente, use um plano pago com contrato de saúde: no crédito grátis, ela pode treinar com o áudio.":"Voice separation uses AssemblyAI. Turn on \"Separate voices\" in the bottom bar. For patient data, use a paid plan with a health-data agreement: on the free credit, it may train on the audio.",
+"Não. Só grave com o consentimento de todos que estão na conversa, e conte que um serviço de IA vai transformar a gravação em texto. Em muitos lugares, a lei exige que todos concordem.":"No. Only record with the consent of everyone in the conversation, and tell them an AI service will turn the recording into text. In many places, the law requires everyone to agree.",
+"O Vox não assina BAA nem outro contrato de saúde. Com a sua chave, o áudio vai direto do seu aparelho ao serviço que você escolheu, e quem responde pelos dados é você, profissional. Para dado de paciente, use um plano pago com contrato de saúde, ou o transcritor local.":"Vox doesn't sign BAAs or other health-data agreements. With your key, the audio goes straight from your device to the service you chose, and you, the professional, are responsible for the data. For patient data, use a paid plan with a health-data agreement, or the local transcriber.",
+"Pela LGPD (e pelo GDPR, na Europa), quem controla os dados do paciente é você, profissional. Com a sua chave, o Vox não trata esses dados: o áudio vai direto do seu aparelho ao serviço que você escolheu, e as notas ficam no seu aparelho.":"Under Brazil's LGPD (and the GDPR in Europe), you, the professional, are the controller of your patient's data. With your key, Vox doesn't process that data: the audio goes straight from your device to the service you chose, and your notes stay on your device.",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -43753,14 +43757,23 @@ function _exemploTirar(){
 // que a pessoa já configurou, mandando SÓ a pergunta e o guia (nunca notas
 // nem nomes). Toda resposta pode ter "Me leva lá", que abre a tela certa e
 // acende o balão no lugar.
+// Respostas FIXAS de assunto jurídico (lote 14.7, 03/11/2026): vêm antes de
+// qualquer outra (fixa:true ganha sempre que uma palavra bate) e nunca vão pra IA.
+// Gravar escondido: a resposta é sempre "não", e nunca ensina como.
 const GUIA_VOX=[
+  {d:'',fixa:true,p:['sem a pessoa saber','sem ela saber','sem ele saber','sem eles saberem','sem o paciente saber','sem o cliente saber','escondid','as escondidas','sem avisar','sem consentimento','sem permissao','sem autorizacao','gravar oculto','secretly','in secret','hidden','without consent','without telling','without them knowing','without asking','covert'],
+    r:'Não. Só grave com o consentimento de todos que estão na conversa, e conte que um serviço de IA vai transformar a gravação em texto. Em muitos lugares, a lei exige que todos concordem.'},
+  {d:'',fixa:true,p:['hipaa','baa','business associate','contrato de saude','health data agreement'],
+    r:'O Vox não assina BAA nem outro contrato de saúde. Com a sua chave, o áudio vai direto do seu aparelho ao serviço que você escolheu, e quem responde pelos dados é você, profissional. Para dado de paciente, use um plano pago com contrato de saúde, ou o transcritor local.'},
+  {d:'',fixa:true,p:['lgpd','gdpr','rgpd','protecao de dados','dados pessoais','controlador','anpd','data protection','personal data','controller'],
+    r:'Pela LGPD (e pelo GDPR, na Europa), quem controla os dados do paciente é você, profissional. Com a sua chave, o Vox não trata esses dados: o áudio vai direto do seu aparelho ao serviço que você escolheu, e as notas ficam no seu aparelho.'},
   {d:'ficha',p:['combin','ultima vez','da ultima','ficou combinado','agreed','last time'],r:'Fica na ficha da pessoa: no Painel, toque no nome dela e veja "Da última vez". Sai da nota de combinados da última sessão.'},
   {d:'ficha',p:['ficha','objetivo','anotar sobre','lembrar','sempre lembrar','file','goal'],r:'No Painel, toque no nome da pessoa e depois em "Preencher ficha" (ou "Editar"): nome completo, objetivo, o que sempre lembrar e o retorno combinado.'},
   {d:'sessao',p:['trocar a pessoa','mudar a pessoa','pessoa errada','errei a pessoa','de quem e','guardar em','mover sessao','wrong person'],r:'No card da sessão, use o campo "Pessoa" na faixa da Consulta e escolha a pessoa certa. A sessão muda de ficha na hora.'},
   {d:'sempessoa',p:['sem pessoa','sem escolher','sem dono','sem pasta','nao escolhi','no person'],r:'No Painel, o bloco "Sem pessoa definida" lista as sessões gravadas sem dizer de quem eram. Escolha a pessoa em cada uma.'},
   {d:'fechar',p:['fechar atendimento','nota','prontuario','evolucao','soap','devolutiva','relatorio','resumo da sessao','note','report'],r:'No card da sessão, toque em "Fechar atendimento": o Vox escreve a nota do seu ofício, a devolutiva e os combinados, presos àquela sessão.'},
   {d:'gravar',p:['gravar','grava','nova consulta','novo atendimento','comecar','iniciar','record','start'],r:'No Painel, toque em "Começar atendimento" e escolha a pessoa. Ou aperte o botão vermelho lá embaixo: quando parar, o Vox pergunta de quem é a consulta.'},
-  {d:'separar',p:['voz','vozes','separar','diariz','quem falou','assembly','speaker'],r:'A separação de vozes usa a AssemblyAI. Ligue "Separar vozes", na barra de baixo; a chave é grátis e dá US$ 50 de crédito, sem cartão.'},
+  {d:'separar',p:['voz','vozes','separar','diariz','quem falou','assembly','speaker'],r:'A separação de vozes usa a AssemblyAI. Ligue "Separar vozes", na barra de baixo. Para dado de paciente, use um plano pago com contrato de saúde: no crédito grátis, ela pode treinar com o áudio.'},
   {d:'senha',p:['senha','proteger','sigilo','cofre','cifr','criptograf','privacidade','password','lock'],r:'No céu (Mundos), abra a ficha deste mundo e toque em "Proteger com senha". As notas, as fotos, os nomes e as fichas ficam cifrados no aparelho.'},
   {d:'calendario',p:['agendar','agenda','marcar','proximo atendimento','proxima consulta','calendario','retorno','schedule','calendar'],r:'Abra o Calendário e arraste a nota da pessoa até o dia. O Painel passa a mostrar o atendimento em "Agora" e "Hoje".'},
   {d:'personalizar',p:['oficio','papeis','nome das vozes','psicolog','paciente','cliente','personalizar','modelo de nota','abre em','profession','customize'],r:'Em "Personalizar", no topo do Painel: ofício, quem fala, a nota de depois da sessão, onde o mundo abre e a proteção.'},
@@ -43783,6 +43796,8 @@ function _guiaPessoa(q){
 }
 function _guiaLocal(q){
   const n=_guiaNorm(q);let melhor=null,pts=0;
+  const fixa=GUIA_VOX.find(g=>g.fixa&&g.p.some(x=>n.includes(x)));
+  if(fixa)return fixa;
   GUIA_VOX.forEach(g=>{const k=g.p.filter(x=>n.includes(x)).length;if(k>pts){pts=k;melhor=g}});
   return melhor;
 }
