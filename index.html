@@ -13112,6 +13112,8 @@ let I18N_EN={
 "Colocar minha chave":"Add my key",
 "Esta lente precisa da sua chave":"This lens needs your key",
 "Sua gravação fica guardada até a chave chegar.":"Your recording stays saved until the key arrives.",
+"🔗 Cards juntados. O que você arrastou foi para a lixeira.":"🔗 Cards merged. The one you dragged went to the trash.",
+"↩ Cards separados de novo":"↩ Cards split apart again",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -46310,10 +46312,18 @@ function _startDrag(el,e0,isTouch=false,isFolder=false){
     if(target){
       const srcText=el.querySelector('textarea')?.value||'';
       const dstTa=target.querySelector('textarea');
-      if(dstTa&&srcText){dstTa.value=(dstTa.value.trimEnd()+'\n\n'+srcText).trim();autoR(dstTa);updateFooter(target.id)}
-      doDelete(_dragSrcId);saveHistory();
-      if(dstTa)navigator.clipboard.writeText(dstTa.value).then(()=>toast(t('🔗 Cards mesclados e copiados para a área de transferência')));
-      else toast(t('🔗 Cards mesclados!'));
+      // O card arrastado vai pra LIXEIRA, com Desfazer — antes era doDelete, o
+      // único caminho que apagava de vez sem passar por ela (bancada 03/11/2026):
+      // um soltar errado levava o card, as fotos e o áudio dele.
+      const srcId=_dragSrcId,dstId=target.id,antes=dstTa?dstTa.value:null;
+      if(dstTa&&srcText){dstTa.value=(dstTa.value.trimEnd()+'\n\n'+srcText).trim();autoR(dstTa);updateFooter(dstId)}
+      paraLixeira(srcId,true);
+      if(dstTa)navigator.clipboard?.writeText(dstTa.value).catch(()=>{});
+      toastDesfazer(t('🔗 Cards juntados. O que você arrastou foi para a lixeira.'),()=>{
+        const ta=document.getElementById(dstId)?.querySelector('textarea');
+        if(ta&&antes!=null){ta.value=antes;autoR(ta);updateFooter(dstId)}
+        restaurarDaLixeira(srcId,true);toast(t('↩ Cards separados de novo'));
+      });
     }
     _dragSrcId=null;_dragEl=null;
   }
