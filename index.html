@@ -6601,6 +6601,15 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 .lembrete.guardada .conv-p{animation:pendRespira 2.4s ease-in-out infinite}
 .lembrete.guardada .conv-p:disabled{opacity:.6;cursor:default;animation:none}
 .lembrete.guardada .pend-erro{color:var(--warn-txt);font-weight:700}
+/* × de descartar (03/11/2026): um erro que não passa (ex.: arquivo vazio)
+   deixava o cartão preso pra sempre. Fica no canto, discreto, e o aviso
+   traz "Desfazer" pra quem tocou sem querer. */
+.lembrete.guardada{position:relative;padding-right:34px}
+.pend-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:50%;
+  background:none;color:var(--text3);display:grid;place-items:center;cursor:pointer;padding:0}
+.pend-x:hover{background:var(--bg-input);color:var(--text)}
+.pend-x:active{transform:scale(.9)}
+.pend-x svg{width:14px;height:14px}
 @keyframes pendChega{0%{opacity:0;transform:translateY(-8px) scale(.97)}60%{opacity:1;transform:translateY(1px) scale(1.01)}100%{transform:none}}
 @keyframes pendSai{to{opacity:0;transform:scale(.97);max-height:0;padding-top:0;padding-bottom:0;margin:0}}
 @keyframes pendRespira{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent)}50%{box-shadow:0 0 0 6px transparent}}
@@ -10565,7 +10574,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.10.30.4';
+const VOX_VERSION='2026.11.03.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13093,6 +13102,9 @@ let I18N_EN={
 "#{a} agora é #{b}, em {n}.":"#{a} is now #{b}, in {n}.",
 "#{tag} apagada de {n}.":"#{tag} removed from {n}.",
 "#{tag} apagada da Biblioteca.":"#{tag} removed from the library.",
+"Descartar esta gravação":"Discard this recording",
+"Gravação descartada.":"Recording discarded.",
+"Gravações descartadas.":"Recordings discarded.",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -15095,8 +15107,34 @@ async function _pendPintar(){
        `<button type="button" class="conv-p" onclick="_pendentesProcessar(true,true)">${escHtml(t('Transformar sem separar vozes'))}</button>`
       :`<button type="button" class="conv-p" onclick="_pendentesProcessar(true)"${_pendentesRodando?' disabled':''}>${escHtml(_pendentesRodando?t('Transformando…'):t('Transformar em texto'))}</button>`)+
     `<button type="button" class="conv-s" onclick="_pendBaixar()">${escHtml(t('Baixar o áudio'))}</button>`+
-    `</span>`;
+    `</span>`+
+    (_pendentesRodando?'':`<button type="button" class="pend-x" onclick="_pendDescartar()" aria-label="${escHtml(t('Descartar esta gravação'))}" title="${escHtml(t('Descartar esta gravação'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`);
   if(el.style.display==='none'||!el.style.display){el.style.display='flex';if(typeof _jz==='function')_jz(el,'pend-chega',430)}
+}
+// Descarta a(s) gravação(ões) deste mundo que estão no cartão. Os bytes ficam
+// na memória enquanto o "Desfazer" está na tela; tocou nele, voltam pro cofre.
+async function _pendDescartar(){
+  if(_pendentesRodando)return;
+  if(_pendAudio){_pendAudio.pause();URL.revokeObjectURL(_pendAudio.src);_pendAudio=null}
+  let tiradas=[];
+  try{
+    const todas=(await _idbGetBruto(_PEND_IDB))||[];
+    tiradas=todas.filter(p=>_pendDoMundo(p)&&!_pendOcupadas.has(p.id));
+    if(!tiradas.length)return;
+    const ids=new Set(tiradas.map(p=>p.id)),resto=todas.filter(p=>!ids.has(p.id));
+    await _idbSetBruto(_PEND_IDB,resto);
+    if(!resto.length)localStorage.removeItem('vox_tem_pendente');
+  }catch(e){return}
+  _pendErro='';_pendPintar();
+  toastDesfazer(tiradas.length>1?t('Gravações descartadas.'):t('Gravação descartada.'),async()=>{
+    try{
+      const lista=(await _idbGetBruto(_PEND_IDB))||[];
+      const ja=new Set(lista.map(p=>p.id));
+      await _idbSetBruto(_PEND_IDB,lista.concat(tiradas.filter(p=>!ja.has(p.id))));
+      localStorage.setItem('vox_tem_pendente','1');
+    }catch(e){}
+    _pendPintar();
+  });
 }
 async function _pendBaixar(){
   let lista=[];try{lista=((await _idbGetBruto(_PEND_IDB))||[]).filter(_pendDoMundo)}catch(e){}
