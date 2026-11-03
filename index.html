@@ -37223,8 +37223,9 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
       const pollRes=await fetch(`https://api.assemblyai.com/v2/transcript/${id}`,{headers:{authorization:key}});
       data=await pollRes.json();
       setPL(pid,t('Processando ({status})…').replace('{status}',data.status));
-      if(data.status==='completed')break;
+      if(data.status==='completed'){_aaiApagar(id,key);break}
       if(data.status==='error'){
+        _aaiApagar(id,key);
         // Idioma em "automático": a AssemblyAI tenta adivinhar o idioma e recusa
         // quando ouve pouca fala ("no spoken audio"). Uma vez, refaz dizendo o idioma.
         if(!comIdioma&&/no spoken audio|language_detection/i.test(data.error||'')){
@@ -37254,6 +37255,14 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
 }
 
 // O idioma para mandar quando o automático falha: o escolhido, senão o da tela.
+// Lote 14.9 (03/11/2026): a AssemblyAI guarda a transcrição por 30 dias. Assim que
+// o app tem o resultado na mão, pede pra ela apagar — com a mesma chave da pessoa.
+// Sem esperar e sem travar nada: se falhar (rede, chave), o fluxo segue igual.
+// (Servidor europeu ainda NÃO: depende do teste 14.1, com a chave do Rafa.)
+function _aaiApagar(id,key){
+  if(!id||!key)return;
+  try{fetch(`https://api.assemblyai.com/v2/transcript/${encodeURIComponent(id)}`,{method:'DELETE',headers:{authorization:key}}).catch(()=>{})}catch(e){}
+}
 function _aaiIdioma(){const l=String(cfg.lang||getLocale()||'pt').toLowerCase();return l.startsWith('pt')?'pt':l.startsWith('es')?'es':l.startsWith('en')?'en':l.slice(0,2)}
 // "No spoken audio" vira uma explicação, com marca própria para a fila saber o que oferecer.
 function _aaiErro(msg){
