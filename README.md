@@ -14,9 +14,11 @@ Think out loud. Your speech becomes text you can actually work with.
 
 ## Why it's different
 
-**There is no server. There is no account. Your recordings never reach us — because there is no "us" to reach.**
+**Vox doesn't keep your recordings and doesn't train AI with them.**
 
-Vox runs entirely in your browser and talks directly to whichever AI provider *you* choose, using *your* own key (BYOK — Bring Your Own Key). Your notes live in your device's storage. We have no database, no logs, and no way to read anything you record.
+Vox runs in your browser and talks directly to whichever AI provider *you* choose, using *your* own key (BYOK — Bring Your Own Key). With your key, the audio goes straight from your device to that provider: we don't receive it. With the local transcriber, it doesn't leave your computer. Your notes live in your device's storage.
+
+The exceptions are listed in the [Privacy Policy](privacy.html): your first few transcriptions and lenses without a key go through a small bridge of ours (code in [`ponte/`](ponte/)), usage counts happen only if you say yes, and Vox Pro is sold through Freemius.
 
 You don't have to take our word for it. **The entire app is a single `index.html` file in this repository** — read it, audit it, run it yourself.
 
