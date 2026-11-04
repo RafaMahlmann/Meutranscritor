@@ -10574,7 +10574,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.04.1';
+const VOX_VERSION='2026.11.04.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13106,6 +13106,23 @@ let I18N_EN={
 "Gravação descartada.":"Recording discarded.",
 "Gravações descartadas.":"Recordings discarded.",
 "Pense em voz alta — sua fala vira raciocínio pronto pra trabalhar, com vários cérebros de IA te ajudando a lapidar. Suas chaves, seus dados: com a sua chave, o áudio vai direto do seu aparelho ao serviço que você escolheu. A gente não guarda suas gravações nem treina IA com elas.":"Think out loud — your speech becomes workable thought, shaped by multiple AI brains you choose. Your keys, your data: with your key, the audio goes straight from your device to the service you chose. We don't keep your recordings or train AI with them.",
+"Em consultas e entrevistas, o áudio vai direto da sua chave ao serviço. As transcrições e lentes por nossa conta não passam por aqui.":"In consultations and interviews, the audio goes straight from your key to the service. Our free transcriptions and lenses don't go through here.",
+"Assim que você colar a sua chave, esta gravação vira texto sozinha.":"As soon as you paste your key, this recording turns into text on its own.",
+"O navegador recusou guardar o áudio neste aparelho. Com a sua chave, as próximas gravações viram texto na hora.":"The browser refused to save the audio on this device. With your key, your next recordings turn into text right away.",
+"Colocar minha chave":"Add my key",
+"Esta lente precisa da sua chave":"This lens needs your key",
+"Sua gravação fica guardada até a chave chegar.":"Your recording stays saved until the key arrives.",
+"🔗 Cards juntados. O que você arrastou foi para a lixeira.":"🔗 Cards merged. The one you dragged went to the trash.",
+"↩ Cards separados de novo":"↩ Cards split apart again",
+"Este número não bate com a conversa: {x}. Confira.":"This number doesn't match the conversation: {x}. Check it.",
+"Dado de paciente: no crédito grátis, a AssemblyAI pode treinar com este áudio. Use um plano pago com contrato de saúde, ou o transcritor local.":"Patient data: on the free credit, AssemblyAI may train on this audio. Use a paid plan with a health-data agreement, or the local transcriber.",
+"Falta configurar a separação de vozes":"Voice separation isn't set up yet",
+"Separe as vozes com segurança: dado de paciente pede um plano pago com contrato de saúde, ou o transcritor local":"Separate voices safely: patient data calls for a paid plan with a health-data agreement, or the local transcriber",
+"Dado de paciente: use a AssemblyAI num plano pago, com contrato de saúde, ou o transcritor local. No crédito grátis, ela pode treinar com o áudio.":"Patient data: use AssemblyAI on a paid plan with a health-data agreement, or the local transcriber. On the free credit, it may train on the audio.",
+"A separação de vozes usa a AssemblyAI. Ligue \"Separar vozes\", na barra de baixo. Para dado de paciente, use um plano pago com contrato de saúde: no crédito grátis, ela pode treinar com o áudio.":"Voice separation uses AssemblyAI. Turn on \"Separate voices\" in the bottom bar. For patient data, use a paid plan with a health-data agreement: on the free credit, it may train on the audio.",
+"Não. Só grave com o consentimento de todos que estão na conversa, e conte que um serviço de IA vai transformar a gravação em texto. Em muitos lugares, a lei exige que todos concordem.":"No. Only record with the consent of everyone in the conversation, and tell them an AI service will turn the recording into text. In many places, the law requires everyone to agree.",
+"O Vox não assina BAA nem outro contrato de saúde. Com a sua chave, o áudio vai direto do seu aparelho ao serviço que você escolheu, e quem responde pelos dados é você, profissional. Para dado de paciente, use um plano pago com contrato de saúde, ou o transcritor local.":"Vox doesn't sign BAAs or other health-data agreements. With your key, the audio goes straight from your device to the service you chose, and you, the professional, are responsible for the data. For patient data, use a paid plan with a health-data agreement, or the local transcriber.",
+"Pela LGPD (e pelo GDPR, na Europa), quem controla os dados do paciente é você, profissional. Com a sua chave, o Vox não trata esses dados: o áudio vai direto do seu aparelho ao serviço que você escolheu, e as notas ficam no seu aparelho.":"Under Brazil's LGPD (and the GDPR in Europe), you, the professional, are the controller of your patient's data. With your key, Vox doesn't process that data: the audio goes straight from your device to the service you chose, and your notes stay on your device.",
 // [EQUIPE A] traduções novas entram ACIMA desta linha
 // ── separador entre as equipes: não apagar, não escrever aqui ──
 "Revisão da semana":"Weekly review",
@@ -14810,9 +14827,35 @@ async function _cortesiaTranscrever(file){
   _cortesiaEst={disponivel:j.restantes>0,motivo:j.restantes>0?'':'esgotada',restantes:j.restantes,max_segundos:j.max_segundos};
   return j;
 }
+// ── CORTESIA FORA DE CONSULTAS E ENTREVISTAS (lote 14.2, 03/11/2026) ──
+// O parecer jurídico de 18/10: com chave própria o Vox é só ferramenta; a ponte
+// é o que tira ele desse lado — e o contrato de saúde do Groq não cobre conta
+// grátis. Então, em Consulta e Entrevista (modo OU mundo desse tipo), nada de
+// ponte: nem transcrição nem lente. Quem grava sem chave grava normalmente e a
+// gravação fica guardada até a chave chegar (_pendenteGuardar), como sempre.
+// PARA VOLTAR ATRÁS: deixe a lista vazia ([]). É o único lugar.
+const CORTESIA_FORA_DE=['consulta','entrevista'];
+function _cortesiaForaAqui(mode){
+  if(!CORTESIA_FORA_DE.length)return false;
+  if(CORTESIA_FORA_DE.includes(mode||sessionMode))return true;
+  // O Meu espaço nunca conta: o ofício grava tipo:'consulta' nele também (ver _mundoFalaPessoa).
+  if(_mundoAtivo===VOX_MUNDO_RAIZ)return false;
+  const m=_mundosLista().find(x=>x.id===_mundoAtivo);
+  return !!(m&&CORTESIA_FORA_DE.includes(m.tipo));
+}
+function _cortesiaForaTexto(){return t('Em consultas e entrevistas, o áudio vai direto da sua chave ao serviço. As transcrições e lentes por nossa conta não passam por aqui.')}
+// Gravou sem chave numa consulta: a gravação já está guardada; explica por quê.
+function _cortesiaForaModal(guardou){
+  _cortesiaModal(`<h2 class="ob-h">${guardou?t('Sua gravação está guardada'):t('Não deu para guardar esta gravação')}</h2>
+    <p class="ob-p">${_cortesiaForaTexto()}</p>
+    <p class="ob-p">${guardou?t('Assim que você colar a sua chave, esta gravação vira texto sozinha.'):t('O navegador recusou guardar o áudio neste aparelho. Com a sua chave, as próximas gravações viram texto na hora.')}</p>
+    <button class="ob-btn" onclick="_cortesiaFechar();_obAbrirNaChave()">${t('Colocar minha chave')}</button>
+    <button class="ob-btn-ghost" onclick="_cortesiaFechar()">${t('Fazer isso depois')}</button>`);
+}
 // Chamado pelo doTranscribe quando não há chave. true = segue pela cortesia;
 // false = a gravação já foi cuidada aqui (guardada, ou mandou configurar).
 async function _cortesiaPodeSeguir(file,durSec,fromRec,sn,mode){
+  if(fromRec&&_cortesiaForaAqui(mode)){_cortesiaForaModal(await _pendenteGuardar(file,durSec,sn,mode));return false}
   if(!fromRec||!_cortesiaLigada()){toast(t('🔑 Configure a chave API!'),true);openModal();return false}
   const est=await _cortesiaEstado();
   if(!est.disponivel){_cortesiaGuardadaModal(est.motivo,await _pendenteGuardar(file,durSec,sn,mode));return false}
@@ -14880,7 +14923,14 @@ const _CORTESIA_CHAVE='__cortesia__';
 const CORTESIA_LENTE_MAX=14000; // igual ao LENTE_MAX_CHARS da ponte
 let _cortesiaLenteUltima=false;
 function _cortesiaAlvoTexto(){return {pv:'cortesia',url:_ponteUrl()+'/v1/cortesia/lente',key:_CORTESIA_CHAVE,model:'openai/gpt-oss-120b',name:'Vox'}}
-async function _cortesiaLentePode(L,texto){
+async function _cortesiaLentePode(L,texto,mode){
+  if(_cortesiaForaAqui(mode)){
+    _cortesiaModal(`<h2 class="ob-h">${t('Esta lente precisa da sua chave')}</h2>
+      <p class="ob-p">${_cortesiaForaTexto()}</p>
+      <button class="ob-btn" onclick="_cortesiaFechar();_obAbrirNaChave()">${t('Colocar minha chave')}</button>
+      <button class="ob-btn-ghost" onclick="_cortesiaFechar()">${t('Fazer isso depois')}</button>`);
+    return false;
+  }
   // Recusou a cortesia, ou não há ponte: o caminho é a chave (direto na tela dela).
   if(!_cortesiaLigada()){toast(t('🔑 Precisa configurar uma inteligência artificial antes.'),true);setTimeout(_obAbrirNaChave,300);return false}
   if(texto.length>CORTESIA_LENTE_MAX){_cortesiaLenteAcabouModal('grande');return false}
@@ -14943,7 +14993,7 @@ function _gravLimiteArmar(){
   // inteira, como arquivo — vozes nos 20 primeiros min e o resto em texto (_diarizarComLimite).
   if(false&&_diarExtraNaGravacao())regras.push({seg:LIM_DIAR_EXTRA_SEG,aviso:t('Faltam 15 segundos: no plano grátis, da 2ª gravação com vozes separadas do mês em diante, a gravação com vozes separadas vai até 20 minutos.')});
   if(_gravEmBlocos())regras.push({seg:LIM_GRAV_BLOCO_SEG,aviso:t('Faltam 15 segundos neste bloco de 1 minuto. Depois é só tocar em gravar de novo.')});
-  if(!_temChaveTranscricao()&&_cortesiaLigada()){
+  if(!_temChaveTranscricao()&&_cortesiaLigada()&&!_cortesiaForaAqui()){
     // Ainda sem resposta da ponte: pergunta e arma de novo quando ela chegar.
     if(!_cortesiaEst)_cortesiaEstado().then(()=>{if(isRec)_gravLimiteArmar()});
     // Acabou a cortesia: grava inteira — ela fica guardada pra sua chave.
@@ -15727,6 +15777,7 @@ function _precisaConfigurar(gravacao){
   const temChave=cfg.apiKeyGroq||cfg.apiKey||cfg.apiKeyGrok||cfg.provider==='local';
   // Gravar sem chave é permitido enquanto a cortesia existe: vira texto pela
   // ponte, ou fica guardada até a chave chegar (ver _cortesiaPodeSeguir).
+  if(!temChave&&gravacao&&_cortesiaForaAqui()){toast(_cortesiaForaTexto()+' '+t('Sua gravação fica guardada até a chave chegar.'));return false}
   if(!temChave&&gravacao&&_cortesiaLigada())return false;
   if(!temChave){
     toast(t('🔑 Precisa configurar uma inteligência artificial antes.'),true);
@@ -27973,7 +28024,7 @@ function _csPastasOpts(sel,vazio){
 function _csRota(){
   if(cfg.provider==='local'&&cfg.diarLocal)return {serv:t('seu computador'),aviso:''};
   const d=cfg.diarProvider;
-  if(cfg.diarEnabled&&d==='assemblyai'&&cfg.apiKeyAssembly)return {serv:'AssemblyAI',aviso:t('No crédito grátis da AssemblyAI o áudio pode ser usado para treinar o modelo. No plano pago dá para desligar, em Data Controls.')};
+  if(cfg.diarEnabled&&d==='assemblyai'&&cfg.apiKeyAssembly)return {serv:'AssemblyAI',aviso:t('Dado de paciente: no crédito grátis, a AssemblyAI pode treinar com este áudio. Use um plano pago com contrato de saúde, ou o transcritor local.')};
   if(cfg.diarEnabled&&d==='gladia'&&cfg.apiKeyGladia)return {serv:'Gladia',aviso:''};
   if(cfg.diarEnabled&&d==='openai'&&cfg.apiKey)return {serv:'OpenAI',aviso:''};
   return null;
@@ -27984,7 +28035,8 @@ function _csVozesHtml(){
     if(_diarExtraNaGravacao())return `<span class="cs-sem am"></span><span>${escHtml(t('Vozes nos 20 primeiros minutos (grátis)'))} · ${escHtml(r.serv)}</span>`;
     return `<span class="cs-sem v"></span><span>${escHtml(t('Pronto para separar as vozes'))} · ${escHtml(r.serv)}</span>`;
   }
-  return `<span class="cs-sem r"></span>${escHtml(t('Falta a chave da AssemblyAI'))} <button type="button" class="cs-link" onclick="_csFechar();openModalToDiar()">${escHtml(t('Pegar a chave grátis'))}</button>`;
+  // Lote 14.6: em consulta não se oferece mais o crédito grátis (ele pode treinar com o áudio).
+  return `<span class="cs-sem r"></span>${escHtml(t('Falta configurar a separação de vozes'))} <button type="button" class="cs-link" onclick="_csFechar();openModalToDiar()">${escHtml(t('Configurar'))}</button>`;
 }
 function _csAbrir(btn){
   const ja=document.getElementById('csPop');
@@ -37175,8 +37227,9 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
       const pollRes=await fetch(`https://api.assemblyai.com/v2/transcript/${id}`,{headers:{authorization:key}});
       data=await pollRes.json();
       setPL(pid,t('Processando ({status})…').replace('{status}',data.status));
-      if(data.status==='completed')break;
+      if(data.status==='completed'){_aaiApagar(id,key);break}
       if(data.status==='error'){
+        _aaiApagar(id,key);
         // Idioma em "automático": a AssemblyAI tenta adivinhar o idioma e recusa
         // quando ouve pouca fala ("no spoken audio"). Uma vez, refaz dizendo o idioma.
         if(!comIdioma&&/no spoken audio|language_detection/i.test(data.error||'')){
@@ -37206,6 +37259,14 @@ async function doDiarizeAssembly(file,durSec,fromRec,sn,mode){
 }
 
 // O idioma para mandar quando o automático falha: o escolhido, senão o da tela.
+// Lote 14.9 (03/11/2026): a AssemblyAI guarda a transcrição por 30 dias. Assim que
+// o app tem o resultado na mão, pede pra ela apagar — com a mesma chave da pessoa.
+// Sem esperar e sem travar nada: se falhar (rede, chave), o fluxo segue igual.
+// (Servidor europeu ainda NÃO: depende do teste 14.1, com a chave do Rafa.)
+function _aaiApagar(id,key){
+  if(!id||!key)return;
+  try{fetch(`https://api.assemblyai.com/v2/transcript/${encodeURIComponent(id)}`,{method:'DELETE',headers:{authorization:key}}).catch(()=>{})}catch(e){}
+}
 function _aaiIdioma(){const l=String(cfg.lang||getLocale()||'pt').toLowerCase();return l.startsWith('pt')?'pt':l.startsWith('es')?'es':l.startsWith('en')?'en':l.slice(0,2)}
 // "No spoken audio" vira uma explicação, com marca própria para a fila saber o que oferecer.
 function _aaiErro(msg){
@@ -38198,7 +38259,50 @@ function _notaRevisei(id,sim){
   if(sim)toast(t('Nota marcada como revisada.'));
 }
 const _PROVA_PARADAS=new Set('para pela pelo pelos pelas como mais muito muita muitos muitas isso essa esse esta este estas estes aqui quando onde porque sobre entre depois antes ainda também tambem ela ele elas eles dela dele nossa nosso sessao paciente cliente pessoa profissional nota vezes coisa fazer feito vamos teve tinha estava foram seria pode podem'.split(' '));
-function _provaPalavras(x){return [...new Set(_guiaNorm(x).replace(/[^\p{L}\p{N}]+/gu,' ').split(' ').filter(w=>w.length>=4&&!_PROVA_PARADAS.has(w)))]}
+// Números e unidades contam, de qualquer tamanho (bancada 03/11/2026): antes o
+// filtro de 4 letras jogava fora "500", "mg" e "8/8h", e uma dose errada passava
+// como conferida. Agora: "1.000" = "1000", "0,5" = "0.5", "500mg" = "500 mg" =
+// "500 miligramas". E todo número da frase precisa estar no trecho (ver _notaProvas).
+const _PROVA_UNID={mg:'mg',miligrama:'mg',miligramas:'mg',milligram:'mg',milligrams:'mg',ml:'ml',mililitro:'ml',mililitros:'ml',milliliter:'ml',milliliters:'ml',millilitre:'ml',millilitres:'ml',
+  mcg:'mcg',ug:'mcg',micrograma:'mcg',microgramas:'mcg',microgram:'mcg',micrograms:'mcg',g:'g',grama:'g',gramas:'g',gram:'g',grams:'g',kg:'kg',quilo:'kg',quilos:'kg',kilo:'kg',kilos:'kg',
+  l:'l',litro:'l',litros:'l',liter:'l',liters:'l',ui:'ui',iu:'ui',gota:'gotas',gotas:'gotas',drop:'gotas',drops:'gotas',cp:'cp',comprimido:'cp',comprimidos:'cp',tablet:'cp',tablets:'cp',
+  capsula:'caps',capsulas:'caps',capsule:'caps',capsules:'caps',h:'h',hora:'h',horas:'h',hour:'h',hours:'h',hr:'h',hrs:'h',min:'min',minuto:'min',minutos:'min',minute:'min',minutes:'min',
+  dia:'dia',dias:'dia',day:'dia',days:'dia',semana:'semana',semanas:'semana',week:'semana',weeks:'semana',mes:'mes',meses:'mes',month:'mes',months:'mes',
+  mmhg:'mmhg',bpm:'bpm',cm:'cm',mm:'mm',kcal:'kcal',x:'x',vez:'x',vezes:'x',times:'x','%':'%',porcento:'%',percent:'%'};
+function _provaNormNum(x){
+  return _guiaNorm(x).replace(/\bpor\s+cento\b/g,'porcento')
+    .replace(/(\d)\.(?=\d{3}(?!\d))/g,'$1').replace(/(\d),(?=\d)/g,'$1.')   // 1.000 → 1000 · 0,5 → 0.5
+    .replace(/(\d)([a-z%])/g,'$1 $2').replace(/([a-z])(\d)/g,'$1 $2');      // 500mg → 500 mg · 8/8h → 8/8 h
+}
+// As "chaves" de uma frase: cada número, e número+unidade quando a unidade vem logo depois.
+function _provaChaves(x){
+  const n=_provaNormNum(x),nums=new Set(),comUn=new Map();
+  (n.match(/\d+(?:\.\d+)?/g)||[]).forEach(v=>nums.add(v.replace(/\.0+$/,'')));
+  n.replace(/(\d+(?:\.\d+)?)\s*([a-z%]+)/g,(m,v,u)=>{const un=_PROVA_UNID[u];if(un){v=v.replace(/\.0+$/,'');if(!comUn.has(v))comUn.set(v,new Set());comUn.get(v).add(un)}return m});
+  return {nums,comUn};
+}
+// O que da frase não está no trecho: número que falta, ou número com outra unidade.
+function _provaNumFaltam(frase,trecho){
+  const a=_provaChaves(frase),b=_provaChaves(trecho),f=[];
+  a.nums.forEach(v=>{
+    if(!b.nums.has(v)){f.push(v);return}
+    const ua=a.comUn.get(v),ub=b.comUn.get(v);
+    if(ua&&ub&&![...ua].some(u=>ub.has(u)))f.push(v+' '+[...ua].join('/'));
+  });
+  return f;
+}
+function _provaPalavras(x){
+  const n=_provaNormNum(x).replace(/[^\p{L}\p{N}.%]+/gu,' ').replace(/(?<!\d)\.|\.(?!\d)/g,' ');
+  const ws=n.split(' '),out=[];
+  ws.forEach((w,i)=>{
+    if(!w)return;
+    if(/\d/.test(w)){out.push(w.replace(/\.0+$/,''));return}
+    // Unidade só vale grudada num número ("500 mg"); solta, "g" ou "x" seriam ruído.
+    if(_PROVA_UNID[w]&&i>0&&/\d/.test(ws[i-1])){out.push(_PROVA_UNID[w]);return}
+    if(w.length>=4&&!_PROVA_PARADAS.has(w))out.push(w);
+  });
+  return [...new Set(out)];
+}
 // Para cada frase da nota, o trecho (1 ou 2 falas seguidas) que mais divide palavras com ela.
 function _notaProvas(c,pai){
   let us=[],sp={};try{us=JSON.parse(pai.dataset.utterances||'[]');sp=JSON.parse(pai.dataset.speakers||'{}')}catch(e){}
@@ -38209,11 +38313,15 @@ function _notaProvas(c,pai){
   const linhas=String(c.querySelector('textarea')?.value||'').split('\n').map(x=>x.replace(/\*\*/g,'').replace(/^\s*(#+|[-*•]|\d+[.)])\s*/,'').trim()).filter(Boolean);
   return linhas.map(l=>{
     const pw=_provaPalavras(l.replace(/^[^:]{1,40}:\s*/,''));
-    if(pw.length<2)return {l,titulo:true};
+    // Linha com número nunca passa como título: "Dose: 500 mg" precisa ser conferida.
+    if(pw.length<2&&!/\d/.test(l))return {l,titulo:true};
     const busca=lista=>{let m=null,p=0;lista.forEach(j=>{const k=pw.filter(w=>j.w.has(w)).length;if(k>p){p=k;m=j}});return {m,p}};
     const basta=r=>r.m&&r.p>=2&&r.p/pw.length>=0.34;
     let r=busca(sozinhas);if(!basta(r))r=busca(pares);
-    const melhor=r.m,ok=basta(r);
+    const melhor=r.m;let ok=basta(r)||(pw.length<2&&r.m&&r.p>=1);
+    // Achou o trecho, mas um número (dose, horário, quantidade) não bate: não passa.
+    const falta=ok?_provaNumFaltam(l,melhor.v.map(x=>x.text).join(' ')):[];
+    if(falta.length)return {l,ok:false,num:falta,u:melhor.u,quem:sp[melhor.u.speaker]||melhor.u.speaker,trecho:melhor.v.map(x=>x.text).join(' ')};
     return {l,ok,u:ok?melhor.u:null,quem:ok?(sp[melhor.u.speaker]||melhor.u.speaker):'',trecho:ok?melhor.v.map(x=>x.text).join(' '):''};
   });
 }
@@ -38226,6 +38334,7 @@ function _notaConferir(id){
     <div class="tx-sub">${escHtml(t('{a} de {b} frases têm um trecho da conversa que as sustenta. As marcadas em laranja não têm: confira antes de usar.').replace('{a}',boas).replace('{b}',checadas.length))}</div>
     <ul class="nf-lista">${r.map(x=>x.titulo?`<li class="nf-tit">${escHtml(x.l)}</li>`:x.ok
       ?`<li class="nf-sim"><span class="nf-frase">${escHtml(x.l)}</span><button type="button" class="nf-cita" onclick="closeTxOverlay();_encIr('${escJs(pai.id)}',${+x.u.start||0})"><small>${escHtml(x.quem)} · ${escHtml(fmtMs(x.u.start))}</small>"${escHtml(x.trecho.slice(0,220))}${x.trecho.length>220?'…':''}"</button></li>`
+      :x.num?`<li class="nf-nao"><span class="nf-frase">${escHtml(x.l)}</span><small>${escHtml(t('Este número não bate com a conversa: {x}. Confira.').replace('{x}',x.num.join(', ')))}</small><button type="button" class="nf-cita" onclick="closeTxOverlay();_encIr('${escJs(pai.id)}',${+x.u.start||0})"><small>${escHtml(x.quem)} · ${escHtml(fmtMs(x.u.start))}</small>"${escHtml(x.trecho.slice(0,220))}${x.trecho.length>220?'…':''}"</button></li>`
       :`<li class="nf-nao"><span class="nf-frase">${escHtml(x.l)}</span><small>${escHtml(t('Sem trecho na conversa que sustente esta frase. Confira.'))}</small></li>`).join('')}</ul>
     <div class="fa-pe"><button type="button" class="conv-s" onclick="closeTxOverlay()">${escHtml(t('Fechar'))}</button><button type="button" class="conv-p" onclick="closeTxOverlay();_notaRevisei('${escJs(id)}',true)">${escHtml(t('Revisei'))} ✓</button></div>
   </div>`;
@@ -43480,7 +43589,7 @@ function _painelPintar(){
     ${ex?`<div class="pn-exemplo"><span>${escHtml(t('{n} é de mentira, para você ver o painel cheio.').replace('{n}',ex.name))}</span><button type="button" class="pn-mini" onclick="_exemploTirar()">${escHtml(t('Tirar o exemplo'))}</button></div>`:''}
     ${vazio?`<section class="pn-bloco pn-vazio"><h3>${escHtml(t('Seu primeiro atendimento em 3 passos'))}</h3><ol>
       ${passo(!!o,t('Diga que atendimento você faz'),'_oficioPerguntar(_painelPintar)',t('Escolher'))}
-      ${passo(!!cfg.apiKeyAssembly,t('Deixe a AssemblyAI pronta para separar as vozes'),'fecharPainel();openModalToDiar()',t('Pegar a chave grátis'))}
+      ${passo(!!cfg.apiKeyAssembly,t('Separe as vozes com segurança: dado de paciente pede um plano pago com contrato de saúde, ou o transcritor local'),'fecharPainel();openModalToDiar()',t('Configurar'))}
       ${passo(false,t('Grave a primeira consulta com o botão Consulta'),'_painelComecar(\'\')',t('Gravar agora'))}
     </ol></section>`:''}
     <div class="pn-grade">
@@ -43648,14 +43757,23 @@ function _exemploTirar(){
 // que a pessoa já configurou, mandando SÓ a pergunta e o guia (nunca notas
 // nem nomes). Toda resposta pode ter "Me leva lá", que abre a tela certa e
 // acende o balão no lugar.
+// Respostas FIXAS de assunto jurídico (lote 14.7, 03/11/2026): vêm antes de
+// qualquer outra (fixa:true ganha sempre que uma palavra bate) e nunca vão pra IA.
+// Gravar escondido: a resposta é sempre "não", e nunca ensina como.
 const GUIA_VOX=[
+  {d:'',fixa:true,p:['sem a pessoa saber','sem ela saber','sem ele saber','sem eles saberem','sem o paciente saber','sem o cliente saber','escondid','as escondidas','sem avisar','sem consentimento','sem permissao','sem autorizacao','gravar oculto','secretly','in secret','hidden','without consent','without telling','without them knowing','without asking','covert'],
+    r:'Não. Só grave com o consentimento de todos que estão na conversa, e conte que um serviço de IA vai transformar a gravação em texto. Em muitos lugares, a lei exige que todos concordem.'},
+  {d:'',fixa:true,p:['hipaa','baa','business associate','contrato de saude','health data agreement'],
+    r:'O Vox não assina BAA nem outro contrato de saúde. Com a sua chave, o áudio vai direto do seu aparelho ao serviço que você escolheu, e quem responde pelos dados é você, profissional. Para dado de paciente, use um plano pago com contrato de saúde, ou o transcritor local.'},
+  {d:'',fixa:true,p:['lgpd','gdpr','rgpd','protecao de dados','dados pessoais','controlador','anpd','data protection','personal data','controller'],
+    r:'Pela LGPD (e pelo GDPR, na Europa), quem controla os dados do paciente é você, profissional. Com a sua chave, o Vox não trata esses dados: o áudio vai direto do seu aparelho ao serviço que você escolheu, e as notas ficam no seu aparelho.'},
   {d:'ficha',p:['combin','ultima vez','da ultima','ficou combinado','agreed','last time'],r:'Fica na ficha da pessoa: no Painel, toque no nome dela e veja "Da última vez". Sai da nota de combinados da última sessão.'},
   {d:'ficha',p:['ficha','objetivo','anotar sobre','lembrar','sempre lembrar','file','goal'],r:'No Painel, toque no nome da pessoa e depois em "Preencher ficha" (ou "Editar"): nome completo, objetivo, o que sempre lembrar e o retorno combinado.'},
   {d:'sessao',p:['trocar a pessoa','mudar a pessoa','pessoa errada','errei a pessoa','de quem e','guardar em','mover sessao','wrong person'],r:'No card da sessão, use o campo "Pessoa" na faixa da Consulta e escolha a pessoa certa. A sessão muda de ficha na hora.'},
   {d:'sempessoa',p:['sem pessoa','sem escolher','sem dono','sem pasta','nao escolhi','no person'],r:'No Painel, o bloco "Sem pessoa definida" lista as sessões gravadas sem dizer de quem eram. Escolha a pessoa em cada uma.'},
   {d:'fechar',p:['fechar atendimento','nota','prontuario','evolucao','soap','devolutiva','relatorio','resumo da sessao','note','report'],r:'No card da sessão, toque em "Fechar atendimento": o Vox escreve a nota do seu ofício, a devolutiva e os combinados, presos àquela sessão.'},
   {d:'gravar',p:['gravar','grava','nova consulta','novo atendimento','comecar','iniciar','record','start'],r:'No Painel, toque em "Começar atendimento" e escolha a pessoa. Ou aperte o botão vermelho lá embaixo: quando parar, o Vox pergunta de quem é a consulta.'},
-  {d:'separar',p:['voz','vozes','separar','diariz','quem falou','assembly','speaker'],r:'A separação de vozes usa a AssemblyAI. Ligue "Separar vozes", na barra de baixo; a chave é grátis e dá US$ 50 de crédito, sem cartão.'},
+  {d:'separar',p:['voz','vozes','separar','diariz','quem falou','assembly','speaker'],r:'A separação de vozes usa a AssemblyAI. Ligue "Separar vozes", na barra de baixo. Para dado de paciente, use um plano pago com contrato de saúde: no crédito grátis, ela pode treinar com o áudio.'},
   {d:'senha',p:['senha','proteger','sigilo','cofre','cifr','criptograf','privacidade','password','lock'],r:'No céu (Mundos), abra a ficha deste mundo e toque em "Proteger com senha". As notas, as fotos, os nomes e as fichas ficam cifrados no aparelho.'},
   {d:'calendario',p:['agendar','agenda','marcar','proximo atendimento','proxima consulta','calendario','retorno','schedule','calendar'],r:'Abra o Calendário e arraste a nota da pessoa até o dia. O Painel passa a mostrar o atendimento em "Agora" e "Hoje".'},
   {d:'personalizar',p:['oficio','papeis','nome das vozes','psicolog','paciente','cliente','personalizar','modelo de nota','abre em','profession','customize'],r:'Em "Personalizar", no topo do Painel: ofício, quem fala, a nota de depois da sessão, onde o mundo abre e a proteção.'},
@@ -43678,6 +43796,8 @@ function _guiaPessoa(q){
 }
 function _guiaLocal(q){
   const n=_guiaNorm(q);let melhor=null,pts=0;
+  const fixa=GUIA_VOX.find(g=>g.fixa&&g.p.some(x=>n.includes(x)));
+  if(fixa)return fixa;
   GUIA_VOX.forEach(g=>{const k=g.p.filter(x=>n.includes(x)).length;if(k>pts){pts=k;melhor=g}});
   return melhor;
 }
@@ -43833,8 +43953,8 @@ function _meGuia(passo){
       <div class="tx-sub">${escHtml(t('É ela que separa quem atende de quem é atendido, do começo ao fim da consulta.'))}</div>
       <div class="mg-ex"><span class="mut">${escHtml(t('Sem:'))} "${escHtml(t('bom dia como foi a semana foi difícil dormi mal'))}"</span><span>${escHtml(t('Com:'))} <b class="cs-va">${escHtml(_consultaPapeis()[0])}:</b> ${escHtml(t('Como foi a semana?'))} <b class="cs-vb">${escHtml(_consultaPapeis()[1])}:</b> ${escHtml(t('Foi difícil, dormi mal.'))}</span></div>
       ${ok?`<div class="mg-ok"><span class="cs-sem v"></span> ${escHtml(t('A AssemblyAI já está pronta neste aparelho.'))}</div>`
-        :`<div class="mg-falta"><span class="cs-sem am"></span> ${escHtml(t('Falta 1 chave grátis da AssemblyAI (US$ 50 de crédito, sem cartão). Leva uns 2 minutos.'))}</div>
-          <div class="fa-pe" style="justify-content:flex-start"><button type="button" class="conv-p" onclick="closeTxOverlay();openModalToDiar()">${escHtml(t('Pegar a chave grátis'))}</button><button type="button" class="conv-s" onclick="_meGuia(1)">${escHtml(t('Já colei a chave'))}</button></div>`}
+        :`<div class="mg-falta"><span class="cs-sem am"></span> ${escHtml(t('Dado de paciente: use a AssemblyAI num plano pago, com contrato de saúde, ou o transcritor local. No crédito grátis, ela pode treinar com o áudio.'))}</div>
+          <div class="fa-pe" style="justify-content:flex-start"><button type="button" class="conv-p" onclick="closeTxOverlay();openModalToDiar()">${escHtml(t('Configurar'))}</button><button type="button" class="conv-s" onclick="_meGuia(1)">${escHtml(t('Já colei a chave'))}</button></div>`}
       <div class="fa-pe"><button type="button" class="conv-s" onclick="_meGuia(2)">${escHtml(ok?t('Continuar'):t('Pular este passo'))}</button></div>`;
   }else if(passo===2){
     corpo=`<div class="mg-passo">${escHtml(t('Passo {a} de {b}').replace('{a}',2).replace('{b}',3))}</div>
@@ -44110,7 +44230,7 @@ async function runLens(id,lensKey,focus='',sel=null,opts=null){
     const c0=document.getElementById(id);
     const t0=(sel?sel.texto:(c0&&c0.querySelector('textarea')?.value||'')).trim();
     if(!t0){toast(t('ℹ️ Card vazio — nada para transformar'),true);return}
-    if(!(await _cortesiaLentePode(LENSES[lensKey],t0)))return;
+    if(!(await _cortesiaLentePode(LENSES[lensKey],t0,c0&&c0.dataset.mode)))return;
     viaCortesia=true;
   }else if(_precisaConfigurar())return;
   if(lensKey==='traduzir'){
@@ -46270,10 +46390,18 @@ function _startDrag(el,e0,isTouch=false,isFolder=false){
     if(target){
       const srcText=el.querySelector('textarea')?.value||'';
       const dstTa=target.querySelector('textarea');
-      if(dstTa&&srcText){dstTa.value=(dstTa.value.trimEnd()+'\n\n'+srcText).trim();autoR(dstTa);updateFooter(target.id)}
-      doDelete(_dragSrcId);saveHistory();
-      if(dstTa)navigator.clipboard.writeText(dstTa.value).then(()=>toast(t('🔗 Cards mesclados e copiados para a área de transferência')));
-      else toast(t('🔗 Cards mesclados!'));
+      // O card arrastado vai pra LIXEIRA, com Desfazer — antes era doDelete, o
+      // único caminho que apagava de vez sem passar por ela (bancada 03/11/2026):
+      // um soltar errado levava o card, as fotos e o áudio dele.
+      const srcId=_dragSrcId,dstId=target.id,antes=dstTa?dstTa.value:null;
+      if(dstTa&&srcText){dstTa.value=(dstTa.value.trimEnd()+'\n\n'+srcText).trim();autoR(dstTa);updateFooter(dstId)}
+      paraLixeira(srcId,true);
+      if(dstTa)navigator.clipboard?.writeText(dstTa.value).catch(()=>{});
+      toastDesfazer(t('🔗 Cards juntados. O que você arrastou foi para a lixeira.'),()=>{
+        const ta=document.getElementById(dstId)?.querySelector('textarea');
+        if(ta&&antes!=null){ta.value=antes;autoR(ta);updateFooter(dstId)}
+        restaurarDaLixeira(srcId,true);toast(t('↩ Cards separados de novo'));
+      });
     }
     _dragSrcId=null;_dragEl=null;
   }
