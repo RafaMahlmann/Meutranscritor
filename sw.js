@@ -55,7 +55,28 @@ self.addEventListener('fetch', e => {
   const url = e.request.url;
   // Só mesma origem: APIs externas e fontes seguem direto pra rede.
   if (!url.startsWith(self.location.origin)) return;
-  // HTML sempre vai para a rede (nunca cachear o app — updates instantâneos).
+  // Abrir o app (navegação): REDE PRIMEIRO, cópia guardada só como reserva.
+  // Antes o HTML nunca era guardado — com o 5G oscilando, o download do
+  // index.html (~4 MB) caía no meio e o app da tela inicial do iPhone mostrava
+  // "O Safari não pode abrir a página porque a conexão de rede foi perdida".
+  // Agora: com rede, sempre a versão nova (updates instantâneos continuam);
+  // sem rede, abre a última versão que funcionou. A chave ignora a ?query
+  // (ex.: ?compartilhado=1) para existir uma cópia só por página.
+  if (e.request.mode === 'navigate') {
+    const u = new URL(url);
+    const chave = u.origin + u.pathname;
+    e.respondWith(fetch(e.request).then(res => {
+      if (res.ok && res.type === 'basic') {
+        const copia = res.clone();
+        e.waitUntil(caches.open(CACHE).then(c => c.put(chave, copia)).catch(() => {}));
+      }
+      return res;
+    }).catch(() => caches.open(CACHE).then(c =>
+      c.match(chave).then(r => r || c.match(new URL('./', self.registration.scope).href))
+    ).then(r => r || Response.error())));
+    return;
+  }
+  // Outros pedidos de HTML (não-navegação) seguem direto pra rede, sem cache.
   if (e.request.headers.get('accept')?.includes('text/html') || url.endsWith('/')) return;
   // Demais recursos same-origin (ícones, manifest, vídeo): cache-first.
   e.respondWith(caches.open(CACHE).then(c =>
