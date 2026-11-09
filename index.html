@@ -10574,7 +10574,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.04.1';
+const VOX_VERSION='2026.11.09.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13174,6 +13174,7 @@ let I18N_EN={
 "Obrigado! Dá pra desligar quando quiser, no menu ⋯.":"Thank you! You can turn it off anytime in the ⋯ menu.",
 "Desligado. O que já tinha sido contado deste aparelho foi apagado.":"Turned off. What had been counted from this device was erased.",
 "Tudo bem: nada é contado.":"All right: nothing is counted.",
+"Não consegui pegar o que você copiou. Toque e segure dentro do card e escolha Colar.":"I couldn't get what you copied. Touch and hold inside the card and choose Paste.",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -35491,30 +35492,47 @@ function _irParaCardNovoToque(cid){
 }
 // Lê a área de transferência (precisa ser chamada dentro do toque) e põe no
 // card: link solto vira etiqueta, texto vai pra caixa, foto vai pra tira —
-// mesma regra do colar dentro de um card no computador. Recusou, veio vazio
-// ou o navegador não deixa: não faz nada, o card continua pronto pra escrever.
+// mesma regra do colar dentro de um card no computador.
 // read() antes de readText() porque só ele traz foto; chamar os dois
 // mostraria a bolha duas vezes, então é um OU o outro.
+// 09/11/2026 (Rafa, link copiado no Instagram): o botão não colava nada e
+// não dizia nada. Link copiado num app do iPhone (botão "Copiar link") chega
+// como ENDEREÇO (text/uri-list), sem texto comum (text/plain), e a leitura só
+// procurava texto comum. Agora lê texto, endereço ou HTML, e quando não dá
+// (recusou a bolha, veio vazio, navegador sem a função) avisa e ensina o
+// caminho do sistema, em vez de ficar mudo.
+async function _colarLerItens(itens){
+  let img=null,texto='',link='',html='';
+  for(const it of itens){
+    const ti=it.types.find(x=>x.indexOf('image/')===0);
+    if(ti&&!img){const b=await it.getType(ti);img=new File([b],'colado.'+(ti.split('/')[1]||'png'),{type:ti})}
+    if(!texto&&it.types.includes('text/plain'))texto=await (await it.getType('text/plain')).text();
+    if(!link&&it.types.includes('text/uri-list')){
+      const l=(await (await it.getType('text/uri-list')).text()).split(/\r?\n/).map(x=>x.trim()).find(x=>x&&x[0]!=='#');
+      if(l)link=l;
+    }
+    if(!html&&it.types.includes('text/html'))html=await (await it.getType('text/html')).text();
+  }
+  if(!texto&&link)texto=link;
+  if(!texto&&html){
+    // Só o texto do HTML (DOMParser não executa script nem carrega imagem).
+    try{texto=new DOMParser().parseFromString(html,'text/html').body.textContent||''}catch(e){}
+  }
+  return {img,texto};
+}
 function _colarNoCardNovo(cid,aoColar){
   const cb=navigator.clipboard;
+  const avisar=()=>toast(t('Não consegui pegar o que você copiou. Toque e segure dentro do card e escolha Colar.'),true);
   let leitura=null;
   try{
-    if(cb&&cb.read)leitura=cb.read().then(async itens=>{
-      let img=null,texto='';
-      for(const it of itens){
-        const ti=it.types.find(x=>x.indexOf('image/')===0);
-        if(ti&&!img){const b=await it.getType(ti);img=new File([b],'colado.'+(ti.split('/')[1]||'png'),{type:ti})}
-        if(!texto&&it.types.includes('text/plain'))texto=await (await it.getType('text/plain')).text();
-      }
-      return {img,texto};
-    });
+    if(cb&&cb.read)leitura=cb.read().then(_colarLerItens);
     else if(cb&&cb.readText)leitura=cb.readText().then(texto=>({img:null,texto}));
   }catch(e){}
-  if(!leitura)return;
+  if(!leitura){avisar();return}
   leitura.then(({img,texto})=>{
     const card=document.getElementById(cid);if(!card)return;
     texto=(texto||'').trim();
-    if(!img&&!texto)return;
+    if(!img&&!texto){avisar();return}
     const ta=card.querySelector('textarea');
     if(texto&&/^https?:\/\/\S+$/.test(texto))_anexarLink(cid,texto); // já chama saveHistory()
     else if(texto&&ta){
@@ -35525,7 +35543,7 @@ function _colarNoCardNovo(cid,aoColar){
     }
     if(img)_anexarUmaImagem(cid,img).then(chave=>{if(chave){_pulsarConfirmacaoFoto(cid);saveHistory()}});
     if(aoColar)aoColar();
-  }).catch(()=>{});
+  }).catch(avisar);
 }
 // Efeito de abertura do "+" (CSS em #btnNewCard.mais-pulo).
 // Espera a tela principal ficar livre — vídeo, céu de mundos, pedido do
