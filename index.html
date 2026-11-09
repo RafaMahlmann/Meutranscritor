@@ -6242,6 +6242,39 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
    grava no card aberto (ver _gravAlvo) e tocar no resto do vidro continua
    fechando. Gravando, a .rec-on (10000) já vale e não é tocada aqui. */
 body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
+/* Rótulo que troca (09/11/2026, proposta 1 escolhida pelo Rafa): com um card
+   ativo no toque (.ibar.alvo-card, ver _recRotuloSync), o vermelho vira a
+   pílula "Gravar aqui" com um anel branco no miolo, e acima dela aparece o
+   botão escuro "+ Novo card" (mesma pastilha do "Colar o que você copiou"),
+   o caminho de volta visível e de um toque. Sem card ativo, o vermelho é o
+   de sempre. Trocar de destino dá um aceno (mola) no botão. */
+#btnRec .rec-rot{display:none}
+.ibar.alvo-card #btnRec{width:auto;border-radius:999px;padding:0 14px 0 12px;gap:6px}
+.ibar.alvo-card #btnRec .rec-rot{display:inline;font:700 13px/1 var(--font);color:#fff;white-space:nowrap;letter-spacing:.01em;animation:recRotEntra .2s cubic-bezier(.22,1,.36,1)}
+.ibar.alvo-card #btnRec>svg{border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.95);animation:recAnel .34s cubic-bezier(.34,1.56,.64,1)}
+/* A pílula precisa de ~85 px a mais na barra: enquanto ela aparece, o
+   puxador encolhe (continua puxando). Sem isso o chip do modo "Livre"
+   virava "L". */
+.ibar.alvo-card .sheet-handle{width:36px}
+.ibar.alvo-card .sheet-handle-bar{width:26px}
+@media (max-width:360px){.ibar.alvo-card .smode-chip-txt{display:none}}
+@keyframes recRotEntra{from{opacity:0;transform:translateY(6px)}}
+@keyframes recAnel{from{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+#btnRec.rec-aceno{animation:recAceno .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes recAceno{0%{transform:scale(.9)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
+.rec-novo{position:absolute;right:0;bottom:calc(100% + 10px);display:none;align-items:center;gap:7px;min-height:42px;padding:0 15px;border:0;border-radius:12px;background:#1d1d1f;color:#f5f5f7;font:600 13px var(--font);pointer-events:auto;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.18);-webkit-user-select:none;user-select:none}
+.rec-novo .svgi{font-size:15px;color:#ffcc00}
+[data-theme="dark"] .rec-novo{background:#3a3a3c}
+[data-theme="dark"] .rec-novo .svgi{color:#ffd60a}
+.rec-novo:active{transform:scale(.94);transition:transform .09s}
+.ibar.alvo-card:not(.rec-on) .rec-novo{display:inline-flex;animation:recNovoEntra .22s cubic-bezier(.22,1,.36,1) .06s backwards}
+@keyframes recNovoEntra{from{opacity:0;transform:translateY(6px) scale(.95)}}
+/* O card que está recebendo a gravação respira em vermelho. */
+.card.grav-aqui{box-shadow:0 0 0 2px rgba(255,59,48,.55),0 8px 24px -10px rgba(255,59,48,.45);animation:gravRespira 1.6s ease-in-out infinite}
+@keyframes gravRespira{50%{box-shadow:0 0 0 3px rgba(255,59,48,.28),0 8px 24px -10px rgba(255,59,48,.2)}}
+@media (prefers-reduced-motion:reduce){
+  .ibar.alvo-card #btnRec .rec-rot,.ibar.alvo-card #btnRec>svg,#btnRec.rec-aceno,.ibar.alvo-card:not(.rec-on) .rec-novo,.card.grav-aqui{animation:none}
+}
 @keyframes recSoco{0%{transform:scale(1)}24%{transform:scale(.93)}58%{transform:scale(1.07)}100%{transform:scale(1)}}
 
 /* ── M4: os 3 botões voltando depois da gravação ──
@@ -9152,6 +9185,7 @@ body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
 
 <!-- IBAR -->
 <div class="ibar">
+  <button type="button" class="rec-novo" id="btnRecNovo" onclick="_gravEmCardNovo(event)"></button>
   <div class="ibar-inner">
     <!-- Achado pelo Rafa (04/09/2026): com Órbita/Fluxograma/Calendário
          abertos, a barra encolhe pro botão sozinho (ver comentário grande no
@@ -9282,6 +9316,7 @@ body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
         </div>
         <button class="circle c-rec" id="btnRec" onclick="_recBtnClick(event)" ontouchstart="_recBtnTouchStart(event)" ontouchmove="_recBtnTouchMove(event)" ontouchend="_recBtnTouchEnd(event)" ontouchcancel="_recBtnTouchCancel(event)" title="Gravar (Espaço)" data-i18n-title>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          <span class="rec-rot" id="recRot" aria-hidden="true"></span>
           <span class="lp-dot" id="lpDot" aria-hidden="true"></span>
         </button>
         <button class="circle c-stop" id="btnStop" onclick="stopRec()" style="display:none">
@@ -10581,7 +10616,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.09.2';
+const VOX_VERSION='2026.11.09.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -28692,6 +28727,25 @@ function _recRotuloSync(){
   const nome=cid?_gravNomeCard(cid):'';
   const rot=cid?(nome?t('Gravar no card {0}').replace('{0}',nome):t('Gravar neste card')):t('Gravar em card novo');
   b.setAttribute('aria-label',rot);b.title=rot;
+  const bar=document.querySelector('.ibar');if(!bar)return;
+  const era=bar.classList.contains('alvo-card');
+  bar.classList.toggle('alvo-card',!!cid);
+  const r=document.getElementById('recRot');if(r)r.textContent=t('Gravar aqui');
+  const nv=document.getElementById('btnRecNovo');
+  if(nv&&!nv.firstChild){nv.innerHTML='<span class="svgi" aria-hidden="true">'+ICO.plus+'</span>'+escHtml(t('Novo card'));nv.setAttribute('aria-label',t('Gravar em card novo'))}
+  if(era!==!!cid&&!_voxReduzMov()&&b.offsetParent){b.classList.remove('rec-aceno');void b.offsetWidth;b.classList.add('rec-aceno');clearTimeout(b._aceno);b._aceno=setTimeout(()=>b.classList.remove('rec-aceno'),360)}
+}
+// "+ Novo card" acima da pílula: grava num card novo sem precisar tocar fora
+// antes. Fecha a janela do Mural (a fala vai pra outro card) e esquece o alvo.
+function _gravEmCardNovo(e){
+  e?.stopPropagation();
+  if(isRec||isProc||stagedFile)return;
+  if(typeof _cofreFechado==='function'&&_cofreFechado()){toast(t('Este mundo está trancado. Destranque pra gravar: sem a senha, a gravação não teria onde ser guardada.'),true);_cofreDestrancar();return}
+  _gravAlvoLimpar();
+  const a=document.activeElement;if(a&&a!==document.body&&a.blur)a.blur();
+  activeTA=null;activeTACard=null;
+  if(document.getElementById('floatLayer')?.classList.contains('float-layer-fixo'))[..._flAbertas].forEach(j=>_flFecharJanela(j.id));
+  startRec();
 }
 // Tocou fora do card ativo → esquece. A barra de baixo (vermelho, segurar
 // pra escolher fonte, parar), o aviso e a própria janela do card não contam
@@ -36769,6 +36823,7 @@ async function startRec(targetCardId=null,targetTA=null){
         // cobriria metade do card. O ponto de entrada fica guardado na seleção.
         if(_voxToque()){if(document.activeElement===ta||document.activeElement===otEl)document.activeElement.blur()}
         else ta.focus();
+        if(_voxToque())el.classList.add('grav-aqui');
         el.querySelector('.rec-here')?.classList.add('recording-this')
       }
     }
@@ -36826,6 +36881,7 @@ async function startRec(targetCardId=null,targetTA=null){
   }catch(err){
     stopCapture();
     _flAbrirNoProximoCard=false; // gravação não chegou a existir: nenhum card nasce dela
+    document.querySelectorAll('.card.grav-aqui').forEach(c=>c.classList.remove('grav-aqui'));
     document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
     recTargetTA=null;recTargetCard=null;
     const src=cfg.audioSource||'mic';
@@ -36834,6 +36890,7 @@ async function startRec(targetCardId=null,targetTA=null){
 }
 function stopRec(){
   if(!isRec||!MR)return;
+  document.querySelectorAll('.card.grav-aqui').forEach(c=>c.classList.remove('grav-aqui'));
   _gravContar();
   if(_gravBlocoNesta)localStorage.setItem('vox_grav_aviso_dia',_diaLocal());
   navigator.vibrate?.([20,40,20]); // FASE 4b: feedback tátil ao parar (Android; iOS/desktop ignoram silenciosamente)
@@ -36924,6 +36981,7 @@ function setSegCardLive(id,on){
   card.closest('.float-window')?.classList.toggle('fl-ao-vivo',!!on);
 }
 function cancelRec(){
+  document.querySelectorAll('.card.grav-aqui').forEach(c=>c.classList.remove('grav-aqui'));
   if(!isRec||!MR)return;
   _flAbrirNoProximoCard=false; // cancelou: o próximo card a nascer não tem nada a ver com esta gravação
   _encGrav=null;_encPendente=null;document.getElementById('encMarcaPop')?.remove();_encTelaFechar();
@@ -37160,6 +37218,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       const _avisoCard=_voxToque()&&insertCard&&!opts.prefixo;
       autoR(insertTA);if(_dioCopiaSozinho())navigator.clipboard.writeText(text).then(()=>{if(!_avisoCard)toast(t('Inserido + copiado!'))},()=>{});
       if(_avisoCard){
+        const _cEl=document.getElementById(insertCard);if(_cEl)_cardNasce(_cEl);
         const nm=_gravNomeCard(insertCard);
         setTimeout(()=>toastDesfazer(nm?t('Entrou no card {0}').replace('{0}',nm):t('Entrou neste card'),()=>cardUndo(insertCard)),40);
       }
