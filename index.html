@@ -6241,7 +6241,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
    fechava a janela. Com a janela aberta a barra sobe pra 151: o vermelho
    grava no card aberto (ver _gravAlvo) e tocar no resto do vidro continua
    fechando. Gravando, a .rec-on (10000) já vale e não é tocada aqui. */
-@media (pointer:coarse){body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}} /* só no toque: no computador nada muda */
+body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
 /* Rótulo que troca (09/11/2026, proposta 1 escolhida pelo Rafa): com um card
    ativo no toque (.ibar.alvo-card, ver _recRotuloSync), o vermelho vira a
    pílula "Gravar aqui" com um anel branco no miolo, e acima dela aparece o
@@ -6287,12 +6287,13 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 @keyframes gotaSai{to{transform:rotate(-45deg) scale(0);opacity:0}}
 /* Barra compacta enquanto escreve no toque (09/11/2026, pedido do Rafa: o
    teclado escondia o vermelho e a barra inteira cobria a linha do cursor).
+   Só com teclado NA TELA aberto (ver _kbSync; teclado físico não conta).
    Com o texto de um card em foco, a barra vira só dois botões no canto
    direito, logo acima do teclado: fechar teclado e o vermelho "Gravar
    aqui" (que fecha o teclado e grava no ponto do cursor). Ao fechar o
    teclado, a barra inteira volta. */
 .kb-fechar{display:none}
-body.kb-escrevendo .ibar:not(.rec-on){left:auto;width:auto}
+body.kb-escrevendo .ibar:not(.rec-on){left:auto;width:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb-offset,0px))}
 body.kb-escrevendo .ibar:not(.rec-on) .sheet-handle,
 body.kb-escrevendo .ibar:not(.rec-on) .smode-chip,
 body.kb-escrevendo .ibar:not(.rec-on) #btnAttach,
@@ -10656,7 +10657,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.09.7';
+const VOX_VERSION='2026.11.09.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -20148,9 +20149,11 @@ function _flAbrirCard(id,origemEl,posFixa){
   win.innerHTML=`<button type="button" class="float-window-close" title="${t('Fechar janela')}" aria-label="${t('Fechar janela')}" onclick="event.stopPropagation();_flFecharJanela('${escJs(id)}')">${ICO.close}</button>${_flHandlesResizeHtml()}`;
   win.addEventListener('pointerdown',()=>_flTrazerFrente(id));
   win.appendChild(card);
-  // Card aberto como janela no toque (Mural) já é o card ativo: o vermelho
-  // grava nele mesmo sem cursor (ver _gravAlvo).
-  if(_voxToque()&&layer.classList.contains('float-layer-fixo'))_gravAlvoMarcar(id);
+  // Card aberto como janela a partir da lista/Mural já é o card ativo: o
+  // vermelho grava nele mesmo sem cursor (ver _gravAlvo). Todo aparelho.
+  // Depois de a janela entrar na tela (aqui o card ainda está solto, fora do
+  // documento, e a marca seria descartada).
+  if(layer.classList.contains('float-layer-fixo'))setTimeout(()=>_gravAlvoMarcar(id),0);
   // Bug real: o card chega aqui com left/top/width/maxHeight/overflow presos
   // do layout do Masonry (miniatura recortada) — sem limpar, a janela
   // flutuante nascia do tamanho certo mas o card dentro continuava do
@@ -28603,7 +28606,9 @@ window.addEventListener('scroll',_onChromeScroll,{passive:true});
 // é 0 e nada muda. Só liga no mobile — desktop não tem teclado virtual.
 function _updateKeyboardOffset(){
   const vv=window.visualViewport;
-  if(!vv||!_isSheetViewport()){document.documentElement.style.setProperty('--kb-offset','0px');return}
+  // Tela estreita OU tela de toque (iPad também tem teclado na tela; antes
+  // só a estreita acompanhava e no iPad a barra ficava atrás do teclado).
+  if(!vv||!(_isSheetViewport()||navigator.maxTouchPoints>0)){document.documentElement.style.setProperty('--kb-offset','0px');return}
   const overlap=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop));
   document.documentElement.style.setProperty('--kb-offset',overlap+'px');
 }
@@ -28732,18 +28737,19 @@ function _recBtnTouchCancel(){
 // tira o foco, e no Mural o card aberto como janela nem sempre tem o
 // cursor. _gravAlvo guarda o card ativo e onde o cursor estava, e só é
 // esquecido quando a pessoa toca FORA do card (fora da barra de baixo e do
-// aviso), fecha a janela, ou escolhe "+ Novo card". No computador nada muda:
-// lá o caminho continua sendo o foco de verdade (activeTA).
+// aviso), fecha a janela, ou escolhe "+ Novo card". Vale em todo aparelho
+// (Rafa, 09/11: "gravar dentro do card que eu abri tem que funcionar em
+// qualquer dispositivo"); no computador o card aberto como janela também.
 let _gravAlvo=null; // {cid, s, e}: s/e = seleção guardada (null = fim do texto)
 function _gravAlvoCid(){
-  if(!_gravAlvo||!_voxToque())return null;
+  if(!_gravAlvo)return null;
   const el=document.getElementById(_gravAlvo.cid);
   // Miniatura do Mural é só leitura: card ali fora da janela não é alvo.
   if(!el||!el.querySelector('.cb textarea')||(el.closest('.masonry-preview')&&!el.closest('.float-window'))){_gravAlvo=null;return null}
   return _gravAlvo.cid;
 }
 function _gravAlvoMarcar(cid){
-  if(!_voxToque()||!cid)return;
+  if(!cid)return;
   if(!_gravAlvo||_gravAlvo.cid!==cid)_gravAlvo={cid,s:null,e:null};
   _recRotuloSync();
 }
@@ -28764,7 +28770,7 @@ function _gravNomeCard(cid){
 // Rótulo do vermelho (fase 1 preenche o visual; aqui só o que o leitor de
 // tela ouve e o título).
 function _recRotuloSync(){
-  const b=document.getElementById('btnRec');if(!b||!_voxToque())return;
+  const b=document.getElementById('btnRec');if(!b)return;
   const cid=_gravAlvoCid();
   const nome=cid?_gravNomeCard(cid):'';
   const rot=cid?(nome?t('Gravar no card {0}').replace('{0}',nome):t('Gravar neste card')):t('Gravar em card novo');
@@ -28837,7 +28843,50 @@ function _gotaSync(){
   const et=g.querySelector('b');
   et.style.left=Math.min(-12,cb.clientWidth-gl-et.offsetWidth-8)+'px';
 }
-// Botão "fechar teclado" da barra compacta (body.kb-escrevendo, só no toque):
+// ── TECLADO NA TELA (09/11/2026) ──
+// O que muda com o teclado (o + sem teclado, a barra compacta) só vale
+// quando um teclado aparece DE VERDADE na tela — não por ser celular. Com
+// teclado físico (computador, tablet ou celular com teclado ligado) nada
+// disso acontece. Como saber, pelo padrão dos navegadores:
+//  - navigator.virtualKeyboard (Chrome/Android): retângulo do teclado;
+//  - visualViewport (iPhone/iPad/Android): a parte visível encolhe quando
+//    o teclado sobe (iPad com teclado físico mostra só a barrinha de
+//    atalhos, ~60px, que não conta);
+//  - Android antigo: a própria janela encolhe (innerHeight).
+// Antes de focar não existe jeito padrão de saber se há teclado físico,
+// então o Vox aprende: focou num card numa tela de toque e o teclado da
+// tela não subiu → teclado físico (guardado; se um dia subir, desaprende).
+let _kbFisico=false;try{_kbFisico=localStorage.getItem('vox_kb_fisico')==='1'}catch(e){}
+let _kbAltBase=window.innerHeight,_kbAprendeT=null;
+function _ehTelaDeToque(){return navigator.maxTouchPoints>0||_voxToque()}
+// Previsão (antes de focar): este aparelho abre teclado na tela?
+function _tecladoNaTela(){return _ehTelaDeToque()&&!_kbFisico}
+function _editandoCard(){const a=document.activeElement;return !!(a&&a.tagName==='TEXTAREA'&&a.closest('.card'))}
+function _tecladoAbertoAgora(){
+  const vk=navigator.virtualKeyboard;
+  if(vk&&vk.boundingRect&&vk.boundingRect.height>80)return true;
+  const vv=window.visualViewport;
+  if(vv&&window.innerHeight-vv.height-vv.offsetTop>120)return true;
+  return window.innerHeight<_kbAltBase-150;
+}
+function _kbSync(){
+  const ed=_editandoCard();
+  if(!ed)_kbAltBase=window.innerHeight;
+  document.body.classList.toggle('kb-escrevendo',ed&&_ehTelaDeToque()&&_tecladoAbertoAgora());
+}
+function _kbAprender(){
+  clearTimeout(_kbAprendeT);
+  if(!_ehTelaDeToque())return;
+  _kbAprendeT=setTimeout(()=>{
+    if(!_editandoCard())return;
+    const fis=!_tecladoAbertoAgora();
+    if(fis!==_kbFisico){_kbFisico=fis;try{localStorage.setItem('vox_kb_fisico',fis?'1':'0')}catch(e){}}
+  },900);
+}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',_kbSync);window.visualViewport.addEventListener('scroll',_kbSync)}
+if(navigator.virtualKeyboard)try{navigator.virtualKeyboard.addEventListener('geometrychange',_kbSync)}catch(e){}
+window.addEventListener('resize',_kbSync);
+// Botão "fechar teclado" da barra compacta (body.kb-escrevendo):
 // fica colado no vermelho, no canto direito acima do teclado.
 // Com o teclado aberto, tocar no vermelho ou no fechar não pode tirar o foco
 // no mousedown: a barra cresceria embaixo do dedo antes do clique chegar.
@@ -35735,8 +35784,10 @@ function _irParaCardNovoToque(cid){
   // ativo (pílula "Gravar aqui" + gota no fim do texto) e com o botão Colar,
   // que lê a área de transferência sem precisar do teclado. Pra escrever,
   // toca no texto. (Antes, desde 23/10, o + focava o texto de propósito pro
-  // colar do sistema; o botão Colar tomou esse lugar.)
+  // colar do sistema; o botão Colar tomou esse lugar.) Com teclado físico
+  // ligado (aprendido, ver _kbFisico) o teclado não atrapalha: foca.
   _gravAlvoMarcar(cid);
+  if(!_tecladoNaTela()){const ta=el.querySelector('textarea');if(ta)try{ta.focus({preventScroll:true})}catch(e){ta.focus()}}
 }
 // Lê a área de transferência (precisa ser chamada dentro do toque) e põe no
 // card: link solto vira etiqueta, texto vai pra caixa, foto vai pra tira —
@@ -36761,7 +36812,7 @@ document.addEventListener('focusin',e=>{
     activeTA=e.target;activeTACard=e.target.closest('.card')?.id||null;
     _gravAlvoMarcar(activeTACard);
     if(_gravAlvo)_gotaSync();
-    if(_voxToque())document.body.classList.add('kb-escrevendo');
+    setTimeout(_kbSync,0);_kbAprender();
     document.querySelectorAll('.card').forEach(c=>c.classList.remove('focused'));
     e.target.closest('.card').classList.add('focused');
   }
@@ -36770,7 +36821,7 @@ document.addEventListener('focusout',e=>{
   if(e.target.tagName==='TEXTAREA'&&e.target.closest('.card')){
     _gravAlvoGuardarCursor(e.target);
     if(_gravAlvo)setTimeout(_gotaSync,0);
-    setTimeout(()=>{const a=document.activeElement;if(!(a&&a.tagName==='TEXTAREA'&&a.closest('.card')))document.body.classList.remove('kb-escrevendo')},0);
+    setTimeout(_kbSync,0);
     setTimeout(()=>{if(document.activeElement!==e.target){activeTA=null;activeTACard=null;e.target.closest('.card')?.classList.remove('focused')}},200);
   }
 });
@@ -36943,11 +36994,13 @@ async function startRec(targetCardId=null,targetTA=null){
           const n=ta.value.length;
           ta.selectionStart=g?Math.min(g.s,n):n;ta.selectionEnd=g?Math.min(g.e,n):n;
         }
-        // No toque não chama o teclado: gravar não precisa dele, e o teclado
-        // cobriria metade do card. O ponto de entrada fica guardado na seleção.
-        if(_voxToque()){if(document.activeElement===ta||document.activeElement===otEl)document.activeElement.blur()}
+        // Com teclado NA TELA não chama o teclado: gravar não precisa dele, e
+        // ele cobriria metade do card. O ponto de entrada fica guardado na
+        // seleção. Com teclado físico (computador, tablet com teclado) segue
+        // o foco de sempre.
+        if(_tecladoNaTela()){if(document.activeElement===ta||document.activeElement===otEl)document.activeElement.blur()}
         else ta.focus();
-        if(_voxToque()){el.classList.add('grav-aqui');setTimeout(_gotaSync,0)}
+        el.classList.add('grav-aqui');setTimeout(_gotaSync,0);
         el.querySelector('.rec-here')?.classList.add('recording-this')
       }
     }
@@ -37001,7 +37054,7 @@ async function startRec(targetCardId=null,targetTA=null){
     document.getElementById('btnSend').style.display='none';document.getElementById('btnStop').style.display='none';document.getElementById('btnCancel').style.display='none';
     recTimer=setInterval(()=>{const el=Math.floor((Date.now()-recStart)/1000);const s=String(Math.floor(el/60)).padStart(2,'0')+':'+String(el%60).padStart(2,'0');document.getElementById('recTimer').textContent=s;const dt=document.getElementById('docRecTimer');if(dt)dt.textContent=s},1000);
     initVU(stream);setStatus('Gravando…','rec');
-    if(recTargetCard&&_voxToque())_gotaSync();
+    if(recTargetCard)_gotaSync();
     _gravLimiteArmar();_gravAvisoDoDia();_diarAvisoInicio();
   }catch(err){
     stopCapture();
@@ -37336,8 +37389,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       // No fim do texto, linha nova (como sempre foi). No meio (o cursor
       // estava numa frase, 09/11/2026), só os espaços que faltarem: antes era
       // linha nova olhando o FIM do texto, e a fala caía partindo a frase.
-      // Só no toque (Rafa, 09/11: no computador não mexer); lá segue a regra antiga.
-      const noFim=!_voxToque()||en>=cur.length;
+      const noFim=en>=cur.length;
       let sep=noFim?(cur.length>0&&cur[cur.length-1]!=='\n'?'\n':''):(s>0&&!/\s/.test(cur[s-1])?' ':'');
       if(!noFim&&text&&!/^\s/.test(cur[en])&&!/\s$/.test(text))text=text+' ';
       const insertCard=insertTA.closest('.card')?.id;cardAlvo=insertCard;
@@ -37348,7 +37400,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       if(_gravAlvo&&_gravAlvo.cid===insertCard){_gravAlvo.s=_gravAlvo.e=_fimNovo}
       // No toque, o aviso é sempre o do "Entrou no card · Desfazer" (o
       // copiar sozinho continua acontecendo, só sem o aviso próprio).
-      const _avisoCard=_voxToque()&&insertCard&&!opts.prefixo;
+      const _avisoCard=insertCard&&!opts.prefixo;
       autoR(insertTA);if(_dioCopiaSozinho())navigator.clipboard.writeText(text).then(()=>{if(!_avisoCard)toast(t('Inserido + copiado!'))},()=>{});
       if(_avisoCard){
         const _cEl=document.getElementById(insertCard);if(_cEl)_cardNasce(_cEl);
