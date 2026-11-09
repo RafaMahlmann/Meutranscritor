@@ -6235,6 +6235,13 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* O soco é o mesmo gesto da bolinha de cor da pasta (folderDotSoco), com
    amplitude menor porque aqui o objeto é 4x maior. */
 .c-rec.rec-soco{animation:recSoco .36s cubic-bezier(.22,1,.36,1)}
+/* Gravar no card aberto (09/11/2026, pedido do Rafa): no Mural do celular o
+   card abre como janela e o vidro dela (.float-layer-fixo, 150) cobria a
+   barra parada (100). O vermelho aparecia mas o toque caía no vidro e só
+   fechava a janela. Com a janela aberta a barra sobe pra 151: o vermelho
+   grava no card aberto (ver _gravAlvo) e tocar no resto do vidro continua
+   fechando. Gravando, a .rec-on (10000) já vale e não é tocada aqui. */
+body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
 @keyframes recSoco{0%{transform:scale(1)}24%{transform:scale(.93)}58%{transform:scale(1.07)}100%{transform:scale(1)}}
 
 /* ── M4: os 3 botões voltando depois da gravação ──
@@ -10574,7 +10581,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.09.1';
+const VOX_VERSION='2026.11.09.2';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13175,6 +13182,11 @@ let I18N_EN={
 "Desligado. O que já tinha sido contado deste aparelho foi apagado.":"Turned off. What had been counted from this device was erased.",
 "Tudo bem: nada é contado.":"All right: nothing is counted.",
 "Não consegui pegar o que você copiou. Toque e segure dentro do card e escolha Colar.":"I couldn't get what you copied. Touch and hold inside the card and choose Paste.",
+"Gravar no card {0}":"Record into card {0}",
+"Gravar neste card":"Record into this card",
+"Gravar em card novo":"Record into a new card",
+"Entrou no card {0}":"Added to card {0}",
+"Entrou neste card":"Added to this card",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -20059,6 +20071,9 @@ function _flAbrirCard(id,origemEl,posFixa){
   win.innerHTML=`<button type="button" class="float-window-close" title="${t('Fechar janela')}" aria-label="${t('Fechar janela')}" onclick="event.stopPropagation();_flFecharJanela('${escJs(id)}')">${ICO.close}</button>${_flHandlesResizeHtml()}`;
   win.addEventListener('pointerdown',()=>_flTrazerFrente(id));
   win.appendChild(card);
+  // Card aberto como janela no toque (Mural) já é o card ativo: o vermelho
+  // grava nele mesmo sem cursor (ver _gravAlvo).
+  if(_voxToque()&&layer.classList.contains('float-layer-fixo'))_gravAlvoMarcar(id);
   // Bug real: o card chega aqui com left/top/width/maxHeight/overflow presos
   // do layout do Masonry (miniatura recortada) — sem limpar, a janela
   // flutuante nascia do tamanho certo mas o card dentro continuava do
@@ -20700,6 +20715,7 @@ function _flRestaurarFiltro(){
   if(q)doSearch(q);else applyFolderFilter();
 }
 function _flFecharJanela(id){
+  if(_gravAlvo&&_gravAlvo.cid===id)_gravAlvoLimpar();
   const win=document.getElementById('floatwin-'+id);
   const card=document.getElementById(id);
   _flAbertas=_flAbertas.filter(j=>j.id!==id);
@@ -28630,6 +28646,64 @@ function _recBtnTouchCancel(){
   if(_recLpTimer){clearTimeout(_recLpTimer);_recLpTimer=null}
   _recLongPressFired=false;
 }
+// ── GRAVAR NO CARD ATIVO (toque) — 09/11/2026 ──
+// Pedido do Rafa: "o cursor fica piscando... eu apertar o vermelhinho lá
+// embaixo, ele já grava onde está piscando. Se eu tiver clicado fora do
+// card, ou não tiver clicado em card nenhum, aí sim grava abrindo um card
+// novo". O startRec() já gravava no card com o cursor (activeTA), mas no
+// celular o foco some fácil: o teclado desce ("OK"), o toque no vermelho
+// tira o foco, e no Mural o card aberto como janela nem sempre tem o
+// cursor. _gravAlvo guarda o card ativo e onde o cursor estava, e só é
+// esquecido quando a pessoa toca FORA do card (fora da barra de baixo e do
+// aviso), fecha a janela, ou escolhe "+ Novo card". No computador nada muda:
+// lá o caminho continua sendo o foco de verdade (activeTA).
+let _gravAlvo=null; // {cid, s, e}: s/e = seleção guardada (null = fim do texto)
+function _gravAlvoCid(){
+  if(!_gravAlvo||!_voxToque())return null;
+  const el=document.getElementById(_gravAlvo.cid);
+  // Miniatura do Mural é só leitura: card ali fora da janela não é alvo.
+  if(!el||!el.querySelector('.cb textarea')||(el.closest('.masonry-preview')&&!el.closest('.float-window'))){_gravAlvo=null;return null}
+  return _gravAlvo.cid;
+}
+function _gravAlvoMarcar(cid){
+  if(!_voxToque()||!cid)return;
+  if(!_gravAlvo||_gravAlvo.cid!==cid)_gravAlvo={cid,s:null,e:null};
+  _recRotuloSync();
+}
+function _gravAlvoLimpar(){
+  if(!_gravAlvo)return;
+  _gravAlvo=null;_recRotuloSync();
+}
+function _gravAlvoGuardarCursor(ta){
+  if(!_gravAlvo||!ta)return;
+  if(ta.closest('.card')?.id!==_gravAlvo.cid)return;
+  try{_gravAlvo.s=ta.selectionStart;_gravAlvo.e=ta.selectionEnd}catch(e){}
+}
+// Nome curto do card pros avisos e pro leitor de tela.
+function _gravNomeCard(cid){
+  const c=document.getElementById(cid);
+  return ((c?.dataset.sessionName||c?.querySelector('.sname-badge:not(.sname-badge-empty)')?.textContent||'').trim()).slice(0,40);
+}
+// Rótulo do vermelho (fase 1 preenche o visual; aqui só o que o leitor de
+// tela ouve e o título).
+function _recRotuloSync(){
+  const b=document.getElementById('btnRec');if(!b||!_voxToque())return;
+  const cid=_gravAlvoCid();
+  const nome=cid?_gravNomeCard(cid):'';
+  const rot=cid?(nome?t('Gravar no card {0}').replace('{0}',nome):t('Gravar neste card')):t('Gravar em card novo');
+  b.setAttribute('aria-label',rot);b.title=rot;
+}
+// Tocou fora do card ativo → esquece. A barra de baixo (vermelho, segurar
+// pra escolher fonte, parar), o aviso e a própria janela do card não contam
+// como "fora".
+document.addEventListener('pointerdown',e=>{
+  if(!_gravAlvo)return;
+  const tg=e.target;if(!(tg instanceof Element))return;
+  if(tg.closest('.ibar,#toastWrap'))return;
+  const c=document.getElementById(_gravAlvo.cid);
+  if(c&&(c.contains(tg)||tg.closest('#floatwin-'+CSS.escape(_gravAlvo.cid))))return;
+  _gravAlvoLimpar();
+},true);
 function _recBtnClick(e){
   if(_recLongPressFired){_recLongPressFired=false;e.preventDefault();e.stopPropagation();return}
   if(!isRec&&typeof _cofreFechado==='function'&&_cofreFechado()){toast(t('Este mundo está trancado. Destranque pra gravar: sem a senha, a gravação não teria onde ser guardada.'),true);_cofreDestrancar();return}
@@ -36511,12 +36585,14 @@ function stopVU(){
 document.addEventListener('focusin',e=>{
   if(e.target.tagName==='TEXTAREA'&&e.target.closest('.card')){
     activeTA=e.target;activeTACard=e.target.closest('.card')?.id||null;
+    _gravAlvoMarcar(activeTACard);
     document.querySelectorAll('.card').forEach(c=>c.classList.remove('focused'));
     e.target.closest('.card').classList.add('focused');
   }
 });
 document.addEventListener('focusout',e=>{
   if(e.target.tagName==='TEXTAREA'&&e.target.closest('.card')){
+    _gravAlvoGuardarCursor(e.target);
     setTimeout(()=>{if(document.activeElement!==e.target){activeTA=null;activeTACard=null;e.target.closest('.card')?.classList.remove('focused')}},200);
   }
 });
@@ -36673,6 +36749,7 @@ async function startRec(targetCardId=null,targetTA=null){
     targetTA.focus();
   }else{
     if(!targetCardId&&activeTA&&activeTACard&&document.contains(activeTA))targetCardId=activeTACard;
+    if(!targetCardId)targetCardId=_gravAlvoCid(); // toque: card ativo sem foco (ver _gravAlvo)
     if(!targetCardId){recTargetTA=null;recTargetCard=null} // gravação global: limpa alvo antigo
     if(targetCardId){
       const el=document.getElementById(targetCardId);
@@ -36682,8 +36759,17 @@ async function startRec(targetCardId=null,targetTA=null){
         // estava (ex: clicou no meio do texto antes de apertar gravar), respeita a posição
         // real — mantida sincronizada pelo listener em _mountFocusEditor.
         const otEl=(_focusEditorCardId===targetCardId)?_focusEditorInstance?.textarea:null;
-        if(document.activeElement!==ta&&document.activeElement!==otEl)ta.selectionStart=ta.selectionEnd=ta.value.length;
-        ta.focus();el.querySelector('.rec-here')?.classList.add('recording-this')
+        if(document.activeElement!==ta&&document.activeElement!==otEl){
+          // No toque, volta pro ponto onde o cursor estava antes do teclado descer.
+          const g=(_gravAlvo&&_gravAlvo.cid===targetCardId&&_gravAlvo.s!=null)?_gravAlvo:null;
+          const n=ta.value.length;
+          ta.selectionStart=g?Math.min(g.s,n):n;ta.selectionEnd=g?Math.min(g.e,n):n;
+        }
+        // No toque não chama o teclado: gravar não precisa dele, e o teclado
+        // cobriria metade do card. O ponto de entrada fica guardado na seleção.
+        if(_voxToque()){if(document.activeElement===ta||document.activeElement===otEl)document.activeElement.blur()}
+        else ta.focus();
+        el.querySelector('.rec-here')?.classList.add('recording-this')
       }
     }
   }
@@ -37066,7 +37152,17 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       const insertCard=insertTA.closest('.card')?.id;cardAlvo=insertCard;
       if(insertCard)pushCardHistory(insertCard);
       insertTA.value=cur.slice(0,s)+sep+text+cur.slice(en);
-      autoR(insertTA);if(_dioCopiaSozinho())navigator.clipboard.writeText(text).then(()=>toast(t('Inserido + copiado!')));
+      const _fimNovo=s+sep.length+(text||'').length;
+      try{insertTA.selectionStart=insertTA.selectionEnd=_fimNovo}catch(e){}
+      if(_gravAlvo&&_gravAlvo.cid===insertCard){_gravAlvo.s=_gravAlvo.e=_fimNovo}
+      // No toque, o aviso é sempre o do "Entrou no card · Desfazer" (o
+      // copiar sozinho continua acontecendo, só sem o aviso próprio).
+      const _avisoCard=_voxToque()&&insertCard&&!opts.prefixo;
+      autoR(insertTA);if(_dioCopiaSozinho())navigator.clipboard.writeText(text).then(()=>{if(!_avisoCard)toast(t('Inserido + copiado!'))},()=>{});
+      if(_avisoCard){
+        const nm=_gravNomeCard(insertCard);
+        setTimeout(()=>toastDesfazer(nm?t('Entrou no card {0}').replace('{0}',nm):t('Entrou neste card'),()=>cardUndo(insertCard)),40);
+      }
       updateFooter(insertCard);saveHistory();activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;
     }else{
       const cid=addCard(text,fromRec?file:file,cost,fromRec?'gravacao':'arquivo',prov,true,null,null,[],sn,mode,false);cardAlvo=cid;
