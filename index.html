@@ -10632,7 +10632,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.09.4';
+const VOX_VERSION='2026.11.09.5';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13232,7 +13232,7 @@ let I18N_EN={
 "Obrigado! Dá pra desligar quando quiser, no menu ⋯.":"Thank you! You can turn it off anytime in the ⋯ menu.",
 "Desligado. O que já tinha sido contado deste aparelho foi apagado.":"Turned off. What had been counted from this device was erased.",
 "Tudo bem: nada é contado.":"All right: nothing is counted.",
-"Não consegui pegar o que você copiou. Toque e segure dentro do card e escolha Colar.":"I couldn't get what you copied. Touch and hold inside the card and choose Paste.",
+"Não colou. Segure no card e toque em Colar.":"Didn't paste. Hold inside the card and tap Paste.",
 "Gravar no card {0}":"Record into card {0}",
 "Gravar neste card":"Record into this card",
 "Gravar em card novo":"Record into a new card",
@@ -28802,8 +28802,12 @@ function _gotaSync(){
   // Ponto fora da parte visível do texto (card recortado): não desenha.
   if(c.y<-4||c.y>ta.clientHeight){g.style.display='none';return}
   g.style.display='';
-  g.style.left=Math.round(rt.left-rc.left+c.x+2)+'px';
+  const gl=Math.round(rt.left-rc.left+c.x+2);
+  g.style.left=gl+'px';
   g.style.top=Math.round(rt.top-rc.top+c.y+c.lh/2)+'px';
+  // A etiqueta não pode sair pela direita do card (o card corta).
+  const et=g.querySelector('b');
+  et.style.left=Math.min(-12,cb.clientWidth-gl-et.offsetWidth-8)+'px';
 }
 // "+ Novo card" acima da pílula: grava num card novo sem precisar tocar fora
 // antes. Fecha a janela do Mural (a fala vai pra outro card) e esquece o alvo.
@@ -35720,7 +35724,7 @@ async function _colarLerItens(itens){
 }
 function _colarNoCardNovo(cid,aoColar){
   const cb=navigator.clipboard;
-  const avisar=()=>toast(t('Não consegui pegar o que você copiou. Toque e segure dentro do card e escolha Colar.'),true);
+  const avisar=()=>toast(t('Não colou. Segure no card e toque em Colar.'),true);
   let leitura=null;
   try{
     if(cb&&cb.read)leitura=cb.read().then(_colarLerItens);
