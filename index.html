@@ -6241,7 +6241,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
    fechava a janela. Com a janela aberta a barra sobe pra 151: o vermelho
    grava no card aberto (ver _gravAlvo) e tocar no resto do vidro continua
    fechando. Gravando, a .rec-on (10000) já vale e não é tocada aqui. */
-body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
+@media (pointer:coarse){body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}} /* só no toque: no computador nada muda */
 /* Rótulo que troca (09/11/2026, proposta 1 escolhida pelo Rafa): com um card
    ativo no toque (.ibar.alvo-card, ver _recRotuloSync), o vermelho vira a
    pílula "Gravar aqui" com um anel branco no miolo, e acima dela aparece o
@@ -10656,7 +10656,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.09.6';
+const VOX_VERSION='2026.11.09.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -37336,7 +37336,8 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       // No fim do texto, linha nova (como sempre foi). No meio (o cursor
       // estava numa frase, 09/11/2026), só os espaços que faltarem: antes era
       // linha nova olhando o FIM do texto, e a fala caía partindo a frase.
-      const noFim=en>=cur.length;
+      // Só no toque (Rafa, 09/11: no computador não mexer); lá segue a regra antiga.
+      const noFim=!_voxToque()||en>=cur.length;
       let sep=noFim?(cur.length>0&&cur[cur.length-1]!=='\n'?'\n':''):(s>0&&!/\s/.test(cur[s-1])?' ':'');
       if(!noFim&&text&&!/^\s/.test(cur[en])&&!/\s$/.test(text))text=text+' ';
       const insertCard=insertTA.closest('.card')?.id;cardAlvo=insertCard;
