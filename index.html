@@ -6285,6 +6285,29 @@ body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
 @keyframes gotaChega{from{transform:rotate(-45deg) scale(0)}}
 @keyframes gotaPulsa{50%{box-shadow:0 0 0 7px rgba(255,59,48,0)}}
 @keyframes gotaSai{to{transform:rotate(-45deg) scale(0);opacity:0}}
+/* Barra compacta enquanto escreve no toque (09/11/2026, pedido do Rafa: o
+   teclado escondia o vermelho e a barra inteira cobria a linha do cursor).
+   Com o texto de um card em foco, a barra vira só dois botões no canto
+   direito, logo acima do teclado: fechar teclado e o vermelho "Gravar
+   aqui" (que fecha o teclado e grava no ponto do cursor). Ao fechar o
+   teclado, a barra inteira volta. */
+.kb-fechar{display:none}
+body.kb-escrevendo .ibar:not(.rec-on){left:auto;width:auto}
+body.kb-escrevendo .ibar:not(.rec-on) .sheet-handle,
+body.kb-escrevendo .ibar:not(.rec-on) .smode-chip,
+body.kb-escrevendo .ibar:not(.rec-on) #btnAttach,
+body.kb-escrevendo .ibar:not(.rec-on) .aud-wrap,
+body.kb-escrevendo .ibar:not(.rec-on) #btnRecNovo,
+body.kb-escrevendo .ibar:not(.rec-on) #itxt{display:none!important}
+body.kb-escrevendo .ibar:not(.rec-on) .ibar-inner,
+body.kb-escrevendo .ibar:not(.rec-on) .ibox{background:transparent!important;border-color:transparent!important;box-shadow:none!important;padding:0!important;min-width:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+body.kb-escrevendo .ibar:not(.rec-on) .ibtns{gap:10px}
+body.kb-escrevendo .ibar:not(.rec-on) .kb-fechar{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;border:0;padding:0;background:#1d1d1f;color:#f5f5f7;cursor:pointer;pointer-events:auto;box-shadow:0 6px 18px rgba(0,0,0,.22);animation:recNovoEntra .22s cubic-bezier(.22,1,.36,1) backwards}
+body.kb-escrevendo .ibar:not(.rec-on) .kb-fechar svg{width:22px;height:22px}
+body.kb-escrevendo .ibar:not(.rec-on) #btnRec{height:44px;box-shadow:0 6px 18px rgba(255,59,48,.35)}
+[data-theme="dark"] body.kb-escrevendo .ibar:not(.rec-on) .kb-fechar{background:#3a3a3c}
+.kb-fechar:active{transform:scale(.94)}
+@media (prefers-reduced-motion:reduce){body.kb-escrevendo .ibar .kb-fechar{animation:none}}
 /* O card que está recebendo a gravação respira em vermelho. */
 .card.grav-aqui{box-shadow:0 0 0 2px rgba(255,59,48,.55),0 8px 24px -10px rgba(255,59,48,.45);animation:gravRespira 1.6s ease-in-out infinite}
 @keyframes gravRespira{50%{box-shadow:0 0 0 3px rgba(255,59,48,.28),0 8px 24px -10px rgba(255,59,48,.2)}}
@@ -9330,6 +9353,7 @@ body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
             <div class="aud-note" id="audioCfgNote"></div>
           </div>
         </div>
+        <button type="button" class="kb-fechar" id="btnKbFechar" onclick="_kbFechar()" title="Fechar teclado" aria-label="Fechar teclado" data-i18n-title></button>
         <button class="circle c-rec" id="btnRec" onclick="_recBtnClick(event)" ontouchstart="_recBtnTouchStart(event)" ontouchmove="_recBtnTouchMove(event)" ontouchend="_recBtnTouchEnd(event)" ontouchcancel="_recBtnTouchCancel(event)" title="Gravar (Espaço)" data-i18n-title>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
           <span class="rec-rot" id="recRot" aria-hidden="true"></span>
@@ -10632,7 +10656,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.09.5';
+const VOX_VERSION='2026.11.09.6';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13239,6 +13263,7 @@ let I18N_EN={
 "Entrou no card {0}":"Added to card {0}",
 "Entrou neste card":"Added to this card",
 "sua fala entra aqui":"your words go here",
+"Fechar teclado":"Close keyboard",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -28745,10 +28770,13 @@ function _recRotuloSync(){
   const rot=cid?(nome?t('Gravar no card {0}').replace('{0}',nome):t('Gravar neste card')):t('Gravar em card novo');
   b.setAttribute('aria-label',rot);b.title=rot;
   const bar=document.querySelector('.ibar');if(!bar)return;
-  setTimeout(_gotaSync,0);
+  // Duas vezes: a janela do Mural abre animando (escala), e a medida tirada
+  // no meio da animação punha a gota na borda do card.
+  setTimeout(_gotaSync,0);setTimeout(_gotaSync,480);
   const era=bar.classList.contains('alvo-card');
   bar.classList.toggle('alvo-card',!!cid);
   const r=document.getElementById('recRot');if(r)r.textContent=t('Gravar aqui');
+  const kf=document.getElementById('btnKbFechar');if(kf&&!kf.firstChild){kf.innerHTML=ICO.kbDismiss;kf.title=kf.ariaLabel=t('Fechar teclado');kf.setAttribute('aria-label',t('Fechar teclado'))}
   const nv=document.getElementById('btnRecNovo');
   if(nv&&!nv.firstChild){nv.innerHTML='<span class="svgi" aria-hidden="true">'+ICO.plus+'</span>'+escHtml(t('Novo card'));nv.setAttribute('aria-label',t('Gravar em card novo'))}
   if(era!==!!cid&&!_voxReduzMov()&&b.offsetParent){b.classList.remove('rec-aceno');void b.offsetWidth;b.classList.add('rec-aceno');clearTimeout(b._aceno);b._aceno=setTimeout(()=>b.classList.remove('rec-aceno'),360)}
@@ -28808,6 +28836,19 @@ function _gotaSync(){
   // A etiqueta não pode sair pela direita do card (o card corta).
   const et=g.querySelector('b');
   et.style.left=Math.min(-12,cb.clientWidth-gl-et.offsetWidth-8)+'px';
+}
+// Botão "fechar teclado" da barra compacta (body.kb-escrevendo, só no toque):
+// fica colado no vermelho, no canto direito acima do teclado.
+// Com o teclado aberto, tocar no vermelho ou no fechar não pode tirar o foco
+// no mousedown: a barra cresceria embaixo do dedo antes do clique chegar.
+// Quem fecha o teclado é a própria ação (startRec / _kbFechar).
+document.addEventListener('mousedown',e=>{
+  if(!document.body.classList.contains('kb-escrevendo'))return;
+  if(e.target instanceof Element&&e.target.closest('#btnRec,#btnKbFechar'))e.preventDefault();
+},true);
+function _kbFechar(){
+  const a=document.activeElement;if(a&&a!==document.body&&a.blur)a.blur();
+  document.body.classList.remove('kb-escrevendo');
 }
 // "+ Novo card" acima da pílula: grava num card novo sem precisar tocar fora
 // antes. Fecha a janela do Mural (a fala vai pra outro card) e esquece o alvo.
@@ -35689,8 +35730,13 @@ function _irParaCardNovoToque(cid){
     _flAcoplarCamada(document.body);
     _flAbrirCard(cid,el);
   }else el.scrollIntoView({behavior:'smooth',block:'center'});
-  const ta=el.querySelector('textarea');
-  if(ta)try{ta.focus({preventScroll:true})}catch(e){ta.focus()}
+  // 09/11/2026 (Rafa): o + não chama mais o teclado. "Eu ia clicar no gravar,
+  // não queria o teclado" — e com ele aberto o vermelho sumia. O card nasce
+  // ativo (pílula "Gravar aqui" + gota no fim do texto) e com o botão Colar,
+  // que lê a área de transferência sem precisar do teclado. Pra escrever,
+  // toca no texto. (Antes, desde 23/10, o + focava o texto de propósito pro
+  // colar do sistema; o botão Colar tomou esse lugar.)
+  _gravAlvoMarcar(cid);
 }
 // Lê a área de transferência (precisa ser chamada dentro do toque) e põe no
 // card: link solto vira etiqueta, texto vai pra caixa, foto vai pra tira —
@@ -36715,6 +36761,7 @@ document.addEventListener('focusin',e=>{
     activeTA=e.target;activeTACard=e.target.closest('.card')?.id||null;
     _gravAlvoMarcar(activeTACard);
     if(_gravAlvo)_gotaSync();
+    if(_voxToque())document.body.classList.add('kb-escrevendo');
     document.querySelectorAll('.card').forEach(c=>c.classList.remove('focused'));
     e.target.closest('.card').classList.add('focused');
   }
@@ -36723,6 +36770,7 @@ document.addEventListener('focusout',e=>{
   if(e.target.tagName==='TEXTAREA'&&e.target.closest('.card')){
     _gravAlvoGuardarCursor(e.target);
     if(_gravAlvo)setTimeout(_gotaSync,0);
+    setTimeout(()=>{const a=document.activeElement;if(!(a&&a.tagName==='TEXTAREA'&&a.closest('.card')))document.body.classList.remove('kb-escrevendo')},0);
     setTimeout(()=>{if(document.activeElement!==e.target){activeTA=null;activeTACard=null;e.target.closest('.card')?.classList.remove('focused')}},200);
   }
 });
