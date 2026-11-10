@@ -5558,6 +5558,58 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 }
 #btnNewCard:focus-visible{outline:2px solid var(--text);outline-offset:2px}
 #btnNewCard:focus-visible svg{transform:rotate(90deg)}
+/* Pastas em tinta índigo (pedido do Rafa, 10/11/2026; proposta em
+   PLANO_DIRETOR/acessibilidade-pastas). O ícone cinza do celular dava 2,55:1
+   sobre a pílula e reprovava o mínimo de ícone (3:1, WCAG 1.4.11): era o botão
+   mais apagado da barra, e quem chegava agora nem sabia que as pastas existiam.
+   Mesma lógica do #btnNewCard: cor própria, igual em toda skin, e só a cara
+   do botão muda (tamanho e lugar na .stats, zona protegida, continuam).
+   Medido: #2e3a8c sobre o fundo índigo 10% dá 7,6:1; branco sobre #2e3a8c,
+   10:1. No escuro, #a5b4fc dá 6,9:1.
+   - Tinta que espalha: aberto/fechado se lê pelo PREENCHIMENTO, não só pela
+     cor. O índigo nasce no ponto do toque (--pt-x/--pt-y, ver _ptTintaPonto).
+   - Gaveta com mola: a linha do ícone anda 4px junto com o painel.
+   - O número amarelo conta as notas fora de qualquer pasta (_ptSoltasSinc):
+     só a partir de 3, pra não virar enfeite permanente.
+   Os filhos são <i> e <b>, não <span>: no celular .stat-folders-btn span
+   some (vira botão só-ícone) e levaria a tinta e o número junto. */
+:root{--pt-tinta:#2e3a8c;--pt-tinta-fundo:rgba(46,58,140,.10);--pt-tinta-anel:rgba(46,58,140,.38);--pt-sobre:#fff}
+[data-theme="dark"]{--pt-tinta:#a5b4fc;--pt-tinta-fundo:rgba(165,180,252,.16);--pt-tinta-anel:rgba(165,180,252,.42);--pt-sobre:#131315}
+#btnFolders,#btnFolders:hover,#btnFolders.folders-on{position:relative;color:var(--pt-tinta);background:var(--pt-tinta-fundo);box-shadow:inset 0 0 0 1.5px var(--pt-tinta-anel);transition:color .2s,box-shadow .2s}
+#btnFolders.folders-on,#btnFolders.folders-on:hover{color:var(--pt-sobre);box-shadow:none}
+#btnFolders svg,#btnFolders span{position:relative;z-index:1}
+#btnFolders svg{stroke-width:2.4}
+#btnFolders .pt-tinta{position:absolute;inset:0;border-radius:inherit;background:var(--pt-tinta);pointer-events:none;
+  clip-path:circle(0% at var(--pt-x,50%) var(--pt-y,50%));transition:clip-path .28s cubic-bezier(.2,.8,.2,1)}
+#btnFolders.folders-on .pt-tinta{clip-path:circle(150% at var(--pt-x,50%) var(--pt-y,50%))}
+#btnFolders svg line{transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+#btnFolders.folders-on svg line{transform:translateX(-4px)}
+#btnFolders:focus-visible{outline:2px solid var(--pt-tinta);outline-offset:2px}
+#btnFolders.mola{animation:mwMola .32s cubic-bezier(.34,1.56,.64,1)}
+#btnFolders.engole{animation:ptEngole .34s cubic-bezier(.34,1.56,.64,1)}
+@keyframes ptEngole{35%{transform:scale(.82,.9)}70%{transform:scale(1.1)}}
+#btnFolders .pt-soltas{position:absolute;top:-6px;right:-7px;z-index:2;min-width:17px;height:17px;padding:0 4px;border-radius:9px;
+  background:#ffcc00;color:#1d1d1f;font:700 10.5px/17px var(--font);font-style:normal;text-align:center;font-variant-numeric:tabular-nums;
+  box-shadow:0 0 0 2px var(--bg);pointer-events:none}
+[data-theme="dark"] #btnFolders .pt-soltas{background:#ffd60a}
+/* No computador o botão encosta na borda direita da janela e o número
+   saía cortado (visto no Chromium a 1366px): lá ele mora no canto esquerdo. */
+@media(min-width:641px){#btnFolders .pt-soltas{right:auto;left:-7px}}
+#btnFolders .pt-soltas.pop{animation:ptPop .36s cubic-bezier(.34,1.56,.64,1)}
+@keyframes ptPop{0%{transform:scale(.4)}60%{transform:scale(1.25)}}
+/* A nota que vai pra uma pasta com o painel fechado voa até o botão (_ptVoo). */
+.pt-voo{position:fixed;z-index:10000;pointer-events:none;border-radius:14px;background:var(--bg-card);border:1.5px solid var(--pt-tinta);
+  box-shadow:0 10px 26px rgba(0,0,0,.22);display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 14px;transform-origin:50% 50%}
+.pt-voo i{display:block;height:5px;border-radius:3px;background:var(--text4);opacity:.6}
+.pt-voo i+i{width:60%}
+/* Gaveta do computador: entra com um passo a mais e assenta (só quando a
+   pessoa abre — no carregamento ela já está lá, sem animar). */
+.folders-bar.pt-entra{animation:ptEntra .34s cubic-bezier(.34,1.3,.64,1)}
+@keyframes ptEntra{from{opacity:0;transform:translateX(14px)}}
+@media (prefers-reduced-motion:reduce){
+  #btnFolders .pt-tinta,#btnFolders svg line{transition:none}
+  #btnFolders.mola,#btnFolders.engole,#btnFolders .pt-soltas.pop,.folders-bar.pt-entra{animation:none}
+}
 #btnNewCard:active{scale:.95}
 #btnNewCard.mola{animation:mwMola .32s cubic-bezier(.34,1.56,.64,1)}
 .jz-onda.larga{animation-name:jzOndaLarga}
@@ -5598,8 +5650,19 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
      vão de tela vazia embaixo com o app aparecendo atrás. Achado pelo
      agente de design em 20/08 medindo no WebKit: 531px de gaveta numa
      tela de 681px. */
-  .folders-bar.open{position:fixed;top:0;right:0;bottom:0;width:min(272px,80vw);border-radius:0;z-index:400;max-height:none;overflow-y:auto;padding:16px 12px;animation:slideInRight .25s ease}
-  @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+  /* Gaveta com mola (10/11/2026): passa 8px do ponto e assenta. A sombra
+     sólida de 10px à direita fica fora da tela em repouso e tampa o vão
+     que o passo a mais abriria na borda. */
+  .folders-bar.open{position:fixed;top:0;right:0;bottom:0;width:min(272px,80vw);border-radius:0;z-index:400;max-height:none;overflow-y:auto;padding:16px 12px;animation:slideInRight .36s cubic-bezier(.2,.8,.2,1);box-shadow:var(--shadow-card),10px 0 0 0 var(--bg-card)}
+  @keyframes slideInRight{0%{transform:translateX(100%)}70%{transform:translateX(-8px)}100%{transform:translateX(0)}}
+  /* A espiada da mãozinha (_ptEspiar): a gaveta mostra 44px e volta, sem abrir. */
+  .folders-bar.pt-espia:not(.open){display:block;position:fixed;top:0;right:0;bottom:0;width:min(272px,80vw);border-radius:0;z-index:399;max-height:none;overflow:hidden;padding:16px 12px;pointer-events:none;
+    box-shadow:-6px 0 18px rgba(0,0,0,.14);animation:ptEspia .95s cubic-bezier(.34,1.3,.64,1) both}
+  @keyframes ptEspia{0%{transform:translateX(100%)}40%,70%{transform:translateX(calc(100% - 44px))}100%{transform:translateX(100%)}}
+}
+@media(max-width:640px) and (prefers-reduced-motion:reduce){
+  .folders-bar.open{animation:none}
+  .folders-bar.pt-espia:not(.open){display:none}
 }
 /* Sem esta faixa, o iPad (641–1024px) caía direto na .folders-bar base de
    182px — mais estreita que os 248px que o celular ganha logo acima — e
@@ -9026,8 +9089,10 @@ body.kb-escrevendo .ibar:not(.rec-on) #btnRec{height:44px;box-shadow:0 6px 18px 
       <button class="font-sz-btn" id="fzG" onclick="setFontSize('g')" style="font-size:18px">A</button>
     </div>
     <button class="stat-folders-btn" id="btnFolders" onclick="toggleFolders()" title="Mostrar/ocultar pastas" aria-label="Mostrar/ocultar pastas" data-i18n-title>
+      <i class="pt-tinta" aria-hidden="true"></i>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
       <span data-i18n>Pastas</span>
+      <b class="pt-soltas" hidden aria-hidden="true"></b>
     </button>
   </div>
 </div>
@@ -10657,7 +10722,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.09.8';
+const VOX_VERSION='2026.11.10.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -11455,6 +11520,9 @@ function applyStaticI18n(){
 }
 // Dicionário PT→EN (gettext-style: chave = texto original em português).
 let I18N_EN={
+// ── Botão Pastas em tinta índigo (10/11/2026) ──
+"Suas pastas moram aqui. Toque para abrir e guardar suas notas por assunto.":"Your folders live here. Tap to open them and keep your notes by topic.",
+"{n} notas fora de pasta":"{n} notes outside a folder",
 // ── Configurações avançadas, Fase A (28/09/2026) ──
 "Em uso agora":"In use now",
 "Mais capaz":"More capable",
@@ -18446,6 +18514,8 @@ function renderFolders(){
   html+=`</div>`;
   list.innerHTML=html;
   _folderAtualizaPlaqueta();
+  // Pasta criada ou apagada muda quem está "solto" sem mexer no data-folder.
+  if(typeof _ptSoltasAgendar==='function')_ptSoltasAgendar();
 }
 function renderFolderTree(parentId,lvl,counts){
   const children=getFolderChildrenVisiveis(parentId);
@@ -27880,6 +27950,11 @@ function toggleFolders(){
   document.getElementById('foldersBackdrop').classList.toggle('on',open&&window.innerWidth<=640);
   document.getElementById('btnFolders').classList.toggle('folders-on',open);
   localStorage.setItem('vox_folders_open',open?'1':'0');
+  // Gaveta com mola: o botão afunda e volta; no computador o painel entra com
+  // um passo a mais (no celular a mola mora no próprio slideInRight).
+  _jz(document.getElementById('btnFolders'),'mola',340);
+  if(open&&window.innerWidth>640)_jz(bar,'pt-entra',380);
+  if(open)bar.classList.remove('pt-espia');
   if(open){_ajustarAlturaPastas();_telaDica('pastas')}
   // A porta dos Mundos dá um cintilo quando a barra abre — no máximo 1 a
   // cada 45 s, pra nunca virar pisca-pisca.
@@ -27888,6 +27963,113 @@ function toggleFolders(){
     setTimeout(()=>_jz(document.getElementById('btnFolderMundos'),'mw-cintila',720),260);
   }
 }
+// ── Botão Pastas em tinta índigo (10/11/2026) ──
+// A tinta nasce onde o dedo encostou. Teclado (sem ponteiro): do meio.
+function _ptTintaPonto(e){
+  const b=document.getElementById('btnFolders');if(!b)return;
+  const r=b.getBoundingClientRect();
+  const x=e&&e.clientX!=null?e.clientX-r.left:r.width/2,y=e&&e.clientY!=null?e.clientY-r.top:r.height/2;
+  b.style.setProperty('--pt-x',Math.round(x)+'px');b.style.setProperty('--pt-y',Math.round(y)+'px');
+}
+// Nota "da pessoa" que conta: não é processamento, exemplo, lixeira nem arquivo.
+function _ptNotaConta(c){
+  if(!c||c.classList.contains('proc-card'))return false;
+  const tg=(c.dataset.tags||'').split(',');
+  if(tg.includes('demo')||tg.includes(t('demo'))||tg.includes(_MAPA_EX_TAG))return false;
+  return !_cardNaLixeira(c)&&!_cardArquivado(c);
+}
+function _ptTemPasta(c){const f=c.dataset.folder||'';return !!f&&folders.some(x=>x.id===f&&!x.del)}
+// O número amarelo no botão: notas fora de qualquer pasta, só a partir de 3.
+// E quando uma nota solta ENTRA numa pasta com o painel fechado, ela voa até
+// o botão (_ptVoo). Um ponto só para os dois: não importa por onde a nota foi
+// movida (menu, arrastar, "Trazer notas", Conversar), o data-folder muda.
+let _ptSoltasAntes=null,_ptSoltasN=-1,_ptSoltasT=0;
+function _ptSoltasAgendar(){clearTimeout(_ptSoltasT);_ptSoltasT=setTimeout(_ptSoltasSinc,250)}
+function _ptSoltasSinc(){
+  const btn=document.getElementById('btnFolders');if(!btn||typeof folders==='undefined')return;
+  const cards=[...document.querySelectorAll('#cardsList > .card')].filter(_ptNotaConta);
+  const soltas=new Set(cards.filter(c=>!_ptTemPasta(c)).map(c=>c.id));
+  const n=soltas.size,bd=btn.querySelector('.pt-soltas');
+  if(bd){
+    const mostra=n>=3;bd.hidden=!mostra;bd.textContent=n>99?'99+':String(n);
+    if(mostra&&_ptSoltasN>=0&&n>_ptSoltasN)_jz(bd,'pop',380);
+  }
+  const rot=t('Mostrar/ocultar pastas');
+  btn.setAttribute('aria-label',n>=3?rot+' · '+t('{n} notas fora de pasta').replace('{n}',n):rot);
+  if(_ptSoltasAntes){
+    const foi=[..._ptSoltasAntes].filter(id=>!soltas.has(id)).map(id=>document.getElementById(id))
+      .filter(c=>c&&_ptNotaConta(c)&&_ptTemPasta(c));
+    if(foi.length)_ptVoo(foi[0]);
+  }
+  _ptSoltasAntes=soltas;_ptSoltasN=n;
+  if(cards.length&&_temNotaDaPessoa())_ptDicaBotao();
+}
+function _ptVoo(card){
+  const btn=document.getElementById('btnFolders');
+  // Painel aberto: a pasta já aparece ali, o voo seria ruído.
+  if(!btn||btn.classList.contains('folders-on'))return;
+  // A nota caiu na pasta que a pessoa está olhando ("Trazer notas" da pasta
+  // nova): ela aparece ali mesmo, e voar até o botão seria dizer a mesma
+  // coisa duas vezes. Achado pelo teste do leigo, 10/11/2026.
+  if(typeof activeFolderId!=='undefined'&&activeFolderId&&activeFolderId===card.dataset.folder)return;
+  if(Date.now()-(_ptVoo._t||0)<700)return;_ptVoo._t=Date.now();
+  const rb=btn.getBoundingClientRect();if(!rb.width)return;
+  // No celular a barra some ao rolar (chrome-hidden): voar até um botão
+  // escondido seria uma nota sumindo no nada. Só voa com o botão à vista.
+  if(!_dicaAlvoVisivel(btn))return;
+  const engole=()=>{_jz(btn,'engole',360);try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}};
+  const rc=card.getBoundingClientRect();
+  if(_voxReduzMov()||!rc.width||rc.bottom<0||rc.top>innerHeight){engole();return}
+  const w=Math.min(rc.width,220),h=Math.min(rc.height,110);
+  const g=document.createElement('div');g.className='pt-voo';g.setAttribute('aria-hidden','true');g.innerHTML='<i></i><i></i>';
+  g.style.left=rc.left+'px';g.style.top=rc.top+'px';g.style.width=w+'px';g.style.height=h+'px';
+  document.body.appendChild(g);
+  const dx=rb.left+rb.width/2-(rc.left+w/2),dy=rb.top+rb.height/2-(rc.top+h/2);
+  const a=g.animate([
+    {transform:'translate(0,0) scale(1)',opacity:1},
+    {transform:'translate('+dx*.45+'px,'+(dy*.45-48)+'px) scale(.55) rotate(-6deg)',opacity:1,offset:.45},
+    {transform:'translate('+dx+'px,'+dy+'px) scale(.1) rotate(-10deg)',opacity:.35}
+  ],{duration:520,easing:'cubic-bezier(.5,0,.75,0)'});
+  a.onfinish=()=>{g.remove();engole()};a.oncancel=()=>g.remove();
+}
+// A mãozinha das primeiras vezes: só com o painel fechado e depois da 1ª nota
+// da pessoa (antes disso ela brigaria com as boas-vindas). Vista uma vez,
+// não volta — tocar no próprio botão também conta. No celular a gaveta
+// espia 44px e volta enquanto a mão aponta: mostra o que o toque faz.
+function _ptDicaBotao(){
+  if(_ptDicaBotao._ok)return;_ptDicaBotao._ok=1;
+  setTimeout(()=>{_ptDicaBotao._ok=0;_dica({id:'pastas-botao',mao:true,
+    alvo:()=>document.getElementById('foldersBar')?.classList.contains('open')?null:document.getElementById('btnFolders'),
+    frase:t('Suas pastas moram aqui. Toque para abrir e guardar suas notas por assunto.'),
+    aoMostrar:()=>setTimeout(_ptEspiar,600)})},1200);
+}
+function _ptEspiar(){
+  const bar=document.getElementById('foldersBar');
+  if(!bar||bar.classList.contains('open')||window.innerWidth>640||_voxReduzMov())return;
+  // A pessoa já tocou em outra coisa e a dica fechou: espiar agora seria a
+  // gaveta passando sozinha pela tela, sem a mão explicando por quê.
+  if(!_dicaAtual||_dicaAtual.id!=='pastas-botao')return;
+  bar.setAttribute('aria-hidden','true');_jz(bar,'pt-espia',1000);
+  setTimeout(()=>bar.removeAttribute('aria-hidden'),1000);
+}
+window.addEventListener('load',()=>setTimeout(()=>{
+  const b=document.getElementById('btnFolders'),l=document.getElementById('cardsList');
+  if(b)b.addEventListener('pointerdown',_ptTintaPonto);
+  if(b)b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')_ptTintaPonto(null)});
+  // Leitor de tela: "expandido/recolhido". Quatro lugares ligam e desligam o
+  // folders-on (abrir, fechar a gaveta, restaurar ao carregar, mundo novo);
+  // vigiar a classe acerta todos sem espalhar setAttribute por eles.
+  if(b){
+    const exp=()=>b.setAttribute('aria-expanded',b.classList.contains('folders-on')?'true':'false');
+    b.setAttribute('aria-controls','foldersBar');exp();
+    new MutationObserver(exp).observe(b,{attributes:true,attributeFilter:['class']});
+  }
+  if(l){
+    new MutationObserver(_ptSoltasAgendar).observe(l,{childList:true});
+    new MutationObserver(_ptSoltasAgendar).observe(l,{subtree:true,attributes:true,attributeFilter:['data-folder','data-del','data-arch','data-tags']});
+  }
+  _ptSoltasSinc();
+},1500));
 // O max-height fixo de ontem (calc(100vh-150px)) resolvia a colisão com a
 // barra do Windows mas abria outra: numa janela mais baixa, o painel podia
 // terminar POR BAIXO da barra de gravar (fixa, flutuante), escondendo até
@@ -37206,6 +37388,16 @@ function spaceHotkey(e){
   // Exceção de sempre: gravando DENTRO do textarea alvo, espaço/enter param a
   // gravação — é o único caso em que a tecla num campo vale como atalho.
   if(emCampo&&!(isRec&&alvo===activeTA))return;
+  // BUG REAL (achado pelo teste do especialista, 10/11/2026; autorizado pelo
+  // Rafa): Enter/Espaço num BOTÃO ou link é a pessoa apertando aquele botão
+  // (teclado, leitor de tela, controle de acessibilidade). Antes este atalho
+  // engolia a tecla com preventDefault e tentava gravar: nenhum botão do app
+  // funcionava pelo teclado (Pastas, Novo card, Buscar...). Agora o botão age
+  // do jeito normal do navegador; o atalho de gravar continua valendo quando
+  // o foco não está em nenhum controle (página, card). O próprio #btnRec
+  // segue gravando com Espaço: é o clique dele que grava.
+  const ctl=alvo&&alvo.closest&&alvo.closest('button,a[href],summary,[role="button"],[role="link"],[role="menuitem"],[role="menuitemcheckbox"],[role="checkbox"],[role="switch"],[role="tab"],[role="option"],[role="radio"]');
+  if(ctl)return;
   const tag=document.activeElement?document.activeElement.tagName:'';
   const onRecTarget=isRec&&document.activeElement===activeTA;
   if((tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')&&!onRecTarget)return;
@@ -44306,6 +44498,7 @@ function _dicaMostrar(d,el){
   }
   el.classList.add('dica-alvo');
   _dicaPosicionar();
+  if(d.aoMostrar)try{d.aoMostrar(el)}catch(e){}
   d.desde=Date.now();
   d.vigia=setInterval(()=>{
     // Um aviso que chega depois espera o balão sair do caminho; o alvo que some fecha a dica.
