@@ -244,7 +244,10 @@ async function especialista(browser, base) {
     ok(await ver(() => !(_dicaAtual && _dicaAtual.id === 'pastas-botao')), 'no computador o painel já vem aberto, e a mãozinha não aparece pra quem não precisa');
     await foto('dia-a-dia');
 
-    // Teclado: foco visível e 6 Enter seguidos
+    // Teclado: foco visível, Enter e Espaço no botão, e o atalho de gravar
+    // continua vivo fora dos botões. startRec/stopRec trocados por contadores:
+    // aqui só importa QUEM recebeu a tecla, não gravar de verdade.
+    await ver(() => { window.__grav = 0; window.startRec = () => { __grav++; }; window.stopRec = () => { __grav++; }; });
     await ver(() => document.getElementById('btnFolders').focus());
     await page.keyboard.press('Shift');
     const foco = await ver(() => { const b = document.getElementById('btnFolders'); return b.matches(':focus-visible') && getComputedStyle(b).outlineStyle !== 'none'; });
@@ -252,8 +255,12 @@ async function especialista(browser, base) {
     const ini = (await estado()).open;
     await page.keyboard.press('Enter'); await page.waitForTimeout(400);
     const porEnter = (await estado()).open !== ini;
-    ok(porEnter, 'Enter no botão Pastas abre/fecha o painel (bug antigo: o atalho de gravar, spaceHotkey, engole Enter e Espaço em qualquer botão)');
-    if (porEnter) await page.keyboard.press('Enter');
+    await page.keyboard.press('Space'); await page.waitForTimeout(400);
+    const porEspaco = (await estado()).open === ini;
+    ok(porEnter && porEspaco && await ver(() => __grav === 0), 'Enter e Espaço no botão Pastas abrem e fecham o painel, sem disparar a gravação');
+    await ver(() => { document.activeElement && document.activeElement.blur(); });
+    await page.keyboard.press('Space'); await page.waitForTimeout(200);
+    ok(await ver(() => __grav === 1), 'com o foco fora dos botões, Espaço ainda é o atalho de gravar');
     await page.waitForTimeout(400);
     for (let i = 0; i < 6; i++) { await page.click('#btnFolders'); await page.waitForTimeout(60); }
     await page.waitForTimeout(900);
