@@ -27,3 +27,14 @@ Contexto completo da decisão (preço, gating do Free, ordem de execução)
 está no Plano Diretor, que não vai pro Git de propósito (repo público,
 doc tem estratégia comercial) — combinar por fora entre máquinas quando
 precisar dele.
+
+## Páginas internas (10/11/2026, Equipe D, doc 33 L2.2 e L2.8)
+
+- `vox-vs-audiopen.html`, `vox-vs-otter.html`, `vox-vs-wispr-flow.html`,
+  `audiopen-alternative.html` e `affiliates.html`. Só inglês (são páginas de
+  busca). Dividem `vox-pages.css` e `vox-pages.js` (a mesma medição da landing).
+- **Fato sobre concorrente tem data.** Cada página diz "Checked on the official
+  pages on <data>". Antes de mexer em preço ou função de concorrente, abrir a
+  página oficial dele de novo e trocar a data.
+- Ao copiar pro `vox-landing`: levar os 5 `.html`, `vox-pages.css`,
+  `vox-pages.js`, `sitemap.xml` e o `index.html` (ganhou os links no rodapé).
