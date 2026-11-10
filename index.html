@@ -6235,6 +6235,86 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 /* O soco é o mesmo gesto da bolinha de cor da pasta (folderDotSoco), com
    amplitude menor porque aqui o objeto é 4x maior. */
 .c-rec.rec-soco{animation:recSoco .36s cubic-bezier(.22,1,.36,1)}
+/* Gravar no card aberto (09/11/2026, pedido do Rafa): no Mural do celular o
+   card abre como janela e o vidro dela (.float-layer-fixo, 150) cobria a
+   barra parada (100). O vermelho aparecia mas o toque caía no vidro e só
+   fechava a janela. Com a janela aberta a barra sobe pra 151: o vermelho
+   grava no card aberto (ver _gravAlvo) e tocar no resto do vidro continua
+   fechando. Gravando, a .rec-on (10000) já vale e não é tocada aqui. */
+body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
+/* Rótulo que troca (09/11/2026, proposta 1 escolhida pelo Rafa): com um card
+   ativo no toque (.ibar.alvo-card, ver _recRotuloSync), o vermelho vira a
+   pílula "Gravar aqui" com um anel branco no miolo, e acima dela aparece o
+   botão escuro "+ Novo card" (mesma pastilha do "Colar o que você copiou"),
+   o caminho de volta visível e de um toque. Sem card ativo, o vermelho é o
+   de sempre. Trocar de destino dá um aceno (mola) no botão. */
+#btnRec .rec-rot{display:none}
+.ibar.alvo-card #btnRec{width:auto;border-radius:999px;padding:0 14px 0 12px;gap:6px}
+.ibar.alvo-card #btnRec .rec-rot{display:inline;font:700 13px/1 var(--font);color:#fff;white-space:nowrap;letter-spacing:.01em;animation:recRotEntra .2s cubic-bezier(.22,1,.36,1)}
+.ibar.alvo-card #btnRec>svg{border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.95);animation:recAnel .34s cubic-bezier(.34,1.56,.64,1)}
+/* A pílula precisa de ~85 px a mais na barra: enquanto ela aparece, o
+   puxador encolhe (continua puxando). Sem isso o chip do modo "Livre"
+   virava "L". */
+.ibar.alvo-card .sheet-handle{width:36px}
+.ibar.alvo-card .sheet-handle-bar{width:26px}
+@media (max-width:360px){.ibar.alvo-card .smode-chip-txt{display:none}}
+@keyframes recRotEntra{from{opacity:0;transform:translateY(6px)}}
+@keyframes recAnel{from{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+#btnRec.rec-aceno{animation:recAceno .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes recAceno{0%{transform:scale(.9)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
+.rec-novo{position:absolute;right:0;bottom:calc(100% + 10px);display:none;align-items:center;gap:7px;min-height:42px;padding:0 15px;border:0;border-radius:12px;background:#1d1d1f;color:#f5f5f7;font:600 13px var(--font);pointer-events:auto;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.18);-webkit-user-select:none;user-select:none}
+.rec-novo .svgi{font-size:15px;color:#ffcc00}
+[data-theme="dark"] .rec-novo{background:#3a3a3c}
+[data-theme="dark"] .rec-novo .svgi{color:#ffd60a}
+.rec-novo:active{transform:scale(.94);transition:transform .09s}
+.ibar.alvo-card:not(.rec-on) .rec-novo{display:inline-flex;animation:recNovoEntra .22s cubic-bezier(.22,1,.36,1) .06s backwards}
+@keyframes recNovoEntra{from{opacity:0;transform:translateY(6px) scale(.95)}}
+/* Gota no cursor (09/11/2026, proposta 3 escolhida pelo Rafa): com o card
+   ativo e o teclado fechado não existe cursor piscando, então uma gota
+   vermelha marca o ponto exato onde a fala vai entrar (ver _gotaSync). Ela
+   chega com mola, pulsa devagar, e enquanto grava diz "sua fala entra aqui".
+   Com o teclado aberto some: o cursor de verdade já mostra o lugar. */
+.cb.tem-gota{position:relative}
+.grav-gota{position:absolute;z-index:6;width:0;height:0;pointer-events:none}
+.grav-gota i{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#ff3b30;box-shadow:0 0 0 0 rgba(255,59,48,.45);animation:gotaChega .34s cubic-bezier(.34,1.56,.64,1),gotaPulsa 1.6s ease-in-out .34s infinite}
+.grav-gota b{position:absolute;left:-12px;top:12px;padding:3px 8px;border-radius:8px;background:#ff3b30;color:#fff;font:700 11px/16px var(--font);white-space:nowrap;opacity:0;transform:translateY(-4px);transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1)}
+.grav-gota.gota-dica b,.grav-gota.gravando b{opacity:1;transform:none}
+.grav-gota.gravando i{animation:gotaPulsa .9s ease-in-out infinite}
+.grav-gota.sai i{animation:gotaSai .18s ease-in forwards}
+.grav-gota.sai b{opacity:0}
+@keyframes gotaChega{from{transform:rotate(-45deg) scale(0)}}
+@keyframes gotaPulsa{50%{box-shadow:0 0 0 7px rgba(255,59,48,0)}}
+@keyframes gotaSai{to{transform:rotate(-45deg) scale(0);opacity:0}}
+/* Barra compacta enquanto escreve no toque (09/11/2026, pedido do Rafa: o
+   teclado escondia o vermelho e a barra inteira cobria a linha do cursor).
+   Só com teclado NA TELA aberto (ver _kbSync; teclado físico não conta).
+   Com o texto de um card em foco, a barra vira só dois botões no canto
+   direito, logo acima do teclado: fechar teclado e o vermelho "Gravar
+   aqui" (que fecha o teclado e grava no ponto do cursor). Ao fechar o
+   teclado, a barra inteira volta. */
+.kb-fechar{display:none}
+body.kb-escrevendo .ibar:not(.rec-on){left:auto;width:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb-offset,0px))}
+body.kb-escrevendo .ibar:not(.rec-on) .sheet-handle,
+body.kb-escrevendo .ibar:not(.rec-on) .smode-chip,
+body.kb-escrevendo .ibar:not(.rec-on) #btnAttach,
+body.kb-escrevendo .ibar:not(.rec-on) .aud-wrap,
+body.kb-escrevendo .ibar:not(.rec-on) #btnRecNovo,
+body.kb-escrevendo .ibar:not(.rec-on) #itxt{display:none!important}
+body.kb-escrevendo .ibar:not(.rec-on) .ibar-inner,
+body.kb-escrevendo .ibar:not(.rec-on) .ibox{background:transparent!important;border-color:transparent!important;box-shadow:none!important;padding:0!important;min-width:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+body.kb-escrevendo .ibar:not(.rec-on) .ibtns{gap:10px}
+body.kb-escrevendo .ibar:not(.rec-on) .kb-fechar{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;border:0;padding:0;background:#1d1d1f;color:#f5f5f7;cursor:pointer;pointer-events:auto;box-shadow:0 6px 18px rgba(0,0,0,.22);animation:recNovoEntra .22s cubic-bezier(.22,1,.36,1) backwards}
+body.kb-escrevendo .ibar:not(.rec-on) .kb-fechar svg{width:22px;height:22px}
+body.kb-escrevendo .ibar:not(.rec-on) #btnRec{height:44px;box-shadow:0 6px 18px rgba(255,59,48,.35)}
+[data-theme="dark"] body.kb-escrevendo .ibar:not(.rec-on) .kb-fechar{background:#3a3a3c}
+.kb-fechar:active{transform:scale(.94)}
+@media (prefers-reduced-motion:reduce){body.kb-escrevendo .ibar .kb-fechar{animation:none}}
+/* O card que está recebendo a gravação respira em vermelho. */
+.card.grav-aqui{box-shadow:0 0 0 2px rgba(255,59,48,.55),0 8px 24px -10px rgba(255,59,48,.45);animation:gravRespira 1.6s ease-in-out infinite}
+@keyframes gravRespira{50%{box-shadow:0 0 0 3px rgba(255,59,48,.28),0 8px 24px -10px rgba(255,59,48,.2)}}
+@media (prefers-reduced-motion:reduce){
+  .ibar.alvo-card #btnRec .rec-rot,.ibar.alvo-card #btnRec>svg,#btnRec.rec-aceno,.ibar.alvo-card:not(.rec-on) .rec-novo,.card.grav-aqui,.grav-gota i,.grav-gota.gravando i{animation:none}
+}
 @keyframes recSoco{0%{transform:scale(1)}24%{transform:scale(.93)}58%{transform:scale(1.07)}100%{transform:scale(1)}}
 
 /* ── M4: os 3 botões voltando depois da gravação ──
@@ -9145,6 +9225,7 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
 
 <!-- IBAR -->
 <div class="ibar">
+  <button type="button" class="rec-novo" id="btnRecNovo" onclick="_gravEmCardNovo(event)"></button>
   <div class="ibar-inner">
     <!-- Achado pelo Rafa (04/09/2026): com Órbita/Fluxograma/Calendário
          abertos, a barra encolhe pro botão sozinho (ver comentário grande no
@@ -9273,8 +9354,10 @@ body.ibar-sobre-mapa .ibar:not(.rec-on) .ibar-inner{width:fit-content;margin-lef
             <div class="aud-note" id="audioCfgNote"></div>
           </div>
         </div>
+        <button type="button" class="kb-fechar" id="btnKbFechar" onclick="_kbFechar()" title="Fechar teclado" aria-label="Fechar teclado" data-i18n-title></button>
         <button class="circle c-rec" id="btnRec" onclick="_recBtnClick(event)" ontouchstart="_recBtnTouchStart(event)" ontouchmove="_recBtnTouchMove(event)" ontouchend="_recBtnTouchEnd(event)" ontouchcancel="_recBtnTouchCancel(event)" title="Gravar (Espaço)" data-i18n-title>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          <span class="rec-rot" id="recRot" aria-hidden="true"></span>
           <span class="lp-dot" id="lpDot" aria-hidden="true"></span>
         </button>
         <button class="circle c-stop" id="btnStop" onclick="stopRec()" style="display:none">
@@ -10574,7 +10657,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.04.1';
+const VOX_VERSION='2026.11.09.8';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13174,6 +13257,14 @@ let I18N_EN={
 "Obrigado! Dá pra desligar quando quiser, no menu ⋯.":"Thank you! You can turn it off anytime in the ⋯ menu.",
 "Desligado. O que já tinha sido contado deste aparelho foi apagado.":"Turned off. What had been counted from this device was erased.",
 "Tudo bem: nada é contado.":"All right: nothing is counted.",
+"Não colou. Segure no card e toque em Colar.":"Didn't paste. Hold inside the card and tap Paste.",
+"Gravar no card {0}":"Record into card {0}",
+"Gravar neste card":"Record into this card",
+"Gravar em card novo":"Record into a new card",
+"Entrou no card {0}":"Added to card {0}",
+"Entrou neste card":"Added to this card",
+"sua fala entra aqui":"your words go here",
+"Fechar teclado":"Close keyboard",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -20058,6 +20149,11 @@ function _flAbrirCard(id,origemEl,posFixa){
   win.innerHTML=`<button type="button" class="float-window-close" title="${t('Fechar janela')}" aria-label="${t('Fechar janela')}" onclick="event.stopPropagation();_flFecharJanela('${escJs(id)}')">${ICO.close}</button>${_flHandlesResizeHtml()}`;
   win.addEventListener('pointerdown',()=>_flTrazerFrente(id));
   win.appendChild(card);
+  // Card aberto como janela a partir da lista/Mural já é o card ativo: o
+  // vermelho grava nele mesmo sem cursor (ver _gravAlvo). Todo aparelho.
+  // Depois de a janela entrar na tela (aqui o card ainda está solto, fora do
+  // documento, e a marca seria descartada).
+  if(layer.classList.contains('float-layer-fixo'))setTimeout(()=>_gravAlvoMarcar(id),0);
   // Bug real: o card chega aqui com left/top/width/maxHeight/overflow presos
   // do layout do Masonry (miniatura recortada) — sem limpar, a janela
   // flutuante nascia do tamanho certo mas o card dentro continuava do
@@ -20699,6 +20795,7 @@ function _flRestaurarFiltro(){
   if(q)doSearch(q);else applyFolderFilter();
 }
 function _flFecharJanela(id){
+  if(_gravAlvo&&_gravAlvo.cid===id)_gravAlvoLimpar();
   const win=document.getElementById('floatwin-'+id);
   const card=document.getElementById(id);
   _flAbertas=_flAbertas.filter(j=>j.id!==id);
@@ -28509,7 +28606,9 @@ window.addEventListener('scroll',_onChromeScroll,{passive:true});
 // é 0 e nada muda. Só liga no mobile — desktop não tem teclado virtual.
 function _updateKeyboardOffset(){
   const vv=window.visualViewport;
-  if(!vv||!_isSheetViewport()){document.documentElement.style.setProperty('--kb-offset','0px');return}
+  // Tela estreita OU tela de toque (iPad também tem teclado na tela; antes
+  // só a estreita acompanhava e no iPad a barra ficava atrás do teclado).
+  if(!vv||!(_isSheetViewport()||navigator.maxTouchPoints>0)){document.documentElement.style.setProperty('--kb-offset','0px');return}
   const overlap=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop));
   document.documentElement.style.setProperty('--kb-offset',overlap+'px');
 }
@@ -28629,6 +28728,200 @@ function _recBtnTouchCancel(){
   if(_recLpTimer){clearTimeout(_recLpTimer);_recLpTimer=null}
   _recLongPressFired=false;
 }
+// ── GRAVAR NO CARD ATIVO (toque) — 09/11/2026 ──
+// Pedido do Rafa: "o cursor fica piscando... eu apertar o vermelhinho lá
+// embaixo, ele já grava onde está piscando. Se eu tiver clicado fora do
+// card, ou não tiver clicado em card nenhum, aí sim grava abrindo um card
+// novo". O startRec() já gravava no card com o cursor (activeTA), mas no
+// celular o foco some fácil: o teclado desce ("OK"), o toque no vermelho
+// tira o foco, e no Mural o card aberto como janela nem sempre tem o
+// cursor. _gravAlvo guarda o card ativo e onde o cursor estava, e só é
+// esquecido quando a pessoa toca FORA do card (fora da barra de baixo e do
+// aviso), fecha a janela, ou escolhe "+ Novo card". Vale em todo aparelho
+// (Rafa, 09/11: "gravar dentro do card que eu abri tem que funcionar em
+// qualquer dispositivo"); no computador o card aberto como janela também.
+let _gravAlvo=null; // {cid, s, e}: s/e = seleção guardada (null = fim do texto)
+function _gravAlvoCid(){
+  if(!_gravAlvo)return null;
+  const el=document.getElementById(_gravAlvo.cid);
+  // Miniatura do Mural é só leitura: card ali fora da janela não é alvo.
+  if(!el||!el.querySelector('.cb textarea')||(el.closest('.masonry-preview')&&!el.closest('.float-window'))){_gravAlvo=null;return null}
+  return _gravAlvo.cid;
+}
+function _gravAlvoMarcar(cid){
+  if(!cid)return;
+  if(!_gravAlvo||_gravAlvo.cid!==cid)_gravAlvo={cid,s:null,e:null};
+  _recRotuloSync();
+}
+function _gravAlvoLimpar(){
+  if(!_gravAlvo)return;
+  _gravAlvo=null;_recRotuloSync();
+}
+function _gravAlvoGuardarCursor(ta){
+  if(!_gravAlvo||!ta)return;
+  if(ta.closest('.card')?.id!==_gravAlvo.cid)return;
+  try{_gravAlvo.s=ta.selectionStart;_gravAlvo.e=ta.selectionEnd}catch(e){}
+}
+// Nome curto do card pros avisos e pro leitor de tela.
+function _gravNomeCard(cid){
+  const c=document.getElementById(cid);
+  return ((c?.dataset.sessionName||c?.querySelector('.sname-badge:not(.sname-badge-empty)')?.textContent||'').trim()).slice(0,40);
+}
+// Rótulo do vermelho (fase 1 preenche o visual; aqui só o que o leitor de
+// tela ouve e o título).
+function _recRotuloSync(){
+  const b=document.getElementById('btnRec');if(!b)return;
+  const cid=_gravAlvoCid();
+  const nome=cid?_gravNomeCard(cid):'';
+  const rot=cid?(nome?t('Gravar no card {0}').replace('{0}',nome):t('Gravar neste card')):t('Gravar em card novo');
+  b.setAttribute('aria-label',rot);b.title=rot;
+  const bar=document.querySelector('.ibar');if(!bar)return;
+  // Duas vezes: a janela do Mural abre animando (escala), e a medida tirada
+  // no meio da animação punha a gota na borda do card.
+  setTimeout(_gotaSync,0);setTimeout(_gotaSync,480);
+  const era=bar.classList.contains('alvo-card');
+  bar.classList.toggle('alvo-card',!!cid);
+  const r=document.getElementById('recRot');if(r)r.textContent=t('Gravar aqui');
+  const kf=document.getElementById('btnKbFechar');if(kf&&!kf.firstChild){kf.innerHTML=ICO.kbDismiss;kf.title=kf.ariaLabel=t('Fechar teclado');kf.setAttribute('aria-label',t('Fechar teclado'))}
+  const nv=document.getElementById('btnRecNovo');
+  if(nv&&!nv.firstChild){nv.innerHTML='<span class="svgi" aria-hidden="true">'+ICO.plus+'</span>'+escHtml(t('Novo card'));nv.setAttribute('aria-label',t('Gravar em card novo'))}
+  if(era!==!!cid&&!_voxReduzMov()&&b.offsetParent){b.classList.remove('rec-aceno');void b.offsetWidth;b.classList.add('rec-aceno');clearTimeout(b._aceno);b._aceno=setTimeout(()=>b.classList.remove('rec-aceno'),360)}
+}
+// Onde fica o ponto `pos` dentro do textarea, em px a partir do canto do
+// próprio textarea: espelho invisível com a mesma letra, largura e
+// quebra de linha, e um marcador no ponto (textarea não diz onde o cursor
+// está na tela).
+function _caretXY(ta,pos){
+  const cs=getComputedStyle(ta),d=document.createElement('div');
+  ['boxSizing','width','paddingTop','paddingRight','paddingBottom','paddingLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','lineHeight','textTransform','wordSpacing','textIndent','tabSize'].forEach(k=>d.style[k]=cs[k]);
+  d.style.position='absolute';d.style.visibility='hidden';d.style.top='0';d.style.left='-9999px';
+  d.style.whiteSpace='pre-wrap';d.style.overflowWrap='break-word';d.style.wordBreak=cs.wordBreak;
+  d.textContent=ta.value.slice(0,pos);
+  const m=document.createElement('span');m.textContent=ta.value.slice(pos,pos+1)||'.';d.appendChild(m);
+  document.body.appendChild(d);
+  const lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.4;
+  const r={x:m.offsetLeft-ta.scrollLeft,y:m.offsetTop-ta.scrollTop,lh};
+  d.remove();return r;
+}
+let _gotaVista=0;
+function _gotaTirar(sai){
+  document.querySelectorAll('.grav-gota').forEach(g=>{
+    const cb=g.parentElement;
+    if(sai&&!_voxReduzMov()){g.classList.add('sai');setTimeout(()=>{g.remove();cb?.classList.remove('tem-gota')},190)}
+    else{g.remove();cb?.classList.remove('tem-gota')}
+  });
+}
+// Mostra/atualiza a gota no card ativo (só no toque, sem foco no texto).
+function _gotaSync(){
+  const cid=_gravAlvoCid();
+  const card=cid&&document.getElementById(cid);
+  const ta=card&&card.querySelector('.cb textarea');
+  // Gravando ou transcrevendo PRA ESTE card: a gota fica (é ali que o texto vai cair).
+  const aqui=(isRec||isProc)&&recTargetCard===cid,gravandoAqui=isRec&&aqui;
+  if(!ta||(document.activeElement===ta&&!aqui)||(isProc&&!aqui)){_gotaTirar(false);return}
+  const cb=ta.closest('.cb');
+  let g=cb.querySelector(':scope>.grav-gota');
+  document.querySelectorAll('.grav-gota').forEach(x=>{if(x!==g)x.remove()});
+  if(!g){
+    g=document.createElement('span');g.className='grav-gota';g.setAttribute('aria-hidden','true');
+    g.innerHTML='<i></i><b></b>';cb.classList.add('tem-gota');cb.appendChild(g);
+    // A dica aparece nas três primeiras vezes que a gota surge, por 2,5 s.
+    if(_gotaVista<3){_gotaVista++;g.classList.add('gota-dica');setTimeout(()=>g.classList.remove('gota-dica'),2500)}
+  }
+  g.querySelector('b').textContent=t('sua fala entra aqui');
+  g.classList.toggle('gravando',gravandoAqui);
+  const n=ta.value.length;
+  const pos=(_gravAlvo&&_gravAlvo.s!=null)?Math.min(_gravAlvo.s,n):n;
+  const c=_caretXY(ta,pos),rt=ta.getBoundingClientRect(),rc=cb.getBoundingClientRect();
+  // Ponto fora da parte visível do texto (card recortado): não desenha.
+  if(c.y<-4||c.y>ta.clientHeight){g.style.display='none';return}
+  g.style.display='';
+  const gl=Math.round(rt.left-rc.left+c.x+2);
+  g.style.left=gl+'px';
+  g.style.top=Math.round(rt.top-rc.top+c.y+c.lh/2)+'px';
+  // A etiqueta não pode sair pela direita do card (o card corta).
+  const et=g.querySelector('b');
+  et.style.left=Math.min(-12,cb.clientWidth-gl-et.offsetWidth-8)+'px';
+}
+// ── TECLADO NA TELA (09/11/2026) ──
+// O que muda com o teclado (o + sem teclado, a barra compacta) só vale
+// quando um teclado aparece DE VERDADE na tela — não por ser celular. Com
+// teclado físico (computador, tablet ou celular com teclado ligado) nada
+// disso acontece. Como saber, pelo padrão dos navegadores:
+//  - navigator.virtualKeyboard (Chrome/Android): retângulo do teclado;
+//  - visualViewport (iPhone/iPad/Android): a parte visível encolhe quando
+//    o teclado sobe (iPad com teclado físico mostra só a barrinha de
+//    atalhos, ~60px, que não conta);
+//  - Android antigo: a própria janela encolhe (innerHeight).
+// Antes de focar não existe jeito padrão de saber se há teclado físico,
+// então o Vox aprende: focou num card numa tela de toque e o teclado da
+// tela não subiu → teclado físico (guardado; se um dia subir, desaprende).
+let _kbFisico=false;try{_kbFisico=localStorage.getItem('vox_kb_fisico')==='1'}catch(e){}
+let _kbAltBase=window.innerHeight,_kbAprendeT=null;
+function _ehTelaDeToque(){return navigator.maxTouchPoints>0||_voxToque()}
+// Previsão (antes de focar): este aparelho abre teclado na tela?
+function _tecladoNaTela(){return _ehTelaDeToque()&&!_kbFisico}
+function _editandoCard(){const a=document.activeElement;return !!(a&&a.tagName==='TEXTAREA'&&a.closest('.card'))}
+function _tecladoAbertoAgora(){
+  const vk=navigator.virtualKeyboard;
+  if(vk&&vk.boundingRect&&vk.boundingRect.height>80)return true;
+  const vv=window.visualViewport;
+  if(vv&&window.innerHeight-vv.height-vv.offsetTop>120)return true;
+  return window.innerHeight<_kbAltBase-150;
+}
+function _kbSync(){
+  const ed=_editandoCard();
+  if(!ed)_kbAltBase=window.innerHeight;
+  document.body.classList.toggle('kb-escrevendo',ed&&_ehTelaDeToque()&&_tecladoAbertoAgora());
+}
+function _kbAprender(){
+  clearTimeout(_kbAprendeT);
+  if(!_ehTelaDeToque())return;
+  _kbAprendeT=setTimeout(()=>{
+    if(!_editandoCard())return;
+    const fis=!_tecladoAbertoAgora();
+    if(fis!==_kbFisico){_kbFisico=fis;try{localStorage.setItem('vox_kb_fisico',fis?'1':'0')}catch(e){}}
+  },900);
+}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',_kbSync);window.visualViewport.addEventListener('scroll',_kbSync)}
+if(navigator.virtualKeyboard)try{navigator.virtualKeyboard.addEventListener('geometrychange',_kbSync)}catch(e){}
+window.addEventListener('resize',_kbSync);
+// Botão "fechar teclado" da barra compacta (body.kb-escrevendo):
+// fica colado no vermelho, no canto direito acima do teclado.
+// Com o teclado aberto, tocar no vermelho ou no fechar não pode tirar o foco
+// no mousedown: a barra cresceria embaixo do dedo antes do clique chegar.
+// Quem fecha o teclado é a própria ação (startRec / _kbFechar).
+document.addEventListener('mousedown',e=>{
+  if(!document.body.classList.contains('kb-escrevendo'))return;
+  if(e.target instanceof Element&&e.target.closest('#btnRec,#btnKbFechar'))e.preventDefault();
+},true);
+function _kbFechar(){
+  const a=document.activeElement;if(a&&a!==document.body&&a.blur)a.blur();
+  document.body.classList.remove('kb-escrevendo');
+}
+// "+ Novo card" acima da pílula: grava num card novo sem precisar tocar fora
+// antes. Fecha a janela do Mural (a fala vai pra outro card) e esquece o alvo.
+function _gravEmCardNovo(e){
+  e?.stopPropagation();
+  if(isRec||isProc||stagedFile)return;
+  if(typeof _cofreFechado==='function'&&_cofreFechado()){toast(t('Este mundo está trancado. Destranque pra gravar: sem a senha, a gravação não teria onde ser guardada.'),true);_cofreDestrancar();return}
+  _gravAlvoLimpar();
+  const a=document.activeElement;if(a&&a!==document.body&&a.blur)a.blur();
+  activeTA=null;activeTACard=null;
+  if(document.getElementById('floatLayer')?.classList.contains('float-layer-fixo'))[..._flAbertas].forEach(j=>_flFecharJanela(j.id));
+  startRec();
+}
+// Tocou fora do card ativo → esquece. A barra de baixo (vermelho, segurar
+// pra escolher fonte, parar), o aviso e a própria janela do card não contam
+// como "fora".
+document.addEventListener('pointerdown',e=>{
+  if(!_gravAlvo)return;
+  const tg=e.target;if(!(tg instanceof Element))return;
+  if(tg.closest('.ibar,#toastWrap'))return;
+  const c=document.getElementById(_gravAlvo.cid);
+  if(c&&(c.contains(tg)||tg.closest('#floatwin-'+CSS.escape(_gravAlvo.cid))))return;
+  _gravAlvoLimpar();
+},true);
 function _recBtnClick(e){
   if(_recLongPressFired){_recLongPressFired=false;e.preventDefault();e.stopPropagation();return}
   if(!isRec&&typeof _cofreFechado==='function'&&_cofreFechado()){toast(t('Este mundo está trancado. Destranque pra gravar: sem a senha, a gravação não teria onde ser guardada.'),true);_cofreDestrancar();return}
@@ -35486,35 +35779,59 @@ function _irParaCardNovoToque(cid){
     _flAcoplarCamada(document.body);
     _flAbrirCard(cid,el);
   }else el.scrollIntoView({behavior:'smooth',block:'center'});
-  const ta=el.querySelector('textarea');
-  if(ta)try{ta.focus({preventScroll:true})}catch(e){ta.focus()}
+  // 09/11/2026 (Rafa): o + não chama mais o teclado. "Eu ia clicar no gravar,
+  // não queria o teclado" — e com ele aberto o vermelho sumia. O card nasce
+  // ativo (pílula "Gravar aqui" + gota no fim do texto) e com o botão Colar,
+  // que lê a área de transferência sem precisar do teclado. Pra escrever,
+  // toca no texto. (Antes, desde 23/10, o + focava o texto de propósito pro
+  // colar do sistema; o botão Colar tomou esse lugar.) Com teclado físico
+  // ligado (aprendido, ver _kbFisico) o teclado não atrapalha: foca.
+  _gravAlvoMarcar(cid);
+  if(!_tecladoNaTela()){const ta=el.querySelector('textarea');if(ta)try{ta.focus({preventScroll:true})}catch(e){ta.focus()}}
 }
 // Lê a área de transferência (precisa ser chamada dentro do toque) e põe no
 // card: link solto vira etiqueta, texto vai pra caixa, foto vai pra tira —
-// mesma regra do colar dentro de um card no computador. Recusou, veio vazio
-// ou o navegador não deixa: não faz nada, o card continua pronto pra escrever.
+// mesma regra do colar dentro de um card no computador.
 // read() antes de readText() porque só ele traz foto; chamar os dois
 // mostraria a bolha duas vezes, então é um OU o outro.
+// 09/11/2026 (Rafa, link copiado no Instagram): o botão não colava nada e
+// não dizia nada. Link copiado num app do iPhone (botão "Copiar link") chega
+// como ENDEREÇO (text/uri-list), sem texto comum (text/plain), e a leitura só
+// procurava texto comum. Agora lê texto, endereço ou HTML, e quando não dá
+// (recusou a bolha, veio vazio, navegador sem a função) avisa e ensina o
+// caminho do sistema, em vez de ficar mudo.
+async function _colarLerItens(itens){
+  let img=null,texto='',link='',html='';
+  for(const it of itens){
+    const ti=it.types.find(x=>x.indexOf('image/')===0);
+    if(ti&&!img){const b=await it.getType(ti);img=new File([b],'colado.'+(ti.split('/')[1]||'png'),{type:ti})}
+    if(!texto&&it.types.includes('text/plain'))texto=await (await it.getType('text/plain')).text();
+    if(!link&&it.types.includes('text/uri-list')){
+      const l=(await (await it.getType('text/uri-list')).text()).split(/\r?\n/).map(x=>x.trim()).find(x=>x&&x[0]!=='#');
+      if(l)link=l;
+    }
+    if(!html&&it.types.includes('text/html'))html=await (await it.getType('text/html')).text();
+  }
+  if(!texto&&link)texto=link;
+  if(!texto&&html){
+    // Só o texto do HTML (DOMParser não executa script nem carrega imagem).
+    try{texto=new DOMParser().parseFromString(html,'text/html').body.textContent||''}catch(e){}
+  }
+  return {img,texto};
+}
 function _colarNoCardNovo(cid,aoColar){
   const cb=navigator.clipboard;
+  const avisar=()=>toast(t('Não colou. Segure no card e toque em Colar.'),true);
   let leitura=null;
   try{
-    if(cb&&cb.read)leitura=cb.read().then(async itens=>{
-      let img=null,texto='';
-      for(const it of itens){
-        const ti=it.types.find(x=>x.indexOf('image/')===0);
-        if(ti&&!img){const b=await it.getType(ti);img=new File([b],'colado.'+(ti.split('/')[1]||'png'),{type:ti})}
-        if(!texto&&it.types.includes('text/plain'))texto=await (await it.getType('text/plain')).text();
-      }
-      return {img,texto};
-    });
+    if(cb&&cb.read)leitura=cb.read().then(_colarLerItens);
     else if(cb&&cb.readText)leitura=cb.readText().then(texto=>({img:null,texto}));
   }catch(e){}
-  if(!leitura)return;
+  if(!leitura){avisar();return}
   leitura.then(({img,texto})=>{
     const card=document.getElementById(cid);if(!card)return;
     texto=(texto||'').trim();
-    if(!img&&!texto)return;
+    if(!img&&!texto){avisar();return}
     const ta=card.querySelector('textarea');
     if(texto&&/^https?:\/\/\S+$/.test(texto))_anexarLink(cid,texto); // já chama saveHistory()
     else if(texto&&ta){
@@ -35525,7 +35842,7 @@ function _colarNoCardNovo(cid,aoColar){
     }
     if(img)_anexarUmaImagem(cid,img).then(chave=>{if(chave){_pulsarConfirmacaoFoto(cid);saveHistory()}});
     if(aoColar)aoColar();
-  }).catch(()=>{});
+  }).catch(avisar);
 }
 // Efeito de abertura do "+" (CSS em #btnNewCard.mais-pulo).
 // Espera a tela principal ficar livre — vídeo, céu de mundos, pedido do
@@ -36493,12 +36810,18 @@ function stopVU(){
 document.addEventListener('focusin',e=>{
   if(e.target.tagName==='TEXTAREA'&&e.target.closest('.card')){
     activeTA=e.target;activeTACard=e.target.closest('.card')?.id||null;
+    _gravAlvoMarcar(activeTACard);
+    if(_gravAlvo)_gotaSync();
+    setTimeout(_kbSync,0);_kbAprender();
     document.querySelectorAll('.card').forEach(c=>c.classList.remove('focused'));
     e.target.closest('.card').classList.add('focused');
   }
 });
 document.addEventListener('focusout',e=>{
   if(e.target.tagName==='TEXTAREA'&&e.target.closest('.card')){
+    _gravAlvoGuardarCursor(e.target);
+    if(_gravAlvo)setTimeout(_gotaSync,0);
+    setTimeout(_kbSync,0);
     setTimeout(()=>{if(document.activeElement!==e.target){activeTA=null;activeTACard=null;e.target.closest('.card')?.classList.remove('focused')}},200);
   }
 });
@@ -36655,6 +36978,7 @@ async function startRec(targetCardId=null,targetTA=null){
     targetTA.focus();
   }else{
     if(!targetCardId&&activeTA&&activeTACard&&document.contains(activeTA))targetCardId=activeTACard;
+    if(!targetCardId)targetCardId=_gravAlvoCid(); // toque: card ativo sem foco (ver _gravAlvo)
     if(!targetCardId){recTargetTA=null;recTargetCard=null} // gravação global: limpa alvo antigo
     if(targetCardId){
       const el=document.getElementById(targetCardId);
@@ -36664,8 +36988,20 @@ async function startRec(targetCardId=null,targetTA=null){
         // estava (ex: clicou no meio do texto antes de apertar gravar), respeita a posição
         // real — mantida sincronizada pelo listener em _mountFocusEditor.
         const otEl=(_focusEditorCardId===targetCardId)?_focusEditorInstance?.textarea:null;
-        if(document.activeElement!==ta&&document.activeElement!==otEl)ta.selectionStart=ta.selectionEnd=ta.value.length;
-        ta.focus();el.querySelector('.rec-here')?.classList.add('recording-this')
+        if(document.activeElement!==ta&&document.activeElement!==otEl){
+          // No toque, volta pro ponto onde o cursor estava antes do teclado descer.
+          const g=(_gravAlvo&&_gravAlvo.cid===targetCardId&&_gravAlvo.s!=null)?_gravAlvo:null;
+          const n=ta.value.length;
+          ta.selectionStart=g?Math.min(g.s,n):n;ta.selectionEnd=g?Math.min(g.e,n):n;
+        }
+        // Com teclado NA TELA não chama o teclado: gravar não precisa dele, e
+        // ele cobriria metade do card. O ponto de entrada fica guardado na
+        // seleção. Com teclado físico (computador, tablet com teclado) segue
+        // o foco de sempre.
+        if(_tecladoNaTela()){if(document.activeElement===ta||document.activeElement===otEl)document.activeElement.blur()}
+        else ta.focus();
+        el.classList.add('grav-aqui');setTimeout(_gotaSync,0);
+        el.querySelector('.rec-here')?.classList.add('recording-this')
       }
     }
   }
@@ -36718,10 +37054,12 @@ async function startRec(targetCardId=null,targetTA=null){
     document.getElementById('btnSend').style.display='none';document.getElementById('btnStop').style.display='none';document.getElementById('btnCancel').style.display='none';
     recTimer=setInterval(()=>{const el=Math.floor((Date.now()-recStart)/1000);const s=String(Math.floor(el/60)).padStart(2,'0')+':'+String(el%60).padStart(2,'0');document.getElementById('recTimer').textContent=s;const dt=document.getElementById('docRecTimer');if(dt)dt.textContent=s},1000);
     initVU(stream);setStatus('Gravando…','rec');
+    if(recTargetCard)_gotaSync();
     _gravLimiteArmar();_gravAvisoDoDia();_diarAvisoInicio();
   }catch(err){
     stopCapture();
     _flAbrirNoProximoCard=false; // gravação não chegou a existir: nenhum card nasce dela
+    document.querySelectorAll('.card.grav-aqui').forEach(c=>c.classList.remove('grav-aqui'));
     document.querySelectorAll('.recording-this').forEach(b=>b.classList.remove('recording-this'));
     recTargetTA=null;recTargetCard=null;
     const src=cfg.audioSource||'mic';
@@ -36730,6 +37068,8 @@ async function startRec(targetCardId=null,targetTA=null){
 }
 function stopRec(){
   if(!isRec||!MR)return;
+  document.querySelectorAll('.card.grav-aqui').forEach(c=>c.classList.remove('grav-aqui'));
+  document.querySelectorAll('.grav-gota.gravando').forEach(g=>g.classList.remove('gravando'));
   _gravContar();
   if(_gravBlocoNesta)localStorage.setItem('vox_grav_aviso_dia',_diaLocal());
   navigator.vibrate?.([20,40,20]); // FASE 4b: feedback tátil ao parar (Android; iOS/desktop ignoram silenciosamente)
@@ -36820,6 +37160,8 @@ function setSegCardLive(id,on){
   card.closest('.float-window')?.classList.toggle('fl-ao-vivo',!!on);
 }
 function cancelRec(){
+  document.querySelectorAll('.card.grav-aqui').forEach(c=>c.classList.remove('grav-aqui'));
+  setTimeout(_gotaSync,0);
   if(!isRec||!MR)return;
   _flAbrirNoProximoCard=false; // cancelou: o próximo card a nascer não tem nada a ver com esta gravação
   _encGrav=null;_encPendente=null;document.getElementById('encMarcaPop')?.remove();_encTelaFechar();
@@ -37044,11 +37386,28 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
     const insertTA=opts.novaNota?null:((recTargetTA&&document.contains(recTargetTA))?recTargetTA:((activeTA&&document.contains(activeTA))?activeTA:null));
     if(insertTA){
       const s=insertTA.selectionStart,en=insertTA.selectionEnd,cur=insertTA.value;
-      const sep=cur.length>0&&cur[cur.length-1]!=='\n'?'\n':'';
+      // No fim do texto, linha nova (como sempre foi). No meio (o cursor
+      // estava numa frase, 09/11/2026), só os espaços que faltarem: antes era
+      // linha nova olhando o FIM do texto, e a fala caía partindo a frase.
+      const noFim=en>=cur.length;
+      let sep=noFim?(cur.length>0&&cur[cur.length-1]!=='\n'?'\n':''):(s>0&&!/\s/.test(cur[s-1])?' ':'');
+      if(!noFim&&text&&!/^\s/.test(cur[en])&&!/\s$/.test(text))text=text+' ';
       const insertCard=insertTA.closest('.card')?.id;cardAlvo=insertCard;
       if(insertCard)pushCardHistory(insertCard);
       insertTA.value=cur.slice(0,s)+sep+text+cur.slice(en);
-      autoR(insertTA);if(_dioCopiaSozinho())navigator.clipboard.writeText(text).then(()=>toast(t('Inserido + copiado!')));
+      const _fimNovo=s+sep.length+(text||'').length;
+      try{insertTA.selectionStart=insertTA.selectionEnd=_fimNovo}catch(e){}
+      if(_gravAlvo&&_gravAlvo.cid===insertCard){_gravAlvo.s=_gravAlvo.e=_fimNovo}
+      // No toque, o aviso é sempre o do "Entrou no card · Desfazer" (o
+      // copiar sozinho continua acontecendo, só sem o aviso próprio).
+      const _avisoCard=insertCard&&!opts.prefixo;
+      autoR(insertTA);if(_dioCopiaSozinho())navigator.clipboard.writeText(text).then(()=>{if(!_avisoCard)toast(t('Inserido + copiado!'))},()=>{});
+      if(_avisoCard){
+        const _cEl=document.getElementById(insertCard);if(_cEl)_cardNasce(_cEl);
+        _gotaTirar(true);setTimeout(_gotaSync,420);
+        const nm=_gravNomeCard(insertCard);
+        setTimeout(()=>toastDesfazer(nm?t('Entrou no card {0}').replace('{0}',nm):t('Entrou neste card'),()=>cardUndo(insertCard)),40);
+      }
       updateFooter(insertCard);saveHistory();activeTA=null;activeTACard=null;recTargetTA=null;recTargetCard=null;
     }else{
       const cid=addCard(text,fromRec?file:file,cost,fromRec?'gravacao':'arquivo',prov,true,null,null,[],sn,mode,false);cardAlvo=cid;
