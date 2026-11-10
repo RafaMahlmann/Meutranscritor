@@ -10722,7 +10722,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.10.2';
+const VOX_VERSION='2026.11.10.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -37388,6 +37388,16 @@ function spaceHotkey(e){
   // Exceção de sempre: gravando DENTRO do textarea alvo, espaço/enter param a
   // gravação — é o único caso em que a tecla num campo vale como atalho.
   if(emCampo&&!(isRec&&alvo===activeTA))return;
+  // BUG REAL (achado pelo teste do especialista, 10/11/2026; autorizado pelo
+  // Rafa): Enter/Espaço num BOTÃO ou link é a pessoa apertando aquele botão
+  // (teclado, leitor de tela, controle de acessibilidade). Antes este atalho
+  // engolia a tecla com preventDefault e tentava gravar: nenhum botão do app
+  // funcionava pelo teclado (Pastas, Novo card, Buscar...). Agora o botão age
+  // do jeito normal do navegador; o atalho de gravar continua valendo quando
+  // o foco não está em nenhum controle (página, card). O próprio #btnRec
+  // segue gravando com Espaço: é o clique dele que grava.
+  const ctl=alvo&&alvo.closest&&alvo.closest('button,a[href],summary,[role="button"],[role="link"],[role="menuitem"],[role="menuitemcheckbox"],[role="checkbox"],[role="switch"],[role="tab"],[role="option"],[role="radio"]');
+  if(ctl)return;
   const tag=document.activeElement?document.activeElement.tagName:'';
   const onRecTarget=isRec&&document.activeElement===activeTA;
   if((tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')&&!onRecTarget)return;
