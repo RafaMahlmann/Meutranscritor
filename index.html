@@ -6325,12 +6325,21 @@ body:has(#floatLayer.float-layer-fixo.on) .ibar:not(.rec-on){z-index:151}
 @keyframes recAnel{from{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
 #btnRec.rec-aceno{animation:recAceno .32s cubic-bezier(.34,1.56,.64,1)}
 @keyframes recAceno{0%{transform:scale(.9)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
-.rec-novo{position:absolute;right:0;bottom:calc(100% + 10px);display:none;align-items:center;gap:7px;min-height:42px;padding:0 15px;border:0;border-radius:12px;background:#1d1d1f;color:#f5f5f7;font:600 13px var(--font);pointer-events:auto;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.18);-webkit-user-select:none;user-select:none}
+.rec-novo{position:absolute;z-index:5;right:0;bottom:calc(100% + 10px);display:none;align-items:center;gap:7px;min-height:42px;padding:0 15px;border:0;border-radius:12px;background:#1d1d1f;color:#f5f5f7;font:600 13px var(--font);pointer-events:auto;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.18);-webkit-user-select:none;user-select:none}
 .rec-novo .svgi{font-size:15px;color:#ffcc00}
 [data-theme="dark"] .rec-novo{background:#3a3a3c}
 [data-theme="dark"] .rec-novo .svgi{color:#ffd60a}
 .rec-novo:active{transform:scale(.94);transition:transform .09s}
 .ibar.alvo-card:not(.rec-on) .rec-novo{display:inline-flex;animation:recNovoEntra .22s cubic-bezier(.22,1,.36,1) .06s backwards}
+/* Bolinha (depois de 4 s): 30 px, só o "+", encostada no canto da pílula. */
+.rec-novo .rn-txt{white-space:nowrap}
+.ibar.alvo-card:not(.rec-on) .rec-novo.mini{right:var(--mini-x,96px);bottom:var(--mini-y,30px);min-height:0;width:30px;height:30px;padding:0;gap:0;justify-content:center;border-radius:50%;box-shadow:0 0 0 2px var(--bg-card,#fff),0 4px 10px rgba(0,0,0,.22);animation:recNovoMini .34s cubic-bezier(.34,1.56,.64,1)}
+.ibar.alvo-card:not(.rec-on) .rec-novo.mini .rn-txt{display:none}
+/* Área de toque de 44 px em volta da bolinha de 30. */
+.rec-novo.mini::before{content:'';position:absolute;inset:-7px;border-radius:50%}
+.ibar.alvo-card:not(.rec-on) .rec-novo.mini .svgi{font-size:14px}
+@keyframes recNovoMini{from{transform:scale(.4);opacity:0}}
+@media (prefers-reduced-motion:reduce){.ibar.alvo-card:not(.rec-on) .rec-novo.mini{animation:none}}
 @keyframes recNovoEntra{from{opacity:0;transform:translateY(6px) scale(.95)}}
 /* Gota no cursor (09/11/2026, proposta 3 escolhida pelo Rafa): com o card
    ativo e o teclado fechado não existe cursor piscando, então uma gota
@@ -10722,7 +10731,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.10.3';
+const VOX_VERSION='2026.11.11.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -28966,7 +28975,16 @@ function _recRotuloSync(){
   const r=document.getElementById('recRot');if(r)r.textContent=t('Gravar aqui');
   const kf=document.getElementById('btnKbFechar');if(kf&&!kf.firstChild){kf.innerHTML=ICO.kbDismiss;kf.title=kf.ariaLabel=t('Fechar teclado');kf.setAttribute('aria-label',t('Fechar teclado'))}
   const nv=document.getElementById('btnRecNovo');
-  if(nv&&!nv.firstChild){nv.innerHTML='<span class="svgi" aria-hidden="true">'+ICO.plus+'</span>'+escHtml(t('Novo card'));nv.setAttribute('aria-label',t('Gravar em card novo'))}
+  if(nv&&!nv.firstChild){nv.innerHTML='<span class="svgi" aria-hidden="true">'+ICO.plus+'</span><span class="rn-txt">'+escHtml(t('Novo card'))+'</span>';nv.setAttribute('aria-label',t('Gravar em card novo'))}
+  // "+ Novo card" aparece inteiro por 4 s quando um card vira o ativo (pra
+  // ser visto) e depois encolhe numa bolinha "+" no canto da pílula, pra não
+  // ficar por cima do card de baixo na Lista (Rafa, 11/11). Continua a um
+  // toque, e volta inteiro quando outro card vira o ativo.
+  if(nv){
+    if(cid&&cid!==nv._cid){nv.classList.remove('mini');clearTimeout(nv._miniT);nv._miniT=setTimeout(()=>_recNovoMini(true),4000)}
+    if(!cid){clearTimeout(nv._miniT);nv.classList.remove('mini')}
+    nv._cid=cid||null;
+  }
   if(era!==!!cid&&!_voxReduzMov()&&b.offsetParent){b.classList.remove('rec-aceno');void b.offsetWidth;b.classList.add('rec-aceno');clearTimeout(b._aceno);b._aceno=setTimeout(()=>b.classList.remove('rec-aceno'),360)}
 }
 // Onde fica o ponto `pos` dentro do textarea, em px a partir do canto do
@@ -29081,6 +29099,19 @@ function _kbFechar(){
   const a=document.activeElement;if(a&&a!==document.body&&a.blur)a.blur();
   document.body.classList.remove('kb-escrevendo');
 }
+// Encolhe o "+ Novo card" numa bolinha centrada no canto de cima à esquerda
+// da pílula vermelha (o canto direito já tem o pontinho do segurar).
+function _recNovoMini(on){
+  const nv=document.getElementById('btnRecNovo'),b=document.getElementById('btnRec'),bar=document.querySelector('.ibar');
+  if(!nv||!b||!bar)return;
+  if(on&&b.offsetParent){
+    const rb=b.getBoundingClientRect(),ri=bar.getBoundingClientRect();
+    nv.style.setProperty('--mini-x',Math.round(ri.right-rb.left-15)+'px');
+    nv.style.setProperty('--mini-y',Math.round(ri.bottom-rb.top-15)+'px');
+  }
+  nv.classList.toggle('mini',!!on);
+}
+window.addEventListener('resize',()=>{const nv=document.getElementById('btnRecNovo');if(nv&&nv.classList.contains('mini'))_recNovoMini(true)});
 // "+ Novo card" acima da pílula: grava num card novo sem precisar tocar fora
 // antes. Fecha a janela do Mural (a fala vai pra outro card) e esquece o alvo.
 function _gravEmCardNovo(e){
