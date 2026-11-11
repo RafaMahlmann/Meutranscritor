@@ -2147,6 +2147,7 @@ body.dio-fechado #cardsList,body.dio-fechado .empty-state,body.dio-fechado #empt
 .cons-aceite a{color:inherit;text-decoration:underline}
 .cons-pe{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .cons-link{border:0;background:none;color:var(--text3);font:600 13px var(--font);padding:8px 2px;cursor:pointer;text-decoration:underline}
+.bbl-wrap+.cons-linha{margin:8px 14px 0}
 .cons-linha{margin:8px 0 0;font-size:11.5px;line-height:1.45;color:var(--text3);border-top:1px dashed var(--border);padding-top:6px}
 @media (prefers-reduced-motion:reduce){.cons-ov,.cons-folha{animation:none}.cons-ov.sai .cons-folha{transition:none}}
 .dio-ov{position:fixed;inset:0;z-index:10003;background:rgba(10,14,18,.5);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -38811,8 +38812,14 @@ function _consRender(c){
   if(!c)return;
   let el=c.querySelector(':scope .cons-linha');
   if(!c.dataset.consent){el?.remove();return}
-  const cb=c.querySelector('.cb');if(!cb)return;
-  if(!el){el=document.createElement('p');el.className='cons-linha';cb.appendChild(el)}
+  // Card de vozes separadas tem duas vistas (roteiro e bolhas) e uma delas fica
+  // escondida: a linha mora logo depois das duas, à vista em qualquer uma
+  // (achado do Kimi no teste 6, 11/11). Card de texto: no pé do texto.
+  const bbl=c.querySelector('.bbl-wrap'),cb=c.querySelector('.cb');
+  if(!bbl&&!cb)return;
+  if(!el){el=document.createElement('p');el.className='cons-linha'}
+  if(bbl){if(el.previousElementSibling!==bbl)bbl.after(el)}
+  else if(el.parentElement!==cb)cb.appendChild(el);
   el.textContent=c.dataset.consent;
 }
 // O card que nasce da gravação recebe as marcas (e os rabiscos) dela.
