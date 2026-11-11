@@ -32,6 +32,16 @@ jobs:
       - name: Diário do leigo
         if: always()
         run: node testes/diario-leigo.js fotos-leigo
+      # Sonda de segurança: tenta injetar código pelo backup, pela pasta do Vox
+      # Transfer e por erro de serviço de IA. Falha se alguma armadilha disparar.
+      - name: Sonda de segurança
+        if: always()
+        run: node testes/seguranca.js
+      # O Pages publica só a pasta de testes/montar-site.sh: confere que nela
+      # está tudo o que o app carrega (arquivo esquecido vira 404 no ar).
+      - name: Site publicado tem tudo
+        if: always()
+        run: node testes/site-publicado.js
       - name: Fotos de cada passo
         if: always()
         uses: actions/upload-artifact@v4

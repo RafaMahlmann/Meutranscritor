@@ -98,7 +98,11 @@ Falha do Groq não gasta a cortesia da pessoa.
 
 ## Painel
 
-`https://<endereço-da-ponte>/painel`: pede a senha (`PAINEL_SENHA`). Mostra os
+`https://<endereço-da-ponte>/painel`: pede a senha (`PAINEL_SENHA`). Cada endereço
+de internet pode errar a senha 10 vezes por dia; depois disso o painel recusa
+esse endereço até o dia seguinte, mesmo com a senha certa (desde 06/11/2026; teste
+em `testes/painel.mjs`, que roda no Node sem conta da Cloudflare). Use uma senha
+longa e aleatória. Mostra os
 minutos de hoje, quantos aparelhos usaram, quantos chegaram ao fim, quantos
 conectaram a própria chave, os últimos 30 dias, e os ajustes (liga/desliga,
 cortesias por aparelho, minutos por gravação, teto do dia, limite por

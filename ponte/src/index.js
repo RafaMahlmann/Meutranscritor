@@ -352,6 +352,12 @@ const USO_EVENTOS = new Set([
 // Passos do funil, na ordem. A primeira vez de cada um fica em uso_marcos.
 const USO_FUNIL = ['abriu', 'gravou', 'lente', 'chave', 'tela_pro', 'assinou'];
 const RE_LENTE_EVENTO = /^lente:[a-z]{2,24}$/;
+// De onde a pessoa veio (doc 33, L3.8): 'origem:<canal>', uma vez por aparelho,
+// só de quem disse "sim". Lista fechada, igual à do app. Entra só no total do
+// dia (uso_eventos); não vira passo do funil nem fica ligado ao código.
+const USO_ORIGENS = new Set(['landing', 'producthunt', 'hn', 'x', 'reddit', 'alternativeto', 'saashub', 'futuretools', 'launchingnext',
+  'microsoft-store', 'appsumo', 'indiehackers', 'youtube', 'newsletter', 'afiliado', 'outra']);
+const ehOrigemEvento = (e) => e.startsWith('origem:') && USO_ORIGENS.has(e.slice(7));
 const RE_DIA = /^\d{4}-\d{2}-\d{2}$/;
 const USO_MAX_POR_PEDIDO = 50;
 const USO_MAX_POR_DIA = 400; // por aparelho: ninguém infla a contagem sozinho
@@ -393,7 +399,7 @@ async function usoEventos(request, env, origem) {
   const evs = [];
   for (const x of lista) {
     const e = String(x?.e || '');
-    if (!USO_EVENTOS.has(e) && !RE_LENTE_EVENTO.test(e)) continue; // fora da lista: ignora
+    if (!USO_EVENTOS.has(e) && !RE_LENTE_EVENTO.test(e) && !ehOrigemEvento(e)) continue; // fora da lista: ignora
     const d = RE_DIA.test(String(x?.dia || '')) && x.dia >= minimo && x.dia <= dia ? x.dia : dia;
     evs.push({ e, d });
   }
@@ -451,13 +457,14 @@ async function usoPainel(env, dia) {
   await usoApagarVelhos(env);
   const d30 = diaMenos(dia, 29), d7 = diaMenos(dia, 6);
   const q = (sql, ...b) => env.DB.prepare(sql).bind(...b);
-  const [tot, at7, at30, funil, lentes, limites] = await Promise.all([
+  const [tot, at7, at30, funil, lentes, limites, origens] = await Promise.all([
     q('SELECT COUNT(*) AS n FROM uso_aparelhos').first(),
     q('SELECT COUNT(DISTINCT id) AS n FROM uso_ativos WHERE dia >= ?', d7).first(),
     q('SELECT COUNT(DISTINCT id) AS n FROM uso_ativos WHERE dia >= ?', d30).first(),
     q('SELECT passo, COUNT(*) AS n FROM uso_marcos GROUP BY passo').all(),
     q("SELECT substr(evento, 7) AS lente, SUM(n) AS n FROM uso_eventos WHERE dia >= ? AND evento LIKE 'lente:%' GROUP BY evento ORDER BY n DESC LIMIT 12", d30).all(),
     q("SELECT evento, SUM(n) AS n FROM uso_eventos WHERE dia >= ? AND evento LIKE 'limite_%' GROUP BY evento ORDER BY n DESC", d30).all(),
+    q("SELECT substr(evento, 8) AS origem, SUM(n) AS n FROM uso_eventos WHERE dia >= ? AND evento LIKE 'origem:%' GROUP BY evento ORDER BY n DESC", d30).all(),
   ]);
   // Quem volta: dos aparelhos que começaram há pelo menos N semanas, quantos
   // abriram o app de novo na semana N (dias 7–13, 14–20, 21–27 depois do 1º dia).
@@ -470,7 +477,7 @@ async function usoPainel(env, dia) {
     semanas.push({ s, base: r?.base || 0, voltaram: r?.voltaram || 0 });
   }
   const passos = Object.fromEntries((funil.results || []).map((x) => [x.passo, x.n]));
-  return { total: tot?.n || 0, at7: at7?.n || 0, at30: at30?.n || 0, semanas, passos, lentes: lentes.results || [], limites: limites.results || [] };
+  return { total: tot?.n || 0, at7: at7?.n || 0, at30: at30?.n || 0, semanas, passos, lentes: lentes.results || [], limites: limites.results || [], origens: origens.results || [] };
 }
 
 function htmlUso(u) {
@@ -488,6 +495,7 @@ function htmlUso(u) {
   const linhasSem = u.semanas.map((x) => `<tr><td>Semana ${x.s}</td><td>${x.base}</td><td>${x.voltaram}</td><td>${p(x.voltaram, x.base)}</td></tr>`).join('');
   const linhasLentes = u.lentes.map((x) => `<tr><td>${esc(x.lente)}</td><td>${x.n}</td></tr>`).join('') || '<tr><td colspan="2" class="vazio">Sem dados ainda.</td></tr>';
   const linhasLim = u.limites.map((x) => `<tr><td>${esc(nomesLim[x.evento] || x.evento)}</td><td>${x.n}</td></tr>`).join('') || '<tr><td colspan="2" class="vazio">Ninguém bateu num limite ainda.</td></tr>';
+  const linhasOrig = (u.origens || []).map((x) => `<tr><td>${esc(x.origem)}</td><td>${x.n}</td></tr>`).join('') || '<tr><td colspan="2" class="vazio">Ninguém chegou por um link marcado ainda.</td></tr>';
   return `<div class="card">
   <h2>Uso do app (só de quem disse "sim")</h2>
   <p class="leg">O app pergunta uma vez se pode contar como a pessoa usa o Vox. Daqui pra baixo, só entra quem respondeu "sim". Sem texto, sem áudio, sem nome.</p>
@@ -505,6 +513,7 @@ function htmlUso(u) {
   <div class="grid" style="margin-top:12px">
     <div class="card"><h2>Lentes mais usadas (30 dias)</h2><table><tbody>${linhasLentes}</tbody></table></div>
     <div class="card"><h2>Limites do grátis batidos (30 dias)</h2><table><tbody>${linhasLim}</tbody></table></div>
+    <div class="card"><h2>De onde vieram (30 dias)</h2><table><tbody>${linhasOrig}</tbody></table><p class="leg" style="margin-top:8px">Só quem abriu o app pela primeira vez por um link com <code>?utm_source=</code> e disse "sim" à contagem.</p></div>
   </div>
 </div>`;
 }
@@ -596,9 +605,33 @@ async function landingEvento(request, env, origem) {
 
 // ── Painel do Rafa ──────────────────────────────────────────────────────────
 
+// Trava de senhas erradas (06/11/2026, lote 17): sem ela, quem achasse o
+// endereço do painel podia testar senhas sem parar. Cada endereço de internet
+// pode errar PAINEL_MAX_ERROS vezes por dia; depois disso o painel recusa esse
+// endereço até o dia seguinte (horário de Brasília). O endereço entra
+// embaralhado com o dia, na mesma tabela `ips` da cortesia, com prefixo
+// próprio (não come a cota de transcrição de ninguém), e some no dia seguinte.
+const PAINEL_MAX_ERROS = 10;
+
 async function painel(request, env, url) {
   if (!env.PAINEL_SENHA) return new Response('Painel desligado: falta definir a senha (PAINEL_SENHA).\n', { status: 503 });
+  const diaTrava = hoje();
+  const ip = request.headers.get('CF-Connecting-IP') || 'sem-ip';
+  const hashIp = await sha256hex(`PAINEL|${ip}|${diaTrava}|${env.SAL_IP || 'vox'}`);
+  const erros = (await env.DB.prepare('SELECT usos FROM ips WHERE dia = ? AND hash = ?').bind(diaTrava, hashIp).first())?.usos || 0;
+  if (erros >= PAINEL_MAX_ERROS) {
+    return new Response('Muitas senhas erradas deste endereço hoje. O painel volta a aceitar amanhã.\n', {
+      status: 429,
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  }
   if (!(await senhaConfere(request, env.PAINEL_SENHA))) {
+    // Só conta quando veio uma senha: a primeira visita (que só abre a caixa
+    // de senha do navegador) não é erro.
+    if (request.headers.get('Authorization')) {
+      await env.DB.prepare('INSERT INTO ips (dia, hash, usos) VALUES (?, ?, 1) ON CONFLICT(dia, hash) DO UPDATE SET usos = usos + 1')
+        .bind(diaTrava, hashIp).run();
+    }
     return new Response('Senha necessária.\n', {
       status: 401,
       headers: { 'WWW-Authenticate': 'Basic realm="Painel da ponte do Vox", charset="UTF-8"', 'Cache-Control': 'no-store' },
