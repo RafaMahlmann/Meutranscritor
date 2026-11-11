@@ -596,9 +596,33 @@ async function landingEvento(request, env, origem) {
 
 // ── Painel do Rafa ──────────────────────────────────────────────────────────
 
+// Trava de senhas erradas (06/11/2026, lote 17): sem ela, quem achasse o
+// endereço do painel podia testar senhas sem parar. Cada endereço de internet
+// pode errar PAINEL_MAX_ERROS vezes por dia; depois disso o painel recusa esse
+// endereço até o dia seguinte (horário de Brasília). O endereço entra
+// embaralhado com o dia, na mesma tabela `ips` da cortesia, com prefixo
+// próprio (não come a cota de transcrição de ninguém), e some no dia seguinte.
+const PAINEL_MAX_ERROS = 10;
+
 async function painel(request, env, url) {
   if (!env.PAINEL_SENHA) return new Response('Painel desligado: falta definir a senha (PAINEL_SENHA).\n', { status: 503 });
+  const diaTrava = hoje();
+  const ip = request.headers.get('CF-Connecting-IP') || 'sem-ip';
+  const hashIp = await sha256hex(`PAINEL|${ip}|${diaTrava}|${env.SAL_IP || 'vox'}`);
+  const erros = (await env.DB.prepare('SELECT usos FROM ips WHERE dia = ? AND hash = ?').bind(diaTrava, hashIp).first())?.usos || 0;
+  if (erros >= PAINEL_MAX_ERROS) {
+    return new Response('Muitas senhas erradas deste endereço hoje. O painel volta a aceitar amanhã.\n', {
+      status: 429,
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  }
   if (!(await senhaConfere(request, env.PAINEL_SENHA))) {
+    // Só conta quando veio uma senha: a primeira visita (que só abre a caixa
+    // de senha do navegador) não é erro.
+    if (request.headers.get('Authorization')) {
+      await env.DB.prepare('INSERT INTO ips (dia, hash, usos) VALUES (?, ?, 1) ON CONFLICT(dia, hash) DO UPDATE SET usos = usos + 1')
+        .bind(diaTrava, hashIp).run();
+    }
     return new Response('Senha necessária.\n', {
       status: 401,
       headers: { 'WWW-Authenticate': 'Basic realm="Painel da ponte do Vox", charset="UTF-8"', 'Cache-Control': 'no-store' },
