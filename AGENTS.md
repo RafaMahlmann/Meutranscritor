@@ -4,6 +4,26 @@ Este repositório é editado por mais de um agente de IA (e pelo mantenedor).
 Estas regras existem para que um agente nunca destrua ou "varra" o trabalho
 de outro. Elas NÃO são opcionais.
 
+## Antes de tudo: o contexto interno mora em outro repositório
+
+Este repositório é público e só tem o código. O mapa do projeto (decisões,
+o que já foi feito, quem faz o quê, frentes em andamento) fica no repositório
+**privado** `RafaMahlmann/vox-docs-privados`. Antes de responder qualquer
+pergunta sobre o estado do projeto ou começar uma tarefa:
+
+1. Abra o `vox-docs-privados` junto com este. Numa sessão na nuvem
+   (claude.ai/code) que só recebeu este repositório, peça para anexar o outro
+   antes de seguir. Se não tiver acesso, pergunte ao mantenedor. Não responda
+   "o que falta" só olhando o código: compras testadas, decisões e frentes
+   abertas (jurídica, por exemplo) só estão lá.
+2. Leia, nesta ordem: `CLAUDE.md`, `PLANO_DIRETOR/LEIA_PRIMEIRO_IA.md` (a tabela
+   do topo vale mais que qualquer doc antigo) e a pauta das equipes,
+   `PLANO_DIRETOR/30_PAUTA_EXECUCAO_DUAS_EQUIPES_2026-10-07.md`.
+3. Quem publica na `main` está na pauta: as Equipes A e B publicam depois do
+   teste completo, com a trava "Publicando agora"; a Equipe C (Claude na
+   nuvem) e agentes de fora (Kimi etc.) nunca publicam. Entregam o ramo e
+   deixam o recado na pauta. A seção 1 abaixo é a regra para quem não é A nem B.
+
 ## 0. Setup obrigatório (uma vez por clone, em qualquer máquina)
 
 ```
@@ -46,7 +66,8 @@ sem bump, deixando o app corrigido se dizendo com a versão anterior.
 ## 5. Convenções do código (index.html é o app inteiro)
 
 - Toda string de interface nova passa por `t()` e ganha tradução no `I18N_EN`.
-- Valide os 3 blocos `<script>` com `new Function()` no Node antes de commitar.
+- Valide **todos** os blocos `<script>` com `new Function()` no Node antes de
+  commitar (eram 3; hoje são 5, e o número muda).
 - Dados de usuário no DOM: sempre `escHtml()` / `escJs()` / `safeColor()`.
 - Não adicione scripts de CDN (a CSP bloqueia; bibliotecas são vendorizadas).
 - Bump de `VOX_VERSION` (formato `ano.mês.dia.sequência`): **automático** pelo
