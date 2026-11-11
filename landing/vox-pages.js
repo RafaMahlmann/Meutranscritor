@@ -23,6 +23,19 @@
         origem = q.get('utm_source') || ref || 'direto';
     } catch (e) {}
     avisa({ tipo: 'visita', origem: origem });
+    /* Repassa a origem pro app (doc 33, L3.8): quem chegou aqui com
+       ?utm_source=<canal> leva o mesmo canal no link do app; quem chegou sem
+       nada leva "landing". O app só guarda canal de uma lista fechada e só
+       conta se a pessoa aceitar a contagem (ver Privacidade). */
+    try {
+        var canal = (new URLSearchParams(location.search).get('utm_source') || '').toLowerCase();
+        if (!/^[a-z0-9-]{1,30}$/.test(canal)) canal = 'landing';
+        Array.prototype.forEach.call(document.querySelectorAll('a[href*="app.voxcharmai.com"]'), function (a) {
+            var h = a.getAttribute('href') || '';
+            if (/terms|privacy/.test(h) || /[?&]utm_source=/.test(h)) return;
+            a.setAttribute('href', h + (h.indexOf('?') > -1 ? '&' : '?') + 'utm_source=' + canal);
+        });
+    } catch (e) {}
     function avisaEVai(o, destino) {
         var foi = false;
         function vai() { if (!foi) { foi = true; location.href = destino; } }
