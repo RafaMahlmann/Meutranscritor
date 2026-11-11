@@ -3657,6 +3657,11 @@ mark{background:rgba(255,214,0,0.35);color:inherit;border-radius:2px;padding:0 1
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .spk-stats,
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .spk-rename-row,
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .conversa-bar{display:none}
+/* Card recém-nascido de uma gravação (.recem, ver _chRecemNascido): a barra
+   Conversar/Transformar fica à vista mesmo com o cabeçalho recolhido. Fora
+   da miniatura de toque, que não mostra botão nenhum; lá vale na janela. */
+.cards:not(.masonry-preview)>.card.recem:not(.ch-header-open):not(.focus-active):not(.proc-card) .conversa-bar,
+.float-window .card.recem:not(.ch-header-open):not(.focus-active):not(.proc-card) .conversa-bar{display:flex}
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .badge.diar,
 .card:not(.ch-header-open):not(.focus-active):not(.proc-card) .ch-left .badge.pin{display:none}
 /* Rodapé recolhido esconde o CONTEÚDO do bloco de tags, mas NÃO o
@@ -10736,7 +10741,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.10.6';
+const VOX_VERSION='2026.11.10.7';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13190,8 +13195,8 @@ let I18N_EN={
 "Este é o Mural de {x}. Grave cada atendimento no botão vermelho, longe do resto: a fala vira texto sozinha. Depois, a lente {l} organiza o texto no formato de nota clínica.":"This is the {x} Pinboard. Record each appointment with the red button, away from everything else: speech turns into text on its own. Then the {l} lens organizes the text as a clinical note.",
 "Este é o Mural de {x}. Toque no botão vermelho e conte como foi o dia, do jeito que vier: a fala vira texto sozinha. Depois, experimente a lente {l}.":"This is the {x} Pinboard. Tap the red button and tell how your day went, however it comes out: speech turns into text on its own. Then try the {l} lens.",
 "Este é o Mural de {x}. Grave a aula ou o que você estudou no botão vermelho: a fala vira texto sozinha. Depois, a lente {l} transforma o texto em cartões de estudo.":"This is the {x} Pinboard. Record the class or what you studied with the red button: speech turns into text on its own. Then the {l} lens turns the text into study cards.",
-"Aqui é o seu Mural. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque numa lente (os botões coloridos da nota) pra transformar o texto. Comece pela lente {l}.":"This is your Pinboard. Tap the red button and speak: your speech becomes a note. Then tap a lens (the colored buttons on the note) to transform the text. Start with the {l} lens.",
-"Este é o Mural de {x}. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque numa lente (os botões coloridos da nota) pra transformar o texto. Comece pela lente {l}.":"This is the {x} Pinboard. Tap the red button and speak: your speech becomes a note. Then tap a lens (the colored buttons on the note) to transform the text. Start with the {l} lens.",
+"Aqui é o seu Mural. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque em Transformar, na nota, pra passar o texto por uma lente (se o botão não aparecer, toque nos três pontinhos da nota). Comece pela lente {l}.":"This is your Pinboard. Tap the red button and speak: your speech becomes a note. Then tap Transform, on the note, to run the text through a lens (if you don't see the button, tap the three dots on the note). Start with the {l} lens.",
+"Este é o Mural de {x}. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque em Transformar, na nota, pra passar o texto por uma lente (se o botão não aparecer, toque nos três pontinhos da nota). Comece pela lente {l}.":"This is the {x} Pinboard. Tap the red button and speak: your speech becomes a note. Then tap Transform, on the note, to run the text through a lens (if you don't see the button, tap the three dots on the note). Start with the {l} lens.",
 "Gravar → virar texto → {l}.":"Record → turn into text → {l}.",
 "O modo {m} já está marcado lá embaixo.":"{m} mode is already selected down below.",
 "Da próxima vez, este mundo abre em {t}.":"Next time, this world opens in {t}.",
@@ -16810,8 +16815,8 @@ function _1aCardBoasVindas(m,p){
     diario:'Este é o seu Diário. Toque no botão vermelho e conte como foi o dia, do jeito que vier: a fala vira texto e já fica guardada no dia de hoje, no Calendário. Depois, toque em {l}, embaixo do texto.',
     aulas:'Este é o Mural de {x}. Grave a aula ou o que você estudou no botão vermelho: a fala vira texto sozinha. Depois, a lente {l} transforma o texto em cartões de estudo.'
   }[sid]||(m.mundo===VOX_MUNDO_RAIZ||_mundoAtivo===VOX_MUNDO_RAIZ
-    ?'Aqui é o seu Mural. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque numa lente (os botões coloridos da nota) pra transformar o texto. Comece pela lente {l}.'
-    :'Este é o Mural de {x}. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque numa lente (os botões coloridos da nota) pra transformar o texto. Comece pela lente {l}.');
+    ?'Aqui é o seu Mural. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque em Transformar, na nota, pra passar o texto por uma lente (se o botão não aparecer, toque nos três pontinhos da nota). Comece pela lente {l}.'
+    :'Este é o Mural de {x}. Toque no botão vermelho e fale: a fala vira uma nota. Depois, toque em Transformar, na nota, pra passar o texto por uma lente (se o botão não aparecer, toque nos três pontinhos da nota). Comece pela lente {l}.');
   let txt=t(abertura).replace('{x}',nome).replace('{l}',lente);
   if(sid==='consultas'){
     txt+='\n\n'+t('Gravar → dizer de quem é → Fechar atendimento.');
@@ -34274,6 +34279,17 @@ function _chPadraoAberto(){
   // não persistindo: expandir vale para aquele card naquela sessão.
   return false;
 }
+// Card que ACABOU de nascer de uma gravação ou de um arquivo (doc 33, L3.9,
+// 11/11/2026). A regra "todo card nasce recolhido" (Rafa, 18/08) escondia
+// Conversar/Transformar justamente na hora em que a pessoa terminou de falar
+// e ia usar a primeira lente: eram 2 toques no computador e 3 no celular, o
+// primeiro num ícone sem nome. Então ESTE card ganha a classe .recem, que
+// deixa à vista SÓ a barra Conversar/Transformar (regra de CSS ao lado da que
+// a esconde). O cabeçalho continua recolhido: nada de bandeja de ferramentas
+// num card que a pessoa só quer ler. Não vale pra card restaurado, digitado,
+// colado ou criado por lente. A classe não é guardada (recarregou, sumiu) e
+// sai no primeiro toque nos três pontinhos.
+function _chRecemNascido(el){el.classList.add('recem')}
 // which='header' (menu de cima + Conversar/Transformar) ou 'footer' (tags).
 // Os dois são independentes agora — abrir um não mexe no outro.
 function _chAplicarEstado(card,id,open,which){
@@ -34323,6 +34339,7 @@ function toggleChCollapse(id){
   // Modo Documento tem seu próprio recolhimento de cabeçalho (hdr-folded,
   // toggleDocHeaderFold) — nunca mistura os dois numa mesma visualização.
   if(card.classList.contains('focus-active'))return;
+  card.classList.remove('recem');
   _chAplicarEstado(card,id,!chHeaderOpenCards.has(id),'header');
 }
 // Menu "⋯" da bandeja de ferramentas. Guarda as ações que não cabem na fila
@@ -38089,6 +38106,7 @@ function addDiarCard(utterances,speakers,costUSD,prov,save=true,forceCI=null,for
 
 
   document.getElementById('cardsList').prepend(el);
+  if(save)_chRecemNascido(el);
   if(_enc)_encPintar(id);
   // Entrada 1x do dock só em card genuinamente novo (save=true) — cards
   // restaurados do histórico (loadHistory chama com save=false) aparecem
@@ -45003,6 +45021,7 @@ function addCard(text,file,costUSD,type,prov,save=true,forceCI=null,forceDt=null
     `;
 
   document.getElementById('cardsList').prepend(el);
+  if(save&&(type==='gravacao'||type==='arquivo'))_chRecemNascido(el);
   if(images&&images.length)_tiraPintarFotos(el);
   // Entrada 1x do dock só em card genuinamente novo (save=true) — ver
   // comentário equivalente em addDiarCard.
