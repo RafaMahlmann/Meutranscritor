@@ -13350,6 +13350,7 @@ let I18N_EN={
 "Podemos contar como você usa o Vox?":"Can we count how you use Vox?",
 "É pra melhorar o app: saber o que as pessoas usam e onde elas travam. Você decide, e pode mudar quando quiser no menu ⋯, em \"Contar meu uso\".":"It's to make the app better: to learn what people use and where they get stuck. It's your call, and you can change it anytime in the ⋯ menu, under \"Count my usage\".",
 "O que contamos":"What we count",
+"De qual site você veio, quando o link diz (só o nome, de uma lista nossa)":"Which site sent you here, when the link says so (only its name, from our own list)",
 "Que você abriu o app, gravou ou usou uma lente (o nome da lente, nunca o texto)":"That you opened the app, recorded, or used a lens (the lens name, never the text)",
 "Se conectou uma chave, abriu a tela do Pro ou chegou num limite do plano grátis":"Whether you connected a key, opened the Pro screen, or reached a free plan limit",
 "O que nunca sai daqui":"What never leaves your device",
@@ -15428,6 +15429,30 @@ async function _primeiroPasso(){
 // e joga o código fora. A Política de Privacidade explica (#analytics).
 const _MEDIR_EVENTOS=new Set(['abriu','gravou','arquivo','chave','presente_inicio','presente_fim','tela_pro','assinou',
   'limite_gravacao','limite_arquivo','limite_diarizacao','limite_pasta','limite_recurso_pro']);
+// De onde a pessoa veio (doc 33, L3.8). O link de divulgação pode trazer
+// ?utm_source=<canal>. Na PRIMEIRA abertura do app neste aparelho, guarda só o
+// nome do canal, e só se ele estiver nesta lista fechada (o resto vira 'outra').
+// Fica no aparelho; só vai pra ponte se a pessoa disser "sim" à contagem, uma
+// única vez, como evento 'origem:<canal>'. Quem já usava o Vox fica com '-'.
+const _MEDIR_ORIGENS=new Set(['landing','producthunt','hn','x','reddit','alternativeto','saashub','futuretools','launchingnext',
+  'microsoft-store','appsumo','indiehackers','youtube','newsletter','afiliado']);
+function _origemAnotar(){
+  try{
+    if(localStorage.getItem('vox_origem')!==null)return;
+    let o='-';
+    const u=(new URLSearchParams(location.search).get('utm_source')||'').toLowerCase().trim();
+    if(u)o=_MEDIR_ORIGENS.has(u)?u:'outra';
+    if(o!=='-'&&(localStorage.getItem('vox_intro_seen')||localStorage.getItem('vox_cfg')||localStorage.getItem('vox_1a_entrada')))o='-';
+    localStorage.setItem('vox_origem',o);
+  }catch(e){}
+}
+_origemAnotar();
+function _medirOrigemTalvez(){
+  const o=localStorage.getItem('vox_origem');
+  if(!o||o==='-'||_medirEstado()!=='sim'||localStorage.getItem('vox_medir_origem')==='1')return;
+  localStorage.setItem('vox_medir_origem','1');
+  _medir('origem:'+o);
+}
 function _medirEstado(){const v=localStorage.getItem('vox_medir');return v==='1'?'sim':v==='0'?'nao':''}
 function _medirId(){
   let id=localStorage.getItem('vox_medir_id')||'';
@@ -15447,6 +15472,8 @@ function _medir(nome){
   if(String(nome).startsWith('lente:')){
     const k=nome.slice(6);
     nome=Object.prototype.hasOwnProperty.call(LENSES,k)&&/^[a-z]{2,24}$/.test(k)?nome:'lente:propria';
+  }else if(String(nome).startsWith('origem:')){
+    const k=nome.slice(7);if(k!=='outra'&&!_MEDIR_ORIGENS.has(k))return;
   }else if(!_MEDIR_EVENTOS.has(nome))return;
   const d=new Date(),dia=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const f=_medirFila();f.push({e:nome,dia});
@@ -15493,7 +15520,8 @@ function _medirPerguntar(doMenu){
     <div class="medir-listas">
       <div class="medir-lista"><b>${t('O que contamos')}</b><ul>
         <li>${t('Que você abriu o app, gravou ou usou uma lente (o nome da lente, nunca o texto)')}</li>
-        <li>${t('Se conectou uma chave, abriu a tela do Pro ou chegou num limite do plano grátis')}</li></ul></div>
+        <li>${t('Se conectou uma chave, abriu a tela do Pro ou chegou num limite do plano grátis')}</li>
+        <li>${t('De qual site você veio, quando o link diz (só o nome, de uma lista nossa)')}</li></ul></div>
       <div class="medir-lista"><b>${t('O que nunca sai daqui')}</b><ul>
         <li>${t('Seu áudio e seus textos')}</li>
         <li>${t('Nomes de notas e de pastas, seu nome, seu e-mail')}</li></ul></div>
@@ -15510,7 +15538,7 @@ function _medirEscolher(sim){
   if(sim){
     localStorage.setItem('vox_medir','1');
     if(antes!=='sim'){
-      _medirUmaPorDia('abriu');
+      _medirUmaPorDia('abriu');_medirOrigemTalvez();
       if(_temChaveTranscricao()&&localStorage.getItem('vox_medir_chave')!=='1'){localStorage.setItem('vox_medir_chave','1');_medir('chave')}
       toast(t('Obrigado! Dá pra desligar quando quiser, no menu ⋯.'));
     }
@@ -16630,7 +16658,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // também libera o que estava guardado esperando.
   setTimeout(_chaveTalvezChegou,1500);
   _proAtualizarMenu();setTimeout(_licencaTalvezConferir,2500);setTimeout(_presenteConferir,3500);
-  _medirAtualizarMenu();setTimeout(()=>{_medirUmaPorDia('abriu');if(_medirFila().length)_medirEnviar()},4000);
+  _medirAtualizarMenu();setTimeout(()=>{_medirUmaPorDia('abriu');_medirOrigemTalvez();if(_medirFila().length)_medirEnviar()},4000);
   document.getElementById('snameInput').addEventListener('input',e=>syncSessionName(e.target.value));
   document.addEventListener('click',e=>{
     if(!document.getElementById('expDrop').contains(e.target)&&!document.getElementById('btnExport').contains(e.target))
