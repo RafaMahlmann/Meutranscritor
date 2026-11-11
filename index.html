@@ -2117,6 +2117,38 @@ body.dio-fechado #cardsList,body.dio-fechado .empty-state,body.dio-fechado #empt
 .dio-qc[hidden]{display:none}
 @media (max-width:560px){.dio-perg{grid-template-columns:1fr}.dio-falar{grid-column:1;grid-row:auto;justify-self:start}}
 .dio-soseu:focus-visible{outline:2px solid #c98a1c;outline-offset:2px}
+.cons-ov{position:fixed;inset:0;z-index:10002;background:rgba(10,14,18,.42);display:flex;align-items:flex-end;justify-content:center;animation:consFundo .2s ease-out}
+.cons-ov.sai{opacity:0;transition:opacity .18s}
+.cons-folha{width:min(560px,100%);max-height:92vh;overflow:auto;background:var(--bg-card);color:var(--text);border-radius:22px 22px 0 0;padding:10px 18px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -12px 36px rgba(0,0,0,.22);display:flex;flex-direction:column;gap:10px;animation:consSobe .28s cubic-bezier(.22,1,.36,1)}
+.cons-ov.sai .cons-folha{transform:translateY(24px);transition:transform .18s ease-in}
+@keyframes consSobe{from{transform:translateY(100%)}}
+@keyframes consFundo{from{opacity:0}}
+.cons-grab{width:38px;height:4px;border-radius:2px;background:var(--border2);margin:0 auto 2px}
+.cons-cab{display:flex;align-items:center;justify-content:space-between}
+.cons-cab b{font-size:18px}
+.cons-x{border:0;background:var(--bg-input);color:var(--text3);width:34px;height:34px;border-radius:50%;font-size:20px;cursor:pointer}
+.cons-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cons-chip{font-size:12px;font-weight:600;background:var(--bg-input);border-radius:999px;padding:4px 10px}
+.cons-chip-vox{color:var(--accent)}
+.cons-p{margin:0;font-size:13px;color:var(--text2);line-height:1.5}
+.cons-aviso{margin:0;font-size:13px;line-height:1.45;background:rgba(255,159,10,.14);color:var(--text);border-radius:10px;padding:8px 10px}
+.cons-frase{background:var(--bg-input);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5;transition:font-size .2s}
+.cons-frase small{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
+.cons-frase.grande{font-size:20px;line-height:1.4;font-weight:500}
+.cons-q{margin:4px 0 0;font-weight:700;font-size:15px}
+.cons-resps{display:grid;gap:8px}
+.cons-r{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:48px;padding:11px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text);font:600 15px var(--font);cursor:pointer}
+.cons-r small{font-weight:500;font-size:12px;color:var(--text3)}
+.cons-r:active{transform:scale(.98)}
+.cons-r:focus-visible,.cons-link:focus-visible,.cons-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cons-r-ok{background:#ff3b30;border-color:#ff3b30;color:#fff;align-items:center}
+.cons-r-pedir{border-style:dashed}
+.cons-aceite{margin:-6px 0 2px;font-size:12px;color:var(--text3);line-height:1.45}
+.cons-aceite a{color:inherit;text-decoration:underline}
+.cons-pe{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.cons-link{border:0;background:none;color:var(--text3);font:600 13px var(--font);padding:8px 2px;cursor:pointer;text-decoration:underline}
+.cons-linha{margin:8px 0 0;font-size:11.5px;line-height:1.45;color:var(--text3);border-top:1px dashed var(--border);padding-top:6px}
+@media (prefers-reduced-motion:reduce){.cons-ov,.cons-folha{animation:none}.cons-ov.sai .cons-folha{transition:none}}
 .dio-ov{position:fixed;inset:0;z-index:10003;background:rgba(10,14,18,.5);display:flex;align-items:center;justify-content:center;padding:16px}
 .dio-caixa{width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;background:var(--bg-card);color:var(--text);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
 .dio-cab{display:flex;align-items:center;gap:10px}
@@ -10741,7 +10773,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.10.7';
+const VOX_VERSION='2026.11.11.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -13371,6 +13403,30 @@ let I18N_EN={
 "Entrou neste card":"Added to this card",
 "sua fala entra aqui":"your words go here",
 "Fechar teclado":"Close keyboard",
+"Groq, pela ponte do Vox":"Groq, through Vox's bridge",
+"Consentimento: \"{r}\"":"Consent: \"{r}\"",
+"Gravado sem responder ao aviso de consentimento":"Recorded without answering the consent notice",
+"Termos de {d}":"Terms of {d}",
+"vozes":"voices",
+"O Vox não recebeu o áudio.":"Vox never received the audio.",
+"No crédito grátis, a AssemblyAI pode usar este áudio para treinar os modelos dela.":"On the free credit, AssemblyAI may use this audio to train its models.",
+"Todos aqui concordaram":"Everyone here agreed",
+"Tenho autorização por escrito":"I have written permission",
+"termo assinado pelo paciente":"consent form signed by the patient",
+"Só eu falo (nota pessoal)":"Just me (personal note)",
+"Antes de gravar":"Before you record",
+"Vox não recebe":"Vox receives nothing",
+"Sem a sua chave, o áudio passa pela ponte do Vox (veja a Privacidade). A nota fica neste aparelho.":"Without your own key, the audio goes through Vox's bridge (see Privacy). Your note stays on this device.",
+"O Vox não vê o áudio e não guarda nada. A nota fica neste aparelho.":"Vox doesn't see the audio and keeps nothing. Your note stays on this device.",
+"Quem está na chamada pode estar sob leis mais rígidas: pergunte a todos.":"People on the call may be under stricter laws: ask everyone.",
+"Frase para dizer":"What to say",
+"Posso gravar a nossa conversa? Um serviço de IA vai transformar o áudio em texto para as minhas anotações.":"Mind if I record this? An AI service will turn the audio into text for my notes.",
+"Quem está nesta gravação?":"Who's in this recording?",
+"Vou pedir agora":"I'll ask now",
+"Ao escolher, você confirma o que marcou e aceita os":"By choosing, you confirm your answer and agree to the",
+"Fechar e gravar mesmo assim":"Close and record anyway",
+"Pronto, concordaram · gravar":"Done, they agreed · record",
+"Pedi e todos concordaram":"I asked and everyone agreed",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -26392,6 +26448,7 @@ const TAG_CORES=['#10b981','#3b82f6','#a78bfa','#f97316','#ec4899','#06b6d4','#e
 function _restaurarEtiqueta(id,it){
   if(!id||it==null)return;
   const el=document.getElementById(id);
+  if(el&&it.consent){el.dataset.consent=String(it.consent);_consRender(el)}
   if(it.tc!==undefined&&it.tc!==null){
     const n=parseInt(it.tc);
     if(!isNaN(n)&&n>=0&&n<TAG_CORES.length)el?.setAttribute('data-tc',String(n));
@@ -33718,6 +33775,7 @@ function saveHistory(){
       // salvando exatamente o mesmo que salvava antes.
       ...(c.dataset.arch==='1'?{arch:1,archAt:c.dataset.archAt||''}:{}),
       ...(c.dataset.del==='1'?{del:1,delAt:c.dataset.delAt||''}:{}),
+      ...(c.dataset.consent?{consent:c.dataset.consent}:{}),
       // quando = o dia em que a nota está MARCADA no calendário (só data).
       // Não confundir com dt, que é o nascimento do card e é imutável: se o
       // calendário redefinisse dt ao arrastar, a ordem da lista lateral
@@ -37258,6 +37316,10 @@ function makeRecorder(stream,bps){
 async function startRec(targetCardId=null,targetTA=null){
   if(isRec||isProc||stagedFile)return;
   if(_precisaConfigurar(true))return;
+  // Antes de gravar (consentimento): ver _consPrecisa. Responder no painel chama
+  // startRec de novo, já liberado.
+  if(!_consOk&&_consPrecisa(targetTA)){_consAbrir(()=>startRec(targetCardId,targetTA));return}
+  _consOk=false;
   // Botão principal/atalho de espaço chegam aqui sem alvo explícito. Se existe um card
   // com o cursor piscando (activeTA/activeTACard — rastreados em Lista, Masonry e também
   // no editor OverType do Modo Documento, ver trackFocus() em _mountFocusEditor), grava
@@ -37702,6 +37764,7 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       const _fimNovo=s+sep.length+(text||'').length;
       try{insertTA.selectionStart=insertTA.selectionEnd=_fimNovo}catch(e){}
       if(_gravAlvo&&_gravAlvo.cid===insertCard){_gravAlvo.s=_gravAlvo.e=_fimNovo}
+      if(insertCard)_consAplicar(insertCard);
       // No toque, o aviso é sempre o do "Entrou no card · Desfazer" (o
       // copiar sozinho continua acontecendo, só sem o aviso próprio).
       const _avisoCard=insertCard&&!opts.prefixo;
@@ -38641,8 +38704,114 @@ function _encTelaNunca(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('encOv')?.classList.contains('on')){e.preventDefault();_encTelaMinimizar()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('dioOv')?.classList.contains('on')){e.preventDefault();_dioTelaMinimizar()}});
+// ── ANTES DE GRAVAR: o consentimento (lote 14.5, proposta 3 "folha no botão de
+// gravar", escolhida pelo Rafa em 04/11; respostas e aceite pelo parecer de
+// 11/11/2026, lancamento/parecer-ranking-consentimento.md) ──
+// Em vários lugares (11 a 13 estados americanos, por exemplo) todos na
+// conversa têm que concordar em ser gravados. Esse dever é de quem grava; o
+// Vox não proíbe nada, mas pergunta, deixa a frase pronta e registra NA NOTA
+// (só neste aparelho) o que a pessoa declarou. Tocar numa resposta também
+// aceita os Termos (aceite claro colado no botão, o que vale na justiça
+// americana; o link solto no rodapé, sozinho, costuma não valer). Decisões do
+// Rafa (11/11): "Fechar e gravar mesmo assim" grava e a nota diz "Gravado sem
+// responder ao aviso de consentimento"; no Online o painel aparece sempre e sem
+// "Só eu falo".
+const TERMOS_DATA='2026-11-11'; // data da versão dos Termos que o painel aceita
+const CONS_MODOS=['consulta','entrevista','reuniao'];
+let _consOk=false,_consPendente=null;
+function _consOnline(){return cfg.audioSource==='both'||cfg.audioSource==='system'}
+function _consPrecisa(targetTA){
+  if(targetTA)return false; // ditado na caixa do chat: é a própria pessoa
+  if(_consOnline()||CONS_MODOS.includes(sessionMode))return true;
+  return _diarVaiRodar(); // Livre/Diário com "Separar vozes" ligado: há mais gente
+}
+function _consPelaPonte(){return cfg.provider!=='local'&&!_temChaveTranscricao()&&_cortesiaLigada()&&!CORTESIA_FORA_DE.includes(sessionMode)}
+function _consNomeTx(){
+  if(cfg.provider==='local')return t('seu computador');
+  if(_consPelaPonte())return t('Groq, pela ponte do Vox');
+  return {groqwhisper:'Groq',grok:'xAI',openai:'OpenAI'}[cfg.provider]||String(cfg.provider||'');
+}
+function _consNomeVozes(){
+  if(!_diarVaiRodar())return '';
+  if(cfg.provider==='local'&&cfg.diarLocal)return t('seu computador');
+  return {assemblyai:'AssemblyAI',gladia:'Gladia',openai:'OpenAI'}[cfg.diarProvider]||String(cfg.diarProvider||'');
+}
+function _consDataTermos(){try{return new Date(TERMOS_DATA+'T12:00:00').toLocaleDateString(getLocale(),{day:'numeric',month:'short',year:'numeric'})}catch(e){return TERMOS_DATA}}
+function _consLinha(resp){
+  const tx=_consNomeTx(),vz=_consNomeVozes();
+  let quando='';try{quando=new Date().toLocaleString(getLocale(),{dateStyle:'short',timeStyle:'short'})}catch(e){quando=new Date().toISOString().slice(0,16)}
+  const cab=resp?t('Consentimento: "{r}"').replace('{r}',resp):t('Gravado sem responder ao aviso de consentimento');
+  return [cab,quando,t('Termos de {d}').replace('{d}',_consDataTermos()),t('Áudio')+': '+tx+(vz?'; '+t('vozes')+': '+vz:''),_consPelaPonte()?'':t('O Vox não recebeu o áudio.')].filter(Boolean).join(' · ');
+}
+function _consFechar(){
+  const ov=document.getElementById('consOv');if(!ov)return;
+  document.removeEventListener('keydown',_consTecla,true);
+  if(_voxReduzMov()){ov.remove();return}
+  ov.classList.add('sai');setTimeout(()=>ov.remove(),200);
+}
+function _consTecla(e){if(e.key==='Escape'){e.preventDefault();e.stopPropagation();_consFechar()}}
+function _consAbrir(seguir){
+  document.getElementById('consOv')?.remove();
+  const online=_consOnline(),tx=_consNomeTx(),vz=_consNomeVozes(),consulta=sessionMode==='consulta';
+  const aviso=_diarVaiRodar()&&cfg.diarProvider==='assemblyai'&&cfg.provider!=='local'?t('No crédito grátis, a AssemblyAI pode usar este áudio para treinar os modelos dela.'):'';
+  const chip=(a,b)=>`<span class="cons-chip">${escHtml(a)} → ${escHtml(b)}</span>`;
+  const resp=[['todos',t('Todos aqui concordaram'),''],['escrito',t('Tenho autorização por escrito'),consulta?t('termo assinado pelo paciente'):''],online?null:['so_eu',t('Só eu falo (nota pessoal)'),'']].filter(Boolean);
+  const ov=document.createElement('div');ov.id='consOv';ov.className='cons-ov';
+  ov.innerHTML=`<div class="cons-folha" role="dialog" aria-modal="true" aria-labelledby="consT">
+    <div class="cons-grab" aria-hidden="true"></div>
+    <div class="cons-cab"><b id="consT">${escHtml(t('Antes de gravar'))}</b><button type="button" class="cons-x" aria-label="${escHtml(t('Agora não'))}">×</button></div>
+    <div class="cons-chips">${chip(t('Áudio'),tx)}${vz?chip(t('vozes'),vz):''}<span class="cons-chip cons-chip-vox">${escHtml(t('Vox não recebe'))}</span></div>
+    <p class="cons-p">${escHtml(_consPelaPonte()?t('Sem a sua chave, o áudio passa pela ponte do Vox (veja a Privacidade). A nota fica neste aparelho.'):t('O Vox não vê o áudio e não guarda nada. A nota fica neste aparelho.'))}</p>
+    ${aviso?`<p class="cons-aviso">${escHtml(aviso)}</p>`:''}
+    ${online?`<p class="cons-aviso">${escHtml(t('Quem está na chamada pode estar sob leis mais rígidas: pergunte a todos.'))}</p>`:''}
+    <div class="cons-frase"><small>${escHtml(t('Frase para dizer'))}</small><span>${escHtml(t('Posso gravar a nossa conversa? Um serviço de IA vai transformar o áudio em texto para as minhas anotações.'))}</span></div>
+    <p class="cons-q">${escHtml(t('Quem está nesta gravação?'))}</p>
+    <p class="cons-aceite">${escHtml(t('Ao escolher, você confirma o que marcou e aceita os'))} <a href="terms.html" target="_blank" rel="noopener">${escHtml(t('Termos de Uso'))}</a>.</p>
+    <div class="cons-resps">${resp.map(r=>`<button type="button" class="cons-r" data-r="${r[0]}"><span>${escHtml(r[1])}</span>${r[2]?`<small>${escHtml(r[2])}</small>`:''}</button>`).join('')}
+      <button type="button" class="cons-r cons-r-pedir" data-r="pedir"><span>${escHtml(t('Vou pedir agora'))}</span></button></div>
+    <div class="cons-pe"><button type="button" class="cons-link" data-r="sem">${escHtml(t('Fechar e gravar mesmo assim'))}</button><button type="button" class="cons-link cons-nao">${escHtml(t('Agora não'))}</button></div>
+  </div>`;
+  const escolher=(chave,rot)=>{
+    _consPendente={linha:_consLinha(rot),em:Date.now()};
+    try{localStorage.setItem('vox_termos_aceitos',TERMOS_DATA);localStorage.setItem('vox_termos_aceitos_em',new Date().toISOString())}catch(e){}
+    _consFechar();_consOk=true;seguir();
+  };
+  ov.addEventListener('click',e=>{
+    if(e.target===ov||e.target.closest('.cons-x,.cons-nao')){_consFechar();return}
+    const b=e.target.closest('[data-r]');if(!b)return;
+    const r=b.dataset.r;
+    if(r==='sem'){escolher('sem',null);return}
+    if(r==='pedir'){
+      // Mostra a frase grande pra ler olhando pra pessoa; o botão vira "concordaram".
+      ov.querySelector('.cons-frase').classList.add('grande');
+      const lista=ov.querySelector('.cons-resps');
+      lista.innerHTML=`<button type="button" class="cons-r cons-r-ok" data-r="pediu"><span>${escHtml(t('Pronto, concordaram · gravar'))}</span></button>`;
+      lista.querySelector('button').focus();return;
+    }
+    if(r==='pediu'){escolher('todos',t('Pedi e todos concordaram'));return}
+    const it=resp.find(x=>x[0]===r);if(it)escolher(r,it[1]);
+  });
+  document.addEventListener('keydown',_consTecla,true);
+  document.body.appendChild(ov);
+  ov.querySelector('.cons-r')?.focus({preventScroll:true});
+}
+// A linha vai pro card que nasce da gravação (ou pro card onde ela entra).
+function _consAplicar(id){
+  const c=document.getElementById(id);
+  if(!c||!_consPendente||Date.now()-_consPendente.em>4*3600e3)return;
+  c.dataset.consent=_consPendente.linha;_consPendente=null;_consRender(c);
+}
+function _consRender(c){
+  if(!c)return;
+  let el=c.querySelector(':scope .cons-linha');
+  if(!c.dataset.consent){el?.remove();return}
+  const cb=c.querySelector('.cb');if(!cb)return;
+  if(!el){el=document.createElement('p');el.className='cons-linha';cb.appendChild(el)}
+  el.textContent=c.dataset.consent;
+}
 // O card que nasce da gravação recebe as marcas (e os rabiscos) dela.
 function _encAplicarPendente(id){
+  _consAplicar(id);
   _dioAplicarPendente(id);
   const c=document.getElementById(id);
   if(!c||!_encPendente||c.dataset.type!=='gravacao'||Date.now()-_encPendente.em>30*60000)return;
