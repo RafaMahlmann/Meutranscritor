@@ -11648,6 +11648,7 @@
                 </div>
 
                 <div class="vox-price">
+                    <s class="vox-price-was" id="voxPriceWas" hidden>US$ 149</s>
                     <span class="vox-price-currency">US$</span>
                     <span class="vox-price-number" id="voxPriceNumber">59</span>
                     <span class="vox-price-period" id="voxPricePeriod" data-i18n>/ year</span>
@@ -11747,8 +11748,24 @@
 
 </section>
 
+<style>
+/* Oferta de lançamento (oferta-lancamento.md): só existe entre OFERTA.ini e OFERTA.fim. */
+.vox-price-was{font:700 20px/1 Inter,Arial,Helvetica,sans-serif;color:var(--vox-muted);margin-right:10px;align-self:center;text-decoration-thickness:2px;white-space:nowrap}
+.vox-price-was[hidden]{display:none}
+.vox-oferta-faixa{display:block;padding:10px 96px 10px 16px;background:#48d7d2;color:#071516;font:700 14px/1.35 Inter,Arial,Helvetica,sans-serif;text-align:center;text-decoration:none}
+.vox-oferta-faixa:hover{background:#6fe3df}
+.vox-oferta-faixa u{text-underline-offset:2px}
+@media (max-width:520px){.vox-oferta-faixa{font-size:13px;text-align:left}}
+</style>
 <script>
 (function () {
+    /* Oferta de lançamento: o cupom LAUNCH99 no Freemius tem as mesmas datas
+       e o limite de 100. Fora das datas, a página fica exatamente como antes.
+       ?oferta-teste mostra a oferta antes da hora, pra conferir (o checkout só
+       aceita o cupom dentro das datas). */
+    var OFERTA = { ini: Date.parse("2026-12-01T00:00:00-08:00"), fim: Date.parse("2027-01-10T23:59:59-08:00"), cupom: "LAUNCH99", preco: "99", normal: "149" };
+    var agora = Date.now();
+    var ofertaOn = (agora >= OFERTA.ini && agora <= OFERTA.fim) || /[?&]oferta-teste\b/.test(location.search);
     var prices = {
         /* Base em inglês, como o resto da página: t() traduz pro português.
            Antes os textos estavam em português e, em inglês, quem tocava em
@@ -11757,6 +11774,10 @@
         annual:   { number: "59", period: "/ year", note: "Works out to US$4.92 a month.", micro: "Billed once a year." },
         lifetime: { number: "149", period: "one-time", note: "One payment, no monthly fee after.", micro: "One-time payment. No renewal." }
     };
+    if (ofertaOn) {
+        prices.lifetime.number = OFERTA.preco;
+        prices.lifetime.note = "Launch offer: until January 10 or the first 100 licenses.";
+    }
 
     var toggle = document.getElementById("voxCycleToggle");
     if (!toggle) return;
@@ -11767,6 +11788,31 @@
     var periodEl = document.getElementById("voxPricePeriod");
     var noteEl = document.getElementById("voxPriceNote");
     var microEl = document.getElementById("voxPlanMicro");
+    var wasEl = document.getElementById("voxPriceWas");
+    var linkEl = document.getElementById("voxCheckoutLink");
+    var linkBase = linkEl ? linkEl.getAttribute("href") : "";
+
+    if (ofertaOn) {
+        var faixa = document.createElement("a");
+        faixa.className = "vox-oferta-faixa";
+        faixa.href = "#teste-gratis";
+        faixa.innerHTML = "<u></u>";
+        var faixaTx = "Launch offer: Vox Pro lifetime for US$ 99 (normally US$ 149). Until January 10 or the first 100 licenses.";
+        faixa.firstChild.textContent = faixaTx;
+        /* t() nasce num script mais abaixo: traduz quando a página termina de carregar. */
+        document.addEventListener("DOMContentLoaded", function () { if (typeof t === "function") faixa.firstChild.textContent = t(faixaTx); });
+        faixa.addEventListener("click", function () {
+            var b = toggle.querySelector('.vox-toggle-btn[data-cycle="lifetime"]');
+            if (b && !b.classList.contains("is-active")) setTimeout(function () { b.click(); }, 50);
+        });
+        document.body.insertBefore(faixa, document.body.firstChild);
+    }
+    /* O vitalício em oferta: preço antigo riscado e o link de compra com o cupom. */
+    function ofertaCiclo(cycle) {
+        var vit = ofertaOn && cycle === "lifetime";
+        if (wasEl) wasEl.hidden = !vit;
+        if (linkEl) linkEl.setAttribute("href", vit ? linkBase + "&billing_cycle=lifetime&coupon=" + encodeURIComponent(OFERTA.cupom) : linkBase);
+    }
 
     /* A pilula ativa e sempre o MESMO no do DOM: ela desliza ate o botao
        escolhido em vez de sumir de um e nascer no outro. */
@@ -11811,6 +11857,7 @@
             var tr = (typeof t === "function") ? t : function (s) { return s; };
 
             numberEl.textContent = p.number;
+            ofertaCiclo(cycle);
             periodEl.textContent = tr(p.period);
             noteEl.textContent = tr(p.note);
             microEl.textContent = tr(p.micro);
@@ -14407,6 +14454,8 @@ let I18N_PT = {
 "Lifetime":"Vitalício",
 "/ year":"/ ano",
 "/ month":"/ mês",
+"Launch offer: until January 10 or the first 100 licenses.":"Oferta de lançamento: até 10 de janeiro ou as 100 primeiras licenças.",
+"Launch offer: Vox Pro lifetime for US$ 99 (normally US$ 149). Until January 10 or the first 100 licenses.":"Oferta de lançamento: Vox Pro vitalício por US$ 99 (normal US$ 149). Até 10 de janeiro ou as 100 primeiras licenças.",
 "one-time":"único",
 "Billed every month.":"Cobrado todo mês.",
 "Billed monthly. Cancel anytime.":"Cobrado mensalmente. Cancele quando quiser.",
