@@ -13380,6 +13380,8 @@ let I18N_EN={
 "Entrou neste card":"Added to this card",
 "sua fala entra aqui":"your words go here",
 "Fechar teclado":"Close keyboard",
+"Cópia restaurada: a nota saiu da Lixeira":"Backup restored: the note came back from the Trash",
+"Cópia restaurada: {n} notas saíram da Lixeira":"Backup restored: {n} notes came back from the Trash",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
 "Guias amigáveis nas funções avançadas (diarização, provedores, primeiros usos). Recomendado.":"Friendly guides on advanced features (diarization, providers, first uses). Recommended.",
 "Zerar o app":"Reset the app",
@@ -34066,8 +34068,15 @@ async function _restoreProject(data){
   // Restaurar centenas de notas trava a tela por dezenas de segundos (cada nota vira um card montado na hora).
   // Sem este aviso a pessoa acha que quebrou e fecha a aba no meio. O toast pinta antes do laco comecar.
   if((data.history||[]).length>60){toast(t('Restaurando a cópia… com muitas notas pode levar cerca de um minuto. Não feche esta aba.'));await new Promise(r=>setTimeout(r,80))}
+  // Assinatura → card. Card na Lixeira (data-del) também entra, mas restaurar
+  // a cópia TIRA ele da Lixeira em vez de pular (11/11/2026, achado do Kimi no
+  // WebKit: apagar uma nota, restaurar a cópia e ouvir "nada novo a adicionar",
+  // com a nota ainda presa na Lixeira).
+  const _cardDaSig=new Map();
   const existing=new Set([...document.querySelectorAll('.card:not(.proc-card)')].map(c=>{
-    const txt=c.querySelector('textarea')?.value||'';return (c.dataset.dt||'')+'|'+txt.slice(0,60);
+    const txt=c.querySelector('textarea')?.value||'';const sig=(c.dataset.dt||'')+'|'+txt.slice(0,60);
+    if(!_cardDaSig.has(sig)||!c.dataset.del)_cardDaSig.set(sig,c);
+    return sig;
   }));
   // pastas (merge sem duplicar id)
   try{
@@ -34097,10 +34106,14 @@ async function _restoreProject(data){
     if(typeof renderLearningPanel==='function')renderLearningPanel();
   }
   if(data.stats&&typeof updateStats==='function')updateStats();
-  let added=0,skipped=0;
+  let added=0,skipped=0,voltaram=0;
   for(const it of (data.history||[])){
     const sig=(it.dt||'')+'|'+(it.text||'').slice(0,60);
-    if(existing.has(sig)){skipped++;continue}
+    if(existing.has(sig)){
+      const c=_cardDaSig.get(sig);
+      if(c&&c.dataset.del){restaurarDaLixeira(c.id,true);voltaram++}else skipped++;
+      continue;
+    }
     existing.add(sig);
     // Fotos do backup (Etapa 5): o Blob veio embutido em base64 — grava de
     // volta no IndexedDB DESTE aparelho, com a MESMA chave, antes de montar
@@ -34131,7 +34144,8 @@ async function _restoreProject(data){
   applyFolderFilter&&applyFolderFilter();
   document.getElementById('expDrop')?.classList.remove('on');
   if(typeof closeTxOverlay==='function')closeTxOverlay();
-  if(added)toast(t('Cópia restaurada: {n} {itemword}{skipmsg}').replace('{n}',added).replace('{itemword}',t(added===1?'nota adicionada':'notas adicionadas')).replace('{skipmsg}',skipped?t(' ({n} já existiam)').replace('{n}',skipped):''));
+  if(voltaram&&!added)toast(voltaram===1?t('Cópia restaurada: a nota saiu da Lixeira'):t('Cópia restaurada: {n} notas saíram da Lixeira').replace('{n}',voltaram));
+  else if(added)toast(t('Cópia restaurada: {n} {itemword}{skipmsg}').replace('{n}',added).replace('{itemword}',t(added===1?'nota adicionada':'notas adicionadas')).replace('{skipmsg}',skipped?t(' ({n} já existiam)').replace('{n}',skipped):''));
   else toast(t('ℹ️ Tudo dessa cópia já estava aqui — nada novo a adicionar'));
   // O arquivo das notas nao leva as chaves de API (elas tem arquivo proprio). Quem restaura num
   // endereco novo fica sem chave e sem saber por que; avisa depois do resultado principal.
