@@ -2143,8 +2143,10 @@ body.dio-fechado #cardsList,body.dio-fechado .empty-state,body.dio-fechado #empt
 .cons-r:focus-visible,.cons-link:focus-visible,.cons-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .cons-r-ok{background:#ff3b30;border-color:#ff3b30;color:#fff;align-items:center}
 .cons-r-pedir{border-style:dashed}
-.cons-aceite{margin:-6px 0 2px;font-size:12px;color:var(--text3);line-height:1.45}
-.cons-aceite a{color:inherit;text-decoration:underline}
+.cons-aceite{margin:-2px 0 2px;font-size:13px;color:var(--text2);line-height:1.45}
+.cons-aceite a{color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.cons-aviso-forte{background:rgba(255,59,48,.14);border:1px solid rgba(255,59,48,.45);font-weight:600}
+.cons-copiar{margin-top:8px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text);border-radius:999px;padding:7px 12px;font:600 13px var(--font);cursor:pointer}
 .cons-pe{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .cons-link{border:0;background:none;color:var(--text3);font:600 13px var(--font);padding:8px 2px;cursor:pointer;text-decoration:underline}
 .bbl-wrap+.cons-linha{margin:8px 14px 0}
@@ -13591,7 +13593,12 @@ let I18N_EN={
 "O Vox vai preparar a transcrição":"Vox will prepare the transcription",
 "Também funciona com vídeo que tenha áudio.":"Video with audio works too.",
 "⚠️ Solte um arquivo de áudio ou vídeo.":"⚠️ Drop an audio or video file.",
-"Termos de Uso":"Terms of Use","Política de Privacidade":"Privacy Policy",
+"Termos de Uso":"Terms of Use",
+"Em consultas, prefira um serviço que não treina com o áudio, ou desligue o treino na sua conta antes.":"In consultations, prefer a service that doesn't train on the audio, or turn training off in your account first.",
+"Copiar aviso pra mandar no chat":"Copy a notice to send in the chat",
+"Vou transcrever esta conversa no meu aparelho para as minhas anotações. Tudo bem para você?":"I'll transcribe this call on my device for my notes. Is that OK with you?",
+"Copiado. Cole no chat da chamada.":"Copied. Paste it in the call chat.",
+"Fatos conferidos nas páginas oficiais em {d}. As políticas mudam: confira no site do serviço.":"Facts checked on the official pages on {d}. Policies change: check the service's site.","Política de Privacidade":"Privacy Policy",
 "🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 grátis</small>":"🟣 AssemblyAI<br><small style=\"font-weight:400;opacity:0.8\">US$50 free</small>",
 "<strong>Em poucos minutos:</strong> <ol> <li>Crie sua conta gratuita em <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>não pede cartão</strong>.</li> <li>No painel, copie sua chave de API.</li> <li>Cole aqui em cima — pronto.</li> </ol> <br> 💰 O crédito inicial de cerca de <strong>US$ 50</strong> costuma dar para <strong>muitas horas</strong> de uso. Só depois que ele acabar a AssemblyAI pede um cartão para continuar.<br> 🎯 <strong>Ideal para:</strong> quem quer começar de forma simples e sem gastar nada de início.":"<strong>In a few minutes:</strong> <ol> <li>Create your free account at <a href=\"https://www.assemblyai.com\" target=\"_blank\" rel=\"noopener noreferrer\">assemblyai.com</a> — <strong>no card required</strong>.</li> <li>In the dashboard, copy your API key.</li> <li>Paste it above — done.</li> </ol> <br> 💰 The initial credit of about <strong>US$50</strong> is usually enough for <strong>many hours</strong> of use. Only after it runs out will AssemblyAI ask for a card to continue.<br> 🎯 <strong>Great for:</strong> those who want to start simply without spending anything at first.",
 "💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/mês grátis</small>":"💠 Gladia<br><small style=\"font-weight:400;opacity:0.8\">10 h/month free</small>",
@@ -20930,6 +20937,8 @@ function _srvCardHtml(cat,c,p,emUso){
     `<div class="srv-pe">${_seloSigiloHtml(pr.sigilo)}${pr.site?`<a href="${escHtml(pr.site)}" target="_blank" rel="noopener noreferrer">${t('site oficial')}</a>`:''}<span>${m.precoTxt!==undefined?escHtml(m.precoTxt):_precoTxt(m)}</span></div>`+
     `<div class="srv-chave${emUso||aberto?' on':''}"><div data-slot="${escHtml(p)}"></div></div></div>`;
 }
+// Dia em que os fatos do comparativo foram conferidos nas páginas oficiais (🅺, 11/11/2026). Revisar a cada 3 meses.
+const COMPARATIVO_CONFERIDO='2026-11-11';
 function _srvRender(cat){
   const g=document.getElementById('gv-'+cat),parque=document.getElementById('srvParque');
   if(!g||!parque)return;
@@ -20944,7 +20953,7 @@ function _srvRender(cat){
   const _alfa=cat==='diarizacao';
   if(_alfa)resto.sort((a,b)=>String(a.c.prov.nome).localeCompare(String(b.c.prov.nome),'en',{sensitivity:'base'}));
   g.innerHTML=`<div class="srv-rotulo">${t('Em uso agora')}</div><div class="srv-slot">${_srvCardHtml(cat,emUso.c,emUso.p,true)}</div>`+
-    (resto.length?`<div class="srv-alt-t">${t('Outras opções')}</div>${_alfa?`<p class="srv-criterio">${escHtml(t('Em ordem alfabética. É informação, não recomendação: o Vox não ganha nada de nenhum deles. Confira o preço e o que cada um faz com o áudio na página do serviço antes de escolher.'))}</p>`:''}<div class="srv-alt">${resto.map(x=>_srvCardHtml(cat,x.c,x.p,false)).join('')}</div>`:'')+
+    (resto.length?`<div class="srv-alt-t">${t('Outras opções')}</div>${_alfa?`<p class="srv-criterio">${escHtml(t('Em ordem alfabética. É informação, não recomendação: o Vox não ganha nada de nenhum deles. Confira o preço e o que cada um faz com o áudio na página do serviço antes de escolher.'))} ${escHtml(t('Fatos conferidos nas páginas oficiais em {d}. As políticas mudam: confira no site do serviço.').replace('{d}',_fmtDataCurta(new Date(COMPARATIVO_CONFERIDO+'T12:00:00'))))}</p>`:''}<div class="srv-alt">${resto.map(x=>_srvCardHtml(cat,x.c,x.p,false)).join('')}</div>`:'')+
     `<div class="srv-fala" aria-live="polite"></div>`;
   Object.entries(d.no).forEach(([p,id])=>{
     const n=document.getElementById(id),slot=g.querySelector('[data-slot="'+p+'"]');
@@ -31234,7 +31243,9 @@ const CEREBROS={
       {id:'gladia',nome:t('Diarização Gladia'),selo:t('50 € de crédito, uma vez'),
        desc:t('Começa com 50 € de crédito, uma vez só, válidos por um ano. Por padrão a Gladia usa o seu áudio pra treinar os modelos dela, também no plano pago; dá pra desligar de graça no perfil (no Enterprise já vem desligado). Conferido nas páginas oficiais em 11/11/2026.')}
     ]},
-  di_pyannote:{nome:'pyannote.ai',ico:'🎯',cat:'diarizacao',sigilo:2,
+  // Escondido (12/11/2026, C3): a pyannote ainda nao funciona no Vox. Tirar o
+  // 'oculto' quando a integracao existir de verdade.
+  di_pyannote:{nome:'pyannote.ai',ico:'🎯',cat:'diarizacao',sigilo:2,oculto:true,
     usar:"setDiarProvider('pyannote',true,true)",site:'https://www.pyannote.ai',
     modelos:[
       {id:'pyannote',nome:t('Diarização pyannote'),selo:t('Não treina com o seu áudio'),
@@ -31345,6 +31356,7 @@ function _cerebrosLista(cat='texto',filtrarChave=true){
   const out=[];
   Object.entries(CEREBROS).forEach(([pid,p])=>{
     if(cat&&p.cat!==cat)return;
+    if(p.oculto)return; // servico ainda nao integrado: some de todas as listas
     // Cartão que só faz sentido se a pessoa já tem a chave (o xAI reaproveita a
     // da aba Transcrição). No ranking a gente mostra todos, por isso o filtro
     // é opcional.
@@ -38820,7 +38832,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElement
 // Rafa (11/11): "Fechar e gravar mesmo assim" grava e a nota registra que o
 // aviso foi mostrado; no Online o painel aparece sempre e sem
 // "Só eu falo".
-const TERMOS_DATA='2026-11-11'; // data da versão dos Termos que o painel aceita
+const TERMOS_DATA='2026-11-12'; // data da versão dos Termos que o painel aceita
 const CONS_MODOS=['consulta','entrevista','reuniao'];
 let _consOk=false,_consPendente=null;
 function _consOnline(){return cfg.audioSource==='both'||cfg.audioSource==='system'}
@@ -38867,9 +38879,9 @@ function _consAbrir(seguir){
     <div class="cons-cab"><b id="consT">${escHtml(t('Antes de gravar'))}</b><button type="button" class="cons-x" aria-label="${escHtml(t('Agora não'))}">×</button></div>
     <div class="cons-chips">${chip(t('Áudio'),tx)}${vz?chip(t('vozes'),vz):''}<span class="cons-chip cons-chip-vox">${escHtml(t('Vox não recebe'))}</span></div>
     <p class="cons-p">${escHtml(_consPelaPonte()?t('Sem a sua chave, o áudio passa pela ponte do Vox (veja a Privacidade). A nota fica neste aparelho.'):t('O Vox não vê o áudio e não guarda nada. A nota fica neste aparelho.'))}</p>
-    ${aviso?`<p class="cons-aviso">${escHtml(aviso)}</p>`:''}
+    ${aviso?`<p class="cons-aviso${consulta?' cons-aviso-forte':''}">${escHtml(aviso)}${consulta?' '+escHtml(t('Em consultas, prefira um serviço que não treina com o áudio, ou desligue o treino na sua conta antes.')):''}</p>`:''}
     ${online?`<p class="cons-aviso">${escHtml(t('Quem está na chamada pode estar sob leis mais rígidas: pergunte a todos.'))}</p>`:''}
-    <div class="cons-frase"><small>${escHtml(t('Frase para dizer'))}</small><span>${escHtml(t('Posso gravar a nossa conversa? Um serviço de IA vai transformar o áudio em texto para as minhas anotações.'))}</span></div>
+    <div class="cons-frase"><small>${escHtml(t('Frase para dizer'))}</small><span>${escHtml(t('Posso gravar a nossa conversa? Um serviço de IA vai transformar o áudio em texto para as minhas anotações.'))}</span>${online?`<br><button type="button" class="cons-copiar">${escHtml(t('Copiar aviso pra mandar no chat'))}</button>`:''}</div>
     <p class="cons-q">${escHtml(t('Quem está nesta gravação?'))}</p>
     <p class="cons-aceite">${escHtml(t('Ao escolher, você confirma o que marcou e aceita os'))} <a href="terms.html" target="_blank" rel="noopener">${escHtml(t('Termos de Uso'))}</a>.</p>
     <div class="cons-resps">${resp.map(r=>`<button type="button" class="cons-r" data-r="${r[0]}"><span>${escHtml(r[1])}</span>${r[2]?`<small>${escHtml(r[2])}</small>`:''}</button>`).join('')}
@@ -38883,6 +38895,13 @@ function _consAbrir(seguir){
   };
   ov.addEventListener('click',e=>{
     if(e.target===ov||e.target.closest('.cons-x,.cons-nao')){_consFechar();return}
+    // Online: a frase pronta pra quem está do outro lado (o Vox não entra na
+    // chamada; quem avisa é a pessoa). Só copia: não grava nem manda nada.
+    const cp=e.target.closest('.cons-copiar');
+    if(cp){const tx=t('Vou transcrever esta conversa no meu aparelho para as minhas anotações. Tudo bem para você?');
+      const ok=()=>{cp.textContent=t('Copiado. Cole no chat da chamada.');};
+      try{navigator.clipboard.writeText(tx).then(ok,()=>toast(tx))}catch(_){toast(tx)}
+      return}
     const b=e.target.closest('[data-r]');if(!b)return;
     const r=b.dataset.r;
     if(r==='sem'){escolher('sem',null);return}
@@ -41639,7 +41658,7 @@ const BRAIN_CATS=[
   {key:'ia_texto',cfgField:'txtProvider',setter:'setTxtProvider',icoKey:'messageCircle',
     opts:[['groq','Groq'],['openai','OpenAI'],['custom',t('Personalizado')]]},
   {key:'diarizacao',cfgField:'diarProvider',setter:'setDiarProvider',icoKey:'users',cls:'cat-diar',
-    opts:[['assemblyai','AssemblyAI'],['gladia','Gladia'],['pyannote','Pyannote'],['openai','OpenAI']]}
+    opts:[['assemblyai','AssemblyAI'],['gladia','Gladia'],['openai','OpenAI']]} // pyannote fora ate funcionar (C3)
 ];
 // Qual linha acabou de girar e pra que lado, pra molinha animar só ela.
 // Zerado assim que o painel usa (uma animação por giro, não por render).
