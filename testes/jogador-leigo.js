@@ -81,7 +81,12 @@ function servidor() {
     ok(dica === 'painel', 'uma dica aponta o Painel (' + dica + ')');
     if (dica) { await foto('dica-painel'); await page.click('#dicaBalao .dica-ok'); }
     // 3. Grava sem escolher ninguém, como o leigo faria
-    await page.click('#btnRec'); await page.waitForTimeout(2500);
+    await page.click('#btnRec'); await page.waitForTimeout(700);
+    // Antes de gravar (consentimento, 11/11/2026): em Consulta a folha pergunta
+    // quem está na gravação, com o aceite dos Termos à vista. O leigo responde.
+    ok(await ver(() => !!document.querySelector('#consOv .cons-aceite a[href="terms.html"]') && !isRec), 'antes de gravar uma consulta, a folha pergunta quem está na gravação (com o aceite dos Termos) e ainda não grava');
+    await foto('antes-de-gravar');
+    await page.getByText('Todos aqui concordaram', { exact: true }).click(); await page.waitForTimeout(2500);
     ok(await ver(() => document.getElementById('encOv')?.classList.contains('on')), 'gravando uma consulta, abre a tela de atendimento');
     await foto('tela-atendimento');
     // Não sabe para que serve a estrela: toca no "?" ao lado dela.
