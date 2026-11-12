@@ -10741,7 +10741,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.12.2';
+const VOX_VERSION='2026.11.12.3';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -14238,6 +14238,10 @@ let I18N_EN={
 "Seu plano: grátis · veja o que o Pro libera":"Your plan: free · see what Pro unlocks",
 "Sim, desativar aqui":"Yes, deactivate here",
 "US$ 6 por mês · US$ 59 por ano · US$ 149 uma vez só":"US$ 6 a month · US$ 59 a year · US$ 149 once",
+"US$ 6 por mês · US$ 59 por ano":"US$ 6 a month · US$ 59 a year",
+"US$ 99 uma vez só":"US$ 99 once",
+"Vitalício por US$ 99":"Lifetime for US$ 99",
+"Oferta de lançamento: vitalício por US$ 99 em vez de US$ 149, até 10 de janeiro ou as 100 primeiras licenças.":"Launch offer: lifetime for US$ 99 instead of US$ 149, until January 10 or the first 100 licenses.",
 "Validade":"Valid",
 "Você está no plano grátis, e ele continua grátis pra sempre. O Pro é pra quando o Vox já faz parte do seu dia.":"You're on the free plan, and it stays free forever. Pro is for when Vox is already part of your day.",
 "Vox Pro ativo":"Vox Pro active",
@@ -15613,6 +15617,12 @@ function voxPro(){return _proLicencaAtiva()||_presenteAtivo()}
 // Desconto pra quem assinar durante o presente: um cupom criado no Freemius.
 // Vazio = o app não mostra desconto nenhum (nunca prometer cupom que não existe).
 const VOX_CUPOM_PRESENTE='';
+// Oferta de lançamento (PLANO_DIRETOR/lancamento/oferta-lancamento.md): vitalício
+// por US$ 99 com o cupom LAUNCH99, que no Freemius tem as mesmas datas e o limite
+// de 100. Fora das datas, a tela do Pro fica exatamente como antes.
+const VOX_OFERTA={cupom:'LAUNCH99',ini:Date.parse('2026-12-01T00:00:00-08:00'),fim:Date.parse('2027-01-10T23:59:59-08:00')};
+function _ofertaAtiva(){const n=Date.now();return !!VOX_OFERTA.cupom&&n>=VOX_OFERTA.ini&&n<=VOX_OFERTA.fim}
+function _checkoutOfertaUrl(){return VOX_CHECKOUT+'&billing_cycle=lifetime&coupon='+encodeURIComponent(VOX_OFERTA.cupom)}
 const VOX_CUPOM_PCT=25;
 function _presente(){try{return JSON.parse(localStorage.getItem('vox_presente_pro')||'null')}catch(e){return null}}
 function _presenteAtivo(){const p=_presente();return !!(p&&p.fim&&Date.now()<Date.parse(p.fim))}
@@ -15816,8 +15826,10 @@ function _proRender(contexto,aviso,avisoErro){
     <p class="ob-p">${intro}</p>
     <ul class="pro-lista">${lista}</ul>
     ${cupom?`<p class="pro-oferta">${escHtml(t('Assine durante o presente e ganhe {p}% no primeiro ano.').replace('{p}',VOX_CUPOM_PCT))}</p>`:''}
-    <p class="pro-preco">${t('US$ 6 por mês · US$ 59 por ano · US$ 149 uma vez só')}</p>
+    ${_ofertaAtiva()?`<p class="pro-oferta">${t('Oferta de lançamento: vitalício por US$ 99 em vez de US$ 149, até 10 de janeiro ou as 100 primeiras licenças.')}</p>
+    <p class="pro-preco">${t('US$ 6 por mês · US$ 59 por ano')} · <s>US$&nbsp;149</s> ${t('US$ 99 uma vez só').replace('US$ ','US$&nbsp;')}</p>`:`<p class="pro-preco">${t('US$ 6 por mês · US$ 59 por ano · US$ 149 uma vez só')}</p>`}
     <a class="ob-btn pro-assinar" href="${_checkoutUrl(cupom)}" target="_blank" rel="noopener noreferrer">${cupom?escHtml(t('Assinar com {p}% no 1º ano').replace('{p}',VOX_CUPOM_PCT)):t('Assinar o Pro')}</a>
+    ${_ofertaAtiva()?`<a class="ob-btn-ghost pro-oferta-btn" href="${_checkoutOfertaUrl()}" target="_blank" rel="noopener noreferrer">${t('Vitalício por US$ 99')}</a>`:''}
     <a class="ob-btn-ghost pro-comparar" href="https://voxcharmai.com/?site#teste-gratis" target="_blank" rel="noopener noreferrer">${t('Comparar os planos')}</a>
     <div class="pro-sep"></div>
     <h3 class="pro-h3">${t('Já assinou?')}</h3>
