@@ -13407,7 +13407,7 @@ let I18N_EN={
 "Fechar teclado":"Close keyboard",
 "Groq, pela ponte do Vox":"Groq, through Vox's bridge",
 "Consentimento: \"{r}\"":"Consent: \"{r}\"",
-"Gravado sem responder ao aviso de consentimento":"Recorded without answering the consent notice",
+"Aviso de consentimento mostrado antes de gravar":"Consent notice shown before recording",
 "Termos de {d}":"Terms of {d}",
 "vozes":"voices",
 "O Vox não recebeu o áudio.":"Vox never received the audio.",
@@ -38718,14 +38718,17 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElement
 // ── ANTES DE GRAVAR: o consentimento (lote 14.5, proposta 3 "folha no botão de
 // gravar", escolhida pelo Rafa em 04/11; respostas e aceite pelo parecer de
 // 11/11/2026, lancamento/parecer-ranking-consentimento.md) ──
+// 12/11: a linha de quem grava sem responder virou neutra ("Aviso de
+// consentimento mostrado antes de gravar"), sugestão da 🅳 aceita pelo Rafa:
+// registra que o aviso apareceu sem escrever nada contra o próprio cliente.
 // Em vários lugares (11 a 13 estados americanos, por exemplo) todos na
 // conversa têm que concordar em ser gravados. Esse dever é de quem grava; o
 // Vox não proíbe nada, mas pergunta, deixa a frase pronta e registra NA NOTA
 // (só neste aparelho) o que a pessoa declarou. Tocar numa resposta também
 // aceita os Termos (aceite claro colado no botão, o que vale na justiça
 // americana; o link solto no rodapé, sozinho, costuma não valer). Decisões do
-// Rafa (11/11): "Fechar e gravar mesmo assim" grava e a nota diz "Gravado sem
-// responder ao aviso de consentimento"; no Online o painel aparece sempre e sem
+// Rafa (11/11): "Fechar e gravar mesmo assim" grava e a nota registra que o
+// aviso foi mostrado; no Online o painel aparece sempre e sem
 // "Só eu falo".
 const TERMOS_DATA='2026-11-11'; // data da versão dos Termos que o painel aceita
 const CONS_MODOS=['consulta','entrevista','reuniao'];
@@ -38751,7 +38754,7 @@ function _consDataTermos(){try{return new Date(TERMOS_DATA+'T12:00:00').toLocale
 function _consLinha(resp){
   const tx=_consNomeTx(),vz=_consNomeVozes();
   let quando='';try{quando=new Date().toLocaleString(getLocale(),{dateStyle:'short',timeStyle:'short'})}catch(e){quando=new Date().toISOString().slice(0,16)}
-  const cab=resp?t('Consentimento: "{r}"').replace('{r}',resp):t('Gravado sem responder ao aviso de consentimento');
+  const cab=resp?t('Consentimento: "{r}"').replace('{r}',resp):t('Aviso de consentimento mostrado antes de gravar');
   return [cab,quando,t('Termos de {d}').replace('{d}',_consDataTermos()),t('Áudio')+': '+tx+(vz?'; '+t('vozes')+': '+vz:''),_consPelaPonte()?'':t('O Vox não recebeu o áudio.')].filter(Boolean).join(' · ');
 }
 function _consFechar(){
