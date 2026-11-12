@@ -13457,7 +13457,7 @@ let I18N_EN={
 "Speechmatics (diarização)":"Speechmatics (speaker separation)",
 "Diarização Speechmatics":"Speechmatics speaker separation",
 "US$ 100 de crédito, uma vez":"US$ 100 credit, one time",
-"Começa com US$ 100 de crédito, sem cartão, válidos por 12 meses; depois, a partir de US$ 0,12 por hora, com a separação de vozes incluída. Não usa o seu áudio pra treinar, a não ser que você ligue isso no portal. O Vox usa o servidor europeu e pede pra apagar o trabalho assim que recebe o resultado. Conferido nas páginas oficiais em 11/11/2026.":"Starts with US$ 100 of credit, no card, valid for 12 months; then from US$ 0.12 per hour, with speaker separation included. It doesn't use your audio for training unless you turn that on in its portal. Vox uses the European server and asks it to delete the job as soon as it gets the result. Checked on the official pages on Nov 11, 2026.",
+"Começa com US$ 100 de crédito, sem cartão, válidos por 12 meses; depois, cerca de US$ 0,38 por hora no modelo mais preciso (o que o Vox usa), com a separação de vozes incluída. Não usa o seu áudio pra treinar, a não ser que você ligue isso no portal. O Vox usa o servidor europeu e pede pra apagar o trabalho assim que recebe o resultado. Conferido nas páginas oficiais em 11/11/2026.":"Starts with US$ 100 of credit, no card, valid for 12 months; then about US$ 0.38 per hour on the most accurate model (the one Vox uses), with speaker separation included. It doesn't use your audio for training unless you turn that on in its portal. Vox uses the European server and asks it to delete the job as soon as it gets the result. Checked on the official pages on Nov 11, 2026.",
 "Ainda não funciona no Vox":"Doesn't work in Vox yet",
 "<strong>Em poucos minutos:</strong> <ol> <li>Crie sua conta em <a href=\"https://portal.speechmatics.com\" target=\"_blank\" rel=\"noopener noreferrer\">portal.speechmatics.com</a> — não pede cartão.</li> <li>No portal, gere uma chave de API.</li> <li>Cole aqui em cima — pronto.</li> </ol> <br> 💰 Você ganha <strong>US$ 100 de crédito, uma vez só</strong>, válidos por 12 meses.<br> 🔒 Não usa o seu áudio pra treinar, a não ser que você ligue isso no portal.":"<strong>In a few minutes:</strong> <ol> <li>Create your account at <a href=\"https://portal.speechmatics.com\" target=\"_blank\" rel=\"noopener noreferrer\">portal.speechmatics.com</a> — no card needed.</li> <li>In the portal, create an API key.</li> <li>Paste it above — done.</li> </ol> <br> 💰 You get <strong>US$ 100 of credit, one time only</strong>, valid for 12 months.<br> 🔒 It doesn't use your audio for training unless you turn that on in the portal.",
 // [EQUIPE C] traduções novas entram ACIMA desta linha
@@ -31196,8 +31196,8 @@ const CEREBROS={
   di_speechmatics:{nome:'Speechmatics',ico:'🔊',cat:'diarizacao',sigilo:2,
     usar:"setDiarProvider('speechmatics',true,true)",site:'https://www.speechmatics.com',
     modelos:[
-      {id:'speechmatics',nome:t('Diarização Speechmatics'),selo:t('US$ 100 de crédito, uma vez'),porHora:0.12,
-       desc:t('Começa com US$ 100 de crédito, sem cartão, válidos por 12 meses; depois, a partir de US$ 0,12 por hora, com a separação de vozes incluída. Não usa o seu áudio pra treinar, a não ser que você ligue isso no portal. O Vox usa o servidor europeu e pede pra apagar o trabalho assim que recebe o resultado. Conferido nas páginas oficiais em 11/11/2026.')}
+      {id:'speechmatics',nome:t('Diarização Speechmatics'),selo:t('US$ 100 de crédito, uma vez'),porHora:0.38,
+       desc:t('Começa com US$ 100 de crédito, sem cartão, válidos por 12 meses; depois, cerca de US$ 0,38 por hora no modelo mais preciso (o que o Vox usa), com a separação de vozes incluída. Não usa o seu áudio pra treinar, a não ser que você ligue isso no portal. O Vox usa o servidor europeu e pede pra apagar o trabalho assim que recebe o resultado. Conferido nas páginas oficiais em 11/11/2026.')}
     ]},
   di_openai:{nome:'OpenAI',ico:'🤖',cat:'diarizacao',sigilo:2,
     usar:"setDiarProvider('openai',true,true)",site:'https://platform.openai.com',
@@ -38087,7 +38087,11 @@ async function doDiarizeSpeechmatics(file,durSec,fromRec,sn,mode){
   let id='';
   try{
     setPL(pid,t('Enviando áudio…'));
-    const conf={type:'transcription',transcription_config:{language:cfg.lang||'auto',diarization:'speaker'}};
+        // operating_point 'enhanced': o modelo mais preciso dela. No ranking
+    // independente (Artificial Analysis, inglês) o Enhanced erra um pouco menos
+    // que o Whisper large-v3; os mais baratos (Standard, Melia) empatam ou ficam
+    // atrás. Regra do Rafa (12/11): só serve se for igual ou melhor que o Whisper.
+    const conf={type:'transcription',transcription_config:{language:cfg.lang||'auto',diarization:'speaker',operating_point:'enhanced'}};
     const fd=new FormData();fd.append('data_file',file);fd.append('config',JSON.stringify(conf));
     const sub=await fetch(SPX_API+'/jobs/',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd});
     if(!sub.ok){const e=await sub.json().catch(()=>({}));throw new Error(t('Submit falhou:')+' '+(e.detail||e.error||sub.status))}
