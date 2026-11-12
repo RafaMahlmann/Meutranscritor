@@ -10775,7 +10775,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.11.1';
+const VOX_VERSION='2026.11.12.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -31156,7 +31156,9 @@ const CEREBROS={
       {id:'gladia',nome:t('Diarização Gladia'),selo:t('50 € de crédito, uma vez'),
        desc:t('Começa com 50 € de crédito, uma vez só, válidos por um ano. Por padrão a Gladia usa o seu áudio pra treinar os modelos dela, também no plano pago; dá pra desligar de graça no perfil (no Enterprise já vem desligado). Conferido nas páginas oficiais em 11/11/2026.')}
     ]},
-  di_pyannote:{nome:'pyannote.ai',ico:'🎯',cat:'diarizacao',sigilo:2,
+  // Escondido (12/11/2026, C3): a pyannote ainda nao funciona no Vox. Tirar o
+  // 'oculto' quando a integracao existir de verdade.
+  di_pyannote:{nome:'pyannote.ai',ico:'🎯',cat:'diarizacao',sigilo:2,oculto:true,
     usar:"setDiarProvider('pyannote',true,true)",site:'https://www.pyannote.ai',
     modelos:[
       {id:'pyannote',nome:t('Diarização pyannote'),selo:t('Não treina com o seu áudio'),
@@ -31267,6 +31269,7 @@ function _cerebrosLista(cat='texto',filtrarChave=true){
   const out=[];
   Object.entries(CEREBROS).forEach(([pid,p])=>{
     if(cat&&p.cat!==cat)return;
+    if(p.oculto)return; // servico ainda nao integrado: some de todas as listas
     // Cartão que só faz sentido se a pessoa já tem a chave (o xAI reaproveita a
     // da aba Transcrição). No ranking a gente mostra todos, por isso o filtro
     // é opcional.
@@ -41549,7 +41552,7 @@ const BRAIN_CATS=[
   {key:'ia_texto',cfgField:'txtProvider',setter:'setTxtProvider',icoKey:'messageCircle',
     opts:[['groq','Groq'],['openai','OpenAI'],['custom',t('Personalizado')]]},
   {key:'diarizacao',cfgField:'diarProvider',setter:'setDiarProvider',icoKey:'users',cls:'cat-diar',
-    opts:[['assemblyai','AssemblyAI'],['gladia','Gladia'],['pyannote','Pyannote'],['openai','OpenAI']]}
+    opts:[['assemblyai','AssemblyAI'],['gladia','Gladia'],['openai','OpenAI']]} // pyannote fora ate funcionar (C3)
 ];
 // Qual linha acabou de girar e pra que lado, pra molinha animar só ela.
 // Zerado assim que o painel usa (uma animação por giro, não por render).
