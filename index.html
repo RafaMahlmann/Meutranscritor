@@ -14242,6 +14242,11 @@ let I18N_EN={
 "Assinar o Pro":"Get Pro",
 "Ativando…":"Activating…",
 "Ativar neste aparelho":"Activate on this device",
+"Aparelhos":"Devices",
+"{x} de {y} em uso":"{x} of {y} in use",
+"{x} em uso, sem limite":"{x} in use, no limit",
+"Este aparelho":"This device",
+"Nome deste aparelho (opcional), ex.: iPhone da Ana":"Name for this device (optional), e.g. Ana's iPhone",
 "Cole a chave de licença que chegou no seu e-mail.":"Paste the license key that arrived in your email.",
 "Conferido agora: está tudo certo.":"Checked just now: all good.",
 "Conferir agora":"Check now",
@@ -14252,7 +14257,7 @@ let I18N_EN={
 "Diarização sem limite no mês":"Unlimited speaker separation every month",
 "Essa chave não foi reconhecida. Confira se copiou inteira, começando por sk_.":"That key wasn't recognized. Check that you copied all of it, starting with sk_.",
 "Essa licença foi cancelada.":"That license was cancelled.",
-"Essa licença já está no número máximo de aparelhos. Desative em um deles (Vox Pro → Desativar neste aparelho) e tente de novo.":"That license is already on its maximum number of devices. Deactivate it on one of them (Vox Pro → Deactivate on this device) and try again.",
+"Essa licença já está no número máximo de aparelhos. Desative em um deles (Vox Pro → Desativar neste aparelho) e tente de novo. Se a licença é de um time, peça a quem comprou pra liberar um aparelho no portal do Freemius (users.freemius.com).":"That license is already on its maximum number of devices. Deactivate it on one of them (Vox Pro → Deactivate on this device) and try again. If it is a team license, ask the person who bought it to free up a device in the Freemius portal (users.freemius.com).",
 "Essa licença venceu. Renove pelo link do e-mail do Freemius e tente de novo.":"That license has expired. Renew it through the link in the Freemius email and try again.",
 "Exportar o calendário pro Google ou Apple (.ics)":"Export the calendar to Google or Apple (.ics)",
 "Gravação sem limite diário, que nunca encolhe":"Recording with no daily limit, never shrinks",
@@ -15704,7 +15709,23 @@ async function _presenteTalvezComecar(){
   localStorage.setItem('vox_presente_pro',JSON.stringify({ini:ini.toISOString(),fim:fim.toISOString(),dias}));
   _medir('presente_inicio');
   _proAtualizarMenu();
-  setTimeout(()=>_presenteModal('comecou'),1200);
+  // O aviso não abre mais logo depois da 1ª gravação (cobria os botões de
+  // Conversar/Transformar do card novo): espera a primeira lente dar certo,
+  // ou a próxima vez que o app abrir. O presente já vale desde agora.
+  localStorage.setItem('vox_presente_aviso_pendente','1');
+}
+// Mostra o aviso "Você ganhou N dias de Pro" que ficou guardado, se ainda vale.
+function _presenteAvisoPendente(espera){
+  if(localStorage.getItem('vox_presente_aviso_pendente')!=='1')return;
+  if(!_presenteAtivo()||_proLicencaAtiva()){localStorage.removeItem('vox_presente_aviso_pendente');return}
+  setTimeout(()=>{
+    if(localStorage.getItem('vox_presente_aviso_pendente')!=='1')return;
+    // Outro aviso aberto (cortesia, Vox Pro): fica pra próxima lente ou abertura.
+    const ov=document.getElementById('cortesiaOverlay'),pro=document.getElementById('proOverlay');
+    if((ov&&ov.style.display==='flex')||(pro&&pro.style.display==='flex'))return;
+    localStorage.removeItem('vox_presente_aviso_pendente');
+    _presenteModal('comecou');
+  },espera||0);
 }
 // comecou · acabando (faltam 2 dias) · acabou
 function _presenteModal(tipo){
@@ -15734,6 +15755,7 @@ function _presenteModal(tipo){
 // Na abertura: avisa uma vez quando faltam 2 dias, e uma vez quando acabou.
 function _presenteConferir(){
   const p=_presente();if(!p||_proLicencaAtiva())return;
+  if(localStorage.getItem('vox_presente_aviso_pendente')==='1'){_presenteAvisoPendente(0);return}
   if(_presenteAtivo()){
     if(_presenteDiasRestantes()<=2&&localStorage.getItem('vox_presente_aviso2')!=='1'){localStorage.setItem('vox_presente_aviso2','1');_presenteModal('acabando')}
   }else if(localStorage.getItem('vox_presente_avisofim')!=='1'){
@@ -15747,7 +15769,12 @@ function _licencaUid(){
   if(!/^[a-f0-9]{32}$/.test(u)){const b=new Uint8Array(16);crypto.getRandomValues(b);u=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem('vox_licenca_uid',u)}
   return u;
 }
-function _nomeAparelho(){
+// Nome que a pessoa deu a este aparelho ao ativar (ex.: "iPhone da Ana"): é o
+// que o dono de uma licença de time vê no portal do Freemius pra saber qual é qual.
+function _nomeAparelhoLimpo(n){return String(n||'').replace(/[\u0000-\u001f\u007f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,60)}
+function _nomeAparelho(dado){
+  const nome=_nomeAparelhoLimpo(dado);
+  if(nome)return 'Vox · '+nome;
   const ua=navigator.userAgent;
   const so=/iPad/.test(ua)?'iPad':/iPhone/.test(ua)?'iPhone':/Android/.test(ua)?'Android':/Mac/.test(ua)?'Mac':/Windows/.test(ua)?'Windows':/Linux/.test(ua)?'Linux':'';
   const nav=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)?'Safari':'';
@@ -15763,13 +15790,13 @@ async function _fs(caminho,opts={}){
   }catch(e){if(!e.http)e.codigo='rede';throw e}
   finally{clearTimeout(tm)}
 }
-async function ativarLicenca(chave){
+async function ativarLicenca(chave,nome){
   // Copiada do e-mail, a chave às vezes vem com espaço ou quebra de linha no meio.
   chave=String(chave||'').replace(/\s+/g,'');
   if(chave.length>32){const e=new Error('');e.codigo='license_key_too_long';throw e}
   const uid=_licencaUid();
-  const j=await _fs('/licenses/activate.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({license_key:chave,uid,title:_nomeAparelho()})});
-  _licencaSalvar({chave,uid,install_id:String(j.install_id||''),plano:j.license_plan_name||'',plano_id:String(j.license_plan_id||''),pricing_id:String(j.license_pricing_id||''),expira:null,cancelada:false,ativada_em:new Date().toISOString(),conferida_em:null});
+  const j=await _fs('/licenses/activate.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({license_key:chave,uid,title:_nomeAparelho(nome)})});
+  _licencaSalvar({chave,uid,nome:_nomeAparelhoLimpo(nome),install_id:String(j.install_id||''),plano:j.license_plan_name||'',plano_id:String(j.license_plan_id||''),pricing_id:String(j.license_pricing_id||''),expira:null,cancelada:false,ativada_em:new Date().toISOString(),conferida_em:null});
   // A ativação não diz quando vence — a conferência diz. Se ela falhar agora,
   // o Pro já vale (a ativação deu certo) e a próxima conferência completa.
   await conferirLicenca().catch(()=>{});
@@ -15782,6 +15809,8 @@ async function conferirLicenca(){
     const j=await _fs('/installs/'+encodeURIComponent(l.install_id)+'/license.json'+q);
     l.expira=j.expiration||null;l.cancelada=!!j.is_cancelled;l.conferida_em=new Date().toISOString();delete l.motivo;
     if(j.plan_id)l.plano_id=String(j.plan_id);
+    // Quantos aparelhos a licença aceita (quota; vazio = sem limite) e quantos já usam.
+    if(typeof j.activated==='number'){l.aparelhos=j.activated;l.aparelhos_max=typeof j.quota==='number'?j.quota:null}
     _licencaSalvar(l);
   }catch(e){
     // O Freemius respondeu que esta licença não vale mais aqui (reembolso,
@@ -15835,6 +15864,8 @@ function _proRender(contexto,aviso,avisoErro){
       <div class="pro-ficha">
         <div><span>${t('Plano')}</span><b>${escHtml(l.plano&&l.plano.toLowerCase()!=='pro'?('Pro · '+l.plano):'Pro')}</b></div>
         <div><span>${t('Validade')}</span><b>${e?escHtml(t('até {d}').replace('{d}',_fmtDataCurta(e))):t('vitalício, não vence')}</b></div>
+        ${typeof l.aparelhos==='number'?`<div><span>${t('Aparelhos')}</span><b>${escHtml(l.aparelhos_max?t('{x} de {y} em uso').replace('{x}',l.aparelhos).replace('{y}',l.aparelhos_max):t('{x} em uso, sem limite').replace('{x}',l.aparelhos))}</b></div>`:''}
+        ${l.nome?`<div><span>${t('Este aparelho')}</span><b>${escHtml(l.nome)}</b></div>`:''}
         ${ativ?`<div><span>${t('Neste aparelho desde')}</span><b>${escHtml(_fmtDataCurta(ativ))}</b></div>`:''}
         ${conf?`<div><span>${t('Conferido em')}</span><b>${escHtml(_fmtDataCurta(conf))}</b></div>`:''}
       </div>
@@ -15866,6 +15897,7 @@ function _proRender(contexto,aviso,avisoErro){
     <h3 class="pro-h3">${t('Já assinou?')}</h3>
     <p class="ob-p">${t('Cole a chave de licença que chegou no seu e-mail.')}</p>${antiga}${msg}
     <input type="text" class="ob-key" id="proChave" placeholder="sk_…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <input type="text" class="ob-key" id="proNomeAparelho" maxlength="60" placeholder="${escHtml(t('Nome deste aparelho (opcional), ex.: iPhone da Ana'))}" autocomplete="off" spellcheck="false">
     <button class="ob-btn" id="proAtivarBtn" onclick="_proAtivar()">${t('Ativar neste aparelho')}</button>
     <p class="ob-note">${t('A chave vai do seu aparelho direto para o Freemius, a loja que vende o Vox. Não passa por nós.')}</p>
     <button class="ob-btn-ghost" onclick="fecharVoxPro()">${t('Fechar')}</button>`;
@@ -15879,24 +15911,25 @@ function _proErroTexto(e){
   if(c==='invalid_license_key')return t('Essa chave não foi reconhecida. Confira se copiou inteira, começando por sk_.');
   // license_utilized: o código que o Freemius manda de verdade quando a cota
   // de aparelhos acabou (visto no teste real de 29/09/2026 — não é "limit").
-  if(/limit|quota|activations|utilized/.test(c))return t('Essa licença já está no número máximo de aparelhos. Desative em um deles (Vox Pro → Desativar neste aparelho) e tente de novo.');
+  if(/limit|quota|activations|utilized/.test(c))return t('Essa licença já está no número máximo de aparelhos. Desative em um deles (Vox Pro → Desativar neste aparelho) e tente de novo. Se a licença é de um time, peça a quem comprou pra liberar um aparelho no portal do Freemius (users.freemius.com).');
   if(/expired/.test(c))return t('Essa licença venceu. Renove pelo link do e-mail do Freemius e tente de novo.');
   if(/cancel/.test(c))return t('Essa licença foi cancelada.');
   return t('O Freemius recusou a ativação: {m}').replace('{m}',e.message||c);
 }
 async function _proAtivar(){
   const inp=document.getElementById('proChave'),btn=document.getElementById('proAtivarBtn');
-  const chave=(inp?.value||'').trim();
+  const chave=(inp?.value||'').trim(),nome=(document.getElementById('proNomeAparelho')?.value||'').trim();
   if(!chave){_proRender(_proContexto,t('Cole a chave primeiro.'),true);return}
   if(btn){btn.disabled=true;btn.textContent=t('Ativando…')}
   try{
-    await ativarLicenca(chave);
+    await ativarLicenca(chave,nome);
     _medir('assinou');
     _proRender('',t('Pronto: o Vox Pro está ativo neste aparelho.'));
     toast(t('Vox Pro ativo. Obrigado!'));
   }catch(e){
     _proRender(_proContexto,_proErroTexto(e),true);
     const i2=document.getElementById('proChave');if(i2)i2.value=chave;
+    const n2=document.getElementById('proNomeAparelho');if(n2)n2.value=nome;
   }
 }
 async function _proConferir(){
@@ -45122,6 +45155,7 @@ async function runLens(id,lensKey,focus='',sel=null,opts=null){
       }
       pushCardHistory(id);ta.value=novoTexto;autoR(ta);updateFooter(id);saveHistory();
       toast(L.label+' '+t('aplicado! Ctrl+Z desfaz.'));
+      _presenteAvisoPendente(2500);
     }else{
       const mode=card.dataset.mode||'livre';
       if(lensKey==='traduzir'&&(result||'').trim().toLowerCase()===(text||'').trim().toLowerCase()){
@@ -45145,6 +45179,7 @@ async function runLens(id,lensKey,focus='',sel=null,opts=null){
       toastDesfazer(t('{x} pronto: virou um card novo, no topo.').replace('{x}',L.label),()=>_cardIrAte(novo),t('Ir até lá'));
       try{_truque('transformar')}catch(e){}
       if(viaCortesia&&_cortesiaLenteUltima)_cortesiaNotaUltima(novo,'lente');
+      _presenteAvisoPendente(2500);
     }
   }catch(e){
     if(e&&e.cortesia){_cortesiaLenteAcabouModal(e.cortesia);return}
