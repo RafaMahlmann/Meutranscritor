@@ -104,8 +104,8 @@ Desde 13/11/2026 o painel **não fica mais na ponte**: mora num Worker só dele,
 (302).
 
 **Como entrar:** abra `https://vox-painel.flordeplasma.workers.dev/painel`. O
-Cloudflare Access pede o e-mail e manda um **código de uso único** pra ele (ou
-"Entrar com o Google", se estiver ligado). Sem senha pra lembrar. Só entram os
+Cloudflare Access pede o login da conta Cloudflare (o mesmo que o cofre de senhas
+já preenche) ou, se estiver ligado, manda um **código de uso único** pro e-mail. Sem senha pra lembrar. Só entram os
 e-mails da lista.
 
 Duas fechaduras:
@@ -123,8 +123,9 @@ painel responde 503 ("painel desligado"). Publicar antes de ligar o Access não
 abre nada. Os três são **segredos** (o repositório é público), nunca no código nem
 no `.toml`. Prévias (`preview_urls`) estão desligadas no `vox-painel`.
 
-O formulário de ajustes só aceita envio feito do próprio painel (confere a
-origem). Ajuste salvo vale na hora, sem publicar nada.
+O formulário de ajustes só aceita envio feito do próprio painel: `Origin` igual
+à do painel (exata); sem `Origin`, `Referer` começando com o endereço do painel e
+`/`. Ajuste salvo vale na hora, sem publicar nada.
 
 O painel mostra os minutos de hoje, quantos aparelhos usaram, quantos chegaram ao
 fim, quantos conectaram a própria chave, os últimos 30 dias, "De onde vieram", o
@@ -142,14 +143,24 @@ Na pasta `ponte/`, com `npx wrangler login` feito:
 npx wrangler deploy -c wrangler.painel.toml
 ```
 
-1. No painel do Cloudflare: **Workers e Pages → vox-painel → Configurações →
-   Domínios e rotas**, no `workers.dev`: **ativar o Cloudflare Access**. Na
-   aplicação que ele cria (Zero Trust → Access → Aplicações), deixar a regra
-   **só com os e-mails do Rafa** e o login por **código de uso único** (One-time
-   PIN); Google é opcional.
-2. Anotar o **AUD** da aplicação (Application Audience Tag) e o **domínio do
-   time** (`<time>.cloudflareaccess.com`).
-3. Gravar os segredos (o wrangler pede o valor escondido; no Windows **não** use
+1. **Zero Trust ativo na conta** (dash.cloudflare.com → Zero Trust). O plano
+   **Free** ($0, até 50 pessoas) só ativa com um meio de pagamento cadastrado
+   (cobra só o que passar do grátis). Os botões "Set up Zero Trust" e "Manage
+   Access app" abrem outra aba; se o navegador bloquear, ir direto por
+   `dash.cloudflare.com/<conta>/one`.
+2. **Workers e Pages → vox-painel → aba Access → "Protect this Worker behind
+   Access" → All traffic** (cobre workers.dev, rotas e prévias). Política:
+   **"Cloudflare account"** (só quem é membro da conta Cloudflare). **Nunca "Email
+   domain" com gmail.com**: abriria a porta de fora pra qualquer Gmail. **Apply
+   Access.** Sem login, o endereço passa a mandar pra tela de entrada do Access.
+   - Opcional, código por e-mail (não vem ligado): Zero Trust → Integrations →
+     Identity providers → Add new → **One-time PIN**, e na aplicação do
+     `vox-painel` (Zero Trust → Access → Applications) uma política com os e-mails
+     do Rafa. O código vale 10 minutos e vem de `noreply@notify.cloudflare.com`.
+3. Na mesma aba Access, em **"Application values"**: o **AUD** (vai em
+   `POLICY_AUD`) e o JWKS `https://<time>.cloudflareaccess.com/cdn-cgi/access/certs`
+   (o `<time>.cloudflareaccess.com` vai em `TEAM_DOMAIN`).
+4. Gravar os segredos (o wrangler pede o valor escondido; no Windows **não** use
    `valor | wrangler ...`, o PowerShell 5.1 põe um caractere invisível no começo):
 
 ```bash
@@ -158,7 +169,9 @@ npx wrangler secret put POLICY_AUD -c wrangler.painel.toml
 npx wrangler secret put PAINEL_EMAILS -c wrangler.painel.toml
 ```
 
-`PAINEL_EMAILS`: os e-mails separados por vírgula (os mesmos da regra do Access).
+`PAINEL_EMAILS`: os e-mails separados por vírgula. Tem que ter o **e-mail da conta
+Cloudflare** (é o que vem no crachá de quem entra pelo login do Cloudflare) e os do
+código por e-mail, se ele estiver ligado.
 
 ## Colocar no ar
 

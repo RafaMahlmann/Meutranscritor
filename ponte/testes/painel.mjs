@@ -84,10 +84,20 @@ const valor = (k) => db.prepare('SELECT valor FROM ajustes WHERE chave = ?').get
 const antes = valor('por_aparelho');
 ok((await pede(await cracha(), '/painel/ajustes', { method: 'POST', body: form(), headers: { Origin: 'https://site-malvado.example' } })).status === 403, 'POST de ajustes vindo de outra origem: 403');
 ok((await pede(await cracha(), '/painel/ajustes', { method: 'POST', body: form(), headers: { Origin: 'null' } })).status === 403, 'POST de ajustes com Origin "null": 403');
+for (const [cab, nome] of [
+  [{ Origin: ENDERECO + '.malvado.example' }, 'Origin que só começa com o endereço do painel (…workers.dev.malvado.example)'],
+  [{ Origin: ENDERECO + ':8443' }, 'Origin com outra porta'],
+  [{ Referer: ENDERECO + '.malvado.example/painel' }, 'sem Origin, Referer de …workers.dev.malvado.example'],
+  [{ Referer: ENDERECO + '@malvado.example/' }, 'sem Origin, Referer com @ depois do endereço'],
+  [{}, 'sem Origin nem Referer'],
+]) ok((await pede(await cracha(), '/painel/ajustes', { method: 'POST', body: form(), headers: cab })).status === 403, `POST de ajustes: ${nome}: 403`);
 ok(valor('por_aparelho') === antes, '...e nada foi gravado');
 ok((await pede(null, '/painel/ajustes', { method: 'POST', body: form(), headers: { Origin: ENDERECO } })).status === 403, 'POST de ajustes sem crachá, mesmo da origem certa: 403');
 { const r = await pede(await cracha(), '/painel/ajustes', { method: 'POST', body: form(), headers: { Origin: ENDERECO } });
   ok(r.status === 303 && valor('por_aparelho') === 7, 'POST de ajustes do próprio painel, com crachá: grava e volta pro painel (303)'); }
+{ db.exec("DELETE FROM ajustes WHERE chave = 'por_aparelho'");
+  const r = await pede(await cracha(), '/painel/ajustes', { method: 'POST', body: form(), headers: { Referer: ENDERECO + '/painel' } });
+  ok(r.status === 303 && valor('por_aparelho') === 7, 'sem Origin, Referer do próprio painel: grava (303)'); }
 
 // Configuração faltando: fecha.
 for (const falta of ['TEAM_DOMAIN', 'POLICY_AUD', 'PAINEL_EMAILS']) {

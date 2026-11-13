@@ -192,8 +192,12 @@ async function paginaPainel(request, env, url) {
     if (request.method !== 'POST') return Response.redirect(`${url.origin}/painel`, 303);
     // Sem isto, outro site poderia enviar o formulário usando a sessão do
     // Access que o navegador já guardou. Só aceita envio feito do próprio painel.
-    const de = request.headers.get('Origin') || request.headers.get('Referer') || '';
-    if (!de.startsWith(url.origin)) return new Response('Envio recusado.\n', { status: 403 });
+    // Origem EXATA: "começa com" deixava passar https://<painel>.malvado.example.
+    // Sem Origin, vale o Referer, que tem que começar com a origem e uma barra.
+    const origem = request.headers.get('Origin');
+    const referer = request.headers.get('Referer') || '';
+    const doPainel = origem != null ? origem === url.origin : referer.startsWith(url.origin + '/');
+    if (!doPainel) return new Response('Envio recusado.\n', { status: 403 });
     const form = await request.formData();
     const novos = {
       ligada: form.get('ligada') ? 1 : 0,
