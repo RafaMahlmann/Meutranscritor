@@ -1,0 +1,21 @@
+# Painel da ponte do Vox — Worker próprio, atrás do Cloudflare Access (13/11/2026).
+# Publicar (na pasta ponte/):  npx wrangler deploy -c wrangler.painel.toml
+#
+# Segredos (NUNCA aqui, o repositório é público), gravados depois de ligar o Access:
+#   npx wrangler secret put TEAM_DOMAIN   -c wrangler.painel.toml   # ex.: time.cloudflareaccess.com
+#   npx wrangler secret put POLICY_AUD    -c wrangler.painel.toml   # o "AUD" que o Access mostra
+#   npx wrangler secret put PAINEL_EMAILS -c wrangler.painel.toml   # e-mails, separados por vírgula
+# Faltando qualquer um, o painel responde 503 ("painel desligado"): nada abre por engano.
+name = "vox-painel"
+main = "src/painel.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+# Sem endereços de prévia: cada versão teria um endereço próprio, e o painel só
+# deve existir num lugar, o que o Access protege. (O código já recusa sem crachá.)
+preview_urls = false
+
+[[d1_databases]]
+# O MESMO banco da ponte: o painel lê os números e grava os ajustes nele.
+binding = "DB"
+database_name = "vox-ponte"
+database_id = "d8db107c-3878-4d6c-85b7-bcbcb610d29e"

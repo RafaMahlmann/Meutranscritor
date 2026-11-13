@@ -98,15 +98,67 @@ Falha do Groq não gasta a cortesia da pessoa.
 
 ## Painel
 
-`https://<endereço-da-ponte>/painel`: pede a senha (`PAINEL_SENHA`). Cada endereço
-de internet pode errar a senha 10 vezes por dia; depois disso o painel recusa
-esse endereço até o dia seguinte, mesmo com a senha certa (desde 06/11/2026; teste
-em `testes/painel.mjs`, que roda no Node sem conta da Cloudflare). Use uma senha
-longa e aleatória. Mostra os
-minutos de hoje, quantos aparelhos usaram, quantos chegaram ao fim, quantos
-conectaram a própria chave, os últimos 30 dias, e os ajustes (liga/desliga,
-cortesias por aparelho, minutos por gravação, teto do dia, limite por
-endereço). Ajuste salvo vale na hora, sem publicar nada.
+Desde 13/11/2026 o painel **não fica mais na ponte**: mora num Worker só dele,
+`vox-painel` (`src/painel.js`, configuração `wrangler.painel.toml`), que usa o
+**mesmo banco** da ponte. A ponte pública só manda quem abrir `/painel` pra lá
+(302).
+
+**Como entrar:** abra `https://vox-painel.flordeplasma.workers.dev/painel`. O
+Cloudflare Access pede o e-mail e manda um **código de uso único** pra ele (ou
+"Entrar com o Google", se estiver ligado). Sem senha pra lembrar. Só entram os
+e-mails da lista.
+
+Duas fechaduras:
+1. **Cloudflare Access**, na frente do Worker: quem não está na regra nem chega
+   ao código.
+2. **O próprio código** confere o crachá que o Access põe em toda requisição
+   (`Cf-Access-Jwt-Assertion`): assinatura RS256 com as chaves de
+   `https://<TEAM_DOMAIN>/cdn-cgi/access/certs`, `aud` com o `POLICY_AUD`,
+   `iss` = `https://<TEAM_DOMAIN>`, validade, e o e-mail dentro de
+   `PAINEL_EMAILS`. Sem crachá válido: 403. Assim, se o Access for desligado ou
+   não cobrir algum endereço, o painel continua fechado.
+
+**Fecha por padrão:** faltando `TEAM_DOMAIN`, `POLICY_AUD` ou `PAINEL_EMAILS`, o
+painel responde 503 ("painel desligado"). Publicar antes de ligar o Access não
+abre nada. Os três são **segredos** (o repositório é público), nunca no código nem
+no `.toml`. Prévias (`preview_urls`) estão desligadas no `vox-painel`.
+
+O formulário de ajustes só aceita envio feito do próprio painel (confere a
+origem). Ajuste salvo vale na hora, sem publicar nada.
+
+O painel mostra os minutos de hoje, quantos aparelhos usaram, quantos chegaram ao
+fim, quantos conectaram a própria chave, os últimos 30 dias, "De onde vieram", o
+uso do app e os ajustes (liga/desliga, cortesias por aparelho, minutos por
+gravação, teto do dia, limite por endereço).
+
+Teste (Node 22+, sem conta da Cloudflare nem internet; gera a própria chave RSA no
+papel do Access): `node --no-warnings testes/painel.mjs`, na pasta `ponte/`.
+
+### Ligar o painel (uma vez)
+
+Na pasta `ponte/`, com `npx wrangler login` feito:
+
+```bash
+npx wrangler deploy -c wrangler.painel.toml
+```
+
+1. No painel do Cloudflare: **Workers e Pages → vox-painel → Configurações →
+   Domínios e rotas**, no `workers.dev`: **ativar o Cloudflare Access**. Na
+   aplicação que ele cria (Zero Trust → Access → Aplicações), deixar a regra
+   **só com os e-mails do Rafa** e o login por **código de uso único** (One-time
+   PIN); Google é opcional.
+2. Anotar o **AUD** da aplicação (Application Audience Tag) e o **domínio do
+   time** (`<time>.cloudflareaccess.com`).
+3. Gravar os segredos (o wrangler pede o valor escondido; no Windows **não** use
+   `valor | wrangler ...`, o PowerShell 5.1 põe um caractere invisível no começo):
+
+```bash
+npx wrangler secret put TEAM_DOMAIN -c wrangler.painel.toml
+npx wrangler secret put POLICY_AUD -c wrangler.painel.toml
+npx wrangler secret put PAINEL_EMAILS -c wrangler.painel.toml
+```
+
+`PAINEL_EMAILS`: os e-mails separados por vírgula (os mesmos da regra do Access).
 
 ## Colocar no ar
 
@@ -116,12 +168,12 @@ npx wrangler d1 create vox-ponte        # copie o database_id pro wrangler.toml
 npx wrangler d1 execute vox-ponte --remote --file schema.sql
 npx wrangler deploy
 npx wrangler secret put GROQ_KEY        # a chave do Groq (conta grátis, sem cartão)
-npx wrangler secret put PAINEL_SENHA    # a senha do painel
 npx wrangler secret put SAL_IP          # qualquer texto aleatório longo
 ```
 
 Depois, o endereço publicado (`https://vox-ponte.<conta>.workers.dev`) entra em
-`VOX_PONTE_URL`, no `index.html`.
+`VOX_PONTE_URL`, no `index.html`. O painel é publicado à parte (ver "Ligar o
+painel", acima).
 
 ## Endereços
 
@@ -132,7 +184,7 @@ Depois, o endereço publicado (`https://vox-ponte.<conta>.workers.dev`) entra em
 - `POST /v1/landing/evento` `{tipo:"visita",origem}` ou `{tipo:"clique",alvo:"gratis"|"assinar"}` → medição da landing (só aceita a origem voxcharmai.com).
 - `POST /v1/uso/eventos` `{id, eventos:[{e, dia}]}` (até 50 por pedido, 400 por código por dia) → medição opcional do app.
 - `POST /v1/uso/apagar` `{id}` → apaga tudo deste código (a pessoa desligou a medição).
-- `GET /painel` → painel (com senha).
+- `GET /painel` → redireciona (302) pro painel no `vox-painel` (`PAINEL_URL`, no `wrangler.toml`).
 
 Só aceita pedidos com `Origin` do app (`ORIGENS` no `wrangler.toml`) ou de
 `localhost`, para testes.
