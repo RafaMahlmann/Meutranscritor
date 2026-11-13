@@ -119,3 +119,14 @@ CREATE TABLE IF NOT EXISTS uso_eventos (
   n INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (dia, evento)
 );
+
+-- Erros do Groq por tipo (13/11/2026): por dia, onde (transcricao | lente) e o
+-- tipo (ocupado 429, formato 400, tamanho 413, chave 401/403, falha_groq 5xx,
+-- rede, vazia, http_<código>). Só contagem. A ponte cria sozinha se faltar.
+CREATE TABLE IF NOT EXISTS erros_groq (
+  dia TEXT NOT NULL,
+  onde TEXT NOT NULL,
+  tipo TEXT NOT NULL,
+  n INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (dia, onde, tipo)
+);

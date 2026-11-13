@@ -123,6 +123,22 @@ painel responde 503 ("painel desligado"). Publicar antes de ligar o Access não
 abre nada. Os três são **segredos** (o repositório é público), nunca no código nem
 no `.toml`. Prévias (`preview_urls`) estão desligadas no `vox-painel`.
 
+**Chave do Groq:** mora só na ponte. O painel pergunta pela ligação interna
+`PONTE` (Service Binding pro `vox-ponte`, porta `PonteParaPainel`), que só responde
+"tem chave: sim/não" e não é um endereço da internet. Por isso **a ponte é publicada
+antes do painel**. Se a ligação não responder, o painel diz isso, sem alarme falso.
+
+**Erros do Groq por tipo** (desde 13/11/2026, tabela `erros_groq`, criada sozinha,
+não apaga nada): por dia e por lugar (transcrição ou lente), quantos foram de cada
+tipo: ocupado (429), formato (400), tamanho (413), chave (401/403), falha do Groq
+(5xx), rede, resposta vazia. Só o número. O painel mostra um quadro e põe um
+**alerta vermelho no topo** se houve erro nos últimos 7 dias. Erros de antes dessa
+data aparecem como "sem tipo".
+
+**Nome do áudio:** o app manda `gravacao.webm` quando a gravação não tem nome, mas o
+Safari grava em MP4. Desde 13/11 a ponte manda pro Groq um nome que combina com o
+tipo do áudio (`gravacao.m4a`, `.ogg`...).
+
 O formulário de ajustes só aceita envio feito do próprio painel: `Origin` igual
 à do painel (exata); sem `Origin`, `Referer` começando com o endereço do painel e
 `/`. Ajuste salvo vale na hora, sem publicar nada.

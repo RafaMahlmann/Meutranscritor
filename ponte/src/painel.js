@@ -19,7 +19,7 @@
 // nunca no código: o repositório é público), responde 503 "painel desligado".
 import {
   LIMITES, USO_FUNIL, lerAjustes, hoje, esc, diaMenos, pessoasQueClicaram,
-  garantirTabelasLentes, garantirTabelasUso, garantirColunasPessoas, usoApagarVelhos,
+  garantirTabelasLentes, garantirTabelasUso, garantirColunasPessoas, usoApagarVelhos, garantirTabelaErros,
 } from './index.js';
 
 export default {
@@ -116,6 +116,81 @@ async function chavePublica(time, kid) {
 }
 
 // ── Painel ──────────────────────────────────────────────────────────────────
+
+// A chave do Groq mora só na ponte. O painel pergunta, pela ligação interna
+// PONTE (Service Binding, wrangler.painel.toml), só "tem chave: sim/não".
+// null = não deu pra perguntar (aí o painel diz isso, em vez de alarmar à toa).
+async function perguntaChave(env) {
+  try {
+    if (!env.PONTE || typeof env.PONTE.temChave !== 'function') return null;
+    return (await env.PONTE.temChave()) === true;
+  } catch { return null; }
+}
+
+// Erros do Groq: os tipos (tabela erros_groq, desde 13/11/2026) e o total de
+// cada dia (colunas `erros` antigas). A diferença é "sem tipo": erros de antes
+// da contagem por tipo.
+const DIAS_ALERTA = 7;
+const NOMES_ERRO = {
+  ocupado: 'Groq ocupado ou limite da conta grátis acabou (429)',
+  formato: 'Groq não aceitou o áudio ou o pedido: formato (400)',
+  tamanho: 'Arquivo grande demais pro Groq (413)',
+  chave: 'Groq recusou a chave (401/403)',
+  falha_groq: 'Falha do lado do Groq (5xx)',
+  rede: 'A ponte não conseguiu falar com o Groq (rede)',
+  vazia: 'Groq respondeu sem texto',
+  sem_tipo: 'Sem tipo (de antes de 13/11, quando só se contava o total)',
+};
+const nomeErro = (t) => NOMES_ERRO[t] || (t.startsWith('http_') ? `Outro código do Groq (${t.slice(5)})` : t);
+const ONDE = { transcricao: 'transcrição', lente: 'lente' };
+
+async function errosPainel(env, dia) {
+  await garantirTabelaErros(env);
+  const d30 = diaMenos(dia, 29);
+  const tipos = (await env.DB.prepare('SELECT dia, onde, tipo, n FROM erros_groq WHERE dia >= ? ORDER BY dia DESC, n DESC').bind(d30).all()).results || [];
+  const totT = (await env.DB.prepare('SELECT dia, erros FROM dias WHERE dia >= ? AND erros > 0').bind(d30).all()).results || [];
+  const totL = (await env.DB.prepare('SELECT dia, erros FROM lentes_dias WHERE dia >= ? AND erros > 0').bind(d30).all()).results || [];
+  const linhas = tipos.map((x) => ({ ...x }));
+  for (const [onde, tot] of [['transcricao', totT], ['lente', totL]]) {
+    for (const x of tot) {
+      const comTipo = tipos.filter((t) => t.dia === x.dia && t.onde === onde).reduce((s, t) => s + t.n, 0);
+      if (x.erros > comTipo) linhas.push({ dia: x.dia, onde, tipo: 'sem_tipo', n: x.erros - comTipo });
+    }
+  }
+  linhas.sort((a, b) => (a.dia < b.dia ? 1 : a.dia > b.dia ? -1 : b.n - a.n));
+  return { linhas, desde: diaMenos(dia, DIAS_ALERTA - 1) };
+}
+
+const brDia = (d) => String(d).split('-').reverse().join('/');
+const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+
+// Alerta vermelho no topo: um item por dia e por lugar, nos últimos 7 dias.
+function htmlAlertaErros(erros) {
+  const porDia = new Map();
+  for (const x of erros.linhas) {
+    if (x.dia < erros.desde) continue;
+    const k = `${x.dia}|${x.onde}`;
+    const g = porDia.get(k) || { dia: x.dia, onde: x.onde, n: 0, tipos: [] };
+    g.n += x.n; g.tipos.push(x); porDia.set(k, g);
+  }
+  if (!porDia.size) return '';
+  const itens = [...porDia.values()].map((g) => {
+    const oque = g.onde === 'lente' ? plural(g.n, 'lente recusada', 'lentes recusadas') : plural(g.n, 'transcrição recusada', 'transcrições recusadas');
+    const motivo = g.tipos.sort((a, b) => b.n - a.n).map((t) => `${esc(nomeErro(t.tipo))}: ${t.n}`).join('; ');
+    return `<li><strong>${oque} pelo Groq em ${esc(brDia(g.dia))}</strong> · ${motivo}</li>`;
+  }).join('');
+  return `<div class="alerta"><strong>Erros do Groq nos últimos ${DIAS_ALERTA} dias.</strong> Quem usou a cortesia nessas horas não recebeu o texto (e não perdeu a cortesia). Detalhes no quadro "Erros do Groq", mais abaixo.<ul>${itens}</ul></div>`;
+}
+
+function htmlErros(erros) {
+  const linhas = erros.linhas.map((x) => `<tr><td>${esc(brDia(x.dia))}</td><td>${esc(ONDE[x.onde] || x.onde)}</td><td style="text-align:left;white-space:normal">${esc(nomeErro(x.tipo))}</td><td>${x.n}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="vazio">Nenhum erro do Groq nos últimos 30 dias.</td></tr>';
+  return `<div class="card">
+  <h2>Erros do Groq (30 dias)</h2>
+  <div class="rolar"><table><thead><tr><th>Dia</th><th>Onde</th><th style="text-align:left">O que foi</th><th>Quantos</th></tr></thead><tbody>${linhas}</tbody></table></div>
+  <p class="leg" style="margin-top:12px">Só o tipo e a quantidade: nada da pessoa nem do áudio. "Ocupado" costuma passar sozinho. "Formato" repetido aponta pro jeito que algum navegador grava. "Chave" quer dizer trocar a chave do Groq na ponte.</p>
+</div>`;
+}
 
 // O que o painel mostra da medição.
 async function usoPainel(env, dia) {
@@ -241,7 +316,9 @@ async function paginaPainel(request, env, url) {
   const uso = await usoPainel(env, dia);
   const origens = (await env.DB.prepare("SELECT origem, SUM(n) AS n FROM landing_origens WHERE dia >= ? GROUP BY origem ORDER BY n DESC LIMIT 12")
     .bind(new Date(Date.now() - 3 * 3600e3 - 29 * 864e5).toISOString().slice(0, 10)).all()).results || [];
-  return new Response(htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, uso, salvo: url.searchParams.has('salvo'), temChave: !!env.GROQ_KEY }), {
+  const erros = await errosPainel(env, dia);
+  const temChave = await perguntaChave(env);
+  return new Response(htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, uso, erros, salvo: url.searchParams.has('salvo'), temChave }), {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
@@ -252,7 +329,7 @@ async function paginaPainel(request, env, url) {
   });
 }
 
-function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, uso, salvo, temChave }) {
+function htmlPainel({ aj, dia, hojeRow, dias, faixas, total, formaram, fim, landing, origens, lentesHoje, lentes30, uso, erros, salvo, temChave }) {
   const minHoje = Math.round((hojeRow.segundos || 0) / 60);
   const pct = aj.teto_minutos_dia ? Math.min(100, Math.round((minHoje / aj.teto_minutos_dia) * 100)) : 100;
   const p = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—');
@@ -299,7 +376,9 @@ ul{margin:6px 0 0;padding-left:20px}li{margin-bottom:4px}
 <h1>Painel da ponte do Vox</h1>
 <p class="sub">Transcrições por nossa conta · hoje é ${esc(br(dia))} (horário de Brasília)</p>
 ${salvo ? '<div class="ok">Ajustes salvos. Já estão valendo.</div>' : ''}
-${temChave ? '' : '<div class="alerta">A chave do Groq ainda não foi colocada na ponte. A cortesia fica desligada até lá.</div>'}
+${temChave === false ? '<div class="alerta">A chave do Groq ainda não foi colocada na ponte. A cortesia fica desligada até lá.</div>' : ''}
+${temChave === null ? '<div class="alerta">Não deu pra perguntar à ponte se a chave do Groq está lá (a ligação PONTE do painel não respondeu). O resto do painel está certo.</div>' : ''}
+${htmlAlertaErros(erros)}
 ${aj.ligada ? '' : '<div class="alerta">A cortesia está desligada. Ninguém novo recebe transcrição por nossa conta.</div>'}
 
 <div class="card">
@@ -348,6 +427,8 @@ ${htmlUso(uso)}
     <li>A maioria usa só 1 e some: o número não é o problema. É a primeira experiência.</li>
   </ul>
 </div>
+
+${htmlErros(erros)}
 
 <div class="card">
   <h2>Ajustes</h2>

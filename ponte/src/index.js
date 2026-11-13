@@ -70,6 +70,18 @@ const CAMPOS_DIA = new Set([
 const RE_APARELHO = /^[A-Za-z0-9_-]{16,64}$/;
 const RE_IDIOMA = /^[a-z]{2}$/;
 
+import { WorkerEntrypoint } from 'cloudflare:workers';
+
+// Porta interna pro painel (vox-painel), por Service Binding (13/11/2026). Não é
+// um endereço da internet: só um Worker da mesma conta, ligado a ela no
+// wrangler.painel.toml, consegue chamar. Responde só "tem chave: sim/não";
+// a chave do Groq nunca sai da ponte.
+export class PonteParaPainel extends WorkerEntrypoint {
+  async temChave() {
+    return !!this.env.GROQ_KEY;
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -178,7 +190,7 @@ async function transcrever(request, env, origem) {
   if (usadas >= cota) return recusar('esgotada', 402, 'recusa_esgotada', { restantes: 0 });
 
   const fd = new FormData();
-  fd.append('file', audio, audio.name || 'gravacao.webm');
+  fd.append('file', audio, nomeDoAudio(audio));
   fd.append('model', MODELO);
   fd.append('response_format', 'verbose_json');
   if (RE_IDIOMA.test(idioma)) fd.append('language', idioma);
@@ -186,12 +198,14 @@ async function transcrever(request, env, origem) {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.GROQ_KEY}` },
     body: fd,
-  });
-  if (!r.ok) {
+  }).catch(() => null);
+  if (!r || !r.ok) {
     // 429 do Groq = o limite dele acabou antes do nosso (ex.: o teto por hora).
-    // Não gasta a cortesia da pessoa: ela não recebeu nada.
-    await somarDia(env, dia, { erros: 1 })?.run();
-    return json({ ok: false, motivo: r.status === 429 ? 'ocupado' : 'falha', max_segundos: aj.max_segundos }, r.status === 429 ? 429 : 502, origem);
+    // Não gasta a cortesia da pessoa: ela não recebeu nada. Guarda o TIPO do
+    // erro (só o código, nada da pessoa), pro painel mostrar a causa.
+    await garantirTabelaErros(env);
+    await env.DB.batch([somarDia(env, dia, { erros: 1 }), somarErroGroq(env, dia, 'transcricao', tipoErroGroq(r))]);
+    return json({ ok: false, motivo: r?.status === 429 ? 'ocupado' : 'falha', max_segundos: aj.max_segundos }, r?.status === 429 ? 429 : 502, origem);
   }
   const res = await r.json();
   const texto = String(res.text || '').trim();
@@ -304,17 +318,19 @@ async function lente(request, env, origem) {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.GROQ_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: MODELO_TEXTO, messages, max_tokens: maxTokens, temperature }),
-  });
-  if (!r.ok) {
+  }).catch(() => null);
+  if (!r || !r.ok) {
     // Falha do Groq não gasta a lente da pessoa.
-    await somarLentesDia(env, dia, { erros: 1 }).run();
-    const motivo = r.status === 429 ? 'ocupado' : 'falha';
-    return json({ ok: false, motivo, error: { message: `cortesia_${motivo}` } }, r.status === 429 ? 429 : 502, origem);
+    await garantirTabelaErros(env);
+    await env.DB.batch([somarLentesDia(env, dia, { erros: 1 }), somarErroGroq(env, dia, 'lente', tipoErroGroq(r))]);
+    const motivo = r?.status === 429 ? 'ocupado' : 'falha';
+    return json({ ok: false, motivo, error: { message: `cortesia_${motivo}` } }, r?.status === 429 ? 429 : 502, origem);
   }
   const res = await r.json().catch(() => ({}));
   const texto = String(res?.choices?.[0]?.message?.content || '').trim();
   if (!texto) {
-    await somarLentesDia(env, dia, { erros: 1 }).run();
+    await garantirTabelaErros(env);
+    await env.DB.batch([somarLentesDia(env, dia, { erros: 1 }), somarErroGroq(env, dia, 'lente', 'vazia')]);
     return json({ ok: false, motivo: 'falha', error: { message: 'cortesia_falha' } }, 502, origem);
   }
   const restantes = Math.max(0, cota - usadas - 1);
@@ -538,6 +554,47 @@ async function landingEvento(request, env, origem) {
   }
   await env.DB.batch(stmts);
   return vazio();
+}
+
+// ── Erros do Groq por tipo (13/11/2026) ─────────────────────────────────────
+// Antes só se sabia "deu erro" (coluna `erros`). Agora fica também QUAL erro,
+// por dia: só o tipo e a quantidade, nada da pessoa nem do áudio. Tabela nova,
+// criada sozinha no primeiro uso (não apaga nem muda nada do que já existe).
+let _tabelaErrosOk = false;
+export async function garantirTabelaErros(env) {
+  if (_tabelaErrosOk) return;
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS erros_groq (
+    dia TEXT NOT NULL, onde TEXT NOT NULL, tipo TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (dia, onde, tipo))`).run();
+  _tabelaErrosOk = true;
+}
+// r = resposta do Groq, ou null quando nem deu pra falar com ele.
+export function tipoErroGroq(r) {
+  if (!r) return 'rede';
+  const s = r.status;
+  if (s === 429) return 'ocupado';
+  if (s === 400 || s === 415 || s === 422) return 'formato';
+  if (s === 413) return 'tamanho';
+  if (s === 401 || s === 403) return 'chave';
+  if (s >= 500) return 'falha_groq';
+  return 'http_' + (Number.isInteger(s) ? s : 0);
+}
+function somarErroGroq(env, dia, onde, tipo) {
+  return env.DB.prepare('INSERT INTO erros_groq (dia, onde, tipo, n) VALUES (?, ?, ?, 1) ON CONFLICT(dia, onde, tipo) DO UPDATE SET n = n + 1')
+    .bind(dia, onde, tipo);
+}
+
+// Nome do arquivo que vai pro Groq. O app manda "gravacao.webm" quando a
+// gravação não tem nome, mas o Safari grava em MP4: o Groq recebia um MP4
+// chamado .webm. Quando o tipo do áudio diz outra coisa, o nome segue o tipo.
+const EXT_POR_TIPO = [[/webm/, 'webm'], [/mp4|m4a|aac/, 'm4a'], [/ogg|opus/, 'ogg'], [/wav/, 'wav'], [/mpeg|mp3/, 'mp3'], [/flac/, 'flac']];
+export function nomeDoAudio(audio) {
+  const nome = String(audio.name || '');
+  const tipo = String(audio.type || '').toLowerCase();
+  const ext = (EXT_POR_TIPO.find(([re]) => re.test(tipo)) || [])[1];
+  const temExt = /\.[a-z0-9]{2,5}$/i.test(nome);
+  if (ext && (!temExt || nome === 'gravacao.webm')) return `gravacao.${ext}`;
+  return temExt ? nome : 'gravacao.webm';
 }
 
 // ── Utilidades ──────────────────────────────────────────────────────────────

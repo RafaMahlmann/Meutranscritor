@@ -19,9 +19,12 @@ const D1 = { prepare(sql) { let args = []; const st = { bind(...a) { args = a; r
 // Os arquivos de src/ são módulos do Worker (import/export); o Node só os lê
 // como módulos se a pasta disser isso. Copia pra uma pasta temporária que diz.
 const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'ponte-'));
-for (const f of fs.readdirSync(new URL('../src/', import.meta.url))) fs.copyFileSync(new URL('../src/' + f, import.meta.url), path.join(pasta, f));
+// O "cloudflare:workers" só existe no Cloudflare: aqui vira uma classe de mentira.
+for (const f of fs.readdirSync(new URL('../src/', import.meta.url))) fs.writeFileSync(path.join(pasta, f), fs.readFileSync(new URL('../src/' + f, import.meta.url), 'utf8')
+  .replace("import { WorkerEntrypoint } from 'cloudflare:workers';", 'class WorkerEntrypoint { constructor(ctx, env) { this.ctx = ctx; this.env = env; } }'));
 fs.writeFileSync(path.join(pasta, 'package.json'), '{"type":"module"}');
 const ponte = (await import('file://' + path.join(pasta, 'index.js'))).default;
+const modPonte = await import('file://' + path.join(pasta, 'index.js'));
 const painel = (await import('file://' + path.join(pasta, 'painel.js'))).default;
 
 // ── O "Access" de mentira: um par de chaves RSA e o endereço das chaves públicas.
@@ -31,7 +34,10 @@ const par = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulus
 const intruso = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['sign', 'verify']);
 const jwkPub = await crypto.subtle.exportKey('jwk', par.publicKey);
 let buscasChaves = 0;
-globalThis.fetch = async (u) => {
+let groqResponde = () => new Response(JSON.stringify({ text: 'oi', duration: 3 }), { headers: { 'Content-Type': 'application/json' } });
+let groqRecebeu = null;
+globalThis.fetch = async (u, init) => {
+  if (String(u) === 'https://groq.test/audio') { groqRecebeu = init.body instanceof FormData ? init.body.get('file') : null; return groqResponde(); }
   if (String(u) === `https://${TIME}/cdn-cgi/access/certs`) {
     buscasChaves++;
     return new Response(JSON.stringify({ keys: [{ kid: 'k1', kty: 'RSA', alg: 'RS256', use: 'sig', e: jwkPub.e, n: jwkPub.n }] }), { headers: { 'Content-Type': 'application/json' } });
@@ -49,7 +55,9 @@ async function cracha(mudar = {}, chave = par.privateKey) {
 }
 
 const ENDERECO = 'https://vox-painel.teste.workers.dev';
-const env = { DB: D1, TEAM_DOMAIN: TIME, POLICY_AUD: AUD, PAINEL_EMAILS: 'outro@exemplo.com, Rafa@Exemplo.com' };
+// A ligação PONTE de verdade: a classe da ponte, com a chave só no env da ponte.
+const ponteComChave = new modPonte.PonteParaPainel({}, { GROQ_KEY: 'gsk-segredo' });
+const env = { DB: D1, TEAM_DOMAIN: TIME, POLICY_AUD: AUD, PAINEL_EMAILS: 'outro@exemplo.com, Rafa@Exemplo.com', PONTE: ponteComChave };
 const pede = (jwt, caminho = '/painel', init = {}, e = env) => painel.fetch(new Request(ENDERECO + caminho, {
   ...init, headers: { ...(jwt ? { 'Cf-Access-Jwt-Assertion': jwt } : {}), ...(init.headers || {}) },
 }), e, {});
@@ -77,6 +85,17 @@ ok((await pede(await cracha({ dados: { email: undefined } }))).status === 403, '
   ok(r.headers.get('Cache-Control') === 'no-store' && r.headers.get('X-Frame-Options') === 'DENY', 'página não fica em cache e não abre dentro de outro site'); }
 ok((await pede(await cracha({ dados: { aud: 'aud-de-teste-0123456789abcdef' } }))).status === 200, 'aud como texto (não lista) também vale');
 ok((await pede(await cracha(), '/')).status === 302, 'raiz do painel leva a /painel (302)');
+
+// Chave do Groq: o painel pergunta à ponte e nunca vê a chave.
+const AVISO_CHAVE = 'A chave do Groq ainda não foi colocada na ponte';
+{ const html = await (await pede(await cracha())).text();
+  ok(!html.includes(AVISO_CHAVE) && !html.includes('gsk-segredo'), 'ponte com chave: sem o aviso falso, e a chave não aparece no painel'); }
+ok((await (await pede(await cracha(), '/painel', {}, { ...env, PONTE: new modPonte.PonteParaPainel({}, {}) })).text()).includes(AVISO_CHAVE), 'ponte sem chave: aviso vermelho da chave');
+{ const html = await (await pede(await cracha(), '/painel', {}, { ...env, PONTE: undefined })).text();
+  ok(!html.includes(AVISO_CHAVE) && html.includes('Não deu pra perguntar à ponte'), 'sem a ligação PONTE: diz que não deu pra perguntar (não alarma à toa)'); }
+{ const html = await (await pede(await cracha(), '/painel', {}, { ...env, PONTE: { temChave: async () => { throw new Error('fora'); } } })).text();
+  ok(html.includes('Não deu pra perguntar à ponte'), 'ligação PONTE com falha: mesma mensagem, painel abre'); }
+ok(Object.getOwnPropertyNames(modPonte.PonteParaPainel.prototype).join() === 'constructor,temChave', 'a porta interna da ponte só tem temChave (nada que devolva a chave)');
 
 // Ajustes: de outra origem, recusa; do próprio painel, grava.
 const form = () => { const f = new URLSearchParams({ ligada: '1', por_aparelho: '7', max_minutos: '2', teto_minutos_dia: '100', por_ip_dia: '20', lentes_por_aparelho: '3', lentes_dia: '50', pro_dias: '7' }); return f; };
@@ -123,5 +142,52 @@ ok((await naPonte('/')).status === 200, 'ponte: página inicial continua');
   ok(r.status === 200 && (await r.json()).ok !== false, 'ponte: rota do app (/v1/cortesia/estado) continua respondendo'); }
 ok((await naPonte('/v1/cortesia/estado', { method: 'POST', body: '{}', headers: { Origin: 'https://site-malvado.example' } })).status === 403, 'ponte: rota do app continua recusando outra origem');
 ok(db.prepare('SELECT COUNT(*) n FROM ips').get().n === 0, 'nenhuma trava de senha gravada no banco (a trava saiu)');
+
+// ── Erros do Groq por tipo
+const envGroq = { ...envPonte, GROQ_KEY: 'gsk-segredo', GROQ_URL: 'https://groq.test/audio' };
+let nAparelho = 0;
+const transcreve = (tipo = 'audio/webm;codecs=opus', nome = 'gravacao.webm') => {
+  const fd = new FormData();
+  fd.append('audio', new File([new Uint8Array(2000)], nome, { type: tipo }));
+  fd.append('aparelho', 'aparelho-teste-' + String(++nAparelho).padStart(6, '0'));
+  return naPonte('/v1/cortesia/transcrever', { method: 'POST', body: fd, headers: { Origin: 'https://app.voxcharmai.com' } }, envGroq);
+};
+const hojeBR = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+// Erro antigo, de antes da contagem por tipo (como os 7 de 12/11)
+const ontem = new Date(Date.now() - 27 * 3600e3).toISOString().slice(0, 10);
+db.prepare('INSERT INTO dias (dia, erros) VALUES (?, 7)').run(ontem);
+ok((await (await pede(await cracha())).text()).includes('7 transcrições recusadas pelo Groq em ' + ontem.split('-').reverse().join('/')), 'alerta no topo pros 7 erros antigos (sem tipo)');
+for (const [status, tipo] of [[400, 'formato'], [400, 'formato'], [429, 'ocupado'], [413, 'tamanho'], [401, 'chave'], [503, 'falha_groq'], [418, 'http_418']]) {
+  groqResponde = () => new Response('{"error":{"message":"x"}}', { status });
+  const r = await transcreve();
+  ok(r.status === (status === 429 ? 429 : 502), `Groq ${status}: a pessoa recebe ${status === 429 ? '429 ocupado' : '502 falha'}, como antes`);
+}
+groqResponde = () => { throw new TypeError('rede'); };
+ok((await transcreve()).status === 502, 'Groq fora da rede: 502 (antes virava 500 sem contar)');
+const tipos = Object.fromEntries(db.prepare("SELECT tipo, n FROM erros_groq WHERE dia = ? AND onde = 'transcricao'").all(hojeBR).map((x) => [x.tipo, x.n]));
+ok(JSON.stringify(tipos) === JSON.stringify({ chave: 1, falha_groq: 1, formato: 2, http_418: 1, ocupado: 1, rede: 1, tamanho: 1 }), 'erros guardados por tipo: ' + JSON.stringify(tipos));
+ok(db.prepare('SELECT erros FROM dias WHERE dia = ?').get(hojeBR).erros === 8, 'e o total antigo (coluna erros) continua somando: 8');
+ok(db.prepare('SELECT COUNT(*) n FROM aparelhos').get().n === 0, 'erro do Groq não gasta a cortesia de ninguém');
+{ const html = await (await pede(await cracha())).text();
+  ok(html.includes('8 transcrições recusadas pelo Groq em ' + hojeBR.split('-').reverse().join('/')), 'alerta no topo com os erros de hoje');
+  ok(html.includes('Groq não aceitou o áudio ou o pedido: formato (400): 2') && html.includes('Falha do lado do Groq (5xx)') && html.includes('A ponte não conseguiu falar com o Groq (rede)'), 'tipos em palavras simples no alerta e no quadro');
+  ok(html.includes('Sem tipo (de antes de 13/11'), 'os erros antigos aparecem como "sem tipo"'); }
+// Lente
+{ groqResponde = () => new Response('{}', { status: 500 });
+  const r = await naPonte('/v1/cortesia/lente', { method: 'POST', body: JSON.stringify({ aparelho: 'aparelho-lente-0000001', messages: [{ role: 'user', content: 'oi' }] }), headers: { Origin: 'https://app.voxcharmai.com', 'Content-Type': 'application/json' } }, { ...envGroq, GROQ_CHAT_URL: 'https://groq.test/audio' });
+  ok(r.status === 502 && db.prepare("SELECT n FROM erros_groq WHERE onde = 'lente' AND tipo = 'falha_groq'").get()?.n === 1, 'lente: erro do Groq também guardado por tipo'); }
+
+// ── Nome do arquivo que vai pro Groq
+groqResponde = () => new Response(JSON.stringify({ text: 'oi', duration: 3 }), { headers: { 'Content-Type': 'application/json' } });
+for (const [tipo, nome, espera] of [
+  ['audio/mp4', 'gravacao.webm', 'gravacao.m4a'],
+  ['audio/webm;codecs=opus', 'gravacao.webm', 'gravacao.webm'],
+  ['audio/ogg', 'blob', 'gravacao.ogg'],
+  ['audio/mpeg', 'reuniao.mp3', 'reuniao.mp3'],
+  ['', 'gravacao.webm', 'gravacao.webm'],
+]) {
+  const r = await transcreve(tipo, nome);
+  ok(r.status === 200 && groqRecebeu?.name === espera, `áudio "${tipo || 'sem tipo'}" chamado ${nome} vai pro Groq como ${espera} (foi ${groqRecebeu?.name})`);
+}
 
 process.exit(falhas ? 1 : 0);
