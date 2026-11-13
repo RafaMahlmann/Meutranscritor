@@ -10786,7 +10786,7 @@ window.eldDetect=function(text){
 
 <script>
 // ── VERSÃO — bump manual a cada commit relevante (formato ano.mês.dia.sequência) ──
-const VOX_VERSION='2026.11.12.8';
+const VOX_VERSION='2026.11.13.1';
 
 // ── WORLDS — espaços de trabalho separados ────────────────────────────────
 // Cada World tem as PRÓPRIAS pastas, notas, calendário e etiquetas. O que
@@ -28387,6 +28387,17 @@ function _txDica(fd){
     fd.append('prompt',txt+'.');
   }catch(e){}
 }
+// OpenAI (13/11/2026, C4): o whisper-1 desliga em 26/02/2027; o modelo novo é o
+// gpt-transcribe (K5 + especificação oficial da OpenAI). Ele usa `languages` em
+// lista (no formulário, "languages[]"), no lugar do `language` antigo, que não
+// pode ir junto. Resposta: o JSON padrão, lendo `.text` (viaJson nos 3 lugares).
+// O `prompt` (_txDica) continua igual. O servidor local segue com whisper-1.
+const OPENAI_TX_MODELO='gpt-transcribe';
+function _openaiTxPedido(fd){
+  fd.append('model',OPENAI_TX_MODELO);
+  if(cfg.lang)fd.append('languages[]',cfg.lang);
+  _txDica(fd);
+}
 // ── Oficina e Entrevista: lentes do tipo do mundo ──────────────────────────────
 const LENTES_OFICINA=[
   {k:'of_pedido',nome:'Pedido pra IA',desc:'A fala solta vira um pedido claro para o agente, e aponta o que faltou dizer',
@@ -35950,7 +35961,7 @@ async function _vtTranscribe(blob){
   const ext=blob.type.includes('mp4')?'mp4':'webm';
   const file=new File([blob],'vt.'+ext,{type:blob.type});
   const fd=new FormData();fd.append('file',file);
-  let res;
+  let res,viaJson=false;
   const key=cfg.apiKeyGroq||cfg.apiKey;
   if(cfg.apiKeyGroq){
     fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);
@@ -35961,11 +35972,11 @@ async function _vtTranscribe(blob){
     fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);
     res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd});
   }else{
-    fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);
+    _openaiTxPedido(fd);viaJson=true;
     res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
   }
   if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||'Erro '+res.status);}
-  const text=cfg.provider==='grok'?(await res.json()).text||'':await res.text();
+  const text=(cfg.provider==='grok'||viaJson)?(await res.json()).text||'':await res.text();
   return text.trim();
 }
 function _vtRenderResult(id,tags,transcript){
@@ -37830,13 +37841,13 @@ async function doTranscribe(file,durSec,fromRec,sn='',mode='livre',opts={}){
       setPL(pid,t('Transcrevendo…'));
       if(viaCortesia){cortesiaRes=await _cortesiaTranscrever(file);text=cortesiaRes.texto}
       else{
-        const fd=new FormData();fd.append('file',file);let res;
+        const fd=new FormData();fd.append('file',file);let res,viaJson=false;
         if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
         else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
         else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd})}
-        else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
+        else{_openaiTxPedido(fd);viaJson=true;res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd})}
         if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||'Erro '+res.status)}
-        text=cfg.provider==='grok'?(await res.json()).text||'':await res.text();
+        text=(cfg.provider==='grok'||viaJson)?(await res.json()).text||'':await res.text();
       }
     }
     const cpm=cfg.provider==='grok'?COST_G:cfg.provider==='groqwhisper'?COST_GQ:COST_W;
@@ -47729,12 +47740,12 @@ async function txChunk(file,key){
     const fd=new FormData();fd.append('file',file);
     const ctrl=new AbortController();
     const to=setTimeout(()=>ctrl.abort(),90000);
-    let res;
+    let res,viaJson=false;
     try{
       if(cfg.provider==='grok'){res=await fetch('https://api.x.ai/v1/stt',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
       else if(cfg.provider==='groqwhisper'){fd.append('model','whisper-large-v3-turbo');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
       else if(cfg.provider==='local'){fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('http://localhost:8000/v1/audio/transcriptions',{method:'POST',body:fd,signal:ctrl.signal})}
-      else{fd.append('model','whisper-1');if(cfg.lang)fd.append('language',cfg.lang);fd.append('response_format','text');_txDica(fd);res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
+      else{_openaiTxPedido(fd);viaJson=true;res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd,signal:ctrl.signal})}
     }catch(netErr){
       clearTimeout(to);
       if(attempt<MAX-1){
@@ -47761,7 +47772,7 @@ async function txChunk(file,key){
       continue;
     }
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+res.status)}
-    return cfg.provider==='grok'?(await res.json()).text||'':await res.text();
+    return (cfg.provider==='grok'||viaJson)?(await res.json()).text||'':await res.text();
   }
   throw new Error(t('limite de uso da IA — tente novamente em instantes'));
 }
