@@ -2071,6 +2071,42 @@
 
 </section>
 
+<!-- PROVA: 15 s do app de verdade (ph-capa, gravado em 11/11 com o Groq).
+     A fala é de sintetizador e o tempo foi encurtado; o texto e a lente são reais. -->
+<section class="vox-demo" id="demo" aria-labelledby="voxDemoTitle">
+<style>
+.vox-demo{background:#071516;color:#eaf4f4;padding:8px 20px 56px}
+.vox-demo-inner{max-width:880px;margin:0 auto;text-align:center}
+.vox-demo h2{font-size:clamp(20px,3.2vw,28px);margin:0 0 6px;font-weight:800;letter-spacing:-.01em}
+.vox-demo-sub{margin:0 0 18px;color:#a9bcbc;font-size:15px}
+.vox-demo-frame{border-radius:14px;overflow:hidden;border:1px solid rgba(72,215,210,.28);box-shadow:0 18px 50px rgba(0,0,0,.45);background:#0b2021;aspect-ratio:16/9}
+.vox-demo-frame video{display:block;width:100%;height:100%;object-fit:cover}
+.vox-demo-note{margin:10px 0 0;color:#a9bcbc;font-size:12.5px}
+</style>
+<div class="vox-demo-inner">
+    <h2 id="voxDemoTitle" data-i18n>See it in 15 seconds</h2>
+    <p class="vox-demo-sub" data-i18n>Record, get the text, pick a lens, get your to-do list.</p>
+    <div class="vox-demo-frame">
+        <video id="voxDemoVideo" src="vox-demo.mp4" poster="vox-demo-poster.jpg" muted loop playsinline preload="none" width="1280" height="720" aria-label="Vox demo: recording a voice note, the text appears, the Decisions &amp; Actions lens turns it into a list"></video>
+    </div>
+    <p class="vox-demo-note" data-i18n>The real app and real AI output. Sped up, no sound; the voice is a made-up note read by a speech synthesizer.</p>
+</div>
+<script>
+(function () {
+    var v = document.getElementById('voxDemoVideo');
+    if (!v) return;
+    var calmo = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calmo) { v.setAttribute('controls', ''); v.preload = 'metadata'; return; }
+    function tocar() { v.preload = 'auto'; var p = v.play(); if (p && p.catch) p.catch(function () { v.setAttribute('controls', ''); }); }
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (es) {
+            es.forEach(function (e) { if (e.isIntersecting) tocar(); else v.pause(); });
+        }, { threshold: .25 }).observe(v);
+    } else { tocar(); }
+})();
+</script>
+</section>
+
 <style>
 
 /* =====================================================
@@ -11648,6 +11684,7 @@
                 </div>
 
                 <div class="vox-price">
+                    <s class="vox-price-was" id="voxPriceWas" hidden>US$ 149</s>
                     <span class="vox-price-currency">US$</span>
                     <span class="vox-price-number" id="voxPriceNumber">59</span>
                     <span class="vox-price-period" id="voxPricePeriod" data-i18n>/ year</span>
@@ -11728,6 +11765,15 @@
 
         <!-- BOTTOM -->
 
+        <!-- Planos de time (doc 33, Frente Empresas, L6.7). So um convite: os precos e o
+             checkout ficam na for-teams.html. -->
+        <div class="vox-pricing-bottom" style="margin-top:26px">
+            <div class="vox-pricing-bottom-small">
+                <span data-i18n>More than 6 devices? One license for the whole team: up to 20 or 50 devices.</span>
+                <a href="for-teams.html" style="color:#2db3b0;font-weight:800;white-space:nowrap" data-i18n>See Vox for teams →</a>
+            </div>
+        </div>
+
         <div class="vox-pricing-bottom">
 
             <div class="vox-pricing-bottom-main">
@@ -11747,13 +11793,36 @@
 
 </section>
 
+<style>
+/* Oferta de lançamento (oferta-lancamento.md): só existe entre OFERTA.ini e OFERTA.fim. */
+.vox-price-was{font:700 20px/1 Inter,Arial,Helvetica,sans-serif;color:var(--vox-muted);margin-right:10px;align-self:center;text-decoration-thickness:2px;white-space:nowrap}
+.vox-price-was[hidden]{display:none}
+.vox-oferta-faixa{display:block;padding:10px 96px 10px 16px;background:#48d7d2;color:#071516;font:700 14px/1.35 Inter,Arial,Helvetica,sans-serif;text-align:center;text-decoration:none}
+.vox-oferta-faixa:hover{background:#6fe3df}
+.vox-oferta-faixa u{text-underline-offset:2px}
+@media (max-width:520px){.vox-oferta-faixa{font-size:13px;text-align:left}}
+</style>
 <script>
 (function () {
+    /* Oferta de lançamento: o cupom LAUNCH99 no Freemius tem as mesmas datas
+       e o limite de 100. Fora das datas, a página fica exatamente como antes.
+       ?oferta-teste mostra a oferta antes da hora, pra conferir (o checkout só
+       aceita o cupom dentro das datas). */
+    var OFERTA = { ini: Date.parse("2026-12-01T00:00:00-08:00"), fim: Date.parse("2027-01-10T23:59:59-08:00"), cupom: "LAUNCH99", preco: "99", normal: "149" };
+    var agora = Date.now();
+    var ofertaOn = (agora >= OFERTA.ini && agora <= OFERTA.fim) || /[?&]oferta-teste\b/.test(location.search);
     var prices = {
-        monthly:  { number: "6",  period: "/ mês", note: "Cobrado todo mês.", micro: "Cobrado mensalmente. Cancele quando quiser." },
-        annual:   { number: "59", period: "/ ano", note: "Equivale a US$ 4,92 por mês.", micro: "Cobrado uma vez por ano." },
-        lifetime: { number: "149", period: "único", note: "Um pagamento, sem mensalidade depois.", micro: "Pagamento único. Sem renovação." }
+        /* Base em inglês, como o resto da página: t() traduz pro português.
+           Antes os textos estavam em português e, em inglês, quem tocava em
+           Monthly/Lifetime via "único" e "Cobrado todo mês." */
+        monthly:  { number: "6",  period: "/ month", note: "Billed every month.", micro: "Billed monthly. Cancel anytime." },
+        annual:   { number: "59", period: "/ year", note: "Works out to US$4.92 a month.", micro: "Billed once a year." },
+        lifetime: { number: "149", period: "one-time", note: "One payment, no monthly fee after.", micro: "One-time payment. No renewal." }
     };
+    if (ofertaOn) {
+        prices.lifetime.number = OFERTA.preco;
+        prices.lifetime.note = "Launch offer: until January 10 or the first 100 licenses.";
+    }
 
     var toggle = document.getElementById("voxCycleToggle");
     if (!toggle) return;
@@ -11764,6 +11833,34 @@
     var periodEl = document.getElementById("voxPricePeriod");
     var noteEl = document.getElementById("voxPriceNote");
     var microEl = document.getElementById("voxPlanMicro");
+    var wasEl = document.getElementById("voxPriceWas");
+    var linkEl = document.getElementById("voxCheckoutLink");
+    var linkBase = linkEl ? linkEl.getAttribute("href") : "";
+
+    if (ofertaOn) {
+        var faixa = document.createElement("a");
+        faixa.className = "vox-oferta-faixa";
+        faixa.href = "#teste-gratis";
+        faixa.innerHTML = "<u></u>";
+        var faixaTx = "Launch offer: Vox Pro lifetime for US$ 99 (normally US$ 149). Until January 10 or the first 100 licenses.";
+        faixa.firstChild.textContent = faixaTx;
+        /* t() nasce num script mais abaixo: traduz quando a página termina de carregar. */
+        document.addEventListener("DOMContentLoaded", function () { if (typeof t === "function") faixa.firstChild.textContent = t(faixaTx); });
+        faixa.addEventListener("click", function () {
+            var b = toggle.querySelector('.vox-toggle-btn[data-cycle="lifetime"]');
+            if (b && !b.classList.contains("is-active")) setTimeout(function () { b.click(); }, 50);
+        });
+        document.body.insertBefore(faixa, document.body.firstChild);
+    }
+    /* O vitalício em oferta: preço antigo riscado e o link de compra com o cupom. */
+    function ofertaCiclo(cycle) {
+        var vit = ofertaOn && cycle === "lifetime";
+        if (wasEl) wasEl.hidden = !vit;
+        /* O ciclo vai sempre no link: antes o checkout abria igual pros três
+           (sem billing_cycle) e quem escolheu "Monthly" caía no padrão do Freemius. */
+        var ciclo = /^(monthly|annual|lifetime)$/.test(cycle || "") ? cycle : "annual";
+        if (linkEl) linkEl.setAttribute("href", linkBase + "&billing_cycle=" + ciclo + (vit ? "&coupon=" + encodeURIComponent(OFERTA.cupom) : ""));
+    }
 
     /* A pilula ativa e sempre o MESMO no do DOM: ela desliza ate o botao
        escolhido em vez de sumir de um e nascer no outro. */
@@ -11808,6 +11905,7 @@
             var tr = (typeof t === "function") ? t : function (s) { return s; };
 
             numberEl.textContent = p.number;
+            ofertaCiclo(cycle);
             periodEl.textContent = tr(p.period);
             noteEl.textContent = tr(p.note);
             microEl.textContent = tr(p.micro);
@@ -11823,6 +11921,7 @@
 
     toggle.classList.add("is-ready");
     placeThumb(activeBtn(), false);
+    ofertaCiclo(activeBtn().getAttribute("data-cycle"));
     window.addEventListener("load", function () { placeThumb(activeBtn(), false); });
 
     var resizeTimer = null;
@@ -13409,7 +13508,7 @@
                 <div class="vox-faq-answer">
 
                     <div class="vox-faq-answer-inner" data-i18n-html>
-                        VOX uses your own access key to a transcription service — <strong>Groq</strong> comes pre-selected, with generous free use. <br><br> It runs <strong>Whisper</strong>, the engine most people consider the best audio transcriber out there — Groq just delivers it about <strong>5x faster</strong> than the original, thanks to their own hardware, without losing accuracy. <br><br> That's why, with your own key, your data never passes through our servers: the audio goes straight from your browser to Groq, no stop in between. To try it you don't even need one: your first transcriptions and lenses are on us. Only those go through a bridge of ours to Groq, and the bridge keeps neither the audio nor the text.
+                        VOX uses your own access key to a transcription service — <strong>Groq</strong> comes pre-selected, with generous free use. <br><br> It runs <strong>Whisper</strong>, an open speech-recognition model. You can switch to another service in the settings whenever you like. <br><br> That's why, with your own key, your data never passes through our servers: the audio goes straight from your browser to Groq, no stop in between. To try it you don't even need one: your first transcriptions and lenses are on us. Only those go through a bridge of ours to Groq, and the bridge keeps neither the audio nor the text.
                     </div>
 
                 </div>
@@ -13812,7 +13911,7 @@
                 <div class="vox-faq-answer">
 
                     <div class="vox-faq-answer-inner" data-i18n-html>
-                        Yes. It's called <strong>diarization</strong> — automatically splitting out who said what, instead of handing back everything mixed together. In a consultation or interview, that's the difference between a text you still have to untangle and one that's already ready: "Doctor: ... / Patient: ...". <br><br> VOX uses <strong>AssemblyAI</strong> for this — the tech most people consider the most accurate on the market today, with about US$50 in free credit to start (good for hundreds of hours). After that, it runs about 15-20 cents per hour, plus 2 cents for speaker separation. <br><br> One thing worth deciding with your eyes open: on the free credit, AssemblyAI's terms allow them to train their models on your audio — only paying customers can turn that off. For a confidential consultation or interview, it's worth weighing before you choose. VOX shows this information (the "confidentiality badge") on every provider, so you decide with what you know, not what we promise.
+                        Yes. It's called <strong>diarization</strong> — automatically splitting out who said what, instead of handing back everything mixed together. In a consultation or interview, that's the difference between a text you still have to untangle and one that's already ready: "Doctor: ... / Patient: ...". <br><br> VOX works with several speaker-separation services, and you choose one, with your own key. They differ in price, in how you can start for free, and in what they do with your audio: on some free plans, your audio can be used to train their models. <a href="speaker-separation-services.html">Compare the services</a> before you choose, and read <a href="before-you-record.html">who has to agree</a> before you record other people.
                     </div>
 
                 </div>
@@ -14054,6 +14153,20 @@
                      abre um e-mail pro support@voxcharmai.com (em ingles, o publico e americano; suporte@ tambem existe), que e um
                      encaminhamento do Namecheap (criado em 01/10/2026). -->
 
+                <!-- Paginas internas (comparativos e afiliados), doc 33 L2.2 e L2.8.
+                     Nome de produto nao se traduz; so os dois ultimos passam pelo I18N_PT. -->
+                <a href="vox-vs-audiopen.html">Vox vs AudioPen</a>
+
+                <a href="vox-vs-otter.html">Vox vs Otter</a>
+
+                <a href="vox-vs-wispr-flow.html">Vox vs Wispr Flow</a>
+
+                <a href="audiopen-alternative.html" data-i18n>AudioPen alternative</a>
+
+                <a href="for-teams.html" data-i18n>Vox for teams</a>
+
+                <a href="affiliates.html" data-i18n>Become an affiliate</a>
+
                 <a href="https://app.voxcharmai.com/terms.html" data-i18n>
 
                     Terms of Use
@@ -14242,6 +14355,10 @@ let I18N_PT = {
 "Talk it through, messy as it comes. Vox writes down every word — then helps you decide, plan and untangle it: who does what by when, what is still undecided, what is really weighing on you.":"Fale do jeito que vier, bagunçado mesmo. O Vox escreve cada palavra — e depois te ajuda a decidir, planejar e desembaraçar: quem faz o quê até quando, o que ainda não foi decidido, o que está pesando de verdade.",
 "Start for free →":"Comece grátis →",
 "See how it works":"Ver como funciona",
+"See it in 15 seconds":"Veja em 15 segundos",
+"Record, get the text, pick a lens, get your to-do list.":"Grave, receba o texto, escolha uma lente e saia com a lista do que fazer.",
+"The real app and real AI output. Sped up, no sound; the voice is a made-up note read by a speech synthesizer.":"O app e a resposta da IA são de verdade. Acelerado e sem som; a voz é um sintetizador lendo uma nota inventada.",
+"Vox demo: recording a voice note, the text appears, the Decisions & Actions lens turns it into a list":"Demonstração do Vox: gravar uma nota de voz, o texto aparece, a lente Decisões e ações vira uma lista",
 "No account, no card":"Sem conta, sem cartão",
 "14 days of Pro, on us":"14 dias de Pro, de presente",
 "Your notes stay on your device":"Suas notas ficam no seu aparelho",
@@ -14391,6 +14508,14 @@ let I18N_PT = {
 "Annual":"Anual",
 "Lifetime":"Vitalício",
 "/ year":"/ ano",
+"/ month":"/ mês",
+"Launch offer: until January 10 or the first 100 licenses.":"Oferta de lançamento: até 10 de janeiro ou as 100 primeiras licenças.",
+"Launch offer: Vox Pro lifetime for US$ 99 (normally US$ 149). Until January 10 or the first 100 licenses.":"Oferta de lançamento: Vox Pro vitalício por US$ 99 (normal US$ 149). Até 10 de janeiro ou as 100 primeiras licenças.",
+"one-time":"único",
+"Billed every month.":"Cobrado todo mês.",
+"Billed monthly. Cancel anytime.":"Cobrado mensalmente. Cancele quando quiser.",
+"One payment, no monthly fee after.":"Um pagamento, sem mensalidade depois.",
+"One-time payment. No renewal.":"Pagamento único. Sem renovação.",
 "Works out to US$4.92 a month.":"Equivale a US$ 4,92 por mês.",
 "Vox thinks across your whole history: weekly reviews and questions about all your notes":"O Vox pensa no seu histórico inteiro: revisão da semana e perguntas sobre todas as suas notas",
 "No daily recording limit — never degrades":"Gravação sem limite diário — nunca degrada",
@@ -14413,7 +14538,7 @@ let I18N_PT = {
 "What languages does VOX work in?":"Em quais idiomas o VOX funciona?",
 "Today, in <strong>English and Portuguese</strong> — screens, menus and error messages built for both from day one, not translated afterwards.":"Hoje, em <strong>inglês e português</strong> — telas, menus e mensagens de erro pensados nos dois desde o início, não traduzidos depois.",
 "What's an API key? Do I have to pay for it separately?":"O que é a chave de API? Preciso pagar por fora?",
-"VOX uses your own access key to a transcription service — <strong>Groq</strong> comes pre-selected, with generous free use. <br><br> It runs <strong>Whisper</strong>, the engine most people consider the best audio transcriber out there — Groq just delivers it about <strong>5x faster</strong> than the original, thanks to their own hardware, without losing accuracy. <br><br> That's why, with your own key, your data never passes through our servers: the audio goes straight from your browser to Groq, no stop in between. To try it you don't even need one: your first transcriptions and lenses are on us. Only those go through a bridge of ours to Groq, and the bridge keeps neither the audio nor the text.":"O VOX usa a sua própria chave de acesso a um serviço de transcrição — o <strong>Groq</strong> já vem escolhido, com uso gratuito generoso. <br><br> Ele roda o <strong>Whisper</strong>, o motor que a maioria considera o melhor transcritor de áudio do mercado — só que ali o Groq entrega cerca de <strong>5x mais rápido</strong> que o original, por causa do hardware próprio deles, sem perder precisão. <br><br> É por isso que, com a sua chave, seus dados não passam pelos nossos servidores: o áudio vai direto do seu navegador pro Groq, sem escala no meio do caminho. Pra testar você nem precisa dela: as primeiras transcrições e lentes são por nossa conta. Só essas passam por uma ponte nossa até o Groq, e a ponte não guarda o áudio nem o texto.",
+"VOX uses your own access key to a transcription service — <strong>Groq</strong> comes pre-selected, with generous free use. <br><br> It runs <strong>Whisper</strong>, an open speech-recognition model. You can switch to another service in the settings whenever you like. <br><br> That's why, with your own key, your data never passes through our servers: the audio goes straight from your browser to Groq, no stop in between. To try it you don't even need one: your first transcriptions and lenses are on us. Only those go through a bridge of ours to Groq, and the bridge keeps neither the audio nor the text.":"O VOX usa a sua própria chave de acesso a um serviço de transcrição — o <strong>Groq</strong> já vem escolhido, com uso gratuito generoso. <br><br> Ele roda o <strong>Whisper</strong>, um modelo aberto de reconhecimento de fala. Você pode trocar de serviço nas configurações quando quiser. <br><br> É por isso que, com a sua chave, seus dados não passam pelos nossos servidores: o áudio vai direto do seu navegador pro Groq, sem escala no meio do caminho. Pra testar você nem precisa dela: as primeiras transcrições e lentes são por nossa conta. Só essas passam por uma ponte nossa até o Groq, e a ponte não guarda o áudio nem o texto.",
 "Can I try VOX for free? Is there a free plan?":"Posso testar o VOX gratuitamente? Tem alguma modalidade grátis?",
 "Yes — and it's not a trial with a deadline. <strong>Free</strong> is genuinely free, no card, no sign-up. On top of that, when you start you get <strong>14 days of Pro as a gift</strong>: everything unlocked, no card. When it ends you simply stay on Free, and nothing you made is deleted. People who subscribe to <strong>Pro</strong> (from US$6/month) usually do it for the extra features.":"Sim — e não é um teste com prazo pra acabar. O <strong>Free</strong> é grátis de verdade, sem cartão, sem cadastro. E, quando você começa, ganha <strong>14 dias de Pro de presente</strong>: tudo liberado, sem cartão. Quando acaba, você simplesmente segue no Free, e nada do que criou é apagado. Quem assina o <strong>Pro</strong> (a partir de US$ 6/mês) costuma fazer isso pelos recursos extras.",
 "What file types can I use?":"Quais tipos de arquivo posso usar?",
@@ -14429,7 +14554,7 @@ let I18N_PT = {
 "How does the VOX Pro subscription work?":"Como funciona a assinatura do VOX Pro?",
 "You choose: <strong>US$6 a month</strong>, <strong>US$59 a year</strong> (works out to US$4.92/month), or a <strong>US$149 one-time lifetime payment</strong>. You can switch billing cycles whenever you like.":"Você escolhe: <strong>US$ 6 por mês</strong>, <strong>US$ 59 por ano</strong> (equivale a US$ 4,92/mês) ou <strong>US$ 149 pagamento único vitalício</strong>. Pode trocar de ciclo quando quiser.",
 "Does it record consultations and meetings, and actually tell voices apart?":"Ele grava consultas e reuniões, e realmente diferencia as vozes?",
-"Yes. It's called <strong>diarization</strong> — automatically splitting out who said what, instead of handing back everything mixed together. In a consultation or interview, that's the difference between a text you still have to untangle and one that's already ready: \"Doctor: ... / Patient: ...\". <br><br> VOX uses <strong>AssemblyAI</strong> for this — the tech most people consider the most accurate on the market today, with about US$50 in free credit to start (good for hundreds of hours). After that, it runs about 15-20 cents per hour, plus 2 cents for speaker separation. <br><br> One thing worth deciding with your eyes open: on the free credit, AssemblyAI's terms allow them to train their models on your audio — only paying customers can turn that off. For a confidential consultation or interview, it's worth weighing before you choose. VOX shows this information (the \"confidentiality badge\") on every provider, so you decide with what you know, not what we promise.":"Sim. Isso se chama <strong>diarização</strong> — separar automaticamente quem falou o quê, em vez de devolver tudo misturado. Numa consulta ou entrevista, é a diferença entre um texto que você ainda precisa desembaraçar e um que já sai pronto: \"Médico: ... / Paciente: ...\". <br><br> O VOX usa o <strong>AssemblyAI</strong> pra isso — é a tecnologia que a maioria considera a mais precisa do mercado hoje, com cerca de US$ 50 de crédito grátis pra começar (dá pra centenas de horas). Depois disso, sai por ~15-20 centavos de dólar por hora, mais 2 centavos pela separação de vozes. <br><br> Um ponto pra decidir com os olhos abertos: no crédito gratuito, os termos do AssemblyAI permitem treinar os modelos deles com o seu áudio — só quem paga consegue desligar isso. Pra consulta ou entrevista confidencial, vale considerar antes de escolher. O VOX mostra essa informação (o \"selo de sigilo\") em cada provedor, pra você decidir com o que sabe, não com o que a gente promete.",
+"Yes. It's called <strong>diarization</strong> — automatically splitting out who said what, instead of handing back everything mixed together. In a consultation or interview, that's the difference between a text you still have to untangle and one that's already ready: \"Doctor: ... / Patient: ...\". <br><br> VOX works with several speaker-separation services, and you choose one, with your own key. They differ in price, in how you can start for free, and in what they do with your audio: on some free plans, your audio can be used to train their models. <a href=\"speaker-separation-services.html\">Compare the services</a> before you choose, and read <a href=\"before-you-record.html\">who has to agree</a> before you record other people.":"Sim. Isso se chama <strong>diarização</strong> — separar automaticamente quem falou o quê, em vez de devolver tudo misturado. Numa consulta ou entrevista, é a diferença entre um texto que você ainda precisa desembaraçar e um que já sai pronto: \"Médico: ... / Paciente: ...\". <br><br> O VOX funciona com vários serviços de separar vozes, e você escolhe um, com a sua chave. Eles diferem no preço, em como começar de graça e no que fazem com o seu áudio: em alguns planos grátis, o áudio pode ser usado para treinar os modelos deles. <a href=\"speaker-separation-services.html\">Compare os serviços</a> (em inglês) antes de escolher, e leia <a href=\"before-you-record.html\">quem precisa concordar</a> antes de gravar outras pessoas.",
 "I work with confidential information. Can I trust VOX with it?":"Eu trabalho com informação confidencial. Dá pra confiar no VOX?",
 "You can — and there's a way not to even depend on that. <br><br> With your own key, there is no Vox server in the path: the audio goes straight from your browser to whichever transcription service you pick, and each one treats data differently. That's why every option carries a <strong>confidentiality badge</strong>, shown before you choose. <br><br> Now, when the matter is truly sensitive, there's the mode that closes everything off: the <strong>local transcriber</strong>, for Windows and Mac. You install it once and Whisper starts running inside your own computer — the audio goes nowhere, there is no internet in the path. On an ordinary machine, with no graphics card, the Fast model takes about 18 seconds per minute of audio. <br><br> The text AI (summary, minutes) runs on your machine too, if you want: just point VOX at Ollama or LM Studio. <br><br> One limit worth knowing up front: separating who said what doesn't run locally yet — in this mode the transcript comes out as running text. <br><br> And whatever gets stored, you lock: any world becomes a vault with a password, encrypted on the device. Transcribe with no internet, store under key — the data never leaves your desk.":"Dá — e tem um jeito de não depender nem disso. <br><br> Com a sua chave, não existe servidor do Vox no caminho: o áudio vai direto do seu navegador pro serviço de transcrição que você escolher, e cada um trata dado de um jeito. Por isso cada opção vem com um <strong>selo de sigilo</strong>, mostrado antes de você escolher. <br><br> Agora, quando o assunto é sigiloso de verdade, tem o modo que fecha tudo: o <strong>transcritor local</strong>, pra Windows e Mac. Você instala uma vez e o Whisper passa a rodar dentro do seu computador — o áudio não vai pra lugar nenhum, não existe internet no caminho. Numa máquina comum, sem placa de vídeo, o modelo Rápido gasta cerca de 18 segundos por minuto de áudio. <br><br> A IA de texto (resumo, ata) também roda na sua máquina, se você quiser: é só apontar o VOX pro Ollama ou LM Studio. <br><br> Um limite pra você saber antes: separar quem falou ainda não roda local — nesse modo a transcrição sai em texto corrido. <br><br> E o que fica guardado, você tranca: qualquer mundo vira um cofre com senha, criptografado no aparelho. Transcreve sem internet, guarda sob chave — o dado não sai da sua mesa.",
 "I create a lot of AI prompts. I'd love to just speak, save, archive and organize — create my prompts with the same ease as talking to a person. Is VOX good for that?":"Eu crio muitos prompts de IA. Adoraria simplesmente falar, registrar, arquivar e organizar — criar meus prompts com a mesma facilidade que converso com uma pessoa. O VOX serve pra isso?",
@@ -14442,6 +14567,11 @@ let I18N_PT = {
 "Terms of Use":"Termos de Uso",
 "Privacy Policy":"Política de Privacidade",
 "Contact":"Contato",
+"AudioPen alternative":"Alternativa ao AudioPen",
+"Become an affiliate":"Seja um afiliado",
+"Vox for teams":"Vox para times",
+"More than 6 devices? One license for the whole team: up to 20 or 50 devices.":"Mais de 6 aparelhos? Uma licença pro time inteiro: até 20 ou 50 aparelhos.",
+"See Vox for teams →":"Ver o Vox para times →",
 "Expand screenshot":"Ampliar captura",
 "Close":"Fechar",
 "Previous":"Anterior",
@@ -14477,6 +14607,19 @@ let I18N_PT = {
         origem = q.get('utm_source') || ref || 'direto';
     } catch (e) {}
     avisa({ tipo: 'visita', origem: origem });
+    /* Repassa a origem pro app (doc 33, L3.8): quem chegou aqui com
+       ?utm_source=<canal> leva o mesmo canal no link do app; quem chegou sem
+       nada leva "landing". O app só guarda canal de uma lista fechada e só
+       conta se a pessoa aceitar a contagem (ver Privacidade). */
+    try {
+        var canal = (new URLSearchParams(location.search).get('utm_source') || '').toLowerCase();
+        if (!/^[a-z0-9-]{1,30}$/.test(canal)) canal = 'landing';
+        Array.prototype.forEach.call(document.querySelectorAll('a[href*="app.voxcharmai.com"]'), function (a) {
+            var h = a.getAttribute('href') || '';
+            if (/terms|privacy/.test(h) || /[?&]utm_source=/.test(h)) return;
+            a.setAttribute('href', h + (h.indexOf('?') > -1 ? '&' : '?') + 'utm_source=' + canal);
+        });
+    } catch (e) {}
     /* Clique que troca de página na mesma aba: o WebKit (Safari) corta o
        aviso no meio quando a página sai na hora — medido no ar em
        01/10/2026: 5 cliques, 1 contado. Então o aviso vai primeiro e a
