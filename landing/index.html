@@ -11846,9 +11846,16 @@
         faixa.firstChild.textContent = faixaTx;
         /* t() nasce num script mais abaixo: traduz quando a página termina de carregar. */
         document.addEventListener("DOMContentLoaded", function () { if (typeof t === "function") faixa.firstChild.textContent = t(faixaTx); });
-        faixa.addEventListener("click", function () {
+        faixa.addEventListener("click", function (e) {
             var b = toggle.querySelector('.vox-toggle-btn[data-cycle="lifetime"]');
             if (b && !b.classList.contains("is-active")) setTimeout(function () { b.click(); }, 50);
+            /* Vai direto ao cartão do Pro (no celular, o topo dos preços mostra
+               primeiro o plano grátis e o US$ 99 ficava fora da tela). */
+            var pro = document.querySelector(".vox-plan-pro");
+            if (pro && pro.scrollIntoView) {
+                e.preventDefault();
+                pro.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+            }
         });
         document.body.insertBefore(faixa, document.body.firstChild);
     }
